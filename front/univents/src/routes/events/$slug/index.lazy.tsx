@@ -3,9 +3,11 @@ import { Share2, MapPin, Calendar } from 'lucide-react'
 import { handleShare, getInitials } from '@/shared/lib/share'
 import { formatDateRange } from '@/shared/lib/date'
 import { activeEditionQueryOptions, pastEditionsQueryOptions, upcomingEditionsQueryOptions } from '@/features/editions/api'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { OtherEditionsSection } from '@/features/editions/ui/OtherEditionsSection'
 import { ContactSection } from '@/features/events/ui/ContactSection'
+import { TicketsSection } from '@/features/tickets/ui/TicketsSection'
+import { allTicketsQueryOptions } from '@/features/tickets/api'
 
 export const Route = createLazyFileRoute('/events/$slug/')({
   component: RouteComponent,
@@ -25,6 +27,7 @@ function RouteComponent() {
     pastEditionsQueryOptions(event.id)
   )
 
+  const { data: tickets = [] } = useQuery(allTicketsQueryOptions(activeEdition?.id ?? ""))
 
   const initials = getInitials(event.full_name)
 
@@ -152,13 +155,16 @@ function RouteComponent() {
         </div>
       </div>
       <main className='flex flex-col justify-center items-center w-full mt-6 px-4 sm:px-8!'>
-        <OtherEditionsSection
-          editions={[...pastEditions, ...upcomingEditions]}
-          currentEditionId={activeEdition?.id}
-          eventSlug={event.slug}
-          maxDisplay={5}
-        />
-        <ContactSection event={event} />
+        <div className='max-w-6xl w-full'>
+          <TicketsSection tickets={tickets} eventSlug={event.slug} />
+          <OtherEditionsSection
+            editions={[...pastEditions, ...upcomingEditions]}
+            currentEditionId={activeEdition?.id}
+            eventSlug={event.slug}
+            maxDisplay={5}
+          />
+          <ContactSection event={event} />
+        </div>
       </main>
     </div>
   )

@@ -24,6 +24,7 @@ import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
+import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
 import { Route as EventsSlugProfileRouteImport } from './routes/events/$slug/profile'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
@@ -112,6 +113,11 @@ const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
 } as any).lazy(() =>
   import('./routes/admin/events/index.lazy').then((d) => d.Route),
 )
+const EventsSlugTicketsRoute = EventsSlugTicketsRouteImport.update({
+  id: '/events/$slug/tickets',
+  path: '/events/$slug/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsSlugProfileRoute = EventsSlugProfileRouteImport.update({
   id: '/events/$slug/profile',
   path: '/events/$slug/profile',
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/verify/$hash'
     | '/events/'
     | '/events/$slug/profile'
+    | '/events/$slug/tickets'
     | '/admin/events/'
     | '/events/$slug/'
     | '/events/$slug/editions/'
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/verify/$hash'
     | '/events'
     | '/events/$slug/profile'
+    | '/events/$slug/tickets'
     | '/admin/events'
     | '/events/$slug'
     | '/events/$slug/editions'
@@ -393,6 +404,7 @@ export interface FileRouteTypes {
     | '/verify/$hash'
     | '/events/'
     | '/events/$slug/profile'
+    | '/events/$slug/tickets'
     | '/admin/events/'
     | '/events/$slug/'
     | '/events/$slug/editions/'
@@ -423,6 +435,7 @@ export interface RootRouteChildren {
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   EventsSlugProfileRoute: typeof EventsSlugProfileRoute
+  EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
   EventsSlugEditionsIndexRoute: typeof EventsSlugEditionsIndexRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -520,6 +533,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/events/'
       preLoaderRoute: typeof AdminEventsIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/events/$slug/tickets': {
+      id: '/events/$slug/tickets'
+      path: '/events/$slug/tickets'
+      fullPath: '/events/$slug/tickets'
+      preLoaderRoute: typeof EventsSlugTicketsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/events/$slug/profile': {
       id: '/events/$slug/profile'
@@ -686,6 +706,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   EventsSlugProfileRoute: EventsSlugProfileRoute,
+  EventsSlugTicketsRoute: EventsSlugTicketsRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
   EventsSlugEditionsIndexRoute: EventsSlugEditionsIndexRoute,
   EventsEventIdEditionsEditionIdProductsRoute:

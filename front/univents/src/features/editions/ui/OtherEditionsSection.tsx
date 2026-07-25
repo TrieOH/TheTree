@@ -55,7 +55,6 @@ export function OtherEditionsSection({
         </p>
       </div>
 
-      {/* Grid: auto-fill com min 300px */}
       <div className="flex flex-wrap gap-4">
         {sorted.map((edition) => (
           <EditionSummaryCard key={edition.id} edition={edition} />
