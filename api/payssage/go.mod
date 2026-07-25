@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/zap v1.28.0
 	resty.dev/v3 v3.0.0-rc.3
+	riverqueue.com/riverui v0.16.0
 )
 
 require (
@@ -76,5 +77,4 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	riverqueue.com/riverui v0.16.0 // indirect
 )

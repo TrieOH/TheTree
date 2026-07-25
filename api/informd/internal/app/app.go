@@ -25,7 +25,7 @@ func Start() {
 
 	app.cfg = LoadConfig()
 
-	SetupFUN(app.cfg.AppName)
+	SetupFUN()
 
 	app.idxClient = SetupIdentityX(app.cfg)
 

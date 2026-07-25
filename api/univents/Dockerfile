@@ -1,5 +1,5 @@
 FROM git.trieoh.com/trieoh/go-tools:2 AS tools
-FROM golang:1.26.2 AS builder
+FROM golang:1.26.4 AS builder
 WORKDIR /app
 COPY --from=tools /go/bin/sqlc /go/bin/sqlc
 # --- Dependency layer ---
@@ -30,7 +30,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /app/api/univents/univents .
 COPY --from=tools /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/api/univents/internal/database/migrations ./internal/database/migrations
+COPY --from=builder /app/api/univents/db/migrations ./db/migrations
 USER nonroot:nonroot
 EXPOSE 8080
 CMD ["./univents"]

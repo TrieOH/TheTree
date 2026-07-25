@@ -1,7 +1,6 @@
 package app
 
 import (
-	"Informd/internal/database/sqlc"
 	"Informd/internal/features/answers"
 	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
@@ -9,9 +8,11 @@ import (
 	"Informd/internal/features/responders"
 	"Informd/internal/features/responses"
 	"Informd/internal/features/steps"
+	"Informd/internal/sqlc"
 	"Informd/ports"
 	"lib/database"
 	"lib/errx"
+	"lib/telemetry"
 	"lib/xslices"
 	"net/http"
 	"strings"
@@ -19,8 +20,8 @@ import (
 
 	fm "github.com/MintzyG/fun/middlewares"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -75,56 +76,54 @@ type middlewares struct {
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
+func (app *Informd) tracer() trace.Tracer {
+	return otel.Tracer(app.cfg.AppName)
+}
+
+func (app *Informd) txRunner() database.TxRunner {
+	return database.NewPGXTxRunner(app.db)
+}
+
+func (app *Informd) initRepos(q *sqlc.Queries) repos {
 	return repos{
-		namespaces: namespaces.NewRepo(q, logger, tracer),
-		forms:      forms.NewRepo(q, logger, tracer),
-		steps:      steps.NewRepo(q, logger, tracer),
-		fields:     fields.NewRepos(q, logger, tracer),
-		answers:    answers.NewRepo(q, logger, tracer),
-		responders: responders.NewRepo(q, logger, tracer),
-		responses:  responses.NewRepo(q, logger, tracer),
+		namespaces: namespaces.NewRepo(q, app.tracer()),
+		forms:      forms.NewRepo(q, app.tracer()),
+		steps:      steps.NewRepo(q, app.tracer()),
+		fields:     fields.NewRepos(q, app.tracer()),
+		answers:    answers.NewRepo(q, app.tracer()),
+		responders: responders.NewRepo(q, app.tracer()),
+		responses:  responses.NewRepo(q, app.tracer()),
 	}
 }
 
-func initQueries(r repos, logger *zap.Logger, tracer trace.Tracer, tx database.TxRunner) queries {
+func (app *Informd) initQueries(r repos) queries {
 	return queries{
-		namespaces: namespaces.NewQueries(r.namespaces, r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, logger, tx, tracer),
-		forms:      forms.NewQueries(r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, r.namespaces, logger, tx, tracer),
-		steps:      steps.NewQueries(r.forms, r.steps, r.namespaces, logger, tx, tracer),
-		fields:     fields.NewQueries(r.forms, r.steps, r.fields, r.namespaces, logger, tx, tracer),
+		namespaces: namespaces.NewQueries(r.namespaces, r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, app.txRunner(), app.tracer()),
+		forms:      forms.NewQueries(r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, r.namespaces, app.txRunner(), app.tracer()),
+		steps:      steps.NewQueries(r.forms, r.steps, r.namespaces, app.txRunner(), app.tracer()),
+		fields:     fields.NewQueries(r.forms, r.steps, r.fields, r.namespaces, app.txRunner(), app.tracer()),
 	}
 }
 
-func initCommands(r repos, logger *zap.Logger, tracer trace.Tracer, tx database.TxRunner) commands {
+func (app *Informd) initCommands(r repos) commands {
 	return commands{
-		namespaces: namespaces.NewCommands(r.namespaces, r.forms, logger, tx, tracer),
-		forms:      forms.NewCommands(r.forms, r.steps, r.namespaces, logger, tx, tracer),
-		steps:      steps.NewCommands(r.forms, r.steps, r.namespaces, logger, tx, tracer),
-		fields:     fields.NewCommands(r.forms, r.steps, r.fields, r.namespaces, logger, tx, tracer),
-		responses:  responses.NewCommands(r.responders, r.responses, r.answers, r.forms, logger, tx, tracer),
+		namespaces: namespaces.NewCommands(r.namespaces, r.forms, app.txRunner(), app.tracer()),
+		forms:      forms.NewCommands(r.forms, r.steps, r.namespaces, app.txRunner(), app.tracer()),
+		steps:      steps.NewCommands(r.forms, r.steps, r.namespaces, app.txRunner(), app.tracer()),
+		fields:     fields.NewCommands(r.forms, r.steps, r.fields, r.namespaces, app.txRunner(), app.tracer()),
+		responses:  responses.NewCommands(r.responders, r.responses, r.answers, r.forms, app.txRunner(), app.tracer()),
 	}
 }
 
-func initHandlers(c commands, q queries) handlers {
-	return handlers{
-		namespaces: namespaces.NewHandler(c.namespaces, q.namespaces),
-		forms:      forms.NewHandlers(c.forms, q.forms),
-		steps:      steps.NewHandlers(c.steps, q.steps),
-		fields:     fields.NewHandlers(c.fields, q.fields),
-		responses:  responses.NewHandlers(c.responses),
-	}
-}
-
-func initMiddlewares(logger *zap.Logger) middlewares {
+func (app *Informd) initMiddlewares() middlewares {
 	var mw middlewares
-	authMW := setupAuthMiddlewares()
+	authMW := app.setupAuthMiddlewares()
 	mw.jwt = authMW.JWT()
 	mw.apiKey = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
 	mw.bodySize = fm.MaxBodySize(1 << 20)
 	mw.requestID = fm.RequestID(fm.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = fm.Logs(fm.Config{Logger: logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
+	mw.logger = fm.Logs(fm.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := fm.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")
@@ -135,10 +134,20 @@ func initMiddlewares(logger *zap.Logger) middlewares {
 		AllowCredentials: true,
 	})
 	mw.realIP = fm.RealIP()
-	mw.recover = fm.Recover(logger)
+	mw.recover = fm.Recover(telemetry.Log())
 	mw.timeout = fm.Timeout(60 * time.Second)
 	mw.ratelimit = fm.RateLimit(fm.RateLimitConfig{RPS: 400, Burst: 20,
 		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
 	})
 	return mw
+}
+
+func (app *Informd) initHandlers(c commands, q queries) handlers {
+	return handlers{
+		namespaces: namespaces.NewHandler(c.namespaces, q.namespaces),
+		forms:      forms.NewHandlers(c.forms, q.forms),
+		steps:      steps.NewHandlers(c.steps, q.steps),
+		fields:     fields.NewHandlers(c.fields, q.fields),
+		responses:  responses.NewHandlers(c.responses),
+	}
 }

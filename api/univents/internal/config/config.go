@@ -39,7 +39,7 @@ type Config struct {
 	PostgresPassword string `env:"UNIVENTS_POSTGRES_PASSWORD,required"`
 
 	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./internal/database/migrations"`
+	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
 
 	// Postgres (root — from .env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
