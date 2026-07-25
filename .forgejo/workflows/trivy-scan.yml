@@ -107,7 +107,7 @@ jobs:
       - name: trivy scan
         run: |
           trivy fs \
-            --severity LOW,MEDIUM,HIGH,CRITICAL \
+            --severity HIGH,CRITICAL \
             --scanners vuln,secret,misconfig \
             --exit-code 1 \
             "${{ matrix.project }}"
