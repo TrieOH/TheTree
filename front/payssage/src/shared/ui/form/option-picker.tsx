@@ -1,13 +1,17 @@
-import { cn } from "#/shared/lib/utils"
-import type React from "react"
+import type React from "react";
+import { cn } from "#/shared/lib/utils";
 
 interface OptionPickerProps {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  options: { label: string; value: string | number; icon?: React.ComponentType<{ className?: string }> }[]
-  required?: boolean
-  error?: string
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: {
+    label: string;
+    value: string | number;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
+  required?: boolean;
+  error?: string;
 }
 
 export default function OptionPicker({
@@ -25,8 +29,8 @@ export default function OptionPicker({
       </span>
       <div className="grid grid-cols-3 gap-2">
         {options.map((option) => {
-          const isSelected = value === String(option.value)
-          const Icon = option.icon
+          const isSelected = value === String(option.value);
+          const Icon = option.icon;
 
           return (
             <button
@@ -51,10 +55,12 @@ export default function OptionPicker({
               )}
               <span className="text-xs font-medium">{option.label}</span>
             </button>
-          )
+          );
         })}
       </div>
-      {error && <span className="mt-0.5 text-[10px] text-destructive">{error}</span>}
+      {error && (
+        <span className="mt-0.5 text-[10px] text-destructive">{error}</span>
+      )}
     </div>
-  )
+  );
 }

@@ -1,63 +1,67 @@
-import { getProviderCallbackFn } from '#/features/oauth/api'
-import { Button } from '#/shared/ui/shadcn/button'
-import { createFileRoute } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
-import { useEffect } from 'react'
-import z from 'zod'
+import { createFileRoute } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import z from "zod";
+import { getProviderCallbackFn } from "#/features/oauth/api";
+import { Button } from "#/shared/ui/shadcn/button";
 
 const queryParams = z.object({
   code: z.string().optional(),
   state: z.string().optional(),
-})
+});
 
 type CallbackLoaderData =
   | { ok: true; redirectTo: string }
-  | { ok: false; message: string }
+  | { ok: false; message: string };
 
 const cleanRedirectUrl = (redirectTo: string) => {
-  const url = new URL(redirectTo)
-  url.searchParams.delete('credential_id')
-  url.searchParams.delete('public_key')
-  return url.toString()
-}
+  const url = new URL(redirectTo);
+  url.searchParams.delete("credential_id");
+  url.searchParams.delete("public_key");
+  return url.toString();
+};
 
-export const Route = createFileRoute('/callback/$provider/')({
+export const Route = createFileRoute("/callback/$provider/")({
   validateSearch: (search) => queryParams.parse(search),
 
   pendingComponent: RoutePendingComponent,
   pendingMs: 200,
 
   loader: async ({ params, location }): Promise<CallbackLoaderData> => {
-    const { provider } = params
+    const { provider } = params;
 
     const parsed = queryParams.safeParse(
-      Object.fromEntries(new URLSearchParams(location.search))
-    )
-    if (!parsed.success) return { ok: false, message: 'Invalid OAuth params.' }
+      Object.fromEntries(new URLSearchParams(location.search)),
+    );
+    if (!parsed.success) return { ok: false, message: "Invalid OAuth params." };
 
-    const { code, state } = parsed.data
+    const { code, state } = parsed.data;
 
-    if (!code || !state) return { ok: false, message: 'Missing OAuth params.' }
+    if (!code || !state) return { ok: false, message: "Missing OAuth params." };
 
     try {
-      const res = await getProviderCallbackFn(code, state, provider)
+      const res = await getProviderCallbackFn(code, state, provider);
 
-      if (!res.success) return { ok: false, message: 'Failed to connect provider.' }
-      return { ok: true, redirectTo: cleanRedirectUrl(res.data) }
+      if (!res.success)
+        return { ok: false, message: "Failed to connect provider." };
+      return { ok: true, redirectTo: cleanRedirectUrl(res.data) };
     } catch {
-      return { ok: false, message: 'Unexpected error while connecting provider.' }
+      return {
+        ok: false,
+        message: "Unexpected error while connecting provider.",
+      };
     }
   },
   component: CallbackPage,
-})
+});
 
 function CallbackPage() {
-  const data = Route.useLoaderData()
-  const navigate = Route.useNavigate()
+  const data = Route.useLoaderData();
+  const navigate = Route.useNavigate();
 
   useEffect(() => {
-    if (data.ok) window.location.href = data.redirectTo.toString()
-  }, [data])
+    if (data.ok) window.location.href = data.redirectTo.toString();
+  }, [data]);
 
   if (data.ok) {
     return (
@@ -72,7 +76,7 @@ function CallbackPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -90,11 +94,11 @@ function CallbackPage() {
         Go home
       </Button>
     </div>
-  )
+  );
 }
 
 function RoutePendingComponent() {
-  const { provider } = Route.useParams()
+  const { provider } = Route.useParams();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-100 space-y-4 animate-in fade-in duration-500">
@@ -108,5 +112,5 @@ function RoutePendingComponent() {
         </p>
       </div>
     </div>
-  )
+  );
 }

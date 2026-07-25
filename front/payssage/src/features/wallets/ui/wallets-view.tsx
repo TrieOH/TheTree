@@ -1,31 +1,29 @@
-import { useMemo, useState } from "react"
-import { Plus } from "lucide-react"
-import { PaginatedContainer, useLayoutHeader  } from "@trieoh/ui-base"
-import { Button } from "#/shared/ui/shadcn/button"
-import { bpsToPercentage, percentageToBps } from "#/shared/lib/utils"
-import FormModal from "#/widgets/modal/form-modal"
-import {
-  walletCreateSchema,
-  walletSetFeeBpsSchema
-  
-  
-  
-  
-} from "../model"
-import type {WalletCreateI, WalletI, WalletSetFeeBpsI, WalletSetSandboxI} from "../model";
-import WalletCard from "./wallet-card"
+import { PaginatedContainer, useLayoutHeader } from "@trieoh/ui-base";
+import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { bpsToPercentage, percentageToBps } from "#/shared/lib/utils";
+import { Button } from "#/shared/ui/shadcn/button";
+import FormModal from "#/widgets/modal/form-modal";
+import type {
+  WalletCreateI,
+  WalletI,
+  WalletSetFeeBpsI,
+  WalletSetSandboxI,
+} from "../model";
+import { walletCreateSchema, walletSetFeeBpsSchema } from "../model";
+import WalletCard from "./wallet-card";
 
 interface WalletsViewProps {
-  wallets: WalletI[]
-  organizationId?: string
-  title: string
-  description: string
-  onCreate: (data: WalletCreateI) => void
-  isCreating: boolean
-  onSetFee: (walletId: string, data: WalletSetFeeBpsI) => void
-  onSetSandbox: (walletId: string, data: WalletSetSandboxI) => void
-  isSettingFee?: boolean
-  isSettingSandbox?: boolean
+  wallets: WalletI[];
+  organizationId?: string;
+  title: string;
+  description: string;
+  onCreate: (data: WalletCreateI) => void;
+  isCreating: boolean;
+  onSetFee: (walletId: string, data: WalletSetFeeBpsI) => void;
+  onSetSandbox: (walletId: string, data: WalletSetSandboxI) => void;
+  isSettingFee?: boolean;
+  isSettingSandbox?: boolean;
 }
 
 export function WalletsView({
@@ -40,36 +38,39 @@ export function WalletsView({
   isSettingFee,
   isSettingSandbox,
 }: WalletsViewProps) {
-  const [filter, setFilter] = useState("")
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [feeWallet, setFeeWallet] = useState<WalletI | null>(null)
-  const count = wallets.length
+  const [filter, setFilter] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [feeWallet, setFeeWallet] = useState<WalletI | null>(null);
+  const count = wallets.length;
 
-  const header = useMemo(() => (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {count === 0
-            ? `No wallets yet ${description}`
-            : `${count} wallet${count !== 1 ? "s" : ""} ${description}`}
-        </p>
+  const header = useMemo(
+    () => (
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+          <p className="text-sm text-muted-foreground">
+            {count === 0
+              ? `No wallets yet ${description}`
+              : `${count} wallet${count !== 1 ? "s" : ""} ${description}`}
+          </p>
+        </div>
       </div>
-    </div>
-  ), [count, description, title])
+    ),
+    [count, description, title],
+  );
 
-  useLayoutHeader(header)
+  useLayoutHeader(header);
 
   const filteredWallets = wallets.filter((wallet) => {
-    const search = filter.toLowerCase().trim()
-    if (!search) return true
+    const search = filter.toLowerCase().trim();
+    if (!search) return true;
 
     return (
       wallet.name.toLowerCase().includes(search) ||
       wallet.owner_id.toLowerCase().includes(search) ||
       wallet.fee_bps.toString().includes(search)
-    )
-  })
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -122,8 +123,8 @@ export function WalletsView({
           onCreate({
             ...data,
             organization_id: organizationId,
-          })
-          setIsCreateOpen(false)
+          });
+          setIsCreateOpen(false);
         }}
         defaultValues={{ name: "", organization_id: organizationId }}
         disabled={isCreating}
@@ -148,12 +149,12 @@ export function WalletsView({
         isOpen={feeWallet !== null}
         onClose={() => setFeeWallet(null)}
         onSubmit={(payload) => {
-          if (!feeWallet) return
+          if (!feeWallet) return;
           onSetFee(feeWallet.id, {
             fee_bps: percentageToBps(Number(payload.fee_bps)),
             organization_id: feeWallet.organization_id,
-          })
-          setFeeWallet(null)
+          });
+          setFeeWallet(null);
         }}
         defaultValues={{
           fee_bps: bpsToPercentage(feeWallet?.fee_bps ?? 0),
@@ -170,5 +171,5 @@ export function WalletsView({
         ]}
       />
     </div>
-  )
+  );
 }

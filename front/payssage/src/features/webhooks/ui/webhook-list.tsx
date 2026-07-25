@@ -1,16 +1,16 @@
-import { Webhook, Copy, Check, Trash2, Send } from 'lucide-react'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Card, CardContent } from '#/shared/ui/shadcn/card'
-import { Badge } from '#/shared/ui/shadcn/badge'
-import type { WebhookI } from '../model'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { Check, Copy, Send, Trash2, Webhook } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "#/shared/ui/shadcn/badge";
+import { Button } from "#/shared/ui/shadcn/button";
+import { Card, CardContent } from "#/shared/ui/shadcn/card";
+import type { WebhookI } from "../model";
 
 interface WebhookListProps {
-  webhooks: WebhookI[]
-  isLoading: boolean
-  onDelete: (id: string) => void
-  onViewDeliveries: (webhook: WebhookI) => void
+  webhooks: WebhookI[];
+  isLoading: boolean;
+  onDelete: (id: string) => void;
+  onViewDeliveries: (webhook: WebhookI) => void;
 }
 
 export function WebhookList({
@@ -19,21 +19,21 @@ export function WebhookList({
   onDelete,
   onViewDeliveries,
 }: WebhookListProps) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const copyToClipboard = (id: string) => {
-    navigator.clipboard.writeText(id)
-    setCopiedId(id)
-    toast.success('ID copied to clipboard')
-    setTimeout(() => setCopiedId(null), 2000)
-  }
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success("ID copied to clipboard");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   if (isLoading) {
-    return <WebhookListSkeleton />
+    return <WebhookListSkeleton />;
   }
 
   if (webhooks.length === 0) {
-    return <WebhookListEmpty />
+    return <WebhookListEmpty />;
   }
 
   return (
@@ -57,6 +57,7 @@ export function WebhookList({
                     POST
                   </Badge>
                   <button
+                    type="button"
                     onClick={() => copyToClipboard(webhook.id)}
                     className="flex items-center gap-1 group/id min-w-0"
                   >
@@ -85,10 +86,10 @@ export function WebhookList({
                 </span>
                 <span className="hidden xs:inline-block border-l border-border h-4" />
                 <span className="shrink-0">
-                  {new Date(webhook.created_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
+                  {new Date(webhook.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
                   })}
                 </span>
               </div>
@@ -117,7 +118,7 @@ export function WebhookList({
         </Card>
       ))}
     </div>
-  )
+  );
 }
 
 function WebhookListSkeleton() {
@@ -144,7 +145,7 @@ function WebhookListSkeleton() {
         </Card>
       ))}
     </div>
-  )
+  );
 }
 
 function WebhookListEmpty() {
@@ -163,5 +164,5 @@ function WebhookListEmpty() {
         </p>
       </div>
     </div>
-  )
+  );
 }

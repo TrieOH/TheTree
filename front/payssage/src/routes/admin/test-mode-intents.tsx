@@ -1,13 +1,13 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { env } from '#/env'
-import { CreateTestModeIntentForm } from '#/features/payment-intents/ui/create-test-mode-intent-form'
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { env } from "#/env";
+import { CreateTestModeIntentForm } from "#/features/payment-intents/ui/create-test-mode-intent-form";
 
-export const Route = createFileRoute('/admin/test-mode-intents')({
+export const Route = createFileRoute("/admin/test-mode-intents")({
   beforeLoad: () => {
-    if (env.VITE_INTENT_TEST_MODE !== 'true') throw redirect({ to: '/admin' })
+    if (env.VITE_INTENT_TEST_MODE !== "true") throw redirect({ to: "/admin" });
   },
   component: TestModeIntentsPage,
-})
+});
 
 function TestModeIntentsPage() {
   return (
@@ -25,5 +25,5 @@ function TestModeIntentsPage() {
       </div>
       <CreateTestModeIntentForm />
     </div>
-  )
+  );
 }

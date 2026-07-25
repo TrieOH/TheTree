@@ -1,12 +1,12 @@
-import { Link, useLocation } from "@tanstack/react-router"
-import { ChevronRight } from "lucide-react"
-import { Fragment } from "react"
-import { cn } from "#/shared/lib/utils"
+import { Link, useLocation } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
+import { Fragment } from "react";
+import { cn } from "#/shared/lib/utils";
 
 export function Breadcrumb() {
-  const { pathname } = useLocation()
+  const { pathname } = useLocation();
 
-  const segments = pathname.split("/").filter(Boolean)
+  const segments = pathname.split("/").filter(Boolean);
 
   return (
     <nav
@@ -19,19 +19,19 @@ export function Breadcrumb() {
       )}
     >
       {segments.map((segment, index) => {
-        const isLast = index === segments.length - 1
-        const path = `/${segments.slice(0, index + 1).join("/")}`
+        const isLast = index === segments.length - 1;
+        const path = `/${segments.slice(0, index + 1).join("/")}`;
 
-        const label = segment.charAt(0).toUpperCase() + segment.slice(1)
+        const label = segment.charAt(0).toUpperCase() + segment.slice(1);
 
         const isUUID =
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
             segment,
-          )
+          );
         const displayLabel =
           isUUID || label.length > 20
             ? `${label.slice(0, 4)}...${label.slice(-2)}`
-            : label
+            : label;
 
         return (
           <Fragment key={path}>
@@ -51,8 +51,8 @@ export function Breadcrumb() {
               </Link>
             )}
           </Fragment>
-        )
+        );
       })}
     </nav>
-  )
+  );
 }
