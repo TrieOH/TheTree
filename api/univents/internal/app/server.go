@@ -34,7 +34,8 @@ func servePprof(port string) {
 		IdleTimeout:  120 * time.Second,
 	}
 	log.Printf("univents pprof listening on :%s", port)
-	if err := srv.ListenAndServe(); err != nil {
+	err := srv.ListenAndServe()
+	if err != nil {
 		log.Fatalf("univents pprof server error: %v", err)
 	}
 }

@@ -16,7 +16,7 @@ import (
 func TestDiscontinue_OwnerCanDiscontinueActive(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -41,13 +41,13 @@ func TestDiscontinue_OwnerCanDiscontinueActive(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	mock.Verify(repo, mock.Once()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
+	_ = mock.Verify(repo, mock.Once()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
 }
 
 func TestDiscontinue_AdminCanDiscontinueActive(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -75,13 +75,13 @@ func TestDiscontinue_AdminCanDiscontinueActive(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	mock.Verify(repo, mock.Once()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
+	_ = mock.Verify(repo, mock.Once()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
 }
 
 func TestDiscontinue_CannotDiscontinueNonActive(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -105,13 +105,13 @@ func TestDiscontinue_CannotDiscontinueNonActive(t *testing.T) {
 		t.Fatal("expected bad request error, got nil")
 	}
 
-	mock.Verify(repo, mock.Never()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
+	_ = mock.Verify(repo, mock.Never()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
 }
 
 func TestDiscontinue_StaffForbidden(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -138,13 +138,13 @@ func TestDiscontinue_StaffForbidden(t *testing.T) {
 		t.Fatal("expected forbidden error, got nil")
 	}
 
-	mock.Verify(repo, mock.Never()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
+	_ = mock.Verify(repo, mock.Never()).Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())
 }
 
 func TestDiscontinue_NoIdentity(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	cmd := commands.NewCommands(repo, nil, nil)
 

@@ -8,10 +8,6 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -41,181 +37,24 @@ jobs:
               - 'api/univents/**'
               - 'lib/go/**'
 
-  prepare:
-    name: prepare tools
+  ci:
     needs: changes
     if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      SQLC_VERSION: "1.31.1"
-      GOTESTSUM_VERSION: "1.13.0"
-      GOLANGCI_LINT_VERSION: "2.12.2"
-    steps:
-      - run: |
-          mkdir -p /tmp/gobin
-          curl -sSL "https://downloads.sqlc.dev/sqlc_${SQLC_VERSION}_linux_amd64.tar.gz" \
-            -o /tmp/sqlc.tar.gz
-          tar -xzf /tmp/sqlc.tar.gz -C /tmp/gobin sqlc
-          curl -sSL "https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz" \
-            -o /tmp/gotestsum.tar.gz
-          tar -xzf /tmp/gotestsum.tar.gz -C /tmp/gobin gotestsum
-          curl -sSL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz" \
-            -o /tmp/golangci.tar.gz
-          tar -xzf /tmp/golangci.tar.gz --strip-components=1 -C /tmp/gobin golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint
-          chmod +x /tmp/gobin/sqlc /tmp/gobin/gotestsum /tmp/gobin/golangci-lint
-      - uses: https://code.forgejo.org/actions/upload-artifact@v3
-        with:
-          name: ci-tools
-          path: /tmp/gobin
-
-  compile:
-    needs: [changes, prepare]
-    if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      GOWORK: ${{ github.workspace }}/go.work
+    timeout-minutes: 30
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
-      - uses: https://code.forgejo.org/actions/setup-go@v5
+      - name: build service list
+        id: services
+        run: |
+          list=""
+          [ "${{ needs.changes.outputs.identityx }}" == "true" ] && list="$list,identityx"
+          [ "${{ needs.changes.outputs.informd }}" == "true" ] && list="$list,informd"
+          [ "${{ needs.changes.outputs.payssage }}" == "true" ] && list="$list,payssage"
+          [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
+          echo "list=${list#,}" >> "$GITHUB_OUTPUT"
+      - uses: https://github.com/dagger/dagger-for-github@v6
         with:
-          go-version: '1.26.2'
-          cache: true
-      - uses: https://code.forgejo.org/actions/download-artifact@v3
-        with:
-          name: ci-tools
-          path: /tmp/gobin
-      - run: chmod +x /tmp/gobin/* && echo "/tmp/gobin" >> "$GITHUB_PATH"
-      - name: sqlc identityx
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: |
-          if [ -f api/identityx/sqlc.yaml ]; then cd api/identityx && sqlc generate; fi
-      - name: build identityx
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: cd api/identityx && go build ./...
-      - name: sqlc informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: |
-          if [ -f api/informd/sqlc.yaml ]; then cd api/informd && sqlc generate; fi
-      - name: build informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: cd api/informd && go build ./...
-      - name: sqlc payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: |
-          if [ -f api/payssage/sqlc.yaml ]; then cd api/payssage && sqlc generate; fi
-      - name: build payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: cd api/payssage && go build ./...
-      - name: sqlc univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: |
-          if [ -f api/univents/sqlc.yaml ]; then cd api/univents && sqlc generate; fi
-      - name: build univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: cd api/univents && go build ./...
-
-  lint:
-    needs: [changes, compile]
-    if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: https://code.forgejo.org/actions/checkout@v4
-      - uses: https://code.forgejo.org/actions/setup-go@v5
-        with:
-          go-version: '1.26'
-          cache: true
-      - uses: https://code.forgejo.org/actions/download-artifact@v3
-        with:
-          name: ci-tools
-          path: /tmp/gobin
-      - run: chmod +x /tmp/gobin/* && echo "/tmp/gobin" >> "$GITHUB_PATH"
-      - name: sqlc identityx
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: |
-          if [ -f api/identityx/sqlc.yaml ]; then cd api/identityx && sqlc generate; fi
-      - name: lint identityx
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: cd api/identityx && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
-      - name: sqlc informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: |
-          if [ -f api/informd/sqlc.yaml ]; then cd api/informd && sqlc generate; fi
-      - name: lint informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: cd api/informd && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
-      - name: sqlc payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: |
-          if [ -f api/payssage/sqlc.yaml ]; then cd api/payssage && sqlc generate; fi
-      - name: lint payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: cd api/payssage && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
-      - name: sqlc univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: |
-          if [ -f api/univents/sqlc.yaml ]; then cd api/univents && sqlc generate; fi
-      - name: lint univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: cd api/univents && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
-
-  test:
-    needs: [changes, lint]
-    if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: https://code.forgejo.org/actions/checkout@v4
-      - uses: https://code.forgejo.org/actions/setup-go@v5
-        with:
-          go-version: '1.26'
-          cache: true
-      - uses: https://code.forgejo.org/actions/download-artifact@v3
-        with:
-          name: ci-tools
-          path: /tmp/gobin
-      - run: chmod +x /tmp/gobin/* && echo "/tmp/gobin" >> "$GITHUB_PATH"
-      - name: sqlc identityx
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: |
-          if [ -f api/identityx/sqlc.yaml ]; then cd api/identityx && sqlc generate; fi
-      - name: test identityx
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: cd api/identityx && gotestsum --format testdox --format-hide-empty-pkg ./...
-      - name: sqlc informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: |
-          if [ -f api/informd/sqlc.yaml ]; then cd api/informd && sqlc generate; fi
-      - name: test informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: cd api/informd && gotestsum --format testdox --format-hide-empty-pkg ./...
-      - name: sqlc payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: |
-          if [ -f api/payssage/sqlc.yaml ]; then cd api/payssage && sqlc generate; fi
-      - name: test payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: cd api/payssage && gotestsum --format testdox --format-hide-empty-pkg ./...
-      - name: sqlc univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: |
-          if [ -f api/univents/sqlc.yaml ]; then cd api/univents && sqlc generate; fi
-      - name: test univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: cd api/univents && gotestsum --format testdox --format-hide-empty-pkg ./...
-
-  ci-ok:
-    name: CI OK
-    needs: [changes, compile, lint, test]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - run: |
-          if [ "${{ needs.changes.outputs.any }}" == "true" ]; then
-            [ "${{ needs.compile.result }}" == "success" ] || exit 1
-            [ "${{ needs.lint.result }}" == "success" ] || exit 1
-            [ "${{ needs.test.result }}" == "success" ] || exit 1
-          fi
+          verb: call
+          module: .dagger
+          args: ci --source=. --services=${{ steps.services.outputs.list }}

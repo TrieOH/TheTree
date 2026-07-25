@@ -17,8 +17,8 @@ import (
 func TestCreate_Success(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
-	var txr database.TxRunner = mock.Mock[database.TxRunner]()
+	var repo = mock.Mock[ports.EventRepo]()
+	var txr = mock.Mock[database.TxRunner]()
 
 	database.SetDefaultRunner(txr)
 
@@ -61,8 +61,8 @@ func TestCreate_Success(t *testing.T) {
 		t.Fatalf("expected event ID %v, got %v", eventID, event.ID)
 	}
 
-	mock.Verify(repo, mock.Once()).Create(mock.AnyContext(), mock.Any[*models.Event]())
-	mock.Verify(repo, mock.Once()).AddEventMember(
+	_, _ = mock.Verify(repo, mock.Once()).Create(mock.AnyContext(), mock.Any[*models.Event]())
+	_, _ = mock.Verify(repo, mock.Once()).AddEventMember(
 		mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID](), mock.Any[models.EventMemberRole](),
 	)
 }
@@ -70,7 +70,7 @@ func TestCreate_Success(t *testing.T) {
 func TestCreate_NoIdentity(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	cmd := commands.NewCommands(repo, nil, nil)
 
@@ -86,8 +86,8 @@ func TestCreate_NoIdentity(t *testing.T) {
 func TestCreate_RepoCreateFails(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
-	var txr database.TxRunner = mock.Mock[database.TxRunner]()
+	var repo = mock.Mock[ports.EventRepo]()
+	var txr = mock.Mock[database.TxRunner]()
 
 	database.SetDefaultRunner(txr)
 
@@ -111,7 +111,7 @@ func TestCreate_RepoCreateFails(t *testing.T) {
 		})
 
 	mock.When(repo.Create(mock.AnyContext(), mock.Any[*models.Event]())).
-		ThenReturn(nil, assertAnError)
+		ThenReturn(nil, errAssertAnError)
 
 	_, err := cmd.Create(ctx, payload)
 	if err == nil {
@@ -119,7 +119,7 @@ func TestCreate_RepoCreateFails(t *testing.T) {
 	}
 }
 
-var assertAnError = &testError{}
+var errAssertAnError = &testError{}
 
 type testError struct{}
 

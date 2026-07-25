@@ -16,7 +16,7 @@ import (
 func TestAddMember_StaffForbidden(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -49,7 +49,7 @@ func TestAddMember_StaffForbidden(t *testing.T) {
 func TestAddMember_OwnerGetsPastAuth(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -78,7 +78,7 @@ func TestAddMember_OwnerGetsPastAuth(t *testing.T) {
 		}
 	}()
 
-	cmd.AddMember(ctx, eventID, models.AddEventMemberRequest{
+	_, _ = cmd.AddMember(ctx, eventID, models.AddEventMemberRequest{
 		Email: "someone@example.com",
 		Role:  models.EventMemberRoleStaff,
 	})
@@ -87,7 +87,7 @@ func TestAddMember_OwnerGetsPastAuth(t *testing.T) {
 func TestAddMember_NoIdentity(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	cmd := commands.NewCommands(repo, nil, nil)
 

@@ -16,7 +16,7 @@ import (
 func TestRemoveMember_StaffForbidden(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -48,7 +48,7 @@ func TestRemoveMember_StaffForbidden(t *testing.T) {
 func TestRemoveMember_OwnerGetsPastAuth(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -72,7 +72,7 @@ func TestRemoveMember_OwnerGetsPastAuth(t *testing.T) {
 		}
 	}()
 
-	cmd.RemoveMember(ctx, eventID, models.RemoveMemberRequest{
+	_ = cmd.RemoveMember(ctx, eventID, models.RemoveMemberRequest{
 		Email: "someone@example.com",
 	})
 }
@@ -80,7 +80,7 @@ func TestRemoveMember_OwnerGetsPastAuth(t *testing.T) {
 func TestRemoveMember_NoIdentity(t *testing.T) {
 	mock.SetUp(t)
 
-	var repo ports.EventRepo = mock.Mock[ports.EventRepo]()
+	var repo = mock.Mock[ports.EventRepo]()
 
 	cmd := commands.NewCommands(repo, nil, nil)
 
