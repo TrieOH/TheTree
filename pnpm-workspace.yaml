@@ -65,6 +65,7 @@ overrides:
   dompurify: ">=3.4.12"
   esbuild: ">=0.28.1"
   "@opentelemetry/core": ">=2.8.0"
+  postcss: ">=8.5.18"
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
