@@ -1,22 +1,24 @@
-import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import type { FormCreateI, FormI } from "#/features/forms/model";
+import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type {
   MemberAddToNamespaceI,
   NamespaceCreateI,
   NamespaceI,
-  NamespaceMemberI
+  NamespaceMemberI,
 } from "../model";
-import { queryOptions } from "@tanstack/react-query";
-import type { FormCreateI, FormI } from "#/features/forms/model";
 
 /**
  * Creates a new NamespaceI on the server.
  * @param namespaceData - The data for the new namespace.
  * @returns A promise that resolves to the API response containing the newly created namespace.
  */
-export const createNamespaceFn = createClientOnlyFn((namespaceData: NamespaceCreateI) => {
-  return authFetcher.post<NamespaceI>("/namespaces", namespaceData);
-});
+export const createNamespaceFn = createClientOnlyFn(
+  (namespaceData: NamespaceCreateI) => {
+    return authFetcher.post<NamespaceI>("/namespaces", namespaceData);
+  },
+);
 
 /**
  * Fetches all namespaces from the server.
@@ -32,10 +34,10 @@ export const getAllNamespacesFn = createClientOnlyFn(() => {
  */
 export const allNamespacesQueryOptions = () => {
   return queryOptions({
-    queryKey: ['namespaces'],
+    queryKey: ["namespaces"],
     queryFn: () => getAllNamespacesFn(),
-  })
-}
+  });
+};
 
 // Members
 
@@ -45,9 +47,11 @@ export const allNamespacesQueryOptions = () => {
  * @param memberData - The data for the new member.
  * @returns A promise that resolves to the API response containing the newly created member.
  */
-export const addMemberToNamespaceFn = createClientOnlyFn((namespace_id: string, memberData: MemberAddToNamespaceI) => {
-  return authFetcher.post(`/namespaces/${namespace_id}/members`, memberData);
-});
+export const addMemberToNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, memberData: MemberAddToNamespaceI) => {
+    return authFetcher.post(`/namespaces/${namespace_id}/members`, memberData);
+  },
+);
 
 /**
  * Removes a member from a namespace on the server.
@@ -55,20 +59,26 @@ export const addMemberToNamespaceFn = createClientOnlyFn((namespace_id: string, 
  * @param user_id - The ID of the user to remove from the namespace.
  * @returns A promise that resolves to the API response confirming the removal of the member.
  */
-export const removeMemberFromNamespaceFn = createClientOnlyFn((namespace_id: string, user_id: string) => {
-  return authFetcher.delete(`/namespaces/${namespace_id}/members`, { user_id });
-});
+export const removeMemberFromNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, user_id: string) => {
+    return authFetcher.delete(`/namespaces/${namespace_id}/members`, {
+      user_id,
+    });
+  },
+);
 
 /**
  * Fetches all namespace members from the server.
  * @param namespace_id - The ID of the namespace to fetch members for.
  * @returns A promise that resolves to an array of members objects.
  */
-export const getAllNamespacesMemberFn = createClientOnlyFn((
-  namespace_id: string
-) => {
-  return tanstackQueryFetcher<NamespaceMemberI[]>(`/namespaces/${namespace_id}/members`);
-});
+export const getAllNamespacesMemberFn = createClientOnlyFn(
+  (namespace_id: string) => {
+    return tanstackQueryFetcher<NamespaceMemberI[]>(
+      `/namespaces/${namespace_id}/members`,
+    );
+  },
+);
 
 /**
  * Query options for fetching all Members, using TanStack Query.
@@ -77,10 +87,10 @@ export const getAllNamespacesMemberFn = createClientOnlyFn((
  */
 export const allNamespacesMembersQueryOptions = (namespace_id: string) => {
   return queryOptions({
-    queryKey: ['namespaces', namespace_id, 'members'],
+    queryKey: ["namespaces", namespace_id, "members"],
     queryFn: () => getAllNamespacesMemberFn(namespace_id),
-  })
-}
+  });
+};
 
 // Form
 
@@ -90,29 +100,38 @@ export const allNamespacesMembersQueryOptions = (namespace_id: string) => {
  * @param formData - The data for the new form.
  * @returns A promise that resolves to the API response containing the newly created form.
  */
-export const createFormOnNamespaceFn = createClientOnlyFn((
-  namespace_id: string, formData: FormCreateI
-) => {
-  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms`, formData);
-});
+export const createFormOnNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, formData: FormCreateI) => {
+    return authFetcher.post<FormI>(
+      `/namespaces/${namespace_id}/forms`,
+      formData,
+    );
+  },
+);
 
 /**
  * Fetches all forms for a specific namespace from the server.
  * @param namespace_id - The ID of the namespace to fetch forms for.
  * @returns A promise that resolves to an array of form objects.
  */
-export const getAllNamespacesFormsFn = createClientOnlyFn((namespace_id: string) => {
-  return tanstackQueryFetcher<FormI[]>(`/namespaces/${namespace_id}/forms`);
-});
+export const getAllNamespacesFormsFn = createClientOnlyFn(
+  (namespace_id: string) => {
+    return tanstackQueryFetcher<FormI[]>(`/namespaces/${namespace_id}/forms`);
+  },
+);
 
 /**
  * Fetches all archived forms for a specific namespace from the server.
  * @param namespace_id - The ID of the namespace to fetch archived forms for.
  * @returns A promise that resolves to an array of archived form objects.
  */
-export const getAllNamespacesArchivedFormsFn = createClientOnlyFn((namespace_id: string) => {
-  return tanstackQueryFetcher<FormI[]>(`/namespaces/${namespace_id}/forms/archived`);
-});
+export const getAllNamespacesArchivedFormsFn = createClientOnlyFn(
+  (namespace_id: string) => {
+    return tanstackQueryFetcher<FormI[]>(
+      `/namespaces/${namespace_id}/forms/archived`,
+    );
+  },
+);
 
 /**
  * Query options for fetching all Forms, using TanStack Query.
@@ -121,17 +140,19 @@ export const getAllNamespacesArchivedFormsFn = createClientOnlyFn((namespace_id:
  */
 export const allNamespacesFormsQueryOptions = (namespace_id: string) => {
   return queryOptions({
-    queryKey: ['namespaces', namespace_id, 'forms'],
+    queryKey: ["namespaces", namespace_id, "forms"],
     queryFn: () => getAllNamespacesFormsFn(namespace_id),
-  })
-}
+  });
+};
 
-export const allNamespacesArchivedFormsQueryOptions = (namespace_id: string) => {
+export const allNamespacesArchivedFormsQueryOptions = (
+  namespace_id: string,
+) => {
   return queryOptions({
-    queryKey: ['namespaces', namespace_id, 'forms', 'archived'],
+    queryKey: ["namespaces", namespace_id, "forms", "archived"],
     queryFn: () => getAllNamespacesArchivedFormsFn(namespace_id),
-  })
-}
+  });
+};
 
 // Manage Form Status
 
@@ -141,9 +162,13 @@ export const allNamespacesArchivedFormsQueryOptions = (namespace_id: string) => 
  * @param form_id - The ID of the form to open.
  * @returns A promise that resolves to the API response containing the updated Form.
  */
-export const openFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
-  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/open`);
-});
+export const openFormOnNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, form_id: string) => {
+    return authFetcher.post<FormI>(
+      `/namespaces/${namespace_id}/forms/${form_id}/open`,
+    );
+  },
+);
 
 /**
  * Closes a Form on the server (if it is open).
@@ -151,9 +176,13 @@ export const openFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, f
  * @param form_id - The ID of the form to close.
  * @returns A promise that resolves to the API response containing the updated Form.
  */
-export const closeFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
-  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/close`);
-});
+export const closeFormOnNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, form_id: string) => {
+    return authFetcher.post<FormI>(
+      `/namespaces/${namespace_id}/forms/${form_id}/close`,
+    );
+  },
+);
 
 /**
  * Archives a Form on the server (if it is closed).
@@ -161,9 +190,13 @@ export const closeFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, 
  * @param form_id - The ID of the form to archive.
  * @returns A promise that resolves to the API response containing the updated Form.
  */
-export const archiveFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
-  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/archive`);
-});
+export const archiveFormOnNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, form_id: string) => {
+    return authFetcher.post<FormI>(
+      `/namespaces/${namespace_id}/forms/${form_id}/archive`,
+    );
+  },
+);
 
 /**
  * Redrafts a Form on the server (if it is open and have zero submissions/responses).
@@ -171,9 +204,13 @@ export const archiveFormOnNamespaceFn = createClientOnlyFn((namespace_id: string
  * @param form_id - The ID of the form to redraft.
  * @returns A promise that resolves to the API response containing the updated Form.
  */
-export const redraftFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
-  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/redraft`);
-});
+export const redraftFormOnNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, form_id: string) => {
+    return authFetcher.post<FormI>(
+      `/namespaces/${namespace_id}/forms/${form_id}/redraft`,
+    );
+  },
+);
 
 /**
  * Fetches the response count for a specific Form from the server.
@@ -181,9 +218,13 @@ export const redraftFormOnNamespaceFn = createClientOnlyFn((namespace_id: string
  * @param form_id - The ID of the form to fetch the response count for.
  * @returns A promise that resolves to the number of responses for the specified Form.
  */
-export const getFormResponseCountOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
-  return tanstackQueryFetcher<{ count: number }>(`/namespaces/${namespace_id}/forms/${form_id}/responses/count`);
-});
+export const getFormResponseCountOnNamespaceFn = createClientOnlyFn(
+  (namespace_id: string, form_id: string) => {
+    return tanstackQueryFetcher<{ count: number }>(
+      `/namespaces/${namespace_id}/forms/${form_id}/responses/count`,
+    );
+  },
+);
 
 /**
  * Query options for fetching the response count for a specific Form, using TanStack Query.
@@ -191,9 +232,19 @@ export const getFormResponseCountOnNamespaceFn = createClientOnlyFn((namespace_i
  * @param form_id - The ID of the form to fetch the response count for.
  * @returns An object containing the query key and query function for fetching the response count for a specific Form.
  */
-export const formResponseCountOnNamespaceQueryOptions = (namespace_id: string, form_id: string) => {
+export const formResponseCountOnNamespaceQueryOptions = (
+  namespace_id: string,
+  form_id: string,
+) => {
   return queryOptions({
-    queryKey: ['namespaces', namespace_id, 'forms', form_id, 'responses', 'count'],
+    queryKey: [
+      "namespaces",
+      namespace_id,
+      "forms",
+      form_id,
+      "responses",
+      "count",
+    ],
     queryFn: () => getFormResponseCountOnNamespaceFn(namespace_id, form_id),
-  })
-}
+  });
+};

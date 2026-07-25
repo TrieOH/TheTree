@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
-import { toast } from "sonner";
-import type { AnswerCreateI } from "../model";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { allFormsAnswerableQueryOptions, submitFormFn } from "../api";
 import type { FieldAnswerable, StepAnswerable } from "@trieoh/informd-models";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { isValidPhone, isValidUrl } from "#/shared/lib/helpers/mask";
+import { allFormsAnswerableQueryOptions, submitFormFn } from "../api";
+import type { AnswerCreateI } from "../model";
 
 interface FormState {
   currentStepIndex: number;
@@ -25,17 +25,22 @@ export function useForm(formId: string) {
 
   const { data: answerableForm } = useSuspenseQueries({
     queries: [allFormsAnswerableQueryOptions(formId)],
-    combine: (result) => ({ data: result[0].data })
-  })
+    combine: (result) => ({ data: result[0].data }),
+  });
 
-  const steps = useMemo(() =>
-    [...answerableForm.steps].sort((a, b) => a.step.position_hint - b.step.position_hint),
-    [answerableForm.steps]
+  const steps = useMemo(
+    () =>
+      [...answerableForm.steps].sort(
+        (a, b) => a.step.position_hint - b.step.position_hint,
+      ),
+    [answerableForm.steps],
   );
 
   const fieldsByStep = useMemo(() => {
     const map: Record<string, FieldAnswerable[]> = {};
-    steps.forEach((s) => (map[s.step.id] = s.fields));
+    for (const s of steps) {
+      map[s.step.id] = s.fields;
+    }
     return map;
   }, [steps]);
 
@@ -44,23 +49,29 @@ export function useForm(formId: string) {
     if (Object.keys(state.formData).length > 0 || steps.length === 0) return;
 
     const defaults: Record<string, unknown> = {};
-    steps.flatMap(s => s.fields).forEach(f => {
-      let val = f.field.default_value;
-      if (val && typeof val === 'object' && val !== null && 'value' in val) {
-        val = (val as { value: unknown }).value;
-      }
+    steps
+      .flatMap((s) => s.fields)
+      .forEach((f) => {
+        let val = f.field.default_value;
+        if (val && typeof val === "object" && val !== null && "value" in val) {
+          val = (val as { value: unknown }).value;
+        }
 
-      if (f.field.type === 'select') {
-        defaults[f.field.id] = Array.isArray(val) ? val : (val ? [String(val)] : []);
-      } else if (f.field.type === 'bool') {
-        defaults[f.field.id] = val ?? false;
-      } else if (val !== undefined && val !== null && val !== "") {
-        defaults[f.field.id] = val;
-      }
-    });
+        if (f.field.type === "select") {
+          defaults[f.field.id] = Array.isArray(val)
+            ? val
+            : val
+              ? [String(val)]
+              : [];
+        } else if (f.field.type === "bool") {
+          defaults[f.field.id] = val ?? false;
+        } else if (val !== undefined && val !== null && val !== "") {
+          defaults[f.field.id] = val;
+        }
+      });
 
     if (Object.keys(defaults).length > 0) {
-      setState(prev => ({ ...prev, formData: defaults }));
+      setState((prev) => ({ ...prev, formData: defaults }));
     }
   }, [steps]);
 
@@ -72,11 +83,17 @@ export function useForm(formId: string) {
     }));
   }, []);
 
-  const currentStep = steps[state.currentStepIndex] as StepAnswerable | undefined;
+  const currentStep = steps[state.currentStepIndex] as
+    | StepAnswerable
+    | undefined;
   const lastStepId = steps.length > 0 ? steps[steps.length - 1].step.id : null;
-  const lastStepHasFields = lastStepId ? fieldsByStep[lastStepId].length > 0 : false;
+  const lastStepHasFields = lastStepId
+    ? fieldsByStep[lastStepId].length > 0
+    : false;
   const totalStepsCount = steps.length + (lastStepHasFields ? 1 : 0);
-  const isReviewStep = state.currentStepIndex >= steps.length || (currentStep && fieldsByStep[currentStep.step.id].length === 0);
+  const isReviewStep =
+    state.currentStepIndex >= steps.length ||
+    (currentStep && fieldsByStep[currentStep.step.id].length === 0);
 
   const validateStep = useCallback((): boolean => {
     if (isReviewStep || !currentStep) return true;
@@ -84,14 +101,21 @@ export function useForm(formId: string) {
     const stepFields = fieldsByStep[currentStep.step.id];
     const newErrors: Record<string, string> = {};
 
-    stepFields.forEach(f => {
+    stepFields.forEach((f) => {
       const val = state.formData[f.field.id];
-      const isEmpty = val === undefined || val === "" || val === null || (Array.isArray(val) && val.length === 0);
+      const isEmpty =
+        val === undefined ||
+        val === "" ||
+        val === null ||
+        (Array.isArray(val) && val.length === 0);
 
       if (f.field.required && isEmpty) {
         newErrors[f.field.id] = "This field is required";
       } else if (!isEmpty && typeof val === "string") {
-        if (f.field.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        if (
+          f.field.type === "email" &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
+        ) {
           newErrors[f.field.id] = "Invalid email";
         } else if (f.field.type === "url" && !isValidUrl(val)) {
           newErrors[f.field.id] = "Invalid URL";
@@ -110,11 +134,20 @@ export function useForm(formId: string) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    setState((prev) => ({ ...prev, currentStepIndex: Math.min(prev.currentStepIndex + 1, totalStepsCount - 1) }));
+    setState((prev) => ({
+      ...prev,
+      currentStepIndex: Math.min(
+        prev.currentStepIndex + 1,
+        totalStepsCount - 1,
+      ),
+    }));
   }, [validateStep, totalStepsCount]);
 
   const goBack = useCallback(() => {
-    setState((prev) => ({ ...prev, currentStepIndex: Math.max(prev.currentStepIndex - 1, 0) }));
+    setState((prev) => ({
+      ...prev,
+      currentStepIndex: Math.max(prev.currentStepIndex - 1, 0),
+    }));
   }, []);
 
   const submit = useCallback(async () => {
@@ -125,9 +158,11 @@ export function useForm(formId: string) {
     setState((prev) => ({ ...prev, submitting: true }));
 
     try {
-      const allFields = steps.flatMap(s => s.fields);
+      const allFields = steps.flatMap((s) => s.fields);
       const emailField = allFields.find((f) => f.field.type === "email");
-      const email = emailField ? (state.formData[emailField.field.id] as string) : undefined;
+      const email = emailField
+        ? (state.formData[emailField.field.id] as string)
+        : undefined;
 
       const answers: AnswerCreateI[] = allFields
         .filter((f) => {

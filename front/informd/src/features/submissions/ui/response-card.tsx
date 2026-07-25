@@ -1,6 +1,6 @@
-import { Mail, Clock, Layers } from "lucide-react";
-import type { FullStepI, SubmissionSummaryI } from "../model";
+import { Clock, Layers, Mail } from "lucide-react";
 import { cn } from "#/shared/lib/utils";
+import type { FullStepI, SubmissionSummaryI } from "../model";
 
 interface ResponseCardProps {
   data: SubmissionSummaryI;
@@ -9,7 +9,12 @@ interface ResponseCardProps {
   onClick: () => void;
 }
 
-export default function ResponseCard({ data, steps, isSelected, onClick }: ResponseCardProps) {
+export default function ResponseCard({
+  data,
+  steps,
+  isSelected,
+  onClick,
+}: ResponseCardProps) {
   const getStepName = (stepId: string) => {
     const step = steps.find((s) => s.step.id === stepId);
     return step?.step.title ?? stepId;
@@ -23,7 +28,7 @@ export default function ResponseCard({ data, steps, isSelected, onClick }: Respo
         "justify-between gap-3 md:gap-4 p-4 md:p-5 rounded-xl border transition-all cursor-pointer",
         isSelected
           ? "bg-secondary/10 border-secondary/30 shadow-sm ring-1 ring-secondary/20 md:bg-accent/5 md:border-accent/50 md:shadow-md md:ring-0"
-          : "bg-card border-border hover:border-accent/50 hover:shadow-md hover:bg-accent/5"
+          : "bg-card border-border hover:border-accent/50 hover:shadow-md hover:bg-accent/5",
       )}
     >
       {/* Main Info */}
@@ -34,7 +39,7 @@ export default function ResponseCard({ data, steps, isSelected, onClick }: Respo
             "hidden md:flex shrink-0 w-12 h-12 rounded-full items-center justify-center text-base font-bold transition-colors",
             isSelected
               ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground group-hover:bg-accent/20 group-hover:text-accent"
+              : "bg-muted text-muted-foreground group-hover:bg-accent/20 group-hover:text-accent",
           )}
         >
           {data.responder.charAt(0).toUpperCase()}
@@ -45,7 +50,9 @@ export default function ResponseCard({ data, steps, isSelected, onClick }: Respo
             <Mail
               className={cn(
                 "w-4 h-4 shrink-0",
-                isSelected ? "text-secondary md:text-accent" : "text-muted-foreground"
+                isSelected
+                  ? "text-secondary md:text-accent"
+                  : "text-muted-foreground",
               )}
             />
             <span className="text-sm font-semibold text-foreground truncate">
@@ -74,7 +81,7 @@ export default function ResponseCard({ data, steps, isSelected, onClick }: Respo
                   "px-2 py-0.5 rounded-md font-medium border",
                   isSelected
                     ? "bg-secondary/20 border-secondary/30 text-secondary-foreground md:bg-muted md:border-border md:text-muted-foreground md:group-hover:border-accent/30 md:group-hover:text-accent"
-                    : "bg-muted border-border text-muted-foreground group-hover:border-accent/30 group-hover:text-accent"
+                    : "bg-muted border-border text-muted-foreground group-hover:border-accent/30 group-hover:text-accent",
                 )}
               >
                 {getStepName(data.step_id)}

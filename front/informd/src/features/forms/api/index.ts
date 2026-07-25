@@ -1,7 +1,7 @@
-import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
-import { createClientOnlyFn } from "@tanstack/react-start";
-import type { FormCreateI, FormI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import type { FormCreateI, FormI } from "../model";
 
 /**
  * Create a new Form on the server.
@@ -9,7 +9,7 @@ import { queryOptions } from "@tanstack/react-query";
  * @returns A promise that resolves to the API response containing the newly created Form.
  */
 export const createFormFn = createClientOnlyFn((formData: FormCreateI) => {
-  return authFetcher.post<FormI>('forms', formData);
+  return authFetcher.post<FormI>("forms", formData);
 });
 
 /**
@@ -36,8 +36,8 @@ export const allUserFormsQueryOptions = () => {
   return queryOptions({
     queryKey: ["forms"],
     queryFn: () => getAllUserFormsFn(),
-  })
-}
+  });
+};
 
 /**
  * Query options for fetching all archived Forms for the current user, using TanStack Query.
@@ -47,8 +47,8 @@ export const allUserArchivedFormsQueryOptions = () => {
   return queryOptions({
     queryKey: ["forms", "archived"],
     queryFn: () => getAllUserArchivedFormsFn(),
-  })
-}
+  });
+};
 // Manage Form Status
 
 /**
@@ -95,7 +95,9 @@ export const redraftFormFn = createClientOnlyFn((form_id: string) => {
  * @returns A promise that resolves to the number of responses for the specified Form.
  */
 export const getFormResponseCountFn = createClientOnlyFn((form_id: string) => {
-  return tanstackQueryFetcher<{ count: number }>(`forms/${form_id}/responses/count`);
+  return tanstackQueryFetcher<{ count: number }>(
+    `forms/${form_id}/responses/count`,
+  );
 });
 
 /**
@@ -107,5 +109,5 @@ export const formResponseCountQueryOptions = (form_id: string) => {
   return queryOptions({
     queryKey: ["forms", form_id, "responses", "count"],
     queryFn: () => getFormResponseCountFn(form_id),
-  })
-}
+  });
+};

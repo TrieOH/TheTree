@@ -1,8 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "#/shared/lib/utils";
-import FieldRow from "./field-row";
 import type { FieldI } from "../model";
+import FieldRow from "./field-row";
 
 interface SortableFieldRowProps {
   field: FieldI;
@@ -34,10 +34,7 @@ export default function SortableFieldRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        "relative",
-        isDragging && "z-50 opacity-60",
-      )}
+      className={cn("relative", isDragging && "z-50 opacity-60")}
     >
       <FieldRow
         field={field}

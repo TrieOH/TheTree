@@ -1,11 +1,11 @@
+import { CatchBoundary } from "@tanstack/react-router";
+import { AlertCircle, Check } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useForm } from "../../hooks/useForm";
 import { FieldRenderer } from "./field-renderer";
 import { FormFooter } from "./form-footer";
 import ProgressBar from "./progress-bar";
 import { ReviewStep } from "./review-step";
-import { motion, AnimatePresence } from "motion/react";
-import { Check, AlertCircle } from "lucide-react";
-import { CatchBoundary } from "@tanstack/react-router";
 
 interface FormContainerProps {
   formId: string;
@@ -16,8 +16,7 @@ export default function FormContainer({ formId }: FormContainerProps) {
     <CatchBoundary
       getResetKey={() => formId}
       errorComponent={({ error }) => {
-        const err = error as any;
-        const message = err?.error?.fields?.[0]?.message || err?.message || "Something went wrong";
+        const message = error.message;
 
         return (
           <div className="flex min-h-[40vh] w-full max-w-xl flex-col items-center justify-center gap-4 rounded-lg border border-destructive/20 bg-destructive/5 p-8 text-center shadow-sm">
@@ -25,12 +24,13 @@ export default function FormContainer({ formId }: FormContainerProps) {
               <AlertCircle className="size-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">Form not found</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {message}
-              </p>
+              <h2 className="text-lg font-bold text-foreground">
+                Form not found
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">{message}</p>
             </div>
             <button
+              type="button"
               onClick={() => window.location.reload()}
               className="mt-2 text-sm font-semibold text-primary hover:underline"
             >
@@ -79,7 +79,9 @@ function FormContent({ formId }: { formId: string }) {
           <Check className="size-8" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Form submitted!</h2>
-        <p className="text-sm text-muted-foreground">Your responses have been recorded successfully.</p>
+        <p className="text-sm text-muted-foreground">
+          Your responses have been recorded successfully.
+        </p>
       </div>
     );
   }
@@ -107,7 +109,10 @@ function FormContent({ formId }: { formId: string }) {
   return (
     <div className="w-full max-w-xl overflow-hidden rounded-lg border border-border bg-card shadow-sm">
       <div className="h-2 w-full bg-primary" />
-      <ProgressBar currentStep={currentStepIndex} totalSteps={totalStepsCount} />
+      <ProgressBar
+        currentStep={currentStepIndex}
+        totalSteps={totalStepsCount}
+      />
 
       <div className="px-6 pb-6 pt-6">
         <AnimatePresence mode="wait">

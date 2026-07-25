@@ -1,48 +1,48 @@
-import { LayoutContext } from '#/shared/lib/hooks/layout-context'
-import { cn } from '#/shared/lib/utils'
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Inbox, Users2, Workflow } from 'lucide-react'
-import { useState } from 'react'
-import z from 'zod'
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { Inbox, Users2, Workflow } from "lucide-react";
+import { useState } from "react";
+import z from "zod";
+import { LayoutContext } from "#/shared/lib/hooks/layout-context";
+import { cn } from "#/shared/lib/utils";
 
 const formSearchSchema = z.object({
   namespaceID: z.string().optional(),
-})
+});
 
-export const Route = createFileRoute('/admin/form/$formID')({
+export const Route = createFileRoute("/admin/form/$formID")({
   validateSearch: (search) => formSearchSchema.parse(search),
   component: FormLayout,
-})
+});
 
 function FormLayout() {
-  const { formID } = Route.useParams()
-  const { namespaceID } = Route.useSearch()
+  const { formID } = Route.useParams();
+  const { namespaceID } = Route.useSearch();
 
-  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null)
+  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null);
 
   const tabs = [
     {
-      label: 'Steps',
-      to: '/admin/form/$formID',
+      label: "Steps",
+      to: "/admin/form/$formID",
       params: { formID },
       icon: Workflow,
       exact: true,
     },
     {
-      label: 'Submissions',
-      to: '/admin/form/$formID/submissions',
+      label: "Submissions",
+      to: "/admin/form/$formID/submissions",
       params: { formID },
       icon: Inbox,
       exact: true,
     },
     {
-      label: 'Members',
-      to: '/admin/form/$formID/members',
+      label: "Members",
+      to: "/admin/form/$formID/members",
       params: { formID },
       icon: Users2,
       exact: true,
     },
-  ]
+  ];
 
   return (
     <LayoutContext.Provider value={{ setHeader: setHeaderSlot }}>
@@ -74,18 +74,18 @@ function FormLayout() {
                   <>
                     <tab.icon
                       className={cn(
-                        'size-3.5 transition-colors',
+                        "size-3.5 transition-colors",
                         isActive
-                          ? 'text-primary'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     />
                     <span
                       className={cn(
-                        'transition-colors whitespace-nowrap',
+                        "transition-colors whitespace-nowrap",
                         isActive
-                          ? 'text-foreground'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
                       {tab.label}
@@ -104,8 +104,7 @@ function FormLayout() {
         <div className="flex-1 p-6">
           <Outlet />
         </div>
-
       </div>
     </LayoutContext.Provider>
-  )
+  );
 }

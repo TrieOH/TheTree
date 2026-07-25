@@ -1,6 +1,6 @@
-import { PostHogProvider as CorePostHogProvider } from "@trieoh/front-core"
-import { env } from "#/env"
-import type { ReactNode } from "react"
+import { PostHogProvider as CorePostHogProvider } from "@trieoh/front-core";
+import type { ReactNode } from "react";
+import { env } from "#/env";
 
 export default function PostHogProvider({ children }: { children: ReactNode }) {
   return (
@@ -12,5 +12,5 @@ export default function PostHogProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </CorePostHogProvider>
-  )
+  );
 }

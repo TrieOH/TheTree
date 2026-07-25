@@ -1,39 +1,38 @@
-import { useState } from 'react'
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Files, Users2 } from 'lucide-react'
-import { cn } from '#/shared/lib/utils'
-import { LayoutContext } from '#/shared/lib/hooks/layout-context'
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { Files, Users2 } from "lucide-react";
+import { useState } from "react";
+import { LayoutContext } from "#/shared/lib/hooks/layout-context";
+import { cn } from "#/shared/lib/utils";
 
-export const Route = createFileRoute('/admin/$namespaceID')({
+export const Route = createFileRoute("/admin/$namespaceID")({
   component: NamespaceLayout,
-})
+});
 
 function NamespaceLayout() {
-  const { namespaceID } = Route.useParams()
+  const { namespaceID } = Route.useParams();
 
-  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null)
+  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null);
 
   const tabs = [
     {
-      label: 'Forms',
-      to: '/admin/$namespaceID',
+      label: "Forms",
+      to: "/admin/$namespaceID",
       params: { namespaceID },
       icon: Files,
       exact: true,
     },
     {
-      label: 'Members',
-      to: '/admin/$namespaceID/members',
+      label: "Members",
+      to: "/admin/$namespaceID/members",
       params: { namespaceID },
       icon: Users2,
       exact: true,
     },
-  ]
+  ];
 
   return (
     <LayoutContext.Provider value={{ setHeader: setHeaderSlot }}>
       <div className="flex flex-col h-full">
-
         {/* Page Header Slot */}
         {/*
           Rendered only when a child page calls useLayoutHeader().
@@ -60,18 +59,18 @@ function NamespaceLayout() {
                   <>
                     <tab.icon
                       className={cn(
-                        'size-3.5 transition-colors',
+                        "size-3.5 transition-colors",
                         isActive
-                          ? 'text-primary'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     />
                     <span
                       className={cn(
-                        'transition-colors',
+                        "transition-colors",
                         isActive
-                          ? 'text-foreground'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
                       {tab.label}
@@ -90,8 +89,7 @@ function NamespaceLayout() {
         <div className="flex-1 p-6">
           <Outlet />
         </div>
-
       </div>
     </LayoutContext.Provider>
-  )
+  );
 }

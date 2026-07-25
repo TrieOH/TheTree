@@ -1,25 +1,26 @@
-import { authFetcher } from "#/shared/lib/api/fetch";
-import { createClientOnlyFn } from "@tanstack/react-start";
-import type { ApiKeyCreateI, ApiKeyCreateResponseI, ApiKeyI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { authFetcher } from "#/shared/lib/api/fetch";
+import type { ApiKeyCreateI, ApiKeyCreateResponseI, ApiKeyI } from "../model";
 
 /**
  * Create a new API key for the current user on the server.
  * @param apiKeyData - The data for the new API key.
  * @returns A promise that resolves to the API response containing the newly created API key.
  */
-export const createApiKeyFn = createClientOnlyFn((apiKeyData: ApiKeyCreateI) => {
-  return authFetcher.post<ApiKeyCreateResponseI>('/api-keys', apiKeyData);
-});
-
+export const createApiKeyFn = createClientOnlyFn(
+  (apiKeyData: ApiKeyCreateI) => {
+    return authFetcher.post<ApiKeyCreateResponseI>("/api-keys", apiKeyData);
+  },
+);
 
 /**
  * Fetches all API keys from the server.
  * @returns A promise that resolves to an array of API key objects.
  */
 export const getAllApiKeysFn = createClientOnlyFn(async () => {
-  const res = await authFetcher.post<ApiKeyI[]>('/api-keys/bulk');
-  return res.success ? res.data : []
+  const res = await authFetcher.post<ApiKeyI[]>("/api-keys/bulk");
+  return res.success ? res.data : [];
 });
 
 /**
@@ -30,8 +31,8 @@ export const allApiKeysQueryOptions = () => {
   return queryOptions({
     queryKey: ["keys"],
     queryFn: () => getAllApiKeysFn(),
-  })
-}
+  });
+};
 
 /**
  * Revoke an API key for the current user on the server.

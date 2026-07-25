@@ -1,7 +1,7 @@
-import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
-import { createClientOnlyFn } from "@tanstack/react-start";
-import type { FormMemberI, MemberAddToFormI } from "../model/member";
 import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import type { FormMemberI, MemberAddToFormI } from "../model/member";
 
 /**
  * Adds a new member to a namespace on the server.
@@ -10,15 +10,16 @@ import { queryOptions } from "@tanstack/react-query";
  * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to. If not provided, adds member without namespace context.
  * @returns A promise that resolves to the API response containing the newly created member.
  */
-export const addMemberToFormFn = createClientOnlyFn((
-  memberData: MemberAddToFormI,
-  form_id: string,
-  namespace_id?: string,
-) => {
-  if (namespace_id)
-    return authFetcher.post(`namespaces/${namespace_id}/forms/${form_id}/members`, memberData);
-  return authFetcher.post(`/forms/${form_id}/members`, memberData);
-});
+export const addMemberToFormFn = createClientOnlyFn(
+  (memberData: MemberAddToFormI, form_id: string, namespace_id?: string) => {
+    if (namespace_id)
+      return authFetcher.post(
+        `namespaces/${namespace_id}/forms/${form_id}/members`,
+        memberData,
+      );
+    return authFetcher.post(`/forms/${form_id}/members`, memberData);
+  },
+);
 
 /**
  * Removes a member from a namespace on the server.
@@ -27,15 +28,16 @@ export const addMemberToFormFn = createClientOnlyFn((
  * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to. If not provided, adds member without namespace context.
  * @returns A promise that resolves to the API response confirming the removal of the member.
  */
-export const removeMemberFromFormFn = createClientOnlyFn((
-  user_id: string,
-  form_id: string,
-  namespace_id?: string,
-) => {
-  if (namespace_id)
-    return authFetcher.delete(`/namespaces/${namespace_id}/forms/${form_id}/members`, { user_id });
-  return authFetcher.delete(`/forms/${form_id}/members`, { user_id });
-});
+export const removeMemberFromFormFn = createClientOnlyFn(
+  (user_id: string, form_id: string, namespace_id?: string) => {
+    if (namespace_id)
+      return authFetcher.delete(
+        `/namespaces/${namespace_id}/forms/${form_id}/members`,
+        { user_id },
+      );
+    return authFetcher.delete(`/forms/${form_id}/members`, { user_id });
+  },
+);
 
 /**
  * Fetches all members of a specific Form from the server.
@@ -43,15 +45,15 @@ export const removeMemberFromFormFn = createClientOnlyFn((
  * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to. If not provided, fetches members without namespace context.
  * @returns A promise that resolves to an array of FormMemberI objects.
  */
-export const getAllFormsMembersFn = createClientOnlyFn(async (
-  form_id: string,
-  namespace_id?: string
-) => {
-  if (namespace_id)
-    return tanstackQueryFetcher<FormMemberI[]>(`/namespaces/${namespace_id}/forms/${form_id}/members`);
-  return tanstackQueryFetcher<FormMemberI[]>(`/forms/${form_id}/members`);
-});
-
+export const getAllFormsMembersFn = createClientOnlyFn(
+  async (form_id: string, namespace_id?: string) => {
+    if (namespace_id)
+      return tanstackQueryFetcher<FormMemberI[]>(
+        `/namespaces/${namespace_id}/forms/${form_id}/members`,
+      );
+    return tanstackQueryFetcher<FormMemberI[]>(`/forms/${form_id}/members`);
+  },
+);
 
 /**
  * Query options for fetching all members of a specific Form.
@@ -61,10 +63,10 @@ export const getAllFormsMembersFn = createClientOnlyFn(async (
  */
 export const allFormsMembersQueryOptions = (
   form_id: string,
-  namespace_id?: string
+  namespace_id?: string,
 ) => {
   return queryOptions({
     queryKey: ["forms", form_id, "members"],
     queryFn: () => getAllFormsMembersFn(form_id, namespace_id),
-  })
-}
+  });
+};
