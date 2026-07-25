@@ -69,6 +69,8 @@ jobs:
     if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      GOWORK: ${{ github.workspace }}/go.work
     strategy:
       matrix:
         service: ${{ fromJSON(needs.changes.outputs.services) }}
