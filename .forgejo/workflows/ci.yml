@@ -161,7 +161,7 @@ jobs:
           if [ -f api/${{ matrix.service }}/sqlc.yaml ]; then
             cd api/${{ matrix.service }} && sqlc generate
           fi
-      - run: cd api/${{ matrix.service }} && gotestsum --format testdox --format-hide-empty-pkg ./...
+      - run: cd api/${{ matrix.service }} && gotestsum --format testdox --format-icons hivis --format-hide-empty-pkg ./...
 
   ci-ok:
     name: CI OK

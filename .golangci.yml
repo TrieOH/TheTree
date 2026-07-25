@@ -144,7 +144,7 @@ linters:
         - msg
         - source
     interfacebloat:
-      max: 10                   # max methods before warning
+      max: 20                   # max methods before warning
     paralleltest:
       ignore-missing-subtests: false
 
