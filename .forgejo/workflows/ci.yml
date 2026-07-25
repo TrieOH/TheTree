@@ -101,6 +101,9 @@ jobs:
           echo "--- ls api/ ---"
           ls -la api/
       - run: |
+          pwd -P
+          readlink -f .
+          readlink -f api/${{ matrix.service }}
           echo "HOME=$HOME"
           echo "GOFLAGS=$(go env GOFLAGS)"
           echo "GOPATH=$(go env GOPATH)"
