@@ -3,15 +3,12 @@ on:
   pull_request:
     branches:
       - main
-
 concurrency:
   group: trivy-${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
-
 defaults:
   run:
     shell: bash
-
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -62,7 +59,6 @@ jobs:
               - 'sdk/ts/payssage/**'
             sdk/ts/Payssage:
               - 'sdk/ts/Payssage/**'
-
   prepare:
     name: prepare trivy
     needs: detect-changes
@@ -78,11 +74,10 @@ jobs:
             -o /tmp/trivy.tar.gz
           tar -xzf /tmp/trivy.tar.gz -C /tmp/trivybin trivy
           chmod +x /tmp/trivybin/trivy
-      - uses: https://code.forgejo.org/actions/upload-artifact@v4
+      - uses: https://code.forgejo.org/actions/upload-artifact@v3
         with:
           name: trivy-bin
           path: /tmp/trivybin
-
   trivy:
     name: trivy (${{ matrix.project }})
     needs: [detect-changes, prepare]
@@ -97,7 +92,7 @@ jobs:
         project: ${{ fromJSON(needs.detect-changes.outputs.projects) }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
-      - uses: https://code.forgejo.org/actions/download-artifact@v4
+      - uses: https://code.forgejo.org/actions/download-artifact@v3
         with:
           name: trivy-bin
           path: /tmp/trivybin
@@ -116,7 +111,6 @@ jobs:
             --scanners vuln,secret,misconfig \
             --exit-code 1 \
             "${{ matrix.project }}"
-
   trivy-ok:
     name: Trivy OK
     needs: [detect-changes, trivy]
