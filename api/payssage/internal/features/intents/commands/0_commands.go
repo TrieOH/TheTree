@@ -10,7 +10,6 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Commands struct {
@@ -19,7 +18,6 @@ type Commands struct {
 	orgs       ports.OrganizationRepo
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
-	logger     *zap.Logger
 	tracer     trace.Tracer
 	tx         database.TxRunner
 }
@@ -30,7 +28,6 @@ func NewCommands(
 	orgs ports.OrganizationRepo,
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
-	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Commands {
@@ -40,7 +37,6 @@ func NewCommands(
 		orgs:       orgs,
 		collectors: collectors,
 		sellers:    sellers,
-		logger:     logger,
 		tracer:     tracer,
 		tx:         tx,
 	}

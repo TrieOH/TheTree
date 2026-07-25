@@ -31,7 +31,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /app/api/identityx/identityx .
 COPY --from=tools /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/api/identityx/internal/database/migrations ./internal/database/migrations
+COPY --from=builder /app/api/identityx/db/migrations ./db/migrations
 USER nonroot:nonroot
 EXPOSE 8080
 CMD ["./identityx"]

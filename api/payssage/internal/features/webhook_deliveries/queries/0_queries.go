@@ -9,7 +9,6 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Queries struct {
@@ -17,7 +16,6 @@ type Queries struct {
 	endpoints  ports.WebhookEndpointRepo
 	wallets    ports.WalletRepo
 	orgs       ports.OrganizationRepo
-	logger     *zap.Logger
 	tracer     trace.Tracer
 	tx         database.TxRunner
 }
@@ -27,7 +25,6 @@ func NewQueries(
 	endpoints ports.WebhookEndpointRepo,
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
-	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Queries {
@@ -36,7 +33,6 @@ func NewQueries(
 		endpoints:  endpoints,
 		wallets:    wallets,
 		orgs:       orgs,
-		logger:     logger,
 		tracer:     tracer,
 		tx:         tx,
 	}

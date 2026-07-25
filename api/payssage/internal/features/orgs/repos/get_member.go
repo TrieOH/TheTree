@@ -3,7 +3,7 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"payssage/internal/database/sqlc"
+	"payssage/internal/sqlc"
 	"payssage/models"
 
 	"github.com/google/uuid"

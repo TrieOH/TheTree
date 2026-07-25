@@ -3,10 +3,9 @@ package app
 import (
 	"lib/database"
 	"lib/errx"
+	"lib/telemetry"
 	"lib/xslices"
 	"net/http"
-	"payssage/internal/config"
-	"payssage/internal/database/sqlc"
 	"payssage/internal/features/collectors"
 	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
@@ -19,16 +18,16 @@ import (
 	"payssage/internal/features/webhook_events"
 	"payssage/internal/features/webhooks"
 	providers2 "payssage/internal/providers"
+	"payssage/internal/sqlc"
 	"payssage/ports"
-	idx "sdk/identityx"
 	"strings"
 
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/riverqueue/river"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -91,22 +90,30 @@ type handlers struct {
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
+func (app *Payssage) tracer() trace.Tracer {
+	return otel.Tracer(app.cfg.AppName)
+}
+
+func (app *Payssage) txRunner() database.TxRunner {
+	return database.NewPGXTxRunner(app.db)
+}
+
+func (app *Payssage) initRepos(q *sqlc.Queries) repos {
 	return repos{
-		orgs:       orgs.NewRepos(q, logger, tracer),
-		wallets:    wallets.NewRepos(q, logger, tracer),
-		oauth:      oauth.NewRepos(q, logger, tracer),
-		collectors: collectors.NewRepos(q, logger, tracer),
-		sellers:    sellers.NewRepos(q, logger, tracer),
-		intents:    intents.NewRepos(q, logger, tracer),
-		endpoints:  webhook_endpoints.NewRepos(q, logger, tracer),
-		deliveries: webhook_deliveries.NewRepos(q, logger, tracer),
-		events:     webhook_events.NewRepos(q, logger, tracer),
+		orgs:       orgs.NewRepos(q, app.tracer()),
+		wallets:    wallets.NewRepos(q, app.tracer()),
+		oauth:      oauth.NewRepos(q, app.tracer()),
+		collectors: collectors.NewRepos(q, app.tracer()),
+		sellers:    sellers.NewRepos(q, app.tracer()),
+		intents:    intents.NewRepos(q, app.tracer()),
+		endpoints:  webhook_endpoints.NewRepos(q, app.tracer()),
+		deliveries: webhook_deliveries.NewRepos(q, app.tracer()),
+		events:     webhook_events.NewRepos(q, app.tracer()),
 	}
 }
 
-func initProviders(cfg config.MercadoPagoConfig, r repos, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) {
-	mercadoPago := providers.NewMercadoPago(cfg, r.intents, r.collectors, r.sellers, r.wallets, logger, tracer, tx)
+func (app *Payssage) initProviders(r repos) {
+	mercadoPago := providers.NewMercadoPago(app.cfg.MercadoPagoConfig, r.intents, r.collectors, r.sellers, r.wallets, app.tracer(), app.txRunner())
 
 	providers2.PayssageProviders.OAuth = map[providers2.AvailableProviders]ports.OAuthProvider{
 		providers2.MercadoPagoProvider: mercadoPago,
@@ -121,59 +128,51 @@ func initProviders(cfg config.MercadoPagoConfig, r repos, logger *zap.Logger, tx
 	}
 }
 
-func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) queries {
+func (app *Payssage) initQueries(r repos) queries {
 	return queries{
-		orgs:       orgs.NewQueries(r.orgs, idx, logger, tracer, tx),
-		wallets:    wallets.NewQueries(r.wallets, r.orgs, logger, tracer, tx),
-		collectors: collectors.NewQueries(r.collectors, r.orgs, logger, tracer, tx),
-		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, logger, tracer, tx),
-		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs, logger, tracer, tx),
-		endpoints:  webhook_endpoints.NewQueries(r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
-		events:     webhook_events.NewQueries(r.events, r.wallets, r.orgs, logger, tracer, tx),
-		deliveries: webhook_deliveries.NewQueries(r.deliveries, r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
+		orgs:       orgs.NewQueries(r.orgs, app.idxClient, app.tracer(), app.txRunner()),
+		wallets:    wallets.NewQueries(r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		collectors: collectors.NewQueries(r.collectors, r.orgs, app.tracer(), app.txRunner()),
+		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		endpoints:  webhook_endpoints.NewQueries(r.endpoints, r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		events:     webhook_events.NewQueries(r.events, r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		deliveries: webhook_deliveries.NewQueries(r.deliveries, r.endpoints, r.wallets, r.orgs, app.tracer(), app.txRunner()),
 	}
 }
 
-func initCommands(river *river.Client[pgx.Tx], r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) commands {
+func (app *Payssage) initCommands(riverClient *river.Client[pgx.Tx], r repos) commands {
 	return commands{
-		orgs:      orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
-		wallets:   wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
-		oauth:     oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
-		intents:   intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, logger, tracer, tx),
-		webhooks:  webhooks.NewCommands(river, r.events, r.endpoints, r.deliveries, logger, tracer, tx),
-		endpoints: webhook_endpoints.NewCommands(r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
+		orgs:      orgs.NewCommands(r.orgs, app.idxClient, app.tracer(), app.txRunner()),
+		wallets:   wallets.NewCommands(r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		oauth:     oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, app.tracer(), app.txRunner()),
+		intents:   intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, app.tracer(), app.txRunner()),
+		webhooks:  webhooks.NewCommands(riverClient, r.events, r.endpoints, r.deliveries, app.tracer(), app.txRunner()),
+		endpoints: webhook_endpoints.NewCommands(r.endpoints, r.wallets, r.orgs, app.tracer(), app.txRunner()),
 	}
 }
 
-func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg config.Config) middlewares {
+func (app *Payssage) initMiddlewares() middlewares {
 	var mw middlewares
 	authMW := app.setupAuthMiddlewares()
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	//mw.bodySize = mws.MaxBodySize(1 << 20)
-	//mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	promCollectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
+	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
+	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")
 	}
-	mw.metrics = mws.Metrics(promCollectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
+	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(cfg.CorsAllowedOrigins, ",")),
-		AllowedHeaders:   xslices.Clean(strings.Split(cfg.CorsAllowedHeaders, ",")),
+		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
+		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),
 		AllowCredentials: true,
 	})
-	//mw.realIP = mws.RealIP()
-	//mw.recover = mws.Recover(logger)
-	//mw.timeout = mws.Timeout(60 * time.Second)
-	//mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
-	//	KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	//})
 	return mw
 }
 
-func initHandlers(c commands, q queries) handlers {
+func (app *Payssage) initHandlers(c commands, q queries) handlers {
 	return handlers{
 		orgs:       orgs.NewHandlers(c.orgs, q.orgs),
 		wallets:    wallets.NewHandlers(c.wallets, q.wallets),

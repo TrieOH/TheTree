@@ -9,14 +9,12 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Commands struct {
 	endpoints ports.WebhookEndpointRepo
 	wallets   ports.WalletRepo
 	orgs      ports.OrganizationRepo
-	logger    *zap.Logger
 	tracer    trace.Tracer
 	tx        database.TxRunner
 }
@@ -25,7 +23,6 @@ func NewCommands(
 	endpoints ports.WebhookEndpointRepo,
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
-	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Commands {
@@ -33,7 +30,6 @@ func NewCommands(
 		endpoints: endpoints,
 		wallets:   wallets,
 		orgs:      orgs,
-		logger:    logger,
 		tracer:    tracer,
 		tx:        tx,
 	}

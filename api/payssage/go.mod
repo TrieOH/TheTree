@@ -47,6 +47,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
+	github.com/riverqueue/apiframe v0.0.0-20251229202423-2b52ce1c482e // indirect
 	github.com/riverqueue/river/riverdriver v0.35.1 // indirect
 	github.com/riverqueue/river/rivershared v0.35.1 // indirect
 	github.com/riverqueue/river/rivertype v0.35.1 // indirect
@@ -75,4 +76,5 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	riverqueue.com/riverui v0.16.0 // indirect
 )

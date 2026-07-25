@@ -2,33 +2,30 @@ package repos
 
 import (
 	"lib/database"
-	"payssage/internal/database/sqlc"
+	sqlc2 "payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
+	q      *sqlc2.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
 var _ ports.WebhookEndpointRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.WebhookEndpointRepo {
+func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.WebhookEndpointRepo {
 	return &repo{
 		q:      q,
-		log:    log,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("webhook_endpoint"),
 	}
 }
 
-func mapWebhookEndpoint(src sqlc.WebhookEndpoint) models.WebhookEndpoint {
+func mapWebhookEndpoint(src sqlc2.WebhookEndpoint) models.WebhookEndpoint {
 	return models.WebhookEndpoint{
 		ID:        src.ID,
 		WalletID:  src.WalletID,
