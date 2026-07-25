@@ -1,19 +1,8 @@
-import { cn } from "@/shared/lib/utils";
-import {
-  Building2,
-  Ellipsis,
-  ExternalLink,
-  User2,
-} from "lucide-react";
-import type { OrganizationI } from "../model";
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/ui/shadcn/dropdown-menu";
+import { timeAgo } from "@trieoh/shared-utils";
+import { Building2, Ellipsis, ExternalLink, User2 } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -21,8 +10,14 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
-import { timeAgo } from "@trieoh/shared-utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui/shadcn/dropdown-menu";
+import type { OrganizationI } from "../model";
 
 interface PropsI {
   data: OrganizationI;
@@ -55,12 +50,12 @@ function MenuItems({
       <Separator />
       <Item
         onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
+          e.preventDefault();
+          e.stopPropagation();
           navigate({
             to: "/admin/$organizationID/members",
             params: { organizationID: data.id },
-          })
+          });
         }}
       >
         <User2 className="mr-2 size-4" />
@@ -79,7 +74,7 @@ export default function OrganizationCard({ data }: PropsI) {
             className={cn(
               "bg-card rounded-sm w-full cursor-pointer",
               "ring-1 ring-foreground/10 shadow-xs",
-              "relative py-4 hover:ring-primary hover:shadow-primary duration-150"
+              "relative py-4 hover:ring-primary hover:shadow-primary duration-150",
             )}
             to="/admin/$organizationID"
             params={{ organizationID: data.id }}
@@ -121,7 +116,7 @@ export default function OrganizationCard({ data }: PropsI) {
                   variant="ghost"
                   className={cn(
                     "text-muted-foreground hover:text-foreground/40",
-                    "duration-150 cursor-pointer outline-0 select-none"
+                    "duration-150 cursor-pointer outline-0 select-none",
                   )}
                   onClick={(e) => {
                     e.preventDefault();

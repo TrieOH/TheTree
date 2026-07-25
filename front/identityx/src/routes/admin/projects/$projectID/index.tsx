@@ -1,87 +1,110 @@
-import { allApiKeysQueryOptions, revokeApiKeyFn, rotateApiKeyFn } from '@/features/api-keys/api'
-import { apiKeyCreateSchema, type ApiKeyCreateI, type ApiKeyI, type CreateApiKeyResponseI } from '@/features/api-keys/model'
-import { allCapabilitiesQueryOptions } from '@/features/capabilities/api'
-import { ApiKeyCard } from '@/features/api-keys/ui/api-key-card'
-import { ApiKeyCreatedDisplay } from '@/features/api-keys/ui/api-key-created-display'
-import { useLayoutHeader, PaginatedContainer } from '@trieoh/ui-base'
-import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
-import { FormModal } from '@/widgets/modal/FormModal'
-import { Modal } from '@/widgets/modal/modal'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { EmptyState } from '@trieoh/ui-base'
-import { Copy, KeySquare, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  EmptyState,
+  PaginatedContainer,
+  useLayoutHeader,
+} from "@trieoh/ui-base";
+import { Copy, KeySquare, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+  allApiKeysQueryOptions,
+  revokeApiKeyFn,
+  rotateApiKeyFn,
+} from "@/features/api-keys/api";
+import {
+  type ApiKeyCreateI,
+  type ApiKeyI,
+  apiKeyCreateSchema,
+  type CreateApiKeyResponseI,
+} from "@/features/api-keys/model";
+import { ApiKeyCard } from "@/features/api-keys/ui/api-key-card";
+import { ApiKeyCreatedDisplay } from "@/features/api-keys/ui/api-key-created-display";
+import { allCapabilitiesQueryOptions } from "@/features/capabilities/api";
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import { FormModal } from "@/widgets/modal/FormModal";
+import { Modal } from "@/widgets/modal/modal";
 
-export const Route = createFileRoute('/admin/projects/$projectID/')({
+export const Route = createFileRoute("/admin/projects/$projectID/")({
   component: RouteComponent,
-})
+});
 
-
-const handleCopyProjectId = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+const handleCopyProjectId = (
+  e: React.MouseEvent<HTMLButtonElement>,
+  id: string,
+) => {
   e.stopPropagation();
   navigator.clipboard.writeText(id);
   toast.success("Project ID copied to clipboard");
 };
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
-  const { projectID } = Route.useParams()
-  const { data: capabilities = [] } = useQuery(allCapabilitiesQueryOptions(projectID))
+  const queryClient = useQueryClient();
+  const { projectID } = Route.useParams();
+  const { data: capabilities = [] } = useQuery(
+    allCapabilitiesQueryOptions(projectID),
+  );
 
   // const { data: apiKeys = [] } = useQuery(allApiKeysQueryOptions(projectID))
-  const apiKeys: ApiKeyI[] = []
-  const projectCapabilities = capabilities.filter((capability) => capability.project_id === projectID)
+  const apiKeys: ApiKeyI[] = [];
+  const projectCapabilities = capabilities.filter(
+    (capability) => capability.project_id === projectID,
+  );
 
-  const [filter, setFilter] = useState('')
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [createdKey, setCreatedKey] = useState<CreateApiKeyResponseI | null>(null)
-  const [keyToRevoke, setKeyToRevoke] = useState<ApiKeyI | null>(null)
+  const [filter, setFilter] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createdKey, setCreatedKey] = useState<CreateApiKeyResponseI | null>(
+    null,
+  );
+  const [keyToRevoke, setKeyToRevoke] = useState<ApiKeyI | null>(null);
 
   const filteredApiKeys = apiKeys.filter((key) => {
-    const search = filter.toLowerCase().trim()
-    if (!search) return true
+    const search = filter.toLowerCase().trim();
+    if (!search) return true;
     return (
       key.name.toLowerCase().includes(search) ||
       key.display_prefix.toLowerCase().includes(search)
-    )
-  })
+    );
+  });
 
-  const header = useMemo(() => (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Api Keys</h1>
-        <div className='flex items-center gap-2 text-sm'>
-          <span className="truncate text-muted-foreground font-mono max-w-1/2">
-            Project ID: {projectID}
-          </span>
-          <ShadowButton
-            variant="ghost"
-            onClick={(e) => handleCopyProjectId(e, projectID)}
-            className="p-0 h-auto"
-            leftIcon={<Copy className="size-3" />}
-          />
+  const header = useMemo(
+    () => (
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Api Keys</h1>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="truncate text-muted-foreground font-mono max-w-1/2">
+              Project ID: {projectID}
+            </span>
+            <ShadowButton
+              variant="ghost"
+              onClick={(e) => handleCopyProjectId(e, projectID)}
+              className="p-0 h-auto"
+              leftIcon={<Copy className="size-3" />}
+            />
+          </div>
         </div>
       </div>
-    </div>
-  ), [projectID])
+    ),
+    [projectID],
+  );
 
-  useLayoutHeader(header)
+  useLayoutHeader(header);
 
   const { mutate: createApiKey, isPending: isCreating } = useMutation({
     mutationFn: (data: ApiKeyCreateI) => rotateApiKeyFn(projectID, data),
     onSuccess: (response) => {
       if (response.success) {
-        setCreatedKey(response.data)
+        setCreatedKey(response.data);
         queryClient.invalidateQueries({
           queryKey: allApiKeysQueryOptions(projectID).queryKey,
-        })
-        toast.success(response.message || "API key created successfully")
-      } else toast.error(response.message || "Failed to create API key")
+        });
+        toast.success(response.message || "API key created successfully");
+      } else toast.error(response.message || "Failed to create API key");
     },
     onError: (error: Error) => toast.error(error.message),
-  })
+  });
 
   const { mutate: revokeApiKey, isPending: isRevoking } = useMutation({
     mutationFn: (key_id: string) => revokeApiKeyFn(projectID, key_id),
@@ -89,13 +112,13 @@ function RouteComponent() {
       if (response.success) {
         queryClient.invalidateQueries({
           queryKey: allApiKeysQueryOptions(projectID).queryKey,
-        })
-        setKeyToRevoke(null)
-        toast.success(response.message || "API key revoked successfully")
-      } else toast.error(response.message || "Failed to revoke API key")
+        });
+        setKeyToRevoke(null);
+        toast.success(response.message || "API key revoked successfully");
+      } else toast.error(response.message || "Failed to revoke API key");
     },
     onError: (error: Error) => toast.error(error.message),
-  })
+  });
 
   return (
     <div>
@@ -120,11 +143,13 @@ function RouteComponent() {
             value="Create API Key"
           />
         }
-        renderItems={(slice) => slice.map(item => {
-          return (
-            <ApiKeyCard key={item.id} data={item} onRevoke={setKeyToRevoke} />
-          )
-        })}
+        renderItems={(slice) =>
+          slice.map((item) => {
+            return (
+              <ApiKeyCard key={item.id} data={item} onRevoke={setKeyToRevoke} />
+            );
+          })
+        }
         emptyState={
           <EmptyState
             icon={KeySquare}
@@ -153,38 +178,44 @@ function RouteComponent() {
         isOpen={isCreateOpen && !createdKey}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={createApiKey}
-        defaultValues={{ name: '', capabilities: [], subject_id: undefined, env: '', expires_at: undefined }}
+        defaultValues={{
+          name: "",
+          capabilities: [],
+          subject_id: undefined,
+          env: "",
+          expires_at: undefined,
+        }}
         isLoading={isCreating}
         fields={[
           {
-            name: 'name',
-            label: 'Key Name',
-            type: 'text',
-            placeholder: 'e.g. Production Key',
+            name: "name",
+            label: "Key Name",
+            type: "text",
+            placeholder: "e.g. Production Key",
             required: true,
           },
           {
-            name: 'subject_id',
-            label: 'Subject ID',
-            type: 'text',
-            placeholder: 'Optional subject UUID',
+            name: "subject_id",
+            label: "Subject ID",
+            type: "text",
+            placeholder: "Optional subject UUID",
           },
           {
-            name: 'env',
-            label: 'Environment',
-            type: 'text',
-            placeholder: 'e.g. production',
+            name: "env",
+            label: "Environment",
+            type: "text",
+            placeholder: "e.g. production",
             required: true,
           },
           {
-            name: 'expires_at',
-            label: 'Expires At',
-            type: 'date',
+            name: "expires_at",
+            label: "Expires At",
+            type: "date",
           },
           {
-            name: 'capabilities',
-            label: 'Capabilities',
-            type: 'multi-option-picker',
+            name: "capabilities",
+            label: "Capabilities",
+            type: "multi-option-picker",
             options: projectCapabilities.map((capability) => ({
               value: capability.id,
               label: `${capability.resource}:${capability.action}`,
@@ -198,19 +229,19 @@ function RouteComponent() {
       <Modal
         isOpen={createdKey !== null}
         onClose={() => {
-          setCreatedKey(null)
-          setIsCreateOpen(false)
+          setCreatedKey(null);
+          setIsCreateOpen(false);
         }}
         title="API Key Created"
         description="Your new API key has been generated."
       >
         {createdKey && (
           <ApiKeyCreatedDisplay
-            name={createdKey.key?.name ?? 'API Key'}
+            name={createdKey.key?.name ?? "API Key"}
             rawKey={createdKey.raw_key}
             onClose={() => {
-              setCreatedKey(null)
-              setIsCreateOpen(false)
+              setCreatedKey(null);
+              setIsCreateOpen(false);
             }}
           />
         )}
@@ -235,19 +266,22 @@ function RouteComponent() {
               variant="destructive"
               onClick={() => {
                 if (keyToRevoke) {
-                  revokeApiKey(keyToRevoke.id)
+                  revokeApiKey(keyToRevoke.id);
                 }
               }}
               className="rounded-sm font-bold text-xs px-6"
               disabled={isRevoking}
-              value={isRevoking ? 'Revoking...' : 'Revoke Key'}
+              value={isRevoking ? "Revoking..." : "Revoke Key"}
             />
           </div>
         }
       >
         <div className="space-y-4">
           <div className="text-xs text-muted-foreground">
-            Revoking key: <span className="font-semibold text-foreground">{keyToRevoke?.name}</span>
+            Revoking key:{" "}
+            <span className="font-semibold text-foreground">
+              {keyToRevoke?.name}
+            </span>
           </div>
           <div className="flex items-center gap-2 p-3 rounded-sm bg-muted border border-border">
             <span className="text-xs font-mono text-muted-foreground">
@@ -257,5 +291,5 @@ function RouteComponent() {
         </div>
       </Modal>
     </div>
-  )
+  );
 }

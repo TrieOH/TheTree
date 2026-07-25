@@ -1,13 +1,13 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowRight, Lock, Shield } from 'lucide-react'
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, Lock, Shield } from "lucide-react";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: App,
-})
+});
 
 function App() {
-  const { auth } = Route.useRouteContext()
-  const isAuthenticated = auth?.isAuthenticated
+  const { auth } = Route.useRouteContext();
+  const isAuthenticated = auth?.isAuthenticated;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-primary/5">
@@ -51,8 +51,9 @@ function App() {
           </span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-          IdentityX is a modern, headless authentication platform that integrates
-          seamlessly with any stack. OAuth, sessions, organizations — all out of the box.
+          IdentityX is a modern, headless authentication platform that
+          integrates seamlessly with any stack. OAuth, sessions, organizations —
+          all out of the box.
         </p>
         <div className="flex items-center justify-center gap-4">
           {isAuthenticated ? (
@@ -149,5 +150,5 @@ function App() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

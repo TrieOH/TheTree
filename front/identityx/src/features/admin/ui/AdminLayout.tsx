@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -6,20 +6,20 @@ import {
   FolderKanban,
   LogOut,
   Search,
-} from "lucide-react"
-import { useState } from "react"
-import { cn } from "@/shared/lib/utils"
-import { ShadowButton } from "@/shared/ui/buttons/ShadowButton"
-import { Breadcrumb } from "@/shared/ui/breadcrumb"
-import { useAuthActions } from "@/features/auth/hooks/use-auth-actions"
+} from "lucide-react";
+import { useState } from "react";
+import { useAuthActions } from "@/features/auth/hooks/use-auth-actions";
+import { cn } from "@/shared/lib/utils";
+import { Breadcrumb } from "@/shared/ui/breadcrumb";
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 
 interface AdminLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { handleLogout } = useAuthActions()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { handleLogout } = useAuthActions();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     {
@@ -40,7 +40,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       label: "Introspect",
       exact: true,
     },
-  ]
+  ];
 
   return (
     <div className="flex min-h-screen bg-background font-body selection:bg-primary/10">
@@ -175,7 +175,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <div
                   className={cn(
                     "absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full transition-all duration-300 ease-in-out",
-                    isActive ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0",
+                    isActive
+                      ? "opacity-100 scale-x-100"
+                      : "opacity-0 scale-x-0",
                   )}
                 />
               </>
@@ -194,5 +196,5 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </button>
       </nav>
     </div>
-  )
+  );
 }

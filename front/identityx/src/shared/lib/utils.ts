@@ -1,6 +1,6 @@
-export { cn } from "@trieoh/ui-base"
+export { cn } from "@trieoh/ui-base";
 
-import z from 'zod';
+import z from "zod";
 
 function getDefaultInvalidValue(schema: z.ZodTypeAny): unknown {
   if (schema instanceof z.ZodString) return "";
@@ -15,5 +15,5 @@ export function getFieldError(schema: z.ZodTypeAny, value?: string): string[] {
   const result = schema.safeParse(value || getDefaultInvalidValue(schema));
   if (result.success) return [];
 
-  return result.error.issues.map(i => i.message);
+  return result.error.issues.map((i) => i.message);
 }

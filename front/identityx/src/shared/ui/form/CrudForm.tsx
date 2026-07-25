@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { useAppForm } from "@/shared/lib/forms";
 import type { CrudFormConfig, FieldConfig } from "./types";
-import { useState } from "react";
 
 interface PropsI<TFormData> {
   formId: string;
@@ -18,11 +18,11 @@ export default function CrudForm<TFormData>({
     defaultValues: options.defaultValues,
     validators: options.validators,
     onSubmit: async ({ value, formApi }) => {
-      formApi.reset()
-      formApi.mount()
-      await options.onSubmit({ value, formApi })
+      formApi.reset();
+      formApi.mount();
+      await options.onSubmit({ value, formApi });
       setSubmitted(false);
-    }
+    },
   });
 
   return (
@@ -36,11 +36,8 @@ export default function CrudForm<TFormData>({
       }}
     >
       <div className="flex flex-col gap-1">
-        {fields.map(item => (
-          <form.AppField
-            key={item.name}
-            name={item.name}
-          >
+        {fields.map((item) => (
+          <form.AppField key={item.name} name={item.name}>
             {(field) => {
               switch (item.type) {
                 case "option-picker":
@@ -48,7 +45,9 @@ export default function CrudForm<TFormData>({
                     <field.OptionPicker
                       label={item.label}
                       value={String(field.state.value)}
-                      onChange={field.handleChange as unknown as (value: string) => void}
+                      onChange={
+                        field.handleChange as unknown as (value: string) => void
+                      }
                       options={item.options || []}
                       required={item.required}
                     />
@@ -57,8 +56,16 @@ export default function CrudForm<TFormData>({
                   return (
                     <field.MultiOptionPicker
                       label={item.label}
-                      value={Array.isArray(field.state.value) ? field.state.value : []}
-                      onChange={field.handleChange as unknown as (value: string[]) => void}
+                      value={
+                        Array.isArray(field.state.value)
+                          ? field.state.value
+                          : []
+                      }
+                      onChange={
+                        field.handleChange as unknown as (
+                          value: string[],
+                        ) => void
+                      }
                       options={item.options || []}
                       required={item.required}
                     />
@@ -90,5 +97,5 @@ export default function CrudForm<TFormData>({
         ))}
       </div>
     </form>
-  )
+  );
 }

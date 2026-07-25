@@ -1,4 +1,5 @@
-import { cn } from "@/shared/lib/utils";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { timeAgo } from "@trieoh/shared-utils";
 import {
   BadgeCheck,
   Component,
@@ -9,15 +10,8 @@ import {
   Globe,
   Users2,
 } from "lucide-react";
-import type { ProjectI } from "../model";
-import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/ui/shadcn/dropdown-menu";
+import { cn } from "@/shared/lib/utils";
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,8 +19,14 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
-import { timeAgo } from "@trieoh/shared-utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui/shadcn/dropdown-menu";
+import type { ProjectI } from "../model";
 
 interface PropsI {
   data: ProjectI;
@@ -50,7 +50,7 @@ function MenuItems({
           navigate({
             to: "/admin/projects/$projectID",
             params: { projectID: data.id },
-            search: { organizationID: data.organization_id || undefined }
+            search: { organizationID: data.organization_id || undefined },
           })
         }
       >
@@ -59,13 +59,13 @@ function MenuItems({
       </Item>
       <Item
         onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
+          e.preventDefault();
+          e.stopPropagation();
           navigate({
             to: "/admin/projects/$projectID/actors",
             params: { projectID: data.id },
-            search: { organizationID: data.organization_id || undefined }
-          })
+            search: { organizationID: data.organization_id || undefined },
+          });
         }}
       >
         <Component className="mr-2 size-4" />
@@ -73,13 +73,13 @@ function MenuItems({
       </Item>
       <Item
         onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
+          e.preventDefault();
+          e.stopPropagation();
           navigate({
             to: "/admin/projects/$projectID/capabilities",
             params: { projectID: data.id },
-            search: { organizationID: data.organization_id || undefined }
-          })
+            search: { organizationID: data.organization_id || undefined },
+          });
         }}
       >
         <Fingerprint className="mr-2 size-4" />
@@ -87,13 +87,13 @@ function MenuItems({
       </Item>
       <Item
         onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
+          e.preventDefault();
+          e.stopPropagation();
           navigate({
             to: "/admin/projects/$projectID/members",
             params: { projectID: data.id },
-            search: { organizationID: data.organization_id || undefined }
-          })
+            search: { organizationID: data.organization_id || undefined },
+          });
         }}
       >
         <Users2 className="mr-2 size-4" />
@@ -102,9 +102,7 @@ function MenuItems({
       {data.domain && (
         <>
           <Separator />
-          <Item
-            onClick={() => window.open(`https://${data.domain}`, "_blank")}
-          >
+          <Item onClick={() => window.open(`https://${data.domain}`, "_blank")}>
             <Globe className="mr-2 size-4" />
             Visit Domain
           </Item>
@@ -123,7 +121,7 @@ export default function ProjectCard({ data }: PropsI) {
             className={cn(
               "bg-card rounded-sm w-full cursor-pointer",
               "ring-1 ring-foreground/10 shadow-xs",
-              "relative py-4 hover:ring-primary hover:shadow-primary duration-150"
+              "relative py-4 hover:ring-primary hover:shadow-primary duration-150",
             )}
             to="/admin/projects/$projectID"
             params={{ projectID: data.id }}
@@ -178,7 +176,7 @@ export default function ProjectCard({ data }: PropsI) {
                   variant="ghost"
                   className={cn(
                     "text-muted-foreground hover:text-foreground/40",
-                    "duration-150 cursor-pointer outline-0 select-none"
+                    "duration-150 cursor-pointer outline-0 select-none",
                   )}
                   onClick={(e) => {
                     e.preventDefault();

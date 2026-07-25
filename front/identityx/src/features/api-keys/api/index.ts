@@ -1,7 +1,7 @@
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
-import { createClientOnlyFn } from "@tanstack/react-start";
-import type { ApiKeyCreateI, ApiKeyI, CreateApiKeyResponseI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import type { ApiKeyCreateI, ApiKeyI, CreateApiKeyResponseI } from "../model";
 
 /**
  * Rotates an API key for a given project.
@@ -9,9 +9,14 @@ import { queryOptions } from "@tanstack/react-query";
  * @param apiKeyData - The data for creating the new API key.
  * @returns A promise resolving to the response containing the new API key.
  */
-export const rotateApiKeyFn = createClientOnlyFn((project_id: string, apiKeyData: ApiKeyCreateI) => {
-  return authFetcher.post<CreateApiKeyResponseI>(`/projects/${project_id}/api_keys`, apiKeyData);
-});
+export const rotateApiKeyFn = createClientOnlyFn(
+  (project_id: string, apiKeyData: ApiKeyCreateI) => {
+    return authFetcher.post<CreateApiKeyResponseI>(
+      `/projects/${project_id}/api_keys`,
+      apiKeyData,
+    );
+  },
+);
 
 /**
  * Revokes an API key for a given project.
@@ -19,9 +24,13 @@ export const rotateApiKeyFn = createClientOnlyFn((project_id: string, apiKeyData
  * @param key_id - The ID of the API key to revoke.
  * @returns A promise resolving to the API response.
  */
-export const revokeApiKeyFn = createClientOnlyFn((project_id: string, key_id: string) => {
-  return authFetcher.delete<null>(`/projects/${project_id}/api_keys/${key_id}`);
-});
+export const revokeApiKeyFn = createClientOnlyFn(
+  (project_id: string, key_id: string) => {
+    return authFetcher.delete<null>(
+      `/projects/${project_id}/api_keys/${key_id}`,
+    );
+  },
+);
 
 /**
  * Fetches all API keys for a given project.
@@ -39,7 +48,7 @@ export const getAllApiKeysFn = createClientOnlyFn((project_id: string) => {
  */
 export const allApiKeysQueryOptions = (project_id: string) => {
   return queryOptions({
-    queryKey: ['projects', project_id, 'api_keys'],
+    queryKey: ["projects", project_id, "api_keys"],
     queryFn: () => getAllApiKeysFn(project_id),
   });
 };

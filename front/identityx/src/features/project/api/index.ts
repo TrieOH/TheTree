@@ -1,7 +1,12 @@
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
-import type { MemberAddToProjectI, ProjectCreateI, ProjectI, ProjectMemberI } from "../model";
-import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import type {
+  MemberAddToProjectI,
+  ProjectCreateI,
+  ProjectI,
+  ProjectMemberI,
+} from "../model";
 
 /**
  * Creates a new project on the server.
@@ -9,11 +14,16 @@ import { queryOptions } from "@tanstack/react-query";
  * @param orgId - The organization ID to which the project belongs (optional).
  * @returns A promise that resolves to the API response containing the newly created project.
  */
-export const createProjectFn = createClientOnlyFn((projectData: ProjectCreateI, orgId?: string) => {
-  if (orgId)
-    return authFetcher.post<ProjectI>(`/organizations/${orgId}/projects`, projectData);
-  return authFetcher.post<ProjectI>("/projects", projectData);
-});
+export const createProjectFn = createClientOnlyFn(
+  (projectData: ProjectCreateI, orgId?: string) => {
+    if (orgId)
+      return authFetcher.post<ProjectI>(
+        `/organizations/${orgId}/projects`,
+        projectData,
+      );
+    return authFetcher.post<ProjectI>("/projects", projectData);
+  },
+);
 
 /**
  * Fetches all projects from the server.
@@ -22,7 +32,9 @@ export const createProjectFn = createClientOnlyFn((projectData: ProjectCreateI, 
  */
 export const getProjectsFn = createClientOnlyFn(async (orgId?: string) => {
   if (orgId)
-    return await tanstackQueryFetcher<ProjectI[]>(`/organizations/${orgId}/projects`);
+    return await tanstackQueryFetcher<ProjectI[]>(
+      `/organizations/${orgId}/projects`,
+    );
   return await tanstackQueryFetcher<ProjectI[]>("/projects");
 });
 
@@ -47,11 +59,20 @@ export const allProjectsQueryOptions = (orgId?: string) => {
  * @param organization_id - The ID of the organization to add the member to (optional).
  * @returns A promise that resolves to the API response containing the newly created member.
  */
-export const addMemberToProjectFn = createClientOnlyFn((project_id: string, memberData: MemberAddToProjectI, organization_id?: string) => {
-  if (organization_id)
-    return authFetcher.post(`/organizations/${organization_id}/projects/${project_id}/members`, memberData);
-  return authFetcher.post(`/projects/${project_id}/members`, memberData);
-});
+export const addMemberToProjectFn = createClientOnlyFn(
+  (
+    project_id: string,
+    memberData: MemberAddToProjectI,
+    organization_id?: string,
+  ) => {
+    if (organization_id)
+      return authFetcher.post(
+        `/organizations/${organization_id}/projects/${project_id}/members`,
+        memberData,
+      );
+    return authFetcher.post(`/projects/${project_id}/members`, memberData);
+  },
+);
 
 /**
  * Removes a member from a organization on the server.
@@ -60,11 +81,18 @@ export const addMemberToProjectFn = createClientOnlyFn((project_id: string, memb
  * @param organization_id - The ID of the organization to remove the member from (optional).
  * @returns A promise that resolves to the API response confirming the removal of the member.
  */
-export const removeMemberFromProjectFn = createClientOnlyFn((project_id: string, actor_email: string, organization_id?: string) => {
-  if (organization_id)
-    return authFetcher.delete(`/organizations/${organization_id}/projects/${project_id}/members`, { actor_email });
-  return authFetcher.delete(`/projects/${project_id}/members`, { actor_email });
-});
+export const removeMemberFromProjectFn = createClientOnlyFn(
+  (project_id: string, actor_email: string, organization_id?: string) => {
+    if (organization_id)
+      return authFetcher.delete(
+        `/organizations/${organization_id}/projects/${project_id}/members`,
+        { actor_email },
+      );
+    return authFetcher.delete(`/projects/${project_id}/members`, {
+      actor_email,
+    });
+  },
+);
 
 /**
  * Fetches all project members from the server.
@@ -72,14 +100,17 @@ export const removeMemberFromProjectFn = createClientOnlyFn((project_id: string,
  * @param organization_id - The ID of the organization to fetch members for (optional).
  * @returns A promise that resolves to an array of project members objects.
  */
-export const getAllProjectMembersFn = createClientOnlyFn((
-  project_id: string,
-  organization_id?: string
-) => {
-  if (organization_id)
-    return tanstackQueryFetcher<ProjectMemberI[]>(`/organizations/${organization_id}/projects/${project_id}/members`);
-  return tanstackQueryFetcher<ProjectMemberI[]>(`/projects/${project_id}/members`);
-});
+export const getAllProjectMembersFn = createClientOnlyFn(
+  (project_id: string, organization_id?: string) => {
+    if (organization_id)
+      return tanstackQueryFetcher<ProjectMemberI[]>(
+        `/organizations/${organization_id}/projects/${project_id}/members`,
+      );
+    return tanstackQueryFetcher<ProjectMemberI[]>(
+      `/projects/${project_id}/members`,
+    );
+  },
+);
 
 /**
  * Query options for fetching all Project Members, using TanStack Query.
@@ -87,9 +118,12 @@ export const getAllProjectMembersFn = createClientOnlyFn((
  * @param organization_id - The ID of the organization to fetch members for (optional).
  * @returns An object containing the query key and query function for fetching all Project Members.
  */
-export const allProjectMembersQueryOptions = (project_id: string, organization_id?: string) => {
+export const allProjectMembersQueryOptions = (
+  project_id: string,
+  organization_id?: string,
+) => {
   return queryOptions({
-    queryKey: ['projects', project_id, 'members'],
+    queryKey: ["projects", project_id, "members"],
     queryFn: () => getAllProjectMembersFn(project_id, organization_id),
-  })
-}
+  });
+};

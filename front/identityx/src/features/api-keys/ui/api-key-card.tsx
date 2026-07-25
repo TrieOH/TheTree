@@ -1,10 +1,10 @@
-import { cn } from "@/shared/lib/utils";
-import { KeySquare, Copy, Trash2 } from "lucide-react";
+import { timeAgo } from "@trieoh/shared-utils";
+import { Badge } from "@trieoh/ui-base/shadcn/badge";
+import { Copy, KeySquare, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/shared/lib/utils";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import type { ApiKeyI } from "../model";
-import { Badge } from "@trieoh/ui-base/shadcn/badge";
-import { timeAgo } from "@trieoh/shared-utils";
 
 interface ApiKeyCardProps {
   data: ApiKeyI;
@@ -13,7 +13,9 @@ interface ApiKeyCardProps {
 
 export function ApiKeyCard({ data, onRevoke }: ApiKeyCardProps) {
   const isRevoked = !!data.revoked_at;
-  const isExpired = data.expires_at ? new Date(data.expires_at) < new Date() : false;
+  const isExpired = data.expires_at
+    ? new Date(data.expires_at) < new Date()
+    : false;
 
   const handleCopyPrefix = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -45,9 +47,7 @@ export function ApiKeyCard({ data, onRevoke }: ApiKeyCardProps) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold truncate">
-            {data.name}
-          </span>
+          <span className="text-sm font-semibold truncate">{data.name}</span>
           <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
             {status.label}
           </Badge>
