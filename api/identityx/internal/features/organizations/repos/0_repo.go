@@ -1,34 +1,27 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	sqlc2 "IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+	q   *sqlc2.Queries
+	dbe database.ErrorHandler
 }
 
 var _ ports.OrganizationRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) *Repo {
+func NewRepo(q *sqlc2.Queries) *Repo {
 	return &Repo{
-		q:      q,
-		log:    log,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("organization"),
+		q:   q,
+		dbe: database.NewErrorHandler("organization"),
 	}
 }
 
-func mapOrganization(src sqlc.Organization) models.Organization {
+func mapOrganization(src sqlc2.Organization) models.Organization {
 	return models.Organization{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -40,7 +33,7 @@ func mapOrganization(src sqlc.Organization) models.Organization {
 	}
 }
 
-func mapOrganizationMember(src sqlc.OrgMember) models.OrganizationMember {
+func mapOrganizationMember(src sqlc2.OrgMember) models.OrganizationMember {
 	return models.OrganizationMember{
 		OrganizationID: src.OrganizationID,
 		ActorID:        src.ActorID,

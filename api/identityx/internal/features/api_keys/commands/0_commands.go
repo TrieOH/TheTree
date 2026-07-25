@@ -2,10 +2,6 @@ package commands
 
 import (
 	"IdentityX/ports"
-	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Commands struct {
@@ -14,9 +10,6 @@ type Commands struct {
 	apiKeys      ports.APIKeysRepo
 	capabilities ports.CapabilityRepo
 	projects     ports.ProjectRepo
-	logger       *zap.Logger
-	tracer       trace.Tracer
-	tx           database.TxRunner
 }
 
 func NewCommands(
@@ -25,9 +18,6 @@ func NewCommands(
 	apiKeys ports.APIKeysRepo,
 	capabilities ports.CapabilityRepo,
 	projects ports.ProjectRepo,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
 		hmacSecret:   hmacSecret,
@@ -35,8 +25,5 @@ func NewCommands(
 		apiKeys:      apiKeys,
 		capabilities: capabilities,
 		projects:     projects,
-		logger:       logger,
-		tracer:       tracer,
-		tx:           tx,
 	}
 }

@@ -7,11 +7,13 @@ import (
 	"lib/xslices"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (repo *Repo) List(ctx context.Context, projectID uuid.UUID) ([]models.Actor, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "List")
+	ctx, span := telemetry.StartSpan(ctx, "List")
 	defer span.End()
+
 	sqlcActors, err := database.Queries(ctx, repo.q).ListActorsFromProject(ctx, &projectID)
 	if err != nil {
 		return nil, repo.dbe(err)

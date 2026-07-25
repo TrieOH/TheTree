@@ -4,14 +4,15 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
+	"lib/telemetry"
 	"strings"
 )
 
 func (c *Commands) Register(ctx context.Context, in models.IDXRegisterInput) error {
-	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-
-	ctx, span := c.tracer.Start(ctx, "Register")
+	ctx, span := telemetry.StartSpan(ctx, "Register")
 	defer span.End()
+
+	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	hashedPassword, err := crypto.Hash(in.Password, crypto.Strong)
 	if err != nil {

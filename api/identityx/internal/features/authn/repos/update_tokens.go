@@ -1,15 +1,17 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/database"
+	"lib/telemetry"
 )
 
 func (repo *Repo) UpdateTokens(ctx context.Context, identity models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "UpdateTokens")
+	ctx, span := telemetry.StartSpan(ctx, "UpdateTokens")
 	defer span.End()
+
 	row, err := database.Queries(ctx, repo.q).UpdateExternalIdentityTokens(ctx, sqlc.UpdateExternalIdentityTokensParams{
 		Provider:              string(identity.Provider),
 		Subject:               identity.Subject,

@@ -6,11 +6,13 @@ import (
 	"lib/database"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (r *Repo) Get(ctx context.Context, projectID *uuid.UUID) (*models.ProjectProfileSchema, error) {
-	ctx, span := database.Span(ctx, r.tracer, "GetProfileSchema")
+	ctx, span := telemetry.StartSpan(ctx, "Get")
 	defer span.End()
+
 	result, err := database.Queries(ctx, r.q).GetProfileSchema(ctx, projectID)
 	if err != nil {
 		return nil, r.dbe(err)

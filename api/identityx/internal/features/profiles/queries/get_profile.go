@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (q *Queries) GetProfile(ctx context.Context, actorID, projectID uuid.UUID) (*models.ActorProfile, error) {
-	ctx, span := q.tracer.Start(ctx, "ProfileService.GetProfile")
+	ctx, span := telemetry.StartSpan(ctx, "GetProfile")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

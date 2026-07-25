@@ -4,10 +4,13 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
+	"lib/database"
+
+	"lib/telemetry"
 )
 
 func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*models.Project, error) {
-	ctx, span := c.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)
@@ -21,7 +24,7 @@ func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*m
 	}
 
 	var created *models.Project
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		created, err = c.projects.Create(ctx, *project)
 		if err != nil {
 			return err

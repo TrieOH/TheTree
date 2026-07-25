@@ -5,17 +5,15 @@ import (
 	"IdentityX/ports"
 	"context"
 	"lib/crypto"
-	"lib/database"
 	"lib/env"
 	"lib/errx"
+	"lib/telemetry"
 	"os"
 	"time"
 
 	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Commands struct {
@@ -25,9 +23,6 @@ type Commands struct {
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
 	externalIdentities ports.ExternalIdentitiesRepo
-	logger             *zap.Logger
-	tracer             trace.Tracer
-	tx                 database.TxRunner
 }
 
 func NewCommands(
@@ -37,9 +32,6 @@ func NewCommands(
 	cryptoKeys ports.CryptoKeysRepo,
 	blacklist ports.BlacklistRepo,
 	externalIdentities ports.ExternalIdentitiesRepo,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Commands {
 	return errx.MustProvide(&Commands{
 		actors:             actors,
@@ -48,13 +40,13 @@ func NewCommands(
 		cryptoKeys:         cryptoKeys,
 		blacklist:          blacklist,
 		externalIdentities: externalIdentities,
-		logger:             logger,
-		tracer:             tracer,
-		tx:                 tx,
 	})
 }
 
 func (c *Commands) cryptoKeyFromToken(ctx context.Context, token *jwt.Token) (*models.CryptoKey, error) {
+	ctx, span := telemetry.StartSpan(ctx, "cryptoKeyFromToken")
+	defer span.End()
+
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
 		return nil, fun.ErrUnauthorized("missing kid")
@@ -77,6 +69,9 @@ func (c *Commands) cryptoKeyFromToken(ctx context.Context, token *jwt.Token) (*m
 }
 
 func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*models.UserTokensOutput, error) {
+	ctx, span := telemetry.StartSpan(ctx, "issueTokens")
+	defer span.End()
+
 	activeKeyPair, err := c.cryptoKeys.GetActive(ctx, models.SigningCryptoKeyType, actor.ProjectID)
 	if err != nil {
 		return nil, err

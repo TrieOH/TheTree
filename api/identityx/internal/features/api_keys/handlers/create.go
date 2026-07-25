@@ -8,21 +8,6 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-// Create godoc
-// @Summary Create an api key in a project
-// @Tags apikeys
-// @ID apikeys_create
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param project_id path uuid.UUID true "Project ID"
-// @Param request body models.CreateAPIKeyRequest true "Api key creation data"
-// @Success 200 {object} fun.Response{data=models.CreateAPIKeyResponse} "Api key data"
-// @Failure 401 {object} fun.Response "Unauthorized"
-// @Failure 404 {object} fun.Response "Bad Request"
-// @Failure 500 {object} fun.Response "Internal Server Error"
-// @Failure 503 {object} fun.Response "Internal Server Error"
-// @Router /projects/{project_id}/api_keys [post]
 func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if !globals.SetupComplete() {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)

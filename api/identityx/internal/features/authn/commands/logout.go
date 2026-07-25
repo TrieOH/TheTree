@@ -4,19 +4,20 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
 func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
-	ctx, span := c.tracer.Start(ctx, "Logout")
+	ctx, span := telemetry.StartSpan(ctx, "Logout")
 	defer span.End()
 
 	accessClaims := &models.AccessClaims{}
 	token, err := crypto.OpenUnverified(in.AccessToken, accessClaims)
 	if err != nil {
-		c.logger.Error("access token verification failed", zap.Error(err))
+		telemetry.Log().Error("access token verification failed", zap.Error(err))
 		return fun.ErrUnauthorized("invalid access token")
 	}
 	cryptoKey, err := c.cryptoKeyFromToken(ctx, token)
@@ -40,13 +41,13 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 	}
 	err = c.blacklist.Append(ctx, accessEntry)
 	if err != nil {
-		c.logger.Error("error appending access token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
+		telemetry.Log().Error("error appending access token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
 	}
 
 	refreshClaims := &models.RefreshClaims{}
 	_, err = crypto.VerifyToken(in.RefreshToken, cryptoKey.PublicKey, refreshClaims)
 	if err != nil {
-		c.logger.Error("refresh token verification failed", zap.Error(err))
+		telemetry.Log().Error("refresh token verification failed", zap.Error(err))
 		return fun.ErrUnauthorized("invalid refresh token")
 	}
 
@@ -61,7 +62,7 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 	}
 	err = c.blacklist.Append(ctx, refreshEntry)
 	if err != nil {
-		c.logger.Error("error appending refresh token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
+		telemetry.Log().Error("error appending refresh token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
 	}
 
 	return nil

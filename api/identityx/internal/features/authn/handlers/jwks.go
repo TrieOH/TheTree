@@ -11,18 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// JWKS godoc
-// @Summary Get a JWKS set
-// @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by the authentication service.
-// @Tags authn
-// @ID authn_jwks
-// @Accept json
-// @Produce json
-// @Param project_id query uuid.UUID false "Project ID"
-// @Success 200 {object} object "JSON Web Key Set (JWKS)"
-// @Failure 500 {object} fun.Response "Internal Server Error"
-// @Failure 503 {object} fun.Response "Internal Server Error"
-// @Router /.well-known/jwks.json [get]
 func (h *Handlers) JWKS(w http.ResponseWriter, r *http.Request) {
 	if !globals.SetupComplete() {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)

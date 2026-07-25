@@ -4,16 +4,17 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
+	"lib/telemetry"
 	"strings"
 
 	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) Login(ctx context.Context, in models.IDXLoginInput) (tokens *models.UserTokensOutput, err error) {
-	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-
-	ctx, span := c.tracer.Start(ctx, "Login")
+	ctx, span := telemetry.StartSpan(ctx, "Login")
 	defer span.End()
+
+	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	actor, err := c.actors.GetByEmail(ctx, in.Email, in.ProjectID)
 	if fun.Is(err, fun.CodeNotFound) {

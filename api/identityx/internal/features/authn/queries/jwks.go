@@ -3,12 +3,16 @@ package queries
 import (
 	"context"
 	"lib/crypto"
+	"lib/telemetry"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 func (c *Queries) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]any, error) {
+	ctx, span := telemetry.StartSpan(ctx, "JWKS")
+	defer span.End()
+
 	if projectID != nil {
 		_, err := c.projects.GetByID(ctx, *projectID)
 		if err != nil {
@@ -25,7 +29,7 @@ func (c *Queries) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]an
 	for _, k := range keys {
 		jwk, err := crypto.PublicKeyToJWKS(k.ID.String(), k.PublicKey)
 		if err != nil {
-			c.logger.Warn("skipping malformed key", zap.String("key_id", k.ID.String()), zap.Error(err))
+			telemetry.Log().Warn("skipping malformed key", zap.String("key_id", k.ID.String()), zap.Error(err))
 			continue
 		}
 		jwks = append(jwks, jwk)

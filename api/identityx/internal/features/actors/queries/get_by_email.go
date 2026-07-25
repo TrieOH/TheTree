@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (q *Queries) GetByEmail(ctx context.Context, email string, projectID uuid.UUID) (*models.Actor, error) {
-	ctx, span := q.tracer.Start(ctx, "ActorService.GetByEmail")
+	ctx, span := telemetry.StartSpan(ctx, "GetByEmail")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

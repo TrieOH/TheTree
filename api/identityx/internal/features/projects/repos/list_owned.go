@@ -7,11 +7,13 @@ import (
 	"lib/xslices"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (repo *Repo) ListOwned(ctx context.Context, userID uuid.UUID) ([]models.Project, error) {
-	ctx, span := repo.tracer.Start(ctx, "ListOwned")
+	ctx, span := telemetry.StartSpan(ctx, "ListOwned")
 	defer span.End()
+
 	sqlcProjects, err := database.Queries(ctx, repo.q).ListOwnedProjects(ctx, userID)
 	if err != nil {
 		return nil, repo.dbe(err)

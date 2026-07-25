@@ -3,6 +3,7 @@ package commands
 import (
 	"IdentityX/models"
 	"context"
+	"lib/telemetry"
 	"time"
 
 	"github.com/MintzyG/fun"
@@ -10,9 +11,8 @@ import (
 )
 
 func (c *Commands) CreateProjectActor(ctx context.Context, orgID uuid.UUID, payload models.CreateActorInput) (*models.Actor, error) {
-	ctx, span := c.tracer.Start(ctx, "CreateActor")
+	ctx, span := telemetry.StartSpan(ctx, "CreateProjectActor")
 	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

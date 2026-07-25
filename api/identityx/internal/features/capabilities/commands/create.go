@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/MintzyG/fun"
+	"lib/telemetry"
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateCapabilityInput) (*models.Capability, error) {
-	ctx, span := c.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

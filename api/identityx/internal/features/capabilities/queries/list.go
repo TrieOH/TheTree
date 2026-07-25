@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (q *Queries) List(ctx context.Context, projectID uuid.UUID) ([]models.Capability, error) {
-	ctx, span := q.tracer.Start(ctx, "CapabilityService.List")
+	ctx, span := telemetry.StartSpan(ctx, "List")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

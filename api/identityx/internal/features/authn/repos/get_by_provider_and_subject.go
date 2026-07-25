@@ -1,15 +1,17 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/database"
+	"lib/telemetry"
 )
 
 func (repo *Repo) GetByProviderAndSubject(ctx context.Context, provider, subject string) (*models.ActorExternalIdentities, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "GetByProviderAndSubject")
+	ctx, span := telemetry.StartSpan(ctx, "GetByProviderAndSubject")
 	defer span.End()
+
 	row, err := database.Queries(ctx, repo.q).GetExternalIdentityByProviderAndSubject(ctx, sqlc.GetExternalIdentityByProviderAndSubjectParams{
 		Provider: provider,
 		Subject:  subject,

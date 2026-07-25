@@ -1,18 +1,21 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
 	"lib/database"
 
+	"lib/telemetry"
+
 	"github.com/google/uuid"
 )
 
 func (repo *Repo) Create(ctx context.Context, projectID *uuid.UUID, pair *crypto.KeyPair, keyType string) (*models.CryptoKey, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
+
 	sqlcKeyPair, err := database.Queries(ctx, repo.q).CreateCryptoKey(ctx, sqlc.CreateCryptoKeyParams{
 		ProjectID:           projectID,
 		Type:                keyType,

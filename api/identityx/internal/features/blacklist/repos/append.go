@@ -1,18 +1,21 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"errors"
 	"lib/database"
 
+	"lib/telemetry"
+
 	"github.com/jackc/pgx/v5"
 )
 
 func (repo *Repo) Append(ctx context.Context, entry models.BlacklistEntry) error {
-	ctx, span := repo.tracer.Start(ctx, "Register")
+	ctx, span := telemetry.StartSpan(ctx, "Append")
 	defer span.End()
+
 	_, err := database.Queries(ctx, repo.q).AppendBlacklistEntry(ctx, sqlc.AppendBlacklistEntryParams{
 		CreatedByActorID: entry.CreatedByActorID,
 		ProjectID:        entry.ProjectID,

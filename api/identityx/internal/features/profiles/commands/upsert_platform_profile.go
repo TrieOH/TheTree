@@ -6,12 +6,13 @@ import (
 	"lib/jsonschema"
 
 	"github.com/MintzyG/fun"
+	"lib/telemetry"
 )
 
 // UpsertPlatformProfile upserts a platform-scoped actor's profile (project_id is NULL).
 // Only the actor themselves can edit; validates against the platform schema.
 func (c *Commands) UpsertPlatformProfile(ctx context.Context, payload models.UpsertProfileInput) (*models.ActorProfile, error) {
-	ctx, span := c.tracer.Start(ctx, "UpsertPlatformProfile")
+	ctx, span := telemetry.StartSpan(ctx, "UpsertPlatformProfile")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

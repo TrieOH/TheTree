@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (q *Queries) GetSchema(ctx context.Context, projectID *uuid.UUID) (*models.ProjectProfileSchema, error) {
-	ctx, span := q.tracer.Start(ctx, "ProfileSchemaService.GetSchema")
+	ctx, span := telemetry.StartSpan(ctx, "GetSchema")
 	defer span.End()
 
 	// platform schema: any authenticated actor can read it

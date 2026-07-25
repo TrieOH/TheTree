@@ -5,11 +5,14 @@ import (
 	"context"
 	"lib/database"
 	"lib/xslices"
+
+	"lib/telemetry"
 )
 
 func (repo *Repo) ListByAPIKeyPrefix(ctx context.Context, prefix string) ([]models.Capability, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "ListByApiKeyPrefix")
+	ctx, span := telemetry.StartSpan(ctx, "ListByAPIKeyPrefix")
 	defer span.End()
+
 	capabilities, err := database.Queries(ctx, repo.q).ListCapabilitiesByApiKeyPrefix(ctx, prefix)
 	if err != nil {
 		return nil, repo.dbe(err)
