@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      changes: ${{ steps.filter.outputs.changes }}
+      changes: ${{ steps.normalize.outputs.changes }}
       any: ${{ steps.filter.outputs.changes != '[]' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
@@ -38,13 +38,12 @@ jobs:
             univents:
               - 'api/univents/**'
               - 'lib/go/**'
-
-  debug-services:
-    needs: changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - run: echo "changes = >>>${{ needs.changes.outputs.changes }}<<<"
+      - name: normalize output
+        id: normalize
+        run: |
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo '${{ steps.filter.outputs.changes }}' >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
   prepare:
     name: prepare tools
