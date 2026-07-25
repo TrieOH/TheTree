@@ -9,10 +9,9 @@
     "dev": "vite dev --port 3003 --host",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "lint": "node scripts/eslint.cjs",
-    "format": "prettier --check .",
-    "check": "prettier --write . && node scripts/eslint.cjs --fix",
+    "lint": "biome lint",
+    "format": "biome format",
+    "check": "biome check",
     "tsc": "tsc --noEmit",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types"
@@ -43,15 +42,15 @@
     "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
-    "tw-animate-css": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@biomejs/biome": "catalog:",
     "@cloudflare/vite-plugin": "catalog:",
+    "@rolldown/plugin-babel": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/devtools-event-client": "catalog:",
     "@tanstack/devtools-vite": "catalog:",
-    "@tanstack/eslint-config": "catalog:",
     "@tanstack/react-devtools": "catalog:",
     "@tanstack/react-query-devtools": "catalog:",
     "@tanstack/react-router-devtools": "catalog:",
@@ -60,11 +59,8 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "eslint": "10.4.1",
-    "prettier": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint-compiler": "npm:typescript@6.0.3",
     "vite": "catalog:",
     "wrangler": "catalog:"
   }

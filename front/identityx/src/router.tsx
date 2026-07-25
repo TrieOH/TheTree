@@ -13,9 +13,17 @@ export const getRouter = () => {
     routeTree,
     context: { ...context, auth: undefined },
     defaultPreload: 'intent',
+    scrollRestoration: true,
+    defaultPreloadStaleTime: 0,
   })
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient })
 
   return router
+}
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof getRouter>
+  }
 }
