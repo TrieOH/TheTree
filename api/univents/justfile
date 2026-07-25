@@ -3,17 +3,6 @@ set shell := ["bash", "-cu"]
 # Generate all
 gen:
     just gen-sqlc
-    just gen-swag
-    just gen-mocks
-
-gen-sqlc:
-    sqlc generate
-
-gen-swag:
-    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList
-
-gen-mocks:
-    mockery
 
 test:
     @echo "no tests for univents"

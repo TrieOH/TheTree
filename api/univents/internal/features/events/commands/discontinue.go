@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	idx "sdk/identityx"
-	"univents/internal/shared/errx"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -25,7 +24,7 @@ func (c *Commands) Discontinue(ctx context.Context, eventID uuid.UUID) error {
 	}
 
 	if event.Status != models.EventStatusActive {
-		return errx.Invalid("event").SetMessage("cannot discontinue non active event")
+		return fun.ErrBadRequest("cannot discontinue non active event")
 	}
 
 	if event.OwnerID != ident.Sub.ID {
