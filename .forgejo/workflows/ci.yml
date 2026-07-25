@@ -54,7 +54,6 @@ jobs:
           mkdir -p /tmp/gobin
           GOBIN=/tmp/gobin go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
           GOBIN=/tmp/gobin go install gotest.tools/gotestsum@latest
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /tmp/gobin
       - uses: https://code.forgejo.org/actions/upload-artifact@v4
         with:
           name: ci-tools
@@ -112,7 +111,11 @@ jobs:
           if [ -f api/${{ matrix.service }}/sqlc.yaml ]; then
             cd api/${{ matrix.service }} && sqlc generate
           fi
-      - run: golangci-lint run ./api/${{ matrix.service }}/...
+      - uses: https://github.com/golangci/golangci-lint-action@v6
+        with:
+          version: v2.12.2
+          working-directory: api/${{ matrix.service }}
+          args: --config=${{ github.workspace }}/.golangci.yml
 
   build:
     name: build (${{ matrix.service }})
