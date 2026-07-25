@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"lib/database"
@@ -16,7 +16,7 @@ type Config struct {
 	DebugMode bool   `env:"DEBUG_MODE"`
 
 	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./internal/db/migrations"`
+	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
 
 	// Postgres (own DB)
 	PostgresHost     string `env:"INFORMD_POSTGRES_HOST,required"`

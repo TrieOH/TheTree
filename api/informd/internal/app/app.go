@@ -1,6 +1,7 @@
 package app
 
 import (
+	"Informd/internal/config"
 	"context"
 
 	"lib/database"
@@ -14,7 +15,7 @@ import (
 type Informd struct {
 	db        *pgxpool.Pool
 	idxClient *idx.Client
-	cfg       Config
+	cfg       config.Config
 }
 
 var app Informd
@@ -23,7 +24,7 @@ func Start() {
 	ctx := context.Background()
 	SetupConstraintMessages()
 
-	app.cfg = LoadConfig()
+	app.cfg = config.LoadConfig()
 
 	SetupFUN()
 

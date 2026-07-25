@@ -1,6 +1,7 @@
 package app
 
 import (
+	"Informd/internal/config"
 	"context"
 	"lib/errx"
 	"time"
@@ -8,7 +9,7 @@ import (
 	idx "sdk/identityx"
 )
 
-func SetupIdentityX(cfg Config) *idx.Client {
+func SetupIdentityX(cfg config.Config) *idx.Client {
 	client, err := idx.NewClient(idx.Config{
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
