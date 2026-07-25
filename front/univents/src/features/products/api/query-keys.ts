@@ -2,12 +2,15 @@ export const productKeys = {
   all: ['products'] as const,
 
   lists: () => [...productKeys.all, 'list'] as const,
-  publicLists: () => [...productKeys.lists(), 'public'] as const,
-  adminLists: () => [...productKeys.lists(), 'admin'] as const,
+  editionList: (editionId: string) => [...productKeys.lists(), 'edition', editionId] as const,
+  detail: (productId: string) => [...productKeys.all, productId] as const,
+  byVendorCode: (editionId: string, vendorCode: string) =>
+    [...productKeys.all, 'vendor-code', editionId, vendorCode] as const,
 
-  publicListByEdition: (eventId: string, editionId: string) =>
-    [...productKeys.publicLists(), eventId, editionId] as const,
-
-  adminListByEdition: (eventId: string, editionId: string) =>
-    [...productKeys.adminLists(), eventId, editionId] as const,
+  variants: {
+    all: ['variants'] as const,
+    byProduct: (productId: string) => [...productKeys.variants.all, 'product', productId] as const,
+    byVendorCode: (editionId: string, vendorCode: string) =>
+      [...productKeys.variants.all, 'vendor-code', editionId, vendorCode] as const,
+  },
 }

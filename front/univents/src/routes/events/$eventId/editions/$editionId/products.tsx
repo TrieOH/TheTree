@@ -1,38 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ShoppingBag } from "lucide-react";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ProductList } from "@/features/products/ui/ProductList";
-import { Cart } from "@/features/products/ui/Cart";
-import { useCart } from "@/features/products/hooks/use-cart";
-import { Button } from "@/shared/ui/shadcn/button";
-import { cn } from "@/shared/lib/utils";
-import { allProductsQueryOptions } from "@/features/products/api";
-import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
+// import { ShoppingBag } from "lucide-react";
+// import { useState } from "react";
+// import { useQuery } from "@tanstack/react-query";
+// import { ProductList } from "@/features/products/ui/ProductList";
+// import { Cart } from "@/features/products/ui/Cart";
+// import { useCart } from "@/features/products/hooks/use-cart";
+// import { Button } from "@/shared/ui/shadcn/button";
+// import { cn } from "@/shared/lib/utils";
+// import { productsByEditionQueryOptions } from "@/features/products/api";
+// import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 
 export const Route = createFileRoute("/events/$eventId/editions/$editionId/products")({
   component: ProductsPage,
 });
 
 function ProductsPage() {
-  const { eventId, editionId } = Route.useParams();
-  const { totalCents } = useCart(editionId);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  // const { eventId, editionId } = Route.useParams();
+  // const { totalCents } = useCart(editionId);
+  // const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const { data: products = [], isLoading } = useQuery(
-    allProductsQueryOptions(eventId, editionId)
-  );
+  // const { data: products = [], isLoading } = useQuery(
+  //   productsByEditionQueryOptions(editionId)
+  // );
 
-  const { inventory } = useInventoryStream(eventId, editionId);
+  // const { inventory } = useInventoryStream(eventId, editionId);
 
-  const totalFormatted = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(totalCents / 100);
+  // const totalFormatted = new Intl.NumberFormat("pt-BR", {
+  //   style: "currency",
+  //   currency: "BRL",
+  // }).format(totalCents / 100);
 
   return (
     <div className="min-h-screen pb-20">
-      <div className="max-w-7xl mx-auto px-4 pt-8 pb-4 flex items-center justify-end">
+      {/* <div className="max-w-7xl mx-auto px-4 pt-8 pb-4 flex items-center justify-end">
         <Button
           onClick={() => { setIsCartOpen(true); }}
           size="lg"
@@ -52,14 +52,14 @@ function ProductsPage() {
       </div>
 
       <ProductList products={products} inventory={inventory} isLoading={isLoading} />
-
+*/}
       {/* Cart Drawer */}
-      <Cart
+      {/* <Cart
         isOpen={isCartOpen}
         eventId={eventId}
         editionId={editionId}
         onClose={() => { setIsCartOpen(false); }}
-      />
+      />  */}
     </div>
   );
 }

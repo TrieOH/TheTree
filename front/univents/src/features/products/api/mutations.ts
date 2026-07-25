@@ -1,106 +1,88 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { ProductCreateOutputI, ProductI } from '../model'
+import type { CreateInitialProductOutputI, ProductI, ProductPatchOutputI, VariantCreateOutputI, VariantI } from '../model'
 import {
-  createProductFn,
+  createInitialProductFn,
   patchProductFn,
-  publishProductFn,
-  restoreSoftDeletedProductFn,
-  softDeleteProductFn,
+  deleteProductFn,
+  createVariantFn,
+  patchVariantFn,
+  deleteVariantFn,
 } from './index'
 import { productKeys } from './query-keys'
 
-type CreateProductInput = {
-  eventId: string
+type CreateInitialProductInput = {
   editionId: string
-  data: ProductCreateOutputI
+  data: CreateInitialProductOutputI
 }
 
 type UpdateProductInput = {
-  eventId: string
-  editionId: string
   productId: string
-  data: ProductCreateOutputI
+  data: ProductPatchOutputI
 }
 
-type ProductActionInput = {
-  eventId: string
-  editionId: string
+type DeleteProductInput = {
   productId: string
+  editionId: string
 }
 
-function upsertById(products: ProductI[] | undefined, product: ProductI) {
-  const list = products ?? []
-  const index = list.findIndex((item) => item.id === product.id)
+function upsertById<T extends { id: string }>(list: T[] | undefined, item: T) {
+  const items = list ?? []
+  const index = items.findIndex((el) => el.id === item.id)
 
-  if (index === -1) return [...list, product]
+  if (index === -1) return [...items, item]
 
-  const next = [...list]
-  next[index] = product
+  const next = [...items]
+  next[index] = item
   return next
 }
 
-function syncProductCaches(queryClient: QueryClient, eventId: string, editionId: string, product: ProductI) {
+function removeById<T extends { id: string }>(list: T[] | undefined, id: string) {
+  const items = list ?? []
+  return items.filter((el) => el.id !== id)
+}
+
+function syncProductCaches(queryClient: QueryClient, editionId: string, product: ProductI) {
   queryClient.setQueryData<ProductI[]>(
-    productKeys.adminListByEdition(eventId, editionId),
+    productKeys.editionList(editionId),
     (old) => upsertById(old, product),
   )
+}
 
+function removeProductFromCache(queryClient: QueryClient, editionId: string, productId: string) {
   queryClient.setQueryData<ProductI[]>(
-    productKeys.publicListByEdition(eventId, editionId),
-    (old) => upsertById(old, product),
+    productKeys.editionList(editionId),
+    (old) => removeById(old, productId),
   )
 }
 
-function syncProductStatus(
-  queryClient: QueryClient,
-  eventId: string,
-  editionId: string,
-  productId: string,
-  status: ProductI['status'],
-) {
-  const patch = (products: ProductI[] | undefined) =>
-    (products ?? []).map((product) => (
-      product.id === productId
-        ? { ...product, status }
-        : product
-    ))
-
-  queryClient.setQueryData<ProductI[]>(productKeys.adminListByEdition(eventId, editionId), patch)
-  queryClient.setQueryData<ProductI[]>(productKeys.publicListByEdition(eventId, editionId), patch)
+function syncVariantCaches(queryClient: QueryClient, productId: string, variant: VariantI) {
+  queryClient.setQueryData<VariantI[]>(
+    productKeys.variants.byProduct(productId),
+    (old) => upsertById(old, variant),
+  )
 }
 
-function syncSoftDeletedProduct(
-  queryClient: QueryClient,
-  eventId: string,
-  editionId: string,
-  productId: string,
-  deletedAt: string | null,
-) {
-  const patch = (products: ProductI[] | undefined) =>
-    (products ?? []).map((product) => (
-      product.id === productId
-        ? { ...product, deleted_at: deletedAt }
-        : product
-    ))
-
-  queryClient.setQueryData<ProductI[]>(productKeys.adminListByEdition(eventId, editionId), patch)
-  queryClient.setQueryData<ProductI[]>(productKeys.publicListByEdition(eventId, editionId), patch)
+function removeVariantFromCache(queryClient: QueryClient, productId: string, variantId: string) {
+  queryClient.setQueryData<VariantI[]>(
+    productKeys.variants.byProduct(productId),
+    (old) => removeById(old, variantId),
+  )
 }
 
-export function useCreateProductMutation() {
+export function useCreateInitialProductMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ eventId, editionId, data }: CreateProductInput) =>
-      createProductFn(data, eventId, editionId),
+    mutationFn: ({ editionId, data }: CreateInitialProductInput) =>
+      createInitialProductFn(data, editionId),
     onSuccess: (res, variables) => {
       if (!res.success) {
         toast.error(res.message || 'Erro ao criar produto')
         return
       }
 
-      syncProductCaches(queryClient, variables.eventId, variables.editionId, res.data)
+      syncProductCaches(queryClient, variables.editionId, res.data)
       toast.success('Produto criado com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
@@ -111,85 +93,110 @@ export function useUpdateProductMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ eventId, editionId, productId, data }: UpdateProductInput) =>
-      patchProductFn(eventId, editionId, productId, data),
-    onSuccess: (res, variables) => {
+    mutationFn: ({ productId, data }: UpdateProductInput) =>
+      patchProductFn(productId, data),
+    onSuccess: (res) => {
       if (!res.success) {
         toast.error(res.message || 'Erro ao atualizar produto')
         return
       }
 
-      syncProductCaches(queryClient, variables.eventId, variables.editionId, res.data)
+      const editionId = res.data.edition_id
+      syncProductCaches(queryClient, editionId, res.data)
       toast.success('Produto atualizado com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })
 }
 
-export function usePublishProductMutation() {
+export function useDeleteProductMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ eventId, editionId, productId }: ProductActionInput) =>
-      publishProductFn(eventId, editionId, productId),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao publicar produto')
-        return
-      }
-
-      syncProductStatus(queryClient, variables.eventId, variables.editionId, variables.productId, 'available')
-      toast.success('Produto publicado com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-}
-
-export function useSoftDeleteProductMutation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({ eventId, editionId, productId }: ProductActionInput) =>
-      softDeleteProductFn(eventId, editionId, productId),
+    mutationFn: ({ productId }: DeleteProductInput) =>
+      deleteProductFn(productId),
     onSuccess: (res, variables) => {
       if (!res.success) {
         toast.error(res.message || 'Erro ao excluir produto')
         return
       }
 
-      syncSoftDeletedProduct(
-        queryClient,
-        variables.eventId,
-        variables.editionId,
-        variables.productId,
-        new Date().toISOString(),
-      )
+      removeProductFromCache(queryClient, variables.editionId, variables.productId)
       toast.success('Produto excluído com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })
 }
 
-export function useRestoreSoftDeletedProductMutation() {
+
+type CreateVariantInput = {
+  productId: string
+  data: VariantCreateOutputI
+}
+
+type UpdateVariantInput = {
+  variantId: string
+  data: VariantCreateOutputI
+}
+
+type DeleteVariantInput = {
+  variantId: string
+  productId: string
+}
+
+export function useCreateVariantMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ eventId, editionId, productId }: ProductActionInput) =>
-      restoreSoftDeletedProductFn(eventId, editionId, productId),
+    mutationFn: ({ productId, data }: CreateVariantInput) =>
+      createVariantFn(productId, data),
     onSuccess: (res, variables) => {
       if (!res.success) {
-        toast.error(res.message || 'Erro ao restaurar produto')
+        toast.error(res.message || 'Erro ao criar variação')
         return
       }
 
-      syncSoftDeletedProduct(
-        queryClient,
-        variables.eventId,
-        variables.editionId,
-        variables.productId,
-        null,
-      )
-      toast.success('Produto restaurado com sucesso!')
+      syncVariantCaches(queryClient, variables.productId, res.data)
+      toast.success('Variação criada com sucesso!')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor'),
+  })
+}
+
+export function useUpdateVariantMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ variantId, data }: UpdateVariantInput) =>
+      patchVariantFn(variantId, data),
+    onSuccess: (res) => {
+      if (!res.success) {
+        toast.error(res.message || 'Erro ao atualizar variação')
+        return
+      }
+
+      const productId = res.data.product_id
+      syncVariantCaches(queryClient, productId, res.data)
+      toast.success('Variação atualizada com sucesso!')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor'),
+  })
+}
+
+export function useDeleteVariantMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ variantId }: DeleteVariantInput) =>
+      deleteVariantFn(variantId),
+    onSuccess: (res, variables) => {
+      if (!res.success) {
+        toast.error(res.message || 'Erro ao excluir variação')
+        return
+      }
+
+      removeVariantFromCache(queryClient, variables.productId, variables.variantId)
+      toast.success('Variação excluída com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })

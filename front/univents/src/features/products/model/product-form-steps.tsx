@@ -1,14 +1,7 @@
 import type { StepConfig } from '@/widgets/multi-step-form/model/types'
-import type { ProductCreateInputI } from '.'
+import type { CreateInitialProductInputI, ProductPatchInputI, VariantCreateInputI } from '.'
 
-const productTypeOptions = [
-  { label: 'Mercadoria', value: 'merchandise' },
-  { label: 'Ingresso', value: 'ticket' },
-  { label: 'Token', value: 'token' },
-  { label: 'Pacote', value: 'bundle' },
-]
-
-export function createProductFormSteps(): StepConfig<ProductCreateInputI>[] {
+export function createProductFormSteps(): StepConfig<CreateInitialProductInputI>[] {
   return [
     {
       id: 'identidade',
@@ -16,9 +9,21 @@ export function createProductFormSteps(): StepConfig<ProductCreateInputI>[] {
       fields: [
         {
           kind: 'text',
+          name: 'vendor_code',
+          label: 'Código do produto',
+          placeholder: 'Ex: CAMISETA-UNIVENTS',
+        },
+        {
+          kind: 'text',
+          name: 'variant_vendor_code',
+          label: 'Código da variação inicial',
+          placeholder: 'Ex: CAMISETA-M',
+        },
+        {
+          kind: 'text',
           name: 'name',
-          label: 'Nome',
-          placeholder: 'Nome do produto',
+          label: 'Nome da variação',
+          placeholder: 'Nome da primeira variação',
         },
         {
           kind: 'custom',
@@ -36,13 +41,6 @@ export function createProductFormSteps(): StepConfig<ProductCreateInputI>[] {
             </label>
           ),
         },
-        {
-          kind: 'combobox',
-          name: 'type',
-          label: 'Tipo',
-          placeholder: 'Selecione o tipo',
-          options: productTypeOptions,
-        },
       ],
     },
     {
@@ -50,31 +48,17 @@ export function createProductFormSteps(): StepConfig<ProductCreateInputI>[] {
       label: 'Comercial',
       fields: [
         {
-          kind: 'text',
-          name: 'price_cents',
+          kind: 'money',
+          name: 'price',
           label: 'Preço',
-          placeholder: '0',
-          inputType: 'number',
+          currency: "BRL",
+          valueType: "number",
+          maxCents: 99999999999,
         },
         {
-          kind: 'text',
-          name: 'ticket_id',
-          label: 'ID do ticket',
-          placeholder: 'UUID do ticket',
-          optional: true,
-          visibleIf: { type: 'equals', field: 'type', value: 'ticket' },
-        },
-        {
-          kind: 'datetime',
-          name: 'available_from',
-          label: 'Disponível de',
-          optional: true,
-        },
-        {
-          kind: 'datetime',
-          name: 'available_until',
-          label: 'Disponível até',
-          optional: true,
+          kind: 'toggle',
+          name: 'requires_registration',
+          label: 'Exige cadastro',
         },
       ],
     },
@@ -83,42 +67,101 @@ export function createProductFormSteps(): StepConfig<ProductCreateInputI>[] {
       label: 'Estoque',
       fields: [
         {
+          kind: 'text',
+          name: 'stock',
+          label: 'Quantidade em estoque',
+          placeholder: 'Deixe vazio para ilimitado',
+          inputType: 'number',
+          optional: true,
+        },
+      ],
+    },
+  ]
+}
+
+
+export function createProductPatchFormSteps(): StepConfig<ProductPatchInputI>[] {
+  return [
+    {
+      id: 'identidade',
+      label: 'Identidade',
+      fields: [
+        {
+          kind: 'text',
+          name: 'vendor_code',
+          label: 'Código do produto',
+          placeholder: 'Ex: CAMISETA-UNIVENTS',
+        },
+        {
           kind: 'toggle',
-          name: 'has_inventory',
-          label: 'Controlar estoque',
+          name: 'requires_registration',
+          label: 'Exige cadastro',
+        },
+      ],
+    },
+  ]
+}
+
+export function createVariantFormSteps(): StepConfig<VariantCreateInputI>[] {
+  return [
+    {
+      id: 'identidade',
+      label: 'Identidade',
+      fields: [
+        {
+          kind: 'text',
+          name: 'vendor_code',
+          label: 'Código do fornecedor',
+          placeholder: 'Ex: CAMISETA-M-G',
         },
         {
           kind: 'text',
-          name: 'inventory_quantity',
-          label: 'Quantidade em estoque',
-          placeholder: '0',
-          inputType: 'number',
+          name: 'name',
+          label: 'Nome',
+          placeholder: 'Nome da variação',
+        },
+        {
+          kind: 'custom',
+          name: 'description',
           optional: true,
-          visibleIf: { type: 'equals', field: 'has_inventory', value: true },
+          render: ({ form }) => (
+            <label className="block space-y-2">
+              <span className="block text-sm font-medium text-foreground">Descrição</span>
+              <textarea
+                {...form.register('description')}
+                rows={4}
+                placeholder="Descreva a variação"
+                className="min-h-28 w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+            </label>
+          ),
         },
       ],
     },
     {
-      id: 'midia',
-      label: 'Mídia',
+      id: 'comercial',
+      label: 'Comercial',
       fields: [
         {
-          kind: 'image',
-          name: 'thumbnail_url',
-          label: 'Miniatura',
-          hint: 'PNG ou JPEG, até 2MB',
-          accept: 'image/png,image/jpeg',
-          maxSizeMB: 2,
-          optional: true,
+          kind: 'money',
+          name: 'price',
+          label: 'Preço',
+          currency: "BRL",
+          valueType: "number",
+          maxCents: 99999999999,
         },
+      ],
+    },
+    {
+      id: 'estoque',
+      label: 'Estoque',
+      fields: [
         {
-          kind: 'gallery',
-          name: 'gallery_urls',
-          label: 'Galeria',
-          hint: 'Até 6 imagens',
-          accept: 'image/png,image/jpeg',
-          maxSizeMB: 5,
-          maxItems: 6,
+          kind: 'text',
+          name: 'stock',
+          label: 'Quantidade em estoque',
+          placeholder: 'Deixe vazio para ilimitado',
+          inputType: 'number',
           optional: true,
         },
       ],
