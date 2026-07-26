@@ -93,7 +93,7 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          npm publish --access public
+          pnpm publish --access public --no-git-checks
           rm -f ~/.npmrc
         working-directory: ${{ steps.tag.outputs.sdk_path }}
         env:
