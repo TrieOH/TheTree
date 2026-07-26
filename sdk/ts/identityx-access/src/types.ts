@@ -1,10 +1,18 @@
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 export interface ApiKey {
   id: string;
   subject_id: string;
   name: string;
   display_prefix: string;
   key_hash: string;
-  metadata: unknown;
+  metadata: JsonValue;
   expires_at?: string;
   revoked_at?: string;
   last_used_at?: string;
@@ -19,7 +27,7 @@ export interface Actor {
   verified_at?: string;
   email?: string;
   type: string;
-  metadata?: unknown;
+  metadata?: JsonValue;
   created_at: string;
   updated_at: string;
   deleted_at?: string;

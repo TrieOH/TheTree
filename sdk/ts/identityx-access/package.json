@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/identityx-access-sdk-ts",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "SDK focused on IdentityX API keys and capabilities",
   "main": "./dist/index.js",
