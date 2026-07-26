@@ -1,16 +1,16 @@
 {
   "name": "@trieoh/identityx-sdk-ts",
-  "version": "0.12.14",
+  "version": "0.12.15",
   "type": "module",
   "description": "SDK to consume IdentityX",
   "exports": {
     ".": {
-      "types": "./dist/esm/index.d.mts",
+      "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     },
     "./react": {
-      "types": "./dist/esm/react.d.mts",
+      "types": "./dist/esm/react.d.ts",
       "import": "./dist/esm/react.js",
       "require": "./dist/cjs/react.js"
     }
@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "npm run clean && tsup",
+    "build": "npm run clean && tsup && tsc -p tsconfig.types.json",
     "typecheck": "tsc -p . --noEmit",
     "prepublishOnly": "npm run build",
     "storybook": "storybook dev -p 6006",
