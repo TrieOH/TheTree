@@ -1,9 +1,17 @@
 import type { FieldValues } from "react-hook-form";
-import { MultiStepForm } from "./multi-step-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/shadcn/dialog";
 import type { MultiStepFormController } from "../hooks/use-multi-step-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/shadcn/dialog";
+import { MultiStepForm } from "./multi-step-form";
 
-export interface MultiStepFormModalProps<TInput extends FieldValues, TOutput = TInput> {
+export interface MultiStepFormModalProps<
+  TInput extends FieldValues,
+  TOutput = TInput,
+> {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -15,7 +23,10 @@ export interface MultiStepFormModalProps<TInput extends FieldValues, TOutput = T
  * Thin modal shell around <MultiStepForm />. Kept separate so the form
  * itself can be reused inline (a page, a drawer, etc.) without a dialog.
  */
-export function MultiStepFormModal<TInput extends FieldValues, TOutput = TInput>({
+export function MultiStepFormModal<
+  TInput extends FieldValues,
+  TOutput = TInput,
+>({
   open,
   onOpenChange,
   title,

@@ -1,35 +1,43 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { PenLine, Plus, Trash2 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
-import { AlertModal } from '@/widgets/ui/alert-modal'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { allSignaturesQueryOptions } from '@/features/signatures/api'
-import { useRemoveSignatureMutation } from '@/features/signatures/api/mutations'
-import type { SignatureI } from '@/features/signatures/model'
-import { cn } from '@/shared/lib/utils'
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { PenLine, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { allSignaturesQueryOptions } from "@/features/signatures/api";
+import { useRemoveSignatureMutation } from "@/features/signatures/api/mutations";
+import type { SignatureI } from "@/features/signatures/model";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
-export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/signatures/')({
+export const Route = createFileRoute(
+  "/admin/events/$eventId_/editions/$editionId/signatures/",
+)({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const { eventId, editionId } = Route.useParams()
-  const { data: signatures = [] } = useQuery(allSignaturesQueryOptions(eventId, editionId))
-  const removeSignatureMutation = useRemoveSignatureMutation()
-  const [filter, setFilter] = useState('')
-  const [removingSignature, setRemovingSignature] = useState<SignatureI | null>(null)
+  const { eventId, editionId } = Route.useParams();
+  const { data: signatures = [] } = useQuery(
+    allSignaturesQueryOptions(eventId, editionId),
+  );
+  const removeSignatureMutation = useRemoveSignatureMutation();
+  const [filter, setFilter] = useState("");
+  const [removingSignature, setRemovingSignature] = useState<SignatureI | null>(
+    null,
+  );
 
   const filteredSignatures = useMemo(() => {
-    const search = filter.trim().toLowerCase()
-    if (!search) return signatures
+    const search = filter.trim().toLowerCase();
+    if (!search) return signatures;
 
-    return signatures.filter((signature) => (
-      [signature.title, signature.url].some((value) => value.toLowerCase().includes(search))
-    ))
-  }, [filter, signatures])
+    return signatures.filter((signature) =>
+      [signature.title, signature.url].some((value) =>
+        value.toLowerCase().includes(search),
+      ),
+    );
+  }, [filter, signatures]);
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -48,9 +56,9 @@ function RouteComponent() {
             to="/admin/events/$eventId/editions/$editionId/signatures/editor"
             params={{ eventId, editionId }}
             className={cn(
-              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium',
-              'bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90',
-              'sm:min-w-44 sm:px-5',
+              "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
+              "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
+              "sm:min-w-44 sm:px-5",
             )}
           >
             <Plus className="size-4 shrink-0" />
@@ -71,11 +79,11 @@ function RouteComponent() {
             <article
               key={signature.id}
               className={cn(
-                'group relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card text-left',
-                'ring-1 ring-foreground/10 shadow-xs',
-                'transform-gpu will-change-transform',
-                'transition-all duration-300 ease-out',
-                'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
+                "group relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card text-left",
+                "ring-1 ring-foreground/10 shadow-xs",
+                "transform-gpu will-change-transform",
+                "transition-all duration-300 ease-out",
+                "hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm",
               )}
             >
               <div className="relative aspect-video overflow-hidden bg-muted">
@@ -83,16 +91,19 @@ function RouteComponent() {
                   src={signature.url}
                   alt={signature.title}
                   className={cn(
-                    'h-full w-full object-contain bg-background transition-transform duration-700 ease-out',
-                    'group-hover:scale-[1.03]',
+                    "h-full w-full object-contain bg-background transition-transform duration-700 ease-out",
+                    "group-hover:scale-[1.03]",
                   )}
-                  loading={index < 4 ? 'eager' : 'lazy'}
+                  loading={index < 4 ? "eager" : "lazy"}
                 />
 
                 <div className="absolute inset-0 bg-linear-to-t from-background/85 via-background/20 to-transparent" />
 
                 <div className="absolute left-3 top-3">
-                  <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+                  <Badge
+                    variant="outline"
+                    className="bg-background/80 backdrop-blur-sm"
+                  >
                     Assinatura
                   </Badge>
                 </div>
@@ -133,15 +144,15 @@ function RouteComponent() {
         variant="destructive"
         loading={removeSignatureMutation.isPending}
         onConfirm={async () => {
-          if (!removingSignature) return
+          if (!removingSignature) return;
           await removeSignatureMutation.mutateAsync({
             eventId,
             editionId,
             signatureId: removingSignature.id,
-          })
-          setRemovingSignature(null)
+          });
+          setRemovingSignature(null);
         }}
       />
     </div>
-  )
+  );
 }

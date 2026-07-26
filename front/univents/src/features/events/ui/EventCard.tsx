@@ -1,15 +1,15 @@
-import { motion } from 'motion/react'
-import { useNavigate } from '@tanstack/react-router'
-import { ArrowUpRight, Eye } from 'lucide-react'
-import type { EventI } from '../model'
-import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/shadcn/button'
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowUpRight, Eye } from "lucide-react";
+import { motion } from "motion/react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
+import type { EventI } from "../model";
 
 interface EventCardProps {
-  event: EventI
-  index?: number
-  className?: string
-  onPublish?: (event: EventI) => void
+  event: EventI;
+  index?: number;
+  className?: string;
+  onPublish?: (event: EventI) => void;
 }
 
 export function EventCard({
@@ -18,24 +18,24 @@ export function EventCard({
   className,
   onPublish,
 }: EventCardProps) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleClick = () => {
     void navigate({
-      to: '/events/$slug',
+      to: "/events/$slug",
       params: { slug: event.slug },
-    })
-  }
+    });
+  };
 
-  const hasVisual = Boolean(event.banner_url ?? event.logo_url)
+  const hasVisual = Boolean(event.banner_url ?? event.logo_url);
 
   const createdDate = new Date(event.created_at)
-    .toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
+    .toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     })
-    .replace('.', '')
+    .replace(".", "");
 
   return (
     <motion.article
@@ -48,29 +48,29 @@ export function EventCard({
       }}
       onClick={handleClick}
       className={cn(
-        'group relative cursor-pointer min-w-0',
-        'bg-card rounded-2xl overflow-hidden',
-        'border border-transparent hover:border-border',
-        'transition-all duration-300 ease-out',
-        'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
-        'hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1',
+        "group relative cursor-pointer min-w-0",
+        "bg-card rounded-2xl overflow-hidden",
+        "border border-transparent hover:border-border",
+        "transition-all duration-300 ease-out",
+        "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
+        "hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1",
         className,
       )}
       role="link"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          handleClick()
+        if (e.key === "Enter") {
+          handleClick();
         }
       }}
     >
       <div className="overflow-hidden relative bg-muted aspect-4/3">
         {hasVisual ? (
           <img
-            src={event.banner_url ?? event.logo_url ?? ''}
+            src={event.banner_url ?? event.logo_url ?? ""}
             alt=""
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            loading={index < 4 ? 'eager' : 'lazy'}
+            loading={index < 4 ? "eager" : "lazy"}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-muted to-muted/50">
@@ -94,15 +94,15 @@ export function EventCard({
           <div className="text-xs text-muted-foreground">
             Criado em {createdDate}
           </div>
-          {event.status === 'draft' && onPublish ? (
+          {event.status === "draft" && onPublish ? (
             <Button
               type="button"
               size="sm"
               variant="outline"
               className="h-7 px-2.5 text-[11px]"
               onClick={(e) => {
-                e.stopPropagation()
-                onPublish(event)
+                e.stopPropagation();
+                onPublish(event);
               }}
             >
               <Eye className="size-3.5" />
@@ -122,5 +122,5 @@ export function EventCard({
         )}
       </div>
     </motion.article>
-  )
+  );
 }

@@ -1,69 +1,73 @@
-import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
-import { ArrowLeft, Layers, Plus } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
-import type { SortState } from '@trieoh/ui-base'
-import { Button } from '@/shared/ui/shadcn/button'
-import { AlertModal } from '@/widgets/ui/alert-modal'
-import { productVariantsQueryOptions } from '@/features/products/api'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute, useRouter } from "@tanstack/react-router";
+import type { SortState } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { ArrowLeft, Layers, Plus } from "lucide-react";
+import { useState } from "react";
+import { productVariantsQueryOptions } from "@/features/products/api";
 import {
   useCreateVariantMutation,
-  useUpdateVariantMutation,
   useDeleteVariantMutation,
-} from '@/features/products/api/mutations'
-import type { VariantI } from '@/features/products/model'
-import { ManageVariantModal } from '@/features/products/ui/ManageVariantModal'
+  useUpdateVariantMutation,
+} from "@/features/products/api/mutations";
+import type { VariantI } from "@/features/products/model";
+import { ManageVariantModal } from "@/features/products/ui/ManageVariantModal";
+import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
 export const Route = createLazyFileRoute(
-  '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/',
+  "/admin/events/$eventId_/editions/$editionId/products/$productId/variants/",
 )({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const { productId } = Route.useParams()
-  const router = useRouter()
-  const { data: variants = [] } = useQuery(productVariantsQueryOptions(productId))
-  const createVariantMutation = useCreateVariantMutation()
-  const updateVariantMutation = useUpdateVariantMutation()
-  const deleteVariantMutation = useDeleteVariantMutation()
+  const { productId } = Route.useParams();
+  const router = useRouter();
+  const { data: variants = [] } = useQuery(
+    productVariantsQueryOptions(productId),
+  );
+  const createVariantMutation = useCreateVariantMutation();
+  const updateVariantMutation = useUpdateVariantMutation();
+  const deleteVariantMutation = useDeleteVariantMutation();
 
-  const [filter, setFilter] = useState('')
+  const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortState<VariantI>>({
-    field: 'name',
-    direction: 'asc',
-  })
+    field: "name",
+    direction: "asc",
+  });
   const [modalState, setModalState] = useState<{
-    open: boolean
-    variant?: VariantI
-  }>({ open: false })
-  const [deletingVariant, setDeletingVariant] = useState<VariantI | null>(null)
+    open: boolean;
+    variant?: VariantI;
+  }>({ open: false });
+  const [deletingVariant, setDeletingVariant] = useState<VariantI | null>(null);
 
   const filteredVariants = [...variants]
     .filter((variant) => {
-      const search = filter.trim().toLowerCase()
-      if (!search) return true
+      const search = filter.trim().toLowerCase();
+      if (!search) return true;
 
       return [
         variant.name,
         variant.vendor_code,
-        variant.description ?? '',
-      ].some((value) => value.toLowerCase().includes(search))
+        variant.description ?? "",
+      ].some((value) => value.toLowerCase().includes(search));
     })
     .sort((a, b) => {
-      const direction = sort.direction === 'asc' ? 1 : -1
+      const direction = sort.direction === "asc" ? 1 : -1;
 
-      if (sort.field === 'price') {
-        return (a.price - b.price) * direction
+      if (sort.field === "price") {
+        return (a.price - b.price) * direction;
       }
 
-      if (sort.field === 'stock') {
-        return ((a.stock ?? 0) - (b.stock ?? 0)) * direction
+      if (sort.field === "stock") {
+        return ((a.stock ?? 0) - (b.stock ?? 0)) * direction;
       }
 
-      return String(a[sort.field]).localeCompare(String(b[sort.field])) * direction
-    })
+      return (
+        String(a[sort.field]).localeCompare(String(b[sort.field])) * direction
+      );
+    });
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -75,7 +79,9 @@ function RouteComponent() {
         >
           <ArrowLeft className="size-4" />
         </button>
-        <h2 className="text-lg font-semibold text-foreground">Variações do produto</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          Variações do produto
+        </h2>
       </div>
 
       <PaginatedContainer<VariantI>
@@ -86,10 +92,18 @@ function RouteComponent() {
         sort={sort}
         onSortChange={setSort}
         sortFields={[
-          { key: 'name', label: 'Nome' },
-          { key: 'vendor_code', label: 'Código' },
-          { key: 'price', label: 'Preço', comparator: (a, b) => a.price - b.price },
-          { key: 'stock', label: 'Estoque', comparator: (a, b) => (a.stock ?? 0) - (b.stock ?? 0) },
+          { key: "name", label: "Nome" },
+          { key: "vendor_code", label: "Código" },
+          {
+            key: "price",
+            label: "Preço",
+            comparator: (a, b) => a.price - b.price,
+          },
+          {
+            key: "stock",
+            label: "Estoque",
+            comparator: (a, b) => (a.stock ?? 0) - (b.stock ?? 0),
+          },
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
@@ -121,7 +135,9 @@ function RouteComponent() {
               className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 transition-colors hover:bg-accent/5"
             >
               <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-sm font-medium text-foreground">{variant.name}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {variant.name}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Código: {variant.vendor_code}
                   {variant.description && <span> — {variant.description}</span>}
@@ -129,9 +145,13 @@ function RouteComponent() {
               </div>
               <div className="flex shrink-0 items-center gap-4 pl-4">
                 <div className="text-right text-sm">
-                  <p className="font-medium text-foreground">R$ {(variant.price / 100).toFixed(2)}</p>
+                  <p className="font-medium text-foreground">
+                    R$ {(variant.price / 100).toFixed(2)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {variant.stock !== null ? `${variant.stock} em estoque` : 'Ilimitado'}
+                    {variant.stock !== null
+                      ? `${variant.stock} em estoque`
+                      : "Ilimitado"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -159,30 +179,30 @@ function RouteComponent() {
       />
 
       <ManageVariantModal
-        key={modalState.variant?.id ?? 'variant-create'}
+        key={modalState.variant?.id ?? "variant-create"}
         open={modalState.open}
         productId={productId}
         variant={modalState.variant}
         onOpenChange={(open) => {
           if (open) {
-            setModalState((prev) => ({ ...prev, open }))
-            return
+            setModalState((prev) => ({ ...prev, open }));
+            return;
           }
-          setModalState({ open: false, variant: undefined })
+          setModalState({ open: false, variant: undefined });
         }}
         onCreate={async (values) => {
           const res = await createVariantMutation.mutateAsync({
             productId,
             data: values,
-          })
-          return res.success ? res.data : false
+          });
+          return res.success ? res.data : false;
         }}
         onUpdate={async (variantId, values) => {
           const res = await updateVariantMutation.mutateAsync({
             variantId,
             data: values,
-          })
-          return res.success ? res.data : false
+          });
+          return res.success ? res.data : false;
         }}
       />
 
@@ -199,14 +219,14 @@ function RouteComponent() {
         variant="destructive"
         loading={deleteVariantMutation.isPending}
         onConfirm={async () => {
-          if (!deletingVariant) return
+          if (!deletingVariant) return;
           await deleteVariantMutation.mutateAsync({
             variantId: deletingVariant.id,
             productId,
-          })
-          setDeletingVariant(null)
+          });
+          setDeletingVariant(null);
         }}
       />
     </div>
-  )
+  );
 }

@@ -1,72 +1,72 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
-import { Search, Settings, SlidersHorizontal } from 'lucide-react'
-import { useState } from 'react'
-import { motion } from 'motion/react'
-import { useQuery } from '@tanstack/react-query'
-import { EventCard } from '@/features/events/ui/EventCard'
-import { CreateEventCard } from '@/features/events/ui/CreateEventCard'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import { Search, Settings, SlidersHorizontal } from "lucide-react";
+import { motion } from "motion/react";
+import { useState } from "react";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
   allPublicEventsQueryOptions,
-} from '@/features/events/api'
-import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/shadcn/button'
+} from "@/features/events/api";
+import {
+  useCreateEventMutation,
+  usePublishEventMutation,
+} from "@/features/events/api/mutations";
+import { CreateEventCard } from "@/features/events/ui/CreateEventCard";
+import { EventCard } from "@/features/events/ui/EventCard";
+import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/shared/ui/shadcn/drawer'
-import { FABMenu } from '@/widgets/ui/fab-menu'
-import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
-import {
-  useCreateEventMutation,
-  usePublishEventMutation,
-} from '@/features/events/api/mutations'
+} from "@/shared/ui/shadcn/drawer";
+import { FABMenu } from "@/widgets/ui/fab-menu";
 
-export const Route = createLazyFileRoute('/events/')({
+export const Route = createLazyFileRoute("/events/")({
   component: EventsPage,
-})
+});
 
 const filterOptions = [
-  { value: 'all', label: 'Todos os eventos' },
-  { value: 'series', label: 'Apenas séries' },
-] as const
+  { value: "all", label: "Todos os eventos" },
+  { value: "series", label: "Apenas séries" },
+] as const;
 
 const editFilterOptions = [
-  { value: 'active', label: 'Ativos' },
-  { value: 'draft', label: 'Rascunhos' },
-] as const
+  { value: "active", label: "Ativos" },
+  { value: "draft", label: "Rascunhos" },
+] as const;
 
 type FilterValue =
-  | (typeof filterOptions)[number]['value']
-  | (typeof editFilterOptions)[number]['value']
+  | (typeof filterOptions)[number]["value"]
+  | (typeof editFilterOptions)[number]["value"];
 
 function EventsPage() {
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [inplaceEditEnabled, _setInplaceEditEnabled] = useState(true)
-  const [filter, setFilter] = useState<FilterValue>('all')
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
-  const createMutation = useCreateEventMutation()
-  const publishMutation = usePublishEventMutation()
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [inplaceEditEnabled, _setInplaceEditEnabled] = useState(true);
+  const [filter, setFilter] = useState<FilterValue>("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const createMutation = useCreateEventMutation();
+  const publishMutation = usePublishEventMutation();
 
   const { data: publicEvents = [] } = useQuery({
     ...allPublicEventsQueryOptions(),
     enabled: !isEditMode,
-  })
+  });
 
   const { data: ownEvents, isFetching: isFetchingOwnEvents } = useQuery({
     ...allOwnEventsQueryOptions(),
     enabled: isEditMode,
-  })
+  });
 
   const { data: joinedEvents, isFetching: isFetchingJoinedEvents } = useQuery({
     ...allJoinedEventsQueryOptions(),
     enabled: isEditMode,
-  })
+  });
 
   const manageableEvents = [
     ...(ownEvents ?? []),
@@ -74,52 +74,52 @@ function EventsPage() {
   ].filter(
     (event, index, events) =>
       events.findIndex((candidate) => candidate.id === event.id) === index,
-  )
+  );
 
   const events = isEditMode
     ? isFetchingOwnEvents || isFetchingJoinedEvents
       ? publicEvents
       : manageableEvents
-    : publicEvents
+    : publicEvents;
 
   const sortedEvents = [...events].sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  )
+  );
 
   const visibleFilters = isEditMode
     ? [...filterOptions, ...editFilterOptions]
-    : filterOptions
+    : filterOptions;
 
   const filteredEvents = sortedEvents.filter((event) => {
-    if (filter === 'series') return false
-    if (filter === 'active') return event.status === 'active'
-    if (filter === 'draft') return event.status === 'draft'
-    return true
-  })
+    if (filter === "series") return false;
+    if (filter === "active") return event.status === "active";
+    if (filter === "draft") return event.status === "draft";
+    return true;
+  });
 
   const handleFilterSelect = (value: FilterValue) => {
-    setFilter(value)
-    setIsFilterOpen(false)
-  }
+    setFilter(value);
+    setIsFilterOpen(false);
+  };
 
   const handleEditToggle = () => {
-    if (!inplaceEditEnabled) return
+    if (!inplaceEditEnabled) return;
 
     setIsEditMode((current) => {
-      const next = !current
+      const next = !current;
 
       if (!next) {
         setFilter((currentFilter) =>
-          currentFilter === 'active' || currentFilter === 'draft'
-            ? 'all'
+          currentFilter === "active" || currentFilter === "draft"
+            ? "all"
             : currentFilter,
-        )
+        );
       }
 
-      return next
-    })
-  }
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background relative pb-24">
@@ -141,20 +141,20 @@ function EventsPage() {
                   key={option.value}
                   type="button"
                   onClick={() => {
-                    setFilter(option.value)
+                    setFilter(option.value);
                   }}
                   className={cn(
-                    'px-3 py-1.5 text-sm rounded-md transition-all whitespace-nowrap',
+                    "px-3 py-1.5 text-sm rounded-md transition-all whitespace-nowrap",
                     filter === option.value
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground',
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                   variant="ghost"
                 >
-                  {option.label === 'Todos os eventos'
-                    ? 'Todos'
-                    : option.label === 'Apenas séries'
-                      ? 'Séries'
+                  {option.label === "Todos os eventos"
+                    ? "Todos"
+                    : option.label === "Apenas séries"
+                      ? "Séries"
                       : option.label}
                 </Button>
               ))}
@@ -168,9 +168,9 @@ function EventsPage() {
                     <Button
                       type="button"
                       className={cn(
-                        'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
-                        'hover:bg-muted active:bg-muted/60',
-                        isFilterOpen && 'bg-muted',
+                        "flex items-center justify-center w-9 h-9 rounded-lg transition-colors",
+                        "hover:bg-muted active:bg-muted/60",
+                        isFilterOpen && "bg-muted",
                       )}
                       aria-label="Filtrar eventos"
                       variant="ghost"
@@ -192,13 +192,13 @@ function EventsPage() {
                         key={option.value}
                         type="button"
                         onClick={() => {
-                          handleFilterSelect(option.value)
+                          handleFilterSelect(option.value);
                         }}
                         className={cn(
-                          'w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm transition-colors',
+                          "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm transition-colors",
                           filter === option.value
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-foreground hover:bg-muted',
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-foreground hover:bg-muted",
                         )}
                         variant="ghost"
                       >
@@ -273,10 +273,10 @@ function EventsPage() {
           onClick={handleEditToggle}
           active={isEditMode}
           ariaLabel={
-            isEditMode ? 'Sair do modo de edição' : 'Ativar modo de edição'
+            isEditMode ? "Sair do modo de edição" : "Ativar modo de edição"
           }
         />
       )}
     </div>
-  )
+  );
 }

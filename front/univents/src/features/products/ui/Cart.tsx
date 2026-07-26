@@ -1,29 +1,29 @@
-import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react'
-import { useRef } from 'react'
-import { useCart } from '../hooks/use-cart'
-import type { CartItem as CartItemType } from '../model/cart'
-import { Button } from '@/shared/ui/shadcn/button'
-import { cn } from '@/shared/lib/utils'
+import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { useRef } from "react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetFooter,
+  SheetHeader,
   SheetTitle,
-} from '@/shared/ui/shadcn/sheet'
+} from "@/shared/ui/shadcn/sheet";
+import { useCart } from "../hooks/use-cart";
+import type { CartItem as CartItemType } from "../model/cart";
 
 interface CartProps {
-  isOpen: boolean
-  eventId: string
-  editionId: string
-  onClose: () => void
+  isOpen: boolean;
+  eventId: string;
+  editionId: string;
+  onClose: () => void;
 }
 
 interface CartItemProps {
-  item: CartItemType
-  onRemove: (id: string) => void
-  onUpdateQuantity: (id: string, quantity: number) => void
-  priceFormatted: (cents: number) => string
+  item: CartItemType;
+  onRemove: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  priceFormatted: (cents: number) => string;
 }
 
 function CartItem({
@@ -34,31 +34,31 @@ function CartItem({
   getMaxQuantity,
 }: CartItemProps & {
   getMaxQuantity: (
-    p: Pick<CartItemType, 'has_inventory' | 'inventory_remaining'>,
-  ) => number
+    p: Pick<CartItemType, "has_inventory" | "inventory_remaining">,
+  ) => number;
 }) {
-  const max = getMaxQuantity(item)
-  const maxReached = item.quantity >= max
-  const itemTotal = item.price_cents * item.quantity
-  const inputRef = useRef<HTMLInputElement>(null)
+  const max = getMaxQuantity(item);
+  const maxReached = item.quantity >= max;
+  const itemTotal = item.price_cents * item.quantity;
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseInt(e.target.value, 10)
-    if (!isNaN(value)) {
-      if (value < 1) value = 1
-      if (value > max) value = max
-      onUpdateQuantity(item.id, value)
+    let value = parseInt(e.target.value, 10);
+    if (!Number.isNaN(value)) {
+      if (value < 1) value = 1;
+      if (value > max) value = max;
+      onUpdateQuantity(item.id, value);
     }
-  }
+  };
 
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10)
-    if (isNaN(value) || value < 1) {
-      onUpdateQuantity(item.id, 1)
+    const value = parseInt(e.target.value, 10);
+    if (Number.isNaN(value) || value < 1) {
+      onUpdateQuantity(item.id, 1);
     } else if (value > max) {
-      onUpdateQuantity(item.id, max)
+      onUpdateQuantity(item.id, max);
     }
-  }
+  };
 
   return (
     <div className="group flex gap-3 p-3 bg-secondary/30 hover:bg-secondary/50 transition-colors border-b border-border/50 last:border-b-0">
@@ -72,16 +72,17 @@ function CartItem({
 
         <div className="flex items-center gap-1.5 mt-3">
           <button
+            type="button"
             onClick={() => {
               if (item.quantity > 1) {
-                onUpdateQuantity(item.id, item.quantity - 1)
+                onUpdateQuantity(item.id, item.quantity - 1);
               }
             }}
             className={cn(
-              'h-8 w-8 flex items-center justify-center bg-background border border-border',
-              'hover:bg-accent hover:text-accent-foreground hover:border-accent',
-              'active:bg-accent/80 transition-colors select-none',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
+              "h-8 w-8 flex items-center justify-center bg-background border border-border",
+              "hover:bg-accent hover:text-accent-foreground hover:border-accent",
+              "active:bg-accent/80 transition-colors select-none",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
             disabled={item.quantity <= 1}
             aria-label="Diminuir quantidade"
@@ -98,25 +99,26 @@ function CartItem({
             onChange={handleInputChange}
             onBlur={handleInputBlur}
             className={cn(
-              'w-12 h-8 text-center text-sm font-semibold tabular-nums bg-background border border-border',
-              'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent',
-              'hover:border-accent/50 transition-colors',
-              '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+              "w-12 h-8 text-center text-sm font-semibold tabular-nums bg-background border border-border",
+              "focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent",
+              "hover:border-accent/50 transition-colors",
+              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
             )}
           />
 
           <button
+            type="button"
             onClick={() => {
               if (!maxReached) {
-                onUpdateQuantity(item.id, item.quantity + 1)
+                onUpdateQuantity(item.id, item.quantity + 1);
               }
             }}
             className={cn(
-              'h-8 w-8 flex items-center justify-center bg-background border border-border',
-              'hover:bg-accent hover:text-accent-foreground hover:border-accent',
-              'active:bg-accent/80 transition-colors select-none',
+              "h-8 w-8 flex items-center justify-center bg-background border border-border",
+              "hover:bg-accent hover:text-accent-foreground hover:border-accent",
+              "active:bg-accent/80 transition-colors select-none",
               maxReached &&
-                'opacity-50 cursor-not-allowed hover:bg-background hover:border-border',
+                "opacity-50 cursor-not-allowed hover:bg-background hover:border-border",
             )}
             disabled={maxReached}
             aria-label="Aumentar quantidade"
@@ -138,7 +140,7 @@ function CartItem({
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={() => {
-            onRemove(item.id)
+            onRemove(item.id);
           }}
         >
           <Trash2 className="h-4 w-4" />
@@ -148,7 +150,7 @@ function CartItem({
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 export function Cart({
@@ -164,23 +166,23 @@ export function Cart({
     updateQuantity,
     clearCart,
     getMaxQuantity,
-  } = useCart(editionId)
+  } = useCart(editionId);
 
   const handleClose = () => {
-    onClose()
-  }
+    onClose();
+  };
 
   const priceFormatted = (cents: number) =>
-    new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      onClose()
+      onClose();
     }
-  }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
@@ -261,10 +263,10 @@ export function Cart({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    'flex-1 text-xs font-medium uppercase tracking-wide border-2',
-                    'border-muted-foreground/30 hover:border-accent',
-                    'hover:bg-accent hover:text-accent-foreground',
-                    'transition-colors duration-300 rounded-sm',
+                    "flex-1 text-xs font-medium uppercase tracking-wide border-2",
+                    "border-muted-foreground/30 hover:border-accent",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "transition-colors duration-300 rounded-sm",
                   )}
                   onClick={handleClose}
                 >
@@ -274,14 +276,14 @@ export function Cart({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    'flex-1 text-xs font-medium uppercase tracking-wide border-2',
-                    'border-muted-foreground/30 hover:border-destructive',
-                    'hover:bg-destructive hover:text-destructive-foreground',
-                    'transition-colors duration-300 rounded-sm',
+                    "flex-1 text-xs font-medium uppercase tracking-wide border-2",
+                    "border-muted-foreground/30 hover:border-destructive",
+                    "hover:bg-destructive hover:text-destructive-foreground",
+                    "transition-colors duration-300 rounded-sm",
                   )}
                   onClick={() => {
-                    clearCart()
-                    handleClose()
+                    clearCart();
+                    handleClose();
                   }}
                 >
                   Limpar
@@ -292,5 +294,5 @@ export function Cart({
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }

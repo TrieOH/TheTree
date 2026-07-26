@@ -1,51 +1,62 @@
+import { ArrowRight, Calendar, MapPin } from "lucide-react";
+import { formatDateRange } from "@/shared/lib/date";
+import { getInitials } from "@/shared/lib/share";
 import { cn } from "@/shared/lib/utils";
 import type { EditionI, EditionStatus } from "../model";
-import { getInitials } from "@/shared/lib/share";
-import { Calendar, MapPin, ArrowRight } from "lucide-react";
-import { formatDateRange } from "@/shared/lib/date";
 
-function statusBadge(status: EditionStatus): { label: string; className: string } {
+function statusBadge(status: EditionStatus): {
+  label: string;
+  className: string;
+} {
   switch (status) {
-    case 'future':
+    case "future":
       return {
-        label: 'UPCOMING',
-        className: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
-      }
-    case 'active':
+        label: "UPCOMING",
+        className:
+          "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
+      };
+    case "active":
       return {
-        label: 'LIVE',
-        className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-      }
+        label: "LIVE",
+        className:
+          "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
+      };
     default:
       return {
-        label: 'CLOSED',
-        className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-      }
+        label: "CLOSED",
+        className:
+          "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+      };
   }
 }
 
 function actionLabel(status: EditionStatus): string {
   switch (status) {
-    case 'future': return 'Learn More'
-    case 'active': return 'Join Now'
-    default: return 'View Archives'
+    case "future":
+      return "Learn More";
+    case "active":
+      return "Join Now";
+    default:
+      return "View Archives";
   }
 }
 
 interface EditionSummaryCardProps {
-  edition: EditionI
+  edition: EditionI;
 }
 
 export function EditionSummaryCard({ edition }: EditionSummaryCardProps) {
-  const initials = getInitials(edition.name)
-  const badge = statusBadge(edition.status)
+  const initials = getInitials(edition.name);
+  const badge = statusBadge(edition.status);
 
   return (
-    <div className={cn(
-      "group flex rounded-xl bg-card border border-border/60 overflow-hidden",
-      "hover:border-border hover:shadow-md transition-all duration-200",
-      "min-w-64 flex-1 max-w-96"
-    )}>
+    <div
+      className={cn(
+        "group flex rounded-xl bg-card border border-border/60 overflow-hidden",
+        "hover:border-border hover:shadow-md transition-all duration-200",
+        "min-w-64 flex-1 max-w-96",
+      )}
+    >
       {/* Image left */}
       <div className="relative w-24 shrink-0 overflow-hidden bg-muted">
         {edition.banner_url ? (
@@ -79,7 +90,7 @@ export function EditionSummaryCard({ edition }: EditionSummaryCardProps) {
           <span
             className={cn(
               "shrink-0 inline-block px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold tracking-wide",
-              badge.className
+              badge.className,
             )}
           >
             {badge.label}
@@ -113,5 +124,5 @@ export function EditionSummaryCard({ edition }: EditionSummaryCardProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

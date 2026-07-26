@@ -1,102 +1,102 @@
-import { createLazyFileRoute, Link } from '@tanstack/react-router'
-import { motion } from 'motion/react'
-import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute, Link } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
-  CalendarDays,
   CalendarClock,
+  CalendarDays,
   CheckCircle2,
-  CircleAlert,
   ChevronRight,
+  CircleAlert,
   FileText,
   Globe,
   LayoutGrid,
   Store,
   Ticket,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { allAdminEditionsQueryOptions } from '@/features/editions/api'
-import { usePublishEditionMutation } from '@/features/editions/api/mutations'
-import type { EditionI } from '@/features/editions/model'
-import { formatDateRange } from '@/shared/lib/date'
-import { Badge } from '@/shared/ui/shadcn/badge'
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { allAdminEditionsQueryOptions } from "@/features/editions/api";
+import { usePublishEditionMutation } from "@/features/editions/api/mutations";
+import type { EditionI } from "@/features/editions/model";
+import { formatDateRange } from "@/shared/lib/date";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/ui/shadcn/card'
-import { AlertModal } from '@/widgets/ui/alert-modal'
-import { QuickAction } from '@/widgets/ui/quick-action'
-import { cn } from '@/shared/lib/utils'
+} from "@/shared/ui/shadcn/card";
+import { AlertModal } from "@/widgets/ui/alert-modal";
+import { QuickAction } from "@/widgets/ui/quick-action";
 
 export const Route = createLazyFileRoute(
-  '/admin/events/$eventId_/editions/$editionId/',
+  "/admin/events/$eventId_/editions/$editionId/",
 )({
   component: AdminEditionDetailRoute,
-})
+});
 
 const statusConfig: Record<
-  EditionI['status'],
+  EditionI["status"],
   { label: string; className: string; dot: string }
 > = {
   draft: {
-    label: 'Rascunho',
-    className: 'border-amber-500/20 bg-amber-500/10 text-amber-700',
-    dot: 'bg-amber-500',
+    label: "Rascunho",
+    className: "border-amber-500/20 bg-amber-500/10 text-amber-700",
+    dot: "bg-amber-500",
   },
   future: {
-    label: 'Futura',
-    className: 'border-sky-500/20 bg-sky-500/10 text-sky-700',
-    dot: 'bg-sky-500',
+    label: "Futura",
+    className: "border-sky-500/20 bg-sky-500/10 text-sky-700",
+    dot: "bg-sky-500",
   },
   active: {
-    label: 'Ativa',
-    className: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700',
-    dot: 'bg-emerald-500',
+    label: "Ativa",
+    className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700",
+    dot: "bg-emerald-500",
   },
   past: {
-    label: 'Encerrada',
-    className: 'border-slate-500/20 bg-slate-500/10 text-slate-600',
-    dot: 'bg-slate-500',
+    label: "Encerrada",
+    className: "border-slate-500/20 bg-slate-500/10 text-slate-600",
+    dot: "bg-slate-500",
   },
-}
+};
 
 function AdminEditionDetailRoute() {
-  const { eventId, editionId } = Route.useParams()
+  const { eventId, editionId } = Route.useParams();
   const { data: editions = [], isPending } = useQuery(
     allAdminEditionsQueryOptions(eventId),
-  )
-  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
+  );
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const edition = useMemo(
     () => editions.find((item) => item.id === editionId) ?? null,
     [editionId, editions],
-  )
+  );
 
-  const publishEditionMutation = usePublishEditionMutation()
+  const publishEditionMutation = usePublishEditionMutation();
 
   const copyLink = () => {
-    if (!edition) return
+    if (!edition) return;
     void navigator.clipboard.writeText(
       `${window.location.origin}/events/${edition.event_id}/editions/${edition.slug}`,
-    )
-    toast.success('Link copiado')
-  }
+    );
+    toast.success("Link copiado");
+  };
 
   const handlePublishEdition = () => {
-    if (!edition) return
-    publishEditionMutation.mutate({ eventId, editionId })
-  }
+    if (!edition) return;
+    publishEditionMutation.mutate({ eventId, editionId });
+  };
 
   if (isPending) {
     return (
       <div className="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
         Carregando edição...
       </div>
-    )
+    );
   }
 
   if (!edition) {
@@ -104,118 +104,122 @@ function AdminEditionDetailRoute() {
       <div className="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
         Edição não encontrada.
       </div>
-    )
+    );
   }
 
-  const status = statusConfig[edition.status]
+  const status = statusConfig[edition.status];
   const heroTagline =
     edition.tagline ??
     edition.description ??
-    'Sem descrição cadastrada para esta edição.'
-  const isDraft = edition.status === 'draft'
+    "Sem descrição cadastrada para esta edição.";
+  const isDraft = edition.status === "draft";
 
   const metrics = [
     {
-      label: 'Período',
+      label: "Período",
       value: formatDateRange(edition.starts_at, edition.ends_at),
-      hint: 'Datas de início e fim da edição',
+      hint: "Datas de início e fim da edição",
     },
     {
-      label: 'Local',
-      value: edition.location_name ?? '—',
-      hint: edition.location_description ?? 'Local físico da edição',
+      label: "Local",
+      value: edition.location_name ?? "—",
+      hint: edition.location_description ?? "Local físico da edição",
     },
     {
-      label: 'Inscrições abertas em',
+      label: "Inscrições abertas em",
       value: edition.registration_opens_at
-        ? format(new Date(edition.registration_opens_at), "dd 'de' MMM 'de' yyyy", { locale: ptBR })
-        : 'Não definido',
+        ? format(
+            new Date(edition.registration_opens_at),
+            "dd 'de' MMM 'de' yyyy",
+            { locale: ptBR },
+          )
+        : "Não definido",
       hint: edition.registration_opens_at
-        ? `Abertura em ${format(new Date(edition.registration_opens_at), 'HH:mm', { locale: ptBR })}`
-        : 'Data de abertura das inscrições',
+        ? `Abertura em ${format(new Date(edition.registration_opens_at), "HH:mm", { locale: ptBR })}`
+        : "Data de abertura das inscrições",
     },
-  ]
+  ];
 
   const checklist = [
     {
-      label: 'Banner cadastrado',
+      label: "Banner cadastrado",
       done: Boolean(edition.banner_url),
     },
     {
-      label: 'Logo cadastrado',
+      label: "Logo cadastrado",
       done: Boolean(edition.logo_url),
     },
     {
-      label: 'Descrição preenchida',
+      label: "Descrição preenchida",
       done: Boolean(edition.description),
     },
     {
-      label: 'Tagline definida',
+      label: "Tagline definida",
       done: Boolean(edition.tagline),
     },
     {
-      label: 'Local definido',
+      label: "Local definido",
       done: Boolean(edition.location_name),
     },
-  ]
+  ];
 
   const sections = [
     {
-      label: 'Atividades',
-      to: '/admin/events/$eventId/editions/$editionId/activities',
+      label: "Atividades",
+      to: "/admin/events/$eventId/editions/$editionId/activities",
       icon: CalendarClock,
     },
     {
-      label: 'Produtos',
-      to: '/admin/events/$eventId/editions/$editionId/products',
+      label: "Produtos",
+      to: "/admin/events/$eventId/editions/$editionId/products",
       icon: Store,
     },
     {
-      label: 'Certificações',
-      to: '/admin/events/$eventId/editions/$editionId/certifications',
+      label: "Certificações",
+      to: "/admin/events/$eventId/editions/$editionId/certifications",
       icon: FileText,
     },
     {
-      label: 'Assinaturas',
-      to: '/admin/events/$eventId/editions/$editionId/signatures',
+      label: "Assinaturas",
+      to: "/admin/events/$eventId/editions/$editionId/signatures",
       icon: Ticket,
     },
     {
-      label: 'Tickets',
-      to: '/admin/events/$eventId/editions/$editionId/tickets',
+      label: "Tickets",
+      to: "/admin/events/$eventId/editions/$editionId/tickets",
       icon: Ticket,
     },
-  ]
+  ];
 
   const actions = [
     ...(isDraft
       ? [
-        {
-          label: 'Publicar edição',
-          onClick: () => setPublishConfirmOpen(true),
-          disabled: publishEditionMutation.isPending,
-          variant: 'default' as const,
-        },
-      ]
+          {
+            label: "Publicar edição",
+            onClick: () => setPublishConfirmOpen(true),
+            disabled: publishEditionMutation.isPending,
+            variant: "default" as const,
+          },
+        ]
       : []),
     {
-      label: 'Copiar link público',
+      label: "Copiar link público",
       onClick: copyLink,
       disabled: isDraft,
-      variant: 'default' as const,
+      variant: "default" as const,
     },
     {
-      label: 'E-mail de contato',
+      label: "E-mail de contato",
       onClick: () => {
         if (edition.contact_email) {
-          void navigator.clipboard.writeText(edition.contact_email)
-          toast.success('E-mail copiado')
+          void navigator.clipboard.writeText(edition.contact_email);
+          toast.success("E-mail copiado");
         }
       },
       disabled: !edition.contact_email,
-      variant: 'default' as const,
+      variant: "default" as const,
     },
-  ]
+  ];
 
   return (
     <div className="relative space-y-6 p-6 pb-28!">
@@ -267,11 +271,11 @@ function AdminEditionDetailRoute() {
               </span>
               <span
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
+                  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1",
                   status.className,
                 )}
               >
-                <span className={cn('size-1.5 rounded-full', status.dot)} />
+                <span className={cn("size-1.5 rounded-full", status.dot)} />
                 {status.label}
               </span>
             </div>
@@ -317,13 +321,11 @@ function AdminEditionDetailRoute() {
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    'size-2 rounded-full',
-                    item.done ? 'bg-emerald-500' : 'bg-amber-500',
+                    "size-2 rounded-full",
+                    item.done ? "bg-emerald-500" : "bg-amber-500",
                   )}
                 />
-                <span className="text-sm text-foreground">
-                  {item.label}
-                </span>
+                <span className="text-sm text-foreground">{item.label}</span>
               </div>
               {item.done ? (
                 <CheckCircle2 className="size-4 text-emerald-500/70" />
@@ -344,7 +346,7 @@ function AdminEditionDetailRoute() {
         </CardHeader>
         <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">
           {sections.map((section) => {
-            const Icon = section.icon
+            const Icon = section.icon;
             return (
               <Link
                 key={section.to}
@@ -360,7 +362,7 @@ function AdminEditionDetailRoute() {
                 </div>
                 <ChevronRight className="size-4 text-muted-foreground" />
               </Link>
-            )
+            );
           })}
         </CardContent>
       </Card>
@@ -398,10 +400,10 @@ function AdminEditionDetailRoute() {
         variant="default"
         loading={publishEditionMutation.isPending}
         onConfirm={async () => {
-          handlePublishEdition()
-          setPublishConfirmOpen(false)
+          handlePublishEdition();
+          setPublishConfirmOpen(false);
         }}
       />
     </div>
-  )
+  );
 }

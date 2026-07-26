@@ -10,84 +10,88 @@ import {
   Plus,
   Rows3,
   Underline,
-} from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { CERTIFICATE_FONT_FAMILIES, CERTIFICATE_VARIABLES } from '../constants'
-import { useCertificateEditorState } from '../store'
-import { ToolbarCombobox } from './toolbar-combobox'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Input } from '@/shared/ui/shadcn/input'
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import {
+  CERTIFICATE_FONT_FAMILIES,
+  CERTIFICATE_VARIABLES,
+  DEFAULT_CERTIFICATE_TEXT_COLOR,
+} from "../constants";
+import { useCertificateEditorState } from "../store";
+import { ToolbarCombobox } from "./toolbar-combobox";
 
 const FONT_OPTIONS = CERTIFICATE_FONT_FAMILIES.map((font) => ({
   value: font.value,
   label: font.label,
-}))
+}));
 
 const VARIABLE_OPTIONS = CERTIFICATE_VARIABLES.map((variable) => ({
   value: variable.token,
   label: variable.label,
   description: variable.description,
-}))
+}));
 
 const LINE_HEIGHT_OPTIONS = [
-  { value: '1', label: 'Simples' },
-  { value: '1.15', label: '1,15' },
-  { value: '1.25', label: '1,25' },
-  { value: '1.5', label: '1,5' },
-  { value: '2', label: 'Duplo' },
-]
+  { value: "1", label: "Simples" },
+  { value: "1.15", label: "1,15" },
+  { value: "1.25", label: "1,25" },
+  { value: "1.5", label: "1,5" },
+  { value: "2", label: "Duplo" },
+];
 
 export function CertificateTextToolbar() {
   const controller = useCertificateEditorState(
     (state) => state.richTextController,
-  )
+  );
   const selectionStyles = useCertificateEditorState(
     (state) => state.textSelectionStyles,
-  )
-  const [fontSize, setFontSize] = useState('24')
-  const disabled = !controller
+  );
+  const [fontSize, setFontSize] = useState("24");
+  const disabled = !controller;
 
   useEffect(() => {
     if (selectionStyles) {
       setFontSize(
         selectionStyles.fontSize === null
-          ? '—'
+          ? "—"
           : String(selectionStyles.fontSize),
-      )
+      );
     }
-  }, [selectionStyles])
+  }, [selectionStyles]);
 
   const alignments = [
-    ['left', AlignLeft, 'Alinhar à esquerda'],
-    ['center', AlignCenter, 'Centralizar'],
-    ['right', AlignRight, 'Alinhar à direita'],
-    ['justify', AlignJustify, 'Justificar'],
-  ] as const
+    ["left", AlignLeft, "Alinhar à esquerda"],
+    ["center", AlignCenter, "Centralizar"],
+    ["right", AlignRight, "Alinhar à direita"],
+    ["justify", AlignJustify, "Justificar"],
+  ] as const;
 
   function applyFontSize(value: number) {
-    const nextValue = Math.min(400, Math.max(6, Math.round(value)))
-    setFontSize(String(nextValue))
-    controller?.setFontSize(nextValue)
+    const nextValue = Math.min(400, Math.max(6, Math.round(value)));
+    setFontSize(String(nextValue));
+    controller?.setFontSize(nextValue);
   }
 
   function stepFontSize(step: number) {
-    const currentValue = Number(fontSize)
+    const currentValue = Number(fontSize);
     applyFontSize(
       Number.isFinite(currentValue)
         ? currentValue + step
         : (selectionStyles?.fontSize ?? 24) + step,
-    )
+    );
   }
 
   return (
     <div
-      className="relative z-30 flex h-10 shrink-0 items-center justify-center gap-0.5 border-b bg-muted/70 px-2 shadow-sm"
+      className="relative z-30 flex h-10 shrink-0 items-center justify-center gap-0.5 bg-muted/70 px-2 shadow-sm"
       onPointerDown={(event) => event.stopPropagation()}
     >
       <Button
         type="button"
         size="icon-xs"
-        variant={selectionStyles?.bold ? 'secondary' : 'ghost'}
+        variant={selectionStyles?.bold ? "secondary" : "ghost"}
         className="relative"
         title="Negrito"
         disabled={disabled}
@@ -103,7 +107,7 @@ export function CertificateTextToolbar() {
       <Button
         type="button"
         size="icon-xs"
-        variant={selectionStyles?.italic ? 'secondary' : 'ghost'}
+        variant={selectionStyles?.italic ? "secondary" : "ghost"}
         className="relative"
         title="Itálico"
         disabled={disabled}
@@ -119,7 +123,7 @@ export function CertificateTextToolbar() {
       <Button
         type="button"
         size="icon-xs"
-        variant={selectionStyles?.underline ? 'secondary' : 'ghost'}
+        variant={selectionStyles?.underline ? "secondary" : "ghost"}
         className="relative"
         title="Sublinhado"
         disabled={disabled}
@@ -138,7 +142,7 @@ export function CertificateTextToolbar() {
           key={align}
           type="button"
           size="icon-xs"
-          variant={selectionStyles?.align === align ? 'secondary' : 'ghost'}
+          variant={selectionStyles?.align === align ? "secondary" : "ghost"}
           title={label}
           disabled={disabled}
           onClick={() => controller?.setAlign(align)}
@@ -151,7 +155,7 @@ export function CertificateTextToolbar() {
         value={selectionStyles?.fontFamily ?? undefined}
         options={FONT_OPTIONS}
         placeholder={
-          controller && selectionStyles?.fontFamily === null ? '—' : 'Fonte'
+          controller && selectionStyles?.fontFamily === null ? "—" : "Fonte"
         }
         searchPlaceholder="Buscar fonte…"
         disabled={disabled}
@@ -180,22 +184,22 @@ export function CertificateTextToolbar() {
           onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => setFontSize(event.target.value)}
           onBlur={() => {
-            const value = Number(fontSize)
+            const value = Number(fontSize);
             if (Number.isFinite(value) && value >= 6 && value <= 400) {
-              applyFontSize(value)
+              applyFontSize(value);
             } else {
               setFontSize(
                 selectionStyles?.fontSize === null
-                  ? '—'
+                  ? "—"
                   : String(selectionStyles?.fontSize ?? 24),
-              )
+              );
             }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              event.stopPropagation()
-              event.currentTarget.blur()
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.blur();
             }
           }}
         />
@@ -214,7 +218,7 @@ export function CertificateTextToolbar() {
       <div className="relative h-7 w-8 shrink-0">
         <Input
           type="color"
-          value={selectionStyles?.color ?? '#111827'}
+          value={selectionStyles?.color ?? DEFAULT_CERTIFICATE_TEXT_COLOR}
           disabled={disabled}
           aria-label="Cor do texto"
           className="h-7 w-8 rounded-md p-1"
@@ -225,7 +229,7 @@ export function CertificateTextToolbar() {
             className="pointer-events-none absolute inset-1 rounded-sm border border-border"
             style={{
               background:
-                'conic-gradient(#cbd5e1 0 25%, transparent 0 50%, #cbd5e1 0 75%, transparent 0)',
+                "conic-gradient(#cbd5e1 0 25%, transparent 0 50%, #cbd5e1 0 75%, transparent 0)",
             }}
           />
         ) : null}
@@ -254,5 +258,5 @@ export function CertificateTextToolbar() {
         onChange={(lineHeight) => controller?.setLineHeight(Number(lineHeight))}
       />
     </div>
-  )
+  );
 }

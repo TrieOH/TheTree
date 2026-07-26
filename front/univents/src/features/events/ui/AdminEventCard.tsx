@@ -1,6 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
-import type React from 'react'
-import { motion } from 'motion/react'
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   Ban,
@@ -9,56 +7,58 @@ import {
   Mail,
   MoreVertical,
   Pencil,
-} from 'lucide-react'
-import type { EventI, EventStatusI } from '@/features/events/model'
+} from "lucide-react";
+import { motion } from "motion/react";
+import type React from "react";
+import { toast } from "sonner";
+import type { EventI, EventStatusI } from "@/features/events/model";
+import { cn } from "@/shared/lib/utils";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/shared/ui/shadcn/context-menu'
+} from "@/shared/ui/shadcn/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu'
-import { cn } from '@/shared/lib/utils'
-import { toast } from 'sonner'
+} from "@/shared/ui/shadcn/dropdown-menu";
 
 const statusConfig: Record<
   EventStatusI,
   {
-    label: string
-    dot: string
-    pill: string
+    label: string;
+    dot: string;
+    pill: string;
   }
 > = {
   draft: {
-    label: 'Rascunho',
-    dot: 'bg-amber-500',
-    pill: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+    label: "Rascunho",
+    dot: "bg-amber-500",
+    pill: "bg-amber-500/10 text-amber-700 border-amber-500/20",
   },
   active: {
-    label: 'Ativo',
-    dot: 'bg-emerald-500',
-    pill: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+    label: "Ativo",
+    dot: "bg-emerald-500",
+    pill: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
   },
   discontinued: {
-    label: 'Descontinuado',
-    dot: 'bg-rose-500',
-    pill: 'bg-rose-500/10 text-rose-700 border-rose-500/20',
+    label: "Descontinuado",
+    dot: "bg-rose-500",
+    pill: "bg-rose-500/10 text-rose-700 border-rose-500/20",
   },
-}
+};
 
 interface AdminEventCardProps {
-  event: EventI
-  index?: number
-  onEdit?: (event: EventI) => void
-  onPublish: (event: EventI) => void
-  onDiscontinue: (event: EventI) => void
+  event: EventI;
+  index?: number;
+  onEdit?: (event: EventI) => void;
+  onPublish: (event: EventI) => void;
+  onDiscontinue: (event: EventI) => void;
 }
 
 function MenuItems({
@@ -70,27 +70,27 @@ function MenuItems({
   onOpenEditions,
   onOpenDashboard,
 }: {
-  event: EventI
-  isContext?: boolean
-  onEdit?: () => void
-  onPublish: () => void
-  onDiscontinue: () => void
-  onOpenEditions: () => void
-  onOpenDashboard: () => void
+  event: EventI;
+  isContext?: boolean;
+  onEdit?: () => void;
+  onPublish: () => void;
+  onDiscontinue: () => void;
+  onOpenEditions: () => void;
+  onOpenDashboard: () => void;
 }) {
-  const Item = isContext ? ContextMenuItem : DropdownMenuItem
-  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator
+  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
+  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
   const stop =
     (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      action()
-    }
+      e.preventDefault();
+      e.stopPropagation();
+      action();
+    };
   const copyLink = () => {
-    const url = `${window.location.origin}/events/${event.slug}`
-    void navigator.clipboard.writeText(url)
-    toast.success('Link copied to clipboard')
-  }
+    const url = `${window.location.origin}/events/${event.slug}`;
+    void navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard");
+  };
 
   return (
     <>
@@ -105,13 +105,13 @@ function MenuItems({
         <span>Ver dashboard</span>
       </Item>
       <Separator />
-      {event.status === 'draft' && (
+      {event.status === "draft" && (
         <Item onClick={stop(onPublish)}>
           <Eye className="size-4" />
           <span>Publicar</span>
         </Item>
       )}
-      {event.status === 'active' && (
+      {event.status === "active" && (
         <Item onClick={stop(onDiscontinue)}>
           <Ban className="size-4" />
           <span>Descontinuar</span>
@@ -127,7 +127,7 @@ function MenuItems({
         <span>Ver edições</span>
       </Item>
     </>
-  )
+  );
 }
 
 export default function AdminEventCard({
@@ -137,24 +137,24 @@ export default function AdminEventCard({
   onPublish,
   onDiscontinue,
 }: AdminEventCardProps) {
-  const navigate = useNavigate()
-  const status = statusConfig[event.status]
-  const hasVisual = Boolean(event.banner_url ?? event.logo_url)
-  const handleEdit = () => onEdit?.(event)
-  const handlePublish = () => onPublish(event)
-  const handleDiscontinue = () => onDiscontinue(event)
+  const navigate = useNavigate();
+  const status = statusConfig[event.status];
+  const hasVisual = Boolean(event.banner_url ?? event.logo_url);
+  const handleEdit = () => onEdit?.(event);
+  const handlePublish = () => onPublish(event);
+  const handleDiscontinue = () => onDiscontinue(event);
   const handleOpenDashboard = () => {
     void navigate({
-      to: '/admin/events/$eventId',
+      to: "/admin/events/$eventId",
       params: { eventId: event.id },
-    })
-  }
+    });
+  };
   const handleOpenEditions = () => {
     void navigate({
-      to: '/admin/events/$eventId/editions',
+      to: "/admin/events/$eventId/editions",
       params: { eventId: event.id },
-    })
-  }
+    });
+  };
 
   return (
     <ContextMenu>
@@ -169,34 +169,34 @@ export default function AdminEventCard({
               ease: [0.25, 0.1, 0.25, 1],
             }}
             className={cn(
-              'group relative flex w-full min-w-60 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left',
-              'ring-1 ring-foreground/10 shadow-xs',
-              'transform-gpu will-change-transform',
-              'transition-all duration-300 ease-out',
-              'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
-              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
+              "group relative flex w-full min-w-60 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left",
+              "ring-1 ring-foreground/10 shadow-xs",
+              "transform-gpu will-change-transform",
+              "transition-all duration-300 ease-out",
+              "hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm",
+              "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
             )}
             role="button"
             tabIndex={0}
             onClick={onEdit ? handleEdit : handleOpenDashboard}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                if (onEdit) handleEdit()
-                else handleOpenDashboard()
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (onEdit) handleEdit();
+                else handleOpenDashboard();
               }
             }}
           >
             <div className="relative aspect-video overflow-hidden bg-muted">
               {hasVisual ? (
                 <img
-                  src={event.banner_url ?? event.logo_url ?? ''}
+                  src={event.banner_url ?? event.logo_url ?? ""}
                   alt="Representação Visual do Evento"
                   className={cn(
-                    'h-full w-full object-cover transition-transform',
-                    'duration-700 ease-out group-hover:scale-105',
+                    "h-full w-full object-cover transition-transform",
+                    "duration-700 ease-out group-hover:scale-105",
                   )}
-                  loading={index < 4 ? 'eager' : 'lazy'}
+                  loading={index < 4 ? "eager" : "lazy"}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted via-background to-muted/40">
@@ -211,11 +211,11 @@ export default function AdminEventCard({
               <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm',
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm",
                     status.pill,
                   )}
                 >
-                  <span className={cn('size-1.5 rounded-full', status.dot)} />
+                  <span className={cn("size-1.5 rounded-full", status.dot)} />
                   {status.label}
                 </span>
               </div>
@@ -228,9 +228,9 @@ export default function AdminEventCard({
                         type="button"
                         onClick={(e) => e.stopPropagation()}
                         className={cn(
-                          'inline-flex size-9 items-center justify-center rounded-full',
-                          'bg-background/85 text-foreground shadow-sm backdrop-blur-sm',
-                          'transition-colors hover:bg-background',
+                          "inline-flex size-9 items-center justify-center rounded-full",
+                          "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
+                          "transition-colors hover:bg-background",
                         )}
                         aria-label={`Abrir ações de ${event.full_name}`}
                       >
@@ -270,11 +270,11 @@ export default function AdminEventCard({
                 <div className="flex min-w-0 items-center text-xs text-muted-foreground">
                   <span
                     className="inline-flex min-w-0 max-w-full items-center gap-1.5"
-                    title={event.contact_email ?? 'Sem contato cadastrado'}
+                    title={event.contact_email ?? "Sem contato cadastrado"}
                   >
                     <Mail className="size-3.5 shrink-0" />
                     <span className="truncate">
-                      {event.contact_email ?? 'Sem contato'}
+                      {event.contact_email ?? "Sem contato"}
                     </span>
                   </span>
                 </div>
@@ -287,8 +287,8 @@ export default function AdminEventCard({
                 to="/admin/events/$eventId"
                 params={{ eventId: event.id }}
                 className={cn(
-                  'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium',
-                  'bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary',
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
+                  "bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary",
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -312,5 +312,5 @@ export default function AdminEventCard({
         />
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }

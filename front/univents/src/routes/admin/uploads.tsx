@@ -1,50 +1,50 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   CheckCircle2,
   Images,
   RefreshCw,
   UploadCloud,
-} from 'lucide-react'
-import { z } from 'zod'
-import { useMemo } from 'react'
-import { UploadTaskCard } from '@/features/upload-queue/ui/upload-task-card'
-import { useUploadQueue } from '@/features/upload-queue'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Card, CardContent } from '@/shared/ui/shadcn/card'
+} from "lucide-react";
+import { useMemo } from "react";
+import { z } from "zod";
+import { useUploadQueue } from "@/features/upload-queue";
+import { UploadTaskCard } from "@/features/upload-queue/ui/upload-task-card";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Card, CardContent } from "@/shared/ui/shadcn/card";
 
 const searchSchema = z.object({
   task: z.string().optional(),
-})
+});
 
-export const Route = createFileRoute('/admin/uploads')({
+export const Route = createFileRoute("/admin/uploads")({
   validateSearch: searchSchema,
   component: UploadsPage,
-})
+});
 
 function UploadsPage() {
-  const { task: highlightedTaskId } = Route.useSearch()
-  const { tasks, initialized, retry, replaceFile, remove } = useUploadQueue()
+  const { task: highlightedTaskId } = Route.useSearch();
+  const { tasks, initialized, retry, replaceFile, remove } = useUploadQueue();
 
   const counts = useMemo(
     () => ({
       active: tasks.filter((task) =>
-        ['queued', 'uploading', 'associating', 'waiting_retry'].includes(
+        ["queued", "uploading", "associating", "waiting_retry"].includes(
           task.status,
         ),
       ).length,
       problems: tasks.filter((task) =>
-        ['failed', 'rejected', 'paused'].includes(task.status),
+        ["failed", "rejected", "paused"].includes(task.status),
       ).length,
-      completed: tasks.filter((task) => task.status === 'completed').length,
+      completed: tasks.filter((task) => task.status === "completed").length,
     }),
     [tasks],
-  )
+  );
 
   const retryableTasks = tasks.filter(
-    (task) => task.status === 'failed' && task.error?.retryable,
-  )
+    (task) => task.status === "failed" && task.error?.retryable,
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 pb-28">
@@ -126,7 +126,7 @@ function UploadsPage() {
         </section>
       )}
     </div>
-  )
+  );
 }
 
 function SummaryCard({
@@ -134,9 +134,9 @@ function SummaryCard({
   label,
   value,
 }: {
-  icon: typeof UploadCloud
-  label: string
-  value: number
+  icon: typeof UploadCloud;
+  label: string;
+  value: number;
 }) {
   return (
     <Card size="sm">
@@ -150,5 +150,5 @@ function SummaryCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

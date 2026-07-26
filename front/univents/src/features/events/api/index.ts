@@ -1,12 +1,12 @@
-import { createClientOnlyFn } from '@tanstack/react-start'
-import { queryOptions } from '@tanstack/react-query'
-import type { EventCreateOutputI, EventI } from '../model'
+import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
 import {
   authFetcher,
-  publicQueryFetcher,
   authQueryFetcher,
-} from '@/shared/lib/api/fetch'
-import { eventKeys } from './query-keys'
+  publicQueryFetcher,
+} from "@/shared/lib/api/fetch";
+import type { EventCreateOutputI, EventI } from "../model";
+import { eventKeys } from "./query-keys";
 
 /**
  * Creates a new Event on the server.
@@ -15,9 +15,9 @@ import { eventKeys } from './query-keys'
  */
 export const createEventFn = createClientOnlyFn(
   (eventData: EventCreateOutputI) => {
-    return authFetcher.post<EventI>('/events', eventData)
+    return authFetcher.post<EventI>("/events", eventData);
   },
-)
+);
 
 /**
  * Publish a Event on the server.
@@ -25,20 +25,20 @@ export const createEventFn = createClientOnlyFn(
  * @returns A promise that resolves to the API null response.
  */
 export const publishEventFn = createClientOnlyFn((eventId: string) => {
-  return authFetcher.post<null>(`/events/${eventId}/publish`)
-})
+  return authFetcher.post<null>(`/events/${eventId}/publish`);
+});
 
 export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
-  return authFetcher.post<null>(`/events/${eventId}/discontinue`)
-})
+  return authFetcher.post<null>(`/events/${eventId}/discontinue`);
+});
 
 /**
  * Fetches all public events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
 const getPublicEventsFn = async () => {
-  return publicQueryFetcher<EventI[]>('/events')
-}
+  return publicQueryFetcher<EventI[]>("/events");
+};
 
 /**
  * Query options for fetching events, using TanStack Query.
@@ -48,16 +48,16 @@ export const allPublicEventsQueryOptions = () => {
   return queryOptions({
     queryKey: eventKeys.publicLists(),
     queryFn: getPublicEventsFn,
-  })
-}
+  });
+};
 
 /**
  * Fetches all own events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
 const getOwnEventsFn = createClientOnlyFn(async () => {
-  return authQueryFetcher<EventI[]>('/events/owned')
-})
+  return authQueryFetcher<EventI[]>("/events/owned");
+});
 
 /**
  * Query options for fetching own events, using TanStack Query.
@@ -67,16 +67,16 @@ export const allOwnEventsQueryOptions = () => {
   return queryOptions({
     queryKey: eventKeys.ownLists(),
     queryFn: getOwnEventsFn,
-  })
-}
+  });
+};
 
 /**
  * Fetches all joined events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
 const getJoinedEventsFn = createClientOnlyFn(async () => {
-  return authQueryFetcher<EventI[]>('/events/joined')
-})
+  return authQueryFetcher<EventI[]>("/events/joined");
+});
 
 /**
  * Query options for fetching joined events, using TanStack Query.
@@ -86,8 +86,8 @@ export const allJoinedEventsQueryOptions = () => {
   return queryOptions({
     queryKey: eventKeys.joinedLists(),
     queryFn: getJoinedEventsFn,
-  })
-}
+  });
+};
 
 /**
  * Fetches a public events from the server.
@@ -95,8 +95,10 @@ export const allJoinedEventsQueryOptions = () => {
  * @returns A promise that resolves to an Event object.
  */
 const getPublicEventBySlugFn = async (slug: string) => {
-  return publicQueryFetcher<EventI | null>(`/events/${slug}:by-slug`).catch(() => null)
-}
+  return publicQueryFetcher<EventI | null>(`/events/${slug}:by-slug`).catch(
+    () => null,
+  );
+};
 
 /**
  * Query options for fetching event, using TanStack Query.
@@ -107,5 +109,5 @@ export const publicEventBySlugQueryOptions = (slug: string) => {
   return queryOptions({
     queryKey: eventKeys.detail.publicBySlug(slug),
     queryFn: () => getPublicEventBySlugFn(slug),
-  })
-}
+  });
+};

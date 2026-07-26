@@ -1,21 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo } from "react";
+import { useMultiStepForm } from "@/widgets/multi-step-form/hooks/use-multi-step-form";
+import { MultiStepFormModal } from "@/widgets/multi-step-form/ui/multi-step-form-modal";
 import {
-  editionPatchSchema,
   type EditionI,
   type EditionPatchInputI,
   type EditionPatchOutputI,
-} from '../model'
-import { createEditionPatchFormSteps } from '../model/edition-form-steps'
-import { useMultiStepForm } from '@/widgets/multi-step-form/hooks/use-multi-step-form'
-import { MultiStepFormModal } from '@/widgets/multi-step-form/ui/multi-step-form-modal'
+  editionPatchSchema,
+} from "../model";
+import { createEditionPatchFormSteps } from "../model/edition-form-steps";
 
 interface EditEditionModalProps {
-  open: boolean
-  edition: EditionI
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  edition: EditionI;
+  onOpenChange: (open: boolean) => void;
   onUpdate: (
     values: EditionPatchOutputI,
-  ) => Promise<EditionI | null | boolean> | EditionI | null | boolean
+  ) => Promise<EditionI | null | boolean> | EditionI | null | boolean;
 }
 
 export function EditEditionModal({
@@ -24,24 +24,24 @@ export function EditEditionModal({
   onOpenChange,
   onUpdate,
 }: EditEditionModalProps) {
-  const steps = useMemo(() => createEditionPatchFormSteps(), [])
+  const steps = useMemo(() => createEditionPatchFormSteps(), []);
   const defaultValues = useMemo<EditionPatchInputI>(
     () => ({
       name: edition.name,
       slug: edition.slug,
-      tagline: edition.tagline ?? '',
-      description: edition.description ?? '',
-      registration_opens_at: edition.registration_opens_at ?? '',
+      tagline: edition.tagline ?? "",
+      description: edition.description ?? "",
+      registration_opens_at: edition.registration_opens_at ?? "",
       starts_at: edition.starts_at,
       ends_at: edition.ends_at,
-      location_name: edition.location_name ?? '',
-      location_description: edition.location_description ?? '',
-      logo_url: edition.logo_url ?? '',
-      banner_url: edition.banner_url ?? '',
-      contact_email: edition.contact_email ?? '',
+      location_name: edition.location_name ?? "",
+      location_description: edition.location_description ?? "",
+      logo_url: edition.logo_url ?? "",
+      banner_url: edition.banner_url ?? "",
+      contact_email: edition.contact_email ?? "",
     }),
     [edition],
-  )
+  );
   const controller = useMultiStepForm({
     schema: editionPatchSchema,
     steps,
@@ -49,7 +49,7 @@ export function EditEditionModal({
     resetOnSuccessValues: defaultValues,
     onSubmit: async (values) => Boolean(await onUpdate(values)),
     onSubmitSuccess: () => onOpenChange(false),
-  })
+  });
 
   return (
     <MultiStepFormModal
@@ -59,5 +59,5 @@ export function EditEditionModal({
       controller={controller}
       submitLabel="Salvar alterações"
     />
-  )
+  );
 }

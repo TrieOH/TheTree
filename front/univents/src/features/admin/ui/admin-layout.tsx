@@ -1,23 +1,25 @@
-import { useLocation } from '@tanstack/react-router'
+import { useLocation } from "@tanstack/react-router";
+import { Breadcrumb } from "@/shared/ui/breadcrumb";
 import {
   SidebarProvider,
   useSidebar,
-} from '@/widgets/sidebar/hooks/use-sidebar'
-import { MobileTopbar } from '@/widgets/sidebar/ui/mobile-topbar'
-import { Sidebar } from '@/widgets/sidebar/ui/sidebar'
-import { Breadcrumb } from '@/shared/ui/breadcrumb'
+} from "@/widgets/sidebar/hooks/use-sidebar";
+import { MobileTopbar } from "@/widgets/sidebar/ui/mobile-topbar";
+import { Sidebar } from "@/widgets/sidebar/ui/sidebar";
 
 interface AdminLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {
-  const { collapsed } = useSidebar()
-  const { pathname } = useLocation()
-  const isCertificateEditor = pathname.endsWith('/certifications/editor')
+  const { collapsed } = useSidebar();
+  const { pathname } = useLocation();
+  const isCertificateEditor = pathname.endsWith("/certifications/editor");
 
   if (isCertificateEditor) {
-    return <div className="h-dvh overflow-hidden bg-background">{children}</div>
+    return (
+      <div className="h-dvh overflow-hidden bg-background">{children}</div>
+    );
   }
 
   return (
@@ -26,8 +28,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
       <div
         className={
-          'flex min-h-dvh flex-col transition-[padding] duration-300 ease-in-out ' +
-          (collapsed ? 'lg:pl-18' : 'lg:pl-72')
+          "flex min-h-dvh flex-col transition-[padding] duration-300 ease-in-out " +
+          (collapsed ? "lg:pl-18" : "lg:pl-72")
         }
       >
         <MobileTopbar />
@@ -37,7 +39,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1">{children}</main>
       </div>
     </div>
-  )
+  );
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -45,5 +47,5 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <SidebarProvider>
       <AppShell>{children}</AppShell>
     </SidebarProvider>
-  )
+  );
 }

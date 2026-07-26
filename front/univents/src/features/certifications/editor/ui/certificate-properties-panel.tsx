@@ -1,42 +1,43 @@
-import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent, ReactNode } from 'react'
-import type { CertificationTemplateElement } from '../../model'
+import type { ChangeEvent, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import { Separator } from "@/shared/ui/shadcn/separator";
+import type { CertificationTemplateElement } from "../../model";
 import {
   CERTIFICATE_IMAGE_ACCEPT,
   MIN_CERTIFICATE_ELEMENT_SIZE,
-} from '../constants'
-import { certificateEditorActions, useCertificateEditorState } from '../store'
+} from "../constants";
+import { certificateEditorActions, useCertificateEditorState } from "../store";
 import type {
   HashCertificateElement,
   ImageCertificateElement,
   SignatureCertificateElement,
   TextCertificateElement,
-} from '../types'
-import { isSupportedCertificateImage, readCertificateFile } from '../utils'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Input } from '@/shared/ui/shadcn/input'
-import { Separator } from '@/shared/ui/shadcn/separator'
+} from "../types";
+import { isSupportedCertificateImage, readCertificateFile } from "../utils";
+import { ToolbarCombobox } from "./toolbar-combobox";
 
 interface FieldProps {
-  label: string
-  children: ReactNode
+  label: string;
+  children: ReactNode;
 }
 
 function Field({ label, children }: FieldProps) {
   return (
-    <label className="block space-y-1">
+    <div className="block space-y-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       {children}
-    </label>
-  )
+    </div>
+  );
 }
 
 interface NumberPropertyProps {
-  label: string
-  value: number
-  min?: number
-  max?: number
-  onCommit: (value: number) => void
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  onCommit: (value: number) => void;
 }
 
 function NumberProperty({
@@ -46,20 +47,20 @@ function NumberProperty({
   max,
   onCommit,
 }: NumberPropertyProps) {
-  const [draft, setDraft] = useState(String(Math.round(value)))
-  useEffect(() => setDraft(String(Math.round(value))), [value])
+  const [draft, setDraft] = useState(String(Math.round(value)));
+  useEffect(() => setDraft(String(Math.round(value))), [value]);
 
   function commit() {
-    const parsed = Number(draft)
+    const parsed = Number(draft);
     if (
       Number.isFinite(parsed) &&
       (min === undefined || parsed >= min) &&
       (max === undefined || parsed <= max)
     ) {
-      onCommit(parsed)
-      return
+      onCommit(parsed);
+      return;
     }
-    setDraft(String(Math.round(value)))
+    setDraft(String(Math.round(value)));
   }
 
   return (
@@ -72,17 +73,17 @@ function NumberProperty({
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur()
+          if (event.key === "Enter") event.currentTarget.blur();
         }}
       />
     </Field>
-  )
+  );
 }
 
 function PositionSizeProperties({
   element,
 }: {
-  element: CertificationTemplateElement
+  element: CertificationTemplateElement;
 }) {
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -117,16 +118,16 @@ function PositionSizeProperties({
         }
       />
     </div>
-  )
+  );
 }
 
 function updateHash(
   id: string,
-  patch: Partial<Omit<HashCertificateElement, 'id' | 'type'>>,
+  patch: Partial<Omit<HashCertificateElement, "id" | "type">>,
 ) {
   certificateEditorActions.updateElement(id, (element) =>
-    element.type === 'hash' ? { ...element, ...patch } : element,
-  )
+    element.type === "hash" ? { ...element, ...patch } : element,
+  );
 }
 
 function HashProperties({ element }: { element: HashCertificateElement }) {
@@ -166,7 +167,7 @@ function HashProperties({ element }: { element: HashCertificateElement }) {
             value={element.align}
             onChange={(event) =>
               updateHash(element.id, {
-                align: event.target.value as HashCertificateElement['align'],
+                align: event.target.value as HashCertificateElement["align"],
               })
             }
           >
@@ -189,36 +190,36 @@ function HashProperties({ element }: { element: HashCertificateElement }) {
       <Separator />
       <PositionSizeProperties element={element} />
     </div>
-  )
+  );
 }
 
 function updateImage(
   id: string,
-  patch: Partial<Omit<ImageCertificateElement, 'id' | 'type'>>,
+  patch: Partial<Omit<ImageCertificateElement, "id" | "type">>,
 ) {
   certificateEditorActions.updateElement(id, (element) =>
-    element.type === 'image' ? { ...element, ...patch } : element,
-  )
+    element.type === "image" ? { ...element, ...patch } : element,
+  );
 }
 
 function ImageProperties({ element }: { element: ImageCertificateElement }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function replaceImage(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
     if (!isSupportedCertificateImage(file)) {
-      setError('Use uma imagem PNG, JPEG ou WebP.')
-      return
+      setError("Use uma imagem PNG, JPEG ou WebP.");
+      return;
     }
 
     try {
-      updateImage(element.id, { src: await readCertificateFile(file) })
-      setError(null)
+      updateImage(element.id, { src: await readCertificateFile(file) });
+      setError(null);
     } catch {
-      setError('Não foi possível carregar a imagem.')
+      setError("Não foi possível carregar a imagem.");
     }
   }
 
@@ -253,7 +254,7 @@ function ImageProperties({ element }: { element: ImageCertificateElement }) {
           value={element.fit}
           onChange={(event) =>
             updateImage(element.id, {
-              fit: event.target.value as ImageCertificateElement['fit'],
+              fit: event.target.value as ImageCertificateElement["fit"],
             })
           }
         >
@@ -283,26 +284,26 @@ function ImageProperties({ element }: { element: ImageCertificateElement }) {
       <Separator />
       <PositionSizeProperties element={element} />
     </div>
-  )
+  );
 }
 
 function updateSignature(
   id: string,
-  patch: Partial<Omit<SignatureCertificateElement, 'id' | 'type'>>,
+  patch: Partial<Omit<SignatureCertificateElement, "id" | "type">>,
 ) {
   certificateEditorActions.updateElement(id, (element) =>
-    element.type === 'signature' ? { ...element, ...patch } : element,
-  )
+    element.type === "signature" ? { ...element, ...patch } : element,
+  );
 }
 
 function SignatureProperties({
   element,
 }: {
-  element: SignatureCertificateElement
+  element: SignatureCertificateElement;
 }) {
   const signatures = useCertificateEditorState(
     (state) => state.availableSignatures,
-  )
+  );
 
   return (
     <div className="space-y-4">
@@ -321,10 +322,10 @@ function SignatureProperties({
                 })
               }
               className={
-                'overflow-hidden rounded-md border text-left ' +
+                "overflow-hidden rounded-md border text-left " +
                 (element.signatureId === signature.id
-                  ? 'border-ring ring-2 ring-ring/30'
-                  : 'hover:border-ring')
+                  ? "border-ring ring-2 ring-ring/30"
+                  : "hover:border-ring")
               }
             >
               <span className="flex h-14 items-center justify-center bg-white p-1.5">
@@ -342,19 +343,21 @@ function SignatureProperties({
         </div>
       </Field>
       <Field label="Ajuste">
-        <select
-          className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+        <ToolbarCombobox
           value={element.fit}
+          options={[
+            { value: "contain", label: "Ajustar" },
+            { value: "cover", label: "Preencher" },
+            { value: "fill", label: "Esticar" },
+          ]}
+          placeholder="Ajuste"
+          className="w-full"
           onChange={(event) =>
             updateSignature(element.id, {
-              fit: event.target.value as SignatureCertificateElement['fit'],
+              fit: event as SignatureCertificateElement["fit"],
             })
           }
-        >
-          <option value="contain">Ajustar</option>
-          <option value="cover">Preencher</option>
-          <option value="fill">Esticar</option>
-        </select>
+        />
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <NumberProperty
@@ -377,7 +380,7 @@ function SignatureProperties({
       <Separator />
       <PositionSizeProperties element={element} />
     </div>
-  )
+  );
 }
 
 function TextProperties({ element }: { element: TextCertificateElement }) {
@@ -391,17 +394,18 @@ function TextProperties({ element }: { element: TextCertificateElement }) {
       <Separator />
       <PositionSizeProperties element={element} />
     </div>
-  )
+  );
 }
 
 export function CertificatePropertiesPanel() {
   const selectedElementId = useCertificateEditorState(
     (state) => state.selectedElementId,
-  )
+  );
   const elements = useCertificateEditorState(
     (state) => state.draft.data.elements,
-  )
-  const element = elements.find((item) => item.id === selectedElementId) ?? null
+  );
+  const element =
+    elements.find((item) => item.id === selectedElementId) ?? null;
 
   return (
     <aside className="w-72 shrink-0 overflow-y-auto border-l border-border bg-card p-4 text-card-foreground">
@@ -412,15 +416,15 @@ export function CertificatePropertiesPanel() {
         <p className="text-sm text-muted-foreground">
           Selecione um elemento no certificado para editar suas propriedades.
         </p>
-      ) : element.type === 'hash' ? (
+      ) : element.type === "hash" ? (
         <HashProperties element={element} />
-      ) : element.type === 'text' ? (
+      ) : element.type === "text" ? (
         <TextProperties element={element} />
-      ) : element.type === 'image' ? (
+      ) : element.type === "image" ? (
         <ImageProperties element={element} />
       ) : (
         <SignatureProperties element={element} />
       )}
     </aside>
-  )
+  );
 }

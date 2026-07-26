@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useImageUploadAdapter } from "../contexts/upload-adapter-context";
-import type { ImageFieldChange, ImageItem, UploadedImage } from "../model/types";
-import { registerImageUploadTask } from "./use-image-upload-queue";
 import { useImageUploadState } from "../contexts/image-upload-state-context";
+import { useImageUploadAdapter } from "../contexts/upload-adapter-context";
+import type {
+  ImageFieldChange,
+  ImageItem,
+  UploadedImage,
+} from "../model/types";
+import { registerImageUploadTask } from "./use-image-upload-queue";
 
 let localIdCounter = 0;
 function createLocalId(): string {
@@ -49,7 +53,13 @@ export function useImageUploadField({
   const itemsRef = useRef<ImageItem[]>([]);
 
   const initialItems = useMemo(
-    (): ImageItem[] => initialUrls.map((url) => ({ id: createLocalId(), url, status: "existing", isExisting: true })),
+    (): ImageItem[] =>
+      initialUrls.map((url) => ({
+        id: createLocalId(),
+        url,
+        status: "existing",
+        isExisting: true,
+      })),
     [initialUrls],
   );
   const items = getItems(fieldKey) ?? initialItems;
@@ -68,12 +78,18 @@ export function useImageUploadField({
   const emitChanges = useCallback(
     (nextItems: ImageItem[]) => {
       const finalUrls = nextItems
-        .filter((item) => item.status === "existing" || (item.status === "ready" && !item.file))
+        .filter(
+          (item) =>
+            item.status === "existing" ||
+            (item.status === "ready" && !item.file),
+        )
         .map((item) => item.url);
       onValueChange(finalUrls);
 
       const added = nextItems
-        .filter((item) => !item.isExisting && item.status === "ready" && !item.file)
+        .filter(
+          (item) => !item.isExisting && item.status === "ready" && !item.file,
+        )
         .map((item) => ({ id: item.id, url: item.url }));
       onTrackingChange?.({ added, removed: removedRef.current });
     },
@@ -82,7 +98,9 @@ export function useImageUploadField({
 
   const updateItem = useCallback(
     (id: string, patch: Partial<ImageItem>) => {
-      const next = itemsRef.current.map((item) => (item.id === id ? { ...item, ...patch } : item));
+      const next = itemsRef.current.map((item) =>
+        item.id === id ? { ...item, ...patch } : item,
+      );
       setStoredItems(fieldKey, next);
       emitChanges(next);
     },
@@ -111,14 +129,16 @@ export function useImageUploadField({
         const { url } = await adapter.preprocess(item.file);
         updateItem(item.id, { status: "ready", url, file: undefined });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Falha no upload";
+        const message =
+          error instanceof Error ? error.message : "Falha no upload";
         updateItem(item.id, { status: "error", errorMessage: message });
         failureMessage ??= message;
         hadFailure = true;
       }
     }
 
-    if (hadFailure) throw new Error(failureMessage ?? "One or more image uploads failed");
+    if (hadFailure)
+      throw new Error(failureMessage ?? "One or more image uploads failed");
   }, [adapter, maxSizeMB, updateItem]);
 
   useEffect(() => {
@@ -153,7 +173,10 @@ export function useImageUploadField({
       const current = itemsRef.current;
       const target = current.find((item) => item.id === id);
       if (target?.isExisting)
-        removedRef.current = [...removedRef.current, { id: target.id, url: target.url }];
+        removedRef.current = [
+          ...removedRef.current,
+          { id: target.id, url: target.url },
+        ];
 
       const next = current.filter((item) => item.id !== id);
       setStoredItems(fieldKey, next);

@@ -1,12 +1,12 @@
+import { Camera, UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
 import type { FieldValues } from "react-hook-form";
-import { Camera, UploadCloud } from "lucide-react";
-import type { FieldConfig, FieldFormApi } from "../../model/types";
-import { useImageUploadField } from "../../hooks/use-image-upload-field";
-import { ImageThumb } from "./helper/image-thumb";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Label } from "@/shared/ui/shadcn/label";
-import { cn } from "@/shared/lib/utils";
+import { useImageUploadField } from "../../hooks/use-image-upload-field";
+import type { FieldConfig, FieldFormApi } from "../../model/types";
+import { ImageThumb } from "./helper/image-thumb";
 
 export interface GalleryFieldRendererProps<TFieldValues extends FieldValues> {
   field: FieldConfig<TFieldValues>;
@@ -25,7 +25,9 @@ export function GalleryFieldRenderer<TFieldValues extends FieldValues>({
 
   const [initialUrls] = useState<string[]>(() => {
     const current = form.getValues(field.name);
-    return Array.isArray(current) ? current.filter((url: unknown): url is string => typeof url === "string") : [];
+    return Array.isArray(current)
+      ? current.filter((url: unknown): url is string => typeof url === "string")
+      : [];
   });
 
   const { items, addFiles, removeItem, canAddMore } = useImageUploadField({
@@ -45,7 +47,9 @@ export function GalleryFieldRenderer<TFieldValues extends FieldValues>({
       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {field.label}
         {field.optional ? (
-          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">
+            (opcional)
+          </span>
         ) : null}
       </Label>
 
@@ -68,11 +72,14 @@ export function GalleryFieldRenderer<TFieldValues extends FieldValues>({
           event.preventDefault();
           dragDepthRef.current = 0;
           setIsDragging(false);
-          if (event.dataTransfer.files.length > 0) addFiles(event.dataTransfer.files);
+          if (event.dataTransfer.files.length > 0)
+            addFiles(event.dataTransfer.files);
         }}
         className={cn(
           "rounded-xl border border-dashed p-4 transition-colors",
-          isDragging ? "border-primary bg-primary/5" : "border-border bg-muted/10",
+          isDragging
+            ? "border-primary bg-primary/5"
+            : "border-border bg-muted/10",
         )}
       >
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -99,7 +106,12 @@ export function GalleryFieldRenderer<TFieldValues extends FieldValues>({
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((item) => (
-            <ImageThumb key={item.id} item={item} onRemove={() => removeItem(item.id)} className="aspect-square h-auto w-full" />
+            <ImageThumb
+              key={item.id}
+              item={item}
+              onRemove={() => removeItem(item.id)}
+              className="aspect-square h-auto w-full"
+            />
           ))}
 
           {canAddMore ? (
@@ -131,7 +143,9 @@ export function GalleryFieldRenderer<TFieldValues extends FieldValues>({
         />
       </div>
 
-      {field.hint ? <p className="text-xs text-muted-foreground">{field.hint}</p> : null}
+      {field.hint ? (
+        <p className="text-xs text-muted-foreground">{field.hint}</p>
+      ) : null}
     </div>
   );
 }

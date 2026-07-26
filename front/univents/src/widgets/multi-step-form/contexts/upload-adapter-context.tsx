@@ -1,9 +1,11 @@
-import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { preprocessImageUpload } from "@/features/storage/api";
 import type { ImageUploadAdapter } from "../model/types";
 
-const ImageUploadAdapterContext = createContext<ImageUploadAdapter | null>(null);
+const ImageUploadAdapterContext = createContext<ImageUploadAdapter | null>(
+  null,
+);
 
 export const realImageUploadAdapter: ImageUploadAdapter = {
   preprocess: async (file: File) => {
@@ -21,7 +23,11 @@ export function ImageUploadProvider({
   children: ReactNode;
 }) {
   const value = useMemo(() => adapter ?? realImageUploadAdapter, [adapter]);
-  return <ImageUploadAdapterContext.Provider value={value}>{children}</ImageUploadAdapterContext.Provider>;
+  return (
+    <ImageUploadAdapterContext.Provider value={value}>
+      {children}
+    </ImageUploadAdapterContext.Provider>
+  );
 }
 
 export function useImageUploadAdapter(): ImageUploadAdapter {

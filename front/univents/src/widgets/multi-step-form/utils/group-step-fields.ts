@@ -1,7 +1,9 @@
 import type { FieldValues } from "react-hook-form";
 import type { FieldConfig } from "../model/types";
 
-export function groupStepFields<TFieldValues extends FieldValues>(fields: FieldConfig<TFieldValues>[]): FieldConfig<TFieldValues>[][] {
+export function groupStepFields<TFieldValues extends FieldValues>(
+  fields: FieldConfig<TFieldValues>[],
+): FieldConfig<TFieldValues>[][] {
   const rows: FieldConfig<TFieldValues>[][] = [];
   let pendingHalfField: FieldConfig<TFieldValues> | null = null;
 

@@ -1,42 +1,45 @@
-import { useEffect, useRef, useState } from 'react'
-import { ImageUp, Upload, X } from 'lucide-react'
-import { Button } from '@/shared/ui/shadcn/button'
-import { cn } from '@/shared/lib/utils'
+import { ImageUp, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 
 export interface SignatureImageSelectorProps {
-  file: File | null
-  onChange: (file: File | null) => void
+  file: File | null;
+  onChange: (file: File | null) => void;
 }
 
-export function SignatureImageSelector({ file, onChange }: SignatureImageSelectorProps) {
-  const [isDragging, setIsDragging] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const dragDepthRef = useRef(0)
+export function SignatureImageSelector({
+  file,
+  onChange,
+}: SignatureImageSelectorProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
 
   useEffect(() => {
     if (!file) {
-      setPreviewUrl(null)
-      return
+      setPreviewUrl(null);
+      return;
     }
 
-    const objectUrl = URL.createObjectURL(file)
-    setPreviewUrl(objectUrl)
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
 
     return () => {
-      URL.revokeObjectURL(objectUrl)
-    }
-  }, [file])
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
 
   const openFilePicker = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const selectFile = (nextFile: File | null) => {
-    onChange(nextFile)
-  }
+    onChange(nextFile);
+  };
 
-  const previewAvailable = Boolean(previewUrl)
+  const previewAvailable = Boolean(previewUrl);
 
   return (
     <div className="space-y-2">
@@ -46,53 +49,61 @@ export function SignatureImageSelector({ file, onChange }: SignatureImageSelecto
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
         onChange={(e) => {
-          selectFile(e.target.files?.[0] ?? null)
+          selectFile(e.target.files?.[0] ?? null);
         }}
       />
 
       <div
         onDragEnter={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          dragDepthRef.current += 1
-          setIsDragging(true)
+          e.preventDefault();
+          e.stopPropagation();
+          dragDepthRef.current += 1;
+          setIsDragging(true);
         }}
         onDragOver={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setIsDragging(true)
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragging(true);
         }}
         onDragLeave={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          dragDepthRef.current = Math.max(dragDepthRef.current - 1, 0)
-          if (dragDepthRef.current === 0) setIsDragging(false)
+          e.preventDefault();
+          e.stopPropagation();
+          dragDepthRef.current = Math.max(dragDepthRef.current - 1, 0);
+          if (dragDepthRef.current === 0) setIsDragging(false);
         }}
         onDrop={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          dragDepthRef.current = 0
-          setIsDragging(false)
-          selectFile(e.dataTransfer.files[0])
+          e.preventDefault();
+          e.stopPropagation();
+          dragDepthRef.current = 0;
+          setIsDragging(false);
+          selectFile(e.dataTransfer.files[0]);
         }}
         className={cn(
-          'group relative overflow-hidden rounded-2xl border border-dashed transition-all',
-          previewAvailable ? 'min-h-48 border-border bg-muted/10' : 'min-h-56 border-border bg-muted/10',
-          isDragging ? 'border-primary bg-primary/5' : 'hover:border-primary/40',
+          "group relative overflow-hidden rounded-2xl border border-dashed transition-all",
+          previewAvailable
+            ? "min-h-48 border-border bg-muted/10"
+            : "min-h-56 border-border bg-muted/10",
+          isDragging
+            ? "border-primary bg-primary/5"
+            : "hover:border-primary/40",
         )}
         onClick={openFilePicker}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            openFilePicker()
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openFilePicker();
           }
         }}
       >
         {previewAvailable ? (
           <div className="absolute inset-0">
-            <img src={previewUrl ?? undefined} alt="Prévia da assinatura" className="h-full w-full object-contain bg-background p-4" />
+            <img
+              src={previewUrl ?? undefined}
+              alt="Prévia da assinatura"
+              className="h-full w-full object-contain bg-background p-4"
+            />
             <div className="absolute inset-0 bg-linear-to-t from-background/90 via-background/30 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
               <div className="min-w-0 space-y-1">
@@ -101,7 +112,7 @@ export function SignatureImageSelector({ file, onChange }: SignatureImageSelecto
                   Imagem selecionada
                 </div>
                 <p className="truncate text-sm font-medium text-foreground">
-                  {file?.name ?? 'Arquivo selecionado'}
+                  {file?.name ?? "Arquivo selecionado"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Clique para trocar ou use o botão remover.
@@ -114,8 +125,8 @@ export function SignatureImageSelector({ file, onChange }: SignatureImageSelecto
                   size="sm"
                   className="h-8 gap-2"
                   onClick={(event) => {
-                    event.stopPropagation()
-                    openFilePicker()
+                    event.stopPropagation();
+                    openFilePicker();
                   }}
                 >
                   <Upload className="size-4" />
@@ -126,8 +137,8 @@ export function SignatureImageSelector({ file, onChange }: SignatureImageSelecto
                   variant="outline"
                   size="icon-sm"
                   onClick={(event) => {
-                    event.stopPropagation()
-                    selectFile(null)
+                    event.stopPropagation();
+                    selectFile(null);
                   }}
                 >
                   <X className="size-4" />
@@ -155,5 +166,5 @@ export function SignatureImageSelector({ file, onChange }: SignatureImageSelecto
         )}
       </div>
     </div>
-  )
+  );
 }

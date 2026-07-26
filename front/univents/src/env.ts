@@ -1,5 +1,5 @@
-import { createEnv } from '@t3-oss/env-core'
-import { z } from 'zod'
+import { createEnv } from "@t3-oss/env-core";
+import { z } from "zod";
 
 export const env = createEnv({
   server: {
@@ -18,7 +18,7 @@ export const env = createEnv({
    * The prefix that client-side variables must have. This is enforced both at
    * a type-level and at runtime.
    */
-  clientPrefix: 'VITE_',
+  clientPrefix: "VITE_",
 
   client: {
     VITE_POSTHOG_KEY: z.string(),
@@ -59,16 +59,18 @@ export const env = createEnv({
       process.env.STORAGE_IMAGE_MODERATION_PROMPT,
   },
   onValidationError: (issues) => {
-    console.error('Invalid or missing environment variables:')
+    console.error("Invalid or missing environment variables:");
     issues.forEach((issue) => {
-      const path = issue.path?.map(String).join('.')
-      console.error(`  → ${path}: ${issue.message}`)
-    })
-    process.exit(1)
+      const path = issue.path?.map(String).join(".");
+      console.error(`  → ${path}: ${issue.message}`);
+    });
+    process.exit(1);
   },
   onInvalidAccess: (key) => {
-    console.error(`Attempted to access a server variable on the client: ${key}`)
-    throw new Error(`Invalid Access: ${key}`)
+    console.error(
+      `Attempted to access a server variable on the client: ${key}`,
+    );
+    throw new Error(`Invalid Access: ${key}`);
   },
 
   /**
@@ -85,4 +87,4 @@ export const env = createEnv({
    * explicitly specify this option as true.
    */
   emptyStringAsUndefined: true,
-})
+});

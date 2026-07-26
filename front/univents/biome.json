@@ -3,7 +3,7 @@
   "vcs": {
     "enabled": false,
     "clientKind": "git",
-    "useIgnoreFile": false
+    "useIgnoreFile": true
   },
   "files": {
     "ignoreUnknown": false,
@@ -18,7 +18,9 @@
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "tab"
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2
   },
   "assist": {
     "actions": {
@@ -35,6 +37,9 @@
         "noStaticElementInteractions": "off",
         "useKeyWithClickEvents": "off",
         "useSemanticElements": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
       }
     }
   },

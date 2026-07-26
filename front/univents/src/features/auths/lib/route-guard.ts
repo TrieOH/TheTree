@@ -1,4 +1,4 @@
 export {
   requireAuth,
   requireGuest,
-} from "@trieoh/front-core"
+} from "@trieoh/front-core";

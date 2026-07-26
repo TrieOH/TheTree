@@ -1,18 +1,22 @@
-import { TanStackQueryProvider, createQueryClient } from "@trieoh/front-core"
-import type { ReactNode } from "react"
+import { createQueryClient, TanStackQueryProvider } from "@trieoh/front-core";
+import type { ReactNode } from "react";
 
-let context: { queryClient: ReturnType<typeof createQueryClient> } | undefined
+let context: { queryClient: ReturnType<typeof createQueryClient> } | undefined;
 
 export function getContext() {
-  if (context) return context
+  if (context) return context;
 
-  context = { queryClient: createQueryClient() }
+  context = { queryClient: createQueryClient() };
 
-  return context
+  return context;
 }
 
 export function Provider({ children }: { children: ReactNode }) {
-  const { queryClient } = getContext()
+  const { queryClient } = getContext();
 
-  return <TanStackQueryProvider queryClient={queryClient}>{children}</TanStackQueryProvider>
+  return (
+    <TanStackQueryProvider queryClient={queryClient}>
+      {children}
+    </TanStackQueryProvider>
+  );
 }

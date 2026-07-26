@@ -1,67 +1,66 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useMemo } from 'react'
-import { useQueries, useQuery } from '@tanstack/react-query'
-import { BadgeCheck, FileX2, Hash, Loader2, ShieldCheck } from 'lucide-react'
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { BadgeCheck, FileX2, Hash, Loader2, ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
+import { allPublicActivitiesQueryOptions } from "@/features/activities/api";
+import type { ActivityI } from "@/features/activities/model";
 import {
   certificationTemplateQueryOptions,
   verifyCertificationHashFn,
-} from '@/features/certifications/api'
-import { certificationKeys } from '@/features/certifications/api/query-keys'
+} from "@/features/certifications/api";
+import { certificationKeys } from "@/features/certifications/api/query-keys";
 import {
-  CertViewer,
   CertificateTemplateStaticView,
-} from '@/features/certifications/ui/CertViewer'
+  CertViewer,
+} from "@/features/certifications/ui/CertViewer";
+import { allPublicEditionsQueryOptions } from "@/features/editions/api";
+import type { EditionI } from "@/features/editions/model";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
+import { Badge } from "@/shared/ui/shadcn/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/ui/shadcn/card'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { Separator } from '@/shared/ui/shadcn/separator'
-import { allPublicEventsQueryOptions } from '@/features/events/api'
-import { allPublicEditionsQueryOptions } from '@/features/editions/api'
-import { allPublicActivitiesQueryOptions } from '@/features/activities/api'
-import type { EditionI } from '@/features/editions/model'
-import type { ActivityI } from '@/features/activities/model'
+} from "@/shared/ui/shadcn/card";
+import { Separator } from "@/shared/ui/shadcn/separator";
 
-export const Route = createFileRoute('/verify/$hash')({
+export const Route = createFileRoute("/verify/$hash")({
   component: VerifyCertificationPage,
-})
+});
 
 function formatCertifiedAt(value: string) {
-  return new Date(value).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getOrigin() {
-  if (typeof window !== 'undefined' && window.location?.origin)
-    return window.location.origin
+  if (window?.location?.origin) return window.location.origin;
 
-  return 'http://localhost:3002'
+  return "http://localhost:3002";
 }
 
 type VerifiedTemplateSectionProps = {
-  hash: string
+  hash: string;
   templateQuery: {
-    query: ReturnType<typeof certificationTemplateQueryOptions>
-    eventId: string
-    editionId: string
-  }
+    query: ReturnType<typeof certificationTemplateQueryOptions>;
+    eventId: string;
+    editionId: string;
+  };
   payload: {
-    target_type: 'edition' | 'activity'
-    target_id: string
-    certified_at: string
-  }
-  activityLookup: Map<string, ActivityI>
-  editionLookup: Map<string, EditionI>
-}
+    target_type: "edition" | "activity";
+    target_id: string;
+    certified_at: string;
+  };
+  activityLookup: Map<string, ActivityI>;
+  editionLookup: Map<string, EditionI>;
+};
 
 function VerifiedTemplateSection({
   hash,
@@ -70,31 +69,31 @@ function VerifiedTemplateSection({
   activityLookup,
   editionLookup,
 }: VerifiedTemplateSectionProps) {
-  const { data: templateData } = useQuery(templateQuery.query)
+  const { data: templateData } = useQuery(templateQuery.query);
 
   const variables = useMemo(() => {
     const activity =
-      payload.target_type === 'activity'
+      payload.target_type === "activity"
         ? (activityLookup.get(payload.target_id) ?? null)
-        : null
+        : null;
     const editionId =
-      payload.target_type === 'edition'
+      payload.target_type === "edition"
         ? payload.target_id
-        : (activity?.edition_id ?? null)
-    const edition = editionId ? (editionLookup.get(editionId) ?? null) : null
+        : (activity?.edition_id ?? null);
+    const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
 
     return {
       activity_name:
-        payload.target_type === 'edition'
-          ? (edition?.name ?? '')
-          : (activity?.title ?? edition?.name ?? ''),
+        payload.target_type === "edition"
+          ? (edition?.name ?? "")
+          : (activity?.title ?? edition?.name ?? ""),
       certified_at: formatCertifiedAt(payload.certified_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
-    }
-  }, [activityLookup, editionLookup, hash, payload])
+    };
+  }, [activityLookup, editionLookup, hash, payload]);
 
-  if (!templateData) return null
+  if (!templateData) return null;
 
   return (
     <div className="mb-6 overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -118,70 +117,70 @@ function VerifiedTemplateSection({
         />
       </div>
     </div>
-  )
+  );
 }
 
 function VerifyCertificationPage() {
-  const { hash } = Route.useParams()
+  const { hash } = Route.useParams();
   const { data, isLoading, isError } = useQuery({
     queryKey: certificationKeys.verification(hash),
     queryFn: () => verifyCertificationHashFn(hash),
     retry: false,
-  })
+  });
 
-  const verified = data?.is_verified === true
-  const payload = data ?? null
+  const verified = data?.is_verified === true;
+  const payload = data ?? null;
 
-  const { data: events = [] } = useQuery(allPublicEventsQueryOptions())
+  const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
   const editionQueries = useQueries({
     queries: events.map((event) => ({
       ...allPublicEditionsQueryOptions(event.id),
       enabled: !!event.id,
     })),
-  })
+  });
 
   const editionLookup = useMemo(() => {
-    const editions = new Map<string, EditionI>()
+    const editions = new Map<string, EditionI>();
     editionQueries.forEach((query) => {
       for (const edition of (query.data ?? []) as EditionI[]) {
-        editions.set(edition.id, edition)
+        editions.set(edition.id, edition);
       }
-    })
-    return editions
-  }, [editionQueries])
+    });
+    return editions;
+  }, [editionQueries]);
 
   const activityQueries = useQueries({
     queries: [...editionLookup.values()].map((edition) => ({
       ...allPublicActivitiesQueryOptions(edition.event_id, edition.id),
       enabled: !!edition.event_id,
     })),
-  })
+  });
 
   const activityLookup = useMemo(() => {
-    const activities = new Map<string, ActivityI>()
+    const activities = new Map<string, ActivityI>();
     activityQueries.forEach((query) => {
       for (const activity of (query.data ?? []) as ActivityI[]) {
-        activities.set(activity.id, activity)
+        activities.set(activity.id, activity);
       }
-    })
-    return activities
-  }, [activityQueries])
+    });
+    return activities;
+  }, [activityQueries]);
 
   const templateQuery = useMemo(() => {
-    if (!payload) return null
+    if (!payload) return null;
 
     const activity =
-      payload.target_type === 'activity'
+      payload.target_type === "activity"
         ? (activityLookup.get(payload.target_id) ?? null)
-        : null
+        : null;
     const editionId =
-      payload.target_type === 'edition'
+      payload.target_type === "edition"
         ? payload.target_id
-        : (activity?.edition_id ?? null)
-    const edition = editionId ? (editionLookup.get(editionId) ?? null) : null
-    const templateId = activity?.certification_template_id ?? null
+        : (activity?.edition_id ?? null);
+    const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
+    const templateId = activity?.certification_template_id ?? null;
 
-    if (!templateId || !edition?.event_id || !edition?.id) return null
+    if (!templateId || !edition?.event_id || !edition?.id) return null;
 
     return {
       query: certificationTemplateQueryOptions(
@@ -191,8 +190,8 @@ function VerifyCertificationPage() {
       ),
       eventId: edition.event_id,
       editionId: edition.id,
-    }
-  }, [activityLookup, editionLookup, payload])
+    };
+  }, [activityLookup, editionLookup, payload]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -279,9 +278,9 @@ function VerifyCertificationPage() {
                 <Separator />
 
                 <div className="text-sm text-muted-foreground">
-                  Emitido em{' '}
+                  Emitido em{" "}
                   <span className="font-medium text-foreground">
-                    {payload ? formatCertifiedAt(payload.certified_at) : '-'}
+                    {payload ? formatCertifiedAt(payload.certified_at) : "-"}
                   </span>
                 </div>
               </>
@@ -293,8 +292,8 @@ function VerifyCertificationPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {isError
-                    ? 'A verificação falhou ao consultar o certificado.'
-                    : 'O hash informado não corresponde a um certificado válido ou já não está ativo.'}
+                    ? "A verificação falhou ao consultar o certificado."
+                    : "O hash informado não corresponde a um certificado válido ou já não está ativo."}
                 </p>
               </div>
             )}
@@ -309,7 +308,7 @@ function VerifyCertificationPage() {
                   variant="secondary"
                   className="font-mono text-[10px] uppercase tracking-wider"
                 >
-                  {payload.is_verified ? 'verified' : 'unverified'}
+                  {payload.is_verified ? "verified" : "unverified"}
                 </Badge>
               </div>
             )}
@@ -317,5 +316,5 @@ function VerifyCertificationPage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }

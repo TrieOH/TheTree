@@ -1,55 +1,55 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { Award, CalendarDays, ExternalLink, FileCheck2 } from 'lucide-react'
-import { allPublicActivitiesQueryOptions } from '@/features/activities/api'
-import { certificationsByUserQueryOptions } from '../api'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { buttonVariants } from '@/shared/ui/shadcn/button'
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Award, CalendarDays, ExternalLink, FileCheck2 } from "lucide-react";
+import { allPublicActivitiesQueryOptions } from "@/features/activities/api";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { buttonVariants } from "@/shared/ui/shadcn/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/ui/shadcn/card'
-import { Skeleton } from '@/shared/ui/shadcn/skeleton'
-import { cn } from '@/shared/lib/utils'
+} from "@/shared/ui/shadcn/card";
+import { Skeleton } from "@/shared/ui/shadcn/skeleton";
+import { certificationsByUserQueryOptions } from "../api";
 
 interface UserCertificationsSectionProps {
-  eventId: string
-  editionId: string
-  userId: string
-  title?: string
-  subtitle?: string
+  eventId: string;
+  editionId: string;
+  userId: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export function UserCertificationsSection({
   eventId,
   editionId,
   userId,
-  title = 'Meus certificados',
-  subtitle = 'Certificados emitidos nesta edição.',
+  title = "Meus certificados",
+  subtitle = "Certificados emitidos nesta edição.",
 }: UserCertificationsSectionProps) {
   const certificationsQuery = useQuery({
     ...certificationsByUserQueryOptions(userId),
     enabled: Boolean(userId),
-  })
+  });
   const activitiesQuery = useQuery(
     allPublicActivitiesQueryOptions(eventId, editionId),
-  )
-  const activities = activitiesQuery.data ?? []
+  );
+  const activities = activitiesQuery.data ?? [];
   const activityNames = new Map(
     activities.map((activity) => [activity.id, activity.title]),
-  )
-  const activityIds = new Set(activityNames.keys())
+  );
+  const activityIds = new Set(activityNames.keys());
   const certifications = (certificationsQuery.data ?? []).filter(
     (certification) =>
-      (certification.target_type === 'edition' &&
+      (certification.target_type === "edition" &&
         certification.target_id === editionId) ||
-      (certification.target_type === 'activity' &&
+      (certification.target_type === "activity" &&
         activityIds.has(certification.target_id)),
-  )
-  const isLoading = certificationsQuery.isLoading || activitiesQuery.isLoading
+  );
+  const isLoading = certificationsQuery.isLoading || activitiesQuery.isLoading;
 
   return (
     <section className="space-y-4">
@@ -79,10 +79,10 @@ export function UserCertificationsSection({
         <div className="grid gap-4 md:grid-cols-2">
           {certifications.map((certification) => {
             const targetName =
-              certification.target_type === 'edition'
-                ? 'Certificado da edição'
+              certification.target_type === "edition"
+                ? "Certificado da edição"
                 : (activityNames.get(certification.target_id) ??
-                  'Certificado de atividade')
+                  "Certificado de atividade");
 
             return (
               <Card key={certification.id} className="overflow-hidden">
@@ -94,14 +94,14 @@ export function UserCertificationsSection({
                       </CardTitle>
                       <CardDescription className="mt-1 flex items-center gap-1.5 text-xs">
                         <CalendarDays className="size-3.5" />
-                        Emitido em{' '}
+                        Emitido em{" "}
                         {formatCertificateDate(certification.certified_at)}
                       </CardDescription>
                     </div>
                     <Badge variant="secondary">
-                      {certification.target_type === 'edition'
-                        ? 'Edição'
-                        : 'Atividade'}
+                      {certification.target_type === "edition"
+                        ? "Edição"
+                        : "Atividade"}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -111,7 +111,7 @@ export function UserCertificationsSection({
                       Código de verificação
                     </p>
                     <p className="mt-1 truncate font-mono text-xs">
-                      {certification.hash || 'Código indisponível'}
+                      {certification.hash || "Código indisponível"}
                     </p>
                   </div>
                   {certification.hash ? (
@@ -119,8 +119,8 @@ export function UserCertificationsSection({
                       to="/verify/$hash"
                       params={{ hash: certification.hash }}
                       className={cn(
-                        buttonVariants({ variant: 'outline', size: 'sm' }),
-                        'w-full',
+                        buttonVariants({ variant: "outline", size: "sm" }),
+                        "w-full",
                       )}
                     >
                       Verificar certificado
@@ -129,18 +129,18 @@ export function UserCertificationsSection({
                   ) : null}
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
       )}
     </section>
-  )
+  );
 }
 
 function formatCertificateDate(value: string) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(value))
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
 }

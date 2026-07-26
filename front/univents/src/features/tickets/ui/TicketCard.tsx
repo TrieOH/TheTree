@@ -1,5 +1,5 @@
+import { Check, Star } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { Star, Check } from "lucide-react";
 import type { TicketI } from "../model";
 
 function formatPrice(cents: number): string {
@@ -25,7 +25,7 @@ export function TicketCard({ ticket, isFeatured }: TicketCardProps) {
         "relative flex flex-col w-72 h-56 rounded-2xl border overflow-hidden transition-all duration-300 p-5",
         isFeatured
           ? "bg-card border-border/60 lg:scale-105 lg:bg-primary/4 lg:border-primary/25 lg:shadow-lg lg:shadow-primary/5 lg:z-10 hover:border-border hover:shadow-md"
-          : "bg-card border-border/60 hover:border-border hover:shadow-md"
+          : "bg-card border-border/60 hover:border-border hover:shadow-md",
       )}
     >
       {/* Badge */}
@@ -57,7 +57,7 @@ export function TicketCard({ ticket, isFeatured }: TicketCardProps) {
               ? "text-emerald-600 dark:text-emerald-400"
               : isFeatured
                 ? "text-foreground lg:text-primary"
-                : "text-foreground"
+                : "text-foreground",
           )}
         >
           {formatPrice(ticket.price_cents)}

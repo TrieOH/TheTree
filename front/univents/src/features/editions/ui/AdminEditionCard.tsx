@@ -1,6 +1,4 @@
-import type React from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { motion } from 'motion/react'
+import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   Award,
@@ -11,57 +9,60 @@ import {
   Pencil,
   Send,
   ShieldCheck,
-} from 'lucide-react'
-import type { EditionI } from '../model'
+} from "lucide-react";
+import { motion } from "motion/react";
+import type React from "react";
+import { formatDateRange } from "@/shared/lib/date";
+import { cn } from "@/shared/lib/utils";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/shared/ui/shadcn/context-menu'
+} from "@/shared/ui/shadcn/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu'
-import { cn } from '@/shared/lib/utils'
-import { formatDateRange } from '@/shared/lib/date'
+} from "@/shared/ui/shadcn/dropdown-menu";
+import type { EditionI } from "../model";
+
 interface EditionCardProps {
-  edition: EditionI
-  eventId: string
-  index: number
-  onEdit?: (edition: EditionI) => void
-  onPublish?: (edition: EditionI) => void
+  edition: EditionI;
+  eventId: string;
+  index: number;
+  onEdit?: (edition: EditionI) => void;
+  onPublish?: (edition: EditionI) => void;
 }
 
 const statusConfig: Record<
-  EditionI['status'],
+  EditionI["status"],
   { label: string; dot: string; pill: string }
 > = {
   draft: {
-    label: 'Rascunho',
-    dot: 'bg-amber-500',
-    pill: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+    label: "Rascunho",
+    dot: "bg-amber-500",
+    pill: "bg-amber-500/10 text-amber-700 border-amber-500/20",
   },
   future: {
-    label: 'Futura',
-    dot: 'bg-sky-500',
-    pill: 'bg-sky-500/10 text-sky-700 border-sky-500/20',
+    label: "Futura",
+    dot: "bg-sky-500",
+    pill: "bg-sky-500/10 text-sky-700 border-sky-500/20",
   },
   active: {
-    label: 'Ativa',
-    dot: 'bg-emerald-500',
-    pill: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+    label: "Ativa",
+    dot: "bg-emerald-500",
+    pill: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
   },
   past: {
-    label: 'Encerrada',
-    dot: 'bg-slate-500',
-    pill: 'bg-slate-500/10 text-slate-700 border-slate-500/20',
+    label: "Encerrada",
+    dot: "bg-slate-500",
+    pill: "bg-slate-500/10 text-slate-700 border-slate-500/20",
   },
-}
+};
 
 function MenuItems({
   isContext = false,
@@ -70,37 +71,39 @@ function MenuItems({
   onPublish,
   eventId,
 }: {
-  isContext?: boolean
-  edition: EditionI
-  onEdit?: () => void
-  onPublish?: () => void
-  eventId: string
+  isContext?: boolean;
+  edition: EditionI;
+  onEdit?: () => void;
+  onPublish?: () => void;
+  eventId: string;
 }) {
-  const navigate = useNavigate()
-  const Item = isContext ? ContextMenuItem : DropdownMenuItem
-  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator
+  const navigate = useNavigate();
+  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
+  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
   const go = (to: string) => () => {
     void navigate({
       to,
       params: { eventId, editionId: edition.id },
-    })
-  }
-  const openEdition = go('/admin/events/$eventId/editions/$editionId')
+    });
+  };
+  const openEdition = go("/admin/events/$eventId/editions/$editionId");
   const openCertifications = go(
-    '/admin/events/$eventId/editions/$editionId/certifications',
-  )
+    "/admin/events/$eventId/editions/$editionId/certifications",
+  );
   const openSignatures = go(
-    '/admin/events/$eventId/editions/$editionId/signatures',
-  )
-  const openProducts = go('/admin/events/$eventId/editions/$editionId/products')
+    "/admin/events/$eventId/editions/$editionId/signatures",
+  );
+  const openProducts = go(
+    "/admin/events/$eventId/editions/$editionId/products",
+  );
   const openCheckpoints = go(
-    '/admin/events/$eventId/editions/$editionId/checkpoints',
-  )
+    "/admin/events/$eventId/editions/$editionId/checkpoints",
+  );
   const stop = (action?: () => void) => (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    action?.()
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    action?.();
+  };
 
   return (
     <>
@@ -138,7 +141,7 @@ function MenuItems({
         <span>Checkpoints</span>
       </Item>
     </>
-  )
+  );
 }
 
 export function AdminEditionCard({
@@ -148,18 +151,18 @@ export function AdminEditionCard({
   onEdit,
   onPublish,
 }: EditionCardProps) {
-  const navigate = useNavigate()
-  const hasVisual = Boolean(edition.banner_url ?? edition.logo_url)
-  const status = statusConfig[edition.status]
+  const navigate = useNavigate();
+  const hasVisual = Boolean(edition.banner_url ?? edition.logo_url);
+  const status = statusConfig[edition.status];
 
   const openEdition = () => {
     void navigate({
-      to: '/admin/events/$eventId/editions/$editionId',
+      to: "/admin/events/$eventId/editions/$editionId",
       params: { eventId, editionId: edition.id },
-    })
-  }
-  const handleEdit = () => onEdit?.(edition)
-  const handlePublish = () => onPublish?.(edition)
+    });
+  };
+  const handleEdit = () => onEdit?.(edition);
+  const handlePublish = () => onPublish?.(edition);
 
   return (
     <ContextMenu>
@@ -174,34 +177,34 @@ export function AdminEditionCard({
               ease: [0.25, 0.1, 0.25, 1],
             }}
             className={cn(
-              'group relative flex w-full min-w-62.5 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left',
-              'ring-1 ring-foreground/10 shadow-xs',
-              'transform-gpu will-change-transform',
-              'transition-all duration-300 ease-out',
-              'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
-              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
+              "group relative flex w-full min-w-62.5 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left",
+              "ring-1 ring-foreground/10 shadow-xs",
+              "transform-gpu will-change-transform",
+              "transition-all duration-300 ease-out",
+              "hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm",
+              "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
             )}
             role="button"
             tabIndex={0}
             onClick={onEdit ? handleEdit : openEdition}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                if (onEdit) handleEdit()
-                else openEdition()
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (onEdit) handleEdit();
+                else openEdition();
               }
             }}
           >
             <div className="relative aspect-video overflow-hidden bg-muted">
               {hasVisual ? (
                 <img
-                  src={edition.banner_url ?? edition.logo_url ?? ''}
+                  src={edition.banner_url ?? edition.logo_url ?? ""}
                   alt={edition.name}
                   className={cn(
-                    'h-full w-full object-cover transition-transform duration-700 ease-out',
-                    'group-hover:scale-105',
+                    "h-full w-full object-cover transition-transform duration-700 ease-out",
+                    "group-hover:scale-105",
                   )}
-                  loading={index < 4 ? 'eager' : 'lazy'}
+                  loading={index < 4 ? "eager" : "lazy"}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted via-background to-muted/40">
@@ -216,11 +219,11 @@ export function AdminEditionCard({
               <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm',
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm",
                     status.pill,
                   )}
                 >
-                  <span className={cn('size-1.5 rounded-full', status.dot)} />
+                  <span className={cn("size-1.5 rounded-full", status.dot)} />
                   <span className="max-w-28 truncate">{status.label}</span>
                 </span>
               </div>
@@ -233,9 +236,9 @@ export function AdminEditionCard({
                         type="button"
                         onClick={(e) => e.stopPropagation()}
                         className={cn(
-                          'inline-flex size-9 items-center justify-center rounded-full',
-                          'bg-background/85 text-foreground shadow-sm backdrop-blur-sm',
-                          'transition-colors hover:bg-background',
+                          "inline-flex size-9 items-center justify-center rounded-full",
+                          "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
+                          "transition-colors hover:bg-background",
                         )}
                         aria-label={`Abrir ações de ${edition.name}`}
                       >
@@ -287,12 +290,12 @@ export function AdminEditionCard({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  openEdition()
+                  e.stopPropagation();
+                  openEdition();
                 }}
                 className={cn(
-                  'inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium',
-                  'bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary',
+                  "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium",
+                  "bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary",
                 )}
               >
                 Painel
@@ -313,5 +316,5 @@ export function AdminEditionCard({
         />
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }

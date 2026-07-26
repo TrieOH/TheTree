@@ -4,55 +4,56 @@ import {
   Fingerprint,
   Image as ImageIcon,
   ImagePlus,
-  PenLine,
+  PenTool,
   Trash2,
   Type,
-} from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
-import type { CertificationTemplateElement } from '../../model'
+} from "lucide-react";
+import type { ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import { Separator } from "@/shared/ui/shadcn/separator";
+import type { CertificationTemplateElement } from "../../model";
 import {
   CERTIFICATE_CANVAS_PRESETS,
   CERTIFICATE_IMAGE_ACCEPT,
-} from '../constants'
+} from "../constants";
 import {
   createImageElement,
   createSignatureElement,
   createTextElement,
-} from '../factories'
-import { certificateEditorActions, useCertificateEditorState } from '../store'
+} from "../factories";
+import { certificateEditorActions, useCertificateEditorState } from "../store";
 import {
   isSupportedCertificateImage,
   loadCertificateImageDimensions,
   readCertificateFile,
-} from '../utils'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Input } from '@/shared/ui/shadcn/input'
-import { Separator } from '@/shared/ui/shadcn/separator'
+} from "../utils";
+import { ToolbarCombobox } from "./toolbar-combobox";
 
-const LAYER_ICON: Record<CertificationTemplateElement['type'], typeof Type> = {
+const LAYER_ICON: Record<CertificationTemplateElement["type"], typeof Type> = {
   hash: Fingerprint,
   text: Type,
   image: ImageIcon,
-  signature: PenLine,
-}
+  signature: PenTool,
+};
 
 function getLayerLabel(element: CertificationTemplateElement): string {
-  if (element.type === 'hash') return 'Hash de verificação'
-  if (element.type === 'image') return 'Imagem'
-  if (element.type === 'signature') return `Assinatura: ${element.name}`
+  if (element.type === "hash") return "Hash de verificação";
+  if (element.type === "image") return "Imagem";
+  if (element.type === "signature") return `Assinatura: ${element.name}`;
 
   const text = element.paragraphs
     .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
-    .join('')
-    .trim()
-  return text.length > 0 ? text.slice(0, 24) : 'Texto vazio'
+    .join("")
+    .trim();
+  return text.length > 0 ? text.slice(0, 24) : "Texto vazio";
 }
 
 interface CanvasDimensionInputProps {
-  label: string
-  value: number
-  onCommit: (value: number) => void
+  label: string;
+  value: number;
+  onCommit: (value: number) => void;
 }
 
 function CanvasDimensionInput({
@@ -60,21 +61,21 @@ function CanvasDimensionInput({
   value,
   onCommit,
 }: CanvasDimensionInputProps) {
-  const [draft, setDraft] = useState(String(Math.round(value)))
+  const [draft, setDraft] = useState(String(Math.round(value)));
 
-  useEffect(() => setDraft(String(Math.round(value))), [value])
+  useEffect(() => setDraft(String(Math.round(value))), [value]);
 
   function commit() {
-    const parsed = Number(draft)
+    const parsed = Number(draft);
     if (Number.isFinite(parsed) && parsed >= 320 && parsed <= 6000) {
-      onCommit(parsed)
-      return
+      onCommit(parsed);
+      return;
     }
-    setDraft(String(Math.round(value)))
+    setDraft(String(Math.round(value)));
   }
 
   return (
-    <label className="min-w-0 flex-1 space-y-1">
+    <div className="min-w-0 flex-1 space-y-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       <Input
         type="number"
@@ -84,103 +85,108 @@ function CanvasDimensionInput({
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur()
+          if (event.key === "Enter") event.currentTarget.blur();
         }}
       />
-    </label>
-  )
+    </div>
+  );
 }
 
 export function CertificateToolsSidebar() {
-  const canvas = useCertificateEditorState((state) => state.canvas)
+  const canvas = useCertificateEditorState((state) => state.canvas);
+  const selectedCanvasPreset = CERTIFICATE_CANVAS_PRESETS.find(
+    (preset) =>
+      preset.size.width === canvas.width &&
+      preset.size.height === canvas.height,
+  );
   const signatures = useCertificateEditorState(
     (state) => state.availableSignatures,
-  )
+  );
   const backgroundUrl = useCertificateEditorState(
     (state) => state.draft.url ?? state.draft.data.background,
-  )
+  );
   const elements = useCertificateEditorState(
     (state) => state.draft.data.elements,
-  )
+  );
   const selectedElementId = useCertificateEditorState(
     (state) => state.selectedElementId,
-  )
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const backgroundInputRef = useRef<HTMLInputElement>(null)
-  const [imageError, setImageError] = useState<string | null>(null)
-  const [backgroundError, setBackgroundError] = useState<string | null>(null)
-  const [readingImage, setReadingImage] = useState(false)
-  const [readingBackground, setReadingBackground] = useState(false)
+  );
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
+  const [readingImage, setReadingImage] = useState(false);
+  const [readingBackground, setReadingBackground] = useState(false);
   const [backgroundSize, setBackgroundSize] = useState<{
-    width: number
-    height: number
-  } | null>(null)
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     if (!backgroundUrl) {
-      setBackgroundSize(null)
-      return
+      setBackgroundSize(null);
+      return;
     }
 
     void loadCertificateImageDimensions(backgroundUrl)
       .then((size) => {
-        if (active) setBackgroundSize(size)
+        if (active) setBackgroundSize(size);
       })
       .catch(() => {
-        if (active) setBackgroundSize(null)
-      })
+        if (active) setBackgroundSize(null);
+      });
     return () => {
-      active = false
-    }
-  }, [backgroundUrl])
+      active = false;
+    };
+  }, [backgroundUrl]);
 
   async function addImage(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
 
     if (!isSupportedCertificateImage(file)) {
-      setImageError('Use uma imagem PNG, JPEG ou WebP.')
-      return
+      setImageError("Use uma imagem PNG, JPEG ou WebP.");
+      return;
     }
 
-    setReadingImage(true)
-    setImageError(null)
+    setReadingImage(true);
+    setImageError(null);
     try {
-      const src = await readCertificateFile(file)
+      const src = await readCertificateFile(file);
       const naturalSize = await loadCertificateImageDimensions(src).catch(
         () => undefined,
-      )
+      );
       certificateEditorActions.addElement(
         createImageElement(src, canvas, naturalSize),
-      )
+      );
     } catch {
-      setImageError('Não foi possível carregar a imagem.')
+      setImageError("Não foi possível carregar a imagem.");
     } finally {
-      setReadingImage(false)
+      setReadingImage(false);
     }
   }
 
   async function setBackground(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
 
     if (!isSupportedCertificateImage(file)) {
-      setBackgroundError('Use uma imagem PNG, JPEG ou WebP.')
-      return
+      setBackgroundError("Use uma imagem PNG, JPEG ou WebP.");
+      return;
     }
 
-    setReadingBackground(true)
-    setBackgroundError(null)
+    setReadingBackground(true);
+    setBackgroundError(null);
     try {
-      const src = await readCertificateFile(file)
-      certificateEditorActions.setBackgroundUrl(src)
+      const src = await readCertificateFile(file);
+      certificateEditorActions.setBackgroundUrl(src);
     } catch {
-      setBackgroundError('Não foi possível carregar a imagem de fundo.')
+      setBackgroundError("Não foi possível carregar a imagem de fundo.");
     } finally {
-      setReadingBackground(false)
+      setReadingBackground(false);
     }
   }
 
@@ -210,7 +216,7 @@ export function CertificateToolsSidebar() {
             onClick={() => imageInputRef.current?.click()}
           >
             <ImagePlus className="size-4" />
-            {readingImage ? 'Carregando…' : 'Imagem'}
+            {readingImage ? "Carregando…" : "Imagem"}
           </Button>
           <input
             ref={imageInputRef}
@@ -229,7 +235,7 @@ export function CertificateToolsSidebar() {
 
       <section className="space-y-2.5">
         <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          <PenLine className="size-3.5" />
+          <PenTool className="size-3.5" />
           Assinaturas
         </div>
         {signatures.length === 0 ? (
@@ -281,10 +287,10 @@ export function CertificateToolsSidebar() {
             onClick={() => backgroundInputRef.current?.click()}
           >
             {readingBackground
-              ? 'Carregando…'
+              ? "Carregando…"
               : backgroundUrl
-                ? 'Trocar imagem'
-                : 'Adicionar imagem'}
+                ? "Trocar imagem"
+                : "Adicionar imagem"}
           </Button>
           {backgroundUrl ? (
             <Button
@@ -307,7 +313,7 @@ export function CertificateToolsSidebar() {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="h-auto w-full whitespace-normal px-3 py-2 text-center text-xs leading-tight"
             disabled={
               backgroundSize.width < 320 ||
               backgroundSize.height < 320 ||
@@ -318,8 +324,12 @@ export function CertificateToolsSidebar() {
               certificateEditorActions.setCanvasSize(backgroundSize)
             }
           >
-            Usar tamanho da imagem ({backgroundSize.width}×
-            {backgroundSize.height})
+            <span className="block">
+              Usar tamanho da imagem
+              <span className="block text-[11px] text-muted-foreground">
+                {backgroundSize.width}×{backgroundSize.height}
+              </span>
+            </span>
           </Button>
         ) : null}
         {backgroundError ? (
@@ -335,27 +345,24 @@ export function CertificateToolsSidebar() {
         <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Tamanho do certificado
         </h2>
-        <select
+        <ToolbarCombobox
           aria-label="Predefinição de tamanho"
-          className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
-          defaultValue=""
-          onChange={(event) => {
+          value={selectedCanvasPreset?.id}
+          options={CERTIFICATE_CANVAS_PRESETS.map((preset) => ({
+            value: preset.id,
+            label: `${preset.label} (${preset.size.width}×${preset.size.height})`,
+          }))}
+          placeholder="Predefinições"
+          className="w-full"
+          triggerClassName="h-10 text-sm"
+          dropdownClassName="w-full"
+          onChange={(value) => {
             const preset = CERTIFICATE_CANVAS_PRESETS.find(
-              (item) => item.id === event.target.value,
-            )
-            if (preset) certificateEditorActions.setCanvasSize(preset.size)
-            event.target.value = ''
+              (item) => item.id === value,
+            );
+            if (preset) certificateEditorActions.setCanvasSize(preset.size);
           }}
-        >
-          <option value="" disabled>
-            Predefinições
-          </option>
-          {CERTIFICATE_CANVAS_PRESETS.map((preset) => (
-            <option key={preset.id} value={preset.id}>
-              {preset.label} ({preset.size.width}×{preset.size.height})
-            </option>
-          ))}
-        </select>
+        />
         <div className="flex items-end gap-2">
           <CanvasDimensionInput
             label="Largura"
@@ -393,18 +400,18 @@ export function CertificateToolsSidebar() {
         </h2>
         <ul className="space-y-1">
           {[...elements].reverse().map((element, reversedIndex) => {
-            const index = elements.length - 1 - reversedIndex
-            const Icon = LAYER_ICON[element.type]
-            const selected = selectedElementId === element.id
+            const index = elements.length - 1 - reversedIndex;
+            const Icon = LAYER_ICON[element.type];
+            const selected = selectedElementId === element.id;
 
             return (
               <li
                 key={element.id}
                 className={
-                  'flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-sm ' +
+                  "flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-sm " +
                   (selected
-                    ? 'border-ring bg-muted'
-                    : 'border-transparent hover:bg-muted/60')
+                    ? "border-ring bg-muted"
+                    : "border-transparent hover:bg-muted/60")
                 }
                 onClick={() =>
                   certificateEditorActions.selectElement(element.id)
@@ -421,8 +428,8 @@ export function CertificateToolsSidebar() {
                   disabled={index === elements.length - 1}
                   className="rounded p-0.5 text-muted-foreground hover:bg-background disabled:opacity-30"
                   onClick={(event) => {
-                    event.stopPropagation()
-                    certificateEditorActions.bringForward(element.id)
+                    event.stopPropagation();
+                    certificateEditorActions.bringForward(element.id);
                   }}
                 >
                   <ArrowUp className="size-3.5" />
@@ -434,31 +441,31 @@ export function CertificateToolsSidebar() {
                   disabled={index === 0}
                   className="rounded p-0.5 text-muted-foreground hover:bg-background disabled:opacity-30"
                   onClick={(event) => {
-                    event.stopPropagation()
-                    certificateEditorActions.sendBackward(element.id)
+                    event.stopPropagation();
+                    certificateEditorActions.sendBackward(element.id);
                   }}
                 >
                   <ArrowDown className="size-3.5" />
                 </button>
-                {element.type !== 'hash' ? (
+                {element.type !== "hash" ? (
                   <button
                     type="button"
                     title="Excluir"
                     aria-label="Excluir camada"
                     className="rounded p-0.5 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
                     onClick={(event) => {
-                      event.stopPropagation()
-                      certificateEditorActions.removeElement(element.id)
+                      event.stopPropagation();
+                      certificateEditorActions.removeElement(element.id);
                     }}
                   >
                     <Trash2 className="size-3.5" />
                   </button>
                 ) : null}
               </li>
-            )
+            );
           })}
         </ul>
       </section>
     </aside>
-  )
+  );
 }

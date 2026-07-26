@@ -1,49 +1,55 @@
-import type React from 'react'
-import { motion } from 'motion/react'
-import { MoreVertical, PencilLine, Coins, Hash, Infinity, Ticket } from 'lucide-react'
-import type { TicketI } from '@/features/tickets/model'
+import {
+  Coins,
+  Hash,
+  Infinity as InfinityIcon,
+  MoreVertical,
+  PencilLine,
+  Ticket,
+} from "lucide-react";
+import { motion } from "motion/react";
+import type React from "react";
+import type { TicketI } from "@/features/tickets/model";
+import { cn } from "@/shared/lib/utils";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from '@/shared/ui/shadcn/context-menu'
+} from "@/shared/ui/shadcn/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu'
-import { cn } from '@/shared/lib/utils'
+} from "@/shared/ui/shadcn/dropdown-menu";
 
 interface AdminTicketCardProps {
-  ticket: TicketI
-  index?: number
-  onManage: (ticket: TicketI) => void
+  ticket: TicketI;
+  index?: number;
+  onManage: (ticket: TicketI) => void;
 }
 
 function MenuItems({
   isContext = false,
   onManage,
 }: {
-  isContext?: boolean
-  onManage: () => void
+  isContext?: boolean;
+  onManage: () => void;
 }) {
-  const Item = isContext ? ContextMenuItem : DropdownMenuItem
-  const stop = (action?: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    action?.()
-  }
+  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
+  const stop =
+    (action?: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      action?.();
+    };
 
   return (
-    <>
-      <Item onClick={stop(onManage)}>
-        <PencilLine className="size-4" />
-        <span>Editar ticket</span>
-      </Item>
-    </>
-  )
+    <Item onClick={stop(onManage)}>
+      <PencilLine className="size-4" />
+      <span>Editar ticket</span>
+    </Item>
+  );
 }
 
 export default function AdminTicketCard({
@@ -51,28 +57,32 @@ export default function AdminTicketCard({
   index = 0,
   onManage,
 }: AdminTicketCardProps) {
-  const handleEdit = () => onManage(ticket)
+  const handleEdit = () => onManage(ticket);
 
   const Article = (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={{
+        delay: index * 0.05,
+        duration: 0.35,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
       className={cn(
-        'group relative flex w-full min-w-62.5 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left',
-        'ring-1 ring-foreground/10 shadow-xs',
-        'transform-gpu will-change-transform',
-        'transition-all duration-300 ease-out',
-        'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
-        'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
+        "group relative flex w-full min-w-62.5 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left",
+        "ring-1 ring-foreground/10 shadow-xs",
+        "transform-gpu will-change-transform",
+        "transition-all duration-300 ease-out",
+        "hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm",
+        "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
       )}
       role="button"
       tabIndex={0}
       onClick={handleEdit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleEdit()
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleEdit();
         }
       }}
     >
@@ -87,9 +97,9 @@ export default function AdminTicketCard({
                   type="button"
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
-                    'inline-flex size-9 items-center justify-center rounded-full',
-                    'bg-background/85 text-foreground shadow-sm backdrop-blur-sm',
-                    'transition-colors hover:bg-background',
+                    "inline-flex size-9 items-center justify-center rounded-full",
+                    "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
+                    "transition-colors hover:bg-background",
                   )}
                   aria-label={`Abrir ações de ${ticket.name}`}
                 >
@@ -98,9 +108,7 @@ export default function AdminTicketCard({
               }
             />
             <DropdownMenuContent align="end" className="w-56">
-              <MenuItems
-                onManage={handleEdit}
-              />
+              <MenuItems onManage={handleEdit} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -117,7 +125,9 @@ export default function AdminTicketCard({
                 <Coins className="size-3" />
 
                 <span className="max-w-28 truncate">
-                  {ticket.price_cents > 0 ? `R$ ${(ticket.price_cents / 100).toFixed(2)}` : "Gratuito"}
+                  {ticket.price_cents > 0
+                    ? `R$ ${(ticket.price_cents / 100).toFixed(2)}`
+                    : "Gratuito"}
                 </span>
               </span>
             </div>
@@ -152,7 +162,7 @@ export default function AdminTicketCard({
                 </>
               ) : (
                 <>
-                  <Infinity className="size-3.5 shrink-0" />
+                  <InfinityIcon className="size-3.5 shrink-0" />
                   <span>Quantidade ilimitada</span>
                 </>
               )}
@@ -161,23 +171,21 @@ export default function AdminTicketCard({
 
           {ticket.created_at && (
             <p className="text-[11px] text-muted-foreground/70">
-              Criado em {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
+              Criado em{" "}
+              {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
             </p>
           )}
         </div>
       </div>
     </motion.article>
-  )
+  );
 
   return (
     <ContextMenu>
       <ContextMenuTrigger render={Article} />
       <ContextMenuContent className="w-56">
-        <MenuItems
-          isContext
-          onManage={handleEdit}
-        />
+        <MenuItems isContext onManage={handleEdit} />
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }

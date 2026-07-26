@@ -1,8 +1,8 @@
-import { ArrowRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { TicketCard } from "./TicketCard";
 import type { TicketI } from "../model";
+import { TicketCard } from "./TicketCard";
 
 interface TicketsSectionProps {
   tickets: TicketI[];
@@ -16,11 +16,7 @@ export function TicketsSection({ tickets, eventSlug }: TicketsSectionProps) {
     .sort((a, b) => b.access_level - a.access_level)
     .slice(0, 3);
 
-  const visibilityClasses = [
-    "",
-    "hidden sm:block",
-    "hidden lg:block",
-  ];
+  const visibilityClasses = ["", "hidden sm:block", "hidden lg:block"];
 
   return (
     <section className="w-full py-10">
@@ -30,17 +26,18 @@ export function TicketsSection({ tickets, eventSlug }: TicketsSectionProps) {
             Ingressos
           </h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Escolha o tipo de ingresso que melhor se encaixa na sua experiência no evento.
+            Escolha o tipo de ingresso que melhor se encaixa na sua experiência
+            no evento.
           </p>
         </div>
 
         <div className="flex justify-center gap-4 max-w-5xl mx-auto">
           {sortedTickets.map((ticket, index) => (
-            <div key={ticket.id} className={cn("shrink-0", visibilityClasses[index])}>
-              <TicketCard
-                ticket={ticket}
-                isFeatured={index === 1}
-              />
+            <div
+              key={ticket.id}
+              className={cn("shrink-0", visibilityClasses[index])}
+            >
+              <TicketCard ticket={ticket} isFeatured={index === 1} />
             </div>
           ))}
         </div>

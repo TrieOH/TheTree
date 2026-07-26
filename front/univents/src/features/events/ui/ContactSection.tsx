@@ -1,12 +1,12 @@
-import { Mail } from 'lucide-react'
-import type { EventI } from '@/features/events/model'
+import { Mail } from "lucide-react";
+import type { EventI } from "@/features/events/model";
 
 interface ContactSectionProps {
-  event: EventI
+  event: EventI;
 }
 
 export function ContactSection({ event }: ContactSectionProps) {
-  if (!event.contact_email) return null
+  if (!event.contact_email) return null;
 
   return (
     <section className="w-full py-10 sm:py-14 md:py-16">
@@ -18,7 +18,8 @@ export function ContactSection({ event }: ContactSectionProps) {
 
         {/* Description */}
         <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed">
-          Nossa equipe organizadora está à disposição para ajudar com dúvidas sobre inscrições, palestras ou patrocínios.
+          Nossa equipe organizadora está à disposição para ajudar com dúvidas
+          sobre inscrições, palestras ou patrocínios.
         </p>
 
         {/* Email button */}
@@ -33,5 +34,5 @@ export function ContactSection({ event }: ContactSectionProps) {
         </a>
       </div>
     </section>
-  )
+  );
 }

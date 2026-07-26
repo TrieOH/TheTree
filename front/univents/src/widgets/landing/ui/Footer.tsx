@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 
 export function Footer() {
   return (
@@ -8,17 +8,26 @@ export function Footer() {
           © 2026 Univents. Todos os direitos reservados.
         </div>
         <div className="flex gap-6 md:gap-8 text-xs md:text-sm order-1 md:order-2">
-          <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            to="/terms"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             Termos
           </Link>
-          <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            to="/privacy"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             Privacidade
           </Link>
-          <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            to="/contact"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
             Contato
           </Link>
         </div>
       </div>
     </footer>
-  )
+  );
 }

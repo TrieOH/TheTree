@@ -1,19 +1,7 @@
-import { Download, Eye, FileImage, FileText, LoaderCircle } from 'lucide-react'
-import { forwardRef, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
-import type { CertificationTemplateI } from '../model'
-import { DEFAULT_CERTIFICATE_CANVAS } from '../editor/constants'
-import { useElementSize } from '../editor/hooks/use-element-size'
-import { CertificateElementView } from '../editor/ui/elements/certificate-element-view'
-import {
-  resolveCertificationTemplate,
-  type CertificateVariableValues,
-} from '../editor/variables'
-import {
-  downloadCertificate,
-  type CertificateExportFormat,
-} from '../export/certificate-export'
-import { Button } from '@/shared/ui/shadcn/button'
+import { Download, Eye, FileImage, FileText, LoaderCircle } from "lucide-react";
+import { forwardRef, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -21,35 +9,47 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/shared/ui/shadcn/dialog'
+} from "@/shared/ui/shadcn/dialog";
+import { DEFAULT_CERTIFICATE_CANVAS } from "../editor/constants";
+import { useElementSize } from "../editor/hooks/use-element-size";
+import { CertificateElementView } from "../editor/ui/elements/certificate-element-view";
+import {
+  type CertificateVariableValues,
+  resolveCertificationTemplate,
+} from "../editor/variables";
+import {
+  type CertificateExportFormat,
+  downloadCertificate,
+} from "../export/certificate-export";
+import type { CertificationTemplateI } from "../model";
 
 interface CertViewerProps {
-  template: CertificationTemplateI
-  triggerLabel?: string
-  variables?: CertificateVariableValues
+  template: CertificationTemplateI;
+  triggerLabel?: string;
+  variables?: CertificateVariableValues;
 }
 
 export function CertViewer({
   template,
-  triggerLabel = 'Visualizar',
+  triggerLabel = "Visualizar",
   variables = {},
 }: CertViewerProps) {
-  const canvasRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState<CertificateExportFormat | null>(
     null,
-  )
+  );
 
   async function exportCertificate(format: CertificateExportFormat) {
-    if (!canvasRef.current || exporting) return
-    setExporting(format)
+    if (!canvasRef.current || exporting) return;
+    setExporting(format);
     try {
-      await downloadCertificate(canvasRef.current, template.title, format)
+      await downloadCertificate(canvasRef.current, template.title, format);
     } catch {
       toast.error(
         `Não foi possível exportar o certificado em ${format.toUpperCase()}.`,
-      )
+      );
     } finally {
-      setExporting(null)
+      setExporting(null);
     }
   }
 
@@ -65,9 +65,9 @@ export function CertViewer({
         className="z-100! grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 shadow-2xl"
         overlayClassName="!z-[99] bg-black/40 backdrop-blur-md"
         style={{
-          width: 'min(72rem, calc(100vw - 2rem))',
-          maxWidth: 'calc(100vw - 2rem)',
-          height: 'min(48rem, calc(100dvh - 2rem))',
+          width: "min(72rem, calc(100vw - 2rem))",
+          maxWidth: "calc(100vw - 2rem)",
+          height: "min(48rem, calc(100dvh - 2rem))",
         }}
       >
         <DialogHeader className="items-stretch justify-between gap-3 border-b bg-background px-5 py-3 pr-14 sm:flex-row sm:items-center">
@@ -86,9 +86,9 @@ export function CertViewer({
               size="sm"
               variant="outline"
               disabled={exporting !== null}
-              onClick={() => void exportCertificate('png')}
+              onClick={() => void exportCertificate("png")}
             >
-              {exporting === 'png' ? (
+              {exporting === "png" ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
                 <FileImage className="size-4" />
@@ -99,9 +99,9 @@ export function CertViewer({
               type="button"
               size="sm"
               disabled={exporting !== null}
-              onClick={() => void exportCertificate('pdf')}
+              onClick={() => void exportCertificate("pdf")}
             >
-              {exporting === 'pdf' ? (
+              {exporting === "pdf" ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
                 <Download className="size-4" />
@@ -119,12 +119,12 @@ export function CertViewer({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 interface CertificateTemplateStaticViewProps {
-  template: CertificationTemplateI
-  variables?: CertificateVariableValues
+  template: CertificationTemplateI;
+  variables?: CertificateVariableValues;
 }
 
 export const CertificateTemplateStaticView = forwardRef<
@@ -134,17 +134,18 @@ export const CertificateTemplateStaticView = forwardRef<
   { template, variables = {} },
   canvasRef,
 ) {
-  const { ref, size } = useElementSize<HTMLDivElement>()
-  const canvas = template.data.canvas ?? DEFAULT_CERTIFICATE_CANVAS
+  const { ref, size } = useElementSize<HTMLDivElement>();
+  const canvas = template.data.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
   const scale = Math.max(
     0,
     Math.min(size.width / canvas.width, size.height / canvas.height),
-  )
+  );
   const resolvedTemplate = useMemo(
     () => resolveCertificationTemplate(template, variables),
     [template, variables],
-  )
-  const backgroundUrl = resolvedTemplate.url ?? resolvedTemplate.data.background
+  );
+  const backgroundUrl =
+    resolvedTemplate.url ?? resolvedTemplate.data.background;
 
   return (
     <div
@@ -169,9 +170,9 @@ export const CertificateTemplateStaticView = forwardRef<
               backgroundImage: backgroundUrl
                 ? `url(${JSON.stringify(backgroundUrl)})`
                 : undefined,
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: 'cover',
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "cover",
             }}
           >
             {resolvedTemplate.data.elements.map((element) => (
@@ -192,5 +193,5 @@ export const CertificateTemplateStaticView = forwardRef<
         </div>
       ) : null}
     </div>
-  )
-})
+  );
+});

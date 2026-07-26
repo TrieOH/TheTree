@@ -1,16 +1,16 @@
-import { ChevronLeft, Menu } from 'lucide-react'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { useSidebar } from '../hooks/use-sidebar'
-import { getAdminBackLink, getAdminShellLabel } from '../sidebar-menu'
-import { cn } from '@/shared/lib/utils'
+import { Link, useRouterState } from "@tanstack/react-router";
+import { ChevronLeft, Menu } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
+import { useSidebar } from "../hooks/use-sidebar";
+import { getAdminBackLink, getAdminShellLabel } from "../sidebar-menu";
 
 export function MobileTopbar() {
-  const { setMobileOpen } = useSidebar()
+  const { setMobileOpen } = useSidebar();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
-  })
-  const label = getAdminShellLabel(pathname)
-  const backLink = getAdminBackLink(pathname)
+  });
+  const label = getAdminShellLabel(pathname);
+  const backLink = getAdminBackLink(pathname);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center border-b border-border/60 bg-card/95 px-3 shadow-sm shadow-black/5 backdrop-blur-xl lg:hidden!">
@@ -21,7 +21,7 @@ export function MobileTopbar() {
             {...(backLink.params ? { params: backLink.params as never } : {})}
             preload="intent"
             className={cn(
-              'inline-flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60',
+              "inline-flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60",
             )}
             aria-label="Voltar"
           >
@@ -32,7 +32,7 @@ export function MobileTopbar() {
             type="button"
             onClick={() => setMobileOpen(true)}
             className={cn(
-              'inline-flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60',
+              "inline-flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60",
             )}
             aria-label="Abrir menu"
           >
@@ -51,13 +51,13 @@ export function MobileTopbar() {
         type="button"
         onClick={() => setMobileOpen(true)}
         className={cn(
-          'inline-flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60',
-          backLink ? 'opacity-100' : 'hidden',
+          "inline-flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60",
+          backLink ? "opacity-100" : "hidden",
         )}
         aria-label="Abrir menu"
       >
         <Menu className="h-5 w-5" />
       </button>
     </header>
-  )
+  );
 }

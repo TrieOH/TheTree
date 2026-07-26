@@ -1,14 +1,14 @@
-import { motion } from 'motion/react'
-import { Link } from '@tanstack/react-router'
-import { buttonVariants } from '@/shared/ui/shadcn/button'
-import { cn } from '@/shared/lib/utils'
+import { Link } from "@tanstack/react-router";
+import { motion } from "motion/react";
+import { cn } from "@/shared/lib/utils";
+import { buttonVariants } from "@/shared/ui/shadcn/button";
 
 export default function NotFound() {
   return (
     <div
       className={cn(
         "flex flex-col items-center justify-center min-h-screen px-4 text-center",
-        "bg-background text-foreground"
+        "bg-background text-foreground",
       )}
     >
       <motion.div
@@ -55,25 +55,29 @@ export default function NotFound() {
             Ops! Página não encontrada
           </h1>
           <p className="text-muted-foreground text-balance max-w-xs mx-auto">
-            Parece que o evento que você está procurando ainda não começou ou o link está incorreto.
+            Parece que o evento que você está procurando ainda não começou ou o
+            link está incorreto.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
           <Link
             to="/"
-            className={cn(buttonVariants({ size: 'xl' }), "rounded-full px-8")}
+            className={cn(buttonVariants({ size: "xl" }), "rounded-full px-8")}
           >
             Voltar ao Início
           </Link>
           <Link
             to="/events"
-            className={cn(buttonVariants({ variant: 'outline', size: 'xl' }), "rounded-full px-8")}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "xl" }),
+              "rounded-full px-8",
+            )}
           >
             Explorar Eventos
           </Link>
         </div>
       </motion.div>
     </div>
-  )
+  );
 }

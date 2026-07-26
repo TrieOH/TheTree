@@ -1,7 +1,7 @@
-import type { SignatureCertificateElement } from '../../types'
+import type { SignatureCertificateElement } from "../../types";
 
 interface SignatureElementViewProps {
-  element: SignatureCertificateElement
+  element: SignatureCertificateElement;
 }
 
 export function SignatureElementView({ element }: SignatureElementViewProps) {
@@ -18,5 +18,5 @@ export function SignatureElementView({ element }: SignatureElementViewProps) {
         borderRadius: element.radius,
       }}
     />
-  )
+  );
 }

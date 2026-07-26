@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   Check,
@@ -12,60 +11,61 @@ import {
   Trash2,
   UploadCloud,
   WifiOff,
-} from 'lucide-react'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Card, CardContent } from '@/shared/ui/shadcn/card'
-import { cn } from '@/shared/lib/utils'
-import { uploadQueueConfig } from '../lib/config'
-import type { UploadTask, UploadTaskStatus } from '../model/types'
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Card, CardContent } from "@/shared/ui/shadcn/card";
+import { uploadQueueConfig } from "../lib/config";
+import type { UploadTask, UploadTaskStatus } from "../model/types";
 
 const statusLabels: Record<UploadTaskStatus, string> = {
-  queued: 'Na fila',
-  uploading: 'Enviando imagem',
-  associating: 'Associando imagem',
-  waiting_retry: 'Retry agendado',
-  completed: 'Concluído',
-  failed: 'Envio interrompido',
-  rejected: 'Ação necessária',
-  paused: 'Processamento pausado',
-}
+  queued: "Na fila",
+  uploading: "Enviando imagem",
+  associating: "Associando imagem",
+  waiting_retry: "Retry agendado",
+  completed: "Concluído",
+  failed: "Envio interrompido",
+  rejected: "Ação necessária",
+  paused: "Processamento pausado",
+};
 
 const statusClasses: Record<UploadTaskStatus, string> = {
-  queued: 'border-border bg-muted/30',
-  uploading: 'border-primary/30 bg-primary/3',
-  associating: 'border-primary/30 bg-primary/3',
-  waiting_retry: 'border-amber-500/30 bg-amber-500/3',
-  completed: 'border-emerald-500/25 bg-emerald-500/3',
-  failed: 'border-destructive/30 bg-destructive/3',
-  rejected: 'border-destructive/30 bg-destructive/3',
-  paused: 'border-amber-500/30 bg-amber-500/3',
-}
+  queued: "border-border bg-muted/30",
+  uploading: "border-primary/30 bg-primary/3",
+  associating: "border-primary/30 bg-primary/3",
+  waiting_retry: "border-amber-500/30 bg-amber-500/3",
+  completed: "border-emerald-500/25 bg-emerald-500/3",
+  failed: "border-destructive/30 bg-destructive/3",
+  rejected: "border-destructive/30 bg-destructive/3",
+  paused: "border-amber-500/30 bg-amber-500/3",
+};
 
 function TaskPreview({ task }: { task: UploadTask }) {
-  const [source, setSource] = useState(task.uploadedUrl)
+  const [source, setSource] = useState(task.uploadedUrl);
 
   useEffect(() => {
     if (task.uploadedUrl) {
-      setSource(task.uploadedUrl)
-      return
+      setSource(task.uploadedUrl);
+      return;
     }
     if (task.file.size === 0) {
-      setSource(undefined)
-      return
+      setSource(undefined);
+      return;
     }
 
-    const objectUrl = URL.createObjectURL(task.file)
-    setSource(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
-  }, [task.file, task.uploadedUrl])
+    const objectUrl = URL.createObjectURL(task.file);
+    setSource(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [task.file, task.uploadedUrl]);
 
   if (!source) {
     return (
       <div className="flex h-full min-h-40 items-center justify-center bg-muted text-muted-foreground">
         <FileImage className="size-9" />
       </div>
-    )
+    );
   }
 
   return (
@@ -74,18 +74,18 @@ function TaskPreview({ task }: { task: UploadTask }) {
       alt={task.label}
       className="h-full min-h-40 w-full object-cover"
     />
-  )
+  );
 }
 
 function StatusIcon({ status }: { status: UploadTaskStatus }) {
-  if (status === 'completed')
-    return <CheckCircle2 className="size-4 text-emerald-600" />
-  if (status === 'uploading' || status === 'associating')
-    return <Loader2 className="size-4 animate-spin text-primary" />
-  if (status === 'waiting_retry')
-    return <WifiOff className="size-4 text-amber-600" />
-  if (status === 'queued') return <Clock3 className="size-4" />
-  return <AlertTriangle className="size-4 text-destructive" />
+  if (status === "completed")
+    return <CheckCircle2 className="size-4 text-emerald-600" />;
+  if (status === "uploading" || status === "associating")
+    return <Loader2 className="size-4 animate-spin text-primary" />;
+  if (status === "waiting_retry")
+    return <WifiOff className="size-4 text-amber-600" />;
+  if (status === "queued") return <Clock3 className="size-4" />;
+  return <AlertTriangle className="size-4 text-destructive" />;
 }
 
 function StageStep({
@@ -93,32 +93,32 @@ function StageStep({
   label,
   state,
 }: {
-  icon: typeof UploadCloud
-  label: string
-  state: 'pending' | 'active' | 'done'
+  icon: typeof UploadCloud;
+  label: string;
+  state: "pending" | "active" | "done";
 }) {
   return (
     <div
       className={cn(
-        'flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors',
-        state === 'done' &&
-          'border-emerald-500/20 bg-emerald-500/5 text-emerald-700',
-        state === 'active' && 'border-primary/25 bg-primary/5 text-primary',
-        state === 'pending' && 'border-border/70 text-muted-foreground',
+        "flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors",
+        state === "done" &&
+          "border-emerald-500/20 bg-emerald-500/5 text-emerald-700",
+        state === "active" && "border-primary/25 bg-primary/5 text-primary",
+        state === "pending" && "border-border/70 text-muted-foreground",
       )}
     >
       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-background shadow-sm">
-        {state === 'done' ? (
+        {state === "done" ? (
           <Check className="size-3.5" />
         ) : (
           <Icon
-            className={cn('size-3.5', state === 'active' && 'animate-pulse')}
+            className={cn("size-3.5", state === "active" && "animate-pulse")}
           />
         )}
       </span>
       <span className="font-medium">{label}</span>
     </div>
-  )
+  );
 }
 
 export function UploadTaskCard({
@@ -128,40 +128,40 @@ export function UploadTaskCard({
   onReplace,
   onRemove,
 }: {
-  task: UploadTask
-  highlighted: boolean
-  onRetry: () => void
-  onReplace: (file: File) => void
-  onRemove: () => void
+  task: UploadTask;
+  highlighted: boolean;
+  onRetry: () => void;
+  onReplace: (file: File) => void;
+  onRemove: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
   const isProcessing =
-    task.status === 'uploading' || task.status === 'associating'
-  const canRetry = task.status === 'failed' && task.error?.retryable
+    task.status === "uploading" || task.status === "associating";
+  const canRetry = task.status === "failed" && task.error?.retryable;
   const needsReplacement =
-    task.status === 'rejected' || task.error?.requiresReplacement
+    task.status === "rejected" || task.error?.requiresReplacement;
   const uploadIsDone =
-    task.stage === 'association' || task.status === 'completed'
+    task.stage === "association" || task.status === "completed";
   const uploadIsActive =
-    task.stage === 'upload' &&
-    ['queued', 'uploading', 'waiting_retry'].includes(task.status)
+    task.stage === "upload" &&
+    ["queued", "uploading", "waiting_retry"].includes(task.status);
   const associationIsActive =
-    task.stage === 'association' && task.status === 'associating'
+    task.stage === "association" && task.status === "associating";
   const nextAttempt = task.nextAttemptAt
-    ? new Date(task.nextAttemptAt).toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
+    ? new Date(task.nextAttemptAt).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
       })
-    : undefined
+    : undefined;
 
   return (
     <Card
       id={`upload-${task.id}`}
       className={cn(
-        'border py-0 transition-all',
+        "border py-0 transition-all",
         statusClasses[task.status],
         highlighted &&
-          'ring-2 ring-primary ring-offset-2 ring-offset-background',
+          "ring-2 ring-primary ring-offset-2 ring-offset-background",
       )}
     >
       <CardContent className="grid gap-0 p-0 lg:grid-cols-[14rem_minmax(0,1fr)]">
@@ -190,11 +190,11 @@ export function UploadTaskCard({
 
             <Badge
               variant={
-                task.status === 'completed'
-                  ? 'secondary'
-                  : task.status === 'failed' || task.status === 'rejected'
-                    ? 'destructive'
-                    : 'outline'
+                task.status === "completed"
+                  ? "secondary"
+                  : task.status === "failed" || task.status === "rejected"
+                    ? "destructive"
+                    : "outline"
               }
               className="h-7 gap-1.5 px-2.5"
             >
@@ -208,7 +208,7 @@ export function UploadTaskCard({
               icon={UploadCloud}
               label="Upload e moderação"
               state={
-                uploadIsDone ? 'done' : uploadIsActive ? 'active' : 'pending'
+                uploadIsDone ? "done" : uploadIsActive ? "active" : "pending"
               }
             />
             <div className="h-px w-3 shrink-0 bg-border" />
@@ -216,11 +216,11 @@ export function UploadTaskCard({
               icon={Link2}
               label="Associação"
               state={
-                task.status === 'completed'
-                  ? 'done'
+                task.status === "completed"
+                  ? "done"
                   : associationIsActive
-                    ? 'active'
-                    : 'pending'
+                    ? "active"
+                    : "pending"
               }
             />
           </div>
@@ -246,7 +246,7 @@ export function UploadTaskCard({
                   {task.retryCount > uploadQueueConfig.maxRetries
                     ? `Limite de ${uploadQueueConfig.maxRetries} retries atingido`
                     : `${task.retryCount} de ${uploadQueueConfig.maxRetries} retries utilizados`}
-                  {nextAttempt ? ` · próxima tentativa às ${nextAttempt}` : ''}
+                  {nextAttempt ? ` · próxima tentativa às ${nextAttempt}` : ""}
                 </span>
               ) : (
                 <span>Nenhuma nova tentativa necessária</span>
@@ -289,12 +289,12 @@ export function UploadTaskCard({
           accept="image/*"
           className="hidden"
           onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) onReplace(file)
-            event.target.value = ''
+            const file = event.target.files?.[0];
+            if (file) onReplace(file);
+            event.target.value = "";
           }}
         />
       </CardContent>
     </Card>
-  )
+  );
 }

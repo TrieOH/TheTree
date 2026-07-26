@@ -1,7 +1,7 @@
-import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { TicketCreateOutputI, TicketI } from "../model";
+import { createClientOnlyFn } from "@tanstack/react-start";
 import { authFetcher, publicQueryFetcher } from "@/shared/lib/api/fetch";
+import type { TicketCreateOutputI, TicketI } from "../model";
 import { ticketKeys } from "./query-keys";
 
 /**
@@ -10,15 +10,14 @@ import { ticketKeys } from "./query-keys";
  * @param editionId - the edition id
  * @returns A promise that resolves to the API response containing the newly created ticket.
  */
-export const createTicketFn = createClientOnlyFn((
-  ticketData: TicketCreateOutputI,
-  editionId: string
-) => {
-  return authFetcher.post<TicketI>(
-    `/editions/${editionId}/ticket-types`,
-    ticketData
-  );
-});
+export const createTicketFn = createClientOnlyFn(
+  (ticketData: TicketCreateOutputI, editionId: string) => {
+    return authFetcher.post<TicketI>(
+      `/editions/${editionId}/ticket-types`,
+      ticketData,
+    );
+  },
+);
 
 /**
  * Patches a Ticket on the server. (Needs Auth)
@@ -26,12 +25,11 @@ export const createTicketFn = createClientOnlyFn((
  * @param ticketId - the ticket id
  * @returns A promise that resolves to the API response containing the updated ticket.
  */
-export const patchTicketFn = createClientOnlyFn((
-  ticketData: TicketCreateOutputI,
-  ticketId: string
-) => {
-  return authFetcher.patch<TicketI>(`/ticket-types/${ticketId}`, ticketData);
-});
+export const patchTicketFn = createClientOnlyFn(
+  (ticketData: TicketCreateOutputI, ticketId: string) => {
+    return authFetcher.patch<TicketI>(`/ticket-types/${ticketId}`, ticketData);
+  },
+);
 
 /**
  * Fetches all tickets for a specific edition from the server.
@@ -39,7 +37,7 @@ export const patchTicketFn = createClientOnlyFn((
  * @returns A promise that resolves to an array of Ticket objects.
  */
 const getAllTicketsFn = async (editionId: string) => {
-  return publicQueryFetcher<TicketI[]>(`/editions/${editionId}/ticket-types`)
+  return publicQueryFetcher<TicketI[]>(`/editions/${editionId}/ticket-types`);
 };
 
 /**
@@ -51,8 +49,8 @@ export const allTicketsQueryOptions = (editionId: string) => {
   return queryOptions({
     queryKey: ticketKeys.listByEdition(editionId),
     queryFn: () => getAllTicketsFn(editionId),
-  })
-}
+  });
+};
 
 /**
  * Fetches a ticket by ID from the server.
@@ -60,8 +58,10 @@ export const allTicketsQueryOptions = (editionId: string) => {
  * @returns A promise that resolves to a Ticket object.
  */
 const getTicketByIdFn = async (ticketId: string) => {
-  return publicQueryFetcher<TicketI | null>(`/ticket-types/${ticketId}`).catch(() => null)
-}
+  return publicQueryFetcher<TicketI | null>(`/ticket-types/${ticketId}`).catch(
+    () => null,
+  );
+};
 
 /**
  * Query options for fetching a ticket by ID, using TanStack Query.
@@ -72,5 +72,5 @@ export const ticketByIdQueryOptions = (ticketId: string) => {
   return queryOptions({
     queryKey: ticketKeys.detail.byId(ticketId),
     queryFn: () => getTicketByIdFn(ticketId),
-  })
-}
+  });
+};

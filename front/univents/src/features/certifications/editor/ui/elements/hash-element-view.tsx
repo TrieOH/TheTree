@@ -1,15 +1,15 @@
-import { ExternalLink } from 'lucide-react'
-import type { HashCertificateElement } from '../../types'
+import { ExternalLink } from "lucide-react";
+import type { HashCertificateElement } from "../../types";
 
 interface HashElementViewProps {
-  element: HashCertificateElement
+  element: HashCertificateElement;
 }
 
 export function HashElementView({ element }: HashElementViewProps) {
-  const hashLabel = element.hashLabel.trim() || 'Código de verificação'
-  const hash = element.hash.trim() || '{{cert_hash}}'
-  const url = element.url.trim() || '{{verify_url}}'
-  const linkLabel = element.linkLabel.trim() || url
+  const hashLabel = element.hashLabel.trim() || "Código de verificação";
+  const hash = element.hash.trim() || "{{cert_hash}}";
+  const url = element.url.trim() || "{{verify_url}}";
+  const linkLabel = element.linkLabel.trim() || url;
 
   return (
     <div
@@ -31,16 +31,16 @@ export function HashElementView({ element }: HashElementViewProps) {
         className="inline-flex items-center gap-1 truncate font-medium underline decoration-current underline-offset-2"
         style={{
           justifyContent:
-            element.align === 'center'
-              ? 'center'
-              : element.align === 'right'
-                ? 'flex-end'
-                : 'flex-start',
+            element.align === "center"
+              ? "center"
+              : element.align === "right"
+                ? "flex-end"
+                : "flex-start",
         }}
       >
         {linkLabel}
         <ExternalLink className="size-3 shrink-0" />
       </a>
     </div>
-  )
+  );
 }

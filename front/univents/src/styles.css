@@ -115,6 +115,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.certificate-rich-text ::selection,
+.certificate-rich-text .certificate-preserved-selection {
+  background-color: #bfdbfe;
+  color: #000000;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0;
   pointer-events: none;

@@ -1,72 +1,72 @@
-import { motion } from 'motion/react'
-import { MapPin, Users, Coins } from 'lucide-react'
-import type { ActivityI } from '@/features/activities/model'
-import { cn } from '@/shared/lib/utils'
+import { Coins, MapPin, Users } from "lucide-react";
+import { motion } from "motion/react";
+import type { ActivityI } from "@/features/activities/model";
+import { cn } from "@/shared/lib/utils";
 
-type Difficulty = ActivityI['difficulty']
+type Difficulty = ActivityI["difficulty"];
 
 interface DifficultyConfig {
-  label: string
-  accent: string
-  pill: string
-  pillText: string
+  label: string;
+  accent: string;
+  pill: string;
+  pillText: string;
 }
 
 export const difficultyConfig: Record<Difficulty, DifficultyConfig> = {
   no_prerequisites: {
-    label: 'Sem pré-requisitos',
-    accent: 'bg-emerald-500',
-    pill: 'bg-emerald-50',
-    pillText: 'text-emerald-700',
+    label: "Sem pré-requisitos",
+    accent: "bg-emerald-500",
+    pill: "bg-emerald-50",
+    pillText: "text-emerald-700",
   },
   beginner: {
-    label: 'Iniciante',
-    accent: 'bg-blue-500',
-    pill: 'bg-blue-50',
-    pillText: 'text-blue-700',
+    label: "Iniciante",
+    accent: "bg-blue-500",
+    pill: "bg-blue-50",
+    pillText: "text-blue-700",
   },
   intermediate: {
-    label: 'Intermediário',
-    accent: 'bg-amber-400',
-    pill: 'bg-amber-50',
-    pillText: 'text-amber-700',
+    label: "Intermediário",
+    accent: "bg-amber-400",
+    pill: "bg-amber-50",
+    pillText: "text-amber-700",
   },
   advanced: {
-    label: 'Avançado',
-    accent: 'bg-orange-500',
-    pill: 'bg-orange-50',
-    pillText: 'text-orange-700',
+    label: "Avançado",
+    accent: "bg-orange-500",
+    pill: "bg-orange-50",
+    pillText: "text-orange-700",
   },
   expert: {
-    label: 'Especialista',
-    accent: 'bg-red-500',
-    pill: 'bg-red-50',
-    pillText: 'text-red-700',
+    label: "Especialista",
+    accent: "bg-red-500",
+    pill: "bg-red-50",
+    pillText: "text-red-700",
   },
-}
+};
 
 export function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function formatDuration(startsAt: string, endsAt: string) {
   const minutes = Math.round(
-    (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000
-  )
-  if (minutes < 60) return `${minutes}min`
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m > 0 ? `${h}h ${m}min` : `${h}h`
+    (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000,
+  );
+  if (minutes < 60) return `${minutes}min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
 interface ActivityCardProps {
-  activity: ActivityI
-  registered?: boolean
-  onClick?: () => void
-  index?: number
+  activity: ActivityI;
+  registered?: boolean;
+  onClick?: () => void;
+  index?: number;
 }
 
 export default function ActivityCard({
@@ -75,8 +75,8 @@ export default function ActivityCard({
   onClick,
   index = 0,
 }: ActivityCardProps) {
-  const difficulty = difficultyConfig[activity.difficulty]
-  const isFull = activity.has_capacity && activity.remaining_capacity <= 0
+  const difficulty = difficultyConfig[activity.difficulty];
+  const isFull = activity.has_capacity && activity.remaining_capacity <= 0;
 
   return (
     <motion.button
@@ -85,16 +85,20 @@ export default function ActivityCard({
       transition={{ delay: index * 0.05 }}
       onClick={onClick}
       className={cn(
-        'grid w-full grid-cols-[3px_52px_1fr] gap-x-3 text-left',
-        'rounded-lg border bg-card p-3.5 transition-colors',
-        'hover:border-border/60 active:scale-[0.99]',
-        registered && 'border-emerald-200 bg-emerald-50/60'
+        "grid w-full grid-cols-[3px_52px_1fr] gap-x-3 text-left",
+        "rounded-lg border bg-card p-3.5 transition-colors",
+        "hover:border-border/60 active:scale-[0.99]",
+        registered && "border-emerald-200 bg-emerald-50/60",
       )}
     >
       <span
         className={cn(
-          'w-0.75 self-stretch rounded-full',
-          registered ? 'bg-emerald-500' : isFull ? 'bg-red-400' : difficulty.accent
+          "w-0.75 self-stretch rounded-full",
+          registered
+            ? "bg-emerald-500"
+            : isFull
+              ? "bg-red-400"
+              : difficulty.accent,
         )}
       />
 
@@ -135,9 +139,9 @@ export default function ActivityCard({
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={cn(
-              'rounded text-[11px] font-medium',
+              "rounded text-[11px] font-medium",
               difficulty.pill,
-              difficulty.pillText
+              difficulty.pillText,
             )}
           >
             {difficulty.label}
@@ -165,5 +169,5 @@ export default function ActivityCard({
         </div>
       </div>
     </motion.button>
-  )
+  );
 }

@@ -1,186 +1,186 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
-import { motion } from 'motion/react'
-import { useState } from 'react'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   CalendarDays,
   CalendarPlus,
   CheckCircle2,
+  ChevronRight,
   CircleAlert,
   Eye,
   LayoutGrid,
-  ChevronRight,
   Users,
-} from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Badge } from '@/shared/ui/shadcn/badge'
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  allJoinedEventsQueryOptions,
+  allOwnEventsQueryOptions,
+} from "@/features/events/api";
+import {
+  useDiscontinueEventMutation,
+  usePublishEventMutation,
+} from "@/features/events/api/mutations";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/ui/shadcn/card'
-import { AlertModal } from '@/widgets/ui/alert-modal'
-import { QuickAction } from '@/widgets/ui/quick-action'
-import {
-  allJoinedEventsQueryOptions,
-  allOwnEventsQueryOptions,
-} from '@/features/events/api'
-import {
-  useDiscontinueEventMutation,
-  usePublishEventMutation,
-} from '@/features/events/api/mutations'
-import { cn } from '@/shared/lib/utils'
+} from "@/shared/ui/shadcn/card";
+import { AlertModal } from "@/widgets/ui/alert-modal";
+import { QuickAction } from "@/widgets/ui/quick-action";
 
 const statusConfig = {
   draft: {
-    label: 'Rascunho',
-    className: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
-    dot: 'bg-amber-500',
+    label: "Rascunho",
+    className: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+    dot: "bg-amber-500",
   },
   active: {
-    label: 'Ativo',
-    className: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
-    dot: 'bg-emerald-500',
+    label: "Ativo",
+    className: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+    dot: "bg-emerald-500",
   },
   archived: {
-    label: 'Arquivado',
-    className: 'bg-slate-500/10 text-slate-700 border-slate-500/20',
-    dot: 'bg-slate-500',
+    label: "Arquivado",
+    className: "bg-slate-500/10 text-slate-700 border-slate-500/20",
+    dot: "bg-slate-500",
   },
   discontinued: {
-    label: 'Descontinuado',
-    className: 'bg-rose-500/10 text-rose-700 border-rose-500/20',
-    dot: 'bg-rose-500',
+    label: "Descontinuado",
+    className: "bg-rose-500/10 text-rose-700 border-rose-500/20",
+    dot: "bg-rose-500",
   },
-} as const
+} as const;
 
-export const Route = createLazyFileRoute('/admin/events/$eventId/')({
+export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
-})
+});
 
 function EventOverviewRoute() {
-  const { eventId } = Route.useParams()
-  const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions())
-  const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions())
-  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
-  const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false)
+  const { eventId } = Route.useParams();
+  const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions());
+  const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false);
   const event =
     [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
-    null
-  const isPublished = event?.status === 'active'
-  const status = event ? statusConfig[event.status] : statusConfig.draft
+    null;
+  const isPublished = event?.status === "active";
+  const status = event ? statusConfig[event.status] : statusConfig.draft;
 
-  const publishEventMutation = usePublishEventMutation()
-  const discontinueEventMutation = useDiscontinueEventMutation()
+  const publishEventMutation = usePublishEventMutation();
+  const discontinueEventMutation = useDiscontinueEventMutation();
 
   const copyLink = () => {
-    if (!event) return
+    if (!event) return;
     void navigator.clipboard.writeText(
       `${window.location.origin}/events/${event.slug}`,
-    )
-    toast.success('Link copiado')
-  }
+    );
+    toast.success("Link copiado");
+  };
 
   const handlePublishEvent = () => {
-    if (!event || isPublished) return
-    publishEventMutation.mutate(eventId)
-  }
+    if (!event || isPublished) return;
+    publishEventMutation.mutate(eventId);
+  };
 
   const handleDiscontinueEvent = () => {
-    if (!event || event.status !== 'active') return
-    discontinueEventMutation.mutate(eventId)
-  }
+    if (!event || event.status !== "active") return;
+    discontinueEventMutation.mutate(eventId);
+  };
 
   const metrics = [
     {
-      label: 'Criado em',
+      label: "Criado em",
       value: event
-        ? format(new Date(event.created_at), 'dd MMM yyyy', { locale: ptBR })
-        : '—',
-      hint: 'Data de criação do evento',
+        ? format(new Date(event.created_at), "dd MMM yyyy", { locale: ptBR })
+        : "—",
+      hint: "Data de criação do evento",
     },
     {
-      label: 'Atualizado em',
+      label: "Atualizado em",
       value: event?.updated_at
-        ? format(new Date(event.updated_at), 'dd MMM yyyy', { locale: ptBR })
-        : '—',
-      hint: 'Última alteração registrada',
+        ? format(new Date(event.updated_at), "dd MMM yyyy", { locale: ptBR })
+        : "—",
+      hint: "Última alteração registrada",
     },
     {
-      label: 'Contato',
-      value: event?.contact_email ?? '—',
-      hint: 'E-mail principal do evento',
+      label: "Contato",
+      value: event?.contact_email ?? "—",
+      hint: "E-mail principal do evento",
     },
-  ]
+  ];
   const heroDescription =
-    event?.description ?? 'Sem descrição cadastrada para este evento.'
+    event?.description ?? "Sem descrição cadastrada para este evento.";
 
   const checklist = [
     {
-      label: 'Banner e logo cadastrados',
+      label: "Banner e logo cadastrados",
       done: Boolean(event?.banner_url || event?.logo_url),
     },
     {
-      label: 'Descrição preenchida',
+      label: "Descrição preenchida",
       done: Boolean(event?.description),
     },
     {
-      label: 'Slug público disponível',
+      label: "Slug público disponível",
       done: Boolean(event?.slug),
     },
-  ]
+  ];
 
   const sections = [
     {
-      label: 'Edições',
-      to: '/admin/events/$eventId/editions',
+      label: "Edições",
+      to: "/admin/events/$eventId/editions",
       icon: CalendarPlus,
     },
     {
-      label: 'Membros',
-      to: '/admin/events/$eventId/members',
+      label: "Membros",
+      to: "/admin/events/$eventId/members",
       icon: Users,
     },
-  ]
+  ];
 
   const actions = [
-    ...(event?.status === 'draft'
+    ...(event?.status === "draft"
       ? [
-        {
-          label: 'Publicar evento',
-          onClick: () => setPublishConfirmOpen(true),
-          disabled: publishEventMutation.isPending,
-          variant: 'default' as const,
-        },
-      ]
+          {
+            label: "Publicar evento",
+            onClick: () => setPublishConfirmOpen(true),
+            disabled: publishEventMutation.isPending,
+            variant: "default" as const,
+          },
+        ]
       : []),
     {
-      label: 'Copiar link público',
+      label: "Copiar link público",
       onClick: copyLink,
       disabled: !event,
-      variant: 'default' as const,
+      variant: "default" as const,
     },
     ...(isPublished
       ? [
-        {
-          label: 'Descontinuar evento',
-          onClick: () => setDiscontinueConfirmOpen(true),
-          disabled: discontinueEventMutation.isPending,
-          variant: 'destructive' as const,
-        },
-        {
-          label: 'Abrir painel público',
-          to: '/events/$slug' as const,
-          params: { slug: event?.slug ?? '' },
-          variant: 'default' as const,
-        },
-      ]
+          {
+            label: "Descontinuar evento",
+            onClick: () => setDiscontinueConfirmOpen(true),
+            disabled: discontinueEventMutation.isPending,
+            variant: "destructive" as const,
+          },
+          {
+            label: "Abrir painel público",
+            to: "/events/$slug" as const,
+            params: { slug: event?.slug ?? "" },
+            variant: "default" as const,
+          },
+        ]
       : []),
-  ]
+  ];
 
   return (
     <>
@@ -205,7 +205,7 @@ function EventOverviewRoute() {
 
               <div className="space-y-3">
                 <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  {event?.full_name ?? 'Evento'}
+                  {event?.full_name ?? "Evento"}
                 </h1>
                 <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
                   {heroDescription}
@@ -215,7 +215,7 @@ function EventOverviewRoute() {
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
                   <CalendarDays className="size-3.5" />
-                  {event?.slug ?? 'slug-do-evento'}
+                  {event?.slug ?? "slug-do-evento"}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
                   <Eye className="size-3.5" />
@@ -223,11 +223,11 @@ function EventOverviewRoute() {
                 </span>
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1",
                     status.className,
                   )}
                 >
-                  <span className={cn('size-1.5 rounded-full', status.dot)} />
+                  <span className={cn("size-1.5 rounded-full", status.dot)} />
                   {status.label}
                 </span>
               </div>
@@ -273,13 +273,11 @@ function EventOverviewRoute() {
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      'size-2 rounded-full',
-                      item.done ? 'bg-emerald-500' : 'bg-amber-500',
+                      "size-2 rounded-full",
+                      item.done ? "bg-emerald-500" : "bg-amber-500",
                     )}
                   />
-                  <span className="text-sm text-foreground">
-                    {item.label}
-                  </span>
+                  <span className="text-sm text-foreground">{item.label}</span>
                 </div>
                 {item.done ? (
                   <CheckCircle2 className="size-4 text-emerald-500/70" />
@@ -300,7 +298,7 @@ function EventOverviewRoute() {
           </CardHeader>
           <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">
             {sections.map((section) => {
-              const Icon = section.icon
+              const Icon = section.icon;
               return (
                 <QuickAction
                   key={section.to}
@@ -315,7 +313,7 @@ function EventOverviewRoute() {
                   </div>
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </QuickAction>
-              )
+              );
             })}
           </CardContent>
         </Card>
@@ -329,7 +327,7 @@ function EventOverviewRoute() {
           </CardHeader>
           <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-3">
             {actions.map((action) => {
-              if ('to' in action && action.to) {
+              if ("to" in action && action.to) {
                 return (
                   <QuickAction
                     key={action.label}
@@ -343,7 +341,7 @@ function EventOverviewRoute() {
                     </span>
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </QuickAction>
-                )
+                );
               }
 
               return (
@@ -358,7 +356,7 @@ function EventOverviewRoute() {
                   </span>
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </QuickAction>
-              )
+              );
             })}
           </CardContent>
         </Card>
@@ -373,8 +371,8 @@ function EventOverviewRoute() {
         variant="default"
         loading={publishEventMutation.isPending}
         onConfirm={async () => {
-          handlePublishEvent()
-          setPublishConfirmOpen(false)
+          handlePublishEvent();
+          setPublishConfirmOpen(false);
         }}
       />
 
@@ -387,10 +385,10 @@ function EventOverviewRoute() {
         variant="destructive"
         loading={discontinueEventMutation.isPending}
         onConfirm={async () => {
-          handleDiscontinueEvent()
-          setDiscontinueConfirmOpen(false)
+          handleDiscontinueEvent();
+          setDiscontinueConfirmOpen(false);
         }}
       />
     </>
-  )
+  );
 }

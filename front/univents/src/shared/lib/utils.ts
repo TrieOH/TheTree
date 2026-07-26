@@ -1,1 +1,1 @@
-export { cn } from "@trieoh/ui-base"
+export { cn } from "@trieoh/ui-base";

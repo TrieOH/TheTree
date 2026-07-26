@@ -2,10 +2,10 @@ import type {
   StoragePreprocessResponse,
   StorageUploadRequest,
   StorageUploadResponse,
-} from '../model'
+} from "../model";
 
-const MODERATION_MAX_EDGE = 448
-const MODERATION_WEBP_QUALITY = 0.82
+const MODERATION_MAX_EDGE = 448;
+const MODERATION_WEBP_QUALITY = 0.82;
 
 export class StorageImageError extends Error {
   constructor(
@@ -13,65 +13,65 @@ export class StorageImageError extends Error {
     readonly code: string,
     readonly status?: number,
   ) {
-    super(message)
-    this.name = 'StorageImageError'
+    super(message);
+    this.name = "StorageImageError";
   }
 }
 
 async function resizeImageForModeration(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) return file
+  if (!file.type.startsWith("image/")) return file;
 
-  if (typeof createImageBitmap !== 'function') return file
-  if (typeof document === 'undefined') return file
+  if (typeof createImageBitmap !== "function") return file;
+  if (typeof document === "undefined") return file;
 
   try {
-    const bitmap = await createImageBitmap(file)
+    const bitmap = await createImageBitmap(file);
     const scale = Math.min(
       1,
       MODERATION_MAX_EDGE / Math.max(bitmap.width, bitmap.height),
-    )
-    const targetWidth = Math.max(1, Math.round(bitmap.width * scale))
-    const targetHeight = Math.max(1, Math.round(bitmap.height * scale))
+    );
+    const targetWidth = Math.max(1, Math.round(bitmap.width * scale));
+    const targetHeight = Math.max(1, Math.round(bitmap.height * scale));
 
     if (
       targetWidth === bitmap.width &&
       targetHeight === bitmap.height &&
-      file.type === 'image/webp'
+      file.type === "image/webp"
     ) {
-      bitmap.close()
-      return file
+      bitmap.close();
+      return file;
     }
 
-    const canvas = document.createElement('canvas')
-    canvas.width = targetWidth
-    canvas.height = targetHeight
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
 
-    const context = canvas.getContext('2d')
+    const context = canvas.getContext("2d");
     if (!context) {
-      bitmap.close()
-      return file
+      bitmap.close();
+      return file;
     }
 
-    context.drawImage(bitmap, 0, 0, targetWidth, targetHeight)
-    bitmap.close()
+    context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+    bitmap.close();
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(
         (nextBlob) => resolve(nextBlob),
-        'image/webp',
+        "image/webp",
         MODERATION_WEBP_QUALITY,
-      )
-    })
+      );
+    });
 
-    if (!blob || blob.size >= file.size) return file
+    if (!blob || blob.size >= file.size) return file;
 
-    const baseName = file.name.replace(/\.[^.]+$/, '') || 'image'
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
     return new File([blob], `${baseName}.webp`, {
-      type: 'image/webp',
+      type: "image/webp",
       lastModified: file.lastModified,
-    })
+    });
   } catch {
-    return file
+    return file;
   }
 }
 
@@ -80,44 +80,46 @@ export async function preprocessImageUpload(
   path?: string,
   idempotencyKey?: string,
 ): Promise<string> {
-  const optimizedFile = await resizeImageForModeration(file)
-  const formData = new FormData()
-  formData.append('file', optimizedFile)
-  if (path) formData.append('path', path)
-  if (idempotencyKey) formData.append('idempotencyKey', idempotencyKey)
+  const optimizedFile = await resizeImageForModeration(file);
+  const formData = new FormData();
+  formData.append("file", optimizedFile);
+  if (path) formData.append("path", path);
+  if (idempotencyKey) formData.append("idempotencyKey", idempotencyKey);
 
-  let res: Response
+  let res: Response;
   try {
-    res = await fetch('/storage/image/preprocess', {
-      method: 'POST',
+    res = await fetch("/storage/image/preprocess", {
+      method: "POST",
       body: formData,
-    })
+    });
   } catch {
     throw new StorageImageError(
-      'Não foi possível conectar ao servidor.',
-      'NETWORK_ERROR',
-    )
+      "Não foi possível conectar ao servidor.",
+      "NETWORK_ERROR",
+    );
   }
 
   if (!res.ok) {
-    const errorData = (await res.json().catch(() => ({}))) as { error?: string }
+    const errorData = (await res.json().catch(() => ({}))) as {
+      error?: string;
+    };
     throw new StorageImageError(
-      errorData.error ?? 'Não foi possível processar a imagem.',
+      errorData.error ?? "Não foi possível processar a imagem.",
       `STORAGE_HTTP_${res.status}`,
       res.status,
-    )
+    );
   }
 
-  const data: StoragePreprocessResponse = await res.json()
+  const data: StoragePreprocessResponse = await res.json();
   if (!data.approved || !data.publicUrl) {
     throw new StorageImageError(
-      'A imagem não foi aprovada pela moderação.',
-      'MODERATION_REJECTED',
+      "A imagem não foi aprovada pela moderação.",
+      "MODERATION_REJECTED",
       422,
-    )
+    );
   }
 
-  return data.publicUrl
+  return data.publicUrl;
 }
 
 export const uploadFile = async (
@@ -126,32 +128,33 @@ export const uploadFile = async (
 ): Promise<string> => {
   const filename = path
     ? `${path}/${Date.now()}-${file.name}`
-    : `${Date.now()}-${file.name}`
+    : `${Date.now()}-${file.name}`;
 
   const uploadPayload: StorageUploadRequest = {
     filename,
     contentType: file.type,
     size: file.size,
-  }
+  };
 
-  const uploadRes = await fetch('/storage/upload', {
-    method: 'POST',
+  const uploadRes = await fetch("/storage/upload", {
+    method: "POST",
     body: JSON.stringify(uploadPayload),
-  })
+  });
 
   if (!uploadRes.ok) {
-    const errorData: { error?: string } = await uploadRes.json()
-    throw new Error(errorData.error ?? 'Failed to get upload URL')
+    const errorData: { error?: string } = await uploadRes.json();
+    throw new Error(errorData.error ?? "Failed to get upload URL");
   }
-  const { uploadUrl, publicUrl }: StorageUploadResponse = await uploadRes.json()
+  const { uploadUrl, publicUrl }: StorageUploadResponse =
+    await uploadRes.json();
 
   const putRes = await fetch(uploadUrl, {
-    method: 'PUT',
+    method: "PUT",
     body: file,
-    headers: { 'Content-Type': file.type },
-  })
+    headers: { "Content-Type": file.type },
+  });
 
-  if (!putRes.ok) throw new Error('Failed to upload file')
+  if (!putRes.ok) throw new Error("Failed to upload file");
 
-  return publicUrl
-}
+  return publicUrl;
+};

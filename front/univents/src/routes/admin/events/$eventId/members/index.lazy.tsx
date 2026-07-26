@@ -1,85 +1,87 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { UserPlus, Users } from 'lucide-react'
-import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
-import type { SortState } from '@trieoh/ui-base'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import type { SortState } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { UserPlus, Users } from "lucide-react";
+import { useState } from "react";
 import {
   allEventMembersQueryOptions,
   type EventMemberI,
-} from '@/features/events/api/members'
+} from "@/features/events/api/members";
 import {
   useAddEventMemberMutation,
   useRemoveEventMemberMutation,
-} from '@/features/events/api/mutations'
+} from "@/features/events/api/mutations";
 import type {
   EventMemberCreateOutput,
   EventMemberRole,
-} from '@/features/events/model/member'
-import { AdminEventMemberCard } from '@/features/events/ui/AdminEventMemberCard'
-import { ManageEventMemberModal } from '@/features/events/ui/ManageEventMemberModal'
-import { RemoveEventMemberModal } from '@/features/events/ui/RemoveEventMemberModal'
-import { Button } from '@/shared/ui/shadcn/button'
+} from "@/features/events/model/member";
+import { AdminEventMemberCard } from "@/features/events/ui/AdminEventMemberCard";
+import { ManageEventMemberModal } from "@/features/events/ui/ManageEventMemberModal";
+import { RemoveEventMemberModal } from "@/features/events/ui/RemoveEventMemberModal";
+import { Button } from "@/shared/ui/shadcn/button";
 
-export const Route = createLazyFileRoute('/admin/events/$eventId/members/')({
+export const Route = createLazyFileRoute("/admin/events/$eventId/members/")({
   component: EventMembersRoute,
-})
+});
 
 const roleLabels: Record<EventMemberRole, string> = {
-  owner: 'Proprietário',
-  admin: 'Administrador',
-  staff: 'Equipe',
-}
+  owner: "Proprietário",
+  admin: "Administrador",
+  staff: "Equipe",
+};
 
 const roleSortOrder: Record<EventMemberRole, number> = {
   owner: 0,
   admin: 1,
   staff: 2,
-}
+};
 
 function EventMembersRoute() {
-  const { eventId } = Route.useParams()
-  const { data: members = [] } = useQuery(allEventMembersQueryOptions(eventId))
-  const addMutation = useAddEventMemberMutation()
-  const removeMutation = useRemoveEventMemberMutation()
+  const { eventId } = Route.useParams();
+  const { data: members = [] } = useQuery(allEventMembersQueryOptions(eventId));
+  const addMutation = useAddEventMemberMutation();
+  const removeMutation = useRemoveEventMemberMutation();
 
-  const [addModalOpen, setAddModalOpen] = useState(false)
-  const [memberToRemove, setMemberToRemove] = useState<EventMemberI | null>(null)
-  const [filter, setFilter] = useState('')
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<EventMemberI | null>(
+    null,
+  );
+  const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortState<EventMemberI>>({
-    field: 'created_at',
-    direction: 'desc',
-  })
+    field: "created_at",
+    direction: "desc",
+  });
 
   const visibleMembers = [...members]
     .filter((member) => {
-      const search = filter.trim().toLowerCase()
-      if (!search) return true
+      const search = filter.trim().toLowerCase();
+      if (!search) return true;
 
       return [member.user_id, roleLabels[member.role], member.role].some(
         (value) => value.toLowerCase().includes(search),
-      )
+      );
     })
     .sort((a, b) => {
-      const direction = sort.direction === 'asc' ? 1 : -1
+      const direction = sort.direction === "asc" ? 1 : -1;
 
-      if (sort.field === 'created_at') {
+      if (sort.field === "created_at") {
         return (
           (new Date(a.created_at).getTime() -
             new Date(b.created_at).getTime()) *
           direction
-        )
+        );
       }
 
-      if (sort.field === 'role') {
-        return (roleSortOrder[a.role] - roleSortOrder[b.role]) * direction
+      if (sort.field === "role") {
+        return (roleSortOrder[a.role] - roleSortOrder[b.role]) * direction;
       }
 
       return (
-        String(a[sort.field] ?? '').localeCompare(String(b[sort.field] ?? '')) *
+        String(a[sort.field] ?? "").localeCompare(String(b[sort.field] ?? "")) *
         direction
-      )
-    })
+      );
+    });
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -93,18 +95,18 @@ function EventMembersRoute() {
         onSortChange={setSort}
         sortFields={[
           {
-            key: 'created_at',
-            label: 'Adicionado em',
+            key: "created_at",
+            label: "Adicionado em",
             comparator: (a, b) =>
               new Date(a.created_at).getTime() -
               new Date(b.created_at).getTime(),
           },
           {
-            key: 'role',
-            label: 'Função',
+            key: "role",
+            label: "Função",
             comparator: (a, b) => roleSortOrder[a.role] - roleSortOrder[b.role],
           },
-          { key: 'user_id', label: 'Usuário' },
+          { key: "user_id", label: "Usuário" },
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
@@ -128,8 +130,8 @@ function EventMembersRoute() {
             title="Nenhum membro encontrado"
             description={
               filter
-                ? 'Nenhum membro corresponde à busca informada.'
-                : 'Adicione pessoas para colaborar na gestão deste evento.'
+                ? "Nenhum membro corresponde à busca informada."
+                : "Adicione pessoas para colaborar na gestão deste evento."
             }
             className="border-0 bg-transparent px-0 py-4 shadow-none"
           />
@@ -166,7 +168,7 @@ function EventMembersRoute() {
       <RemoveEventMemberModal
         open={memberToRemove !== null}
         onOpenChange={(open) => {
-          if (!open) setMemberToRemove(null)
+          if (!open) setMemberToRemove(null);
         }}
         member={memberToRemove}
         onRemove={(userId, email) =>
@@ -177,5 +179,5 @@ function EventMembersRoute() {
         }
       />
     </div>
-  )
+  );
 }

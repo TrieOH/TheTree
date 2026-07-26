@@ -1,10 +1,10 @@
-import { PlusCircle } from 'lucide-react'
-import { motion } from 'motion/react'
-import { Button } from '@/shared/ui/shadcn/button'
-import { cn } from '@/shared/lib/utils'
+import { PlusCircle } from "lucide-react";
+import { motion } from "motion/react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 
 interface CreateEventCardProps {
-  onClick: () => void
+  onClick: () => void;
 }
 
 export function CreateEventCard({ onClick }: CreateEventCardProps) {
@@ -14,9 +14,9 @@ export function CreateEventCard({ onClick }: CreateEventCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       className={cn(
-        'group relative min-w-0 overflow-hidden rounded-2xl bg-card',
-        'border border-transparent transition-all duration-300 ease-out',
-        'hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10',
+        "group relative min-w-0 overflow-hidden rounded-2xl bg-card",
+        "border border-transparent transition-all duration-300 ease-out",
+        "hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10",
       )}
     >
       <Button
@@ -25,9 +25,9 @@ export function CreateEventCard({ onClick }: CreateEventCardProps) {
         variant="ghost"
         size="none"
         className={cn(
-          'flex h-full min-h-full w-full flex-col items-stretch justify-start overflow-hidden rounded-2xl border-0 bg-card p-0 text-left font-normal shadow-none whitespace-normal',
-          'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
-          'hover:bg-card active:translate-y-0',
+          "flex h-full min-h-full w-full flex-col items-stretch justify-start overflow-hidden rounded-2xl border-0 bg-card p-0 text-left font-normal shadow-none whitespace-normal",
+          "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
+          "hover:bg-card active:translate-y-0",
         )}
       >
         <div className="relative aspect-4/3 overflow-hidden bg-muted">
@@ -50,5 +50,5 @@ export function CreateEventCard({ onClick }: CreateEventCardProps) {
         </div>
       </Button>
     </motion.div>
-  )
+  );
 }

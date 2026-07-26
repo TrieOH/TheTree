@@ -5,7 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
-} from 'react'
+} from "react";
 
 interface SidebarContextValue {
   /** Sidebar collapsed (icon-only mode) — only applies to screens >= lg */
@@ -31,7 +31,8 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      const isToggleShortcut = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b";
+      const isToggleShortcut =
+        (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b";
 
       // Ctrl/Cmd + B toggles the sidebar: drawer on mobile, collapse on desktop
       if (isToggleShortcut) {
@@ -72,10 +73,15 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
       setMobileOpen,
       toggleMobileOpen,
     }),
-    [collapsed, mobileOpen, toggleCollapsed, toggleMobileOpen]
+    [collapsed, mobileOpen, toggleCollapsed, toggleMobileOpen],
   );
 
-  return <SidebarContext.Provider value={value}> {children} </SidebarContext.Provider>;
+  return (
+    <SidebarContext.Provider value={value}>
+      {" "}
+      {children}{" "}
+    </SidebarContext.Provider>
+  );
 }
 
 export function useSidebar() {

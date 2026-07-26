@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 // import z from 'zod'
 // import { toast } from 'sonner'
 // import { useQueryClient } from '@tanstack/react-query'
@@ -17,14 +17,14 @@ import { createFileRoute } from '@tanstack/react-router'
 // })
 
 export const Route = createFileRoute(
-  '/admin/events/$eventId_/editions/$editionId/callback/payment',
+  "/admin/events/$eventId_/editions/$editionId/callback/payment",
 )({
   // validateSearch: (search) => queryParams.parse(search),
   component: PaymentCallbackComponent,
-})
+});
 
 function PaymentCallbackComponent() {
-  return <div></div>
+  return <div></div>;
   // const { credential_id, provider, public_key } = Route.useSearch()
   // const { eventId, editionId } = Route.useParams()
   // const navigate = Route.useNavigate()

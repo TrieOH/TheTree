@@ -1,66 +1,76 @@
-import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { Package, Plus } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
-import type { SortState } from '@trieoh/ui-base'
-import { Button } from '@/shared/ui/shadcn/button'
-import { AlertModal } from '@/widgets/ui/alert-modal'
-import { productsByEditionQueryOptions } from '@/features/products/api'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute, useRouter } from "@tanstack/react-router";
+import type { SortState } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { Package, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { productsByEditionQueryOptions } from "@/features/products/api";
 import {
   useCreateInitialProductMutation,
   useDeleteProductMutation,
   useUpdateProductMutation,
-} from '@/features/products/api/mutations'
-import type { ProductI } from '@/features/products/model'
-import { AdminProductCard } from '@/features/products/ui/AdminProductCard'
-import { ManageProductModal } from '@/features/products/ui/ManageProductModal'
-import { EditProductModal } from '@/features/products/ui/EditProductModal'
+} from "@/features/products/api/mutations";
+import type { ProductI } from "@/features/products/model";
+import { AdminProductCard } from "@/features/products/ui/AdminProductCard";
+import { EditProductModal } from "@/features/products/ui/EditProductModal";
+import { ManageProductModal } from "@/features/products/ui/ManageProductModal";
+import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
-export const Route = createLazyFileRoute('/admin/events/$eventId_/editions/$editionId/products/')({
+export const Route = createLazyFileRoute(
+  "/admin/events/$eventId_/editions/$editionId/products/",
+)({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const { eventId, editionId } = Route.useParams()
-  const router = useRouter()
-  const { data: products = [] } = useQuery(productsByEditionQueryOptions(editionId))
+  const { eventId, editionId } = Route.useParams();
+  const router = useRouter();
+  const { data: products = [] } = useQuery(
+    productsByEditionQueryOptions(editionId),
+  );
 
-  const createProductMutation = useCreateInitialProductMutation()
-  const updateProductMutation = useUpdateProductMutation()
-  const deleteProductMutation = useDeleteProductMutation()
+  const createProductMutation = useCreateInitialProductMutation();
+  const updateProductMutation = useUpdateProductMutation();
+  const deleteProductMutation = useDeleteProductMutation();
 
-  const [filter, setFilter] = useState('')
+  const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortState<ProductI>>({
-    field: 'vendor_code',
-    direction: 'asc',
-  })
-  const [modalOpen, setModalOpen] = useState(false)
-  const [productToDelete, setProductToDelete] = useState<ProductI | null>(null)
-  const [productToEdit, setProductToEdit] = useState<ProductI | null>(null)
+    field: "vendor_code",
+    direction: "asc",
+  });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<ProductI | null>(null);
+  const [productToEdit, setProductToEdit] = useState<ProductI | null>(null);
 
   const filteredProducts = useMemo(() => {
-    const search = filter.trim().toLowerCase()
+    const search = filter.trim().toLowerCase();
 
     return [...products]
       .filter((product) => {
-        if (!search) return true
+        if (!search) return true;
 
         return [
           product.vendor_code,
           String(product.requires_registration),
-        ].some((value) => value.toLowerCase().includes(search))
+        ].some((value) => value.toLowerCase().includes(search));
       })
       .sort((a, b) => {
-        const direction = sort.direction === 'asc' ? 1 : -1
+        const direction = sort.direction === "asc" ? 1 : -1;
 
-        if (sort.field === 'requires_registration') {
-          return (Number(a.requires_registration) - Number(b.requires_registration)) * direction
+        if (sort.field === "requires_registration") {
+          return (
+            (Number(a.requires_registration) -
+              Number(b.requires_registration)) *
+            direction
+          );
         }
 
-        return String(a[sort.field]).localeCompare(String(b[sort.field])) * direction
-      })
-  }, [filter, products, sort])
+        return (
+          String(a[sort.field]).localeCompare(String(b[sort.field])) * direction
+        );
+      });
+  }, [filter, products, sort]);
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -73,8 +83,13 @@ function RouteComponent() {
         sort={sort}
         onSortChange={setSort}
         sortFields={[
-          { key: 'vendor_code', label: 'Código' },
-          { key: 'requires_registration', label: 'Cadastro', comparator: (a, b) => Number(a.requires_registration) - Number(b.requires_registration) },
+          { key: "vendor_code", label: "Código" },
+          {
+            key: "requires_registration",
+            label: "Cadastro",
+            comparator: (a, b) =>
+              Number(a.requires_registration) - Number(b.requires_registration),
+          },
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
@@ -109,9 +124,9 @@ function RouteComponent() {
               onDelete={setProductToDelete}
               onManageVariants={() => {
                 router.navigate({
-                  to: '/admin/events/$eventId/editions/$editionId/products/$productId/variants',
+                  to: "/admin/events/$eventId/editions/$editionId/products/$productId/variants",
                   params: { eventId, editionId, productId: product.id },
-                })
+                });
               }}
             />
           ))
@@ -119,7 +134,7 @@ function RouteComponent() {
       />
 
       <ManageProductModal
-        key={'product-create'}
+        key={"product-create"}
         open={modalOpen}
         editionId={editionId}
         onOpenChange={setModalOpen}
@@ -127,8 +142,8 @@ function RouteComponent() {
           const res = await createProductMutation.mutateAsync({
             editionId,
             data: values,
-          })
-          return res.success ? res.data : false
+          });
+          return res.success ? res.data : false;
         }}
       />
 
@@ -138,14 +153,14 @@ function RouteComponent() {
           open
           product={productToEdit}
           onOpenChange={(open) => {
-            if (!open) setProductToEdit(null)
+            if (!open) setProductToEdit(null);
           }}
           onUpdate={async (values) => {
             const res = await updateProductMutation.mutateAsync({
               productId: productToEdit.id,
               data: values,
-            })
-            return res.success ? res.data : false
+            });
+            return res.success ? res.data : false;
           }}
         />
       ) : null}
@@ -163,14 +178,14 @@ function RouteComponent() {
         variant="destructive"
         loading={deleteProductMutation.isPending}
         onConfirm={async () => {
-          if (!productToDelete) return
+          if (!productToDelete) return;
           await deleteProductMutation.mutateAsync({
             productId: productToDelete.id,
             editionId,
-          })
-          setProductToDelete(null)
+          });
+          setProductToDelete(null);
         }}
       />
     </div>
-  )
+  );
 }

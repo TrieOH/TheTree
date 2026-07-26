@@ -25,7 +25,9 @@ export function ToggleFieldRenderer<TFieldValues extends FieldValues>({
       <span className="space-y-0.5">
         <span className="block text-sm font-medium">{field.label}</span>
         {field.description ? (
-          <span className="block text-xs text-muted-foreground">{field.description}</span>
+          <span className="block text-xs text-muted-foreground">
+            {field.description}
+          </span>
         ) : null}
       </span>
 

@@ -1,6 +1,6 @@
+import { ExternalLink, Link2 } from "lucide-react";
 import { useState } from "react";
 import type { FieldValues } from "react-hook-form";
-import { ExternalLink, Link2 } from "lucide-react";
 import type { FieldConfig, FieldFormApi } from "../../model/types";
 import { getFieldError } from "../../utils/get-field-error";
 
@@ -46,7 +46,9 @@ export function UrlFieldRenderer<TFieldValues extends FieldValues>({
       >
         {field.label}
         {field.optional ? (
-          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">
+            (opcional)
+          </span>
         ) : null}
       </label>
 
@@ -77,7 +79,10 @@ export function UrlFieldRenderer<TFieldValues extends FieldValues>({
             if (autoPrependScheme && event.target.value.trim().length > 0) {
               const normalized = withScheme(event.target.value.trim());
               if (normalized !== event.target.value) {
-                form.setValue(field.name, normalized as never, { shouldValidate: true, shouldDirty: true });
+                form.setValue(field.name, normalized as never, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
               }
             }
             void registerOnBlur(event);
@@ -97,7 +102,9 @@ export function UrlFieldRenderer<TFieldValues extends FieldValues>({
         ) : null}
       </div>
 
-      {field.description ? <p className="text-xs text-muted-foreground">{field.description}</p> : null}
+      {field.description ? (
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      ) : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

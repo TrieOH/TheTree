@@ -9,5 +9,5 @@ export default function CheckoutOrderConfirmed() {
       description="Seu pagamento foi aprovado. Em breve você receberá um e-mail de confirmação."
       actions={[]}
     />
-  )
+  );
 }

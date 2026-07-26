@@ -1,35 +1,41 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
-import { Share2, MapPin, Calendar } from 'lucide-react'
-import { handleShare, getInitials } from '@/shared/lib/share'
-import { formatDateRange } from '@/shared/lib/date'
-import { activeEditionQueryOptions, pastEditionsQueryOptions, upcomingEditionsQueryOptions } from '@/features/editions/api'
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { OtherEditionsSection } from '@/features/editions/ui/OtherEditionsSection'
-import { ContactSection } from '@/features/events/ui/ContactSection'
-import { TicketsSection } from '@/features/tickets/ui/TicketsSection'
-import { allTicketsQueryOptions } from '@/features/tickets/api'
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import { Calendar, MapPin, Share2 } from "lucide-react";
+import {
+  activeEditionQueryOptions,
+  pastEditionsQueryOptions,
+  upcomingEditionsQueryOptions,
+} from "@/features/editions/api";
+import { OtherEditionsSection } from "@/features/editions/ui/OtherEditionsSection";
+import { ContactSection } from "@/features/events/ui/ContactSection";
+import { allTicketsQueryOptions } from "@/features/tickets/api";
+import { TicketsSection } from "@/features/tickets/ui/TicketsSection";
+import { formatDateRange } from "@/shared/lib/date";
+import { getInitials, handleShare } from "@/shared/lib/share";
 
-export const Route = createLazyFileRoute('/events/$slug/')({
+export const Route = createLazyFileRoute("/events/$slug/")({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const event = Route.useLoaderData()
+  const event = Route.useLoaderData();
   const { data: activeEdition } = useSuspenseQuery(
-    activeEditionQueryOptions(event.id)
-  )
+    activeEditionQueryOptions(event.id),
+  );
 
   const { data: upcomingEditions = [] } = useSuspenseQuery(
-    upcomingEditionsQueryOptions(event.id)
-  )
+    upcomingEditionsQueryOptions(event.id),
+  );
 
   const { data: pastEditions = [] } = useSuspenseQuery(
-    pastEditionsQueryOptions(event.id)
-  )
+    pastEditionsQueryOptions(event.id),
+  );
 
-  const { data: tickets = [] } = useQuery(allTicketsQueryOptions(activeEdition?.id ?? ""))
+  const { data: tickets = [] } = useQuery(
+    allTicketsQueryOptions(activeEdition?.id ?? ""),
+  );
 
-  const initials = getInitials(event.full_name)
+  const initials = getInitials(event.full_name);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -104,7 +110,13 @@ function RouteComponent() {
 
             {/* Share Button */}
             <button
-              onClick={() => handleShare?.(activeEdition?.name ?? event.full_name, window.location.href)}
+              type="button"
+              onClick={() =>
+                handleShare?.(
+                  activeEdition?.name ?? event.full_name,
+                  window.location.href,
+                )
+              }
               className="shrink-0 p-2 sm:p-2.5 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:bg-background hover:scale-105 transition-all duration-200 active:scale-95"
               aria-label="Compartilhar evento"
             >
@@ -126,7 +138,10 @@ function RouteComponent() {
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Calendar className="w-3.5 h-3.5 min-[300px]:w-4 min-[300px]:h-4 sm:w-4 sm:h-4" />
                 <span className="text-xs min-[300px]:text-sm sm:text-sm font-medium">
-                  {formatDateRange(activeEdition.starts_at, activeEdition.ends_at)}
+                  {formatDateRange(
+                    activeEdition.starts_at,
+                    activeEdition.ends_at,
+                  )}
                 </span>
               </div>
 
@@ -154,8 +169,8 @@ function RouteComponent() {
           )}
         </div>
       </div>
-      <main className='flex flex-col justify-center items-center w-full mt-6 px-4 sm:px-8!'>
-        <div className='max-w-6xl w-full'>
+      <main className="flex flex-col justify-center items-center w-full mt-6 px-4 sm:px-8!">
+        <div className="max-w-6xl w-full">
           <TicketsSection tickets={tickets} eventSlug={event.slug} />
           <OtherEditionsSection
             editions={[...pastEditions, ...upcomingEditions]}
@@ -167,5 +182,5 @@ function RouteComponent() {
         </div>
       </main>
     </div>
-  )
+  );
 }

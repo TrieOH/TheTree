@@ -1,20 +1,20 @@
-import { Extension } from '@tiptap/core'
+import { Extension } from "@tiptap/core";
 
-declare module '@tiptap/core' {
+declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     certificateLineHeight: {
-      setCertificateLineHeight: (lineHeight: number) => ReturnType
-    }
+      setCertificateLineHeight: (lineHeight: number) => ReturnType;
+    };
   }
 }
 
 export const CertificateLineHeight = Extension.create({
-  name: 'certificateLineHeight',
+  name: "certificateLineHeight",
 
   addGlobalAttributes() {
     return [
       {
-        types: ['paragraph'],
+        types: ["paragraph"],
         attributes: {
           lineHeight: {
             default: 1.25,
@@ -26,7 +26,7 @@ export const CertificateLineHeight = Extension.create({
           },
         },
       },
-    ]
+    ];
   },
 
   addCommands() {
@@ -34,7 +34,7 @@ export const CertificateLineHeight = Extension.create({
       setCertificateLineHeight:
         (lineHeight) =>
         ({ commands }) =>
-          commands.updateAttributes('paragraph', { lineHeight }),
-    }
+          commands.updateAttributes("paragraph", { lineHeight }),
+    };
   },
-})
+});

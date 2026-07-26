@@ -1,5 +1,6 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import {
   Check,
   ChevronsUpDown,
@@ -7,89 +8,88 @@ import {
   Link2,
   Plus,
   Search,
-} from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
-import type { CertificationTemplateI } from '@/features/certifications/model'
-import { allCertificationTemplatesQueryOptions } from '@/features/certifications/api'
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { allAdminActivitiesQueryOptions } from "@/features/activities/api";
+import { allCertificationTemplatesQueryOptions } from "@/features/certifications/api";
 import {
   useSetActivityCertificationTemplateMutation,
   useSetEditionCertificationTemplateMutation,
-} from '@/features/certifications/api/mutations'
-import { allAdminActivitiesQueryOptions } from '@/features/activities/api'
-import { allAdminEditionsQueryOptions } from '@/features/editions/api'
-import { AdminCertificationTemplateCard } from '@/features/certifications/ui/AdminCertificationTemplateCard'
-import { Button } from '@/shared/ui/shadcn/button'
+} from "@/features/certifications/api/mutations";
+import type { CertificationTemplateI } from "@/features/certifications/model";
+import { AdminCertificationTemplateCard } from "@/features/certifications/ui/AdminCertificationTemplateCard";
+import { allAdminEditionsQueryOptions } from "@/features/editions/api";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/ui/shadcn/card'
-import { Label } from '@/shared/ui/shadcn/label'
-import { cn } from '@/shared/lib/utils'
-import type { ComboboxOption } from '@/widgets/multi-step-form/model/types'
+} from "@/shared/ui/shadcn/card";
+import { Label } from "@/shared/ui/shadcn/label";
+import type { ComboboxOption } from "@/widgets/multi-step-form/model/types";
 
 export const Route = createFileRoute(
-  '/admin/events/$eventId_/editions/$editionId/certifications/',
+  "/admin/events/$eventId_/editions/$editionId/certifications/",
 )({
   component: RouteComponent,
-})
+});
 
 function SelectionCombobox({
   value,
   options,
   placeholder,
-  searchPlaceholder = 'Buscar...',
+  searchPlaceholder = "Buscar...",
   onChange,
   disabled = false,
 }: {
-  value: string
-  options: ComboboxOption[]
-  placeholder: string
-  searchPlaceholder?: string
-  onChange: (value: string) => void
-  disabled?: boolean
+  value: string;
+  options: ComboboxOption[];
+  placeholder: string;
+  searchPlaceholder?: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
 
-  const normalizedQuery = query.trim().toLowerCase()
-  const selectedOption = options.find((option) => option.value === value)
+  const normalizedQuery = query.trim().toLowerCase();
+  const selectedOption = options.find((option) => option.value === value);
   const visibleOptions = useMemo(
     () =>
       options.filter((option) =>
-        `${option.label} ${option.description ?? ''}`
+        `${option.label} ${option.description ?? ""}`
           .toLowerCase()
           .includes(normalizedQuery),
       ),
     [normalizedQuery, options],
-  )
+  );
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
     function closeOnOutsideClick(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false)
+        setOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', closeOnOutsideClick)
-    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
-  }, [open])
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
 
   useEffect(() => {
-    setHighlightedIndex(0)
-  }, [open, query])
+    setHighlightedIndex(0);
+  }, [open, query]);
 
   function select(option: ComboboxOption) {
-    onChange(option.value)
-    setOpen(false)
-    setQuery('')
+    onChange(option.value);
+    setOpen(false);
+    setQuery("");
   }
 
   return (
@@ -100,17 +100,17 @@ function SelectionCombobox({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-input bg-background px-3 text-left text-sm shadow-sm',
-          'transition-colors hover:border-primary/30 hover:bg-muted/30',
-          'focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10',
-          disabled && 'cursor-not-allowed opacity-60',
+          "flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-input bg-background px-3 text-left text-sm shadow-sm",
+          "transition-colors hover:border-primary/30 hover:bg-muted/30",
+          "focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10",
+          disabled && "cursor-not-allowed opacity-60",
         )}
         onClick={() => setOpen((current) => !current)}
       >
         <span
           className={cn(
-            'min-w-0 truncate',
-            !selectedOption && 'text-muted-foreground',
+            "min-w-0 truncate",
+            !selectedOption && "text-muted-foreground",
           )}
         >
           {selectedOption?.label ?? placeholder}
@@ -123,31 +123,30 @@ function SelectionCombobox({
           <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
             <Search className="size-3.5 shrink-0 text-muted-foreground" />
             <input
-              autoFocus
               value={query}
               placeholder={searchPlaceholder}
               className="h-5 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'ArrowDown') {
-                  event.preventDefault()
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
                   setHighlightedIndex((index) =>
                     Math.min(index + 1, Math.max(visibleOptions.length - 1, 0)),
-                  )
-                } else if (event.key === 'ArrowUp') {
-                  event.preventDefault()
-                  setHighlightedIndex((index) => Math.max(index - 1, 0))
-                } else if (event.key === 'Enter') {
-                  event.preventDefault()
-                  select(visibleOptions[highlightedIndex])
-                } else if (event.key === 'Escape') {
-                  setOpen(false)
+                  );
+                } else if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  setHighlightedIndex((index) => Math.max(index - 1, 0));
+                } else if (event.key === "Enter") {
+                  event.preventDefault();
+                  select(visibleOptions[highlightedIndex]);
+                } else if (event.key === "Escape") {
+                  setOpen(false);
                 }
               }}
             />
           </div>
 
-          <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
+          <ul className="max-h-56 overflow-y-auto py-1">
             {visibleOptions.length === 0 ? (
               <li className="px-3 py-3 text-sm text-muted-foreground">
                 Nenhum resultado encontrado
@@ -160,10 +159,10 @@ function SelectionCombobox({
                     role="option"
                     aria-selected={option.value === value}
                     className={cn(
-                      'flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors',
+                      "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors",
                       index === highlightedIndex
-                        ? 'bg-primary/10'
-                        : 'hover:bg-muted/70',
+                        ? "bg-primary/10"
+                        : "hover:bg-muted/70",
                     )}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => select(option)}
@@ -187,71 +186,72 @@ function SelectionCombobox({
         </div>
       ) : null}
     </div>
-  )
+  );
 }
 
 function RouteComponent() {
-  const { eventId, editionId } = Route.useParams()
-  const navigate = useNavigate()
-  const [filter, setFilter] = useState('')
-  const [selectedTemplateId, setSelectedTemplateId] = useState('')
-  const [selectedActivityId, setSelectedActivityId] = useState('')
+  const { eventId, editionId } = Route.useParams();
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedActivityId, setSelectedActivityId] = useState("");
 
   const { data: editions = [] } = useQuery(
     allAdminEditionsQueryOptions(eventId),
-  )
+  );
   const { data: templates = [] } = useQuery(
     allCertificationTemplatesQueryOptions(eventId, editionId),
-  )
+  );
   const { data: activities = [] } = useQuery(
     allAdminActivitiesQueryOptions(eventId, editionId),
-  )
+  );
 
-  const edition = editions.find((item) => item.id === editionId) ?? null
+  const edition = editions.find((item) => item.id === editionId) ?? null;
 
   const filteredTemplates = useMemo(() => {
-    const search = filter.trim().toLowerCase()
-    if (!search) return templates
+    const search = filter.trim().toLowerCase();
+    if (!search) return templates;
 
     return templates.filter((template) =>
-      [template.title, template.url ?? ''].some((value) =>
+      [template.title, template.url ?? ""].some((value) =>
         value.toLowerCase().includes(search),
       ),
-    )
-  }, [filter, templates])
+    );
+  }, [filter, templates]);
 
-  let selectedTemplate: CertificationTemplateI | null = null
+  let selectedTemplate: CertificationTemplateI | null = null;
   const matchedTemplate = filteredTemplates.find(
     (template) => template.id === selectedTemplateId,
-  )
+  );
   if (matchedTemplate) {
-    selectedTemplate = matchedTemplate
+    selectedTemplate = matchedTemplate;
   } else if (filteredTemplates.length > 0) {
-    selectedTemplate = filteredTemplates[0]
+    selectedTemplate = filteredTemplates[0];
   } else if (templates.length > 0) {
-    selectedTemplate = templates[0]
+    selectedTemplate = templates[0];
   }
 
-  const editionTemplateMutation = useSetEditionCertificationTemplateMutation()
-  const activityTemplateMutation = useSetActivityCertificationTemplateMutation()
+  const editionTemplateMutation = useSetEditionCertificationTemplateMutation();
+  const activityTemplateMutation =
+    useSetActivityCertificationTemplateMutation();
 
   const activityOptions = activities.filter(
-    (activity) => activity.status !== 'canceled',
-  )
+    (activity) => activity.status !== "canceled",
+  );
   const templateOptions = templates.map((template) => ({
     value: template.id,
     label: template.title,
     description: template.url
-      ? 'Com fundo configurado'
-      : 'Sem fundo configurado',
-  }))
+      ? "Com fundo configurado"
+      : "Sem fundo configurado",
+  }));
   const activitySelectOptions = activityOptions.map((activity) => ({
     value: activity.id,
     label: activity.title,
     description: activity.location,
-  }))
+  }));
   const isPending =
-    editionTemplateMutation.isPending || activityTemplateMutation.isPending
+    editionTemplateMutation.isPending || activityTemplateMutation.isPending;
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -270,9 +270,9 @@ function RouteComponent() {
             to="/admin/events/$eventId/editions/$editionId/certifications/editor"
             params={{ eventId, editionId }}
             className={cn(
-              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium',
-              'bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90',
-              'sm:min-w-40 sm:px-5',
+              "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
+              "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
+              "sm:min-w-40 sm:px-5",
             )}
           >
             <Plus className="size-4 shrink-0" />
@@ -292,7 +292,7 @@ function RouteComponent() {
           slice.map((template, index) => {
             const isSelected = Boolean(
               selectedTemplate && selectedTemplate.id === template.id,
-            )
+            );
 
             return (
               <AdminCertificationTemplateCard
@@ -303,14 +303,14 @@ function RouteComponent() {
                 onSelect={setSelectedTemplateId}
                 onEdit={() => {
                   void navigate({
-                    to: '/admin/events/$eventId/editions/$editionId/certifications/editor',
+                    to: "/admin/events/$eventId/editions/$editionId/certifications/editor",
                     params: { eventId, editionId },
-                  })
+                  });
                 }}
                 verifyUrl={window.location.href}
-                editionName={edition?.name ?? 'Nome da edição'}
+                editionName={edition?.name ?? "Nome da edição"}
               />
-            )
+            );
           })
         }
       />
@@ -334,8 +334,8 @@ function RouteComponent() {
 
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">
                 {selectedTemplate
-                  ? 'Template pronto para aplicar'
-                  : 'Selecione um template'}
+                  ? "Template pronto para aplicar"
+                  : "Selecione um template"}
               </span>
             </div>
           </CardHeader>
@@ -347,7 +347,7 @@ function RouteComponent() {
                   Template
                 </Label>
                 <SelectionCombobox
-                  value={selectedTemplate ? selectedTemplate.id : ''}
+                  value={selectedTemplate ? selectedTemplate.id : ""}
                   options={templateOptions}
                   placeholder="Selecione um template"
                   searchPlaceholder="Buscar template..."
@@ -375,7 +375,7 @@ function RouteComponent() {
                   Template ativo
                 </p>
                 <p className="truncate text-sm font-medium text-foreground">
-                  {selectedTemplate?.title ?? 'Nenhum template selecionado'}
+                  {selectedTemplate?.title ?? "Nenhum template selecionado"}
                 </p>
               </div>
               <div className="min-w-0 space-y-1">
@@ -386,8 +386,8 @@ function RouteComponent() {
                   {selectedActivityId
                     ? (activityOptions.find(
                         (activity) => activity.id === selectedActivityId,
-                      )?.title ?? 'Atividade selecionada')
-                    : 'Aplicação na edição inteira'}
+                      )?.title ?? "Atividade selecionada")
+                    : "Aplicação na edição inteira"}
                 </p>
               </div>
             </div>
@@ -398,14 +398,14 @@ function RouteComponent() {
                 className="h-9 gap-2 md:min-w-44"
                 disabled={selectedTemplate === null || isPending}
                 onClick={() => {
-                  if (selectedTemplate === null) return
+                  if (selectedTemplate === null) return;
                   editionTemplateMutation.mutate({
                     eventId,
                     editionId,
                     data: {
                       certification_template_id: selectedTemplate.id,
                     },
-                  })
+                  });
                 }}
               >
                 Definir para a edição
@@ -418,7 +418,7 @@ function RouteComponent() {
                   selectedTemplate === null || !selectedActivityId || isPending
                 }
                 onClick={() => {
-                  if (selectedTemplate === null || !selectedActivityId) return
+                  if (selectedTemplate === null || !selectedActivityId) return;
                   activityTemplateMutation.mutate({
                     eventId,
                     editionId,
@@ -426,7 +426,7 @@ function RouteComponent() {
                     data: {
                       certification_template_id: selectedTemplate.id,
                     },
-                  })
+                  });
                 }}
               >
                 Definir para a atividade
@@ -436,5 +436,5 @@ function RouteComponent() {
         </Card>
       </section>
     </div>
-  )
+  );
 }

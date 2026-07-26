@@ -1,7 +1,7 @@
-import type { ImageItem } from "@/widgets/multi-step-form/model/types";
 import { Loader2, X } from "lucide-react";
-import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
+import type { ImageItem } from "@/widgets/multi-step-form/model/types";
 
 export function ImageThumb({
   item,
@@ -16,7 +16,12 @@ export function ImageThumb({
   const hasError = item.status === "error";
 
   return (
-    <div className={cn("relative overflow-hidden rounded-md border bg-muted", className)}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-md border bg-muted",
+        className,
+      )}
+    >
       <img src={item.url} alt="" className="h-full w-full object-cover" />
 
       {isProcessing ? (

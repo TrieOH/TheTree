@@ -1,7 +1,11 @@
+import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FieldValues } from "react-hook-form";
-import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react";
-import type { ComboboxOption, FieldConfig, FieldFormApi } from "../../model/types";
+import type {
+  ComboboxOption,
+  FieldConfig,
+  FieldFormApi,
+} from "../../model/types";
 import { getFieldError } from "../../utils/get-field-error";
 
 export interface ComboboxFieldRendererProps<TFieldValues extends FieldValues> {
@@ -48,7 +52,9 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
 
   useEffect(() => {
     if (!isAsync || !isOpen) return;
-    const loader = field.options as (query: string) => Promise<ComboboxOption[]>;
+    const loader = field.options as (
+      query: string,
+    ) => Promise<ComboboxOption[]>;
     let cancelled = false;
 
     setIsLoading(true);
@@ -66,23 +72,30 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
   }, [isAsync, isOpen, debouncedQuery, field.options]);
 
   const visibleOptions = useMemo(
-    () => (
+    () =>
       isAsync
         ? asyncOptions
-        : staticOptions.filter((option) => option.label.toLowerCase().includes(normalizedQuery))
-    ),
+        : staticOptions.filter((option) =>
+            option.label.toLowerCase().includes(normalizedQuery),
+          ),
     [asyncOptions, isAsync, normalizedQuery, staticOptions],
   );
 
   const selectedOption = useMemo(() => {
-    if (typeof selectedValue !== "string" || selectedValue.length === 0) return undefined;
-    return (isAsync ? asyncOptions : staticOptions).find((option) => option.value === selectedValue);
+    if (typeof selectedValue !== "string" || selectedValue.length === 0)
+      return undefined;
+    return (isAsync ? asyncOptions : staticOptions).find(
+      (option) => option.value === selectedValue,
+    );
   }, [selectedValue, staticOptions, asyncOptions, isAsync]);
 
   useEffect(() => {
     if (!isOpen) return;
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -95,19 +108,24 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
   }, [query, isOpen]);
 
   const selectOption = (option: ComboboxOption) => {
-    form.setValue(field.name, option.value as never, { shouldDirty: true, shouldValidate: true });
+    form.setValue(field.name, option.value as never, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     setIsOpen(false);
     setQuery("");
   };
 
   return (
     <div className="space-y-1.5" ref={containerRef}>
-      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {field.label}
         {field.optional ? (
-          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">
+            (opcional)
+          </span>
         ) : null}
-      </label>
+      </span>
 
       <div className="relative">
         <button
@@ -133,7 +151,6 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
             <div className="flex items-center gap-2 border-b border-border/60 bg-background/70 px-3 py-2.5">
               <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <input
-                autoFocus
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Buscar..."
@@ -141,7 +158,9 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
                 onKeyDown={(event) => {
                   if (event.key === "ArrowDown") {
                     event.preventDefault();
-                    setHighlightedIndex((index) => Math.min(index + 1, visibleOptions.length - 1));
+                    setHighlightedIndex((index) =>
+                      Math.min(index + 1, visibleOptions.length - 1),
+                    );
                   } else if (event.key === "ArrowUp") {
                     event.preventDefault();
                     setHighlightedIndex((index) => Math.max(index - 1, 0));
@@ -156,7 +175,7 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
               />
             </div>
 
-            <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
+            <ul className="max-h-56 overflow-y-auto py-1">
               {isLoading ? (
                 <li className="flex items-center justify-center gap-2 px-3 py-3 text-xs text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -177,16 +196,22 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
                       onClick={() => selectOption(option)}
                       className={
                         "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors " +
-                        (index === highlightedIndex ? "bg-primary/10" : "hover:bg-accent/10")
+                        (index === highlightedIndex
+                          ? "bg-primary/10"
+                          : "hover:bg-accent/10")
                       }
                     >
                       <span>
                         <span className="block">{option.label}</span>
                         {option.description ? (
-                          <span className="block text-xs text-muted-foreground">{option.description}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
                         ) : null}
                       </span>
-                      {option.value === selectedValue ? <Check className="h-4 w-4 shrink-0" /> : null}
+                      {option.value === selectedValue ? (
+                        <Check className="h-4 w-4 shrink-0" />
+                      ) : null}
                     </button>
                   </li>
                 ))
@@ -196,7 +221,9 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
         ) : null}
       </div>
 
-      {field.description ? <p className="text-xs text-muted-foreground">{field.description}</p> : null}
+      {field.description ? (
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      ) : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

@@ -1,20 +1,23 @@
-import { Timer } from "../Timer"
-import type { ReservedItemI, UnavailableItemI } from "@/features/products/model"
+import type {
+  ReservedItemI,
+  UnavailableItemI,
+} from "@/features/products/model";
+import { Timer } from "../Timer";
 
 interface CheckoutPartialReservationProps {
-  reserved: ReservedItemI[]
-  unavailable: UnavailableItemI[]
-  confirmDeadline: string
-  totalCents: number
-  onConfirm: () => void
-  onCancel: () => void
+  reserved: ReservedItemI[];
+  unavailable: UnavailableItemI[];
+  confirmDeadline: string;
+  totalCents: number;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 function formatCurrency(cents: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
-  }).format(cents / 100)
+    currency: "BRL",
+  }).format(cents / 100);
 }
 
 export default function CheckoutPartialReservation({
@@ -23,14 +26,11 @@ export default function CheckoutPartialReservation({
   totalCents,
   onConfirm,
   onCancel,
-  confirmDeadline
+  confirmDeadline,
 }: CheckoutPartialReservationProps) {
   return (
     <main className="w-full min-w-75 max-w-lg mx-auto px-3 py-8 space-y-6">
-      <Timer
-        expiresAt={confirmDeadline}
-        label="Tempo para confirmar"
-      />
+      <Timer expiresAt={confirmDeadline} label="Tempo para confirmar" />
       <div>
         <h1 className="text-lg font-bold text-foreground">Reserva parcial</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -75,12 +75,14 @@ export default function CheckoutPartialReservation({
       {/* Actions */}
       <div className="flex flex-col gap-2">
         <button
+          type="button"
           onClick={onConfirm}
           className="w-full rounded-md bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           Continuar com itens disponíveis
         </button>
         <button
+          type="button"
           onClick={onCancel}
           className="w-full rounded-md border border-border px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
         >
@@ -88,5 +90,5 @@ export default function CheckoutPartialReservation({
         </button>
       </div>
     </main>
-  )
+  );
 }

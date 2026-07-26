@@ -1,33 +1,33 @@
-import { ArrowRight } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
-import { EditionSummaryCard } from './EditionSummaryCard'
-import type { EditionI } from '../model'
+import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
+import type { EditionI } from "../model";
+import { EditionSummaryCard } from "./EditionSummaryCard";
 
 function sortEditions(editions: EditionI[]): EditionI[] {
-  const now = new Date().getTime()
+  const now = Date.now();
 
   return [...editions].sort((a, b) => {
-    const aEnd = new Date(a.ends_at).getTime()
-    const bEnd = new Date(b.ends_at).getTime()
-    const aStart = new Date(a.starts_at).getTime()
-    const bStart = new Date(b.starts_at).getTime()
+    const aEnd = new Date(a.ends_at).getTime();
+    const bEnd = new Date(b.ends_at).getTime();
+    const aStart = new Date(a.starts_at).getTime();
+    const bStart = new Date(b.starts_at).getTime();
 
-    const aIsFuture = aEnd >= now
-    const bIsFuture = bEnd >= now
+    const aIsFuture = aEnd >= now;
+    const bIsFuture = bEnd >= now;
 
-    if (aIsFuture && !bIsFuture) return -1
-    if (!aIsFuture && bIsFuture) return 1
-    if (aIsFuture && bIsFuture) return aStart - bStart
+    if (aIsFuture && !bIsFuture) return -1;
+    if (!aIsFuture && bIsFuture) return 1;
+    if (aIsFuture && bIsFuture) return aStart - bStart;
 
-    return bEnd - aEnd
-  })
+    return bEnd - aEnd;
+  });
 }
 
 interface OtherEditionsSectionProps {
-  editions: EditionI[]
-  currentEditionId?: string
-  eventSlug: string
-  maxDisplay?: number
+  editions: EditionI[];
+  currentEditionId?: string;
+  eventSlug: string;
+  maxDisplay?: number;
 }
 
 export function OtherEditionsSection({
@@ -38,10 +38,10 @@ export function OtherEditionsSection({
 }: OtherEditionsSectionProps) {
   const filtered = editions
     .filter((ed) => ed.id !== currentEditionId)
-    .slice(0, maxDisplay)
+    .slice(0, maxDisplay);
 
-  const sorted = sortEditions(filtered)
-  if (sorted.length === 0) return null
+  const sorted = sortEditions(filtered);
+  if (sorted.length === 0) return null;
 
   return (
     <section className="w-full">
@@ -51,7 +51,8 @@ export function OtherEditionsSection({
           Outras Edições
         </h2>
         <p className="mt-1 text-sm sm:text-base text-muted-foreground">
-          Conheça os próximos eventos ou relembre os destaques das edições anteriores.
+          Conheça os próximos eventos ou relembre os destaques das edições
+          anteriores.
         </p>
       </div>
 
@@ -73,5 +74,5 @@ export function OtherEditionsSection({
         </Link>
       </div>
     </section>
-  )
+  );
 }

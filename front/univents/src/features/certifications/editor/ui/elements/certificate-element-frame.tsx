@@ -1,37 +1,37 @@
-import { Trash2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
+import { cn } from "@/shared/lib/utils";
 import {
   CERTIFICATE_ELEMENT_OVERFLOW,
   MIN_CERTIFICATE_ELEMENT_SIZE,
-} from '../../constants'
-import { useDragResize } from '../../hooks/use-drag-resize'
-import type { ElementBounds, ResizeHandle } from '../../hooks/use-drag-resize'
-import type { CertificateElementType } from '../../types'
-import { cn } from '@/shared/lib/utils'
+} from "../../constants";
+import type { ElementBounds, ResizeHandle } from "../../hooks/use-drag-resize";
+import { useDragResize } from "../../hooks/use-drag-resize";
+import type { CertificateElementType } from "../../types";
 
-const RESIZE_HANDLES: ResizeHandle[] = ['nw', 'ne', 'sw', 'se']
+const RESIZE_HANDLES: ResizeHandle[] = ["nw", "ne", "sw", "se"];
 
 const RESIZE_HANDLE_CLASS: Record<ResizeHandle, string> = {
-  nw: '-left-1.5 -top-1.5 cursor-nwse-resize',
-  ne: '-right-1.5 -top-1.5 cursor-nesw-resize',
-  sw: '-bottom-1.5 -left-1.5 cursor-nesw-resize',
-  se: '-right-1.5 -bottom-1.5 cursor-nwse-resize',
-}
+  nw: "-left-1.5 -top-1.5 cursor-nwse-resize",
+  ne: "-right-1.5 -top-1.5 cursor-nesw-resize",
+  sw: "-bottom-1.5 -left-1.5 cursor-nesw-resize",
+  se: "-right-1.5 -bottom-1.5 cursor-nwse-resize",
+};
 
 interface CertificateElementFrameProps {
-  type: CertificateElementType
-  bounds: ElementBounds
-  scale: number
-  zIndex: number
-  canvas: { width: number; height: number }
-  selected: boolean
-  editing: boolean
-  deletable: boolean
-  onSelect: () => void
-  onDoubleClick?: () => void
-  onChangeBounds: (bounds: ElementBounds) => void
-  onDelete?: () => void
-  children: ReactNode
+  type: CertificateElementType;
+  bounds: ElementBounds;
+  scale: number;
+  zIndex: number;
+  canvas: { width: number; height: number };
+  selected: boolean;
+  editing: boolean;
+  deletable: boolean;
+  onSelect: () => void;
+  onDoubleClick?: () => void;
+  onChangeBounds: (bounds: ElementBounds) => void;
+  onDelete?: () => void;
+  children: ReactNode;
 }
 
 export function CertificateElementFrame({
@@ -57,14 +57,14 @@ export function CertificateElementFrame({
     minWidth: MIN_CERTIFICATE_ELEMENT_SIZE.width,
     minHeight: MIN_CERTIFICATE_ELEMENT_SIZE.height,
     onChange: onChangeBounds,
-  })
+  });
 
   return (
     <div
       data-certificate-element={type}
       className={cn(
-        'absolute select-none',
-        !editing && (selected ? 'cursor-move' : 'cursor-pointer'),
+        "absolute select-none",
+        !editing && (selected ? "cursor-move" : "cursor-pointer"),
       )}
       style={{
         left: bounds.x,
@@ -74,16 +74,16 @@ export function CertificateElementFrame({
         zIndex,
       }}
       onPointerDown={(event) => {
-        onSelect()
-        if (!editing) startDrag(event)
+        onSelect();
+        if (!editing) startDrag(event);
       }}
       onDoubleClick={onDoubleClick}
     >
       <div
         className={cn(
-          'h-full w-full',
-          selected && !editing && 'outline-2 outline-offset-2 outline-ring',
-          editing && 'outline-2 outline-offset-2 outline-accent',
+          "h-full w-full",
+          selected && !editing && "outline-2 outline-offset-2 outline-ring",
+          editing && "outline-2 outline-offset-2 outline-accent",
         )}
       >
         {children}
@@ -97,7 +97,7 @@ export function CertificateElementFrame({
               aria-hidden="true"
               onPointerDown={startResize(handle)}
               className={cn(
-                'absolute size-3 rounded-full border-2 border-ring bg-popover shadow-sm',
+                "absolute size-3 rounded-full border-2 border-ring bg-popover shadow-sm",
                 RESIZE_HANDLE_CLASS[handle],
               )}
             />
@@ -118,5 +118,5 @@ export function CertificateElementFrame({
         </>
       ) : null}
     </div>
-  )
+  );
 }

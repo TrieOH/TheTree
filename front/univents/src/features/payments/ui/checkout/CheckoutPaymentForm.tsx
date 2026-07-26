@@ -1,20 +1,26 @@
-import type { SubmitPaymentPayloadI } from "@/features/payments/model"
-import type { CheckoutPhase } from "@/features/products/hooks/use-checkout-socket"
-import type { ReservedItemI } from "@/features/products/model"
-import { OrderSummary } from "@/features/payments/ui/checkout/OrderSummary"
-import { Timer } from "@/features/payments/ui/checkout/Timer"
-import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector"
+import type { SubmitPaymentPayloadI } from "@/features/payments/model";
+import { OrderSummary } from "@/features/payments/ui/checkout/OrderSummary";
+import { Timer } from "@/features/payments/ui/checkout/Timer";
+import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
+import type { CheckoutPhase } from "@/features/products/hooks/use-checkout-socket";
+import type { ReservedItemI } from "@/features/products/model";
 
 interface CheckoutPaymentFormProps {
-  phase: Extract<CheckoutPhase, "reservation_confirmed" | "awaiting_payment" | "payment_processing" | "payment_failed">
-  reservedItems: ReservedItemI[]
-  totalCents: number
-  reservationExpiresAt: string | null
-  paymentIntentId: string | null
-  sellerPublicKey: string
-  onSubmit: (data: SubmitPaymentPayloadI) => void
-  onCancel: () => void
-  onExpire: () => void
+  phase: Extract<
+    CheckoutPhase,
+    | "reservation_confirmed"
+    | "awaiting_payment"
+    | "payment_processing"
+    | "payment_failed"
+  >;
+  reservedItems: ReservedItemI[];
+  totalCents: number;
+  reservationExpiresAt: string | null;
+  paymentIntentId: string | null;
+  sellerPublicKey: string;
+  onSubmit: (data: SubmitPaymentPayloadI) => void;
+  onCancel: () => void;
+  onExpire: () => void;
 }
 
 export default function CheckoutPaymentForm({
@@ -27,7 +33,8 @@ export default function CheckoutPaymentForm({
   onCancel,
   onExpire,
 }: CheckoutPaymentFormProps) {
-  const isProcessing = phase === "payment_processing" || phase === "awaiting_payment"
+  const isProcessing =
+    phase === "payment_processing" || phase === "awaiting_payment";
 
   const cartItems = reservedItems.map((item) => ({
     id: item.product_id,
@@ -36,16 +43,13 @@ export default function CheckoutPaymentForm({
     quantity: item.quantity,
     inventory_remaining: item.quantity,
     has_inventory: true,
-  }))
+  }));
 
   return (
     <main className="w-full min-w-75 max-w-4xl mx-auto px-3 py-4 space-y-2">
       {/* Timer */}
       {reservationExpiresAt && (
-        <Timer
-          expiresAt={reservationExpiresAt}
-          onExpire={onExpire}
-        />
+        <Timer expiresAt={reservationExpiresAt} onExpire={onExpire} />
       )}
 
       {/* Header */}
@@ -76,5 +80,5 @@ export default function CheckoutPaymentForm({
         </div>
       </div>
     </main>
-  )
+  );
 }

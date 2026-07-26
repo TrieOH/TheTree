@@ -1,100 +1,100 @@
-import { useEffect, useRef } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
-import { useAuth } from '@trieoh/identityx-sdk-ts/react'
-import { uploadQueueProcessor } from '../lib/processor'
-import { uploadQueueStore } from '../lib/store'
-import { useUploadQueue } from '../hooks/use-upload-queue'
-import type { UploadTaskStatus } from '../model/types'
+import { useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { useUploadQueue } from "../hooks/use-upload-queue";
+import { uploadQueueProcessor } from "../lib/processor";
+import { uploadQueueStore } from "../lib/store";
+import type { UploadTaskStatus } from "../model/types";
 
 const notificationStatuses = new Set<UploadTaskStatus>([
-  'completed',
-  'failed',
-  'rejected',
-])
+  "completed",
+  "failed",
+  "rejected",
+]);
 
 export function UploadQueueProvider({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const navigate = useNavigate()
-  const { auth, isAuthenticated } = useAuth()
-  const accountId = isAuthenticated ? auth.profile()?.id : undefined
-  const { tasks, initialized, retry } = useUploadQueue()
-  const previousStatuses = useRef(new Map<string, UploadTaskStatus>())
-  const notificationAccountId = useRef<string | undefined>(undefined)
+  const navigate = useNavigate();
+  const { auth, isAuthenticated } = useAuth();
+  const accountId = isAuthenticated ? auth.profile()?.id : undefined;
+  const { tasks, initialized, retry } = useUploadQueue();
+  const previousStatuses = useRef(new Map<string, UploadTaskStatus>());
+  const notificationAccountId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    uploadQueueStore.setActiveAccount(accountId)
-    previousStatuses.current.clear()
+    uploadQueueStore.setActiveAccount(accountId);
+    previousStatuses.current.clear();
 
     if (!accountId) {
-      uploadQueueProcessor.stop()
-      return
+      uploadQueueProcessor.stop();
+      return;
     }
 
-    void uploadQueueProcessor.start()
+    void uploadQueueProcessor.start();
     return () => {
-      uploadQueueProcessor.stop()
-      uploadQueueStore.setActiveAccount(undefined)
-    }
-  }, [accountId])
+      uploadQueueProcessor.stop();
+      uploadQueueStore.setActiveAccount(undefined);
+    };
+  }, [accountId]);
 
   useEffect(() => {
-    if (!initialized || !accountId) return
+    if (!initialized || !accountId) return;
 
     if (notificationAccountId.current !== accountId) {
-      notificationAccountId.current = accountId
+      notificationAccountId.current = accountId;
       previousStatuses.current = new Map(
         tasks.map((task) => [task.id, task.status]),
-      )
-      return
+      );
+      return;
     }
 
     if (previousStatuses.current.size === 0) {
       previousStatuses.current = new Map(
         tasks.map((task) => [task.id, task.status]),
-      )
-      return
+      );
+      return;
     }
 
     for (const task of tasks) {
-      const previousStatus = previousStatuses.current.get(task.id)
+      const previousStatus = previousStatuses.current.get(task.id);
       if (
         previousStatus === task.status ||
         !notificationStatuses.has(task.status)
       )
-        continue
+        continue;
 
-      if (task.status === 'completed') {
+      if (task.status === "completed") {
         toast.success(`${task.label} foi enviada com sucesso.`, {
           id: `upload-${task.id}`,
-        })
-        continue
+        });
+        continue;
       }
 
-      if (task.status === 'rejected' || task.error?.requiresReplacement) {
+      if (task.status === "rejected" || task.error?.requiresReplacement) {
         toast.error(
           task.error?.message ?? `É necessário substituir ${task.label}.`,
           {
             id: `upload-${task.id}`,
             action: {
-              label: 'Corrigir imagem',
+              label: "Corrigir imagem",
               onClick: () => {
                 if (task.correctionPath) {
-                  void navigate({ to: task.correctionPath })
+                  void navigate({ to: task.correctionPath });
                 } else {
                   void navigate({
-                    to: '/admin/uploads',
+                    to: "/admin/uploads",
                     search: { task: task.id },
-                  })
+                  });
                 }
               },
             },
           },
-        )
-        continue
+        );
+        continue;
       }
 
       toast.error(
@@ -103,25 +103,25 @@ export function UploadQueueProvider({
           id: `upload-${task.id}`,
           action: task.error?.retryable
             ? {
-                label: 'Tentar novamente',
+                label: "Tentar novamente",
                 onClick: () => void retry(task.id),
               }
             : {
-                label: 'Ver detalhes',
+                label: "Ver detalhes",
                 onClick: () =>
                   void navigate({
-                    to: '/admin/uploads',
+                    to: "/admin/uploads",
                     search: { task: task.id },
                   }),
               },
         },
-      )
+      );
     }
 
     previousStatuses.current = new Map(
       tasks.map((task) => [task.id, task.status]),
-    )
-  }, [accountId, initialized, navigate, retry, tasks])
+    );
+  }, [accountId, initialized, navigate, retry, tasks]);
 
-  return children
+  return children;
 }

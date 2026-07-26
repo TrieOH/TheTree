@@ -1,39 +1,34 @@
-import type React from 'react'
-import { motion } from 'motion/react'
-import {
-  Check,
-  FileText,
-  MoreVertical,
-  Pencil,
-} from 'lucide-react'
-import type { CertificationTemplateI } from '../model'
-import { CertViewer } from './CertViewer'
+import { Check, FileText, MoreVertical, Pencil } from "lucide-react";
+import { motion } from "motion/react";
+import type React from "react";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/shared/ui/shadcn/context-menu'
+} from "@/shared/ui/shadcn/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { Button } from '@/shared/ui/shadcn/button'
-import { cn } from '@/shared/lib/utils'
+} from "@/shared/ui/shadcn/dropdown-menu";
+import type { CertificationTemplateI } from "../model";
+import { CertViewer } from "./CertViewer";
 
 interface AdminCertificationTemplateCardProps {
-  template: CertificationTemplateI
-  selected: boolean
-  index?: number
-  onSelect: (templateId: string) => void
-  onEdit: () => void
-  verifyUrl: string
-  editionName: string
+  template: CertificationTemplateI;
+  selected: boolean;
+  index?: number;
+  onSelect: (templateId: string) => void;
+  onEdit: () => void;
+  verifyUrl: string;
+  editionName: string;
 }
 
 function MenuItems({
@@ -41,17 +36,18 @@ function MenuItems({
   onSelect,
   onEdit,
 }: {
-  isContext?: boolean
-  onSelect: () => void
-  onEdit: () => void
+  isContext?: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
 }) {
-  const Item = isContext ? ContextMenuItem : DropdownMenuItem
-  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator
-  const stop = (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    action()
-  }
+  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
+  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
+  const stop =
+    (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      action();
+    };
 
   return (
     <>
@@ -65,7 +61,7 @@ function MenuItems({
         <span>Editar template</span>
       </Item>
     </>
-  )
+  );
 }
 
 export function AdminCertificationTemplateCard({
@@ -77,8 +73,8 @@ export function AdminCertificationTemplateCard({
   verifyUrl,
   editionName,
 }: AdminCertificationTemplateCardProps) {
-  const handleSelect = () => onSelect(template.id)
-  const handleEdit = () => onEdit()
+  const handleSelect = () => onSelect(template.id);
+  const handleEdit = () => onEdit();
 
   return (
     <ContextMenu>
@@ -87,22 +83,26 @@ export function AdminCertificationTemplateCard({
           <motion.article
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{
+              delay: index * 0.05,
+              duration: 0.35,
+              ease: [0.25, 0.1, 0.25, 1],
+            }}
             className={cn(
-              'group relative flex w-full min-w-62.5 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left',
-              'ring-1 ring-foreground/10 shadow-xs',
-              'transform-gpu will-change-transform',
-              'transition-all duration-300 ease-out',
-              'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
-              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
+              "group relative flex w-full min-w-62.5 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left",
+              "ring-1 ring-foreground/10 shadow-xs",
+              "transform-gpu will-change-transform",
+              "transition-all duration-300 ease-out",
+              "hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm",
+              "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
             )}
             role="button"
             tabIndex={0}
             onClick={handleSelect}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                handleSelect()
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelect();
               }
             }}
           >
@@ -112,7 +112,7 @@ export function AdminCertificationTemplateCard({
                   src={template.url}
                   alt={template.title}
                   className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                  loading={index < 4 ? 'eager' : 'lazy'}
+                  loading={index < 4 ? "eager" : "lazy"}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted via-background to-muted/40">
@@ -144,9 +144,9 @@ export function AdminCertificationTemplateCard({
                         type="button"
                         onClick={(e) => e.stopPropagation()}
                         className={cn(
-                          'inline-flex size-8 items-center justify-center rounded-full',
-                          'bg-background/85 text-foreground shadow-sm backdrop-blur-sm',
-                          'transition-colors hover:bg-background',
+                          "inline-flex size-8 items-center justify-center rounded-full",
+                          "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
+                          "transition-colors hover:bg-background",
                         )}
                         aria-label={`Abrir ações de ${template.title}`}
                       >
@@ -155,10 +155,7 @@ export function AdminCertificationTemplateCard({
                     }
                   />
                   <DropdownMenuContent align="end" className="w-56">
-                    <MenuItems
-                      onSelect={handleSelect}
-                      onEdit={handleEdit}
-                    />
+                    <MenuItems onSelect={handleSelect} onEdit={handleEdit} />
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -171,32 +168,32 @@ export function AdminCertificationTemplateCard({
                     {template.title}
                   </h3>
                   <p className="text-[11px] text-muted-foreground">
-                    {template.url ? 'Com fundo configurado' : 'Sem fundo'}
+                    {template.url ? "Com fundo configurado" : "Sem fundo"}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    variant={selected ? 'default' : 'outline'}
+                    variant={selected ? "default" : "outline"}
                     size="sm"
                     className="h-8 flex-1 gap-2"
                     onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleSelect()
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSelect();
                     }}
                   >
                     <Check className="size-3.5" />
-                    {selected ? 'Selecionado' : 'Selecionar'}
+                    {selected ? "Selecionado" : "Selecionar"}
                   </Button>
                   <CertViewer
                     template={template}
                     triggerLabel="Ver"
                     variables={{
                       activity_name: editionName,
-                      certified_at: 'DD/MM/AAAA',
-                      cert_hash: 'HASH-DE-EXEMPLO',
+                      certified_at: "DD/MM/AAAA",
+                      cert_hash: "HASH-DE-EXEMPLO",
                       verify_url: verifyUrl,
                     }}
                   />
@@ -207,12 +204,8 @@ export function AdminCertificationTemplateCard({
         }
       />
       <ContextMenuContent className="w-56">
-        <MenuItems
-          isContext
-          onSelect={handleSelect}
-          onEdit={handleEdit}
-        />
+        <MenuItems isContext onSelect={handleSelect} onEdit={handleEdit} />
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }

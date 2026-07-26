@@ -41,7 +41,9 @@ export function MoneyFieldRenderer<TFieldValues extends FieldValues>({
   const locale = field.locale ?? "pt-BR";
   const valueType = field.valueType ?? "number";
 
-  const [cents, setCents] = useState<number>(() => toCentsNumber(form.getValues(field.name)));
+  const [cents, setCents] = useState<number>(() =>
+    toCentsNumber(form.getValues(field.name)),
+  );
 
   const formatter = useMemo(
     () => new Intl.NumberFormat(locale, { style: "currency", currency }),
@@ -54,7 +56,10 @@ export function MoneyFieldRenderer<TFieldValues extends FieldValues>({
     const clamped = clamp(nextCents, field.minCents, field.maxCents);
     setCents(clamped);
     const nextValue = valueType === "bigint" ? BigInt(clamped) : clamped;
-    form.setValue(field.name, nextValue as never, { shouldDirty: true, shouldValidate: true });
+    form.setValue(field.name, nextValue as never, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   return (
@@ -65,7 +70,9 @@ export function MoneyFieldRenderer<TFieldValues extends FieldValues>({
       >
         {field.label}
         {field.optional ? (
-          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">
+            (opcional)
+          </span>
         ) : null}
       </label>
 
@@ -95,11 +102,15 @@ export function MoneyFieldRenderer<TFieldValues extends FieldValues>({
         className={
           "flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-left text-sm outline-none " +
           "tabular-nums focus-visible:ring-2 focus-visible:ring-ring " +
-          (error ? "border-destructive focus-visible:ring-destructive" : "border-input")
+          (error
+            ? "border-destructive focus-visible:ring-destructive"
+            : "border-input")
         }
       />
 
-      {field.description ? <p className="text-xs text-muted-foreground">{field.description}</p> : null}
+      {field.description ? (
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      ) : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

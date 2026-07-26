@@ -1,21 +1,24 @@
-import { useEffect } from 'react'
-import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import TextAlign from '@tiptap/extension-text-align'
-import { TextStyleKit } from '@tiptap/extension-text-style'
-import { Selection } from '@tiptap/extensions'
-import type { TextCertificateElement } from '../../types'
+import TextAlign from "@tiptap/extension-text-align";
+import { TextStyleKit } from "@tiptap/extension-text-style";
+import { Selection } from "@tiptap/extensions";
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useEffect } from "react";
+import {
+  DEFAULT_CERTIFICATE_FONT,
+  DEFAULT_CERTIFICATE_TEXT_COLOR,
+} from "../../constants";
 import {
   domToParagraphs,
   paragraphsToHtml,
-} from '../../rich-text/dom-serializer'
-import { CertificateLineHeight } from '../../rich-text/line-height-extension'
-import { certificateEditorActions } from '../../store'
-import { DEFAULT_CERTIFICATE_FONT } from '../../constants'
+} from "../../rich-text/dom-serializer";
+import { CertificateLineHeight } from "../../rich-text/line-height-extension";
+import { certificateEditorActions } from "../../store";
+import type { TextCertificateElement } from "../../types";
 
 interface TextElementViewProps {
-  element: TextCertificateElement
-  editing?: boolean
+  element: TextCertificateElement;
+  editing?: boolean;
 }
 
 export function TextElementView({
@@ -26,7 +29,7 @@ export function TextElementView({
     <EditableTextElement element={element} />
   ) : (
     <StaticTextElement element={element} />
-  )
+  );
 }
 
 function EditableTextElement({ element }: { element: TextCertificateElement }) {
@@ -42,39 +45,47 @@ function EditableTextElement({ element }: { element: TextCertificateElement }) {
         horizontalRule: false,
       }),
       TextStyleKit,
-      TextAlign.configure({ types: ['paragraph'] }),
+      TextAlign.configure({ types: ["paragraph"] }),
       CertificateLineHeight,
-      Selection.configure({ className: 'certificate-preserved-selection' }),
+      Selection.configure({ className: "certificate-preserved-selection" }),
     ],
     content: paragraphsToHtml(element.paragraphs),
-    autofocus: 'end',
+    autofocus: "end",
     editorProps: {
       attributes: {
         class:
-          'certificate-rich-text h-full w-full cursor-text overflow-auto whitespace-pre-wrap wrap-break-word outline-none',
-        'aria-label': 'Conteúdo do texto',
+          "certificate-rich-text h-full w-full cursor-text overflow-auto whitespace-pre-wrap wrap-break-word outline-none",
+        "aria-label": "Conteúdo do texto",
       },
       handleKeyDown: (_view, event) => {
-        if (event.key !== 'Escape') return false
-        certificateEditorActions.stopEditing()
-        return true
+        if (event.key !== "Escape") return false;
+        certificateEditorActions.stopEditing();
+        return true;
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
-      updateParagraphs(element.id, domToParagraphs(currentEditor.view.dom))
+      updateParagraphs(element.id, domToParagraphs(currentEditor.view.dom));
+      certificateEditorActions.setTextSelectionStyles(
+        readSelectionStyles(currentEditor),
+      );
     },
-  })
+    onSelectionUpdate: ({ editor: currentEditor }) => {
+      certificateEditorActions.setTextSelectionStyles(
+        readSelectionStyles(currentEditor),
+      );
+    },
+  });
 
   const selectionStyles = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) =>
       currentEditor ? readSelectionStyles(currentEditor) : null,
-  })
+  });
 
   useEffect(() => {
-    if (!editor) return
+    if (!editor) return;
     const commit = () =>
-      updateParagraphs(element.id, domToParagraphs(editor.view.dom))
+      updateParagraphs(element.id, domToParagraphs(editor.view.dom));
     certificateEditorActions.setRichTextController({
       elementId: element.id,
       commit,
@@ -93,147 +104,154 @@ function EditableTextElement({ element }: { element: TextCertificateElement }) {
         void editor.chain().focus().setFontSize(`${fontSize}px`).run(),
       insertText: (text) =>
         void editor.chain().focus().insertContent(text).run(),
-    })
+    });
 
     return () => {
-      certificateEditorActions.setRichTextController(null)
-      certificateEditorActions.setTextSelectionStyles(null)
-    }
-  }, [editor, element.id])
+      certificateEditorActions.setRichTextController(null);
+      certificateEditorActions.setTextSelectionStyles(null);
+    };
+  }, [editor, element.id]);
 
   useEffect(() => {
-    certificateEditorActions.setTextSelectionStyles(selectionStyles)
-  }, [selectionStyles])
+    certificateEditorActions.setTextSelectionStyles(selectionStyles);
+  }, [selectionStyles]);
 
-  if (!editor) return null
+  if (!editor) return null;
   return (
     <EditorContent
       editor={editor}
-      className="h-full w-full"
+      className="certificate-rich-text-host h-full w-full"
+      style={{
+        fontSize: "24px",
+        fontFamily: DEFAULT_CERTIFICATE_FONT,
+        color: DEFAULT_CERTIFICATE_TEXT_COLOR,
+      }}
       onPointerDown={(event) => event.stopPropagation()}
     />
-  )
+  );
 }
 
 function updateParagraphs(
   elementId: string,
-  paragraphs: TextCertificateElement['paragraphs'],
+  paragraphs: TextCertificateElement["paragraphs"],
 ) {
   certificateEditorActions.updateElement(elementId, (current) =>
-    current.type === 'text' ? { ...current, paragraphs } : current,
-  )
+    current.type === "text" ? { ...current, paragraphs } : current,
+  );
 }
 
 function uniform<T>(values: T[]): T | null {
-  const first = values[0]
+  const first = values[0];
   return first !== undefined && values.every((value) => value === first)
     ? first
-    : null
+    : null;
 }
 
-type RichEditor = NonNullable<ReturnType<typeof useEditor>>
+type RichEditor = NonNullable<ReturnType<typeof useEditor>>;
 
 function readSelectionStyles(editor: RichEditor) {
-  const { from, to, empty, $from } = editor.state.selection
+  const { from, to, empty, $from } = editor.state.selection;
   const markSets: Array<
     readonly { type: { name: string }; attrs: Record<string, unknown> }[]
-  > = []
-  const aligns: Array<'left' | 'center' | 'right' | 'justify'> = []
-  const lineHeights: number[] = []
+  > = [];
+  const aligns: Array<"left" | "center" | "right" | "justify"> = [];
+  const lineHeights: number[] = [];
 
   const readParagraph = (attrs: Record<string, unknown>) => {
-    const align = String(attrs.textAlign ?? 'left')
+    const align = String(attrs.textAlign ?? "left");
     aligns.push(
-      align === 'center' || align === 'right' || align === 'justify'
+      align === "center" || align === "right" || align === "justify"
         ? align
-        : 'left',
-    )
-    lineHeights.push(Number(attrs.lineHeight) || 1.25)
-  }
+        : "left",
+    );
+    lineHeights.push(Number(attrs.lineHeight) || 1.25);
+  };
 
   if (empty) {
-    markSets.push(editor.state.storedMarks ?? $from.marks())
-    readParagraph($from.parent.attrs)
+    markSets.push(editor.state.storedMarks ?? $from.marks());
+    readParagraph($from.parent.attrs);
   } else {
     editor.state.doc.nodesBetween(from, to, (node) => {
-      if (node.isText) markSets.push(node.marks)
-      if (node.type.name === 'paragraph') readParagraph(node.attrs)
-    })
+      if (node.isText) markSets.push(node.marks);
+      if (node.type.name === "paragraph") readParagraph(node.attrs);
+    });
   }
 
   const hasMark = (
     marks: readonly { type: { name: string } }[],
     name: string,
-  ) => marks.some((mark) => mark.type.name === name)
+  ) => marks.some((mark) => mark.type.name === name);
   const styleValue = (
     marks: readonly {
-      type: { name: string }
-      attrs: Record<string, unknown>
+      type: { name: string };
+      attrs: Record<string, unknown>;
     }[],
     key: string,
     fallback: string,
   ) => {
-    const value = marks.find((mark) => mark.type.name === 'textStyle')?.attrs[
+    const value = marks.find((mark) => mark.type.name === "textStyle")?.attrs[
       key
-    ]
-    return typeof value === 'string' && value ? value : fallback
-  }
+    ];
+    return typeof value === "string" && value ? value : fallback;
+  };
 
   return {
-    bold: uniform(markSets.map((marks) => hasMark(marks, 'bold'))),
-    italic: uniform(markSets.map((marks) => hasMark(marks, 'italic'))),
-    underline: uniform(markSets.map((marks) => hasMark(marks, 'underline'))),
+    bold: uniform(markSets.map((marks) => hasMark(marks, "bold"))),
+    italic: uniform(markSets.map((marks) => hasMark(marks, "italic"))),
+    underline: uniform(markSets.map((marks) => hasMark(marks, "underline"))),
     align: uniform(aligns),
     lineHeight: uniform(lineHeights),
     color: uniform(
-      markSets.map((marks) => styleValue(marks, 'color', '#111827')),
+      markSets.map((marks) =>
+        styleValue(marks, "color", DEFAULT_CERTIFICATE_TEXT_COLOR),
+      ),
     ),
     fontSize: uniform(
       markSets.map((marks) =>
-        Number.parseFloat(styleValue(marks, 'fontSize', '24px')),
+        Number.parseFloat(styleValue(marks, "fontSize", "24px")),
       ),
     ),
     fontFamily: uniform(
       markSets.map((marks) =>
-        styleValue(marks, 'fontFamily', DEFAULT_CERTIFICATE_FONT),
+        styleValue(marks, "fontFamily", DEFAULT_CERTIFICATE_FONT),
       ),
     ),
-  }
+  };
 }
 
 function StaticTextElement({ element }: { element: TextCertificateElement }) {
   return (
     <div
       className="h-full w-full overflow-hidden whitespace-pre-wrap wrap-break-word"
-      style={{ lineHeight: 1.25, overflowWrap: 'anywhere' }}
+      style={{ lineHeight: 1.25, overflowWrap: "anywhere" }}
     >
-      {element.paragraphs.map((paragraph, paragraphIndex) => (
+      {element.paragraphs.map((paragraph) => (
         <div
-          key={paragraphIndex}
+          key={paragraphKey(paragraph)}
           style={{
             textAlign: paragraph.align,
             lineHeight: paragraph.lineHeight,
             fontSize:
               paragraph.runs[0]?.fontSize ??
-              findNearestRun(element.paragraphs, paragraphIndex)?.fontSize,
+              findNearestRun(element.paragraphs, paragraph)?.fontSize,
             fontFamily:
               paragraph.runs[0]?.fontFamily ??
-              findNearestRun(element.paragraphs, paragraphIndex)?.fontFamily,
+              findNearestRun(element.paragraphs, paragraph)?.fontFamily,
           }}
         >
           {paragraph.runs.length === 0 ? (
             <br />
           ) : (
-            paragraph.runs.map((run, runIndex) => (
+            paragraph.runs.map((run) => (
               <span
-                key={runIndex}
+                key={runKey(run)}
                 style={{
                   color: run.color,
                   fontSize: run.fontSize,
                   fontFamily: run.fontFamily,
                   fontWeight: run.bold ? 700 : 400,
-                  fontStyle: run.italic ? 'italic' : 'normal',
-                  textDecoration: run.underline ? 'underline' : 'none',
+                  fontStyle: run.italic ? "italic" : "normal",
+                  textDecoration: run.underline ? "underline" : "none",
                 }}
               >
                 {run.text}
@@ -243,13 +261,14 @@ function StaticTextElement({ element }: { element: TextCertificateElement }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 function findNearestRun(
-  paragraphs: TextCertificateElement['paragraphs'],
-  paragraphIndex: number,
+  paragraphs: TextCertificateElement["paragraphs"],
+  paragraph: TextCertificateElement["paragraphs"][number],
 ) {
+  const paragraphIndex = paragraphs.indexOf(paragraph);
   return (
     paragraphs
       .slice(0, paragraphIndex)
@@ -259,5 +278,17 @@ function findNearestRun(
     paragraphs
       .slice(paragraphIndex + 1)
       .find((paragraph) => paragraph.runs.length > 0)?.runs[0]
-  )
+  );
+}
+
+function paragraphKey(paragraph: TextCertificateElement["paragraphs"][number]) {
+  return `${paragraph.align}-${paragraph.lineHeight}-${paragraph.runs
+    .map((run) => run.text)
+    .join("|")}`;
+}
+
+function runKey(
+  run: TextCertificateElement["paragraphs"][number]["runs"][number],
+) {
+  return `${run.text}-${run.color}-${run.fontSize}-${run.fontFamily}-${run.bold ? 1 : 0}-${run.italic ? 1 : 0}-${run.underline ? 1 : 0}`;
 }

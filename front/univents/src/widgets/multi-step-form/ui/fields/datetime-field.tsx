@@ -1,8 +1,8 @@
 import type { FieldValues } from "react-hook-form";
+import { Label } from "@/shared/ui/shadcn/label";
+import { DateTimePicker } from "@/widgets/multi-step-form/ui/fields/helper/date-time-picker";
 import type { FieldConfig, FieldFormApi } from "../../model/types";
 import { getFieldError } from "../../utils/get-field-error";
-import { DateTimePicker } from "@/widgets/multi-step-form/ui/fields/helper/date-time-picker";
-import { Label } from "@/shared/ui/shadcn/label";
 
 export interface DateTimeFieldRendererProps<TFieldValues extends FieldValues> {
   field: FieldConfig<TFieldValues>;
@@ -26,7 +26,9 @@ export function DateTimeFieldRenderer<TFieldValues extends FieldValues>({
       >
         {field.label}
         {field.optional ? (
-          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">
+            (opcional)
+          </span>
         ) : null}
       </Label>
 
@@ -46,7 +48,9 @@ export function DateTimeFieldRenderer<TFieldValues extends FieldValues>({
         error={Boolean(error)}
       />
 
-      {field.description ? <p className="text-xs text-muted-foreground">{field.description}</p> : null}
+      {field.description ? (
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      ) : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

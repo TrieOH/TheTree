@@ -1,40 +1,40 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Monitor, Save } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { useCreateCertificationTemplateMutation } from '../../api/mutations'
-import { certificationTemplateCreateSchema } from '../../model'
-import { allSignaturesQueryOptions } from '../../../signatures/api'
-import { certificateEditorActions, useCertificateEditorState } from '../store'
-import { uploadCertificateAssets } from '../upload-assets'
-import { CertificateCanvas } from './certificate-canvas'
-import { CertificatePropertiesPanel } from './certificate-properties-panel'
-import { CertificateTextToolbar } from './certificate-text-toolbar'
-import { CertificateToolsSidebar } from './certificate-tools-sidebar'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Input } from '@/shared/ui/shadcn/input'
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Loader2, Monitor, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import { allSignaturesQueryOptions } from "../../../signatures/api";
+import { useCreateCertificationTemplateMutation } from "../../api/mutations";
+import { certificationTemplateCreateSchema } from "../../model";
+import { certificateEditorActions, useCertificateEditorState } from "../store";
+import { uploadCertificateAssets } from "../upload-assets";
+import { CertificateCanvas } from "./certificate-canvas";
+import { CertificatePropertiesPanel } from "./certificate-properties-panel";
+import { CertificateTextToolbar } from "./certificate-text-toolbar";
+import { CertificateToolsSidebar } from "./certificate-tools-sidebar";
 
 interface CertificateEditorProps {
-  eventId: string
-  editionId: string
+  eventId: string;
+  editionId: string;
 }
 
 export function CertificateEditor({
   eventId,
   editionId,
 }: CertificateEditorProps) {
-  const navigate = useNavigate()
-  const [uploadingAssets, setUploadingAssets] = useState(false)
-  const title = useCertificateEditorState((state) => state.draft.title)
+  const navigate = useNavigate();
+  const [uploadingAssets, setUploadingAssets] = useState(false);
+  const title = useCertificateEditorState((state) => state.draft.title);
   const { data: signatures = [] } = useQuery(
     allSignaturesQueryOptions(eventId, editionId),
-  )
+  );
 
   useEffect(() => {
-    certificateEditorActions.reset()
-    return () => certificateEditorActions.reset()
-  }, [])
+    certificateEditorActions.reset();
+    return () => certificateEditorActions.reset();
+  }, []);
 
   useEffect(() => {
     certificateEditorActions.setAvailableSignatures(
@@ -43,42 +43,42 @@ export function CertificateEditor({
         url: signature.url,
         name: signature.title,
       })),
-    )
-  }, [signatures])
+    );
+  }, [signatures]);
 
-  const createTemplate = useCreateCertificationTemplateMutation()
+  const createTemplate = useCreateCertificationTemplateMutation();
 
   async function saveTemplate() {
     const result = certificationTemplateCreateSchema.safeParse(
       certificateEditorActions.getDraft(),
-    )
+    );
     if (!result.success) {
-      toast.error(result.error.issues[0]?.message ?? 'Template inválido')
-      return
+      toast.error(result.error.issues[0]?.message ?? "Template inválido");
+      return;
     }
-    setUploadingAssets(true)
+    setUploadingAssets(true);
     try {
       const data = await uploadCertificateAssets(
         result.data,
         eventId,
         editionId,
-      )
+      );
       createTemplate.mutate(
         { eventId, editionId, data },
         {
           onSuccess: (response) => {
-            if (!response.success) return
+            if (!response.success) return;
             void navigate({
-              to: '/admin/events/$eventId/editions/$editionId/certifications',
+              to: "/admin/events/$eventId/editions/$editionId/certifications",
               params: { eventId, editionId },
-            })
+            });
           },
         },
-      )
+      );
     } catch {
-      toast.error('Não foi possível enviar as imagens do certificado')
+      toast.error("Não foi possível enviar as imagens do certificado");
     } finally {
-      setUploadingAssets(false)
+      setUploadingAssets(false);
     }
   }
 
@@ -93,13 +93,13 @@ export function CertificateEditor({
       </div>
 
       <div className="hidden h-full min-h-0 flex-col lg:flex">
-        <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-primary px-4 text-primary-foreground">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border/70 bg-card/95 px-4 text-card-foreground shadow-sm backdrop-blur">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link
               to="/admin/events/$eventId/editions/$editionId/certifications"
               params={{ eventId, editionId }}
               aria-label="Voltar para certificados"
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg hover:bg-primary-foreground/10"
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background/80 hover:bg-accent/10"
             >
               <ArrowLeft className="size-4" />
             </Link>
@@ -114,13 +114,13 @@ export function CertificateEditor({
               }
               placeholder="Título do certificado"
               aria-label="Título do certificado"
-              className="max-w-sm border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50"
+              className="max-w-sm border-border/60 bg-background/80 text-card-foreground placeholder:text-muted-foreground/70"
             />
           </div>
 
           <Button
             type="button"
-            variant="secondary"
+            variant="default"
             disabled={uploadingAssets || createTemplate.isPending}
             onClick={() => void saveTemplate()}
           >
@@ -143,5 +143,5 @@ export function CertificateEditor({
         </div>
       </div>
     </div>
-  )
+  );
 }

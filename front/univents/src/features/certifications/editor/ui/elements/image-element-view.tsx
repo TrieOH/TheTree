@@ -1,7 +1,7 @@
-import type { ImageCertificateElement } from '../../types'
+import type { ImageCertificateElement } from "../../types";
 
 interface ImageElementViewProps {
-  element: ImageCertificateElement
+  element: ImageCertificateElement;
 }
 
 export function ImageElementView({ element }: ImageElementViewProps) {
@@ -18,5 +18,5 @@ export function ImageElementView({ element }: ImageElementViewProps) {
         style={{ objectFit: element.fit }}
       />
     </div>
-  )
+  );
 }

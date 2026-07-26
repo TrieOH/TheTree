@@ -1,7 +1,7 @@
-export { useUploadQueue } from './hooks/use-upload-queue'
-export { uploadQueueStore } from './lib/store'
-export { registerUploadAssociationHandler } from './lib/association-registry'
-export { UploadAssociationError } from './lib/errors'
+export { useUploadQueue } from "./hooks/use-upload-queue";
+export { registerUploadAssociationHandler } from "./lib/association-registry";
+export { UploadAssociationError } from "./lib/errors";
+export { uploadQueueStore } from "./lib/store";
 export type {
   EnqueueUploadInput,
   UploadErrorKind,
@@ -11,4 +11,4 @@ export type {
   UploadTaskOwner,
   UploadTaskStage,
   UploadTaskStatus,
-} from './model/types'
+} from "./model/types";

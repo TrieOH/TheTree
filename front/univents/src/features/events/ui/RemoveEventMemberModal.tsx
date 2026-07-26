@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Loader2, Trash2 } from 'lucide-react'
-import type { EventMemberI } from '../api/members'
+import { Loader2, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,16 +8,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/shared/ui/shadcn/alert-dialog'
-import { Button } from '@/shared/ui/shadcn/button'
-import { Input } from '@/shared/ui/shadcn/input'
-import { Label } from '@/shared/ui/shadcn/label'
+} from "@/shared/ui/shadcn/alert-dialog";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import { Label } from "@/shared/ui/shadcn/label";
+import type { EventMemberI } from "../api/members";
 
 interface RemoveEventMemberModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  member: EventMemberI | null
-  onRemove: (userId: string, email: string) => Promise<boolean>
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  member: EventMemberI | null;
+  onRemove: (userId: string, email: string) => Promise<boolean>;
 }
 
 export function RemoveEventMemberModal({
@@ -27,23 +27,23 @@ export function RemoveEventMemberModal({
   member,
   onRemove,
 }: RemoveEventMemberModalProps) {
-  const [email, setEmail] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (open) setEmail('')
-  }, [open])
+    if (open) setEmail("");
+  }, [open]);
 
   const handleRemove = async () => {
-    const normalizedEmail = email.trim().toLowerCase()
-    if (!member || !normalizedEmail) return
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!member || !normalizedEmail) return;
 
-    setIsSubmitting(true)
-    const didRemove = await onRemove(member.user_id, normalizedEmail)
-    setIsSubmitting(false)
+    setIsSubmitting(true);
+    const didRemove = await onRemove(member.user_id, normalizedEmail);
+    setIsSubmitting(false);
 
-    if (didRemove) onOpenChange(false)
-  }
+    if (didRemove) onOpenChange(false);
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -51,7 +51,7 @@ export function RemoveEventMemberModal({
         <AlertDialogHeader>
           <AlertDialogTitle>Remover membro?</AlertDialogTitle>
           <AlertDialogDescription>
-            Confirme o e-mail do usuário{' '}
+            Confirme o e-mail do usuário{" "}
             <span className="font-mono">{member?.user_id}</span> para removê-lo
             deste evento.
           </AlertDialogDescription>
@@ -90,5 +90,5 @@ export function RemoveEventMemberModal({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

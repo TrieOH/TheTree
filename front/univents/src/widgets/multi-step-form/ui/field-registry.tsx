@@ -1,15 +1,15 @@
-import type { FieldValues } from "react-hook-form";
 import type { ReactElement } from "react";
+import type { FieldValues } from "react-hook-form";
 import type { FieldConfig, FieldFormApi, FieldKind } from "../model/types";
-import { TextFieldRenderer } from "./fields/text-field";
-import { CustomFieldRenderer } from "./fields/custom-field";
-import { ImageFieldRenderer } from "./fields/image-field";
-import { GalleryFieldRenderer } from "./fields/gallery-field";
-import { UrlFieldRenderer } from "./fields/url-field";
 import { ComboboxFieldRenderer } from "./fields/combobox-field";
+import { CustomFieldRenderer } from "./fields/custom-field";
 import { DateTimeFieldRenderer } from "./fields/datetime-field";
-import { ToggleFieldRenderer } from "./fields/toggle-field";
+import { GalleryFieldRenderer } from "./fields/gallery-field";
+import { ImageFieldRenderer } from "./fields/image-field";
 import { MoneyFieldRenderer } from "./fields/money-field";
+import { TextFieldRenderer } from "./fields/text-field";
+import { ToggleFieldRenderer } from "./fields/toggle-field";
+import { UrlFieldRenderer } from "./fields/url-field";
 
 export type FieldRenderer<TFieldValues extends FieldValues> = (props: {
   field: FieldConfig<TFieldValues>;
@@ -22,9 +22,14 @@ export type FieldRenderer<TFieldValues extends FieldValues> = (props: {
  * date, ...) means adding one entry here + one renderer file — never
  * touching a big if/switch somewhere else.
  */
-export type FieldRegistry<TFieldValues extends FieldValues> = Record<FieldKind, FieldRenderer<TFieldValues>>;
+export type FieldRegistry<TFieldValues extends FieldValues> = Record<
+  FieldKind,
+  FieldRenderer<TFieldValues>
+>;
 
-export function createFieldRegistry<TFieldValues extends FieldValues>(): FieldRegistry<TFieldValues> {
+export function createFieldRegistry<
+  TFieldValues extends FieldValues,
+>(): FieldRegistry<TFieldValues> {
   return {
     text: TextFieldRenderer,
     url: UrlFieldRenderer,

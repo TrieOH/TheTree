@@ -1,34 +1,34 @@
-import { useRef, useState } from 'react'
-import type { FieldValues } from 'react-hook-form'
-import { ImagePlus, UploadCloud } from 'lucide-react'
-import type { FieldConfig, FieldFormApi } from '../../model/types'
-import { useImageUploadField } from '../../hooks/use-image-upload-field'
-import { ImageThumb } from './helper/image-thumb'
-import { Button } from '@/shared/ui/shadcn/button'
-import { cn } from '@/shared/lib/utils'
-import { Label } from '@/shared/ui/shadcn/label'
+import { ImagePlus, UploadCloud } from "lucide-react";
+import { useRef, useState } from "react";
+import type { FieldValues } from "react-hook-form";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Label } from "@/shared/ui/shadcn/label";
+import { useImageUploadField } from "../../hooks/use-image-upload-field";
+import type { FieldConfig, FieldFormApi } from "../../model/types";
+import { ImageThumb } from "./helper/image-thumb";
 
 export interface ImageFieldRendererProps<TFieldValues extends FieldValues> {
-  field: FieldConfig<TFieldValues>
-  form: FieldFormApi<TFieldValues>
+  field: FieldConfig<TFieldValues>;
+  form: FieldFormApi<TFieldValues>;
 }
 
 export function ImageFieldRenderer<TFieldValues extends FieldValues>({
   field,
   form,
 }: ImageFieldRendererProps<TFieldValues>) {
-  if (field.kind !== 'image') return null
+  if (field.kind !== "image") return null;
 
-  const inputRef = useRef<HTMLInputElement>(null)
-  const dragDepthRef = useRef(0)
-  const [isDragging, setIsDragging] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Captured once (lazy initializer) so it doesn't change on every
   // render — see the note on `initialUrls` in useImageUploadField.
   const [initialUrls] = useState<string[]>(() => {
-    const current = form.getValues(field.name)
-    return typeof current === 'string' && current.length > 0 ? [current] : []
-  })
+    const current = form.getValues(field.name);
+    return typeof current === "string" && current.length > 0 ? [current] : [];
+  });
 
   const { items, addFiles, removeItem } = useImageUploadField({
     fieldKey: String(field.name),
@@ -39,13 +39,13 @@ export function ImageFieldRenderer<TFieldValues extends FieldValues>({
     onValueChange: (urls) => {
       form.setValue(field.name, (urls[0] ?? null) as never, {
         shouldDirty: true,
-      })
+      });
     },
     onTrackingChange: field.onTrackingChange,
-  })
+  });
 
-  const item = items.at(0)
-  const hasItem = item !== undefined
+  const item = items.at(0);
+  const hasItem = item !== undefined;
 
   return (
     <div className="space-y-1.5">
@@ -60,35 +60,35 @@ export function ImageFieldRenderer<TFieldValues extends FieldValues>({
 
       <div
         onDragEnter={(event) => {
-          event.preventDefault()
-          if (field.disabled) return
-          dragDepthRef.current += 1
-          setIsDragging(true)
+          event.preventDefault();
+          if (field.disabled) return;
+          dragDepthRef.current += 1;
+          setIsDragging(true);
         }}
         onDragOver={(event) => {
-          event.preventDefault()
-          if (field.disabled) return
-          setIsDragging(true)
+          event.preventDefault();
+          if (field.disabled) return;
+          setIsDragging(true);
         }}
         onDragLeave={(event) => {
-          event.preventDefault()
-          dragDepthRef.current = Math.max(dragDepthRef.current - 1, 0)
-          if (dragDepthRef.current === 0) setIsDragging(false)
+          event.preventDefault();
+          dragDepthRef.current = Math.max(dragDepthRef.current - 1, 0);
+          if (dragDepthRef.current === 0) setIsDragging(false);
         }}
         onDrop={(event) => {
-          event.preventDefault()
-          if (field.disabled) return
-          dragDepthRef.current = 0
-          setIsDragging(false)
+          event.preventDefault();
+          if (field.disabled) return;
+          dragDepthRef.current = 0;
+          setIsDragging(false);
           if (event.dataTransfer.files.length > 0)
-            addFiles(event.dataTransfer.files)
+            addFiles(event.dataTransfer.files);
         }}
         className={cn(
-          'relative flex min-h-72 w-full overflow-hidden rounded-xl border border-dashed text-left transition-colors',
+          "relative flex min-h-72 w-full overflow-hidden rounded-xl border border-dashed text-left transition-colors",
           isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-border bg-muted/20',
-          field.disabled && 'cursor-not-allowed opacity-60',
+            ? "border-primary bg-primary/5"
+            : "border-border bg-muted/20",
+          field.disabled && "cursor-not-allowed opacity-60",
         )}
       >
         {hasItem ? (
@@ -101,7 +101,7 @@ export function ImageFieldRenderer<TFieldValues extends FieldValues>({
           <button
             type="button"
             onClick={() => {
-              if (!field.disabled) inputRef.current?.click()
+              if (!field.disabled) inputRef.current?.click();
             }}
             disabled={field.disabled}
             className="flex h-full min-h-72 w-full flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center"
@@ -115,8 +115,8 @@ export function ImageFieldRenderer<TFieldValues extends FieldValues>({
               </p>
               <p className="text-xs text-muted-foreground">
                 {field.disabled
-                  ? 'Upload disponível em breve'
-                  : 'ou clique para selecionar um arquivo'}
+                  ? "Upload disponível em breve"
+                  : "ou clique para selecionar um arquivo"}
               </p>
             </div>
             {field.hint ? (
@@ -137,7 +137,7 @@ export function ImageFieldRenderer<TFieldValues extends FieldValues>({
             className="gap-2 bg-background/90 shadow-sm backdrop-blur-sm"
           >
             <ImagePlus className="h-4 w-4" />
-            {hasItem ? 'Trocar imagem' : 'Selecionar imagem'}
+            {hasItem ? "Trocar imagem" : "Selecionar imagem"}
           </Button>
         </div>
 
@@ -149,12 +149,12 @@ export function ImageFieldRenderer<TFieldValues extends FieldValues>({
           className="hidden"
           onChange={(event) => {
             if (event.target.files && event.target.files.length > 0) {
-              addFiles(event.target.files)
+              addFiles(event.target.files);
             }
-            event.target.value = ''
+            event.target.value = "";
           }}
         />
       </div>
     </div>
-  )
+  );
 }

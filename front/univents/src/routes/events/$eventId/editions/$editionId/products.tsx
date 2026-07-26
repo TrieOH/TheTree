@@ -10,7 +10,9 @@ import { createFileRoute } from "@tanstack/react-router";
 // import { productsByEditionQueryOptions } from "@/features/products/api";
 // import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 
-export const Route = createFileRoute("/events/$eventId/editions/$editionId/products")({
+export const Route = createFileRoute(
+  "/events/$eventId/editions/$editionId/products",
+)({
   component: ProductsPage,
 });
 
