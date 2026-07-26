@@ -19,6 +19,10 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://git.trieoh.com/TrieOH/TheTree"
+  },
   "publishConfig": {
     "access": "public"
   },

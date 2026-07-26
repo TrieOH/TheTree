@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/identityx-access-sdk-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "SDK focused on IdentityX API keys and capabilities",
   "main": "./dist/index.js",
@@ -19,6 +19,10 @@
     "build": "pnpm run clean && pnpm exec tsup && pnpm exec tsc -p tsconfig.types.json",
     "clean": "rm -rf dist",
     "typecheck": "pnpm exec tsc -p . --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.trieoh.com/TrieOH/TheTree"
   },
   "publishConfig": {
     "access": "public"
