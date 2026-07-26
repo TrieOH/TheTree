@@ -26,7 +26,7 @@
     "@tanstack/react-start": "catalog:",
     "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:*",
-    "@trieoh/identityx-access-sdk-ts": "workspace:*",
+    "@trieoh/identityx-access-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/payssage-models": "workspace:*",
     "@trieoh/shared-utils": "workspace:*",

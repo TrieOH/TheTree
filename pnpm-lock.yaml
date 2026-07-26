@@ -60,6 +60,9 @@ catalogs:
     '@trieoh/envoy-fetch-ts':
       specifier: ^0.1.5
       version: 0.1.5
+    '@trieoh/identityx-access-sdk-ts':
+      specifier: ^0.1.6
+      version: 0.1.6
     '@trieoh/identityx-sdk-ts':
       specifier: ^0.12.15
       version: 0.12.15
@@ -420,8 +423,8 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ts/front-core
       '@trieoh/identityx-access-sdk-ts':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-access
+        specifier: 'catalog:'
+        version: 0.1.6
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
         version: 0.12.15(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -3323,6 +3326,9 @@ packages:
 
   '@trieoh/envoy-fetch-ts@0.1.5':
     resolution: {integrity: sha512-XzkmoMaxT+UkruB0MKoGIzvcePH7Bko9iu+aSdjYCERa2k6FffdN6zNn9kglZpwx5CqtqreDD4YZpOViOCcKKQ==}
+
+  '@trieoh/identityx-access-sdk-ts@0.1.6':
+    resolution: {integrity: sha512-DMCuwonE+DWIibenlQgbCVSBs/+WSIYLFF8WiHEnjbQ3t/5sJguSMtRwIStLZsrtPa66vdNIlkFJlbnMH8YgNg==}
 
   '@trieoh/identityx-sdk-ts@0.12.15':
     resolution: {integrity: sha512-UBKdUW/RsprWIsGy6tLy2LuL8dzHo7bB2Eo6iBWxeMm/ZCnLa0udWVtwpiRlXKiNoJvdX26w2E1C4IfQjYhbgA==}
@@ -7110,6 +7116,10 @@ snapshots:
       '@tiptap/pm': 3.27.4
 
   '@trieoh/envoy-fetch-ts@0.1.5': {}
+
+  '@trieoh/identityx-access-sdk-ts@0.1.6':
+    dependencies:
+      '@trieoh/envoy-fetch-ts': 0.1.5
 
   '@trieoh/identityx-sdk-ts@0.12.15(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
