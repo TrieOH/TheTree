@@ -1,9 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: {
-    index: "src/index.ts",
-  },
+  entry: ["src/index.ts"],
   format: ["esm"],
   dts: false,
   minify: true,
@@ -13,5 +11,5 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   shims: true,
-  external: ["@trieoh/envoy-fetch-ts"],
+  outDir: "dist",
 });

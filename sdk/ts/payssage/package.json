@@ -2,6 +2,8 @@
   "name": "@trieoh/payssage-sdk-ts",
   "version": "0.1.1",
   "type": "module",
+  "description": "SDK to consume Payssage",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -10,17 +12,22 @@
   },
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --minify"
+    "build": "pnpm run clean && pnpm exec tsup && pnpm exec tsc -p tsconfig.types.json",
+    "clean": "rm -rf dist",
+    "typecheck": "pnpm exec tsc -p . --noEmit"
   },
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
-    "@types/bun": "latest",
-    "tsup": "^8.5.1",
-    "typescript": "^7.0.2"
+    "@types/node": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   },
   "dependencies": {
-    "@trieoh/envoy-fetch-ts": "^0.1.5"
+    "@trieoh/envoy-fetch-ts": "catalog:"
   }
 }

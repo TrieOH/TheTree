@@ -1,23 +1,35 @@
 {
   "name": "@trieoh/identityx-access-sdk-ts",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "SDK focused on IdentityX API keys and capabilities",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
+  "types": "./dist/esm/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "typecheck": "tsc -p . --noEmit"
+    "build": "pnpm run clean && pnpm exec tsup && pnpm exec tsc -p tsconfig.types.json",
+    "clean": "rm -rf dist",
+    "typecheck": "pnpm exec tsc -p . --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
-    "tsup": "^8.5.1",
-    "@types/node": "^24.10.1",
-    "typescript": "^7.0.2"
+    "tsup": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   },
   "dependencies": {
-    "@trieoh/envoy-fetch-ts": "^0.1.5",
+    "@trieoh/envoy-fetch-ts": "catalog:",
     "@trieoh/identityx-models": "workspace:*"
   }
 }
