@@ -870,9 +870,6 @@ importers:
       '@trieoh/envoy-fetch-ts':
         specifier: 'catalog:'
         version: 0.1.5
-      '@trieoh/identityx-models':
-        specifier: workspace:*
-        version: link:../../../lib/ts/identityx
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

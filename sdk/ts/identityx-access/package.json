@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/identityx-access-sdk-ts",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "description": "SDK focused on IdentityX API keys and capabilities",
   "main": "./dist/index.js",
@@ -33,7 +33,6 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "@trieoh/envoy-fetch-ts": "catalog:",
-    "@trieoh/identityx-models": "workspace:*"
+    "@trieoh/envoy-fetch-ts": "catalog:"
   }
 }
