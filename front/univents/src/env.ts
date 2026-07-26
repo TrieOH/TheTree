@@ -6,6 +6,7 @@ export const env = createEnv({
     SERVER_URL: z.url().optional(),
     TRIEOH_PAY_SECRET_KEY: z.string(),
     TRIEOH_PAY_BASE_URL: z.url().optional(),
+    IDENTITYX_ACCESS_API_KEY: z.string(),
 
     STORAGE_IMAGE_ALLOWED_TYPES: z.string().optional(),
     STORAGE_IMAGE_MAX_SIZE_BYTES: z.string().optional(),
@@ -50,6 +51,7 @@ export const env = createEnv({
     SERVER_URL: process.env.SERVER_URL,
     TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
     TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL,
+    IDENTITYX_ACCESS_API_KEY: process.env.IDENTITYX_ACCESS_API_KEY,
     STORAGE_IMAGE_ALLOWED_TYPES: process.env.STORAGE_IMAGE_ALLOWED_TYPES,
     STORAGE_IMAGE_MAX_SIZE_BYTES: process.env.STORAGE_IMAGE_MAX_SIZE_BYTES,
     STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS:

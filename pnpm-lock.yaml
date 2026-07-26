@@ -588,6 +588,9 @@ importers:
       '@trieoh/front-core':
         specifier: workspace:*
         version: link:../../lib/ts/front-core
+      '@trieoh/identityx-access-sdk-ts':
+        specifier: workspace:*
+        version: link:../../sdk/ts/identityx-access
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
         version: 0.12.15(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

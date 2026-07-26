@@ -35,6 +35,7 @@
     "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-access-sdk-ts": "workspace:*",
     "@trieoh/ui-base": "workspace:*",
     "aws4fetch": "^1.0.20",
     "class-variance-authority": "catalog:",

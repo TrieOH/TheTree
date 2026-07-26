@@ -8,6 +8,7 @@ import {
   allEventMembersQueryOptions,
   type EventMemberI,
 } from "@/features/events/api/members";
+import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
 import {
   useAddEventMemberMutation,
   useRemoveEventMemberMutation,
@@ -40,6 +41,18 @@ const roleSortOrder: Record<EventMemberRole, number> = {
 function EventMembersRoute() {
   const { eventId } = Route.useParams();
   const { data: members = [] } = useQuery(allEventMembersQueryOptions(eventId));
+  const { data: actorEmails = {} } = useQuery({
+    queryKey: ["event-member-actor-emails", eventId, members.map((m) => m.user_id)],
+    enabled: members.length > 0,
+    queryFn: () =>
+      getActorEmailsServerFn({
+        data: { actorIds: members.map((member) => member.user_id) },
+      }),
+  });
+  const membersWithEmails = members.map((member) => ({
+    ...member,
+    email: actorEmails[member.user_id],
+  }));
   const addMutation = useAddEventMemberMutation();
   const removeMutation = useRemoveEventMemberMutation();
 
@@ -53,14 +66,17 @@ function EventMembersRoute() {
     direction: "desc",
   });
 
-  const visibleMembers = [...members]
+  const visibleMembers = [...membersWithEmails]
     .filter((member) => {
       const search = filter.trim().toLowerCase();
       if (!search) return true;
 
-      return [member.user_id, roleLabels[member.role], member.role].some(
-        (value) => value.toLowerCase().includes(search),
-      );
+      return [
+        member.email,
+        member.user_id,
+        roleLabels[member.role],
+        member.role,
+      ].some((value) => value?.toLowerCase().includes(search));
     })
     .sort((a, b) => {
       const direction = sort.direction === "asc" ? 1 : -1;
@@ -110,7 +126,7 @@ function EventMembersRoute() {
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
-        filterPlaceholder="Buscar por usuário ou função..."
+        filterPlaceholder="Buscar por e-mail, usuário ou função..."
         itemLabel="membros"
         headerActions={
           <Button

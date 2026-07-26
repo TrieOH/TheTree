@@ -39,7 +39,7 @@ export function AdminEventMemberCard({
 }: AdminEventMemberCardProps) {
   const role = roleConfig[member.role];
   const RoleIcon = role.icon;
-  const displayName = `Usuário ${member.user_id.slice(0, 8)}`;
+  const displayName = member.email ?? `Usuário ${member.user_id.slice(0, 8)}`;
   const initials = member.user_id.slice(0, 2).toUpperCase();
 
   return (
@@ -85,7 +85,7 @@ export function AdminEventMemberCard({
             {displayName}
           </h3>
           <p className="mt-0.5 truncate text-xs leading-5 text-muted-foreground">
-            Membro da equipe do evento
+            {member.email ?? "E-mail não encontrado"}
           </p>
         </div>
       </div>

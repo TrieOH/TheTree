@@ -36,7 +36,12 @@ export function RemoveEventMemberModal({
 
   const handleRemove = async () => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!member || !normalizedEmail) return;
+    if (
+      !member?.email ||
+      !normalizedEmail ||
+      normalizedEmail !== member.email.trim().toLowerCase()
+    )
+      return;
 
     setIsSubmitting(true);
     const didRemove = await onRemove(member.user_id, normalizedEmail);
@@ -51,9 +56,8 @@ export function RemoveEventMemberModal({
         <AlertDialogHeader>
           <AlertDialogTitle>Remover membro?</AlertDialogTitle>
           <AlertDialogDescription>
-            Confirme o e-mail do usuário{" "}
-            <span className="font-mono">{member?.user_id}</span> para removê-lo
-            deste evento.
+            Digite novamente o e-mail abaixo para confirmar a remoção deste
+            membro.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -64,7 +68,7 @@ export function RemoveEventMemberModal({
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="membro@exemplo.com"
+            placeholder={member?.email ?? "membro@exemplo.com"}
             autoComplete="email"
             required
           />
@@ -78,7 +82,11 @@ export function RemoveEventMemberModal({
             type="button"
             variant="destructive"
             onClick={handleRemove}
-            disabled={!member || !email.trim() || isSubmitting}
+            disabled={
+              !member?.email ||
+              email.trim().toLowerCase() !== member.email.trim().toLowerCase() ||
+              isSubmitting
+            }
           >
             {isSubmitting ? (
               <Loader2 className="size-4 animate-spin" />
