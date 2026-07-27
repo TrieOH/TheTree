@@ -8,6 +8,7 @@ import {
 } from "@/features/editions/api";
 import { OtherEditionsSection } from "@/features/editions/ui/OtherEditionsSection";
 import { ContactSection } from "@/features/events/ui/ContactSection";
+import { ProductsSection } from "@/features/products/ui/ProductsSection";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
 import { TicketsSection } from "@/features/tickets/ui/TicketsSection";
 import { formatDateRange } from "@/shared/lib/date";
@@ -172,6 +173,7 @@ function RouteComponent() {
       <main className="flex flex-col justify-center items-center w-full mt-6 px-4 sm:px-8!">
         <div className="max-w-6xl w-full">
           <TicketsSection tickets={tickets} eventSlug={event.slug} />
+          <ProductsSection editionId={activeEdition?.id} />
           <OtherEditionsSection
             editions={[...pastEditions, ...upcomingEditions]}
             currentEditionId={activeEdition?.id}
