@@ -84,7 +84,8 @@ export function RemoveEventMemberModal({
             onClick={handleRemove}
             disabled={
               !member?.email ||
-              email.trim().toLowerCase() !== member.email.trim().toLowerCase() ||
+              email.trim().toLowerCase() !==
+                member.email.trim().toLowerCase() ||
               isSubmitting
             }
           >

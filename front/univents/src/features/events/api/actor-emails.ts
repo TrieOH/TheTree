@@ -1,5 +1,5 @@
-import { createIdentityXAccessClient } from "@trieoh/identityx-access-sdk-ts";
 import { createServerFn } from "@tanstack/react-start";
+import { createIdentityXAccessClient } from "@trieoh/identityx-access-sdk-ts";
 import { env } from "@/env";
 
 const identityXAccessClient = createIdentityXAccessClient({

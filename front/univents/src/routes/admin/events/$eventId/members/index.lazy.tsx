@@ -4,11 +4,11 @@ import type { SortState } from "@trieoh/ui-base";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import { UserPlus, Users } from "lucide-react";
 import { useState } from "react";
+import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
 import {
   allEventMembersQueryOptions,
   type EventMemberI,
 } from "@/features/events/api/members";
-import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
 import {
   useAddEventMemberMutation,
   useRemoveEventMemberMutation,
@@ -42,7 +42,11 @@ function EventMembersRoute() {
   const { eventId } = Route.useParams();
   const { data: members = [] } = useQuery(allEventMembersQueryOptions(eventId));
   const { data: actorEmails = {} } = useQuery({
-    queryKey: ["event-member-actor-emails", eventId, members.map((m) => m.user_id)],
+    queryKey: [
+      "event-member-actor-emails",
+      eventId,
+      members.map((m) => m.user_id),
+    ],
     enabled: members.length > 0,
     queryFn: () =>
       getActorEmailsServerFn({
