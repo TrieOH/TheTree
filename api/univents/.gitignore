@@ -1,7 +1,7 @@
 node_modules/*
 node_modules
-internal/database/sqlc/
-internal/database/sqlc/*
+internal/sqlc/
+internal/sqlc/*
 docs/
 docs/*
 .env

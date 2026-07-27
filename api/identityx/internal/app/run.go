@@ -1,26 +1,22 @@
 package app
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"lib/database"
-	"lib/telemetry"
 	"log"
 	"net/http"
-
-	"go.opentelemetry.io/otel"
 )
 
 func (app *IdentityX) run() {
 	q := sqlc.New(app.db)
-	loggr := telemetry.Log()
-	tx := database.NewPGXTxRunner(app.db, loggr)
-	tracer := otel.Tracer(app.cfg.AppName)
+	tx := database.NewPGXTxRunner(app.db)
+	database.SetDefaultRunner(tx)
 
-	repos := app.initRepos(q, loggr, tracer)
-	queries := app.initQueries(repos, tx, loggr, tracer)
-	commands := app.initCommands(repos, tx, loggr, tracer)
+	repos := app.initRepos(q)
+	queries := app.initQueries(repos)
+	commands := app.initCommands(repos)
 	handlers := app.initHandlers(queries, commands)
-	middlewares := app.initMiddlewares(repos, loggr, app.cfg)
+	middlewares := app.initMiddlewares(repos)
 
 	if app.cfg.ProfilePort != "" {
 		go servePprof(app.cfg.ProfilePort)

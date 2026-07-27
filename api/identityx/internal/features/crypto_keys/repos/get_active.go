@@ -1,17 +1,20 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/database"
+
+	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
 func (repo *Repo) GetActive(ctx context.Context, keyType models.CryptoKeyType, projectID *uuid.UUID) (*models.CryptoKey, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "GetActive")
+	ctx, span := telemetry.StartSpan(ctx, "GetActive")
 	defer span.End()
+
 	sqlcKeyPair, err := database.Queries(ctx, repo.q).GetActiveCryptoKey(ctx, sqlc.GetActiveCryptoKeyParams{
 		Type:      string(keyType),
 		ProjectID: projectID,

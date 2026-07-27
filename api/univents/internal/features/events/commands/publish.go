@@ -2,8 +2,8 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
-	"univents/internal/shared/errx"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "EventService.Publish")
+	ctx, span := telemetry.StartSpan(ctx, "EventService.Publish")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -25,7 +25,7 @@ func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
 	}
 
 	if event.Status != models.EventStatusDraft {
-		return errx.Invalid("event").SetMessage("cannot publish non draft event")
+		return fun.ErrBadRequest("cannot publish non draft event")
 	}
 
 	if event.OwnerID != ident.Sub.ID {

@@ -9,7 +9,6 @@ import (
 	mpconfig "github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 var _ ports.PaymentAbstractionLayer = (*Provider)(nil)
@@ -21,7 +20,6 @@ type Provider struct {
 	sellers     ports.SellerRepo
 	wallets     ports.WalletRepo
 	oauthClient oauth.Client
-	logger      *zap.Logger
 	tracer      trace.Tracer
 	tx          database.TxRunner
 }
@@ -32,7 +30,6 @@ func NewProvider(
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
 	wallets ports.WalletRepo,
-	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Provider {
@@ -47,7 +44,6 @@ func NewProvider(
 		sellers:     sellers,
 		wallets:     wallets,
 		oauthClient: oauth.NewClient(mpCfg),
-		logger:      logger,
 		tracer:      tracer,
 		tx:          tx,
 	}

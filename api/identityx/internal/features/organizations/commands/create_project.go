@@ -3,14 +3,14 @@ package commands
 import (
 	"IdentityX/models"
 	"context"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) CreateProject(ctx context.Context, in models.CreateOrgProjectInput) (*models.Project, error) {
-	ctx, span := c.tracer.Start(ctx, "OrganizationService.CreateProject")
+	ctx, span := telemetry.StartSpan(ctx, "CreateProject")
 	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

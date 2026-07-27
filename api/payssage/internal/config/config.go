@@ -17,7 +17,7 @@ type Config struct {
 	DebugMode bool   `env:"DEBUG_MODE"`
 
 	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./internal/database/migrations"`
+	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
 
 	// Postgres (own DB)
 	PostgresHost     string `env:"PAYSSAGE_POSTGRES_HOST,required"`

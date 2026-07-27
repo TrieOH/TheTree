@@ -9,19 +9,6 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-// Logout godoc
-// @Summary logs out a user from IDX
-// @Description This route is disabled until setup is complete
-// @Tags authn
-// @ID authn_logout
-// @Accept json
-// @Produce json
-// @Success 200 {object} fun.Response
-// @Failure 400 {object} fun.Response
-// @Failure 401 {object} fun.Response
-// @Failure 500 {object} fun.Response
-// @Failure 503 {object} fun.Response
-// @Router /auth/logout [post]
 func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	if !globals.SetupComplete() {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)

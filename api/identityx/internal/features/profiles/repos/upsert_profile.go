@@ -1,15 +1,18 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/database"
+
+	"lib/telemetry"
 )
 
 func (r *Repo) Upsert(ctx context.Context, profile models.ActorProfile) (*models.ActorProfile, error) {
-	ctx, span := database.Span(ctx, r.tracer, "UpsertProfile")
+	ctx, span := telemetry.StartSpan(ctx, "Upsert")
 	defer span.End()
+
 	result, err := database.Queries(ctx, r.q).UpsertActorProfile(ctx, sqlc.UpsertActorProfileParams{
 		ActorID: profile.ActorID,
 		Profile: profile.Profile,

@@ -1,16 +1,16 @@
 package app
 
 import (
-	"lib/database"
 	"lib/errx"
 	"lib/objectstorage"
+	"lib/telemetry"
 	"lib/xslices"
 	"net/http"
 	"strings"
 	"time"
-	"univents/internal/database/sqlc"
 	"univents/internal/features/editions"
 	"univents/internal/features/products"
+	"univents/internal/sqlc"
 
 	idx "sdk/identityx"
 	"univents/internal/features/events"
@@ -19,8 +19,6 @@ import (
 
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -30,12 +28,6 @@ type repos struct {
 	editions    ports.EditionRepo
 	ticketTypes ports.TicketTypeRepo
 	products    ports.ProductRepo
-	//activities ports.ActivitiesRepository
-	//signatures ports2.SignatureRepo
-	//certs      ports2.CertificationRepo
-	//checkpoints ports.CheckpointsRepository
-	//tickets     ports.TicketsRepository
-	//purchases   ports.PurchaseRepository
 }
 
 type queries struct {
@@ -43,12 +35,6 @@ type queries struct {
 	editions    *editions.Queries
 	ticketTypes *ticket_types.Queries
 	products    *products.Queries
-	//activities *activities.Queries
-	//signatures *signatures.Queries
-	//certs      *certifications.Queries
-	//checkpoints *checkpoints.QueryService
-	//tickets     *tickets.QueryService
-	//purchases   *purchases.QueryService
 }
 
 type commands struct {
@@ -56,12 +42,6 @@ type commands struct {
 	editions    *editions.Commands
 	ticketTypes *ticket_types.Commands
 	products    *products.Commands
-	//activities *activities.Commands
-	//signatures *signatures.Commands
-	//certs      *certifications.Commands
-	//checkpoints *checkpoints.CommandService
-	//tickets     *tickets.CommandService
-	//purchases   *purchases.CommandService
 }
 
 type middlewares struct {
@@ -80,83 +60,51 @@ type middlewares struct {
 }
 
 type handlers struct {
-	Events      *events.Handlers
-	Editions    *editions.Handlers
-	TicketTypes *ticket_types.Handlers
-	Products    *products.Handlers
-	//Activities *activities.Handlers
-	//signatures *signatures.Handlers
-	//certs      *certifications.Handlers
-	//Checkpoints *checkpoints.Handler
-	//Tickets     *tickets.Handler
-	//Purchases   *purchases.Handler
-	//Security    *security.Handler
+	events      *events.Handlers
+	editions    *editions.Handlers
+	ticketTypes *ticket_types.Handlers
+	products    *products.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
+func initRepos(q *sqlc.Queries) repos {
 	return repos{
-		events:      events.NewRepos(q, loggr, tracer),
-		editions:    editions.NewRepos(q, loggr, tracer),
-		ticketTypes: ticket_types.NewRepos(q, loggr, tracer),
-		products:    products.NewRepos(q, loggr, tracer),
-		//activities: activities.NewRepos(q, loggr, tracer),
-		//signatures: signatures.NewRepos(q, loggr, tracer),
-		//certs:      certifications.NewRepos(q, loggr, tracer),
-		//checkpoints: checkpoints.NewRepo(q, loggr, tracer),
-		//tickets:     tickets.NewRepo(q, loggr, tracer),
-		//purchases:   purchases.NewRepo(q, loggr, tracer),
+		events:      events.NewRepos(q),
+		editions:    editions.NewRepos(q),
+		ticketTypes: ticket_types.NewRepos(q),
+		products:    products.NewRepos(q),
 	}
 }
 
-func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) queries {
+func initQueries(r repos) queries {
 	return queries{
-		events:      events.NewQueries(r.events, loggr, tracer, tx),
-		editions:    editions.NewQueries(r.events, r.editions, loggr, tracer, tx),
-		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes, loggr, tracer, tx),
-		products:    products.NewQueries(r.editions, r.products, loggr, tracer, tx),
-		//activities: activities.NewQueries(r.activities, r.editions, loggr, tracer, tx),
-		//signatures: signatures.NewQueries(r.signatures, r.editions, loggr, tracer, tx),
-		//certs:      certifications.NewQueries(r.certs, r.editions, loggr, tracer, tx),
-		//checkpoints: checkpoints.NewQueryService(r.checkpoints, r.editions, loggr, tracer, tx),
-		//tickets:     tickets.NewQueryService(r.tickets, r.editions, loggr, tracer, tx),
-		//purchases:   purchases.NewQueryService(r.products, r.purchases, r.editions, loggr, tracer, tx),
+		events:      events.NewQueries(r.events),
+		editions:    editions.NewQueries(r.events, r.editions),
+		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes),
+		products:    products.NewQueries(r.editions, r.products),
 	}
 }
 
-func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) commands {
+func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client) commands {
 	return commands{
-		events:      events.NewCommands(r.events, obj, idx, loggr, tracer, tx),
-		editions:    editions.NewCommands(r.events, r.editions, loggr, tracer, tx),
-		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes, loggr, tracer, tx),
-		products:    products.NewCommands(r.events, r.editions, r.products, loggr, tracer, tx),
-		//activities: activities.NewCommands(r.activities, r.editions, r.certs, loggr, tracer, tx),
-		//signatures: signatures.NewCommands(r.signatures, r.editions, obj, loggr, tracer, tx),
-		//certs:      certifications.NewCommands(r.certs, r.editions, loggr, tracer, tx),
-		//checkpoints: checkpoints.NewCommandService(r.checkpoints, r.editions, loggr, tracer, tx),
-		//tickets:     tickets.NewCommandService(r.editions, r.tickets, loggr, tracer, tx),
-		//purchases:   purchases.NewCommandService(r.editions, r.products, r.purchases, loggr, tracer, tx),
+		events:      events.NewCommands(r.events, obj, idx),
+		editions:    editions.NewCommands(r.events, r.editions),
+		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes),
+		products:    products.NewCommands(r.events, r.editions, r.products),
 	}
 }
 
 func initHandlers(q queries, c commands) handlers {
 	return handlers{
-		//Security: security.NewHandler(rt.wsRegistry)
-		Events:      events.NewHandlers(c.events, q.events),
-		Editions:    editions.NewHandlers(c.editions, q.editions),
-		TicketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
-		Products:    products.NewHandlers(c.products, q.products),
-		//Activities: activities.NewHandlers(c.activities, q.activities),
-		//signatures: signatures.NewHandlers(c.signatures, q.signatures),
-		//certs:      certifications.NewHandlers(c.certs, q.certs),
-		//Checkpoints: checkpoints.NewHandler(c.checkpoints, q.checkpoints),
-		//Tickets:     tickets.NewHandler(c.tickets, q.tickets),
-		//Purchases:   purchases.NewHandler(c.purchases, q.purchases),
+		events:      events.NewHandlers(c.events, q.events),
+		editions:    editions.NewHandlers(c.editions, q.editions),
+		ticketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
+		products:    products.NewHandlers(c.products, q.products),
 	}
 }
 
-func initMiddlewares(logger *zap.Logger) middlewares {
+func initMiddlewares() middlewares {
 	var mw middlewares
 	authMW := SetupAuthMiddlewares()
 
@@ -165,7 +113,7 @@ func initMiddlewares(logger *zap.Logger) middlewares {
 	mw.anyAuth = authMW.AnyAuth()
 	mw.bodySize = mws.MaxBodySize(1 << 20)
 	mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/health", "/metrics", "/admin/asynq"}, RequestIDHeader: "X-Request-ID"})
+	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/health", "/metrics", "/admin/asynq"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")
@@ -177,7 +125,7 @@ func initMiddlewares(logger *zap.Logger) middlewares {
 		AllowCredentials: true,
 	})
 	mw.realIP = mws.RealIP()
-	mw.recover = mws.Recover(logger)
+	mw.recover = mws.Recover(telemetry.Log())
 	mw.timeout = mws.Timeout(60 * time.Second)
 	mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
 		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },

@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/zap v1.28.0
 	resty.dev/v3 v3.0.0-rc.3
+	riverqueue.com/riverui v0.16.0
 )
 
 require (
@@ -47,6 +48,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
+	github.com/riverqueue/apiframe v0.0.0-20251229202423-2b52ce1c482e // indirect
 	github.com/riverqueue/river/riverdriver v0.35.1 // indirect
 	github.com/riverqueue/river/rivershared v0.35.1 // indirect
 	github.com/riverqueue/river/rivertype v0.35.1 // indirect

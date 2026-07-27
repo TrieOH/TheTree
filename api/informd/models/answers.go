@@ -1,10 +1,10 @@
 package models
 
 import (
+	"Informd/internal/sqlc"
 	"encoding/json"
 	"time"
 
-	"Informd/internal/database/sqlc"
 	"lib/xslices"
 
 	"github.com/google/uuid"

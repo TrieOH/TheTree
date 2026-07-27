@@ -3,10 +3,12 @@ package queries
 import (
 	"IdentityX/models"
 	"context"
+
+	"lib/telemetry"
 )
 
 func (s *Queries) ListProjects(ctx context.Context) ([]models.Project, error) {
-	ctx, span := s.tracer.Start(ctx, "ProjectService.ListProjects")
+	ctx, span := telemetry.StartSpan(ctx, "ListProjects")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

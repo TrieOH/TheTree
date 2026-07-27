@@ -5,7 +5,6 @@ import (
 	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Commands struct {
@@ -13,7 +12,6 @@ type Commands struct {
 	responses  ports.ResponseRepo
 	answers    ports.AnswerRepo
 	forms      ports.FormsRepo
-	logger     *zap.Logger
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -23,7 +21,6 @@ func NewCommands(
 	responses ports.ResponseRepo,
 	answers ports.AnswerRepo,
 	forms ports.FormsRepo,
-	logger *zap.Logger,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *Commands {
@@ -32,7 +29,6 @@ func NewCommands(
 		responses:  responses,
 		answers:    answers,
 		forms:      forms,
-		logger:     logger,
 		tx:         tx,
 		tracer:     tracer,
 	}

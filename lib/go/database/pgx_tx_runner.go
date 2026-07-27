@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/jackc/pgx/v5"
@@ -14,12 +15,11 @@ type TxKey struct{}
 var TxKeyValue = TxKey{}
 
 type PgxTxRunner struct {
-	logger *zap.Logger
-	pool   *pgxpool.Pool // Changed from *sql.DB
+	pool *pgxpool.Pool // Changed from *sql.DB
 }
 
-func NewPGXTxRunner(pool *pgxpool.Pool, logger *zap.Logger) TxRunner {
-	return &PgxTxRunner{pool: pool, logger: logger}
+func NewPGXTxRunner(pool *pgxpool.Pool) TxRunner {
+	return &PgxTxRunner{pool: pool}
 }
 
 // WithinTx executes fn inside a transaction using default options
@@ -59,10 +59,10 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 			if !committed {
 				rbErr := tx.Rollback(ctx)
 				if rbErr != nil {
-					r.logger.Error("error during tx rollback after panic", zap.Error(rbErr))
+					telemetry.Log().Error("error during tx rollback after panic", zap.Error(rbErr))
 				}
 			}
-			r.logger.Error("transaction function panicked", zap.Any("panic", p))
+			telemetry.Log().Error("transaction function panicked", zap.Any("panic", p))
 			err = fun.ErrInternal("transaction panicked")
 		}
 	}()
@@ -72,15 +72,15 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	if err = fn(ctx); err != nil {
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
-			r.logger.Error("error during tx rollback after usecase error", zap.Error(rbErr))
+			telemetry.Log().Error("error during tx rollback after usecase error", zap.Error(rbErr))
 		}
 		return err
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		r.logger.Error("error during tx commit", zap.Error(err))
+		telemetry.Log().Error("error during tx commit", zap.Error(err))
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			r.logger.Error("error during tx rollback after commit failure", zap.Error(rbErr))
+			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
 		return fun.Errf("error commiting transaction: %s", err.Error()).Internal()
 	}

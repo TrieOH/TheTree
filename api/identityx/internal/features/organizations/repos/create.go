@@ -1,14 +1,15 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/database"
+	"lib/telemetry"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate models.Organization) (*models.Organization, error) {
-	ctx, span := repo.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 	sqlcOrg, err := database.Queries(ctx, repo.q).CreateOrganization(ctx, sqlc.CreateOrganizationParams{
 		OwnerID:  toCreate.OwnerID,

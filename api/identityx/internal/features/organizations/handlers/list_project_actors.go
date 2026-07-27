@@ -7,19 +7,6 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-// ListProjectActors godoc
-// @Summary List actors by project
-// @Tags organizations
-// @ID organizations_listprojectactors
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} fun.Response{data=[]models.Actor}
-// @Failure 400 {object} fun.Response
-// @Failure 401 {object} fun.Response
-// @Failure 500 {object} fun.Response
-// @Failure 503 {object} fun.Response
-// @Router /organizations/{org_id}/projects/{project_id}/actors [get]
 func (h *Handlers) ListProjectActors(w http.ResponseWriter, r *http.Request) {
 	if !globals.SetupComplete() {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)

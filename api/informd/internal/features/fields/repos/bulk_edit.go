@@ -1,9 +1,9 @@
 package repos
 
 import (
+	"Informd/internal/sqlc"
 	"context"
 
-	"Informd/internal/database/sqlc"
 	"Informd/models"
 	"lib/database"
 	"lib/xslices"

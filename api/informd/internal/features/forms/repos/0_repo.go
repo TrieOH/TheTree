@@ -1,34 +1,31 @@
 package repos
 
 import (
-	"Informd/internal/database/sqlc"
+	sqlc2 "Informd/internal/sqlc"
 	"Informd/models"
 	"Informd/ports"
 	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
+	q      *sqlc2.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
 var _ ports.FormsRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
+func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.FormsRepo {
 	return &repo{
 		q:      q,
-		log:    log,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("form"),
 	}
 }
 
-func mapForm(src sqlc.Form) models.Form {
+func mapForm(src sqlc2.Form) models.Form {
 	return models.Form{
 		ID:          src.ID,
 		NamespaceID: src.NamespaceID,
@@ -43,7 +40,7 @@ func mapForm(src sqlc.Form) models.Form {
 	}
 }
 
-func mapFormMember(src sqlc.FormMember) models.FormMember {
+func mapFormMember(src sqlc2.FormMember) models.FormMember {
 	return models.FormMember{
 		UserID:  src.UserID,
 		FormID:  src.FormID,

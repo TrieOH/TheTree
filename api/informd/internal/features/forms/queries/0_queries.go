@@ -5,7 +5,6 @@ import (
 	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Queries struct {
@@ -16,7 +15,6 @@ type Queries struct {
 	responses  ports.ResponseRepo
 	responders ports.ResponderRepo
 	namespaces ports.NamespaceRepo
-	logger     *zap.Logger
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -29,7 +27,6 @@ func NewQueries(
 	responses ports.ResponseRepo,
 	responders ports.ResponderRepo,
 	namespaces ports.NamespaceRepo,
-	logger *zap.Logger,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *Queries {
@@ -41,7 +38,6 @@ func NewQueries(
 		responses:  responses,
 		responders: responders,
 		namespaces: namespaces,
-		logger:     logger,
 		tx:         tx,
 		tracer:     tracer,
 	}

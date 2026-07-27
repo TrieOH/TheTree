@@ -1,15 +1,18 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"context"
 	"lib/database"
+
+	"lib/telemetry"
 )
 
 func (repo *Repo) GetByTargetAndType(ctx context.Context, target string, entryType models.BlacklistEntryType) (*models.BlacklistEntry, error) {
-	ctx, span := repo.tracer.Start(ctx, "Register")
+	ctx, span := telemetry.StartSpan(ctx, "GetByTargetAndType")
 	defer span.End()
+
 	sqlcEntry, err := database.Queries(ctx, repo.q).GetBlacklistEntryByTargetAndType(ctx, sqlc.GetBlacklistEntryByTargetAndTypeParams{
 		Target: target,
 		Type:   string(entryType),

@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/MintzyG/fun"
+	"lib/telemetry"
 )
 
 func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveProjectMemberInput) error {
-	ctx, span := c.tracer.Start(ctx, "ProjectService.RemoveMember")
+	ctx, span := telemetry.StartSpan(ctx, "RemoveMember")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

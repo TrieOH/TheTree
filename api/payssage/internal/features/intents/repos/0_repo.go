@@ -2,33 +2,30 @@ package repos
 
 import (
 	"lib/database"
-	"payssage/internal/database/sqlc"
+	sqlc2 "payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
+	q      *sqlc2.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
 var _ ports.IntentRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.IntentRepo {
+func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.IntentRepo {
 	return &repo{
 		q:      q,
-		log:    log,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("intent"),
 	}
 }
 
-func mapIntent(src sqlc.Intent) models.Intent {
+func mapIntent(src sqlc2.Intent) models.Intent {
 	var statusDetail *models.IntentStatusDetail
 	if src.StatusDetail != nil {
 		statusDetail = new(models.IntentStatusDetail(*src.StatusDetail))

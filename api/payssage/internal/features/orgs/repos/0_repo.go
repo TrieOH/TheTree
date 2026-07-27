@@ -2,33 +2,30 @@ package repos
 
 import (
 	"lib/database"
-	"payssage/internal/database/sqlc"
+	sqlc2 "payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
+	q      *sqlc2.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
 var _ ports.OrganizationRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.OrganizationRepo {
+func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.OrganizationRepo {
 	return &repo{
 		q:      q,
-		log:    log,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("organization"),
 	}
 }
 
-func mapOrganization(src sqlc.Organization) models.Organization {
+func mapOrganization(src sqlc2.Organization) models.Organization {
 	return models.Organization{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -39,7 +36,7 @@ func mapOrganization(src sqlc.Organization) models.Organization {
 	}
 }
 
-func mapOrganizationMember(src sqlc.OrgMember) models.OrganizationMember {
+func mapOrganizationMember(src sqlc2.OrgMember) models.OrganizationMember {
 	return models.OrganizationMember{
 		OrganizationID: src.OrganizationID,
 		MemberID:       src.MemberID,

@@ -4,10 +4,15 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
+	"lib/database"
+	"lib/telemetry"
 	"strings"
 )
 
 func (c *Commands) Setup(ctx context.Context, in models.SetupInput) error {
+	ctx, span := telemetry.StartSpan(ctx, "Setup")
+	defer span.End()
+
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	hashedPassword, err := crypto.Hash(in.Password, crypto.Strong)
@@ -16,7 +21,7 @@ func (c *Commands) Setup(ctx context.Context, in models.SetupInput) error {
 	}
 
 	var actor *models.Actor
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		actor, err = c.actors.Register(ctx, models.Actor{
 			AuthMethod:   models.PasswordAuthMethod,
 			PasswordHash: &hashedPassword,

@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate *models.Event) (*models.Event, error) {
-	ctx, span := repo.tracer.Start(ctx, "EventsRepo.Create")
+func (repo *Repo) Create(ctx context.Context, toCreate *models.Event) (*models.Event, error) {
+	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.Create")
 	defer span.End()
 
 	event, err := database.Queries(ctx, repo.q).CreateEvent(ctx, sqlc.CreateEventParams{

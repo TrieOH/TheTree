@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate *models.TicketType) (*models.TicketType, error) {
-	ctx, span := repo.tracer.Start(ctx, "TicketTypesRepo.Create")
+func (repo *Repo) Create(ctx context.Context, toCreate *models.TicketType) (*models.TicketType, error) {
+	ctx, span := telemetry.StartSpan(ctx, "TicketTypesRepo.Create")
 	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreateTicketType(ctx, sqlc.CreateTicketTypeParams{
 		EditionID:   toCreate.EditionID,

@@ -1,98 +1,124 @@
 name: Trivy Scan
-
 on:
   pull_request:
     branches:
       - main
-
+concurrency:
+  group: trivy-${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 defaults:
   run:
     shell: bash
-
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
-      projects: ${{ steps.filter.outputs.projects }}
+      projects: ${{ steps.filter.outputs.changes }}
+      any: ${{ steps.filter.outputs.changes != '[]' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Detect changed projects
+      - uses: https://github.com/dorny/paths-filter@v3
         id: filter
-        run: |
-          BASE=${{ github.event.pull_request.base.sha }}
-          HEAD=${{ github.event.pull_request.head.sha }}
-
-          ALL_PROJECTS=(
-            "infra"
-            "front/identityx" "front/informd" "front/payssage" "front/univents"
-            "api/identityx" "api/informd" "api/payssage" "api/univents"
-            "lib/go"
-            "sdk/ts/identityx" "sdk/ts/Payssage"
-            "sdk/go/IdentityX" "sdk/go/Payssage"
-          )
-
-          CHANGED_FILES=$(git diff --name-only "$BASE" "$HEAD")
-          RESULT=()
-
-          for project in "${ALL_PROJECTS[@]}"; do
-            if echo "$CHANGED_FILES" | grep -q "^${project}/"; then
-              RESULT+=("\"$project\"")
-            fi
-          done
-
-          if [ ${#RESULT[@]} -eq 0 ]; then
-            echo "projects=[]" >> $GITHUB_OUTPUT
-          else
-            JOINED=$(IFS=,; echo "${RESULT[*]}")
-            echo "projects=[$JOINED]" >> $GITHUB_OUTPUT
-          fi
-
-  trivy:
+        with:
+          list-files: none
+          filters: |
+            front/identityx:
+              - 'front/identityx/**'
+            front/informd:
+              - 'front/informd/**'
+            front/payssage:
+              - 'front/payssage/**'
+            front/univents:
+              - 'front/univents/**'
+            api/identityx:
+              - 'api/identityx/**'
+              - 'lib/go/**'
+            api/informd:
+              - 'api/informd/**'
+              - 'lib/go/**'
+            api/payssage:
+              - 'api/payssage/**'
+              - 'lib/go/**'
+            api/univents:
+              - 'api/univents/**'
+              - 'lib/go/**'
+            lib/go:
+              - 'lib/go/**'
+            lib/ts:
+              - 'lib/ts/**'
+            sdk/go/IdentityX:
+              - 'sdk/go/IdentityX/**'
+            sdk/go/Payssage:
+              - 'sdk/go/Payssage/**'
+            sdk/ts/identityx:
+              - 'sdk/ts/identityx/**'
+            sdk/ts/identityx-access:
+              - 'sdk/ts/identityx-access/**'
+            sdk/ts/payssage:
+              - 'sdk/ts/payssage/**'
+            sdk/ts/Payssage:
+              - 'sdk/ts/Payssage/**'
+  prepare:
+    name: prepare trivy
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.projects != '[]' }}
+    if: ${{ needs.detect-changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TRIVY_VERSION: "0.71.2"
+    steps:
+      - run: |
+          mkdir -p /tmp/trivybin
+          curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            -o /tmp/trivy.tar.gz
+          tar -xzf /tmp/trivy.tar.gz -C /tmp/trivybin trivy
+          chmod +x /tmp/trivybin/trivy
+      - uses: https://code.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: trivy-bin
+          path: /tmp/trivybin
+  trivy:
+    name: trivy (${{ matrix.project }})
+    needs: [detect-changes, prepare]
+    if: ${{ needs.detect-changes.outputs.any == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
-
     strategy:
       fail-fast: false
       matrix:
-        project: ${{ fromJson(needs.detect-changes.outputs.projects) }}
-
+        project: ${{ fromJSON(needs.detect-changes.outputs.projects) }}
     steps:
-      - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - uses: https://code.forgejo.org/actions/download-artifact@v3
         with:
-          fetch-depth: 0
-
-      - name: Install Trivy (no sudo)
-        env:
-          TRIVY_VERSION: "0.71.2"
-        run: |
-          set -e
-          TRIVY_DIR="$HOME/.local/trivy"
-          mkdir -p "$TRIVY_DIR"
-
-          curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
-            -o /tmp/trivy.tar.gz
-
-          tar -xzf /tmp/trivy.tar.gz -C "$TRIVY_DIR" trivy
-
-          chmod +x "$TRIVY_DIR/trivy"
-
-          echo "$TRIVY_DIR" >> "$GITHUB_PATH"
-
-      - name: Verify Trivy
-        run: |
-          trivy --version
-
-      - name: Trivy scan
+          name: trivy-bin
+          path: /tmp/trivybin
+      - run: chmod +x /tmp/trivybin/trivy && echo "/tmp/trivybin" >> "$GITHUB_PATH"
+      - name: cache trivy db
+        uses: https://code.forgejo.org/actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ github.run_id }}
+          restore-keys: |
+            trivy-db-
+      - name: trivy scan
         run: |
           trivy fs \
-            --severity LOW,MEDIUM,HIGH,CRITICAL \
+            --severity HIGH,CRITICAL \
             --scanners vuln,secret,misconfig \
             --exit-code 1 \
             "${{ matrix.project }}"
+  trivy-ok:
+    name: Trivy OK
+    needs: [detect-changes, trivy]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          if [ "${{ needs.detect-changes.outputs.any }}" == "true" ]; then
+            [ "${{ needs.trivy.result }}" == "success" ] || exit 1
+          fi

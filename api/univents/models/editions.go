@@ -34,8 +34,8 @@ type Edition struct {
 }
 
 type CreateEditionRequest struct {
-	Name     string    `json:"name"       validate:"required,min=2"`
-	Slug     string    `json:"slug"       validate:"required,min=2"`
+	Name     string    `json:"name"      validate:"required,min=2"`
+	Slug     string    `json:"slug"      validate:"required,min=2"`
 	StartsAt time.Time `json:"starts_at"`
 	EndsAt   time.Time `json:"ends_at"`
 }
@@ -59,8 +59,8 @@ type CreateEditionInput struct {
 }
 
 type PatchEditionRequest struct {
-	Name                string     `json:"name"                 validate:"required,min=2"`
-	Slug                string     `json:"slug"                 validate:"required,min=2"`
+	Name                string     `json:"name"                  validate:"required,min=2"`
+	Slug                string     `json:"slug"                  validate:"required,min=2"`
 	Tagline             *string    `json:"tagline"`
 	Description         *string    `json:"description"`
 	RegistrationOpensAt *time.Time `json:"registration_opens_at"`

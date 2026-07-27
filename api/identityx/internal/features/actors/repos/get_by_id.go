@@ -6,11 +6,13 @@ import (
 	"lib/database"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Actor, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "GetByID")
+	ctx, span := telemetry.StartSpan(ctx, "GetByID")
 	defer span.End()
+
 	sqlcActor, err := database.Queries(ctx, repo.q).GetActorByID(ctx, id)
 	if err != nil {
 		return nil, repo.dbe(err)

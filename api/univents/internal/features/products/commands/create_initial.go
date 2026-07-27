@@ -2,6 +2,8 @@ package commands
 
 import (
 	"context"
+	"lib/database"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -9,7 +11,7 @@ import (
 )
 
 func (c *Commands) CreateInitial(ctx context.Context, payload models.CreateInitialProductInput) (*models.Product, error) {
-	ctx, span := c.tracer.Start(ctx, "ProductsService.CreateInitial")
+	ctx, span := telemetry.StartSpan(ctx, "ProductsService.CreateInitial")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -34,7 +36,7 @@ func (c *Commands) CreateInitial(ctx context.Context, payload models.CreateIniti
 	}
 
 	var product *models.Product
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		p, err := c.products.CreateProduct(ctx, &models.Product{
 			EditionID:            payload.EditionID,
 			VendorCode:           payload.VendorCode,

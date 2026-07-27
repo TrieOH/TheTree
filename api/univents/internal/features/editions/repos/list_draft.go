@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListDraft(ctx context.Context, eventID uuid.UUID) ([]models.Edition, error) {
-	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.ListDraft")
+func (repo *Repo) ListDraft(ctx context.Context, eventID uuid.UUID) ([]models.Edition, error) {
+	ctx, span := telemetry.StartSpan(ctx, "EditionsRepo.ListDraft")
 	defer span.End()
 	editions, err := database.Queries(ctx, repo.q).ListDraftEditions(ctx, eventID)
 	if err != nil {

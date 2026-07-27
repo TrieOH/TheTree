@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/sqlc"
 	"context"
 
 	"github.com/riverqueue/river"

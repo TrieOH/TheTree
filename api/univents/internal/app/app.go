@@ -5,6 +5,7 @@ import (
 	"lib/database"
 	"lib/objectstorage"
 	"lib/telemetry"
+	"univents/internal/config"
 
 	idx "sdk/identityx"
 
@@ -16,7 +17,7 @@ type Univents struct {
 	idxClient  *idx.Client
 	objStorage *objectstorage.Client
 
-	cfg Config
+	cfg config.Config
 }
 
 var app Univents
@@ -25,7 +26,7 @@ func Start() {
 	ctx := context.Background()
 	SetupConstraintMessages()
 
-	app.cfg = LoadConfig()
+	app.cfg = config.Load()
 
 	SetupFUN(app.cfg.AppName)
 

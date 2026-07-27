@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Commands struct {
@@ -16,7 +15,6 @@ type Commands struct {
 	events     ports.WebhookEventRepo
 	endpoints  ports.WebhookEndpointRepo
 	deliveries ports.WebhookDeliveryRepo
-	logger     *zap.Logger
 	tracer     trace.Tracer
 	tx         database.TxRunner
 }
@@ -26,7 +24,6 @@ func NewCommands(
 	events ports.WebhookEventRepo,
 	endpoints ports.WebhookEndpointRepo,
 	deliveries ports.WebhookDeliveryRepo,
-	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Commands {
@@ -35,7 +32,6 @@ func NewCommands(
 		events:     events,
 		endpoints:  endpoints,
 		deliveries: deliveries,
-		logger:     logger,
 		tracer:     tracer,
 		tx:         tx,
 	})

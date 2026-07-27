@@ -1,35 +1,28 @@
 package repos
 
 import (
-	"univents/internal/database/sqlc"
+	sqlc2 "univents/internal/sqlc"
 	"univents/models"
 
 	"lib/database"
 	"univents/ports"
-
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
-type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+type Repo struct {
+	q   *sqlc2.Queries
+	dbe database.ErrorHandler
 }
 
-var _ ports.EventRepo = (*repo)(nil)
+var _ ports.EventRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.EventRepo {
-	return &repo{
-		q:      q,
-		log:    log,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("event"),
+func NewRepo(q *sqlc2.Queries) *Repo {
+	return &Repo{
+		q:   q,
+		dbe: database.NewErrorHandler("event"),
 	}
 }
 
-func mapEventMember(src sqlc.EventMember) models.EventMember {
+func mapEventMember(src sqlc2.EventMember) models.EventMember {
 	return models.EventMember{
 		ID:        src.ID,
 		EventID:   src.EventID,
@@ -41,7 +34,7 @@ func mapEventMember(src sqlc.EventMember) models.EventMember {
 	}
 }
 
-func mapEvent(src sqlc.Event) models.Event {
+func mapEvent(src sqlc2.Event) models.Event {
 	return models.Event{
 		ID:               src.ID,
 		OwnerID:          src.OwnerID,

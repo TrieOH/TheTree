@@ -3,15 +3,15 @@ package queries
 import (
 	"IdentityX/models"
 	"context"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (q *Queries) ListProjectActors(ctx context.Context, orgID, projectID uuid.UUID) ([]models.Actor, error) {
-	ctx, span := q.tracer.Start(ctx, "OrganizationService.ListProjectActors")
+	ctx, span := telemetry.StartSpan(ctx, "ListProjectActors")
 	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

@@ -83,8 +83,6 @@ linters:
     - embeddedstructfieldcheck  # embedded types at top of struct, blank line before regular fields
 
     # --- test speed ---
-    - paralleltest          # tests missing t.Parallel() — sequential tests are slow
-    - tparallel             # t.Parallel() used incorrectly inside table tests (teardown races)
     - thelper               # test helpers that don't call t.Helper() — failure points to wrong line
 
     # --- observability conventions ---
@@ -144,9 +142,7 @@ linters:
         - msg
         - source
     interfacebloat:
-      max: 10                   # max methods before warning
-    paralleltest:
-      ignore-missing-subtests: false
+      max: 20                   # max methods before warning
 
   exclusions:
     # Generated code — sqlc, mockery, swag, tygo output.

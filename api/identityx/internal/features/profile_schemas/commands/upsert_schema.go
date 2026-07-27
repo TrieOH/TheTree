@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/MintzyG/fun"
+	"lib/telemetry"
 )
 
 func (c *Commands) UpsertSchema(ctx context.Context, payload models.UpsertProfileSchemaInput) (*models.ProjectProfileSchema, error) {
-	ctx, span := c.tracer.Start(ctx, "UpsertProfileSchema")
+	ctx, span := telemetry.StartSpan(ctx, "UpsertSchema")
 	defer span.End()
 
 	// fixme: platform schema: any authenticated actor can set it for now

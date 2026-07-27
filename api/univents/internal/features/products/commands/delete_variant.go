@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (c *Commands) DeleteVariant(ctx context.Context, id uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "ProductsService.DeleteVariant")
+	ctx, span := telemetry.StartSpan(ctx, "ProductsService.DeleteVariant")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

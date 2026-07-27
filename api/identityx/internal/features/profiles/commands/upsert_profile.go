@@ -8,10 +8,11 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (c *Commands) UpsertProfile(ctx context.Context, payload models.UpsertProfileInput, projectID uuid.UUID) (*models.ActorProfile, error) {
-	ctx, span := c.tracer.Start(ctx, "UpsertProfile")
+	ctx, span := telemetry.StartSpan(ctx, "UpsertProfile")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)
@@ -57,6 +58,9 @@ func (c *Commands) UpsertProfile(ctx context.Context, payload models.UpsertProfi
 // loadActiveSchema returns the project's active schema, falling back to platform schema.
 // Returns nil (no schema) if neither exists or is inactive.
 func (c *Commands) loadActiveSchema(ctx context.Context, projectID *uuid.UUID) ([]byte, error) {
+	ctx, span := telemetry.StartSpan(ctx, "loadActiveSchema")
+	defer span.End()
+
 	s, err := c.schemas.Get(ctx, projectID)
 	if err != nil {
 		return nil, err

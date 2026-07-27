@@ -1,8 +1,9 @@
 package app
 
 import (
-	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/config"
 	"IdentityX/internal/jobs"
+	sqlc2 "IdentityX/internal/sqlc"
 	"context"
 
 	"lib/database"
@@ -20,7 +21,7 @@ import (
 type IdentityX struct {
 	db    *pgxpool.Pool
 	river *river.Client[pgx.Tx]
-	cfg   Config
+	cfg   config.Config
 }
 
 var app IdentityX
@@ -28,13 +29,13 @@ var app IdentityX
 func Start() {
 	ctx := context.Background()
 	SetupConstraintMessages()
-	app.cfg = LoadConfig()
+	app.cfg = config.LoadConfig()
 	SetupFUN()
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)
 
-	sqlcQueries := sqlc.New(app.db)
+	sqlcQueries := sqlc2.New(app.db)
 	has, err := sqlcQueries.HasAnyActor(ctx)
 	if err != nil {
 		errx.Exit(err, "failed to check setup state")
@@ -73,4 +74,47 @@ func Start() {
 	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)
 
 	app.run()
+}
+
+func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.Client[pgx.Tx]) {
+	q := sqlc2.New(db)
+	for _, keyType := range []string{"signing", "encryption"} {
+		exists, err := q.HasActiveCryptoKey(ctx, sqlc2.HasActiveCryptoKeyParams{Type: keyType})
+		if err != nil {
+			errx.Exit(err, "failed to check global "+keyType+" key")
+		}
+		if !exists {
+			_, err = riverClient.Insert(ctx, jobs.CreateCryptoKeyArgs{KeyType: keyType}, nil)
+			if err != nil {
+				errx.Exit(err, "failed to enqueue global "+keyType+" key creation")
+			}
+		}
+	}
+
+	projects, err := q.ListProjects(ctx)
+	if err != nil {
+		errx.Exit(err, "failed to list projects for key check")
+	}
+
+	for _, p := range projects {
+		pid := p.ID
+		for _, keyType := range []string{"signing", "encryption"} {
+			exists, err := q.HasActiveCryptoKey(ctx, sqlc2.HasActiveCryptoKeyParams{
+				ProjectID: &pid,
+				Type:      keyType,
+			})
+			if err != nil {
+				errx.Exit(err, "failed to check "+keyType+" key for project "+pid.String())
+			}
+			if !exists {
+				_, err = riverClient.Insert(ctx, jobs.CreateCryptoKeyArgs{
+					ProjectID: &pid,
+					KeyType:   keyType,
+				}, nil)
+				if err != nil {
+					errx.Exit(err, "failed to enqueue "+keyType+" key creation for project "+pid.String())
+				}
+			}
+		}
+	}
 }

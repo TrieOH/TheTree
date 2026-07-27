@@ -1,7 +1,7 @@
 package models
 
 import (
-	"Informd/internal/database/sqlc"
+	"Informd/internal/sqlc"
 
 	"github.com/google/uuid"
 )

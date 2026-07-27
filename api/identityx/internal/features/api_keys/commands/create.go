@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateAPIKeyInput) (*models.APIKey, string, error) {
-	ctx, span := c.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
 	project, err := c.projects.GetByID(ctx, *payload.ProjectID)
@@ -20,12 +20,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateAPIKeyInput)
 		return nil, "", err
 	}
 
-	var created *models.APIKey
-	var generated *api_keys.GeneratedAPIKey
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
-		created, generated, err = c.createInternal(ctx, *project, payload)
-		return err
-	})
+	created, generated, err := c.createInternal(ctx, *project, payload)
 	if err != nil {
 		return nil, "", err
 	}
@@ -34,7 +29,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateAPIKeyInput)
 }
 
 func (c *Commands) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *api_keys.GeneratedAPIKey, error) {
-	ctx, span := c.tracer.Start(ctx, "createInternal")
+	ctx, span := telemetry.StartSpan(ctx, "createInternal")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

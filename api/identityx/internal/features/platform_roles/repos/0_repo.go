@@ -1,34 +1,27 @@
 package repos
 
 import (
-	"IdentityX/internal/database/sqlc"
+	sqlc2 "IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+	q   *sqlc2.Queries
+	dbe database.ErrorHandler
 }
 
 var _ ports.PlatformRolesRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) *Repo {
+func NewRepo(q *sqlc2.Queries) *Repo {
 	return &Repo{
-		q:      q,
-		log:    log,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("platform role"),
+		q:   q,
+		dbe: database.NewErrorHandler("platform role"),
 	}
 }
 
-func mapPlatformRole(src sqlc.PlatformRole) models.PlatformRoleRelation {
+func mapPlatformRole(src sqlc2.PlatformRole) models.PlatformRoleRelation {
 	return models.PlatformRoleRelation{
 		ActorID:   src.ActorID,
 		Role:      models.PlatformRole(src.Role),

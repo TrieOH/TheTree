@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (s *Queries) ListMembers(ctx context.Context, projectID uuid.UUID) (members []models.ProjectMember, err error) {
-	ctx, span := s.tracer.Start(ctx, "ProjectService.GetMembers")
+	ctx, span := telemetry.StartSpan(ctx, "ListMembers")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

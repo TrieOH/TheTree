@@ -16,7 +16,7 @@ import (
 )
 
 func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*models.UserTokensOutput, error) {
-	ctx, span := c.tracer.Start(ctx, "OAuthCallback")
+	ctx, span := telemetry.StartSpan(ctx, "OAuthCallback")
 	defer span.End()
 
 	p, ok := oauth.Registry[provider]
@@ -26,7 +26,7 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 
 	providerToken, err := p.Config.Exchange(ctx, code)
 	if err != nil {
-		c.logger.Error("oauth code exchange failed", zap.Error(err))
+		telemetry.Log().Error("oauth code exchange failed", zap.Error(err))
 		return nil, fun.ErrUnauthorized("failed to exchange code")
 	}
 	if providerToken == nil {
@@ -54,7 +54,7 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 	if err != nil {
 		return nil, err
 	}
-	c.logger.Info("userinfo response", zap.String("provider", provider), zap.String("body", string(body)))
+	telemetry.Log().Info("userinfo response", zap.String("provider", provider), zap.String("body", string(body)))
 
 	var info oauth.UserInfo
 	err = json.Unmarshal(body, &info)

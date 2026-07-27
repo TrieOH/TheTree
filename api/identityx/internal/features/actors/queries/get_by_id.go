@@ -6,10 +6,11 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
+	"lib/telemetry"
 )
 
 func (q *Queries) GetByID(ctx context.Context, id, projectID uuid.UUID) (*models.Actor, error) {
-	ctx, span := q.tracer.Start(ctx, "ActorService.GetByID")
+	ctx, span := telemetry.StartSpan(ctx, "GetByID")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)

@@ -4,13 +4,14 @@ on:
     branches:
       - main
 
-defaults:
-  run:
-    shell: bash
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       identityx: ${{ steps.filter.outputs.identityx }}
       informd: ${{ steps.filter.outputs.informd }}
@@ -35,71 +36,25 @@ jobs:
             univents:
               - 'api/univents/**'
               - 'lib/go/**'
-  format:
-    needs: changes
-    if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: https://code.forgejo.org/actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: https://code.forgejo.org/actions/setup-go@v5
-        with:
-          go-version: '1.26'
-      - run: gofmt -w .
-      - name: commit formatted code
-        run: |
-          git config user.name "forgejo-actions[bot]"
-          git config user.email "forgejo-actions[bot]@noreply.git.trieoh.com"
-          git add -A
-          git diff --staged --quiet || git commit -m "style: gofmt"
-          git push
-  build:
-    needs: changes
-    if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: https://code.forgejo.org/actions/checkout@v4
-      - run: curl -fsSL https://get.docker.com | sh
-      - if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: docker build -f api/identityx/Dockerfile .
-      - if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: docker build -f api/informd/Dockerfile .
-      - if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: docker build -f api/payssage/Dockerfile .
-      - if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: docker build -f api/univents/Dockerfile .
-  test:
-    needs: [changes, build]
-    if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: https://code.forgejo.org/actions/checkout@v4
-      - uses: https://code.forgejo.org/actions/setup-go@v5
-        with:
-          go-version: '1.26'
-      - run: |
-          run_as_root() {
-            if [ "$(id -u)" -eq 0 ]; then
-              "$@"
-            else
-              sudo "$@"
-            fi
-          }
 
-          run_as_root apt-get update
-          run_as_root apt-get install -y lcov
-          curl -fsSL https://github.com/casey/just/releases/download/1.45.0/just-1.45.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/just.tar.gz
-          run_as_root tar xzf /tmp/just.tar.gz -C /usr/local/bin just
-          go install gotest.tools/gotestsum@latest
-          go install github.com/jandelgado/gcov2lcov@latest
-          go install github.com/vektra/mockery/v3@latest
-      - if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: cd api/identityx && just test
-      - if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: cd api/informd && just test
-      - if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: cd api/payssage && just test
-      - if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: cd api/univents && just test
+  ci:
+    needs: changes
+    if: ${{ needs.changes.outputs.any == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: build service list
+        id: services
+        run: |
+          list=""
+          [ "${{ needs.changes.outputs.identityx }}" == "true" ] && list="$list,identityx"
+          [ "${{ needs.changes.outputs.informd }}" == "true" ] && list="$list,informd"
+          [ "${{ needs.changes.outputs.payssage }}" == "true" ] && list="$list,payssage"
+          [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
+          echo "list=${list#,}" >> "$GITHUB_OUTPUT"
+      - uses: https://github.com/dagger/dagger-for-github@v6
+        with:
+          verb: call
+          module: .dagger
+          args: ci --source=. --services=${{ steps.services.outputs.list }}
