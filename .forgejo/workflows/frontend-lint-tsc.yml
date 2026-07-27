@@ -10,13 +10,14 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
 
-defaults:
-  run:
-    shell: bash
+concurrency:
+  group: frontend-lint-tsc-${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       identityx: ${{ steps.filter.outputs.identityx }}
       informd: ${{ steps.filter.outputs.informd }}
@@ -25,7 +26,6 @@ jobs:
       any: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.univents == 'true' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
-
       - uses: https://github.com/dorny/paths-filter@v4
         id: filter
         with:
@@ -43,10 +43,10 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
-
-      - name: Build service list
+      - name: build service list
         id: services
         run: |
           list=""
