@@ -46,47 +46,18 @@ jobs:
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
 
-      - name: Setup Node
-        uses: https://github.com/actions/setup-node@v6
+      - name: Build service list
+        id: services
+        run: |
+          list=""
+          [ "${{ needs.changes.outputs.identityx }}" == "true" ] && list="$list,identityx"
+          [ "${{ needs.changes.outputs.informd }}" == "true" ] && list="$list,informd"
+          [ "${{ needs.changes.outputs.payssage }}" == "true" ] && list="$list,payssage"
+          [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
+          echo "list=${list#,}" >> "$GITHUB_OUTPUT"
+
+      - uses: https://github.com/dagger/dagger-for-github@v6
         with:
-          node-version: 24
-
-      - name: Setup pnpm
-        uses: https://github.com/pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint IdentityX
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: pnpm -F identityx lint
-
-      - name: TypeScript IdentityX
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: pnpm -F identityx tsc
-
-      - name: Lint Informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: pnpm -F informd lint
-
-      - name: TypeScript Informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: pnpm -F informd tsc
-
-      - name: Lint Payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: pnpm -F payssage lint
-
-      - name: TypeScript Payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: pnpm -F payssage tsc
-
-      - name: Lint Univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: pnpm -F univents lint
-
-      - name: TypeScript Univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: pnpm -F univents tsc
+          verb: call
+          module: .dagger
+          args: frontend-lint-tsc --source=. --services=${{ steps.services.outputs.list }}

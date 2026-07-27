@@ -152,6 +152,28 @@ func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services str
 	return out, nil
 }
 
+// FrontendLintTsc runs lint and TypeScript checks for the given frontend
+// services (comma-separated or "all").
+func (m *Thetree) FrontendLintTsc(ctx context.Context, source *dagger.Directory, services string) (string, error) {
+	list := parseServices(services)
+	c := dag.Container().
+		From("node:24-bookworm").
+		WithMountedCache("/root/.local/share/pnpm/store", dag.CacheVolume("pnpm-store")).
+		WithDirectory("/workspace", source).
+		WithWorkdir("/workspace").
+		WithEnvVariable("CI", "true").
+		WithExec([]string{"corepack", "enable"}).
+		WithExec([]string{"corepack", "prepare", "pnpm@10", "--activate"}).
+		WithExec([]string{"pnpm", "install", "--frozen-lockfile"})
+
+	for _, service := range list {
+		c = c.WithExec([]string{"pnpm", "-F", service, "lint"})
+		c = c.WithExec([]string{"pnpm", "-F", service, "tsc"})
+	}
+
+	return c.Stdout(ctx)
+}
+
 func parseServices(services string) []string {
 	if services == "" || services == "all" {
 		return append([]string{}, servicesConst()...)
