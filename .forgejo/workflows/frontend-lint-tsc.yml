@@ -56,6 +56,16 @@ jobs:
           [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
           echo "list=${list#,}" >> "$GITHUB_OUTPUT"
 
+      - name: Setup Docker for Dagger
+        run: |
+          if ! command -v docker >/dev/null 2>&1; then
+            curl -fsSL https://get.docker.com | sh
+          fi
+          sudo systemctl start docker 2>/dev/null || sudo service docker start
+          sudo usermod -aG docker "$(id -un)" || true
+          docker version
+          docker info
+
       - uses: https://github.com/dagger/dagger-for-github@v6
         with:
           verb: call
