@@ -31,7 +31,7 @@ export function MonthView({
   };
 
   return (
-    <div className="flex-1 overflow-auto p-4">
+    <div className="calendar-scroll flex-1 overflow-auto p-4">
       <div className="grid grid-cols-7 border-t border-l border-border/60">
         {dowLabels.map((d, index) => (
           <div

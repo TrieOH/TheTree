@@ -450,7 +450,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
               >
                 <Plus size={16} /> Criar ocorrência
               </button>
-              <div className="flex-1 overflow-y-auto">
+              <div className="calendar-scroll flex-1 overflow-y-auto">
                 <ProgramList
                   programs={programs}
                   programColors={programColors}

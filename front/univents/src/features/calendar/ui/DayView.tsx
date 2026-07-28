@@ -80,10 +80,10 @@ export function DayView({
   };
 
   return (
-    <div className="min-w-0 flex-1 overflow-auto">
+    <div className="calendar-scroll min-w-0 flex-1 overflow-auto">
       <div className="flex min-w-full">
         <div className="w-[76px] flex-shrink-0 border-r border-border sticky left-0 z-[15] bg-background">
-          <div className="h-16 flex items-start justify-center pt-1 px-1 text-[10px] text-muted-foreground uppercase text-center leading-tight">
+          <div className="sticky top-0 z-30 flex h-[76px] items-center justify-center border-b border-border bg-background px-1 text-center text-[9px] uppercase leading-3 text-muted-foreground break-all">
             {timeZone}
           </div>
           {HOURS.map((h) => (
@@ -99,7 +99,7 @@ export function DayView({
         </div>
 
         <div className="min-w-[600px] flex-1 border-r border-border relative">
-          <div className="sticky top-0 z-20 text-center py-2 border-b border-border bg-background">
+          <div className="sticky top-0 z-20 flex h-[76px] flex-col items-center justify-center border-b border-border bg-background text-center">
             <div
               className={`text-[11px] font-medium uppercase tracking-wide ${dayIsToday ? "text-primary" : "text-muted-foreground"}`}
             >
