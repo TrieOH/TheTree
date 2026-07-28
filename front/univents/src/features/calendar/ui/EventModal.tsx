@@ -1,6 +1,6 @@
-import { Clock, FileText, Tag, Users, X } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
-import { formatFullDate, toISODateTimeLocal } from "../lib/date";
+import { toISODateTimeLocal } from "../lib/date";
 import type { OccurrenceI, ProgramI } from "../model";
 import { CalendarCombobox } from "./CalendarCombobox";
 
@@ -80,8 +80,6 @@ export function EventModal({
     });
   };
 
-  const displayDate = start ? new Date(start) : new Date();
-
   return (
     <div
       className="fixed inset-0 z-100 flex items-center justify-center"
@@ -90,32 +88,12 @@ export function EventModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-popover border border-border rounded-2xl w-110 max-w-[92vw] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="px-6 pt-5 flex items-start justify-between">
-          <div className="flex-1 text-[22px] font-normal text-foreground pb-2">
-            {mode === "edit" ? prog?.name || "Evento" : "Novo evento"}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="ml-3 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
+      <div className="relative w-160 max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl border border-border/70 bg-popover shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Body */}
-        <div className="px-6 py-4 flex flex-col gap-3.5">
+        <div className="flex flex-col gap-2.5 px-6 py-7">
           {/* Date/Time */}
-          <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
-              <Clock size={18} />
-            </div>
-            <div className="flex-1 flex items-center gap-2 flex-wrap text-sm text-foreground">
-              <span className="text-muted-foreground">
-                {formatFullDate(displayDate)}
-              </span>
+          <div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground">
                   Início
@@ -127,7 +105,9 @@ export function EventModal({
                   className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
-              <span className="text-muted-foreground">–</span>
+              <span className="hidden pb-3 text-center text-muted-foreground sm:block">
+                até
+              </span>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground">
                   Término
@@ -143,63 +123,72 @@ export function EventModal({
           </div>
 
           {/* Program */}
-          <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
-              <Tag size={18} />
-            </div>
-            <div className="flex-1">
-              <CalendarCombobox
-                value={programId}
-                onChange={setProgramId}
-                disabled={mode === "edit"}
-                placeholder="Selecionar programa"
-                options={programs.map((p) => ({ value: p.id, label: p.name }))}
-              />
-            </div>
+          <div className="block space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">
+              Programa
+            </span>
+            <CalendarCombobox
+              value={programId}
+              onChange={setProgramId}
+              disabled={mode === "edit"}
+              placeholder="Selecionar programa"
+              options={programs.map((p) => ({ value: p.id, label: p.name }))}
+            />
           </div>
 
           {/* Capacity */}
-          <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
-              <Users size={18} />
-            </div>
-            <div className="flex-1">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Capacidade máxima{" "}
-                  <span className="font-normal">(opcional)</span>
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="Ex.: 100"
-                  value={cap}
-                  onChange={(e) => setCap(e.target.value)}
-                  className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                />
-              </label>
-            </div>
+          <div>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
+                Capacidade máxima{" "}
+                <span className="font-normal">(opcional)</span>
+              </span>
+              <input
+                type="number"
+                min={1}
+                placeholder="Ex.: 100"
+                value={cap}
+                onChange={(e) => setCap(e.target.value)}
+                className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+            </label>
           </div>
 
           {/* Description */}
-          <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
-              <FileText size={18} />
+          {(prog?.description || prog?.price || prog?.staff_only) && (
+            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+              {prog?.description && (
+                <div className="flex items-start gap-3">
+                  <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {prog.description}
+                  </p>
+                </div>
+              )}
+              {(prog?.price || prog?.staff_only) && (
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {prog.price && (
+                    <span className="rounded-full bg-background px-2.5 py-1">
+                      R$ {prog.price}
+                    </span>
+                  )}
+                  {prog.staff_only && (
+                    <span className="rounded-full bg-background px-2.5 py-1">
+                      Somente equipe
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex-1 text-[13px] text-muted-foreground">
-              {prog?.description || ""}
-              {prog?.price ? ` · R$ ${prog.price}` : ""}
-              {prog?.staff_only ? " · Staff only" : ""}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-2">
+        <div className="flex items-center gap-3 border-t border-border/60 bg-muted/20 px-6 py-4">
           {mode === "edit" && occurrence && (
             <button
               type="button"
-              className="mr-auto px-4 py-2 text-sm font-medium text-destructive rounded-md hover:bg-destructive/10 transition-colors"
+              className="mr-auto rounded-xl px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
               onClick={() => occurrence && onDelete?.(occurrence.id)}
             >
               Excluir
@@ -207,14 +196,14 @@ export function EventModal({
           )}
           <button
             type="button"
-            className="px-4 py-2 text-sm font-medium text-foreground rounded-md hover:bg-muted transition-colors"
+            className="rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             onClick={onClose}
           >
             Cancelar
           </button>
           <button
             type="button"
-            className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-full hover:opacity-90 transition-opacity"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
             onClick={handleSave}
           >
             {mode === "edit" ? "Salvar" : "Criar"}

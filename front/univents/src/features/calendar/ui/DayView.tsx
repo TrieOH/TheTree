@@ -162,7 +162,7 @@ export function DayView({
             <div
               className="absolute left-0 right-0 h-0.5 z-12 pointer-events-none"
               style={{
-                top: `${64 + nowPos}px`,
+                top: `${104 + nowPos}px`,
                 background: "var(--destructive)",
               }}
             >

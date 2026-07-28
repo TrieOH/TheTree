@@ -104,7 +104,7 @@ export function WeekView({
           <div className="sticky top-0 z-30 flex h-19 items-center justify-center border-b border-border bg-background px-1 text-center text-[9px] uppercase leading-3 text-muted-foreground break-all">
             {timeZone}
           </div>
-          <div className="h-15 flex items-start justify-center pt-0.5 text-[10px] text-muted-foreground relative" />
+          <div className="h-15" />
           {HOURS.map((h) => (
             <div
               key={h}
@@ -176,7 +176,7 @@ export function WeekView({
                 <div
                   className="absolute left-0 right-0 h-0.5 z-12 pointer-events-none"
                   style={{
-                    top: `${64 + nowPos}px`,
+                    top: `${84 + nowPos}px`,
                     background: "var(--destructive)",
                   }}
                 >
