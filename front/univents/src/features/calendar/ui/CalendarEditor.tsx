@@ -8,19 +8,25 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronLeft, ChevronRight, Monitor, Plus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/shared/ui/shadcn/button";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Monitor,
+  Plus,
+} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import {
   occurrencesQueryOptions,
   programsQueryOptions,
 } from "@/features/programs/api";
 import { useOccurrenceMutation } from "@/features/programs/api/mutations";
-import type { CalendarView, EventColor, OccurrenceI, ProgramI } from "../model";
+import { Button } from "@/shared/ui/shadcn/button";
 import { addDays, formatMonthYear, startOfDay, toISODate } from "../lib/date";
-import { DayView } from "./DayView";
+import type { CalendarView, EventColor, OccurrenceI, ProgramI } from "../model";
 import { CalendarCombobox } from "./CalendarCombobox";
+import { DayView } from "./DayView";
 import { EventModal } from "./EventModal";
 import { MiniCalendar } from "./MiniCalendar";
 import { MonthView } from "./MonthView";
@@ -63,7 +69,13 @@ const VIEW_LABELS: Record<CalendarView, string> = {
   year: "Ano",
 };
 
-export function CalendarEditor({ eventId, editionId }: { eventId: string; editionId: string }) {
+export function CalendarEditor({
+  eventId,
+  editionId,
+}: {
+  eventId: string;
+  editionId: string;
+}) {
   const navigate = useNavigate();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [currentDate, setCurrentDate] = useState<Date>(new Date(today));
@@ -177,83 +189,93 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
     setView("day");
   }, []);
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveDragId(null);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveDragId(null);
 
-    if (!over) return;
+      if (!over) return;
 
-    const activeData = active.data.current;
-    const overData = over.data.current;
+      const activeData = active.data.current;
+      const overData = over.data.current;
 
-    if (!activeData || !overData) return;
+      if (!activeData || !overData) return;
 
-    if (activeData.type === "program" && overData.date !== undefined) {
-      const [year, month, day] = String(overData.date).split("-").map(Number);
-      const start = new Date(
-        year,
-        month - 1,
-        day,
-        Number(overData.hour),
-        0,
-        0,
-        0,
-      );
-      const end = new Date(start.getTime() + 60 * 60 * 1000);
-      occurrenceMutation.mutate({
-        programId: activeData.programId as string,
-        data: { starts_at: start.toISOString(), ends_at: end.toISOString() },
-      });
-      setOccurrences((prev) => [
-        ...prev,
-        {
-          id: "oc_" + Math.random().toString(36).slice(2, 9),
-          program_id: activeData.programId as string,
-          edition_id: "e1",
-          starts_at: start.toISOString(),
-          ends_at: end.toISOString(),
-          max_capacity: null,
-          created_at: new Date().toISOString(),
-          updated_at: null,
-          deleted_at: null,
-        },
-      ]);
-    } else if (
-      activeData.type === "occurrence" &&
-      overData.date !== undefined
-    ) {
-      const occurrenceId = activeData.occurrenceId as string;
-      const occurrence = visibleOccurrences.find((oc) => oc.id === occurrenceId);
-      if (!occurrence) return;
-      const durMs = new Date(occurrence.ends_at).getTime() - new Date(occurrence.starts_at).getTime();
-      const [year, month, day] = String(overData.date).split("-").map(Number);
-      const hour = Math.max(0, Math.min(23, Number(overData.hour)));
-      const currentStart = new Date(occurrence.starts_at);
-      if (
-        toISODate(currentStart) === String(overData.date) &&
-        currentStart.getHours() === hour
+      if (activeData.type === "program" && overData.date !== undefined) {
+        const [year, month, day] = String(overData.date).split("-").map(Number);
+        const start = new Date(
+          year,
+          month - 1,
+          day,
+          Number(overData.hour),
+          0,
+          0,
+          0,
+        );
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        occurrenceMutation.mutate({
+          programId: activeData.programId as string,
+          data: { starts_at: start.toISOString(), ends_at: end.toISOString() },
+        });
+        setOccurrences((prev) => [
+          ...prev,
+          {
+            id: `oc_${Math.random().toString(36).slice(2, 9)}`,
+            program_id: activeData.programId as string,
+            edition_id: "e1",
+            starts_at: start.toISOString(),
+            ends_at: end.toISOString(),
+            max_capacity: null,
+            created_at: new Date().toISOString(),
+            updated_at: null,
+            deleted_at: null,
+          },
+        ]);
+      } else if (
+        activeData.type === "occurrence" &&
+        overData.date !== undefined
       ) {
-        return;
-      }
-      const newStart = new Date(year, month - 1, day, hour, 0, 0, 0);
-      const newEnd = new Date(newStart.getTime() + durMs);
-      occurrenceMutation.mutate({
-        id: occurrenceId,
-        data: { starts_at: newStart.toISOString(), ends_at: newEnd.toISOString() },
-      });
-      setOccurrences((prev) =>
-        prev.map((oc) => {
-          if (oc.id !== occurrenceId) return oc;
-          return {
-            ...oc,
+        const occurrenceId = activeData.occurrenceId as string;
+        const occurrence = visibleOccurrences.find(
+          (oc) => oc.id === occurrenceId,
+        );
+        if (!occurrence) return;
+        const durMs =
+          new Date(occurrence.ends_at).getTime() -
+          new Date(occurrence.starts_at).getTime();
+        const [year, month, day] = String(overData.date).split("-").map(Number);
+        const hour = Math.max(0, Math.min(23, Number(overData.hour)));
+        const currentStart = new Date(occurrence.starts_at);
+        if (
+          toISODate(currentStart) === String(overData.date) &&
+          currentStart.getHours() === hour
+        ) {
+          return;
+        }
+        const newStart = new Date(year, month - 1, day, hour, 0, 0, 0);
+        const newEnd = new Date(newStart.getTime() + durMs);
+        occurrenceMutation.mutate({
+          id: occurrenceId,
+          data: {
             starts_at: newStart.toISOString(),
             ends_at: newEnd.toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-        }),
-      );
-    }
-  }, [occurrenceMutation]);
+          },
+        });
+        setOccurrences((prev) =>
+          prev.map((oc) => {
+            if (oc.id !== occurrenceId) return oc;
+            return {
+              ...oc,
+              starts_at: newStart.toISOString(),
+              ends_at: newEnd.toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          }),
+        );
+      }
+    },
+    [occurrenceMutation],
+  );
 
   const handleSlotClick = useCallback(
     (date: string, hour: number) => {
@@ -306,7 +328,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
         setOccurrences((prev) => [
           ...prev,
           {
-            id: "oc_" + Math.random().toString(36).slice(2, 9),
+            id: `oc_${Math.random().toString(36).slice(2, 9)}`,
             program_id: data.program_id,
             edition_id: "e1",
             starts_at: data.starts_at,
@@ -379,7 +401,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
           onDragEnd={handleDragEnd}
         >
           {/* Toolbar */}
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border h-[56px] flex-shrink-0 bg-background">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border h-14 shrink-0 bg-background">
             <Button
               type="button"
               variant="ghost"
@@ -397,12 +419,14 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
 
             <div className="flex items-center gap-0.5 ml-1">
               <button
+                type="button"
                 className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground"
                 onClick={handlePrev}
               >
                 <ChevronLeft size={18} />
               </button>
               <button
+                type="button"
                 className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground"
                 onClick={handleNext}
               >
@@ -411,6 +435,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
             </div>
 
             <button
+              type="button"
               className="px-4 py-2 border border-border rounded-full text-sm font-medium text-foreground hover:bg-muted transition-colors"
               onClick={handleToday}
             >
@@ -426,7 +451,9 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
             <CalendarCombobox
               value={view}
               onChange={(value) => setView(value as CalendarView)}
-              options={(Object.keys(VIEW_LABELS) as CalendarView[]).map((v) => ({ value: v, label: VIEW_LABELS[v] }))}
+              options={(Object.keys(VIEW_LABELS) as CalendarView[]).map(
+                (v) => ({ value: v, label: VIEW_LABELS[v] }),
+              )}
               placeholder="Visualização"
               compact
             />
@@ -435,7 +462,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
           {/* Body */}
           <div className="flex min-w-0 flex-1 min-h-0 overflow-hidden">
             {/* Sidebar */}
-            <div className="w-[260px] shrink-0 border-r border-border flex flex-col overflow-hidden p-3 gap-4 bg-background">
+            <div className="w-65 shrink-0 border-r border-border flex flex-col overflow-hidden p-3 gap-4 bg-background">
               <MiniCalendar
                 currentDate={currentDate}
                 onDateClick={handleMiniDateClick}
@@ -443,6 +470,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
                 onNextMonth={handleMiniNextMonth}
               />
               <button
+                type="button"
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-sm"
                 onClick={() => {
                   setModalMode("create");
@@ -531,7 +559,7 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
               activeDragOccurrenceProgram &&
               activeDragOccurrenceColor && (
                 <div
-                  className="rounded-md px-3 py-2 shadow-xl opacity-90 min-w-[120px]"
+                  className="rounded-md px-3 py-2 shadow-xl opacity-90 min-w-30"
                   style={{
                     background: activeDragOccurrenceColor.bg,
                     borderLeft: `3px solid ${activeDragOccurrenceColor.border}`,

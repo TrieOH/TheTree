@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { EventColor, OccurrenceI } from "../model";
 import { getMonthGrid, isSameDay, isToday } from "../lib/date";
+import type { EventColor, OccurrenceI } from "../model";
 
 interface YearViewProps {
   currentDate: Date;
@@ -53,16 +53,16 @@ export function YearView({
       <div className="grid grid-cols-3 lg:grid-cols-4 gap-6">
         {months.map((weeks, monthIdx) => (
           <div
-            key={monthIdx}
+            key={MONTH_NAMES[monthIdx]}
             className="border border-border/60 rounded-xl p-3 bg-card hover:shadow-sm transition-shadow"
           >
             <div className="text-sm font-semibold text-foreground mb-2">
               {MONTH_NAMES[monthIdx]}
             </div>
             <div className="grid grid-cols-7 gap-px">
-              {["D", "S", "T", "Q", "Q", "S", "S"].map((d, index) => (
+              {["D", "S", "T", "Q", "Q", "S", "S"].map((d) => (
                 <div
-                  key={`${d}-${index}`}
+                  key={d}
                   className="text-center text-[10px] text-muted-foreground py-0.5"
                 >
                   {d}

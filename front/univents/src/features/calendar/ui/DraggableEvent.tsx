@@ -1,8 +1,8 @@
 import { useDraggable } from "@dnd-kit/core";
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { EventColor, OccurrenceI, ProgramI } from "../model";
 import { formatTimeRange, getDurationMinutes } from "../lib/date";
+import type { EventColor, OccurrenceI, ProgramI } from "../model";
 
 interface DraggableEventProps {
   occurrence: OccurrenceI;
@@ -42,18 +42,12 @@ export function DraggableEvent({
   const start = new Date(occurrence.starts_at);
   const startMins = start.getHours() * 60 + start.getMinutes();
   const durMins = getDurationMinutes(occurrence.starts_at, occurrence.ends_at);
-  // The event is rendered inside the slot for its start hour. Only the
-  // minute offset belongs here; using the full day offset would add the
-  // hour position twice (e.g. 09:00 would render around 18:00).
   const top = startMins % 60;
   const height = Math.min(
     Math.max(22, (durMins / 60) * 60 - 2),
     24 * 60 - startMins,
   );
 
-  // The event lives inside its source hour slot, so clamp its vertical
-  // translation to the 24-hour calendar bounds. This prevents it from
-  // visually escaping above midnight or below the final grid row.
   const sourceAbsoluteTop = Math.floor(startMins / 60) * 60 + top;
   const maxTranslateY = 24 * 60 - sourceAbsoluteTop - height;
   const clampedY = transform
@@ -71,7 +65,7 @@ export function DraggableEvent({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`group absolute rounded-md cursor-grab ${menuOpen ? "z-[9999] overflow-visible" : "z-[5] overflow-hidden"} hover:z-10 hover:shadow-lg transition-shadow`}
+      className={`group absolute rounded-md cursor-grab ${menuOpen ? "z-9999 overflow-visible" : "z-5 overflow-hidden"} hover:z-10 hover:shadow-lg transition-shadow`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -96,10 +90,38 @@ export function DraggableEvent({
         setMenuOpen(true);
       }}
     >
-      {menuOpen && <div ref={menuRef} className="absolute right-1 top-1 z-30 min-w-28 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl" onPointerDown={(e) => e.stopPropagation()}>
-        <button type="button" className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onClick(occurrence.id); }}><Pencil className="size-3" />Alterar</button>
-        <button type="button" className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete?.(occurrence.id); }}><Trash2 className="size-3" />Excluir</button>
-      </div>}
+      {menuOpen && (
+        <div
+          ref={menuRef}
+          className="absolute right-1 top-1 z-30 min-w-28 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(false);
+              onClick(occurrence.id);
+            }}
+          >
+            <Pencil className="size-3" />
+            Alterar
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(false);
+              onDelete?.(occurrence.id);
+            }}
+          >
+            <Trash2 className="size-3" />
+            Excluir
+          </button>
+        </div>
+      )}
       <div className="text-[11px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis leading-tight">
         {program?.name || "Evento"}
       </div>

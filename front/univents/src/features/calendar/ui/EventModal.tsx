@@ -1,7 +1,7 @@
 import { Clock, FileText, Tag, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { OccurrenceI, ProgramI } from "../model";
 import { formatFullDate, toISODateTimeLocal } from "../lib/date";
+import type { OccurrenceI, ProgramI } from "../model";
 import { CalendarCombobox } from "./CalendarCombobox";
 
 interface EventModalProps {
@@ -70,9 +70,6 @@ export function EventModal({
     if (!start || !end) return;
     const startDate = new Date(start);
     const endDate = new Date(end);
-    // A finish time earlier than the start belongs to the following day.
-    // This allows ranges such as 10:00 AM → 9:00 AM without creating an
-    // invalid negative-duration occurrence.
     if (endDate <= startDate) endDate.setDate(endDate.getDate() + 1);
     onSave({
       program_id: programId,
@@ -87,19 +84,20 @@ export function EventModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-100 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-popover border border-border rounded-2xl w-[440px] max-w-[92vw] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-popover border border-border rounded-2xl w-110 max-w-[92vw] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="px-6 pt-5 flex items-start justify-between">
           <div className="flex-1 text-[22px] font-normal text-foreground pb-2">
             {mode === "edit" ? prog?.name || "Evento" : "Novo evento"}
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="ml-3 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
           >
@@ -111,7 +109,7 @@ export function EventModal({
         <div className="px-6 py-4 flex flex-col gap-3.5">
           {/* Date/Time */}
           <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground flex-shrink-0">
+            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
               <Clock size={18} />
             </div>
             <div className="flex-1 flex items-center gap-2 flex-wrap text-sm text-foreground">
@@ -119,22 +117,26 @@ export function EventModal({
                 {formatFullDate(displayDate)}
               </span>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Início</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Início
+                </span>
                 <input
-                type="datetime-local"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  type="datetime-local"
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                  className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
               <span className="text-muted-foreground">–</span>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Término</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Término
+                </span>
                 <input
-                type="datetime-local"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-                className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  type="datetime-local"
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                  className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
             </div>
@@ -142,7 +144,7 @@ export function EventModal({
 
           {/* Program */}
           <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground flex-shrink-0">
+            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
               <Tag size={18} />
             </div>
             <div className="flex-1">
@@ -158,19 +160,22 @@ export function EventModal({
 
           {/* Capacity */}
           <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground flex-shrink-0">
+            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
               <Users size={18} />
             </div>
             <div className="flex-1">
               <label className="block space-y-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Capacidade máxima <span className="font-normal">(opcional)</span></span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Capacidade máxima{" "}
+                  <span className="font-normal">(opcional)</span>
+                </span>
                 <input
-                type="number"
-                min={0}
-                placeholder="Ex.: 100"
-                value={cap}
-                onChange={(e) => setCap(e.target.value)}
-                className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  type="number"
+                  min={0}
+                  placeholder="Ex.: 100"
+                  value={cap}
+                  onChange={(e) => setCap(e.target.value)}
+                  className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </label>
             </div>
@@ -178,7 +183,7 @@ export function EventModal({
 
           {/* Description */}
           <div className="flex items-start gap-3.5">
-            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground flex-shrink-0">
+            <div className="w-5 h-5 mt-0.5 flex items-center justify-center text-muted-foreground shrink-0">
               <FileText size={18} />
             </div>
             <div className="flex-1 text-[13px] text-muted-foreground">
@@ -193,6 +198,7 @@ export function EventModal({
         <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-2">
           {mode === "edit" && occurrence && (
             <button
+              type="button"
               className="mr-auto px-4 py-2 text-sm font-medium text-destructive rounded-md hover:bg-destructive/10 transition-colors"
               onClick={() => occurrence && onDelete?.(occurrence.id)}
             >
@@ -200,12 +206,14 @@ export function EventModal({
             </button>
           )}
           <button
+            type="button"
             className="px-4 py-2 text-sm font-medium text-foreground rounded-md hover:bg-muted transition-colors"
             onClick={onClose}
           >
             Cancelar
           </button>
           <button
+            type="button"
             className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-full hover:opacity-90 transition-opacity"
             onClick={handleSave}
           >

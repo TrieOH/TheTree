@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { EventColor, OccurrenceI, ProgramI } from "../model";
 import { formatTime, getMonthGrid, isSameDay, isToday } from "../lib/date";
+import type { EventColor, OccurrenceI, ProgramI } from "../model";
 
 interface MonthViewProps {
   currentDate: Date;
@@ -24,7 +24,11 @@ export function MonthView({
   const dowLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   const getOccurrencesForDay = (date: Date) => {
-    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayStart = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
     return occurrences.filter((oc) => {
@@ -37,9 +41,9 @@ export function MonthView({
   return (
     <div className="calendar-scroll flex-1 overflow-auto p-4">
       <div className="grid grid-cols-7 border-t border-l border-border/60">
-        {dowLabels.map((d, index) => (
+        {dowLabels.map((d) => (
           <div
-            key={`${d}-${index}`}
+            key={d}
             className="text-center py-2 text-xs font-medium text-muted-foreground border-r border-b border-border/60"
           >
             {d}
@@ -52,7 +56,7 @@ export function MonthView({
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-[100px] border-r border-b border-border/60 p-1 cursor-pointer transition-colors hover:bg-muted/30 ${isOtherMonth ? "bg-muted/20" : ""}`}
+              className={`min-h-25 border-r border-b border-border/60 p-1 cursor-pointer transition-colors hover:bg-muted/30 ${isOtherMonth ? "bg-muted/20" : ""}`}
               onClick={() => onDateClick(day)}
             >
               <div
@@ -80,7 +84,8 @@ export function MonthView({
                     >
                       {isSameDay(new Date(oc.starts_at), day)
                         ? formatTime(oc.starts_at)
-                        : "Continua"} {prog?.name}
+                        : "Continua"}{" "}
+                      {prog?.name}
                     </div>
                   );
                 })}

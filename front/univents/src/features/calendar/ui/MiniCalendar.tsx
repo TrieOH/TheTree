@@ -26,12 +26,14 @@ export function MiniCalendar({
         </span>
         <div className="flex gap-0.5">
           <button
+            type="button"
             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
             onClick={onPrevMonth}
           >
             <ChevronLeft size={16} />
           </button>
           <button
+            type="button"
             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
             onClick={onNextMonth}
           >
@@ -40,9 +42,9 @@ export function MiniCalendar({
         </div>
       </div>
       <div className="grid grid-cols-7 gap-1.5 text-center">
-        {dowLabels.map((d, index) => (
+        {dowLabels.map((d) => (
           <div
-            key={`${d}-${index}`}
+            key={d}
             className="text-[11px] font-medium text-muted-foreground py-1"
           >
             {d}
@@ -64,7 +66,11 @@ export function MiniCalendar({
               "text-muted-foreground hover:bg-muted hover:text-foreground ";
 
           return (
-            <div key={day.toISOString()} className={className} onClick={() => onDateClick(day)}>
+            <div
+              key={day.toISOString()}
+              className={className}
+              onClick={() => onDateClick(day)}
+            >
               {day.getDate()}
             </div>
           );
