@@ -60,12 +60,20 @@ export function YearView({
               {MONTH_NAMES[monthIdx]}
             </div>
             <div className="grid grid-cols-7 gap-px">
-              {["D", "S", "T", "Q", "Q", "S", "S"].map((d) => (
+              {[
+                { label: "D", key: "domingo" },
+                { label: "S", key: "segunda" },
+                { label: "T", key: "terca" },
+                { label: "Q", key: "quarta" },
+                { label: "Q", key: "quinta" },
+                { label: "S", key: "sexta" },
+                { label: "S", key: "sabado" },
+              ].map((d) => (
                 <div
-                  key={d}
+                  key={d.key}
                   className="text-center text-[10px] text-muted-foreground py-0.5"
                 >
-                  {d}
+                  {d.label}
                 </div>
               ))}
               {weeks.flat().map((day) => {

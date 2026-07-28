@@ -21,7 +21,15 @@ export function MonthView({
   onCardClick,
 }: MonthViewProps) {
   const weeks = useMemo(() => getMonthGrid(currentDate), [currentDate]);
-  const dowLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const dowLabels = [
+    { label: "Dom", key: "domingo" },
+    { label: "Seg", key: "segunda" },
+    { label: "Ter", key: "terca" },
+    { label: "Qua", key: "quarta" },
+    { label: "Qui", key: "quinta" },
+    { label: "Sex", key: "sexta" },
+    { label: "Sáb", key: "sabado" },
+  ];
 
   const getOccurrencesForDay = (date: Date) => {
     const dayStart = new Date(
@@ -43,10 +51,10 @@ export function MonthView({
       <div className="grid grid-cols-7 border-t border-l border-border/60">
         {dowLabels.map((d) => (
           <div
-            key={d}
+            key={d.key}
             className="text-center py-2 text-xs font-medium text-muted-foreground border-r border-b border-border/60"
           >
-            {d}
+            {d.label}
           </div>
         ))}
         {weeks.flat().map((day) => {

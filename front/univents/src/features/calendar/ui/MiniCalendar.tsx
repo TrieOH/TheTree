@@ -16,7 +16,15 @@ export function MiniCalendar({
   onNextMonth,
 }: MiniCalendarProps) {
   const weeks = useMemo(() => getMonthGrid(currentDate), [currentDate]);
-  const dowLabels = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const dowLabels = [
+    { label: "D", key: "domingo" },
+    { label: "S", key: "segunda" },
+    { label: "T", key: "terca" },
+    { label: "Q", key: "quarta" },
+    { label: "Q", key: "quinta" },
+    { label: "S", key: "sexta" },
+    { label: "S", key: "sabado" },
+  ];
 
   return (
     <div className="p-2">
@@ -44,10 +52,10 @@ export function MiniCalendar({
       <div className="grid grid-cols-7 gap-1.5 text-center">
         {dowLabels.map((d) => (
           <div
-            key={d}
+            key={d.key}
             className="text-[11px] font-medium text-muted-foreground py-1"
           >
-            {d}
+            {d.label}
           </div>
         ))}
         {weeks.flat().map((day) => {
