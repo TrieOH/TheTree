@@ -46,7 +46,10 @@ export function DraggableEvent({
   // minute offset belongs here; using the full day offset would add the
   // hour position twice (e.g. 09:00 would render around 18:00).
   const top = startMins % 60;
-  const height = Math.max(22, (durMins / 60) * 60 - 2);
+  const height = Math.min(
+    Math.max(22, (durMins / 60) * 60 - 2),
+    24 * 60 - startMins,
+  );
 
   // The event lives inside its source hour slot, so clamp its vertical
   // translation to the 24-hour calendar bounds. This prevents it from

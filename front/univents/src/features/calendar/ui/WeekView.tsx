@@ -70,10 +70,17 @@ export function WeekView({
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const getOccurrencesForDay = (date: Date) => {
-    return occurrences.filter((oc) => {
-      const s = new Date(oc.starts_at);
-      return isSameDay(s, date);
-    });
+    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    return occurrences
+      .filter((oc) => new Date(oc.starts_at) < dayEnd && new Date(oc.ends_at) > dayStart)
+      .map((oc) => {
+        const start = new Date(oc.starts_at);
+        return start < dayStart
+          ? { ...oc, starts_at: dayStart.toISOString() }
+          : oc;
+      });
   };
 
   const formatHourLabel = (h: number): string => {

@@ -228,6 +228,13 @@ export function CalendarEditor({ eventId, editionId }: { eventId: string; editio
       const durMs = new Date(occurrence.ends_at).getTime() - new Date(occurrence.starts_at).getTime();
       const [year, month, day] = String(overData.date).split("-").map(Number);
       const hour = Math.max(0, Math.min(23, Number(overData.hour)));
+      const currentStart = new Date(occurrence.starts_at);
+      if (
+        toISODate(currentStart) === String(overData.date) &&
+        currentStart.getHours() === hour
+      ) {
+        return;
+      }
       const newStart = new Date(year, month - 1, day, hour, 0, 0, 0);
       const newEnd = new Date(newStart.getTime() + durMs);
       occurrenceMutation.mutate({

@@ -61,10 +61,17 @@ export function DayView({
   onDelete,
 }: DayViewProps) {
   const dayOccs = useMemo(() => {
-    return occurrences.filter((oc) => {
-      const s = new Date(oc.starts_at);
-      return isSameDay(s, currentDate);
-    });
+    const dayStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    return occurrences
+      .filter((oc) => new Date(oc.starts_at) < dayEnd && new Date(oc.ends_at) > dayStart)
+      .map((oc) => {
+        const start = new Date(oc.starts_at);
+        return start < dayStart
+          ? { ...oc, starts_at: dayStart.toISOString() }
+          : oc;
+      });
   }, [occurrences, currentDate]);
 
   const nowPos = getNowPosition();

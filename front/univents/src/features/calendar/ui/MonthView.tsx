@@ -24,9 +24,13 @@ export function MonthView({
   const dowLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   const getOccurrencesForDay = (date: Date) => {
+    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
     return occurrences.filter((oc) => {
-      const s = new Date(oc.starts_at);
-      return isSameDay(s, date);
+      const start = new Date(oc.starts_at);
+      const end = new Date(oc.ends_at);
+      return start < dayEnd && end > dayStart;
     });
   };
 
@@ -74,7 +78,9 @@ export function MonthView({
                         onCardClick(oc.id);
                       }}
                     >
-                      {formatTime(oc.starts_at)} {prog?.name}
+                      {isSameDay(new Date(oc.starts_at), day)
+                        ? formatTime(oc.starts_at)
+                        : "Continua"} {prog?.name}
                     </div>
                   );
                 })}
