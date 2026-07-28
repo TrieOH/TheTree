@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "catalog:",
     "@mercadopago/sdk-js": "^0.0.3",
     "@microsoft/fetch-event-source": "^2.0.1",

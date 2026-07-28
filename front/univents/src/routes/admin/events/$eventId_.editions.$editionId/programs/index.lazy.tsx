@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortState } from "@trieoh/ui-base";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import { CalendarRange, Plus } from "lucide-react";
+import { CalendarDays, CalendarRange, Plus } from "lucide-react";
 import { useState } from "react";
 import {
   occurrencesQueryOptions,
@@ -19,7 +19,7 @@ export const Route = createLazyFileRoute(
 )({ component: ProgramsRoute });
 
 function ProgramsRoute() {
-  const { editionId } = Route.useParams();
+  const { eventId, editionId } = Route.useParams();
   const navigate = useNavigate();
   const { data: programs = [] } = useQuery(programsQueryOptions(editionId));
   const { data: occurrences = [] } = useQuery(
@@ -63,17 +63,33 @@ function ProgramsRoute() {
         filterPlaceholder="Buscar programa..."
         itemLabel="programas"
         headerActions={
-          <Button
-            type="button"
-            className="h-9 gap-2"
-            onClick={() => {
-              setEditing(undefined);
-              setModalOpen(true);
-            }}
-          >
-            <Plus className="mr-2 size-4" />
-            Novo programa
-          </Button>
+          <>
+            <Button
+              type="button"
+              className="h-9 gap-2"
+              onClick={() => {
+                setEditing(undefined);
+                setModalOpen(true);
+              }}
+            >
+              <Plus className="mr-2 size-4" />
+              Novo programa
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 gap-2"
+              onClick={() =>
+                navigate({
+                  to: "/admin/events/$eventId/editions/$editionId/programs/calendar",
+                  params: { eventId, editionId },
+                })
+              }
+            >
+              <CalendarDays className="size-4" />
+              Abrir calendário
+            </Button>
+          </>
         }
         emptyState={
           <EmptyState
