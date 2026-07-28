@@ -56,18 +56,54 @@ jobs:
           [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
           echo "list=${list#,}" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Docker for Dagger
-        run: |
-          if ! command -v docker >/dev/null 2>&1; then
-            curl -fsSL https://get.docker.com | sh
-          fi
-          sudo systemctl start docker 2>/dev/null || sudo service docker start
-          sudo usermod -aG docker "$(id -un)" || true
-          docker version
-          docker info
-
-      - uses: https://github.com/dagger/dagger-for-github@v6
+      - name: Setup Node
+        uses: https://github.com/actions/setup-node@v6
         with:
-          verb: call
-          module: .dagger
-          args: frontend-lint-tsc --source=. --services=${{ steps.services.outputs.list }}
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint IdentityX
+        if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: pnpm -F identityx lint
+
+      - name: TypeScript IdentityX
+        if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: pnpm -F identityx tsc
+
+      - name: Lint Informd
+        if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: pnpm -F informd lint
+
+      - name: TypeScript Informd
+        if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: pnpm -F informd tsc
+
+      - name: Lint Payssage
+        if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: pnpm -F payssage lint
+
+      - name: TypeScript Payssage
+        if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: pnpm -F payssage tsc
+
+      - name: Lint Univents
+        if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: pnpm -F univents lint
+
+      - name: TypeScript Univents
+        if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: pnpm -F univents tsc
+
+      # Dagger (requires a container runtime on the runner):
+      # - uses: https://github.com/dagger/dagger-for-github@v6
+      #   with:
+      #     verb: call
+      #     module: .dagger
+      #     args: frontend-lint-tsc --source=. --services=${{ steps.services.outputs.list }}

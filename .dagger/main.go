@@ -152,6 +152,7 @@ func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services str
 	return out, nil
 }
 
+/*
 // FrontendLintTsc runs lint and TypeScript checks for the given frontend
 // services (comma-separated or "all").
 func (m *Thetree) FrontendLintTsc(ctx context.Context, source *dagger.Directory, services string) (string, error) {
@@ -173,6 +174,7 @@ func (m *Thetree) FrontendLintTsc(ctx context.Context, source *dagger.Directory,
 
 	return c.Stdout(ctx)
 }
+*/
 
 func parseServices(services string) []string {
 	if services == "" || services == "all" {
