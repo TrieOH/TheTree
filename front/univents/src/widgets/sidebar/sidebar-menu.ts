@@ -62,9 +62,9 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             exact: true,
           },
           {
-            id: "edition-activities",
-            label: "Atividades",
-            to: "/admin/events/$eventId/editions/$editionId/activities",
+            id: "edition-programs",
+            label: "Programação",
+            to: "/admin/events/$eventId/editions/$editionId/programs",
             params: { eventId, editionId },
             icon: Activity,
             exact: false,

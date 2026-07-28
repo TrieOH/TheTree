@@ -3,7 +3,6 @@ import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  CalendarClock,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
@@ -165,9 +164,9 @@ function AdminEditionDetailRoute() {
 
   const sections = [
     {
-      label: "Atividades",
-      to: "/admin/events/$eventId/editions/$editionId/activities",
-      icon: CalendarClock,
+      label: "Programação",
+      to: "/admin/events/$eventId/editions/$editionId/programs",
+      icon: CalendarDays,
     },
     {
       label: "Produtos",
