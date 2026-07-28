@@ -8,11 +8,15 @@ import {
   occurrencesQueryOptions,
   programsQueryOptions,
 } from "@/features/programs/api";
-import { useOccurrenceMutation } from "@/features/programs/api/mutations";
+import {
+  useDeleteOccurrenceMutation,
+  useOccurrenceMutation,
+} from "@/features/programs/api/mutations";
 import type { OccurrenceI } from "@/features/programs/model";
 import { ManageOccurrenceModal } from "@/features/programs/ui/ManageOccurrenceModal";
 import { OccurrenceAdminCard } from "@/features/programs/ui/OccurrenceAdminCard";
 import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
 export const Route = createLazyFileRoute(
   "/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/",
@@ -26,6 +30,7 @@ function OccurrencesRoute() {
     occurrencesQueryOptions(editionId),
   );
   const mutation = useOccurrenceMutation(editionId);
+  const deleteMutation = useDeleteOccurrenceMutation(editionId);
   const program = programs.find((item) => item.id === programId);
   const occurrences = useMemo(
     () => allOccurrences.filter((item) => item.program_id === programId),
@@ -40,6 +45,8 @@ function OccurrencesRoute() {
     open: boolean;
     occurrence?: OccurrenceI;
   }>({ open: false });
+  const [occurrenceToDelete, setOccurrenceToDelete] =
+    useState<OccurrenceI | null>(null);
   const filtered = occurrences.filter(
     (item) =>
       !filter ||
@@ -108,9 +115,26 @@ function OccurrencesRoute() {
               key={occurrence.id}
               occurrence={occurrence}
               onEdit={() => setModal({ open: true, occurrence })}
+              onDelete={() => {
+                setOccurrenceToDelete(occurrence);
+              }}
             />
           ))
         }
+      />
+      <AlertModal
+        open={Boolean(occurrenceToDelete)}
+        onOpenChange={(open) => !open && setOccurrenceToDelete(null)}
+        title="Excluir ocorrência?"
+        description="Esta ocorrência será removida permanentemente. Essa ação não pode ser desfeita."
+        confirmLabel="Excluir ocorrência"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={async () => {
+          if (!occurrenceToDelete) return;
+          await deleteMutation.mutateAsync(occurrenceToDelete.id);
+          setOccurrenceToDelete(null);
+        }}
       />
       <ManageOccurrenceModal
         open={modal.open}

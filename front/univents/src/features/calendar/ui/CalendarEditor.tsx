@@ -21,7 +21,10 @@ import {
   occurrencesQueryOptions,
   programsQueryOptions,
 } from "@/features/programs/api";
-import { useOccurrenceMutation } from "@/features/programs/api/mutations";
+import {
+  useDeleteOccurrenceMutation,
+  useOccurrenceMutation,
+} from "@/features/programs/api/mutations";
 import { Button } from "@/shared/ui/shadcn/button";
 import { addDays, formatMonthYear, startOfDay, toISODate } from "../lib/date";
 import type { CalendarView, EventColor, OccurrenceI, ProgramI } from "../model";
@@ -87,6 +90,7 @@ export function CalendarEditor({
     occurrencesQueryOptions(editionId),
   );
   const occurrenceMutation = useOccurrenceMutation(editionId);
+  const deleteOccurrenceMutation = useDeleteOccurrenceMutation(editionId);
   const [occurrences, setOccurrences] = useState<OccurrenceI[]>([]);
   const programs = loadedPrograms as ProgramI[];
   const visibleOccurrences = loadedOccurrences.length
@@ -345,16 +349,20 @@ export function CalendarEditor({
     [modalMode, occurrenceMutation],
   );
 
-  const handleModalDelete = useCallback((occurrenceId: string) => {
-    setOccurrences((prev) =>
-      prev.map((oc) =>
-        oc.id === occurrenceId
-          ? { ...oc, deleted_at: new Date().toISOString() }
-          : oc,
-      ),
-    );
-    setModalOpen(false);
-  }, []);
+  const handleModalDelete = useCallback(
+    (occurrenceId: string) => {
+      deleteOccurrenceMutation.mutate(occurrenceId);
+      setOccurrences((prev) =>
+        prev.map((oc) =>
+          oc.id === occurrenceId
+            ? { ...oc, deleted_at: new Date().toISOString() }
+            : oc,
+        ),
+      );
+      setModalOpen(false);
+    },
+    [deleteOccurrenceMutation],
+  );
 
   const activeDragProgram = useMemo(() => {
     if (!activeDragId?.startsWith("program-")) return null;

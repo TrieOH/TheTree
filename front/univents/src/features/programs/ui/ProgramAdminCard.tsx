@@ -4,6 +4,7 @@ import {
   MoreVertical,
   Pencil,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/shared/lib/utils";
@@ -37,12 +38,14 @@ export function ProgramAdminCard({
   index,
   onEdit,
   onManageOccurrences,
+  onDelete,
 }: {
   program: ProgramI;
   occurrences: OccurrenceI[];
   index: number;
   onEdit: () => void;
   onManageOccurrences: () => void;
+  onDelete: () => void;
 }) {
   const card = (
     <motion.article
@@ -96,6 +99,16 @@ export function ProgramAdminCard({
                 <CalendarDays className="size-4" />
                 Gerenciar ocorrências
               </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete();
+                }}
+              >
+                <Trash2 className="size-4" />
+                Excluir programa
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -147,6 +160,16 @@ export function ProgramAdminCard({
         <ContextMenuItem onClick={onManageOccurrences}>
           <CalendarDays className="size-4" />
           Gerenciar ocorrências
+        </ContextMenuItem>
+        <ContextMenuItem
+          variant="destructive"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+        >
+          <Trash2 className="size-4" />
+          Excluir programa
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

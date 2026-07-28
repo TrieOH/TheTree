@@ -8,6 +8,8 @@ import type {
 import {
   createOccurrenceFn,
   createProgramFn,
+  deleteOccurrenceFn,
+  deleteProgramFn,
   patchOccurrenceFn,
   patchProgramFn,
 } from ".";
@@ -27,6 +29,22 @@ export function useProgramMutation(editionId: string) {
         return toast.error(r.message || "Não foi possível salvar o programa");
       void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
       toast.success("Programa salvo");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+export function useDeleteProgramMutation(editionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteProgramFn,
+    onSuccess: (r) => {
+      if (!r.success)
+        return toast.error(r.message || "Não foi possível excluir o programa");
+      void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
+      void qc.invalidateQueries({
+        queryKey: programKeys.occurrences(editionId),
+      });
+      toast.success("Programa excluído");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
   });
@@ -55,6 +73,23 @@ export function useOccurrenceMutation(editionId: string) {
         queryKey: programKeys.occurrences(editionId),
       });
       toast.success("Ocorrência salva");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+export function useDeleteOccurrenceMutation(editionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteOccurrenceFn,
+    onSuccess: (r) => {
+      if (!r.success)
+        return toast.error(
+          r.message || "Não foi possível excluir a ocorrência",
+        );
+      void qc.invalidateQueries({
+        queryKey: programKeys.occurrences(editionId),
+      });
+      toast.success("Ocorrência excluída");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
   });

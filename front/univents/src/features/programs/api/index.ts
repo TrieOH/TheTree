@@ -23,6 +23,9 @@ export const patchProgramFn = createClientOnlyFn(
   (id: string, data: ProgramCreateInput | ProgramCreateOutput) =>
     authFetcher.patch<ProgramI>(`/programs/${id}`, data),
 );
+export const deleteProgramFn = createClientOnlyFn((id: string) =>
+  authFetcher.delete<ProgramI>(`/programs/${id}`),
+);
 export const createOccurrenceFn = createClientOnlyFn(
   (programId: string, data: OccurrenceCreateOutput) =>
     authFetcher.post<OccurrenceI>(`/programs/${programId}/occurrences`, data),
@@ -30,6 +33,9 @@ export const createOccurrenceFn = createClientOnlyFn(
 export const patchOccurrenceFn = createClientOnlyFn(
   (id: string, data: OccurrenceCreateOutput) =>
     authFetcher.patch<OccurrenceI>(`/occurrences/${id}`, data),
+);
+export const deleteOccurrenceFn = createClientOnlyFn((id: string) =>
+  authFetcher.delete<OccurrenceI>(`/occurrences/${id}`),
 );
 export const programsQueryOptions = (editionId: string) =>
   queryOptions({

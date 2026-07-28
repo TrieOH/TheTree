@@ -8,11 +8,15 @@ import {
   occurrencesQueryOptions,
   programsQueryOptions,
 } from "@/features/programs/api";
-import { useProgramMutation } from "@/features/programs/api/mutations";
+import {
+  useDeleteProgramMutation,
+  useProgramMutation,
+} from "@/features/programs/api/mutations";
 import type { ProgramI } from "@/features/programs/model";
 import { ManageProgramModal } from "@/features/programs/ui/ManageProgramModal";
 import { ProgramAdminCard } from "@/features/programs/ui/ProgramAdminCard";
 import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
 export const Route = createLazyFileRoute(
   "/admin/events/$eventId_/editions/$editionId/programs/",
@@ -26,6 +30,7 @@ function ProgramsRoute() {
     occurrencesQueryOptions(editionId),
   );
   const mutation = useProgramMutation(editionId);
+  const deleteMutation = useDeleteProgramMutation(editionId);
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortState<ProgramI>>({
     field: "name",
@@ -33,6 +38,7 @@ function ProgramsRoute() {
   });
   const [editing, setEditing] = useState<ProgramI>();
   const [modalOpen, setModalOpen] = useState(false);
+  const [programToDelete, setProgramToDelete] = useState<ProgramI | null>(null);
 
   const filtered = programs
     .filter((program) =>
@@ -72,7 +78,7 @@ function ProgramsRoute() {
                 setModalOpen(true);
               }}
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="size-4" />
               Novo programa
             </Button>
             <Button
@@ -123,9 +129,26 @@ function ProgramsRoute() {
                   },
                 })
               }
+              onDelete={() => {
+                setProgramToDelete(program);
+              }}
             />
           ))
         }
+      />
+      <AlertModal
+        open={Boolean(programToDelete)}
+        onOpenChange={(open) => !open && setProgramToDelete(null)}
+        title="Excluir programa?"
+        description={`O programa "${programToDelete?.name ?? ""}" e suas ocorrências serão excluídos. Essa ação não pode ser desfeita.`}
+        confirmLabel="Excluir programa"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={async () => {
+          if (!programToDelete) return;
+          await deleteMutation.mutateAsync(programToDelete.id);
+          setProgramToDelete(null);
+        }}
       />
       <ManageProgramModal
         open={modalOpen}
