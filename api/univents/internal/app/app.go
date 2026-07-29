@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/email"
 	"lib/objectstorage"
 	"lib/telemetry"
 	"univents/internal/config"
@@ -13,9 +14,10 @@ import (
 )
 
 type Univents struct {
-	db         *pgxpool.Pool
-	idxClient  *idx.Client
-	objStorage *objectstorage.Client
+	db          *pgxpool.Pool
+	idxClient   *idx.Client
+	objStorage  *objectstorage.Client
+	emailClient *email.Client
 
 	cfg config.Config
 }
@@ -32,6 +34,7 @@ func Start() {
 
 	app.idxClient = SetupIdentityX(app.cfg)
 	app.objStorage = SetupObjectStorage(app.cfg)
+	app.emailClient = email.NewClient(app.cfg.ToEmailConfig())
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)

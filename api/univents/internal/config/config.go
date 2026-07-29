@@ -2,6 +2,7 @@ package config
 
 import (
 	"lib/database"
+	"lib/email"
 	"lib/errx"
 
 	"github.com/caarlos0/env/v11"
@@ -59,6 +60,14 @@ type Config struct {
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
+
+	// SMTP / Email
+	SmtpHost     string `env:"SMTP_HOST,required"`
+	SmtpPort     int    `env:"SMTP_PORT"             envDefault:"587"`
+	SmtpUsername string `env:"SMTP_USERNAME"`
+	SmtpPassword string `env:"SMTP_PASSWORD"`
+	SmtpFrom     string `env:"SMTP_FROM,required"`
+	SmtpTls      bool   `env:"SMTP_TLS" envDefault:"true"`
 }
 
 func (cfg Config) ToDBConfig() database.Config {
@@ -75,6 +84,17 @@ func (cfg Config) ToDBConfig() database.Config {
 		RootHost:      "postgres",
 		RootPort:      "5432",
 		MigrationPath: cfg.MigrationPath,
+	}
+}
+
+func (cfg Config) ToEmailConfig() email.Config {
+	return email.Config{
+		Host:     cfg.SmtpHost,
+		Port:     cfg.SmtpPort,
+		Username: cfg.SmtpUsername,
+		Password: cfg.SmtpPassword,
+		From:     cfg.SmtpFrom,
+		TLS:      cfg.SmtpTls,
 	}
 }
 

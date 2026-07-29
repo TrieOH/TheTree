@@ -12,7 +12,7 @@ func (app *Univents) run() {
 
 	repos := initRepos(q)
 	queries := initQueries(repos)
-	commands := initCommands(repos, app.objStorage, app.idxClient)
+	commands := initCommands(repos, app.objStorage, app.idxClient, app.emailClient)
 	middlewares := initMiddlewares()
 	handlers := initHandlers(queries, commands)
 

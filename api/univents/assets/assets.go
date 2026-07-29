@@ -1,0 +1,47 @@
+package assets
+
+import (
+	"bytes"
+	"embed"
+	"html/template"
+)
+
+// WARNING: everything under assets/ is compiled into the binary via embed.
+// Only put small text files here (email templates, JSON schemas, examples).
+// Do NOT embed images, fonts, PDFs, or anything over a few KB.
+
+//go:embed emails/*.html
+var files embed.FS
+
+var templates = template.Must(template.ParseFS(files, "emails/*.html"))
+
+type RequestSignatureEmailData struct {
+	SignatoryName string
+	EventName     string
+	EditionName   string
+	Link          string
+	ExpiresInDays int
+}
+
+func RenderRequestSignatureEmail(data RequestSignatureEmailData) (string, error) {
+	var buf bytes.Buffer
+	if err := templates.ExecuteTemplate(&buf, "request_signature.html", data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+type SignatureCreatedEmailData struct {
+	SignatoryName string
+	EventName     string
+	EditionName   string
+	RevokeLink    string
+}
+
+func RenderSignatureCreatedEmail(data SignatureCreatedEmailData) (string, error) {
+	var buf bytes.Buffer
+	if err := templates.ExecuteTemplate(&buf, "signature_created.html", data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}

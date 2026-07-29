@@ -35,9 +35,9 @@ func SetupConstraintMessages() {
 		// program_participations
 		"chk_program_participations_status_valid": "Participation status must be one of: registered, attended, no_show, cancelled.",
 
-		// signatures
-		"chk_signatures_status_valid":    "Signature status must be one of: requested, ready, declined, expired.",
-		"chk_signatures_ready_has_image": "A signature marked as ready must have an image URL set.",
+		// signature_requests
+		"chk_signature_requests_status_valid":     "Signature request status must be one of: pending, completed, expired, cancelled.",
+		"uniq_signature_requests_idempotency_key": "This idempotency key has already been used.",
 
 		// certification_templates
 		"chk_certification_templates_kind_valid": "Certification template kind must be one of: edition_attendance, program_attendance.",

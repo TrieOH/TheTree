@@ -1,6 +1,7 @@
 package app
 
 import (
+	"lib/email"
 	"lib/errx"
 	"lib/objectstorage"
 	"lib/telemetry"
@@ -11,6 +12,7 @@ import (
 	"univents/internal/features/editions"
 	"univents/internal/features/products"
 	"univents/internal/features/programs"
+	"univents/internal/features/signatures"
 	"univents/internal/sqlc"
 
 	idx "sdk/identityx"
@@ -25,12 +27,14 @@ import (
 // ── Wire types ────────────────────────────────────────────────────────────
 
 type repos struct {
-	events      ports.EventRepo
-	editions    ports.EditionRepo
-	ticketTypes ports.TicketTypeRepo
-	products    ports.ProductRepo
-	programs    ports.ProgramRepo
-	occurrences ports.ProgramOccurrenceRepo
+	events            ports.EventRepo
+	editions          ports.EditionRepo
+	ticketTypes       ports.TicketTypeRepo
+	products          ports.ProductRepo
+	programs          ports.ProgramRepo
+	occurrences       ports.ProgramOccurrenceRepo
+	signatures        ports.SignatureRepo
+	signatureRequests ports.SignatureRequestRepo
 }
 
 type queries struct {
@@ -39,6 +43,7 @@ type queries struct {
 	ticketTypes *ticket_types.Queries
 	products    *products.Queries
 	programs    *programs.Queries
+	signatures  *signatures.Queries
 }
 
 type commands struct {
@@ -47,6 +52,7 @@ type commands struct {
 	ticketTypes *ticket_types.Commands
 	products    *products.Commands
 	programs    *programs.Commands
+	signatures  *signatures.Commands
 }
 
 type middlewares struct {
@@ -70,19 +76,23 @@ type handlers struct {
 	ticketTypes *ticket_types.Handlers
 	products    *products.Handlers
 	programs    *programs.Handlers
+	signatures  *signatures.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
 
 func initRepos(q *sqlc.Queries) repos {
 	programsRepo := programs.NewRepos(q)
+	sigRepo := signatures.NewRepos(q)
 	return repos{
-		events:      events.NewRepos(q),
-		editions:    editions.NewRepos(q),
-		ticketTypes: ticket_types.NewRepos(q),
-		products:    products.NewRepos(q),
-		programs:    programsRepo,
-		occurrences: programsRepo,
+		events:            events.NewRepos(q),
+		editions:          editions.NewRepos(q),
+		ticketTypes:       ticket_types.NewRepos(q),
+		products:          products.NewRepos(q),
+		programs:          programsRepo,
+		occurrences:       programsRepo,
+		signatures:        sigRepo,
+		signatureRequests: sigRepo,
 	}
 }
 
@@ -93,16 +103,18 @@ func initQueries(r repos) queries {
 		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes),
 		products:    products.NewQueries(r.editions, r.products),
 		programs:    programs.NewQueries(r.programs, r.occurrences),
+		signatures:  signatures.NewQueries(r.editions, r.signatures, r.signatureRequests),
 	}
 }
 
-func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client) commands {
+func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client, email *email.Client) commands {
 	return commands{
 		events:      events.NewCommands(r.events, obj, idx),
 		editions:    editions.NewCommands(r.events, r.editions),
 		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes),
 		products:    products.NewCommands(r.events, r.editions, r.products),
 		programs:    programs.NewCommands(r.events, r.editions, r.programs, r.occurrences),
+		signatures:  signatures.NewCommands(r.events, r.editions, r.signatures, r.signatureRequests, email, app.cfg.HmacSecret),
 	}
 }
 
@@ -113,6 +125,7 @@ func initHandlers(q queries, c commands) handlers {
 		ticketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
 		products:    products.NewHandlers(c.products, q.products),
 		programs:    programs.NewHandlers(c.programs, q.programs),
+		signatures:  signatures.NewHandlers(c.signatures, q.signatures),
 	}
 }
 
