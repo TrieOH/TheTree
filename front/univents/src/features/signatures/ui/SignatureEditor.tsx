@@ -224,8 +224,8 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                     eventId,
                     editionId,
                     data: {
-                      title: trimmedTitle,
-                      url,
+                      signatory_name: trimmedTitle,
+                      image_url: url,
                     },
                   });
 

@@ -21,6 +21,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
+import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
@@ -105,6 +106,12 @@ const VerifyHashRoute = VerifyHashRouteImport.update({
   path: '/verify/$hash',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignatureRequestsFulfillRoute =
+  SignatureRequestsFulfillRouteImport.update({
+    id: '/signature-requests/fulfill',
+    path: '/signature-requests/fulfill',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminUploadsRoute = AdminUploadsRouteImport.update({
   id: '/uploads',
   path: '/uploads',
@@ -293,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
@@ -328,6 +336,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
@@ -364,6 +373,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
@@ -401,6 +411,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/signature-requests/fulfill'
     | '/verify/$hash'
     | '/events/'
     | '/events/$slug/profile'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/signature-requests/fulfill'
     | '/verify/$hash'
     | '/events'
     | '/events/$slug/profile'
@@ -471,6 +483,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/signature-requests/fulfill'
     | '/verify/$hash'
     | '/events/'
     | '/events/$slug/profile'
@@ -506,6 +519,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
+  SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   EventsSlugProfileRoute: typeof EventsSlugProfileRoute
@@ -586,6 +600,13 @@ declare module '@tanstack/react-router' {
       path: '/verify/$hash'
       fullPath: '/verify/$hash'
       preLoaderRoute: typeof VerifyHashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signature-requests/fulfill': {
+      id: '/signature-requests/fulfill'
+      path: '/signature-requests/fulfill'
+      fullPath: '/signature-requests/fulfill'
+      preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/uploads': {
@@ -815,6 +836,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
+  SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   EventsSlugProfileRoute: EventsSlugProfileRoute,
