@@ -15,11 +15,8 @@ jobs:
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
       - name: Set up Docker
-        if: ${{ steps.tag.outputs.skip == 'false' }}
         run: curl -fsSL https://get.docker.com | sh
-
       - name: Build & publish via Dagger
-        if: ${{ steps.tag.outputs.skip == 'false' }}
         uses: https://github.com/dagger/dagger-for-github@v6
         env:
           FJ_TOKEN: ${{ secrets.FJ_TOKEN }}

@@ -170,6 +170,10 @@ func (m *Thetree) Publish(
 	}
 	service, version := parts[0], parts[1]
 
+	if strings.HasSuffix(service, "-ui") || strings.Contains(service, "sdk") {
+		return "", nil
+	}
+
 	img := source.DockerBuild(dagger.DirectoryDockerBuildOpts{
 		Dockerfile: fmt.Sprintf("api/%s/Dockerfile", service),
 	})
