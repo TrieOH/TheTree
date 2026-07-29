@@ -1,5 +1,7 @@
-import { Check, Star } from "lucide-react";
+import { Check, ShoppingCart, Star } from "lucide-react";
+import { useCart } from "@/features/products/hooks/use-cart";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 import type { TicketI } from "../model";
 
 function formatPrice(cents: number): string {
@@ -14,9 +16,14 @@ function formatPrice(cents: number): string {
 interface TicketCardProps {
   ticket: TicketI;
   isFeatured?: boolean;
+  editionId?: string;
 }
 
-export function TicketCard({ ticket, isFeatured }: TicketCardProps) {
+export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
+  const { addItem, items } = useCart(editionId ?? "");
+  const inCart = items.find(
+    (item) => item.id === ticket.id && item.type === "ticket",
+  );
   const isFree = ticket.price_cents === 0;
 
   return (
@@ -69,6 +76,33 @@ export function TicketCard({ ticket, isFeatured }: TicketCardProps) {
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed whitespace-pre-line line-clamp-4">
           {ticket.description}
         </p>
+      )}
+      {editionId && (
+        <Button
+          size="sm"
+          variant={inCart ? "secondary" : "default"}
+          className="mt-5 h-9 w-full gap-2 text-xs font-semibold shadow-sm"
+          onClick={() =>
+            addItem(
+              {
+                id: ticket.id,
+                type: "ticket",
+                name: ticket.name,
+                price_cents: ticket.price_cents,
+                inventory_remaining: ticket.max_quantity ?? 999,
+                has_inventory: ticket.max_quantity !== null,
+              },
+              1,
+            )
+          }
+        >
+          {inCart ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <ShoppingCart className="h-4 w-4" />
+          )}
+          {inCart ? `Adicionado (${inCart.quantity})` : "Adicionar ao carrinho"}
+        </Button>
       )}
     </div>
   );

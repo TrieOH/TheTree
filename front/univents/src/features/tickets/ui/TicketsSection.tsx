@@ -7,9 +7,14 @@ import { TicketCard } from "./TicketCard";
 interface TicketsSectionProps {
   tickets: TicketI[];
   eventSlug: string;
+  editionId?: string;
 }
 
-export function TicketsSection({ tickets, eventSlug }: TicketsSectionProps) {
+export function TicketsSection({
+  tickets,
+  eventSlug,
+  editionId,
+}: TicketsSectionProps) {
   if (tickets.length === 0) return null;
 
   const sortedTickets = [...tickets]
@@ -37,7 +42,11 @@ export function TicketsSection({ tickets, eventSlug }: TicketsSectionProps) {
               key={ticket.id}
               className={cn("shrink-0", visibilityClasses[index])}
             >
-              <TicketCard ticket={ticket} isFeatured={index === 1} />
+              <TicketCard
+                ticket={ticket}
+                isFeatured={index === 1}
+                editionId={editionId}
+              />
             </div>
           ))}
         </div>

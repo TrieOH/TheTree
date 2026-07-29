@@ -1,5 +1,13 @@
-import { Activity, ChevronRight, LogIn } from "lucide-react";
+import {
+  Activity,
+  Check,
+  ChevronRight,
+  LogIn,
+  ShoppingCart,
+} from "lucide-react";
+import { useCart } from "@/features/products/hooks/use-cart";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 import type { OccurrenceI, ProgramI } from "../model";
 
 function formatTimeRange(start: string, end: string): string {
@@ -37,13 +45,16 @@ interface ProgramDayCardProps {
   date: string;
   items: { program: ProgramI; occurrence: OccurrenceI }[];
   maxItems?: number;
+  editionId?: string;
 }
 
 export function ProgramDayCard({
   date,
   items,
   maxItems = 3,
+  editionId,
 }: ProgramDayCardProps) {
+  const { addItem, items: cartItems } = useCart(editionId ?? "");
   const visible = items.slice(0, maxItems);
   const remaining = items.length - maxItems;
 
@@ -63,18 +74,23 @@ export function ProgramDayCard({
           return (
             <div key={occurrence.id} className="flex gap-4">
               {/* Timeline column */}
-              <div className="flex flex-col items-center shrink-0">
+              <div className="flex flex-col items-center shrink-0 relative">
                 <div
                   className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                    "w-9 h-9 rounded-xl z-10 flex items-center justify-center shrink-0",
                     bg,
                   )}
                 >
                   <Icon className={cn("w-4 h-4", text)} />
                 </div>
-                {!isLast && (
-                  <div className="w-px flex-1 min-h-6 bg-border rounded-full" />
-                )}
+                <div
+                  className={cn(
+                    "w-px rounded-full bg-border",
+                    isLast
+                      ? "absolute h-[calc(100%+0.5rem)]"
+                      : "min-h-6 flex-1",
+                  )}
+                />
               </div>
 
               {/* Content */}
@@ -95,6 +111,42 @@ export function ProgramDayCard({
                     {program.description}
                   </p>
                 )}
+                {editionId &&
+                  (() => {
+                    const inCart = cartItems.find(
+                      (item) =>
+                        item.id === occurrence.id && item.type === "activity",
+                    );
+                    return (
+                      <Button
+                        size="sm"
+                        variant={inCart ? "secondary" : "default"}
+                        className="mt-4 h-9 w-full gap-2 text-xs font-semibold shadow-sm"
+                        onClick={() =>
+                          addItem(
+                            {
+                              id: occurrence.id,
+                              type: "activity",
+                              name: program.name,
+                              price_cents: 0,
+                              inventory_remaining: 999,
+                              has_inventory: false,
+                            },
+                            1,
+                          )
+                        }
+                      >
+                        {inCart ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                        )}
+                        {inCart
+                          ? `Adicionado (${inCart.quantity})`
+                          : "Adicionar ao carrinho"}
+                      </Button>
+                    );
+                  })()}
               </div>
             </div>
           );
