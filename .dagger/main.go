@@ -6,6 +6,7 @@ import (
 	"context"
 	"dagger/thetree/internal/dagger"
 	"fmt"
+	"strings"
 )
 
 type Thetree struct{}
@@ -150,6 +151,47 @@ func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services str
 		out += fmt.Sprintf("--- %s ---\n%s\n", s, res)
 	}
 	return out, nil
+}
+
+const registry = "git.trieoh.com"
+
+// Publish builds a service image from its Dockerfile and pushes it to the registry.
+// tag is in the format "<service>/v<version>" (e.g. "identityx/v1.2.3").
+func (m *Thetree) Publish(
+	ctx context.Context,
+	source *dagger.Directory,
+	registryUsername string,
+	registryPassword string,
+	tag string,
+) (string, error) {
+	parts := strings.SplitN(tag, "/", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid tag %q, expected <service>/v<version>", tag)
+	}
+	service, version := parts[0], parts[1]
+
+	img := source.DockerBuild(dagger.DirectoryDockerBuildOpts{
+		Dockerfile: fmt.Sprintf("api/%s/Dockerfile", service),
+	})
+
+	secret := dag.SetSecret("registry-password", registryPassword)
+
+	versionAddr := fmt.Sprintf("%s/trieoh/%s:%s", registry, service, version)
+	digest, err := img.
+		WithRegistryAuth(registry, registryUsername, secret).
+		Publish(ctx, versionAddr)
+	if err != nil {
+		return "", fmt.Errorf("publish %s: %w", versionAddr, err)
+	}
+
+	latestAddr := fmt.Sprintf("%s/trieoh/%s:latest", registry, service)
+	if _, err := img.
+		WithRegistryAuth(registry, registryUsername, secret).
+		Publish(ctx, latestAddr); err != nil {
+		return "", fmt.Errorf("publish latest %s: %w", latestAddr, err)
+	}
+
+	return digest, nil
 }
 
 func parseServices(services string) []string {
