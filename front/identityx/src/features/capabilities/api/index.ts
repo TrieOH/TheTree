@@ -1,7 +1,7 @@
-import { createClientOnlyFn } from "@tanstack/react-start";
-import type { CapabilityCreateI, CapabilityI } from "../model";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { queryOptions } from "@tanstack/react-query";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import type { CapabilityCreateI, CapabilityI } from "../model";
 
 /**
  * Creates a new capability on the server.
@@ -9,18 +9,27 @@ import { queryOptions } from "@tanstack/react-query";
  * @param capabilityData - The data for the new capability.
  * @returns A promise that resolves to the API response containing the newly created capability.
  */
-export const createCapabilityFn = createClientOnlyFn((project_id: string, capabilityData: CapabilityCreateI) => {
-  return authFetcher.post<CapabilityI>(`projects/${project_id}/capabilities`, capabilityData);
-});
+export const createCapabilityFn = createClientOnlyFn(
+  (project_id: string, capabilityData: CapabilityCreateI) => {
+    return authFetcher.post<CapabilityI>(
+      `projects/${project_id}/capabilities`,
+      capabilityData,
+    );
+  },
+);
 
 /**
  * Fetches all capabilities from the server.
  * @param project_id - The ID of the project.
  * @returns A promise that resolves to an array of CapabilityI objects.
  */
-export const getCapabilitiesFn = createClientOnlyFn(async (project_id: string) => {
-  return await tanstackQueryFetcher<CapabilityI[]>(`projects/${project_id}/capabilities`);
-});
+export const getCapabilitiesFn = createClientOnlyFn(
+  async (project_id: string) => {
+    return await tanstackQueryFetcher<CapabilityI[]>(
+      `projects/${project_id}/capabilities`,
+    );
+  },
+);
 
 /**
  * Query options for fetching capabilities.

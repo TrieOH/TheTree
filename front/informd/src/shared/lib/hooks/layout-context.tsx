@@ -1,17 +1,12 @@
-import {
-  createContext,
-  useContext,
-  useLayoutEffect,
-} from 'react'
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect } from "react";
 
 interface LayoutContextValue {
   /** Replace the header slot content. Pass null to clear. */
-  setHeader: (node: ReactNode) => void
+  setHeader: (node: ReactNode) => void;
 }
 
-export const LayoutContext =
-  createContext<LayoutContextValue | null>(null)
+export const LayoutContext = createContext<LayoutContextValue | null>(null);
 
 /**
  * Call inside any child page to inject content into the layout header slot.
@@ -28,16 +23,16 @@ export const LayoutContext =
  * }
  */
 export function useLayoutHeader(node: ReactNode) {
-  const ctx = useContext(LayoutContext)
-  if (!ctx) throw new Error('useLayoutHeader must be used inside Layout')
+  const ctx = useContext(LayoutContext);
+  if (!ctx) throw new Error("useLayoutHeader must be used inside Layout");
 
-  const { setHeader } = ctx
+  const { setHeader } = ctx;
 
   useLayoutEffect(() => {
-    setHeader(node)
+    setHeader(node);
 
     return () => {
-      setHeader(null)
-    }
-  }, [node, setHeader])
+      setHeader(null);
+    };
+  }, [node, setHeader]);
 }

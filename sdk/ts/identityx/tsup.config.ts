@@ -27,7 +27,7 @@ export default defineConfig((options) => {
     {
       ...commonOptions,
       format: ["esm"],
-      dts: true,
+      dts: false,
       outDir: "dist/esm",
     },
     // CJS build

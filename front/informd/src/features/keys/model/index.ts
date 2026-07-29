@@ -1,7 +1,8 @@
 import z from "zod";
 
 export const apiKeyCreateSchema = z.object({
-  name: z.string({ error: "Name is required" })
+  name: z
+    .string({ error: "Name is required" })
     .min(3, "Name must be at least 3 characters long"),
 });
 

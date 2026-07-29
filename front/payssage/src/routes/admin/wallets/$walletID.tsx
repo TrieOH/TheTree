@@ -1,63 +1,63 @@
-import { useMemo } from 'react'
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Link2, Receipt, Store, WalletCards, Webhook } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { useLayoutHeader } from '@trieoh/ui-base'
-import { walletByIdQueryOptions } from '#/features/wallets/api'
-import { cn } from '#/shared/lib/utils'
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { useLayoutHeader } from "@trieoh/ui-base";
+import { Link2, Receipt, Store, WalletCards, Webhook } from "lucide-react";
+import { useMemo } from "react";
+import { walletByIdQueryOptions } from "#/features/wallets/api";
+import { cn } from "#/shared/lib/utils";
 
-export const Route = createFileRoute('/admin/wallets/$walletID')({
+export const Route = createFileRoute("/admin/wallets/$walletID")({
   component: WalletLayout,
-})
+});
 
 function WalletLayout() {
-  const { walletID } = Route.useParams()
-  const { data: wallet } = useQuery(walletByIdQueryOptions(walletID))
+  const { walletID } = Route.useParams();
+  const { data: wallet } = useQuery(walletByIdQueryOptions(walletID));
   const header = useMemo(
     () => (
       <div>
-        <h1 className="text-lg font-semibold">{wallet?.name ?? 'Wallet'}</h1>
+        <h1 className="text-lg font-semibold">{wallet?.name ?? "Wallet"}</h1>
         <p className="text-sm text-muted-foreground">
           Manage this wallet's collector and seller accounts.
         </p>
       </div>
     ),
     [wallet?.name],
-  )
-  useLayoutHeader(header)
+  );
+  useLayoutHeader(header);
 
   const tabs = [
     {
-      label: 'Collector',
-      to: '/admin/wallets/$walletID',
+      label: "Collector",
+      to: "/admin/wallets/$walletID",
       icon: Link2,
       exact: true,
     },
     {
-      label: 'Transactions',
-      to: '/admin/wallets/$walletID/transactions',
+      label: "Transactions",
+      to: "/admin/wallets/$walletID/transactions",
       icon: Receipt,
       exact: true,
     },
     {
-      label: 'Sellers',
-      to: '/admin/wallets/$walletID/sellers',
+      label: "Sellers",
+      to: "/admin/wallets/$walletID/sellers",
       icon: WalletCards,
       exact: true,
     },
     {
-      label: 'Connect seller',
-      to: '/admin/wallets/$walletID/connect-seller',
+      label: "Connect seller",
+      to: "/admin/wallets/$walletID/connect-seller",
       icon: Store,
       exact: true,
     },
     {
-      label: 'Webhooks',
-      to: '/admin/wallets/$walletID/webhooks',
+      label: "Webhooks",
+      to: "/admin/wallets/$walletID/webhooks",
       icon: Webhook,
       exact: true,
     },
-  ] as const
+  ] as const;
 
   return (
     <div className="space-y-6">
@@ -75,17 +75,17 @@ function WalletLayout() {
                 <>
                   <tab.icon
                     className={cn(
-                      'size-3.5',
+                      "size-3.5",
                       isActive
-                        ? 'text-primary'
-                        : 'text-muted-foreground group-hover:text-foreground',
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground",
                     )}
                   />
                   <span
                     className={
                       isActive
-                        ? 'text-foreground'
-                        : 'text-muted-foreground group-hover:text-foreground'
+                        ? "text-foreground"
+                        : "text-muted-foreground group-hover:text-foreground"
                     }
                   >
                     {tab.label}
@@ -101,5 +101,5 @@ function WalletLayout() {
       </div>
       <Outlet />
     </div>
-  )
+  );
 }

@@ -1,51 +1,48 @@
-import { useState, useCallback, type RefObject } from 'react'
-import { AlertCircle, HelpCircle } from 'lucide-react'
-import { Input } from '@/shared/ui/shadcn/input'
-import { Badge } from '@/shared/ui/shadcn/badge'
-import { cn } from '@/shared/lib/utils'
-import {
-  DEFAULT_VARIABLES,
-  validateVariables,
-} from './types'
+import { AlertCircle, HelpCircle } from "lucide-react";
+import { type RefObject, useCallback, useState } from "react";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { Input } from "@/shared/ui/shadcn/input";
+import { DEFAULT_VARIABLES, validateVariables } from "./types";
 
 interface VariableInputProps {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  label?: string
-  id?: string
-  multiline?: boolean
-  textareaRef?: RefObject<HTMLTextAreaElement | null>
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  label?: string;
+  id?: string;
+  multiline?: boolean;
+  textareaRef?: RefObject<HTMLTextAreaElement | null>;
 }
 
 export default function VariableInput({
   value,
   onChange,
-  placeholder = 'Use {{variavel}} para variáveis',
+  placeholder = "Use {{variavel}} para variáveis",
   label,
   id,
   multiline = false,
   textareaRef,
 }: VariableInputProps) {
-  const [showHelp, setShowHelp] = useState(false)
-  const { invalid, valid } = validateVariables(value, DEFAULT_VARIABLES)
+  const [showHelp, setShowHelp] = useState(false);
+  const { invalid, valid } = validateVariables(value, DEFAULT_VARIABLES);
 
   const insertVariable = useCallback(
     (key: string) => {
-      const textareaValue = value
-      const cursorPos = textareaRef?.current?.selectionStart ?? textareaValue.length
-      const endPos = textareaRef?.current?.selectionEnd ?? cursorPos
-      const before = textareaValue.slice(0, cursorPos)
-      const after = textareaValue.slice(endPos)
-      onChange(`${before}{{${key}}}${after}`)
+      const textareaValue = value;
+      const cursorPos =
+        textareaRef?.current?.selectionStart ?? textareaValue.length;
+      const endPos = textareaRef?.current?.selectionEnd ?? cursorPos;
+      const before = textareaValue.slice(0, cursorPos);
+      const after = textareaValue.slice(endPos);
+      onChange(`${before}{{${key}}}${after}`);
     },
-    [value, onChange, textareaRef]
-  )
+    [value, onChange, textareaRef],
+  );
 
   const inputClassName = cn(
-    invalid.length > 0 &&
-    'border-destructive focus-visible:ring-destructive'
-  )
+    invalid.length > 0 && "border-destructive focus-visible:ring-destructive",
+  );
 
   return (
     <div className="space-y-2">
@@ -63,7 +60,7 @@ export default function VariableInput({
             className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <HelpCircle className="size-3" />
-            {showHelp ? 'Fechar ajuda' : 'Variáveis disponíveis'}
+            {showHelp ? "Fechar ajuda" : "Variáveis disponíveis"}
           </button>
         </div>
       )}
@@ -76,8 +73,8 @@ export default function VariableInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={cn(
-            'flex min-h-20 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-            inputClassName
+            "flex min-h-20 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+            inputClassName,
           )}
           rows={3}
         />
@@ -97,12 +94,16 @@ export default function VariableInput({
           <div>
             <span className="font-medium">Variáveis inválidas: </span>
             {invalid.map((v) => (
-              <code key={v} className="mx-0.5 rounded bg-destructive/10 px-1 font-mono">
+              <code
+                key={v}
+                className="mx-0.5 rounded bg-destructive/10 px-1 font-mono"
+              >
                 {`{{${v}}}`}
               </code>
             ))}
             <span className="block mt-1 text-muted-foreground">
-              Use apenas: {DEFAULT_VARIABLES.map((v) => `{{${v.key}}}`).join(', ')}
+              Use apenas:{" "}
+              {DEFAULT_VARIABLES.map((v) => `{{${v.key}}}`).join(", ")}
             </span>
           </div>
         </div>
@@ -111,7 +112,7 @@ export default function VariableInput({
       {valid.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {valid.map((v) => {
-            const def = DEFAULT_VARIABLES.find((d) => d.key === v)
+            const def = DEFAULT_VARIABLES.find((d) => d.key === v);
             return (
               <Badge key={v} variant="secondary" className="text-xs">
                 {`{{${v}}}`}
@@ -121,7 +122,7 @@ export default function VariableInput({
                   </span>
                 )}
               </Badge>
-            )
+            );
           })}
         </div>
       )}
@@ -129,7 +130,7 @@ export default function VariableInput({
       {showHelp && (
         <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
           <p className="text-xs font-medium text-muted-foreground">
-            Variáveis disponíveis para usar com {'{{}}'}:
+            Variáveis disponíveis para usar com {"{{}}"}:
           </p>
           <div className="grid gap-1.5">
             {DEFAULT_VARIABLES.map((v) => (
@@ -141,9 +142,7 @@ export default function VariableInput({
               >
                 <div>
                   <code className="font-mono font-medium">{`{{${v.key}}}`}</code>
-                  <span className="ml-2 text-muted-foreground">
-                    {v.label}
-                  </span>
+                  <span className="ml-2 text-muted-foreground">{v.label}</span>
                 </div>
                 <span className="text-muted-foreground text-[10px]">
                   {v.description}
@@ -157,5 +156,5 @@ export default function VariableInput({
         </div>
       )}
     </div>
-  )
+  );
 }

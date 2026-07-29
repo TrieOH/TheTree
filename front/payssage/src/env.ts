@@ -1,12 +1,28 @@
-import { createEnv } from '@t3-oss/env-core'
-import { z } from 'zod'
+import { createEnv } from "@t3-oss/env-core";
+import { z } from "zod";
 
 const supportedProvidersSchema = z
   .string()
-  .default('mercadopago')
-  .transform((value) => value.split(',').map((provider) => provider.trim()).filter(Boolean))
-  .pipe(z.array(z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/, 'Provider must be a snake_case slug')).min(1))
-  .transform((providers) => [...new Set(providers)])
+  .default("mercadopago")
+  .transform((value) =>
+    value
+      .split(",")
+      .map((provider) => provider.trim())
+      .filter(Boolean),
+  )
+  .pipe(
+    z
+      .array(
+        z
+          .string()
+          .regex(
+            /^[a-z0-9]+(?:_[a-z0-9]+)*$/,
+            "Provider must be a snake_case slug",
+          ),
+      )
+      .min(1),
+  )
+  .transform((providers) => [...new Set(providers)]);
 
 export const env = createEnv({
   server: {
@@ -18,7 +34,7 @@ export const env = createEnv({
    * The prefix that client-side variables must have. This is enforced both at
    * a type-level and at runtime.
    */
-  clientPrefix: 'VITE_',
+  clientPrefix: "VITE_",
 
   client: {
     VITE_POSTHOG_KEY: z.string(),
@@ -28,7 +44,7 @@ export const env = createEnv({
     VITE_API_URL: z.url(),
     VITE_AUTH_API_URL: z.url(),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
-    VITE_INTENT_TEST_MODE: z.string().default('false'),
+    VITE_INTENT_TEST_MODE: z.string().default("false"),
 
     VITE_SUPPORTED_PROVIDERS: supportedProvidersSchema,
   },
@@ -57,4 +73,4 @@ export const env = createEnv({
    * explicitly specify this option as true.
    */
   emptyStringAsUndefined: true,
-})
+});

@@ -1,24 +1,24 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, useWatch } from 'react-hook-form'
-import { toast } from 'sonner'
-import { allWalletsQueryOptions } from '#/features/wallets/api'
-import { sellersQueryOptions } from '#/features/sellers/api'
-import { collectorsQueryOptions } from '#/features/collectors/api'
-import { env } from '#/env'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Input } from '#/shared/ui/shadcn/input'
-import { Label } from '#/shared/ui/shadcn/label'
-import { cn } from '#/shared/lib/utils'
-import { createTestModeWalletIntentFn } from '../api'
-import { createTestModeIntentSchema, intentStatuses } from '../model'
-import type { CreateTestModeIntentFormValues } from '../model'
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
+import { env } from "#/env";
+import { collectorsQueryOptions } from "#/features/collectors/api";
+import { sellersQueryOptions } from "#/features/sellers/api";
+import { allWalletsQueryOptions } from "#/features/wallets/api";
+import { cn } from "#/shared/lib/utils";
+import { Button } from "#/shared/ui/shadcn/button";
+import { Input } from "#/shared/ui/shadcn/input";
+import { Label } from "#/shared/ui/shadcn/label";
+import { createTestModeWalletIntentFn } from "../api";
+import type { CreateTestModeIntentFormValues } from "../model";
+import { createTestModeIntentSchema, intentStatuses } from "../model";
 
 const controlClassName =
-  'h-9 w-full rounded-none border border-border bg-background px-2.5 text-sm outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-50'
+  "h-9 w-full rounded-none border border-border bg-background px-2.5 text-sm outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-50";
 
 export function CreateTestModeIntentForm() {
-  const { data: wallets = [] } = useQuery(allWalletsQueryOptions())
+  const { data: wallets = [] } = useQuery(allWalletsQueryOptions());
   const {
     control,
     register,
@@ -28,46 +28,46 @@ export function CreateTestModeIntentForm() {
   } = useForm<CreateTestModeIntentFormValues>({
     resolver: zodResolver(createTestModeIntentSchema),
     defaultValues: {
-      wallet_id: '',
-      seller_id: '',
-      collector_id: '',
+      wallet_id: "",
+      seller_id: "",
+      collector_id: "",
       amount_cents: 1000,
-      currency: 'BRL',
+      currency: "BRL",
       sandbox: true,
-      provider: env.VITE_SUPPORTED_PROVIDERS[0] ?? 'mercadopago',
-      status: 'succeeded',
+      provider: env.VITE_SUPPORTED_PROVIDERS[0] ?? "mercadopago",
+      status: "succeeded",
       provider_data: JSON.stringify(
         {
           installments: 1,
-          token: 'replace-me',
-          payment_method_id: 'replace-me',
+          token: "replace-me",
+          payment_method_id: "replace-me",
           payer: {
-            email: 'replace-me@example.com',
-            identification_type: 'CPF',
-            identification_number: 'replace-me',
+            email: "replace-me@example.com",
+            identification_type: "CPF",
+            identification_number: "replace-me",
           },
         },
         null,
         2,
       ),
-      metadata: '{}',
+      metadata: "{}",
     },
-  })
-  const walletId = useWatch({ control, name: 'wallet_id' })
-  const selectedWallet = wallets.find((wallet) => wallet.id === walletId)
-  const sellersOptions = sellersQueryOptions(walletId)
+  });
+  const walletId = useWatch({ control, name: "wallet_id" });
+  const selectedWallet = wallets.find((wallet) => wallet.id === walletId);
+  const sellersOptions = sellersQueryOptions(walletId);
   const { data: sellers = [] } = useQuery({
     ...sellersOptions,
     enabled: Boolean(walletId),
-  })
+  });
   const { data: collectors = [] } = useQuery({
     ...collectorsQueryOptions(selectedWallet?.organization_id),
     enabled: Boolean(walletId),
-  })
-  const activeSellers = sellers.filter((seller) => !seller.revoked_at)
+  });
+  const activeSellers = sellers.filter((seller) => !seller.revoked_at);
   const activeCollectors = collectors.filter(
     (collector) => !collector.revoked_at,
-  )
+  );
 
   const { mutate, isPending } = useMutation({
     mutationFn: (values: CreateTestModeIntentFormValues) =>
@@ -88,17 +88,17 @@ export function CreateTestModeIntentForm() {
       }),
     onSuccess: (response) => {
       if (!response.success)
-        return toast.error(response.message || 'Failed to create test intent')
-      toast.success('Test intent created')
-      reset()
+        return toast.error(response.message || "Failed to create test intent");
+      toast.success("Test intent created");
+      reset();
     },
-    onError: () => toast.error('Failed to create test intent'),
-  })
+    onError: () => toast.error("Failed to create test intent"),
+  });
 
   const error = (name: keyof CreateTestModeIntentFormValues) =>
     errors[name] ? (
       <p className="text-xs text-destructive">{errors[name].message}</p>
-    ) : null
+    ) : null;
 
   return (
     <section className="rounded-sm border bg-card p-4">
@@ -111,7 +111,7 @@ export function CreateTestModeIntentForm() {
             <select
               id="wallet_id"
               className={controlClassName}
-              {...register('wallet_id')}
+              {...register("wallet_id")}
             >
               <option value="">Select a wallet</option>
               {wallets.map((wallet) => (
@@ -120,7 +120,7 @@ export function CreateTestModeIntentForm() {
                 </option>
               ))}
             </select>
-            {error('wallet_id')}
+            {error("wallet_id")}
           </Field>
 
           <Field label="Seller" name="seller_id">
@@ -128,10 +128,10 @@ export function CreateTestModeIntentForm() {
               id="seller_id"
               disabled={!walletId}
               className={controlClassName}
-              {...register('seller_id')}
+              {...register("seller_id")}
             >
               <option value="">
-                {walletId ? 'Select a seller' : 'Select a wallet first'}
+                {walletId ? "Select a seller" : "Select a wallet first"}
               </option>
               {activeSellers.map((seller) => (
                 <option key={seller.id} value={seller.id}>
@@ -139,7 +139,7 @@ export function CreateTestModeIntentForm() {
                 </option>
               ))}
             </select>
-            {error('seller_id')}
+            {error("seller_id")}
           </Field>
 
           <Field label="Collector (optional)" name="collector_id">
@@ -147,7 +147,7 @@ export function CreateTestModeIntentForm() {
               id="collector_id"
               disabled={!walletId}
               className={controlClassName}
-              {...register('collector_id')}
+              {...register("collector_id")}
             >
               <option value="">No collector</option>
               {activeCollectors.map((collector) => (
@@ -156,7 +156,7 @@ export function CreateTestModeIntentForm() {
                 </option>
               ))}
             </select>
-            {error('collector_id')}
+            {error("collector_id")}
           </Field>
 
           <Field label="Amount (cents)" name="amount_cents">
@@ -166,25 +166,25 @@ export function CreateTestModeIntentForm() {
               min={1}
               step={1}
               className={controlClassName}
-              {...register('amount_cents', { valueAsNumber: true })}
+              {...register("amount_cents", { valueAsNumber: true })}
             />
-            {error('amount_cents')}
+            {error("amount_cents")}
           </Field>
 
           <Field label="Currency" name="currency">
             <Input
               id="currency"
               className={controlClassName}
-              {...register('currency')}
+              {...register("currency")}
             />
-            {error('currency')}
+            {error("currency")}
           </Field>
 
           <Field label="Provider" name="provider">
             <select
               id="provider"
               className={controlClassName}
-              {...register('provider')}
+              {...register("provider")}
             >
               {env.VITE_SUPPORTED_PROVIDERS.map((provider) => (
                 <option key={provider} value={provider}>
@@ -192,14 +192,14 @@ export function CreateTestModeIntentForm() {
                 </option>
               ))}
             </select>
-            {error('provider')}
+            {error("provider")}
           </Field>
 
           <Field label="Status" name="status">
             <select
               id="status"
               className={controlClassName}
-              {...register('status')}
+              {...register("status")}
             >
               {intentStatuses.map((status) => (
                 <option key={status} value={status}>
@@ -207,14 +207,14 @@ export function CreateTestModeIntentForm() {
                 </option>
               ))}
             </select>
-            {error('status')}
+            {error("status")}
           </Field>
 
           <label className="flex items-center gap-3 self-end pb-2 text-sm font-medium">
             <input
               type="checkbox"
               className="size-4"
-              {...register('sandbox')}
+              {...register("sandbox")}
             />
             Sandbox intent
           </label>
@@ -225,13 +225,13 @@ export function CreateTestModeIntentForm() {
             id="provider_data"
             label="Provider data (JSON)"
             error={errors.provider_data?.message}
-            register={register('provider_data')}
+            register={register("provider_data")}
           />
           <JsonField
             id="metadata"
             label="Metadata (JSON)"
             error={errors.metadata?.message}
-            register={register('metadata')}
+            register={register("metadata")}
           />
         </div>
 
@@ -241,12 +241,12 @@ export function CreateTestModeIntentForm() {
             disabled={isPending}
             className="rounded-none font-black uppercase tracking-widest"
           >
-            {isPending ? 'Creating...' : 'Create test intent'}
+            {isPending ? "Creating..." : "Create test intent"}
           </Button>
         </div>
       </form>
     </section>
-  )
+  );
 }
 
 function Field({
@@ -254,9 +254,9 @@ function Field({
   name,
   children,
 }: {
-  label: string
-  name: string
-  children: React.ReactNode
+  label: string;
+  name: string;
+  children: React.ReactNode;
 }) {
   return (
     <div className="space-y-2">
@@ -268,7 +268,7 @@ function Field({
       </Label>
       {children}
     </div>
-  )
+  );
 }
 
 function JsonField({
@@ -277,10 +277,10 @@ function JsonField({
   error,
   register,
 }: {
-  id: string
-  label: string
-  error?: string
-  register: React.TextareaHTMLAttributes<HTMLTextAreaElement>
+  id: string;
+  label: string;
+  error?: string;
+  register: React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 }) {
   return (
     <Field label={label} name={id}>
@@ -290,12 +290,12 @@ function JsonField({
         spellCheck={false}
         className={cn(
           controlClassName,
-          'h-auto resize-y p-3 font-mono',
-          error && 'border-destructive',
+          "h-auto resize-y p-3 font-mono",
+          error && "border-destructive",
         )}
         {...register}
       />
       {error && <p className="text-xs text-destructive">{error}</p>}
     </Field>
-  )
+  );
 }

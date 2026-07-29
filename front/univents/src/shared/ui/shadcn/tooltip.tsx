@@ -1,5 +1,5 @@
-import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
-import { cn } from "@/shared/lib/utils"
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
+import { cn } from "@/shared/lib/utils";
 
 function TooltipProvider({
   delay = 0,
@@ -11,15 +11,15 @@ function TooltipProvider({
       delay={delay}
       {...props}
     />
-  )
+  );
 }
 
 function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
 }
 
 function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
 function TooltipContent({
@@ -74,7 +74,7 @@ function TooltipContent({
             "data-closed:animate-out",
             "data-closed:fade-out-0",
             "data-closed:zoom-out-95",
-            className
+            className,
           )}
           {...props}
         >
@@ -88,13 +88,13 @@ function TooltipContent({
               "data-[side=bottom]:top-1",
               "data-[side=left]:-right-1",
               "data-[side=right]:-left-1",
-              "data-[side=top]:-bottom-1"
+              "data-[side=top]:-bottom-1",
             )}
           />
         </TooltipPrimitive.Popup>
       </TooltipPrimitive.Positioner>
     </TooltipPrimitive.Portal>
-  )
+  );
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

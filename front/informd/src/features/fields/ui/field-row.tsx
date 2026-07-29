@@ -1,7 +1,22 @@
-import { GripVertical, Settings, Trash2, Text, Mail, Hash, ToggleLeft, Calendar, Clock, CalendarClock, ChevronDown, File, Phone, Link } from "lucide-react";
-import type { FieldI } from "../model";
+import {
+  Calendar,
+  CalendarClock,
+  ChevronDown,
+  Clock,
+  File,
+  GripVertical,
+  Hash,
+  Link,
+  Mail,
+  Phone,
+  Settings,
+  Text,
+  ToggleLeft,
+  Trash2,
+} from "lucide-react";
 import { cn } from "#/shared/lib/utils";
 import { Button } from "#/shared/ui/shadcn/button";
+import type { FieldI } from "../model";
 
 interface FieldRowProps {
   field: FieldI;
@@ -11,7 +26,13 @@ interface FieldRowProps {
   dragHandleProps?: Record<string, unknown>;
 }
 
-export default function FieldRow({ field, onEdit, onDelete, dragHandleRef, dragHandleProps }: FieldRowProps) {
+export default function FieldRow({
+  field,
+  onEdit,
+  onDelete,
+  dragHandleRef,
+  dragHandleProps,
+}: FieldRowProps) {
   return (
     <div className="flex items-center gap-2 px-3.5 py-2.5 hover:bg-muted/20 transition-colors duration-100 group">
       <button
@@ -81,15 +102,26 @@ function TypeIcon({ type }: { type: string }) {
   return (
     <span
       title={label}
-      aria-label={label}
-      className={cn("shrink-0 inline-flex", TYPE_COLOR[type] ?? "text-muted-foreground/30")}
+      className={cn(
+        "shrink-0 inline-flex",
+        TYPE_COLOR[type] ?? "text-muted-foreground/30",
+      )}
     >
       <Icon size={13} strokeWidth={2} />
     </span>
   );
 }
 
-const TYPE_ICON: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number; title?: string; "aria-label"?: string; className?: string }>> = {
+const TYPE_ICON: Record<
+  string,
+  React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+    title?: string;
+    "aria-label"?: string;
+    className?: string;
+  }>
+> = {
   string: Text,
   email: Mail,
   int: Hash,

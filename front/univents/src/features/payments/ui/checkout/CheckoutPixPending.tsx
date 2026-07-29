@@ -1,27 +1,26 @@
-import { Button } from "@/shared/ui/shadcn/button"
+import { Button } from "@/shared/ui/shadcn/button";
 
 interface CheckoutPixPendingProps {
-  qrCode: string
-  qrCodeBase64: string
-  totalCents: number
+  qrCode: string;
+  qrCodeBase64: string;
+  totalCents: number;
   onCancel: () => void;
 }
 
 function formatCurrency(cents: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
-  }).format(cents / 100)
+    currency: "BRL",
+  }).format(cents / 100);
 }
 
 export default function CheckoutPixPending({
   qrCode,
   qrCodeBase64,
   totalCents,
-  onCancel
+  onCancel,
 }: CheckoutPixPendingProps) {
-
-  const handleCopy = () => navigator.clipboard.writeText(qrCode)
+  const handleCopy = () => navigator.clipboard.writeText(qrCode);
 
   return (
     <main className="w-full min-w-75 max-w-sm mx-auto px-3 py-8 flex flex-col items-center gap-6 text-center">
@@ -41,15 +40,24 @@ export default function CheckoutPixPending({
         />
       </div>
 
-      <p className="text-xl font-semibold text-foreground">{formatCurrency(totalCents)}</p>
+      <p className="text-xl font-semibold text-foreground">
+        {formatCurrency(totalCents)}
+      </p>
 
       {/* Copy code */}
       <div className="w-full">
-        <p className="text-xs text-muted-foreground mb-1">Código Pix copia e cola</p>
+        <p className="text-xs text-muted-foreground mb-1">
+          Código Pix copia e cola
+        </p>
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-          <code className="flex-1 text-xs truncate text-foreground">{qrCode}</code>
+          <code className="flex-1 text-xs truncate text-foreground">
+            {qrCode}
+          </code>
           <button
-            onClick={() => { void handleCopy() }}
+            type="button"
+            onClick={() => {
+              void handleCopy();
+            }}
             className="text-xs text-primary hover:underline shrink-0"
           >
             Copiar
@@ -70,5 +78,5 @@ export default function CheckoutPixPending({
         Cancelar e voltar
       </Button>
     </main>
-  )
+  );
 }

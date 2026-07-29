@@ -1,8 +1,12 @@
-import type { AnyFormApi, FormAsyncValidateOrFn, FormValidateOrFn } from "@tanstack/react-form";
+import type {
+  AnyFormApi,
+  FormAsyncValidateOrFn,
+  FormValidateOrFn,
+} from "@tanstack/react-form";
 
 export interface RuleStatus {
-  message: string
-  passed: boolean
+  message: string;
+  passed: boolean;
 }
 
 export interface CrudFormConfig<TFormData> {
@@ -15,12 +19,20 @@ export interface CrudFormConfig<TFormData> {
     onBlurAsync?: FormAsyncValidateOrFn<TFormData>;
     onSubmitAsync?: FormAsyncValidateOrFn<TFormData>;
   };
-  onSubmit: (props: { value: TFormData, formApi: AnyFormApi }) => Promise<void> | void;
+  onSubmit: (props: {
+    value: TFormData;
+    formApi: AnyFormApi;
+  }) => Promise<void> | void;
 }
 
-import type React from 'react';
+import type React from "react";
 
-export type FieldType = "text" | "select" | "option-picker" | "multi-option-picker" | "date";
+export type FieldType =
+  | "text"
+  | "select"
+  | "option-picker"
+  | "multi-option-picker"
+  | "date";
 
 export interface FieldOption {
   label: string;
@@ -35,6 +47,6 @@ export interface FieldConfig {
   type?: FieldType;
   autoComplete?: string;
   required?: boolean;
-  getRulesStatus?: (value: unknown) => RuleStatus[]
+  getRulesStatus?: (value: unknown) => RuleStatus[];
   options?: FieldOption[];
 }

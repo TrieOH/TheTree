@@ -1,5 +1,5 @@
-import { useFieldContext } from "@/shared/lib/forms";
 import { BasicInputField } from "@trieoh/identityx-sdk-ts/react";
+import { useFieldContext } from "@/shared/lib/forms";
 import type { RuleStatus } from "./types";
 
 interface PropsI {
@@ -7,11 +7,18 @@ interface PropsI {
   placeholder: string;
   autoComplete?: string;
   required?: boolean;
-  getRulesStatus?: (value: unknown) => RuleStatus[]
+  getRulesStatus?: (value: unknown) => RuleStatus[];
   submitted?: boolean;
 }
 
-export default function TextField({ label, placeholder, autoComplete, required, getRulesStatus, submitted }: PropsI) {
+export default function TextField({
+  label,
+  placeholder,
+  autoComplete,
+  required,
+  getRulesStatus,
+  submitted,
+}: PropsI) {
   const field = useFieldContext<string>();
   return (
     <BasicInputField
@@ -25,5 +32,5 @@ export default function TextField({ label, placeholder, autoComplete, required, 
       submitted={submitted}
       rulesStatus={getRulesStatus ? getRulesStatus(field.state.value) : []}
     />
-  )
+  );
 }

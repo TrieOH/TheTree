@@ -1,32 +1,35 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
-} from '@/shared/ui/shadcn/accordion'
+  AccordionTrigger,
+} from "@/shared/ui/shadcn/accordion";
 
 interface FAQItem {
-  question: string
-  answer: string
+  question: string;
+  answer: string;
 }
 
 interface FAQSectionProps {
-  items: FAQItem[]
+  items: FAQItem[];
 }
 
 export function FAQSection({ items }: FAQSectionProps) {
-  const [openValues, setOpenValues] = useState<string[]>([])
+  const [openValues, setOpenValues] = useState<string[]>([]);
 
   return (
     <Accordion
       value={openValues}
-      onValueChange={(value) => { setOpenValues(Array.isArray(value) ? value : [value]) }}
+      onValueChange={(value) => {
+        setOpenValues(Array.isArray(value) ? value : [value]);
+      }}
       className="space-y-0"
     >
-      {items.map((item, idx) => (
+      {items.map((item) => (
         <AccordionItem
-          key={idx} value={String(idx)}
+          key={item.question}
+          value={String(item.question)}
           className="border-b border-border last:border-b-0"
         >
           <AccordionTrigger className="hover:no-underline">
@@ -39,5 +42,5 @@ export function FAQSection({ items }: FAQSectionProps) {
         </AccordionItem>
       ))}
     </Accordion>
-  )
+  );
 }

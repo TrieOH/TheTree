@@ -10,14 +10,11 @@ export interface StorageUploadResponse {
   publicUrl: string;
 }
 
-export interface StorageModerateRequest {
-  key: string;
-}
-
-export interface StorageModerateResponse {
-  approved: boolean;
-}
-
 export interface StorageErrorResponse {
   error: string;
+}
+
+export interface StoragePreprocessResponse {
+  approved: boolean;
+  publicUrl?: string;
 }

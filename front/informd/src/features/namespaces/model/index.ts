@@ -1,19 +1,20 @@
-import {
-  NamespaceMemberRoleAdmin,
-  NamespaceMemberRoleEditor,
-  NamespaceMemberRoleOwner,
-  NamespaceMemberRoleViewer
-} from "@trieoh/informd-models";
 import type {
   AddNamespaceMemberRequest,
   CreateNamespaceRequest,
   Namespace,
-  NamespaceMember
+  NamespaceMember,
+} from "@trieoh/informd-models";
+import {
+  NamespaceMemberRoleAdmin,
+  NamespaceMemberRoleEditor,
+  NamespaceMemberRoleOwner,
+  NamespaceMemberRoleViewer,
 } from "@trieoh/informd-models";
 import z from "zod";
 
 export const namespaceCreateSchema = z.object({
-  name: z.string({ error: "Name is required" })
+  name: z
+    .string({ error: "Name is required" })
     .min(3, "Name must be at least 3 characters long"),
 }) satisfies z.ZodType<CreateNamespaceRequest>;
 
@@ -31,17 +32,19 @@ export type NamespaceMemberRoleI =
 
 export const memberAddToNamespaceSchema = z.object({
   user_id: z.string({ error: "User ID is required" }),
-  role: z.enum([
-    NamespaceMemberRoleViewer,
-    NamespaceMemberRoleEditor,
-    NamespaceMemberRoleAdmin,
-    NamespaceMemberRoleOwner
-  ], { error: "Invalid role" }),
+  role: z.enum(
+    [
+      NamespaceMemberRoleViewer,
+      NamespaceMemberRoleEditor,
+      NamespaceMemberRoleAdmin,
+      NamespaceMemberRoleOwner,
+    ],
+    { error: "Invalid role" },
+  ),
 }) satisfies z.ZodType<AddNamespaceMemberRequest>;
 
 export type MemberAddToNamespaceI = AddNamespaceMemberRequest;
 
-export interface NamespaceMemberI
-  extends Omit<NamespaceMember, "role"> {
+export interface NamespaceMemberI extends Omit<NamespaceMember, "role"> {
   role: NamespaceMemberRoleI;
 }

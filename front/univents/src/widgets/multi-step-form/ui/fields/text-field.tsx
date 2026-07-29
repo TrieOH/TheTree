@@ -1,8 +1,8 @@
 import type { FieldValues } from "react-hook-form";
-import type { FieldConfig, FieldFormApi } from "../../model/types";
-import { getFieldError } from "../../utils/get-field-error";
 import { Input } from "@/shared/ui/shadcn/input";
 import { Label } from "@/shared/ui/shadcn/label";
+import type { FieldConfig, FieldFormApi } from "../../model/types";
+import { getFieldError } from "../../utils/get-field-error";
 
 export interface TextFieldRendererProps<TFieldValues extends FieldValues> {
   field: FieldConfig<TFieldValues>;
@@ -25,7 +25,9 @@ export function TextFieldRenderer<TFieldValues extends FieldValues>({
       >
         {field.label}
         {field.optional ? (
-          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">
+            (opcional)
+          </span>
         ) : null}
       </Label>
       <Input
@@ -34,10 +36,16 @@ export function TextFieldRenderer<TFieldValues extends FieldValues>({
         placeholder={field.placeholder}
         disabled={field.disabled}
         aria-invalid={Boolean(error)}
-        className={error ? "border-destructive focus-visible:ring-destructive" : undefined}
+        className={
+          error
+            ? "border-destructive focus-visible:ring-destructive"
+            : undefined
+        }
         {...form.register(field.name)}
       />
-      {field.description ? <p className="text-xs text-muted-foreground">{field.description}</p> : null}
+      {field.description ? (
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      ) : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

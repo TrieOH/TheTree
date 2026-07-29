@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import type { ReactNode, KeyboardEvent } from "react";
 import {
   Search,
@@ -146,7 +146,12 @@ interface ItemsWrapperProps {
   children: ReactNode;
 }
 
-function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps) {
+function ItemsWrapper({
+  layout,
+  gap,
+  minItemWidth,
+  children,
+}: ItemsWrapperProps) {
   const gapClass = GAP_CLASS[gap];
 
   if (layout === "custom") return <>{children}</>;
@@ -168,11 +173,39 @@ function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps
   );
 }
 
-function buildPageNumbers(current: number, total: number): (number | "…")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
-  if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
-  return [1, "…", current - 1, current, current + 1, "…", total];
+function buildPageNumbers(
+  current: number,
+  total: number,
+  maxVisible: number,
+): (number | "…")[] {
+  const visible = Math.max(3, Math.min(maxVisible, total));
+  if (total <= visible) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const middleCount = visible - 2;
+  let start = current - Math.floor(middleCount / 2);
+  let end = start + middleCount - 1;
+
+  if (start < 2) {
+    end += 2 - start;
+    start = 2;
+  }
+
+  if (end > total - 1) {
+    start -= end - (total - 1);
+    end = total - 1;
+  }
+
+  start = Math.max(2, start);
+  end = Math.min(total - 1, end);
+
+  const pages: (number | "…")[] = [1];
+
+  if (start > 2) pages.push("…");
+  for (let page = start; page <= end; page += 1) pages.push(page);
+  if (end < total - 1) pages.push("…");
+
+  pages.push(total);
+  return pages;
 }
 
 function defaultComparator<T>(a: T, b: T, key: keyof T): number {
@@ -185,7 +218,7 @@ function defaultComparator<T>(a: T, b: T, key: keyof T): number {
 function applySorting<T>(
   items: T[],
   sort: SortState<T>,
-  fields: SortField<T>[]
+  fields: SortField<T>[],
 ): T[] {
   const field = fields.find((f) => f.key === sort.field);
   const dir = sort.direction === "desc" ? -1 : 1;
@@ -225,7 +258,7 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
 
   const handleFieldKeyDown = (
     e: KeyboardEvent<HTMLDivElement>,
-    key: keyof T
+    key: keyof T,
   ) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -349,6 +382,29 @@ function PaginationButton({
   );
 }
 
+function useElementWidth<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const update = () => {
+      setWidth(element.getBoundingClientRect().width);
+    };
+
+    update();
+
+    const observer = new ResizeObserver(() => update());
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, width] as const;
+}
+
 export function PaginatedContainer<T>({
   items,
   pageSize = 8,
@@ -370,9 +426,10 @@ export function PaginatedContainer<T>({
 }: PaginatedContainerProps<T>) {
   const [page, setPage] = useState(defaultPage);
   const [internalSort, setInternalSort] = useState<SortState<T> | null>(
-    sortFields ? { field: sortFields[0].key, direction: "asc" } : null
+    sortFields ? { field: sortFields[0].key, direction: "asc" } : null,
   );
   const [sortOpen, setSortOpen] = useState(false);
+  const [paginationRef, paginationWidth] = useElementWidth<HTMLDivElement>();
 
   const activeSort = controlledSort ?? internalSort;
 
@@ -390,7 +447,20 @@ export function PaginatedContainer<T>({
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * pageSize;
   const slice = processedItems.slice(start, start + pageSize);
-  const pageNums = buildPageNumbers(safePage, totalPages);
+  const responsivePageCount = useMemo(() => {
+    if (paginationWidth < 300) return 3;
+    if (paginationWidth < 360) return 5;
+    if (paginationWidth < 520) return 5;
+    if (paginationWidth < 720) return 7;
+    return 9;
+  }, [paginationWidth]);
+  const responsivePageNums = buildPageNumbers(
+    safePage,
+    totalPages,
+    responsivePageCount,
+  );
+  const showBoundaryButtons = paginationWidth >= 320;
+  const compactPagination = paginationWidth < 320;
 
   const go = (p: number) => setPage(Math.max(1, Math.min(totalPages, p)));
 
@@ -399,8 +469,7 @@ export function PaginatedContainer<T>({
       ? sortFields.find((f) => f.key === activeSort.field)?.label
       : null;
 
-  const hasHeader =
-    onFilterChange !== undefined || sortFields || headerActions;
+  const hasHeader = onFilterChange !== undefined || sortFields || headerActions;
 
   return (
     <div
@@ -413,7 +482,7 @@ export function PaginatedContainer<T>({
       {hasHeader && (
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border px-4 py-3">
           {onFilterChange !== undefined && (
-            <div className="relative w-full sm:flex-1 sm:max-w-sm">
+            <div className="relative min-w-[220px] w-full sm:flex-1 sm:max-w-sm">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center">
                 <Search size={13} />
               </span>
@@ -427,7 +496,7 @@ export function PaginatedContainer<T>({
                 }}
                 placeholder={filterPlaceholder}
                 aria-label={filterPlaceholder}
-                className="h-9 w-full rounded-md border border-border bg-muted/50 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:bg-background"
+                className="h-9 min-w-[220px] w-full rounded-md border border-border bg-muted/50 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:bg-background"
               />
             </div>
           )}
@@ -479,11 +548,11 @@ export function PaginatedContainer<T>({
       {/* Content */}
       <div className="p-4">
         {slice.length === 0 ? (
-          emptyState ?? (
+          (emptyState ?? (
             <p className="py-10 text-center text-sm text-muted-foreground">
               No {itemLabel} found.
             </p>
-          )
+          ))
         ) : (
           <ItemsWrapper layout={layout} gap={gap} minItemWidth={minItemWidth}>
             {renderItems(slice)}
@@ -492,8 +561,11 @@ export function PaginatedContainer<T>({
       </div>
 
       {/* Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-border px-4 py-2.5">
-        <span className="text-xs text-muted-foreground">
+      <div
+        ref={paginationRef}
+        className="flex flex-col gap-2.5 border-t border-border px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <span className="min-w-0 text-xs text-muted-foreground">
           {processedItems.length === 0 ? (
             `0 ${itemLabel}`
           ) : (
@@ -511,14 +583,19 @@ export function PaginatedContainer<T>({
           )}
         </span>
 
-        <nav aria-label="Pagination" className="flex items-center gap-1">
-          <PaginationButton
-            onClick={() => go(1)}
-            disabled={safePage === 1}
-            title="First page"
-          >
-            <ChevronFirst size={14} />
-          </PaginationButton>
+        <nav
+          aria-label="Pagination"
+          className="flex max-w-full flex-nowrap items-center gap-0.5 overflow-hidden sm:justify-end"
+        >
+          {showBoundaryButtons && (
+            <PaginationButton
+              onClick={() => go(1)}
+              disabled={safePage === 1}
+              title="First page"
+            >
+              <ChevronFirst size={14} />
+            </PaginationButton>
+          )}
           <PaginationButton
             onClick={() => go(safePage - 1)}
             disabled={safePage === 1}
@@ -527,11 +604,15 @@ export function PaginatedContainer<T>({
             <ChevronLeft size={14} />
           </PaginationButton>
 
-          {pageNums.map((p, i) =>
+          {responsivePageNums.map((p, i) =>
             p === "…" ? (
               <span
                 key={`ellipsis-${i}`}
-                className="flex h-7 w-7 items-center justify-center text-xs text-muted-foreground"
+                className={
+                  compactPagination
+                    ? "flex h-7 w-4 items-center justify-center text-xs text-muted-foreground"
+                    : "flex h-7 w-6 items-center justify-center text-xs text-muted-foreground"
+                }
               >
                 …
               </span>
@@ -541,10 +622,11 @@ export function PaginatedContainer<T>({
                 onClick={() => go(p)}
                 active={p === safePage}
                 aria-current={p === safePage ? "page" : undefined}
+                title={`Page ${p}`}
               >
                 {p}
               </PaginationButton>
-            )
+            ),
           )}
 
           <PaginationButton
@@ -554,13 +636,15 @@ export function PaginatedContainer<T>({
           >
             <ChevronRight size={14} />
           </PaginationButton>
-          <PaginationButton
-            onClick={() => go(totalPages)}
-            disabled={safePage === totalPages}
-            title="Last page"
-          >
-            <ChevronLast size={14} />
-          </PaginationButton>
+          {showBoundaryButtons && (
+            <PaginationButton
+              onClick={() => go(totalPages)}
+              disabled={safePage === totalPages}
+              title="Last page"
+            >
+              <ChevronLast size={14} />
+            </PaginationButton>
+          )}
         </nav>
       </div>
     </div>

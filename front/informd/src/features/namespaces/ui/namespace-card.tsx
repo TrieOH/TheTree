@@ -1,15 +1,8 @@
-import { cn } from "#/shared/lib/utils";
-import { Box, Ellipsis, ExternalLink, User2 } from "lucide-react";
-import type { NamespaceI } from "../model";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Box, Ellipsis, ExternalLink, User2 } from "lucide-react";
 import { timeAgo } from "#/shared/lib/helpers/date-utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "#/shared/ui/shadcn/dropdown-menu";
+import { cn } from "#/shared/lib/utils";
+import { Button } from "#/shared/ui/shadcn/button";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -17,28 +10,51 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "#/shared/ui/shadcn/context-menu";
-import { Button } from "#/shared/ui/shadcn/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "#/shared/ui/shadcn/dropdown-menu";
+import type { NamespaceI } from "../model";
 
 interface PropsI {
-  data: NamespaceI & { ownership: 'owner' | 'member' };
+  data: NamespaceI & { ownership: "owner" | "member" };
 }
 
-function MenuItems({ isContext = false, data }: { isContext?: boolean; data: NamespaceI & { ownership: 'owner' | 'member' } }) {
-  const navigate = useNavigate()
+function MenuItems({
+  isContext = false,
+  data,
+}: {
+  isContext?: boolean;
+  data: NamespaceI & { ownership: "owner" | "member" };
+}) {
+  const navigate = useNavigate();
   const Item = isContext ? ContextMenuItem : DropdownMenuItem;
   const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
 
   return (
     <>
       <Item
-        onClick={() => navigate({ to: '/admin/$namespaceID', params: { namespaceID: data.id } })}
+        onClick={() =>
+          navigate({
+            to: "/admin/$namespaceID",
+            params: { namespaceID: data.id },
+          })
+        }
       >
         <ExternalLink className="mr-2 size-4" />
         View Forms
       </Item>
       <Separator />
       <Item
-        onClick={() => navigate({ to: '/admin/$namespaceID/members', params: { namespaceID: data.id } })}
+        onClick={() =>
+          navigate({
+            to: "/admin/$namespaceID/members",
+            params: { namespaceID: data.id },
+          })
+        }
       >
         <User2 className="mr-2 size-4" />
         View Members
@@ -56,7 +72,7 @@ export function NamespaceCard({ data }: PropsI) {
             className={cn(
               "bg-card rounded-sm w-72 cursor-pointer",
               "ring-1 ring-foreground/10 shadow-xs",
-              "relative py-4 hover:ring-primary hover:shadow-primary duration-150"
+              "relative py-4 hover:ring-primary hover:shadow-primary duration-150",
             )}
             to="/admin/$namespaceID"
             params={{ namespaceID: data.id }}
@@ -71,7 +87,9 @@ export function NamespaceCard({ data }: PropsI) {
         <div className="flex flex-col gap-1 px-4 mt-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Ownership</span>
-            <span>{data.ownership.charAt(0).toUpperCase() + data.ownership.slice(1)}</span>
+            <span>
+              {data.ownership.charAt(0).toUpperCase() + data.ownership.slice(1)}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Updated</span>
@@ -87,7 +105,7 @@ export function NamespaceCard({ data }: PropsI) {
                   size="icon"
                   className={cn(
                     "text-muted-foreground hover:text-foreground/40",
-                    "duration-150 cursor-pointer outline-0 select-none"
+                    "duration-150 cursor-pointer outline-0 select-none",
                   )}
                   onClick={(e) => {
                     e.preventDefault();

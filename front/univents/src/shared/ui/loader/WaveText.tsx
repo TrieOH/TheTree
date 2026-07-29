@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 interface WaveTextProps {
   text?: string;
@@ -25,7 +25,7 @@ export default function WaveText({
   props.current = { duration, delay, lift, waveWidth };
 
   const frame = useCallback((ts: number) => {
-    startTime.current ??= ts
+    startTime.current ??= ts;
 
     const p = props.current;
 
@@ -76,11 +76,16 @@ export default function WaveText({
   }, []);
 
   return (
-    <span ref={containerRef} className="inline-flex font-bold text-lg text-primary">
+    <span
+      ref={containerRef}
+      className="inline-flex font-bold text-lg text-primary"
+    >
       {text.split("").map((char, i) => (
         <span
-          key={i}
-          ref={(el) => { spans.current[i] = el; }}
+          key={`wc-${i}-${char}`}
+          ref={(el) => {
+            spans.current[i] = el;
+          }}
           className="inline-block"
           style={{ whiteSpace: "pre" }}
         >

@@ -1,8 +1,8 @@
-import { cn } from "#/shared/lib/utils";
 import { Key, KeyRound, ShieldOff } from "lucide-react";
-import type { ApiKeyI } from "../model";
 import { timeAgo } from "#/shared/lib/helpers/date-utils";
+import { cn } from "#/shared/lib/utils";
 import { Button } from "#/shared/ui/shadcn/button";
+import type { ApiKeyI } from "../model";
 
 interface PropsI {
   data: ApiKeyI;
@@ -19,7 +19,7 @@ export function APIKeyCard({ data, onRevoke }: PropsI) {
         "ring-1 ring-foreground/10 shadow-xs",
         "flex items-center gap-3 px-4 py-3",
         "hover:ring-foreground/20 duration-150",
-        isRevoked && "opacity-60"
+        isRevoked && "opacity-60",
       )}
     >
       {/* Icon */}
@@ -59,7 +59,7 @@ export function APIKeyCard({ data, onRevoke }: PropsI) {
           className={cn(
             "shrink-0 text-muted-foreground",
             "hover:text-destructive hover:bg-destructive/10",
-            "duration-150 cursor-pointer outline-0"
+            "duration-150 cursor-pointer outline-0",
           )}
           onClick={() => onRevoke?.(data)}
           title="Revoke API key"

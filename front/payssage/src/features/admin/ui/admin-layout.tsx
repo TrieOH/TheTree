@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 import {
   Beaker,
   ChevronLeft,
@@ -9,72 +9,72 @@ import {
   LogOut,
   Receipt,
   WalletCards,
-} from 'lucide-react'
-import { useState } from 'react'
-import { cn } from '#/shared/lib/utils'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Breadcrumb } from '#/shared/ui/breadcrumb'
-import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
-import { env } from '#/env'
+} from "lucide-react";
+import { useState } from "react";
+import { env } from "#/env";
+import { useAuthActions } from "#/features/auths/hooks/use-auth-actions";
+import { cn } from "#/shared/lib/utils";
+import { Breadcrumb } from "#/shared/ui/breadcrumb";
+import { Button } from "#/shared/ui/shadcn/button";
 
 interface AdminLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { handleLogout } = useAuthActions()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { handleLogout } = useAuthActions();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     {
-      to: '/admin',
+      to: "/admin",
       icon: FolderKanban,
-      label: 'Organizations',
+      label: "Organizations",
       exact: true,
     },
     {
-      to: '/admin/wallets',
+      to: "/admin/wallets",
       icon: WalletCards,
-      label: 'Wallets',
+      label: "Wallets",
       exact: true,
     },
     {
-      to: '/admin/collectors',
+      to: "/admin/collectors",
       icon: CircleDollarSign,
-      label: 'Collectors',
+      label: "Collectors",
       exact: true,
     },
     {
-      to: '/admin/transactions',
+      to: "/admin/transactions",
       icon: Receipt,
-      label: 'Transactions',
+      label: "Transactions",
       exact: true,
     },
     {
-      to: '/admin/keys',
+      to: "/admin/keys",
       icon: KeyRound,
-      label: 'API Keys',
+      label: "API Keys",
       exact: true,
     },
-    ...(env.VITE_INTENT_TEST_MODE === 'true'
+    ...(env.VITE_INTENT_TEST_MODE === "true"
       ? [
           {
-            to: '/admin/test-mode-intents' as const,
+            to: "/admin/test-mode-intents" as const,
             icon: Beaker,
-            label: 'Test Intent',
+            label: "Test Intent",
             exact: true,
           },
         ]
       : []),
-  ]
+  ];
 
   return (
     <div className="flex min-h-screen bg-background font-body selection:bg-primary/10">
       {/* Desktop Sidebar Navigation */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col border-r border-border/60 sticky top-0 h-screen shrink-0 bg-background z-20 transition-[width] duration-300 ease-in-out',
-          isCollapsed ? 'w-15' : 'w-50',
+          "hidden lg:flex flex-col border-r border-border/60 sticky top-0 h-screen shrink-0 bg-background z-20 transition-[width] duration-300 ease-in-out",
+          isCollapsed ? "w-15" : "w-50",
         )}
       >
         <div className="p-4 flex items-center justify-between h-16 border-b border-border/60">
@@ -87,7 +87,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             type="button"
             variant="ghost"
             size="icon-sm"
-            className={cn(isCollapsed ? 'mx-auto' : 'ml-auto')}
+            className={cn(isCollapsed ? "mx-auto" : "ml-auto")}
             onClick={() => setIsCollapsed(!isCollapsed)}
             aria-label="Toggle sidebar"
           >
@@ -111,20 +111,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <>
                   <item.icon
                     className={cn(
-                      'w-4 h-4 transition-colors duration-300 shrink-0',
-                      isCollapsed && 'mx-auto',
+                      "w-4 h-4 transition-colors duration-300 shrink-0",
+                      isCollapsed && "mx-auto",
                       isActive
-                        ? 'text-primary'
-                        : 'text-muted-foreground group-hover:text-foreground',
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground",
                     )}
                   />
                   {!isCollapsed && (
                     <span
                       className={cn(
-                        'transition-colors duration-300 truncate',
+                        "transition-colors duration-300 truncate",
                         isActive
-                          ? 'text-foreground'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
                       {item.label}
@@ -134,10 +134,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   {/* Desktop Indicator (Right) */}
                   <div
                     className={cn(
-                      'absolute -right-px transition-all duration-300 ease-in-out bg-primary w-0.5',
+                      "absolute -right-px transition-all duration-300 ease-in-out bg-primary w-0.5",
                       isActive
-                        ? 'top-2 bottom-2 opacity-100'
-                        : 'top-1/2 bottom-1/2 opacity-0',
+                        ? "top-2 bottom-2 opacity-100"
+                        : "top-1/2 bottom-1/2 opacity-0",
                     )}
                   />
                 </>
@@ -152,8 +152,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           >
             <LogOut
               className={cn(
-                'w-4 h-4 transition-colors duration-300',
-                isCollapsed && 'mx-auto',
+                "w-4 h-4 transition-colors duration-300",
+                isCollapsed && "mx-auto",
               )}
             />
             {!isCollapsed && <span className="truncate">Logout</span>}
@@ -182,18 +182,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <>
                 <item.icon
                   className={cn(
-                    'w-5 h-5 transition-colors',
+                    "w-5 h-5 transition-colors",
                     isActive
-                      ? 'text-primary'
-                      : 'text-muted-foreground group-hover:text-foreground',
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
                   )}
                 />
                 <span
                   className={cn(
-                    'text-[9px] font-bold uppercase tracking-tighter transition-colors truncate',
+                    "text-[9px] font-bold uppercase tracking-tighter transition-colors truncate",
                     isActive
-                      ? 'text-primary'
-                      : 'text-muted-foreground group-hover:text-foreground',
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
                   )}
                 >
                   {item.label}
@@ -201,10 +201,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 {/* Mobile Indicator (Top of the bar) */}
                 <div
                   className={cn(
-                    'absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full transition-all duration-300 ease-in-out',
+                    "absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full transition-all duration-300 ease-in-out",
                     isActive
-                      ? 'opacity-100 scale-x-100'
-                      : 'opacity-0 scale-x-0',
+                      ? "opacity-100 scale-x-100"
+                      : "opacity-0 scale-x-0",
                   )}
                 />
               </>
@@ -223,5 +223,5 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </button>
       </nav>
     </div>
-  )
+  );
 }

@@ -18,7 +18,11 @@ export default function WaveSpinnerLoading({
 }: WaveTextProps) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-5">
-      <Spinner size={"6rem"} activeColor="var(--primary)" trackColor="var(--accent)" />
+      <Spinner
+        size={"6rem"}
+        activeColor="var(--primary)"
+        trackColor="var(--accent)"
+      />
       <WaveText
         text={text}
         delay={delay}
@@ -27,5 +31,5 @@ export default function WaveSpinnerLoading({
         waveWidth={waveWidth}
       />
     </div>
-  )
+  );
 }

@@ -1,13 +1,16 @@
 import StatusScreen from "@/widgets/feedback/ui/StatusScreen";
 
 interface CheckoutErrorProps {
-  message: string | null
-  onRetry: () => void
-  onBack: () => void
+  message: string | null;
+  onRetry: () => void;
+  onBack: () => void;
 }
 
-
-export default function CheckoutError({ message, onRetry, onBack }: CheckoutErrorProps) {
+export default function CheckoutError({
+  message,
+  onRetry,
+  onBack,
+}: CheckoutErrorProps) {
   return (
     <StatusScreen
       icon="!"
@@ -19,5 +22,5 @@ export default function CheckoutError({ message, onRetry, onBack }: CheckoutErro
         { label: "Voltar", onClick: onBack, variant: "outline" },
       ]}
     />
-  )
+  );
 }

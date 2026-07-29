@@ -1,6 +1,6 @@
-import { queryOptions } from "@tanstack/react-query"
-import { authFetcher } from "#/shared/lib/api/fetch"
-import type { Collector } from "#/features/oauth/model"
+import { queryOptions } from "@tanstack/react-query";
+import type { Collector } from "#/features/oauth/model";
+import { authFetcher } from "#/shared/lib/api/fetch";
 
 export const collectorsQueryOptions = (organizationId?: string) =>
   queryOptions({
@@ -8,9 +8,9 @@ export const collectorsQueryOptions = (organizationId?: string) =>
     queryFn: async () => {
       const path = organizationId
         ? `/organizations/${organizationId}/collectors`
-        : "/collectors"
-      const response = await authFetcher.get<Collector[]>(path)
-      if (!response.success) throw response
-      return Array.isArray(response.data) ? response.data : []
+        : "/collectors";
+      const response = await authFetcher.get<Collector[]>(path);
+      if (!response.success) throw response;
+      return Array.isArray(response.data) ? response.data : [];
     },
-  })
+  });

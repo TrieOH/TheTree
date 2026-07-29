@@ -1,24 +1,24 @@
-import { useState } from "react"
-import { LogOut } from "lucide-react"
-import { Button } from "@/shared/ui/shadcn/button"
-import { useAuthActions } from "@trieoh/front-core"
-import { toast } from "sonner"
+import { useAuthActions } from "@trieoh/front-core";
+import { LogOut } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/shared/ui/shadcn/button";
 
 export function LogoutCard() {
-  const { handleLogout } = useAuthActions()
-  const [isLoading, setIsLoading] = useState(false)
+  const { handleLogout } = useAuthActions();
+  const [isLoading, setIsLoading] = useState(false);
 
   const onLogout = async () => {
-    if (isLoading) return
-    setIsLoading(true)
+    if (isLoading) return;
+    setIsLoading(true);
     try {
-      await handleLogout()
-    } catch (error) {
-      toast.error("Ocorreu um erro ao tentar sair da sessão.")
+      await handleLogout();
+    } catch (_error) {
+      toast.error("Ocorreu um erro ao tentar sair da sessão.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="pt-4 pb-2">
@@ -40,5 +40,5 @@ export function LogoutCard() {
         </Button>
       </div>
     </div>
-  )
+  );
 }

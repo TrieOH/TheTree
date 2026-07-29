@@ -1,20 +1,20 @@
-import { Check, Copy, AlertTriangle } from 'lucide-react'
-import { Button } from '#/shared/ui/shadcn/button'
+import { AlertTriangle, Check, Copy } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "#/shared/ui/shadcn/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '#/shared/ui/shadcn/dialog'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import type { WebhookCreateResponseI } from '../model'
+} from "#/shared/ui/shadcn/dialog";
+import type { WebhookCreateResponseI } from "../model";
 
 interface WebhookCreatedModalProps {
-  webhook: WebhookCreateResponseI | null
-  isOpen: boolean
-  onClose: () => void
+  webhook: WebhookCreateResponseI | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function WebhookCreatedModal({
@@ -22,17 +22,17 @@ export function WebhookCreatedModal({
   isOpen,
   onClose,
 }: WebhookCreatedModalProps) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
-    if (!webhook) return
-    navigator.clipboard.writeText(webhook.secret)
-    setCopied(true)
-    toast.success('Webhook Secret copied to clipboard')
-    setTimeout(() => setCopied(false), 2000)
-  }
+    if (!webhook) return;
+    navigator.clipboard.writeText(webhook.secret);
+    setCopied(true);
+    toast.success("Webhook Secret copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-  if (!webhook) return null
+  if (!webhook) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -94,5 +94,5 @@ export function WebhookCreatedModal({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

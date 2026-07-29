@@ -1,5 +1,8 @@
+import {
+  EventStreamContentType,
+  fetchEventSource,
+} from "@microsoft/fetch-event-source";
 import { useEffect, useRef, useState } from "react";
-import { fetchEventSource, EventStreamContentType } from "@microsoft/fetch-event-source";
 import { env } from "@/env";
 
 interface InventoryUpdate {
@@ -7,15 +10,17 @@ interface InventoryUpdate {
   inventory_remaining: number;
 }
 
-class RetriableError extends Error { }
-class FatalError extends Error { }
+class RetriableError extends Error {}
+class FatalError extends Error {}
 
 const INITIAL_RETRY_MS = 1_000;
 const MAX_RETRY_MS = 30_000;
 
 export function useInventoryStream(eventId: string, editionId: string) {
   const [inventory, setInventory] = useState<Record<string, number>>({});
-  const [status, setStatus] = useState<"connecting" | "open" | "error">("connecting");
+  const [status, setStatus] = useState<"connecting" | "open" | "error">(
+    "connecting",
+  );
   const retryDelay = useRef(INITIAL_RETRY_MS);
 
   useEffect(() => {
@@ -33,11 +38,18 @@ export function useInventoryStream(eventId: string, editionId: string) {
 
       // eslint-disable-next-line @typescript-eslint/require-await
       onopen: async (res) => {
-        if (res.ok && res.headers.get("content-type") === EventStreamContentType) {
+        if (
+          res.ok &&
+          res.headers.get("content-type") === EventStreamContentType
+        ) {
           console.log(`[InventoryStream] Connection established to ${url}`);
           retryDelay.current = INITIAL_RETRY_MS;
           setStatus("open");
-        } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+        } else if (
+          res.status >= 400 &&
+          res.status < 500 &&
+          res.status !== 429
+        ) {
           throw new FatalError(`HTTP ${res.status}`);
         } else throw new RetriableError();
       },

@@ -1,3 +1,10 @@
+import type {
+  CreateFieldRequest,
+  CreateFieldSelectConfigRequest,
+  Field,
+  FieldSelectConfig,
+  UpdateFieldRequest,
+} from "@trieoh/informd-models";
 import {
   FieldTypeBool,
   FieldTypeDate,
@@ -25,7 +32,6 @@ import {
   SelectValueTypeTime,
   SelectValueTypeURL,
 } from "@trieoh/informd-models";
-import type { CreateFieldRequest, CreateFieldSelectConfigRequest, Field, FieldSelectConfig, UpdateFieldRequest } from "@trieoh/informd-models";
 
 import z from "zod";
 
@@ -62,26 +68,31 @@ export type SelectValueTypeI =
 
 /** Schema for creating/updating a select config */
 const createFieldSelectConfigSchema = z.object({
-  behaviour: z.enum([
-    SelectBehaviourCheckbox,
-    SelectBehaviourRadio,
-    SelectBehaviourDropdownCheckbox,
-    SelectBehaviourDropdownRadio
-  ], { error: "Invalid select behaviour" }),
-  value_type: z.enum([
-    SelectValueTypeString,
-    SelectValueTypeEmail,
-    SelectValueTypeInt,
-    SelectValueTypeFloat,
-    SelectValueTypeDate,
-    SelectValueTypeTime,
-    SelectValueTypeDatetime,
-    SelectValueTypePhone,
-    SelectValueTypeURL
-  ], { error: "Invalid select value type" }),
+  behaviour: z.enum(
+    [
+      SelectBehaviourCheckbox,
+      SelectBehaviourRadio,
+      SelectBehaviourDropdownCheckbox,
+      SelectBehaviourDropdownRadio,
+    ],
+    { error: "Invalid select behaviour" },
+  ),
+  value_type: z.enum(
+    [
+      SelectValueTypeString,
+      SelectValueTypeEmail,
+      SelectValueTypeInt,
+      SelectValueTypeFloat,
+      SelectValueTypeDate,
+      SelectValueTypeTime,
+      SelectValueTypeDatetime,
+      SelectValueTypePhone,
+      SelectValueTypeURL,
+    ],
+    { error: "Invalid select value type" },
+  ),
   options: z.any(),
 }) satisfies z.ZodType<CreateFieldSelectConfigRequest>;
-
 
 export const createFieldRequestSchema = z.object({
   key: z.string({ error: "Field key is required" }),
@@ -89,20 +100,23 @@ export const createFieldRequestSchema = z.object({
   description: z.string().optional(),
   position_hint: z.number({ error: "Position hint must be a number" }),
   required: z.boolean({ error: "Required must be a boolean" }),
-  type: z.enum([
-    FieldTypeString,
-    FieldTypeEmail,
-    FieldTypeInt,
-    FieldTypeFloat,
-    FieldTypeBool,
-    FieldTypeDate,
-    FieldTypeTime,
-    FieldTypeDatetime,
-    FieldTypeSelect,
-    FieldTypeFile,
-    FieldTypePhone,
-    FieldTypeURL
-  ], { error: "Invalid type" }),
+  type: z.enum(
+    [
+      FieldTypeString,
+      FieldTypeEmail,
+      FieldTypeInt,
+      FieldTypeFloat,
+      FieldTypeBool,
+      FieldTypeDate,
+      FieldTypeTime,
+      FieldTypeDatetime,
+      FieldTypeSelect,
+      FieldTypeFile,
+      FieldTypePhone,
+      FieldTypeURL,
+    ],
+    { error: "Invalid type" },
+  ),
   placeholder: z.any().optional(),
   default_value: z.any().optional(),
   config: z.any().optional(),
@@ -116,20 +130,23 @@ export const fieldUpdateRequestSchema = z.object({
   description: z.string().optional(),
   position_hint: z.number({ error: "Position hint must be a number" }),
   required: z.boolean({ error: "Required must be a boolean" }),
-  type: z.enum([
-    FieldTypeString,
-    FieldTypeEmail,
-    FieldTypeInt,
-    FieldTypeFloat,
-    FieldTypeBool,
-    FieldTypeDate,
-    FieldTypeTime,
-    FieldTypeDatetime,
-    FieldTypeSelect,
-    FieldTypeFile,
-    FieldTypePhone,
-    FieldTypeURL
-  ], { error: "Invalid type" }),
+  type: z.enum(
+    [
+      FieldTypeString,
+      FieldTypeEmail,
+      FieldTypeInt,
+      FieldTypeFloat,
+      FieldTypeBool,
+      FieldTypeDate,
+      FieldTypeTime,
+      FieldTypeDatetime,
+      FieldTypeSelect,
+      FieldTypeFile,
+      FieldTypePhone,
+      FieldTypeURL,
+    ],
+    { error: "Invalid type" },
+  ),
   placeholder: z.any().optional(),
   default_value: z.any().optional(),
   config: z.any().optional(),
@@ -149,8 +166,9 @@ export interface OptionI {
   value: string;
 }
 
-export interface FieldSelectConfigI extends Omit<FieldSelectConfig, "behaviour" | "value_type" | "options"> {
+export interface FieldSelectConfigI
+  extends Omit<FieldSelectConfig, "behaviour" | "value_type" | "options"> {
   behaviour: SelectBehaviourI;
   value_type: SelectValueTypeI;
-  options: (OptionI | string)[]
+  options: (OptionI | string)[];
 }

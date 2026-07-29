@@ -1,7 +1,7 @@
 interface CheckoutCartChangedProps {
-  onResume: () => void
-  onUseNew: () => void
-  onCancel: () => void
+  onResume: () => void;
+  onUseNew: () => void;
+  onCancel: () => void;
 }
 
 export default function CheckoutCartChanged({
@@ -18,24 +18,28 @@ export default function CheckoutCartChanged({
       <div className="space-y-1">
         <h1 className="text-lg font-bold text-foreground">Carrinho alterado</h1>
         <p className="text-sm text-muted-foreground">
-          Você tem uma reserva ativa, mas seu carrinho foi alterado. O que deseja fazer?
+          Você tem uma reserva ativa, mas seu carrinho foi alterado. O que
+          deseja fazer?
         </p>
       </div>
 
       <div className="flex flex-col gap-2 w-full">
         <button
+          type="button"
           onClick={onUseNew}
           className="w-full rounded-md bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           Usar carrinho novo
         </button>
         <button
+          type="button"
           onClick={onResume}
           className="w-full rounded-md border border-border px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
         >
           Continuar reserva anterior
         </button>
         <button
+          type="button"
           onClick={onCancel}
           className="w-full rounded-md px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
         >
@@ -43,5 +47,5 @@ export default function CheckoutCartChanged({
         </button>
       </div>
     </main>
-  )
+  );
 }

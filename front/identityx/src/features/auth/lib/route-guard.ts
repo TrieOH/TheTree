@@ -3,4 +3,4 @@ export {
   requireGuest,
   requireSetup,
   requireSetupNotDone,
-} from "@trieoh/front-core"
+} from "@trieoh/front-core";

@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import type { DefaultValues, FieldValues, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  DefaultValues,
+  FieldValues,
+  UseFormReturn,
+} from "react-hook-form";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import type { ZodType } from "zod";
 import type { FieldConfig, StepConfig } from "../model/types";
 import { isFieldVisible } from "../model/visibility";
+import { flushImageUploadTasks } from "./use-image-upload-queue";
 
-export interface MultiStepFormController<TInput extends FieldValues, TOutput = TInput> {
+export interface MultiStepFormController<
+  TInput extends FieldValues,
+  TOutput = TInput,
+> {
   form: UseFormReturn<TInput, unknown, TOutput>;
   steps: StepConfig<TInput>[];
   currentStep: StepConfig<TInput>;
@@ -18,6 +27,7 @@ export interface MultiStepFormController<TInput extends FieldValues, TOutput = T
   goBack: () => void;
   goToStep: (index: number) => void;
   isSubmitting: boolean;
+  isProcessingUploads: boolean;
   /** True once any field differs from its default/edited value. */
   isDirty: boolean;
   /**
@@ -49,7 +59,9 @@ export interface UseMultiStepFormOptions<TInput extends FieldValues, TOutput> {
    * has actually changed. Has no effect on create forms.
    */
   requireDirtyToSubmit?: boolean;
-  onSubmit: (values: TOutput) => boolean | void | Promise<boolean | void>;
+  onSubmit: (
+    values: TOutput,
+  ) => boolean | undefined | Promise<boolean | undefined>;
   /** Optional values to restore after a successful submit (useful for create flows). */
   resetOnSuccessValues?: DefaultValues<TInput>;
   /** Called after a successful submit, after any optional reset. */
@@ -74,7 +86,10 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
   resetOnSuccessValues,
   onSubmitSuccess,
   validationMode = "onChange",
-}: UseMultiStepFormOptions<TInput, TOutput>): MultiStepFormController<TInput, TOutput> {
+}: UseMultiStepFormOptions<TInput, TOutput>): MultiStepFormController<
+  TInput,
+  TOutput
+> {
   const form = useForm<TInput, unknown, TOutput>({
     resolver: zodResolver(schema),
     defaultValues,
@@ -84,6 +99,7 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
 
   const [stepIndex, setStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingUploads, setIsProcessingUploads] = useState(false);
 
   // Whenever the edited record changes (a new `values` reference lands),
   // jump the wizard back to the first step instead of leaving the user
@@ -98,7 +114,10 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
   const isLastStep = stepIndex === steps.length - 1;
 
   const visibleFields = useMemo(
-    () => currentStep.fields.filter((field) => isFieldVisible(field.visibleIf, watchedValues)),
+    () =>
+      currentStep.fields.filter((field) =>
+        isFieldVisible(field.visibleIf, watchedValues),
+      ),
     [currentStep, watchedValues],
   );
 
@@ -108,39 +127,54 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
   const handleSubmit = async (): Promise<boolean> => {
     let didSucceed = false;
 
-    await form.handleSubmit(async (submittedValues) => {
-      setIsSubmitting(true);
-      const result = await onSubmit(submittedValues);
-      setIsSubmitting(false);
+    await form
+      .handleSubmit(async (submittedValues) => {
+        setIsSubmitting(true);
+        const result = await onSubmit(submittedValues);
+        setIsSubmitting(false);
 
-      if (result === false) return;
+        if (result === false) return;
 
-      if (resetOnSuccessValues) {
-        form.reset(resetOnSuccessValues);
-        setStepIndex(0);
-      }
+        if (resetOnSuccessValues) {
+          form.reset(resetOnSuccessValues);
+          setStepIndex(0);
+        }
 
-      await onSubmitSuccess?.();
-      didSucceed = true;
-    })().catch(() => {
-      setIsSubmitting(false);
-    });
+        await onSubmitSuccess?.();
+        didSucceed = true;
+      })()
+      .catch(() => {
+        setIsSubmitting(false);
+      });
 
     return didSucceed;
   };
 
   const goNext = async (): Promise<boolean> => {
     const fieldNamesToValidate = visibleFields
-      .filter((field) => field.kind === "text")
+      .filter((field) => field.kind !== "custom")
       .map((field) => field.name);
 
     const isStepValid =
-      fieldNamesToValidate.length > 0 ? await form.trigger(fieldNamesToValidate) : true;
+      fieldNamesToValidate.length > 0
+        ? await form.trigger(fieldNamesToValidate)
+        : true;
 
     if (!isStepValid) return false;
 
     if (isLastStep) {
       if (!canSubmit) return false;
+      try {
+        setIsProcessingUploads(true);
+        await flushImageUploadTasks();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Falha ao processar imagens",
+        );
+        setIsProcessingUploads(false);
+        return false;
+      }
+      setIsProcessingUploads(false);
       return await handleSubmit();
     }
 
@@ -168,6 +202,7 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
     goBack,
     goToStep,
     isSubmitting,
+    isProcessingUploads,
     isDirty,
     canSubmit,
   };

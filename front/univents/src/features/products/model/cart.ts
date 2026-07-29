@@ -11,16 +11,26 @@ export interface CartItem {
   has_inventory: boolean;
 }
 
-export const getProductMaxQuantity = (product: Pick<CartItem, "has_inventory" | "inventory_remaining">) => {
-  return product.has_inventory ? product.inventory_remaining : GLOBAL_MAX_QUANTITY;
+export const getProductMaxQuantity = (
+  product: Pick<CartItem, "has_inventory" | "inventory_remaining">,
+) => {
+  return product.has_inventory
+    ? product.inventory_remaining
+    : GLOBAL_MAX_QUANTITY;
 };
 
-export const getValidQuantity = (product: Pick<CartItem, "has_inventory" | "inventory_remaining">, quantity: number) => {
+export const getValidQuantity = (
+  product: Pick<CartItem, "has_inventory" | "inventory_remaining">,
+  quantity: number,
+) => {
   const max = getProductMaxQuantity(product);
   return Math.max(0, Math.min(quantity, max));
 };
 
-export const isLimitReached = (product: Pick<CartItem, "has_inventory" | "inventory_remaining">, currentQuantity: number) => {
+export const isLimitReached = (
+  product: Pick<CartItem, "has_inventory" | "inventory_remaining">,
+  currentQuantity: number,
+) => {
   return currentQuantity >= getProductMaxQuantity(product);
 };
 
@@ -52,17 +62,24 @@ cartStore.subscribe(() => {
 });
 
 export const cartActions = {
-  addItem: (editionId: string, product: Omit<CartItem, "quantity">, quantity: number) => {
+  addItem: (
+    editionId: string,
+    product: Omit<CartItem, "quantity">,
+    quantity: number,
+  ) => {
     cartStore.setState((prev) => {
       const currentItems = prev.carts[editionId] ?? [];
       const existing = currentItems.find((i) => i.id === product.id);
 
-      let newItems;
+      let newItems: CartItem[];
       if (existing) {
-        const newQuantity = getValidQuantity(product, existing.quantity + quantity);
+        const newQuantity = getValidQuantity(
+          product,
+          existing.quantity + quantity,
+        );
 
         newItems = currentItems.map((i) =>
-          i.id === product.id ? { ...i, quantity: newQuantity } : i
+          i.id === product.id ? { ...i, quantity: newQuantity } : i,
         );
       } else {
         const finalQuantity = getValidQuantity(product, quantity);

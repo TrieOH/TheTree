@@ -24,7 +24,7 @@ function CallbackPage() {
   const navigate = Route.useNavigate();
   const { provider } = Route.useParams();
   const { code } = Route.useSearch();
-  const router = useRouter()
+  const router = useRouter();
   const { auth } = useAuth();
   const calledRef = useRef(false);
 
@@ -38,14 +38,14 @@ function CallbackPage() {
         return;
       }
       try {
-        const res = await auth.completeProviderLogin(provider, code)
+        const res = await auth.completeProviderLogin(provider, code);
         if (res.success) {
-          await navigate({ to: '/admin' })
-          toast.success(res.message ?? "Login successful!")
+          await navigate({ to: "/admin" });
+          toast.success(res.message ?? "Login successful!");
           router.options.context.queryClient.invalidateQueries();
           return;
         }
-        toast.error(res.message ?? "Auth Initialization Failed")
+        toast.error(res.message ?? "Auth Initialization Failed");
         navigate({ to: "/auth" });
       } catch {
         navigate({ to: "/auth" });

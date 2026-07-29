@@ -1,343 +1,205 @@
-import { createLazyFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import type { SortState } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { Calendar, Plus } from "lucide-react";
+import { useState } from "react";
 import {
-  Plus,
-  ShieldCheck,
-  MoreVertical,
-  Calendar,
-} from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import type { EventCreateOutputI, EventI } from '@/features/events/model';
+  allJoinedEventsQueryOptions,
+  allOwnEventsQueryOptions,
+} from "@/features/events/api";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/shared/ui/shadcn/drawer'
-import { cn } from '@/shared/lib/utils'
-import { eventCreateSchema } from '@/features/events/model'
-import { FormDrawer } from '@/widgets/form/ui/form-drawer'
-import { getEventFields } from '@/features/events/model/field'
-import {
-  ownEventsQueryOptions,
-  eventsQueryOptions,
-  createEventFn,
-  patchEventFn,
-  publishEventFn,
-  addImageToTheEventGalleryFn,
-  removeImageToTheEventGalleryFn,
-  setEventBannerFn,
-  unsetEventBannerFn,
-  setEventLogoFn,
-  unsetEventLogoFn,
-} from '@/features/events/api'
-import AdminEventCard from '@/features/events/ui/AdminEventCard'
-import { AlertModal } from '@/widgets/ui/alert-modal'
-import { getDirtyFields } from '@/shared/lib/diff'
+  useCreateEventMutation,
+  useDiscontinueEventMutation,
+  usePublishEventMutation,
+} from "@/features/events/api/mutations";
+import type { EventI } from "@/features/events/model";
+import AdminEventCard from "@/features/events/ui/AdminEventCard";
+import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
+import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
-export const Route = createLazyFileRoute('/admin/events/')({
+export const Route = createLazyFileRoute("/admin/events/")({
   component: RouteComponent,
-})
+});
+
+const STATUS_SORT_ORDER: Record<EventI["status"], number> = {
+  draft: 0,
+  active: 1,
+  discontinued: 2,
+};
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<EventI | null>(null)
-  const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
-  const [isActionsOpen, setIsActionsOpen] = useState(false)
+  const [filter, setFilter] = useState("");
+  const [sort, setSort] = useState<SortState<EventI>>({
+    field: "created_at",
+    direction: "desc",
+  });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null);
+  const [discontinuingEvent, setDiscontinuingEvent] = useState<EventI | null>(
+    null,
+  );
 
-  const { data: events = [] } = useQuery(ownEventsQueryOptions())
+  const { data: ownEvents = [] } = useQuery(allOwnEventsQueryOptions());
+  const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
+  const events = [...ownEvents, ...joinedEvents].filter(
+    (event, index, list) =>
+      list.findIndex((candidate) => candidate.id === event.id) === index,
+  );
+  const createMutation = useCreateEventMutation();
+  const publishEventMutation = usePublishEventMutation();
+  const discontinueEventMutation = useDiscontinueEventMutation();
 
-  const createMutation = useMutation({
-    mutationFn: createEventFn,
-    onSuccess: (res) => {
-      if (res.success) {
-        queryClient.setQueryData<EventI[]>(
-          ownEventsQueryOptions().queryKey,
-          (old = []) => [...old, res.data]
-        )
-        void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
-        setIsCreateOpen(false)
-        toast.success('Evento criado com sucesso!')
-      } else toast.error(res.message || 'Erro ao criar evento')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor')
-  })
+  const filteredEvents = [...events]
+    .filter((event) => {
+      const search = filter.trim().toLowerCase();
+      if (!search) return true;
 
-  const patchMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<EventI> }) => patchEventFn(id, data),
-    onSuccess: (res) => {
-      if (res.success) {
-        // Update Admin Cache
-        queryClient.setQueryData<EventI[]>(
-          ownEventsQueryOptions().queryKey,
-          (old = []) => old.map(event => event.id === res.data.id ? res.data : event)
-        )
-        void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
+      return [
+        event.full_name,
+        event.slug,
+        event.acronym ?? "",
+        event.contact_email ?? "",
+        event.status,
+      ].some((value) => value.toLowerCase().includes(search));
+    })
+    .sort((a, b) => {
+      const direction = sort.direction === "asc" ? 1 : -1;
 
-        setEditingEvent(null)
-        toast.success('Evento atualizado com sucesso!')
-      } else toast.error(res.message || 'Erro ao atualizar evento')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor')
-  })
-
-  const publishMutation = useMutation({
-    mutationFn: publishEventFn,
-    onSuccess: (res, eventId) => {
-      if (res.success) {
-        // Update the admin list immediately; the public list is revalidated below.
-        queryClient.setQueryData<EventI[]>(ownEventsQueryOptions().queryKey, (old = []) =>
-          old.map(event => {
-            if (event.id === eventId) {
-              return { ...event, status: 'active' as const };
-            }
-            return event;
-          })
-        )
-
-        void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
-
-        setPublishingEvent(null)
-        toast.success('Evento publicado com sucesso!')
-      } else toast.error(res.message || 'Erro ao publicar evento')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor')
-  })
-
-  const handleCreate = (data: EventCreateOutputI) => {
-    createMutation.mutate(data)
-  }
-
-  const updateEventMedia = async (id: string, data: EventCreateOutputI, original: EventI, changes: Partial<EventCreateOutputI>) => {
-    // Gallery
-    if (changes.gallery_urls !== undefined) {
-      const currentGallery = original.gallery_urls ?? []
-      const targetGallery = data.gallery_urls
-
-      for (const url of targetGallery.filter(u => !currentGallery.includes(u))) {
-        await addImageToTheEventGalleryFn(id, { url })
+      if (sort.field === "created_at") {
+        return (
+          (new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()) *
+          direction
+        );
       }
-      for (const url of currentGallery.filter(u => !targetGallery.includes(u))) {
-        await removeImageToTheEventGalleryFn(id, { url })
+
+      if (sort.field === "status") {
+        return (
+          (STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status]) *
+          direction
+        );
       }
-    }
 
-    // Banner
-    if (changes.banner_url !== undefined) {
-      if (data.banner_url) await setEventBannerFn(id, { url: data.banner_url })
-      else await unsetEventBannerFn(id)
-    }
-
-    // Logo
-    if (changes.logo_url !== undefined) {
-      if (data.logo_url) await setEventLogoFn(id, { url: data.logo_url })
-      else await unsetEventLogoFn(id)
-    }
-  }
-
-  const handleEdit = async (data: EventCreateOutputI) => {
-    if (!editingEvent) return
-
-    const changes = getDirtyFields(data, editingEvent as EventCreateOutputI, [
-      'name', 'slug', 'acronym', 'tagline', 'description',
-      'is_series', 'contact_email', 'social_links', 'logo_url', 'banner_url', 'gallery_urls'
-    ])
-
-    if (Object.keys(changes).length === 0) {
-      toast.info('Nenhuma alteração detectada')
-      setEditingEvent(null)
-      return
-    }
-
-    await updateEventMedia(editingEvent.id, data, editingEvent, changes)
-    await patchMutation.mutateAsync({ id: editingEvent.id, data })
-  }
-
-  const handlePublish = () => {
-    if (!publishingEvent) return
-    publishMutation.mutate(publishingEvent.id)
-  }
-
-  const getInitialData = (event: EventI | null): Partial<EventCreateOutputI> => event ? {
-    name: event.name,
-    slug: event.slug,
-    acronym: event.acronym,
-    contact_email: event.contact_email ?? undefined,
-    tagline: event.tagline,
-    description: event.description,
-    is_series: event.is_series,
-    logo_url: event.logo_url,
-    banner_url: event.banner_url,
-    gallery_urls: event.gallery_urls ?? undefined,
-    social_links: event.social_links ?? undefined,
-  } : {}
-
-  const loading = createMutation.isPending || patchMutation.isPending || publishMutation.isPending
+      return (
+        String(a[sort.field]).localeCompare(String(b[sort.field])) * direction
+      );
+    });
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-2 h-14">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground">
-              Eventos
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({events.length})
-              </span>
-            </h1>
-
-            <div className="hidden sm:flex items-center gap-2 ml-auto">
-              <button
-                onClick={() => { setIsCreateOpen(true); }}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg",
-                  "bg-primary text-primary-foreground hover:bg-primary/90",
-                  "text-sm font-medium"
-                )}
+    <div className="flex flex-wrap p-6 pb-28!">
+      <PaginatedContainer<EventI>
+        items={filteredEvents}
+        layout="grid"
+        minItemWidth="16rem"
+        pageSize={8}
+        gap="6"
+        sort={sort}
+        onSortChange={setSort}
+        sortFields={[
+          {
+            key: "created_at",
+            label: "Criado em",
+            comparator: (a, b) =>
+              new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime(),
+          },
+          { key: "full_name", label: "Nome" },
+          { key: "slug", label: "Slug" },
+          {
+            key: "status",
+            label: "Status",
+            comparator: (a, b) =>
+              STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status],
+          },
+        ]}
+        filterValue={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Buscar por nome, slug, sigla ou e-mail..."
+        itemLabel="eventos"
+        headerActions={
+          <Button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            size="sm"
+            className="rounded-sm py-4 gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Novo evento
+          </Button>
+        }
+        emptyState={
+          <EmptyState
+            icon={Calendar}
+            eyebrow="Eventos"
+            title="Nenhum evento encontrado"
+            description="Crie um evento para começar a organizar o dashboard do admin."
+            className="border-0 bg-transparent px-0 py-4 shadow-none"
+            action={
+              <Button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                size="sm"
+                className="mt-0.5 h-9 rounded-sm gap-2 px-4 text-sm shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                Novo evento
-              </button>
-            </div>
-
-            <div className="sm:hidden flex items-center gap-1 ml-auto">
-              <Drawer open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-                <DrawerTrigger asChild>
-                  <button className={cn("flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted")}>
-                    <MoreVertical className="w-5 h-5 text-foreground" />
-                  </button>
-                </DrawerTrigger>
-                <DrawerContent className="z-60 rounded-t-2xl">
-                  <DrawerHeader className="pb-4 border-b">
-                    <DrawerTitle className="text-base font-semibold">Ações</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="p-2 pb-8 space-y-1">
-                    <button
-                      onClick={() => { setIsActionsOpen(false); setIsCreateOpen(true) }}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Plus className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium">Novo evento</span>
-                    </button>
-                  </div>
-                </DrawerContent>
-              </Drawer>
-            </div>
-
-            <Link
-              to="/events"
-              className={cn(
-                "group relative flex items-center justify-center",
-                "w-9 h-9 rounded-lg transition-all",
-                "bg-primary text-primary-foreground",
-                "hover:bg-primary/90",
-                "shrink-0"
-              )}
-            >
-              <ShieldCheck className="w-5 h-5" />
-              <span
-                className={cn(
-                  "pointer-events-none absolute -bottom-9 right-0",
-                  "whitespace-nowrap rounded-md px-2 py-1",
-                  "bg-popover text-popover-foreground border text-xs shadow-md",
-                  "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
-                  "transition-all"
-                )}>
-                Sair do admin
-              </span>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        <AnimatePresence mode="wait">
-          {events.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-24 space-y-6"
-            >
-              <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center">
-                <Calendar className="w-10 h-10 text-muted-foreground/30" />
-              </div>
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-medium">Nenhum evento ainda</h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Crie seu primeiro evento para começar a gerenciar inscrições e programação.
-                </p>
-              </div>
-              <button
-                onClick={() => { setIsCreateOpen(true); }}
-                className={cn(
-                  "mt-2 px-5 py-2.5 rounded-lg",
-                  "bg-primary text-primary-foreground hover:bg-primary/90",
-                  "text-sm font-medium",
-                  "active:scale-95 transition-all"
-                )}
-              >
                 Criar evento
-              </button>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {events.map((event, idx) => (
-                <AdminEventCard
-                  key={event.id}
-                  event={event}
-                  index={idx}
-                  onEdit={setEditingEvent}
-                  onPublish={setPublishingEvent}
-                />
-              ))}
-            </div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      <FormDrawer
-        idPrefix="create-"
-        open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
-        title="Novo evento"
-        fields={getEventFields()}
-        schema={eventCreateSchema}
-        onSubmit={handleCreate}
-        submitLabel="Criar evento"
-        loading={loading}
+              </Button>
+            }
+          />
+        }
+        renderItems={(slice) =>
+          slice.map((event, idx) => (
+            <AdminEventCard
+              key={event.id}
+              event={event}
+              index={idx}
+              onPublish={setPublishingEvent}
+              onDiscontinue={setDiscontinuingEvent}
+            />
+          ))
+        }
       />
 
-      <FormDrawer
-        idPrefix="edit-"
-        open={!!editingEvent}
-        onOpenChange={(open) => {
-          if (!open) setEditingEvent(null)
-        }}
-        title="Editar evento"
-        fields={getEventFields(editingEvent?.id)}
-        schema={eventCreateSchema}
-        onSubmit={handleEdit}
-        defaultValues={getInitialData(editingEvent)}
-        submitLabel="Salvar alterações"
-        loading={loading}
+      <ManageEventModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onCreate={(values) =>
+          createMutation.mutateAsync(values).then(
+            (res) => (res.success ? res.data : false),
+            () => false,
+          )
+        }
       />
 
       <AlertModal
         open={!!publishingEvent}
-        onOpenChange={() => { setPublishingEvent(null); }}
+        onOpenChange={() => setPublishingEvent(null)}
         title="Publicar evento?"
-        description={`Ao publicar "${publishingEvent?.name}", ele ficará visível para o público.`}
+        description={`Ao publicar "${publishingEvent?.full_name}", ele ficará visível para o público.`}
         confirmLabel="Publicar"
-        onConfirm={handlePublish}
+        onConfirm={() => {
+          if (!publishingEvent) return;
+          publishEventMutation.mutate(publishingEvent.id);
+        }}
         variant="success"
-        loading={loading}
+        loading={publishEventMutation.isPending}
+      />
+
+      <AlertModal
+        open={!!discontinuingEvent}
+        onOpenChange={() => setDiscontinuingEvent(null)}
+        title="Descontinuar evento?"
+        description={`Ao descontinuar "${discontinuingEvent?.full_name}", ele deixará de ser um evento ativo.`}
+        confirmLabel="Descontinuar"
+        onConfirm={() => {
+          if (!discontinuingEvent) return;
+          discontinueEventMutation.mutate(discontinuingEvent.id);
+        }}
+        variant="destructive"
+        loading={discontinueEventMutation.isPending}
       />
     </div>
-  )
+  );
 }

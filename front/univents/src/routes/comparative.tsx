@@ -1,169 +1,458 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { motion } from 'motion/react'
+import { createFileRoute } from "@tanstack/react-router";
 import {
-  Check,
-  X,
-  Clock,
-  Calendar,
-  Ticket,
-  MapPin,
   Activity,
+  Calendar,
+  Check,
+  ClipboardCheck,
+  Clock,
+  MapPin,
   Minus,
-  Sparkles,
   ShoppingBag,
-  ClipboardCheck
-} from 'lucide-react'
-import { cn } from '@/shared/lib/utils'
+  Sparkles,
+  Ticket,
+  X,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { cn } from "@/shared/lib/utils";
 
-export const Route = createFileRoute('/comparative')({
+export const Route = createFileRoute("/comparative")({
   component: ComparativoPage,
-})
+});
 
-type FeatureStatus = 'yes' | 'no' | 'soon' | 'partial'
+type FeatureStatus = "yes" | "no" | "soon" | "partial";
 
 interface Feature {
-  name: string
-  current: FeatureStatus
-  competitor: FeatureStatus
-  highlight?: boolean
+  name: string;
+  current: FeatureStatus;
+  competitor: FeatureStatus;
+  highlight?: boolean;
 }
 
 interface Section {
-  id: string
-  title: string
-  icon: React.ElementType
-  features: Feature[]
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  features: Feature[];
 }
 
 const sections: Section[] = [
   {
-    id: 'events',
-    title: 'Funcionalidade Eventos',
+    id: "events",
+    title: "Funcionalidade Eventos",
     icon: Calendar,
     features: [
-      { name: 'Criar Eventos', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Configurar Evento', current: 'yes', competitor: 'yes' },
-      { name: 'Eventos Sub Institucionais', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Dashboard do evento', current: 'yes', competitor: 'yes' },
-      { name: 'Página do Evento', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Página do Evento Customizável na identidade do Evento', current: 'yes', competitor: 'no' },
-      { name: 'Templates de Eventos Simples', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Templates de Eventos Completamente Customizáveis', current: 'yes', competitor: 'no' },
-      { name: 'Análise histórica de dados institucionais', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Customização Completa da Identidade Visual', current: 'yes', competitor: 'no' },
-      { name: 'Customização Personalizada da Página do Evento', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Customização Completa das comunicações (email, posts, etc.)', current: 'yes', competitor: 'no' },
-      { name: 'Automações IFTTT pré prontas', current: 'no', competitor: 'no', highlight: true },
-    ]
+      {
+        name: "Criar Eventos",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Configurar Evento", current: "yes", competitor: "yes" },
+      {
+        name: "Eventos Sub Institucionais",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Dashboard do evento", current: "yes", competitor: "yes" },
+      {
+        name: "Página do Evento",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Página do Evento Customizável na identidade do Evento",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Templates de Eventos Simples",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      {
+        name: "Templates de Eventos Completamente Customizáveis",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Análise histórica de dados institucionais",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Customização Completa da Identidade Visual",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Customização Personalizada da Página do Evento",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Customização Completa das comunicações (email, posts, etc.)",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Automações IFTTT pré prontas",
+        current: "no",
+        competitor: "no",
+        highlight: true,
+      },
+    ],
   },
   {
-    id: 'editions',
-    title: 'Funcionalidade Edições',
+    id: "editions",
+    title: "Funcionalidade Edições",
     icon: Clock,
     features: [
-      { name: 'Edições Separadas por evento', current: 'yes', competitor: 'no' },
-      { name: 'Configurar Edição', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Página da Edição', current: 'yes', competitor: 'no' },
-      { name: 'Página da Edição Customizável na identidade do Evento', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Dashboard da Edição', current: 'yes', competitor: 'no' },
-      { name: 'Templates de Edições Simples', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Templates de Eventos Completamente Customizáveis', current: 'yes', competitor: 'no' },
-      { name: 'Customização Completa da Identidade Visual', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Customização Personalizada da Página de Edição', current: 'yes', competitor: 'no' },
-      { name: 'Customização COmpleta das comunicações (email, posts, etc.)', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Automações IFTTT pré prontas', current: 'no', competitor: 'no', highlight: true },
-      { name: 'Formulario de inscrição', current: 'soon', competitor: 'yes', highlight: true },
-    ]
+      {
+        name: "Edições Separadas por evento",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Configurar Edição",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Página da Edição", current: "yes", competitor: "no" },
+      {
+        name: "Página da Edição Customizável na identidade do Evento",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Dashboard da Edição", current: "yes", competitor: "no" },
+      {
+        name: "Templates de Edições Simples",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Templates de Eventos Completamente Customizáveis",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Customização Completa da Identidade Visual",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Customização Personalizada da Página de Edição",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Customização COmpleta das comunicações (email, posts, etc.)",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Automações IFTTT pré prontas",
+        current: "no",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Formulario de inscrição",
+        current: "soon",
+        competitor: "yes",
+        highlight: true,
+      },
+    ],
   },
   {
-    id: 'tickets',
-    title: 'Funcionalidade Ingressos',
+    id: "tickets",
+    title: "Funcionalidade Ingressos",
     icon: Ticket,
     features: [
-      { name: 'Criar Ingressos', current: 'yes', competitor: 'yes' },
-      { name: 'Transferência de Ingresso', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Configurar Permissões do Ingresso', current: 'yes', competitor: 'no' },
-      { name: 'Ingressos com Visual Customizável', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Presentear Ingresso', current: 'yes', competitor: 'no' },
-      { name: 'Ingressos que habilitam descontos', current: 'soon', competitor: 'no', highlight: true },
-    ]
+      { name: "Criar Ingressos", current: "yes", competitor: "yes" },
+      {
+        name: "Transferência de Ingresso",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      {
+        name: "Configurar Permissões do Ingresso",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Ingressos com Visual Customizável",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Presentear Ingresso", current: "yes", competitor: "no" },
+      {
+        name: "Ingressos que habilitam descontos",
+        current: "soon",
+        competitor: "no",
+        highlight: true,
+      },
+    ],
   },
   {
-    id: 'activities',
-    title: 'Funcionalidades Atividades',
+    id: "activities",
+    title: "Funcionalidades Atividades",
     icon: Activity,
     features: [
-      { name: 'Criar Atividade', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Editar Atividade', current: 'yes', competitor: 'yes' },
-      { name: 'Inscrições em atividades', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Atividades pagas', current: 'yes', competitor: 'yes' },
-      { name: 'Controle de Presença', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Credenciamento QR Code', current: 'yes', competitor: 'yes' },
-      { name: 'Relatórios Automáticos', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Certificados Automáticos (Com suporte para assinatura)', current: 'yes', competitor: 'yes' },
-      { name: 'Atividades com material', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Vagas por Atividade', current: 'yes', competitor: 'yes' },
-      { name: 'Credenciamento NFC', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Controle de tempo mínimo para presença', current: 'yes', competitor: 'no' },
-      { name: 'Controle de Acesso seletivo', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Entrada por tokens', current: 'yes', competitor: 'no' },
-      { name: 'Avaliação de Atividades (Privado ao evento)', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Atividades Complexas (Hackathon)', current: 'yes', competitor: 'no' },
-      { name: 'Lista de espera', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Lista de interesse', current: 'yes', competitor: 'no' },
-      { name: 'Customização da atividade', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Submissão de material de participantes', current: 'soon', competitor: 'yes' },
-    ]
+      {
+        name: "Criar Atividade",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Editar Atividade", current: "yes", competitor: "yes" },
+      {
+        name: "Inscrições em atividades",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Atividades pagas", current: "yes", competitor: "yes" },
+      {
+        name: "Controle de Presença",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Credenciamento QR Code", current: "yes", competitor: "yes" },
+      {
+        name: "Relatórios Automáticos",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      {
+        name: "Certificados Automáticos (Com suporte para assinatura)",
+        current: "yes",
+        competitor: "yes",
+      },
+      {
+        name: "Atividades com material",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Vagas por Atividade", current: "yes", competitor: "yes" },
+      {
+        name: "Credenciamento NFC",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Controle de tempo mínimo para presença",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Controle de Acesso seletivo",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Entrada por tokens", current: "yes", competitor: "no" },
+      {
+        name: "Avaliação de Atividades (Privado ao evento)",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Atividades Complexas (Hackathon)",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Lista de espera",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Lista de interesse", current: "yes", competitor: "no" },
+      {
+        name: "Customização da atividade",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Submissão de material de participantes",
+        current: "soon",
+        competitor: "yes",
+      },
+    ],
   },
   {
-    id: 'zones',
-    title: 'Funcionalidade Zonas de Controle',
+    id: "zones",
+    title: "Funcionalidade Zonas de Controle",
     icon: MapPin,
     features: [
-      { name: 'Criar Zona de Controle', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Definir Acessos Zona de Controle', current: 'yes', competitor: 'no' },
-      { name: 'Dashboard Para dados', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Exportar planilhas e relatórios', current: 'yes', competitor: 'yes' },
-    ]
+      {
+        name: "Criar Zona de Controle",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Definir Acessos Zona de Controle",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Dashboard Para dados",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Exportar planilhas e relatórios",
+        current: "yes",
+        competitor: "yes",
+      },
+    ],
   },
   {
-    id: 'loja',
-    title: 'Funcionalidade Loja',
+    id: "loja",
+    title: "Funcionalidade Loja",
     icon: ShoppingBag,
     features: [
-      { name: 'Códigos de Desconto', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Sistema de Reserva no Check Out', current: 'yes', competitor: 'yes' },
-      { name: 'Exportar Relatórios e Planilhas', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Criar Produtos para venda', current: 'yes', competitor: 'no' },
-      { name: 'Definir estoque / ilimitado em produto', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Criar combos (Ex: Camisa, Caneca, Ingresso)', current: 'yes', competitor: 'no' },
-      { name: 'Histórico de pagamentos, desistências, inválidos, etc.', current: 'yes', competitor: 'partial', highlight: true },
-      { name: 'Sistema de validação de entrega de Produtos', current: 'yes', competitor: 'no' },
-      { name: 'Lista de desejos', current: 'soon', competitor: 'no', highlight: true },
-      { name: 'Presentear outro usuário', current: 'yes', competitor: 'no' },
-      { name: 'Promoções personalizadas', current: 'soon', competitor: 'no', highlight: true },
-      { name: 'Limite por usuário', current: 'soon', competitor: 'no' },
-    ]
+      {
+        name: "Códigos de Desconto",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      {
+        name: "Sistema de Reserva no Check Out",
+        current: "yes",
+        competitor: "yes",
+      },
+      {
+        name: "Exportar Relatórios e Planilhas",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      { name: "Criar Produtos para venda", current: "yes", competitor: "no" },
+      {
+        name: "Definir estoque / ilimitado em produto",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Criar combos (Ex: Camisa, Caneca, Ingresso)",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Histórico de pagamentos, desistências, inválidos, etc.",
+        current: "yes",
+        competitor: "partial",
+        highlight: true,
+      },
+      {
+        name: "Sistema de validação de entrega de Produtos",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Lista de desejos",
+        current: "soon",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Presentear outro usuário", current: "yes", competitor: "no" },
+      {
+        name: "Promoções personalizadas",
+        current: "soon",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Limite por usuário", current: "soon", competitor: "no" },
+    ],
   },
   {
-    id: 'staff',
-    title: 'Funcionalidade Controle de Staff',
+    id: "staff",
+    title: "Funcionalidade Controle de Staff",
     icon: ClipboardCheck,
     features: [
-      { name: 'Painéis de Staff', current: 'yes', competitor: 'yes', highlight: true },
-      { name: 'Editor de atividades da Staff (Linha temporal)', current: 'yes', competitor: 'no' },
-      { name: 'Avisos de Burnout de Staff', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Controle de Acesso Granular da Staff', current: 'yes', competitor: 'no' },
-      { name: 'Resumo do Dia', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Notas de Ocorrência', current: 'yes', competitor: 'no' },
-      { name: 'Sugestões de balanceamento de carga da Staff', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Lembrentes de tarefa automáticos', current: 'yes', competitor: 'no' },
-      { name: 'Cálculo automático de Carga trabalhada (com validação)', current: 'yes', competitor: 'no', highlight: true },
-      { name: 'Gerador de Certificados da Staff (Com carga Horária)', current: 'yes', competitor: 'no' },
-      { name: 'Relatórios (Tarefas completas, Horas Trabalhadas, Atividades Cobertas) Por membro da staff', current: 'yes', competitor: 'no', highlight: true },
-    ]
+      {
+        name: "Painéis de Staff",
+        current: "yes",
+        competitor: "yes",
+        highlight: true,
+      },
+      {
+        name: "Editor de atividades da Staff (Linha temporal)",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Avisos de Burnout de Staff",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Controle de Acesso Granular da Staff",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Resumo do Dia",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      { name: "Notas de Ocorrência", current: "yes", competitor: "no" },
+      {
+        name: "Sugestões de balanceamento de carga da Staff",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Lembrentes de tarefa automáticos",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Cálculo automático de Carga trabalhada (com validação)",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+      {
+        name: "Gerador de Certificados da Staff (Com carga Horária)",
+        current: "yes",
+        competitor: "no",
+      },
+      {
+        name: "Relatórios (Tarefas completas, Horas Trabalhadas, Atividades Cobertas) Por membro da staff",
+        current: "yes",
+        competitor: "no",
+        highlight: true,
+      },
+    ],
   },
-]
+];
 
 // const additionalFeatures = [
 //   { icon: Shield, label: 'LGPD', desc: 'Compliance total' },
@@ -182,55 +471,61 @@ function StatusIndicator({ status }: { status: FeatureStatus }) {
   const configs = {
     yes: {
       icon: Check,
-      className: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
+      className: "text-emerald-500",
+      bg: "bg-emerald-500/10",
     },
     no: {
       icon: X,
-      className: 'text-muted-foreground/40',
-      bg: 'bg-muted',
+      className: "text-muted-foreground/40",
+      bg: "bg-muted",
     },
     soon: {
       icon: Clock,
-      className: 'text-amber-500',
-      bg: 'bg-amber-500/10',
+      className: "text-amber-500",
+      bg: "bg-amber-500/10",
     },
     partial: {
       icon: Minus,
-      className: 'text-orange-500',
-      bg: 'bg-orange-500/10',
-    }
-  }
+      className: "text-orange-500",
+      bg: "bg-orange-500/10",
+    },
+  };
 
-  const config = configs[status]
-  const Icon = config.icon
+  const config = configs[status];
+  const Icon = config.icon;
 
   return (
-    <div className={cn(
-      'w-8 h-8 rounded flex items-center justify-center',
-      config.bg
-    )}>
-      <Icon className={cn('w-4 h-4', config.className)} />
+    <div
+      className={cn(
+        "w-8 h-8 rounded flex items-center justify-center",
+        config.bg,
+      )}
+    >
+      <Icon className={cn("w-4 h-4", config.className)} />
     </div>
-  )
+  );
 }
 
 function PlatformCard({
   name,
   tagline,
   isUs = false,
-  stats
+  stats,
 }: {
-  name: string
-  tagline: string
-  isUs?: boolean
-  stats: { label: string; value: string }[]
+  name: string;
+  tagline: string;
+  isUs?: boolean;
+  stats: { label: string; value: string }[];
 }) {
   return (
-    <div className={cn(
-      'relative p-6 border',
-      isUs ? 'bg-card border-l-4 border-l-primary' : 'bg-muted/20 border-border'
-    )}>
+    <div
+      className={cn(
+        "relative p-6 border",
+        isUs
+          ? "bg-card border-l-4 border-l-primary"
+          : "bg-muted/20 border-border",
+      )}
+    >
       {isUs && (
         <div className="absolute -top-px left-0 right-0 h-px bg-linear-to-r from-primary via-primary/50 to-transparent" />
       )}
@@ -243,18 +538,18 @@ function PlatformCard({
               {name}
             </h3>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {tagline}
-          </p>
+          <p className="text-sm text-muted-foreground">{tagline}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border">
-          {stats.map((stat, idx) => (
-            <div key={idx}>
-              <div className={cn(
-                'text-2xl font-semibold tracking-tight',
-                isUs ? 'text-foreground' : 'text-muted-foreground'
-              )}>
+          {stats.map((stat) => (
+            <div key={stat.label}>
+              <div
+                className={cn(
+                  "text-2xl font-semibold tracking-tight",
+                  isUs ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
                 {stat.value}
               </div>
               <div className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -265,14 +560,14 @@ function PlatformCard({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ComparisonTable({ section }: { section: Section }) {
-  const Icon = section.icon
+  const Icon = section.icon;
 
-  const yesCount = section.features.filter(f => f.current === 'yes').length
-  const total = section.features.length
+  const yesCount = section.features.filter((f) => f.current === "yes").length;
+  const total = section.features.length;
 
   return (
     <div className="border border-border bg-card">
@@ -289,18 +584,22 @@ function ComparisonTable({ section }: { section: Section }) {
 
       {/* Table */}
       <div className="divide-y divide-border/50">
-        {section.features.map((feature, idx) => (
+        {section.features.map((feature) => (
           <div
-            key={idx}
+            key={feature.name}
             className={cn(
-              'grid grid-cols-3 gap-4 px-5 py-3 items-center',
-              feature.highlight && 'bg-primary/5'
+              "grid grid-cols-3 gap-4 px-5 py-3 items-center",
+              feature.highlight && "bg-primary/5",
             )}
           >
-            <span className={cn(
-              'text-sm',
-              feature.highlight ? 'font-medium text-foreground' : 'text-muted-foreground'
-            )}>
+            <span
+              className={cn(
+                "text-sm",
+                feature.highlight
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
               {feature.name}
             </span>
 
@@ -315,33 +614,37 @@ function ComparisonTable({ section }: { section: Section }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 function SummaryBar() {
-  const calculateScore = (platform: 'current' | 'competitor') => {
-    let score = 0
-    sections.forEach(s => {
-      s.features.forEach(f => {
-        const status = platform === 'current' ? f.current : f.competitor
-        if (status === 'yes') score += 2
-        if (status === 'partial') score += 1
-        if (status === 'soon') score += 0.5
-      })
-    })
-    return score
-  }
+  const calculateScore = (platform: "current" | "competitor") => {
+    let score = 0;
+    sections.forEach((s) => {
+      s.features.forEach((f) => {
+        const status = platform === "current" ? f.current : f.competitor;
+        if (status === "yes") score += 2;
+        if (status === "partial") score += 1;
+        if (status === "soon") score += 0.5;
+      });
+    });
+    return score;
+  };
 
-  const ourScore = calculateScore('current')
-  const theirScore = calculateScore('competitor')
-  const total = ourScore + theirScore
-  const ourPercent = Math.round((ourScore / total) * 100)
+  const ourScore = calculateScore("current");
+  const theirScore = calculateScore("competitor");
+  const total = ourScore + theirScore;
+  const ourPercent = Math.round((ourScore / total) * 100);
 
   return (
     <div className="border border-border bg-card p-6">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-foreground">Comparativo geral</span>
-        <span className="text-sm text-muted-foreground">{ourPercent}% vs {100 - ourPercent}%</span>
+        <span className="text-sm font-medium text-foreground">
+          Comparativo geral
+        </span>
+        <span className="text-sm text-muted-foreground">
+          {ourPercent}% vs {100 - ourPercent}%
+        </span>
       </div>
 
       <div className="h-2 bg-muted rounded-full overflow-hidden flex">
@@ -360,39 +663,47 @@ function SummaryBar() {
         <span>Concorrente</span>
       </div>
     </div>
-  )
+  );
 }
 
 function ComparativoPage() {
   const calculateStats = () => {
-    let ourUnique = 0
-    let ourTotal = 0
-    let competitorTotal = 0
-    let competitorUnique = 0
-    let ourPartial = 0
+    let ourUnique = 0;
+    let ourTotal = 0;
+    let competitorTotal = 0;
+    let competitorUnique = 0;
+    let ourPartial = 0;
 
-    sections.forEach(section => {
-      section.features.forEach(feature => {
-        ourTotal++
-        competitorTotal++
+    sections.forEach((section) => {
+      section.features.forEach((feature) => {
+        ourTotal++;
+        competitorTotal++;
 
-        if (feature.current === 'yes' && (feature.competitor === 'no' || feature.competitor === 'soon')) {
-          ourUnique++
+        if (
+          feature.current === "yes" &&
+          (feature.competitor === "no" || feature.competitor === "soon")
+        ) {
+          ourUnique++;
         }
 
-        if (feature.competitor === 'yes' && feature.current !== 'yes') {
-          competitorUnique++
+        if (feature.competitor === "yes" && feature.current !== "yes") {
+          competitorUnique++;
         }
 
         // Nós temos parcial
-        if (feature.current === 'partial') {
-          ourPartial++
+        if (feature.current === "partial") {
+          ourPartial++;
         }
-      })
-    })
+      });
+    });
 
-    const ourEffective = ourTotal - ourPartial + (ourPartial * 0.5)
-    const competitorEffective = competitorTotal - sections.flatMap(s => s.features).filter(f => f.competitor === 'partial').length * 0.5
+    const ourEffective = ourTotal - ourPartial + ourPartial * 0.5;
+    const competitorEffective =
+      competitorTotal -
+      sections
+        .flatMap((s) => s.features)
+        .filter((f) => f.competitor === "partial").length *
+        0.5;
 
     return {
       ourTotal,
@@ -400,11 +711,13 @@ function ComparativoPage() {
       ourPartial,
       competitorTotal,
       competitorUnique,
-      coverage: Math.round((ourEffective / (ourEffective + competitorEffective)) * 100)
-    }
-  }
+      coverage: Math.round(
+        (ourEffective / (ourEffective + competitorEffective)) * 100,
+      ),
+    };
+  };
 
-  const stats = calculateStats()
+  const stats = calculateStats();
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -419,7 +732,8 @@ function ComparativoPage() {
               Comparativo técnico
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed">
-              Análise detalhada de funcionalidades entre nossa plataforma e a solução tradicional do mercado.
+              Análise detalhada de funcionalidades entre nossa plataforma e a
+              solução tradicional do mercado.
             </p>
           </motion.div>
 
@@ -435,15 +749,18 @@ function ComparativoPage() {
               tagline="Plataforma Atual"
               isUs={true}
               stats={[
-                { label: 'Total', value: String(stats.ourTotal) },
-                { label: 'Recursos Exclusivos', value: `${stats.ourUnique}+` },
+                { label: "Total", value: String(stats.ourTotal) },
+                { label: "Recursos Exclusivos", value: `${stats.ourUnique}+` },
               ]}
             />
             <PlatformCard
               name="Concorrente X"
               tagline="Plataforma Concorrente"
               stats={[
-                { label: 'Recursos Exclusivos', value: `${stats.competitorUnique}+` },
+                {
+                  label: "Recursos Exclusivos",
+                  value: `${stats.competitorUnique}+`,
+                },
               ]}
             />
           </motion.div>
@@ -527,5 +844,5 @@ function ComparativoPage() {
         </div> */}
       </main>
     </div>
-  )
+  );
 }

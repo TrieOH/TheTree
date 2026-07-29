@@ -1,16 +1,16 @@
-import { CreditCard, QrCode, Lock, AlertTriangle } from "lucide-react"
-import { motion, AnimatePresence } from "motion/react"
-import type { PaymentMethodI } from "../../model"
-import { cn } from "@/shared/lib/utils"
-import { Button } from "@/shared/ui/shadcn/button"
+import { AlertTriangle, CreditCard, Lock, QrCode } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
+import type { PaymentMethodI } from "../../model";
 
 interface PaymentMethodSelectorProps {
-  amountCents: number
-  selectedMethod: PaymentMethodI | null
-  onSelectMethod: (method: PaymentMethodI) => void
-  onCancel?: () => void
-  disabled?: boolean
-  isTooLowForCreditCard?: boolean
+  amountCents: number;
+  selectedMethod: PaymentMethodI | null;
+  onSelectMethod: (method: PaymentMethodI) => void;
+  onCancel?: () => void;
+  disabled?: boolean;
+  isTooLowForCreditCard?: boolean;
 }
 
 const methods = [
@@ -26,13 +26,13 @@ const methods = [
     description: "Aprovação imediata",
     icon: QrCode,
   },
-]
+];
 
 function formatCurrency(cents: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(cents / 100)
+  }).format(cents / 100);
 }
 
 export function PaymentMethodSelector({
@@ -56,9 +56,10 @@ export function PaymentMethodSelector({
       {/* Methods */}
       <div className="space-y-2">
         {methods.map((method) => {
-          const Icon = method.icon
-          const isSelected = selectedMethod === method.id
-          const isDisabled = disabled || (method.id === "credit_card" && isTooLowForCreditCard)
+          const Icon = method.icon;
+          const isSelected = selectedMethod === method.id;
+          const isDisabled =
+            disabled || (method.id === "credit_card" && isTooLowForCreditCard);
 
           return (
             <div key={method.id} className="space-y-1">
@@ -67,19 +68,19 @@ export function PaymentMethodSelector({
                 size="none"
                 data-state={isSelected ? "active" : "inactive"}
                 onClick={() => {
-                  if (!isDisabled) onSelectMethod(method.id)
+                  if (!isDisabled) onSelectMethod(method.id);
                 }}
                 disabled={isDisabled}
                 className={cn(
                   "w-full flex items-center gap-3 p-3 text-left transition-all rounded-none border",
                   isSelected && "border-primary",
-                  isDisabled && "opacity-50 cursor-not-allowed"
+                  isDisabled && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <Icon
                   className={cn(
                     "w-5 h-5 shrink-0 transition-colors duration-200",
-                    isSelected ? "text-primary" : "text-muted-foreground"
+                    isSelected ? "text-primary" : "text-muted-foreground",
                   )}
                 />
 
@@ -87,7 +88,7 @@ export function PaymentMethodSelector({
                   <p
                     className={cn(
                       "text-sm font-bold uppercase tracking-wide transition-colors duration-200",
-                      isSelected ? "text-primary" : "text-foreground"
+                      isSelected ? "text-primary" : "text-foreground",
                     )}
                   >
                     {method.label}
@@ -102,7 +103,7 @@ export function PaymentMethodSelector({
                     "w-4 h-4 border shrink-0 relative overflow-hidden transition-colors duration-200",
                     isSelected
                       ? "border-primary bg-primary"
-                      : "border-muted-foreground/30"
+                      : "border-muted-foreground/30",
                   )}
                 >
                   <AnimatePresence initial={false}>
@@ -132,15 +133,15 @@ export function PaymentMethodSelector({
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                       <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
                         Valor mínimo para cartão é{" "}
-                        <span className="font-semibold">R$ 1,00</span>.
-                        Use Pix para este valor.
+                        <span className="font-semibold">R$ 1,00</span>. Use Pix
+                        para este valor.
                       </p>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -166,5 +167,5 @@ export function PaymentMethodSelector({
         </Button>
       </div>
     </div>
-  )
+  );
 }

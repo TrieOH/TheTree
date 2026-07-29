@@ -1,2 +1,1 @@
-export { useAuthActions } from "@trieoh/front-core"
-
+export { useAuthActions } from "@trieoh/front-core";

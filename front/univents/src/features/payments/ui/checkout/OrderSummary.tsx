@@ -1,21 +1,22 @@
 // OrderSummary.tsx
-import { useMemo } from "react"
-import { Package } from "lucide-react"
-import type { CartItem } from "@/features/products/model/cart"
-import type { ReservedItemI } from "@/features/products/model"
+
+import { Package } from "lucide-react";
+import { useMemo } from "react";
+import type { ReservedItemI } from "@/features/products/model";
+import type { CartItem } from "@/features/products/model/cart";
 
 interface OrderSummaryProps {
-  items: (CartItem | ReservedItemI)[]
-  totalCents?: number
-  title?: string
-  itemCount?: number
+  items: (CartItem | ReservedItemI)[];
+  totalCents?: number;
+  title?: string;
+  itemCount?: number;
 }
 
 interface NormalizedItem {
-  id: string
-  name: string
-  quantity: number
-  price_cents: number
+  id: string;
+  name: string;
+  quantity: number;
+  price_cents: number;
 }
 
 function normalizeItem(item: CartItem | ReservedItemI): NormalizedItem {
@@ -23,38 +24,35 @@ function normalizeItem(item: CartItem | ReservedItemI): NormalizedItem {
     id: "id" in item ? item.id : item.product_id,
     name: item.name,
     quantity: item.quantity,
-    price_cents: item.price_cents
-  }
+    price_cents: item.price_cents,
+  };
 }
 
 function formatCurrency(cents: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
-  }).format(cents / 100)
+    currency: "BRL",
+  }).format(cents / 100);
 }
 
 export function OrderSummary({
   items,
   totalCents: propTotal,
   title = "Resumo",
-  itemCount
+  itemCount,
 }: OrderSummaryProps) {
-
-  const normalizedItems = useMemo(
-    () => items.map(normalizeItem),
-    [items]
-  )
+  const normalizedItems = useMemo(() => items.map(normalizeItem), [items]);
 
   const total = useMemo(() => {
-    if (propTotal !== undefined) return propTotal
+    if (propTotal !== undefined) return propTotal;
     return normalizedItems.reduce(
       (sum, item) => sum + item.price_cents * item.quantity,
-      0
-    )
-  }, [propTotal, normalizedItems])
+      0,
+    );
+  }, [propTotal, normalizedItems]);
 
-  const totalItems = itemCount ?? normalizedItems.reduce((sum, i) => sum + i.quantity, 0)
+  const totalItems =
+    itemCount ?? normalizedItems.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <div className="w-full min-w-75 space-y-3">
@@ -70,7 +68,7 @@ export function OrderSummary({
 
       <div className="space-y-0 divide-y divide-border/50">
         {normalizedItems.map((item) => {
-          const subtotal = item.price_cents * item.quantity
+          const subtotal = item.price_cents * item.quantity;
 
           return (
             <div key={item.id} className="flex items-center gap-3 py-2.5">
@@ -89,7 +87,7 @@ export function OrderSummary({
                 {formatCurrency(subtotal)}
               </span>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -102,5 +100,5 @@ export function OrderSummary({
         </span>
       </div>
     </div>
-  )
+  );
 }
