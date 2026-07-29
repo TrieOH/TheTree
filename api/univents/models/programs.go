@@ -22,6 +22,7 @@ type Program struct {
 	MinAccessLevel *int        `json:"min_access_level"`
 	StaffOnly      bool        `json:"staff_only"`
 	Price          *int64      `json:"price"`
+	BannerURL      *string     `json:"banner_url"`
 	CreatedAt      time.Time   `json:"created_at"`
 	UpdatedAt      *time.Time  `json:"updated_at"`
 	DeletedAt      *time.Time  `json:"deleted_at"`
@@ -96,6 +97,7 @@ type PatchProgramRequest struct {
 	MinAccessLevel *int        `json:"min_access_level" validate:"omitempty,gte=0"`
 	StaffOnly      bool        `json:"staff_only"`
 	Price          *int64      `json:"price"`
+	BannerURL      *string     `json:"banner_url"`
 }
 
 func (r PatchProgramRequest) ToInput(programID uuid.UUID) PatchProgramInput {
@@ -107,6 +109,7 @@ func (r PatchProgramRequest) ToInput(programID uuid.UUID) PatchProgramInput {
 		MinAccessLevel: r.MinAccessLevel,
 		StaffOnly:      r.StaffOnly,
 		Price:          r.Price,
+		BannerURL:      r.BannerURL,
 	}
 }
 
@@ -118,6 +121,7 @@ type PatchProgramInput struct {
 	MinAccessLevel *int
 	StaffOnly      bool
 	Price          *int64
+	BannerURL      *string
 }
 
 type CreateProgramOccurrenceRequest struct {

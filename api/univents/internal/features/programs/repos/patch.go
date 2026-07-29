@@ -20,6 +20,7 @@ func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, program *models.Progr
 		MinAccessLevel: program.MinAccessLevel,
 		StaffOnly:      program.StaffOnly,
 		Price:          priceValue(program.Price),
+		BannerUrl:      program.BannerURL,
 		ID:             id,
 	})
 	if err != nil {

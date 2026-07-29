@@ -61,12 +61,13 @@ RETURNING *;
 -- name: PatchProductVariant :one
 UPDATE product_variants
 SET
-    vendor_code = @vendor_code,
-    name        = @name,
-    description = @description,
-    price       = @price,
-    stock       = @stock,
-    updated_at  = now()
+    vendor_code  = @vendor_code,
+    name         = @name,
+    description  = @description,
+    price        = @price,
+    stock        = @stock,
+    gallery_urls = @gallery_urls,
+    updated_at   = now()
 WHERE id = @id
   AND deleted_at IS NULL
 RETURNING *;

@@ -35,6 +35,7 @@ func RegisterRoutes(
 		r.With(jwt).Get("/owned", h.ListOwned)
 		r.With(jwt).Get("/joined", h.ListJoined)
 		r.With(jwt).Route("/{event_id}", func(r chi.Router) {
+			r.Patch("/", h.Patch)
 			r.Post("/publish", h.Publish)
 			r.Post("/discontinue", h.Discontinue)
 

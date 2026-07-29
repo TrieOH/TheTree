@@ -48,6 +48,21 @@ SET
 WHERE id = @id
   AND status = 'active';
 
+-- name: PatchEvent :one
+UPDATE events
+SET
+    full_name     = @full_name,
+    acronym       = @acronym,
+    slug          = @slug,
+    description   = @description,
+    logo_url      = @logo_url,
+    banner_url    = @banner_url,
+    contact_email = @contact_email,
+    updated_at    = now()
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
 -- name: GetEventMember :one
 SELECT *
 FROM event_members

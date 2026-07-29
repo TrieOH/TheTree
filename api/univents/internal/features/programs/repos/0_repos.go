@@ -35,6 +35,7 @@ func mapProgram(src sqlc2.Program) models.Program {
 		MinAccessLevel: src.MinAccessLevel,
 		StaffOnly:      src.StaffOnly,
 		Price:          &src.Price,
+		BannerURL:      src.BannerUrl,
 		CreatedAt:      src.CreatedAt,
 		UpdatedAt:      src.UpdatedAt,
 		DeletedAt:      src.DeletedAt,
