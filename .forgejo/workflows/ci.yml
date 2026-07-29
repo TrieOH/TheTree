@@ -53,8 +53,11 @@ jobs:
           [ "${{ needs.changes.outputs.payssage }}" == "true" ] && list="$list,payssage"
           [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
           echo "list=${list#,}" >> "$GITHUB_OUTPUT"
+      - name: Set up Docker
+        run: curl -fsSL https://get.docker.com | sh
       - uses: https://github.com/dagger/dagger-for-github@v6
         with:
+          version: "v0.21.7"
           verb: call
           module: .dagger
           args: ci --source=. --services=${{ steps.services.outputs.list }}

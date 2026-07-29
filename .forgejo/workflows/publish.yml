@@ -14,55 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
-
-      - name: Parse tag
-        id: tag
-        run: |
-          TAG="${{ github.ref_name }}"
-          SVC="${TAG%%/*}"
-          VERSION="${TAG##*/}"
-
-          if [[ "$SVC" == *-ui ]] || [[ "$SVC" == *sdk* ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "skip=false" >> $GITHUB_OUTPUT
-          echo "svc=$SVC" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Download Docker
-        if: ${{ steps.tag.outputs.skip == 'false' }}
+      - name: Set up Docker
         run: curl -fsSL https://get.docker.com | sh
-
-      - name: Login to registry
-        if: ${{ steps.tag.outputs.skip == 'false' }}
+      - name: Build & publish via Dagger
+        uses: https://github.com/dagger/dagger-for-github@v6
         env:
           FJ_TOKEN: ${{ secrets.FJ_TOKEN }}
-          FJ_USER: ${{ secrets.FJ_USER }}
-        run: printenv FJ_TOKEN | docker login git.trieoh.com -u "$FJ_USER" --password-stdin
-
-      - name: Build & push
-        if: ${{ steps.tag.outputs.skip == 'false' }}
-        id: build
-        run: |
-          docker build \
-            -f api/${{ steps.tag.outputs.svc }}/Dockerfile \
-            -t git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }} \
-            -t git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:latest \
-            .
-          docker push git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }}
-          docker push git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:latest
-
-      - name: Deploy to production
-        if: ${{ steps.tag.outputs.skip == 'false' }}
-        uses: https://github.com/appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            docker service update \
-              --detach=false \
-              --image git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }} \
-              trieoh_${{ steps.tag.outputs.svc }}
+          version: "v0.21.7"
+          verb: call
+          module: .dagger
+          args: publish --source=. --registry-username=${{ secrets.FJ_USER }} --registry-password=env:FJ_TOKEN --tag=${{ github.ref_name }}
