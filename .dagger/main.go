@@ -196,10 +196,14 @@ func (m *Thetree) Publish(
 	return digest, nil
 }
 
-/*
 // FrontendLintTsc runs lint and TypeScript checks for the given frontend
 // services (comma-separated or "all").
-func (m *Thetree) FrontendLintTsc(ctx context.Context, source *dagger.Directory, services string) (string, error) {
+func (m *Thetree) FrontendLintTsc(
+	ctx context.Context,
+	// +ignore=["node_modules", "**/node_modules", "dist", "**/dist", ".git", ".wrangler", "**/.wrangler", ".env", "*.env"]
+	source *dagger.Directory,
+	services string,
+) (string, error) {
 	list := parseServices(services)
 	c := dag.Container().
 		From("node:24-bookworm").
@@ -218,7 +222,6 @@ func (m *Thetree) FrontendLintTsc(ctx context.Context, source *dagger.Directory,
 
 	return c.Stdout(ctx)
 }
-*/
 
 func parseServices(services string) []string {
 	if services == "" || services == "all" {
