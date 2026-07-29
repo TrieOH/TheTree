@@ -21,6 +21,7 @@ jobs:
         env:
           FJ_TOKEN: ${{ secrets.FJ_TOKEN }}
         with:
+          version: "v0.21.7"
           verb: call
           module: .dagger
           args: publish --source=. --registry-username=${{ secrets.FJ_USER }} --registry-password=env:FJ_TOKEN --tag=${{ github.ref_name }}
