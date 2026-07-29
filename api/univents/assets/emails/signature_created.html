@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 16px; color: #1a1a2e;">
+    <h2 style="margin: 0 0 4px 0; font-size: 20px;">Signature Created</h2>
+    <p style="margin: 0 0 24px 0; color: #64748b; font-size: 14px;">{{.EventName}} — {{.EditionName}}</p>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6;">Hello {{.SignatoryName}},</p>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6;">Your signature for <strong>{{.EventName}} — {{.EditionName}}</strong> has been recorded. It is valid only for this edition.</p>
+
+    <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">If you wish to invalidate this signature, you can revoke it at any time:</p>
+
+    <a href="{{.RevokeLink}}" style="display: inline-block; padding: 12px 28px; background-color: #ef4444; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
+        Revoke Signature
+    </a>
+
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">
+    <p style="margin: 0 0 8px 0; font-size: 12px; color: #94a3b8;">This signature is edition-scoped. Revoking it removes it from this edition only.</p>
+    <p style="margin: 0; font-size: 12px; color: #f59e0b;">Warning: for integrity reasons, any documents that have already been emitted with this signature will still carry it after revocation.</p>
+</body>
+</html>

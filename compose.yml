@@ -120,6 +120,7 @@ services:
     networks:
       - internal
     ports:
+      - "1025:1025"
       - "8025:8025"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8025/livez || exit 1"]
