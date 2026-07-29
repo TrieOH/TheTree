@@ -161,7 +161,7 @@ func (m *Thetree) Publish(
 	ctx context.Context,
 	source *dagger.Directory,
 	registryUsername string,
-	registryPassword string,
+	registryPassword *dagger.Secret,
 	tag string,
 ) (string, error) {
 	parts := strings.SplitN(tag, "/", 2)
@@ -178,11 +178,9 @@ func (m *Thetree) Publish(
 		Dockerfile: fmt.Sprintf("api/%s/Dockerfile", service),
 	})
 
-	secret := dag.SetSecret("registry-password", registryPassword)
-
 	versionAddr := fmt.Sprintf("%s/trieoh/%s:%s", registry, service, version)
 	digest, err := img.
-		WithRegistryAuth(registry, registryUsername, secret).
+		WithRegistryAuth(registry, registryUsername, registryPassword).
 		Publish(ctx, versionAddr)
 	if err != nil {
 		return "", fmt.Errorf("publish %s: %w", versionAddr, err)
@@ -190,7 +188,7 @@ func (m *Thetree) Publish(
 
 	latestAddr := fmt.Sprintf("%s/trieoh/%s:latest", registry, service)
 	if _, err := img.
-		WithRegistryAuth(registry, registryUsername, secret).
+		WithRegistryAuth(registry, registryUsername, registryPassword).
 		Publish(ctx, latestAddr); err != nil {
 		return "", fmt.Errorf("publish latest %s: %w", latestAddr, err)
 	}
