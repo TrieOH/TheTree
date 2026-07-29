@@ -30,7 +30,6 @@ export const env = createEnv({
     VITE_AUTH_API_URL: z.url(),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
 
-    VITE_MERCADO_PAGO_CALLBACK_URL: z.url(),
     VITE_MERCADO_PAGO_PUBLIC_KEY: z.string(),
 
     VITE_UPLOAD_MAX_RETRIES: z.coerce.number().int().min(0).default(5),
