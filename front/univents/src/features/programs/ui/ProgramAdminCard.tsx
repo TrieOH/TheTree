@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/shadcn/dropdown-menu";
 import type { OccurrenceI, ProgramI } from "../model";
+import { ProgramImageActions } from "./ProgramImageActions";
 
 function gradient(index: number) {
   return [
@@ -66,11 +67,19 @@ export function ProgramAdminCard({
           gradient(index),
         )}
       >
-        <div className="flex h-full items-center justify-center">
-          <div className="flex size-18 items-center justify-center rounded-full border border-border/70 bg-background/80 shadow-sm backdrop-blur-sm">
-            <CalendarDays className="size-7 text-muted-foreground/45" />
+        {program.banner_url ? (
+          <img
+            src={program.banner_url}
+            alt={program.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <div className="flex size-18 items-center justify-center rounded-full border border-border/70 bg-background/80 shadow-sm backdrop-blur-sm">
+              <CalendarDays className="size-7 text-muted-foreground/45" />
+            </div>
           </div>
-        </div>
+        )}
         <div className="absolute inset-0 bg-linear-to-t from-background/95 via-background/25 to-transparent" />
         <div className="absolute left-3 top-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
           <span className="mr-1.5 inline-block size-1.5 rounded-full bg-emerald-500" />
@@ -99,6 +108,13 @@ export function ProgramAdminCard({
                 <CalendarDays className="size-4" />
                 Gerenciar ocorrências
               </DropdownMenuItem>
+              <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
+                Banner{" "}
+                <ProgramImageActions
+                  program={program}
+                  editionId={program.edition_id}
+                />
+              </div>
               <DropdownMenuItem
                 variant="destructive"
                 onClick={(event) => {
@@ -161,6 +177,13 @@ export function ProgramAdminCard({
           <CalendarDays className="size-4" />
           Gerenciar ocorrências
         </ContextMenuItem>
+        <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
+          Banner{" "}
+          <ProgramImageActions
+            program={program}
+            editionId={program.edition_id}
+          />
+        </div>
         <ContextMenuItem
           variant="destructive"
           onClick={(event) => {

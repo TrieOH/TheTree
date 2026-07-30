@@ -7,6 +7,7 @@ export const programSchema = z.object({
   min_access_level: z.coerce.number().int().min(0).optional(),
   staff_only: z.boolean().default(false),
   price: z.coerce.number().int().min(0).optional(),
+  banner_url: z.string().nullable().optional(),
 });
 export type ProgramCreateInput = z.input<typeof programSchema>;
 export type ProgramCreateOutput = z.output<typeof programSchema>;
@@ -16,6 +17,7 @@ export interface ProgramI extends ProgramCreateOutput {
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;
+  banner_url: string | null;
 }
 export interface OccurrenceI {
   id: string;
