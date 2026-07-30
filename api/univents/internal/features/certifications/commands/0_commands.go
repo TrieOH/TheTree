@@ -11,7 +11,6 @@ type Commands struct {
 	certs    ports.CertificationRepo
 	programs ports.ProgramRepo
 	email    *email.Client
-	appURL   string
 }
 
 func NewCommands(
@@ -20,7 +19,6 @@ func NewCommands(
 	certs ports.CertificationRepo,
 	programs ports.ProgramRepo,
 	email *email.Client,
-	appURL string,
 ) *Commands {
 	return &Commands{
 		events:   events,
@@ -28,6 +26,5 @@ func NewCommands(
 		certs:    certs,
 		programs: programs,
 		email:    email,
-		appURL:   appURL,
 	}
 }

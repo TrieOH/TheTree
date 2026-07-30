@@ -6,6 +6,7 @@ import (
 	"lib/crypto"
 	"lib/email"
 	"lib/telemetry"
+	"os"
 	"univents/assets"
 	"univents/models"
 	"univents/ports"
@@ -33,7 +34,6 @@ type grantCertsDeps struct {
 	editions ports.EditionRepo
 	events   ports.EventRepo
 	email    *email.Client
-	appURL   string
 }
 
 type GrantCertsWorker struct {
@@ -46,10 +46,9 @@ func NewGrantCertsWorker(
 	editions ports.EditionRepo,
 	events ports.EventRepo,
 	email *email.Client,
-	appURL string,
 ) *GrantCertsWorker {
 	return &GrantCertsWorker{grantCertsDeps: grantCertsDeps{
-		certs: certs, editions: editions, events: events, email: email, appURL: appURL,
+		certs: certs, editions: editions, events: events, email: email,
 	}}
 }
 
@@ -77,10 +76,9 @@ func NewGrantCertsForOccurrenceWorker(
 	editions ports.EditionRepo,
 	events ports.EventRepo,
 	email *email.Client,
-	appURL string,
 ) *GrantCertsForOccurrenceWorker {
 	return &GrantCertsForOccurrenceWorker{grantCertsDeps: grantCertsDeps{
-		certs: certs, editions: editions, events: events, email: email, appURL: appURL,
+		certs: certs, editions: editions, events: events, email: email,
 	}}
 }
 
@@ -232,8 +230,9 @@ func (w *grantCertsDeps) sendCertEmail(ctx context.Context, cert *models.Certifi
 		return
 	}
 
-	certLink := fmt.Sprintf("%s/certifications/%s", w.appURL, cert.ID)
-	verifyLink := fmt.Sprintf("%s/verify/%s", w.appURL, cert.VerificationHash)
+	appURL := os.Getenv("APP_URL")
+	certLink := fmt.Sprintf("%s/certifications/%s", appURL, cert.ID)
+	verifyLink := fmt.Sprintf("%s/verify/%s", appURL, cert.VerificationHash)
 
 	body, err := assets.RenderCertGrantedEmail(assets.CertGrantedEmailData{
 		AttendeeName: toName,

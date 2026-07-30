@@ -126,7 +126,7 @@ func (app *Univents) initCommands(r repos) commands {
 		products:    products.NewCommands(r.events, r.editions, r.products),
 		programs:    programs.NewCommands(r.events, r.editions, r.programs, r.occurrences),
 		signatures:  signatures.NewCommands(r.events, r.editions, r.signatures, r.signatureRequests, app.emailClient, app.cfg.HmacSecret),
-		certs:       certifications.NewCommands(r.events, r.editions, r.certs, r.programs, app.emailClient, app.cfg.AppUrl),
+		certs:       certifications.NewCommands(r.events, r.editions, r.certs, r.programs, app.emailClient),
 	}
 }
 
@@ -175,8 +175,8 @@ func (app *Univents) initRiver(ctx context.Context, r repos) (*river.Client[pgx.
 	libriver.Migrate(ctx, app.db)
 
 	client := libriver.NewClient(app.db, libriver.NewWorkers(
-		libriver.Register(certifications.NewGrantCertsWorker(r.certs, r.editions, r.events, app.emailClient, app.cfg.AppUrl)),
-		libriver.Register(certifications.NewGrantCertsForOccurrenceWorker(r.certs, r.editions, r.events, app.emailClient, app.cfg.AppUrl)),
+		libriver.Register(certifications.NewGrantCertsWorker(r.certs, r.editions, r.events, app.emailClient)),
+		libriver.Register(certifications.NewGrantCertsForOccurrenceWorker(r.certs, r.editions, r.events, app.emailClient)),
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
 
