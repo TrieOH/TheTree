@@ -21,7 +21,7 @@ var validate = validator.New()
 
 func init() {
 	// Register custom validators
-	if err := validate.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
+	err := validate.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
 		v := fl.Field().String()
 
 		u, err := uuid.Parse(v)
@@ -30,7 +30,8 @@ func init() {
 		}
 
 		return u.Version() == 7
-	}); err != nil {
+	})
+	if err != nil {
 		panic("failed to register uuid7 validator: " + err.Error())
 	}
 
@@ -48,14 +49,15 @@ func init() {
 }
 
 // ValidateRule validates a single value and returns a user-friendly error
-func ValidateRule(value interface{}, rule, fieldName string) error {
+func ValidateRule(value any, rule, fieldName string) error {
 	err := validate.Var(value, rule)
 	if err == nil {
 		return nil
 	}
 
 	var errs []error
-	validationErrors, ok := err.(validator.ValidationErrors)
+	var validationErrors validator.ValidationErrors
+	ok := errors.As(err, &validationErrors)
 	if !ok {
 		return errx.Invalid("request").SetMessage("error validating request").SetCause(err)
 	}
@@ -66,7 +68,7 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 	return errx.Combine("validation", errs...)
 }
 
-func formatValue(v interface{}) string {
+func formatValue(v any) string {
 	if v == nil {
 		return "null"
 	}
@@ -87,13 +89,13 @@ func formatValue(v interface{}) string {
 }
 
 // formatValidationMessage creates user-friendly error messages that include the field name
-func formatValidationMessage(err validator.FieldError, fieldName string, value interface{}) string {
+func formatValidationMessage(err validator.FieldError, fieldName string, value any) string {
 	field := fieldName
 	val := formatValue(value)
 
 	switch err.Tag() {
 	case "required":
-		return fmt.Sprintf("%s is required", field)
+		return field + " is required"
 	case "email":
 		return fmt.Sprintf("%s must be a valid email address (got %s)", field, val)
 	case "uuid":
@@ -118,7 +120,7 @@ func formatValidationMessage(err validator.FieldError, fieldName string, value i
 }
 
 // ValidateStruct validates any struct and returns a Response with validation errors
-func ValidateStruct(s interface{}) error {
+func ValidateStruct(s any) error {
 	err := validate.Struct(s)
 	if err == nil {
 		return nil
@@ -133,11 +135,11 @@ func ValidateStruct(s interface{}) error {
 		structFieldName := err.StructField()
 		fieldName := structFieldName
 		var msg string
-		var value interface{}
+		var value any
 
 		// Get JSON field name if available
 		structType := reflect.TypeOf(s)
-		if structType.Kind() == reflect.Ptr {
+		if structType.Kind() == reflect.Pointer {
 			structType = structType.Elem()
 		}
 		if structField, ok := structType.FieldByName(structFieldName); ok {
@@ -162,11 +164,13 @@ func ValidateInto[T any](r *http.Request, target *T) error {
 		return errx.Invalid("request").SetMessage("content type is not application/json")
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+	err := json.NewDecoder(r.Body).Decode(target)
+	if err != nil {
 		return errx.Invalid("request").SetMessage("invalid JSON").SetCause(err)
 	}
 
-	if err := ValidateStruct(*target); err != nil {
+	err := ValidateStruct(*target)
+	if err != nil {
 		return err
 	}
 
@@ -182,7 +186,8 @@ func Run(validators ...Validator) error {
 		if v == nil {
 			continue
 		}
-		if err := v(); err != nil {
+		err := v()
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}

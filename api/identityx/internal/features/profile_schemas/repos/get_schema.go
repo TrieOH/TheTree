@@ -5,8 +5,9 @@ import (
 	"context"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (r *Repo) Get(ctx context.Context, projectID *uuid.UUID) (*models.ProjectProfileSchema, error) {

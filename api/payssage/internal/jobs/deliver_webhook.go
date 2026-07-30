@@ -28,6 +28,7 @@ func (DeliverWebhookArgs) Kind() string { return "webhook.deliver" }
 
 type DeliverWebhookWorker struct {
 	river.WorkerDefaults[DeliverWebhookArgs]
+
 	deliveries ports.WebhookDeliveryRepo
 }
 

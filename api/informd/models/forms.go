@@ -18,9 +18,9 @@ const (
 type Form struct {
 	ID          uuid.UUID  `json:"id"`
 	NamespaceID *uuid.UUID `json:"namespace_id"`
-	OwnerID     uuid.UUID  `json:"owner_id" validate:"required"`
-	CreatedBy   uuid.UUID  `json:"created_by" validate:"required"`
-	Title       string     `json:"title"    validate:"required"`
+	OwnerID     uuid.UUID  `json:"owner_id"     validate:"required"`
+	CreatedBy   uuid.UUID  `json:"created_by"   validate:"required"`
+	Title       string     `json:"title"        validate:"required"`
 	Status      FormStatus `json:"status"`
 	OpenedAt    *time.Time `json:"opened_at"`
 	ClosedAt    *time.Time `json:"closed_at"`
@@ -37,7 +37,8 @@ func NewForm(namespaceID *uuid.UUID, ownerID, createdBy uuid.UUID, title string)
 		Title:       title,
 		Status:      FormStatusDraft,
 	}
-	if err := validate.Struct(f); err != nil {
+	err := validate.Struct(f)
+	if err != nil {
 		return nil, err
 	}
 	return f, nil
@@ -130,22 +131,26 @@ type RemoveNamespaceFormMemberInput struct {
 }
 
 type FullForm struct {
-	Form  `json:"form"`
+	Form `json:"form"`
+
 	Steps []FullStep `json:"steps"`
 }
 
 type FormAnswerable struct {
-	Form  `json:"form"`
+	Form `json:"form"`
+
 	Steps []StepAnswerable `json:"steps"`
 }
 
 type FullStep struct {
-	Step   `json:"step"`
+	Step `json:"step"`
+
 	Fields []FullField `json:"fields"`
 }
 
 type StepAnswerable struct {
-	Step   `json:"step"`
+	Step `json:"step"`
+
 	Fields []FieldAnswerable `json:"fields"`
 }
 
@@ -155,11 +160,13 @@ type FieldAnswerable struct {
 }
 
 type FullField struct {
-	Field   `json:"field"`
+	Field `json:"field"`
+
 	Answers []FullAnswer `json:"answers"`
 }
 
 type FullAnswer struct {
-	Answer    `json:"answer"`
+	Answer `json:"answer"`
+
 	Responder string `json:"responder"`
 }

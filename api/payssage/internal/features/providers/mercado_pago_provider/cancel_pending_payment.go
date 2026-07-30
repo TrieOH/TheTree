@@ -3,7 +3,6 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"lib/telemetry"
 	"lib/utils"
 	"payssage/models"
@@ -58,7 +57,7 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 		SetBody(body).
 		SetResult(&mpResp).
 		SetResultError(&mpErr).
-		Put(fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", providerData.TransactionID))
+		Put("https://api.mercadopago.com/v1/payments/" + providerData.TransactionID)
 	if err != nil {
 		return fun.Errf("mercadopago cancel payment request: %v", err).BadGateway()
 	}

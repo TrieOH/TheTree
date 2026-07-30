@@ -12,7 +12,8 @@ import (
 func (repo *Repo) GetRequestByID(ctx context.Context, id uuid.UUID) (*models.SignatureRequest, error) {
 	ctx, span := telemetry.StartSpan(ctx, "SignaturesRepo.GetRequestByID")
 	defer span.End()
-	if err := repo.ExpireStaleRequests(ctx); err != nil {
+	err := repo.ExpireStaleRequests(ctx)
+	if err != nil {
 		return nil, err
 	}
 	result, err := database.Queries(ctx, repo.q).GetSignatureRequestByID(ctx, id)

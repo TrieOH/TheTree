@@ -5,8 +5,9 @@ import (
 	"context"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Actor, error) {

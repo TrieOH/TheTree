@@ -25,7 +25,8 @@ type RequestSignatureEmailData struct {
 
 func RenderRequestSignatureEmail(data RequestSignatureEmailData) (string, error) {
 	var buf bytes.Buffer
-	if err := templates.ExecuteTemplate(&buf, "request_signature.html", data); err != nil {
+	err := templates.ExecuteTemplate(&buf, "request_signature.html", data)
+	if err != nil {
 		return "", err
 	}
 	return buf.String(), nil
@@ -40,7 +41,8 @@ type SignatureCreatedEmailData struct {
 
 func RenderSignatureCreatedEmail(data SignatureCreatedEmailData) (string, error) {
 	var buf bytes.Buffer
-	if err := templates.ExecuteTemplate(&buf, "signature_created.html", data); err != nil {
+	err := templates.ExecuteTemplate(&buf, "signature_created.html", data)
+	if err != nil {
 		return "", err
 	}
 	return buf.String(), nil

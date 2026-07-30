@@ -14,6 +14,7 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 func (c *Commands) CreateRequest(ctx context.Context, payload models.CreateSignatureRequestInput) (*models.SignatureRequest, error) {
@@ -74,7 +75,7 @@ func (c *Commands) CreateRequest(ctx context.Context, payload models.CreateSigna
 		return nil, fmt.Errorf("failed to encode signature token: %w", err)
 	}
 
-	link := fmt.Sprintf("https://yourapp.com/signature-requests/fulfill?token=%s", token)
+	link := "https://yourapp.com/signature-requests/fulfill?token=" + token
 	body, err := assets.RenderRequestSignatureEmail(assets.RequestSignatureEmailData{
 		SignatoryName: payload.SignatoryName,
 		EventName:     event.FullName,
@@ -86,12 +87,15 @@ func (c *Commands) CreateRequest(ctx context.Context, payload models.CreateSigna
 		return nil, fmt.Errorf("failed to render email: %w", err)
 	}
 
-	c.email.Send(email.Message{
+	err = c.email.Send(email.Message{
 		To:      []string{*payload.SignatoryEmail},
 		Subject: fmt.Sprintf("Signature request for %s — %s", event.FullName, edition.Name),
 		Body:    body,
 		HTML:    true,
 	})
+	if err != nil {
+		telemetry.Log().Error("failed to send signature request email", zap.Error(err))
+	}
 
 	return request, nil
 }

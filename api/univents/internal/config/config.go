@@ -62,12 +62,12 @@ type Config struct {
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
 
 	// SMTP / Email
-	SmtpHost     string `env:"SMTP_HOST,required"`
-	SmtpPort     int    `env:"SMTP_PORT"             envDefault:"587"`
-	SmtpUsername string `env:"SMTP_USERNAME"`
-	SmtpPassword string `env:"SMTP_PASSWORD"`
-	SmtpFrom     string `env:"SMTP_FROM,required"`
-	SmtpTls      bool   `env:"SMTP_TLS" envDefault:"true"`
+	SMTPHost     string `env:"SMTP_HOST,required"`
+	SMTPPort     int    `env:"SMTP_PORT"          envDefault:"587"`
+	SMTPUsername string `env:"SMTP_USERNAME"`
+	SMTPPassword string `env:"SMTP_PASSWORD"`
+	SMTPFrom     string `env:"SMTP_FROM,required"`
+	SMTPTLS      bool   `env:"SMTPTLS"            envDefault:"true"`
 }
 
 func (cfg Config) ToDBConfig() database.Config {
@@ -89,12 +89,12 @@ func (cfg Config) ToDBConfig() database.Config {
 
 func (cfg Config) ToEmailConfig() email.Config {
 	return email.Config{
-		Host:     cfg.SmtpHost,
-		Port:     cfg.SmtpPort,
-		Username: cfg.SmtpUsername,
-		Password: cfg.SmtpPassword,
-		From:     cfg.SmtpFrom,
-		TLS:      cfg.SmtpTls,
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		Username: cfg.SMTPUsername,
+		Password: cfg.SMTPPassword,
+		From:     cfg.SMTPFrom,
+		TLS:      cfg.SMTPTLS,
 	}
 }
 

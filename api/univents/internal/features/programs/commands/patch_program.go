@@ -46,6 +46,7 @@ func (c *Commands) PatchProgram(ctx context.Context, payload models.PatchProgram
 		MinAccessLevel: payload.MinAccessLevel,
 		StaffOnly:      payload.StaffOnly,
 		Price:          payload.Price,
+		BannerURL:      payload.BannerURL,
 	}
 
 	return c.programs.Patch(ctx, payload.ProgramID, program)
