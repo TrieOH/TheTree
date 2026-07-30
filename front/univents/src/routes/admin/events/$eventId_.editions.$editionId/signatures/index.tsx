@@ -1,20 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import { Mail, PenLine, Plus, Trash2 } from "lucide-react";
+import { PenLine, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-  allSignatureRequestsQueryOptions,
-  allSignaturesQueryOptions,
-  cancelSignatureRequestFn,
-  createSignatureRequestFn,
-} from "@/features/signatures/api";
+import { allSignaturesQueryOptions } from "@/features/signatures/api";
 import { useRemoveSignatureMutation } from "@/features/signatures/api/mutations";
-import type {
-  SignatureI,
-  SignatureRequestI,
-} from "@/features/signatures/model";
+import type { SignatureI } from "@/features/signatures/model";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -31,10 +22,6 @@ function RouteComponent() {
   const { data: signatures = [] } = useQuery(
     allSignaturesQueryOptions(eventId, editionId),
   );
-  const requestsQuery = useQuery(allSignatureRequestsQueryOptions(editionId));
-  const [requestName, setRequestName] = useState("");
-  const [requestEmail, setRequestEmail] = useState("");
-  const [requestBusy, setRequestBusy] = useState(false);
   const removeSignatureMutation = useRemoveSignatureMutation();
   const [filter, setFilter] = useState("");
   const [removingSignature, setRemovingSignature] = useState<SignatureI | null>(
@@ -53,13 +40,17 @@ function RouteComponent() {
   }, [filter, signatures]);
 
   return (
-    <div className="flex flex-wrap p-6 pb-28!">
+    <>
       <PaginatedContainer<SignatureI>
         items={filteredSignatures}
         layout="grid"
         minItemWidth="16rem"
         pageSize={6}
         gap="6"
+        sortFields={[
+          { key: "signatory_name", label: "Signatário" },
+          { key: "created_at", label: "Data de criação" },
+        ]}
         filterValue={filter}
         onFilterChange={setFilter}
         filterPlaceholder="Buscar por título ou URL..."
@@ -71,7 +62,6 @@ function RouteComponent() {
             className={cn(
               "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
               "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
-              "sm:min-w-44 sm:px-5",
             )}
           >
             <Plus className="size-4 shrink-0" />
@@ -143,102 +133,6 @@ function RouteComponent() {
           ))
         }
       />
-      <section className="mt-8 w-full rounded-2xl border bg-card p-5 shadow-xs">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Mail className="size-5" /> Solicitações de assinatura
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Envie um convite para alguém assinar esta edição.
-            </p>
-          </div>
-        </div>
-        <form
-          className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setRequestBusy(true);
-            try {
-              const response = await createSignatureRequestFn(editionId, {
-                signatory_name: requestName,
-                signatory_email: requestEmail,
-              });
-              if (!response.success)
-                throw new Error(
-                  response.message || "Não foi possível criar a solicitação",
-                );
-              setRequestName("");
-              setRequestEmail("");
-              await requestsQuery.refetch();
-            } catch (error) {
-              toast.error(
-                error instanceof Error
-                  ? error.message
-                  : "Erro ao criar solicitação",
-              );
-            } finally {
-              setRequestBusy(false);
-            }
-          }}
-        >
-          <input
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-            placeholder="Nome do signatário"
-            value={requestName}
-            onChange={(event) => setRequestName(event.target.value)}
-            required
-          />
-          <input
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-            type="email"
-            placeholder="E-mail"
-            value={requestEmail}
-            onChange={(event) => setRequestEmail(event.target.value)}
-            required
-          />
-          <Button type="submit" disabled={requestBusy}>
-            {requestBusy ? "Enviando..." : "Enviar convite"}
-          </Button>
-        </form>
-        <div className="mt-5 divide-y rounded-lg border">
-          {(requestsQuery.data ?? []).map((request: SignatureRequestI) => (
-            <div
-              key={request.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 text-sm"
-            >
-              <div>
-                <p className="font-medium">{request.signatory_name}</p>
-                <p className="text-muted-foreground">
-                  {request.signatory_email}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline">{request.status}</Badge>
-                {request.status === "pending" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={async () => {
-                      await cancelSignatureRequestFn(request.id);
-                      await requestsQuery.refetch();
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-          {!requestsQuery.isLoading &&
-            (requestsQuery.data ?? []).length === 0 && (
-              <p className="px-3 py-4 text-sm text-muted-foreground">
-                Nenhuma solicitação enviada.
-              </p>
-            )}
-        </div>
-      </section>
-
       <AlertModal
         open={Boolean(removingSignature)}
         onOpenChange={() => setRemovingSignature(null)}
@@ -261,6 +155,6 @@ function RouteComponent() {
           setRemovingSignature(null);
         }}
       />
-    </div>
+    </>
   );
 }

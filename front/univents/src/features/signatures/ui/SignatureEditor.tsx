@@ -28,7 +28,10 @@ export interface SignatureEditorProps {
 
 export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("Assinatura");
+  const [signatoryName, setSignatoryName] = useState("");
+  const [signatoryTitle, setSignatoryTitle] = useState("");
+  const [signatoryEmail, setSignatoryEmail] = useState("");
+  const [signatoryUserId, setSignatoryUserId] = useState("");
   const [mode, setMode] = useState<Mode>("draw");
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -115,11 +118,8 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
   const saveMutation = useCreateSignatureMutation();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 pb-28!">
+    <div className="mx-auto max-w-6xl px-4">
       <div className="mb-6 space-y-1">
-        <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
-          Admin
-        </p>
         <h1 className="text-2xl font-semibold">Nova assinatura</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Crie uma assinatura desenhando no canvas ou importando uma imagem
@@ -134,16 +134,48 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
               Configuração
             </CardTitle>
             <CardDescription className="text-xs">
-              Nome e origem da assinatura.
+              Dados do signatário e origem da assinatura.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Título</Label>
+              <Label className="text-xs text-muted-foreground">
+                Nome do signatário
+              </Label>
               <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Assinatura do responsável"
+                value={signatoryName}
+                onChange={(e) => setSignatoryName(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Cargo</Label>
+              <Input
+                value={signatoryTitle}
+                onChange={(e) => setSignatoryTitle(e.target.value)}
+                placeholder="Cargo ou função"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">E-mail</Label>
+              <Input
+                type="email"
+                value={signatoryEmail}
+                onChange={(e) => setSignatoryEmail(e.target.value)}
+                placeholder="nome@exemplo.com"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                ID do usuário
+              </Label>
+              <Input
+                value={signatoryUserId}
+                onChange={(e) => setSignatoryUserId(e.target.value)}
+                placeholder="Opcional"
               />
             </div>
 
@@ -184,9 +216,9 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
               className="h-9 w-full gap-2"
               onClick={async () => {
                 try {
-                  const trimmedTitle = title.trim();
-                  if (!trimmedTitle) {
-                    toast.error("Título é obrigatório");
+                  const trimmedName = signatoryName.trim();
+                  if (!trimmedName) {
+                    toast.error("Nome do signatário é obrigatório");
                     return;
                   }
 
@@ -224,7 +256,10 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                     eventId,
                     editionId,
                     data: {
-                      signatory_name: trimmedTitle,
+                      signatory_name: trimmedName,
+                      signatory_title: signatoryTitle.trim() || undefined,
+                      signatory_email: signatoryEmail.trim() || undefined,
+                      signatory_user_id: signatoryUserId.trim() || undefined,
                       image_url: url,
                     },
                   });

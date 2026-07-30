@@ -55,3 +55,22 @@ export interface SignatureRequestCreateI {
   signatory_user_id?: string;
   expires_in_days?: number;
 }
+
+export const signatureRequestCreateSchema = z.object({
+  signatory_name: z.string().trim().min(2, "Informe o nome do signatário"),
+  signatory_title: z.string().trim().optional(),
+  signatory_email: z.email("Informe um e-mail válido"),
+  signatory_user_id: z.string().uuid().optional().or(z.literal("")),
+  expires_in_days: z.coerce
+    .number()
+    .int("Informe um número inteiro")
+    .min(1, "O prazo mínimo é de 1 dia")
+    .max(365, "O prazo máximo é de 365 dias"),
+});
+
+export type SignatureRequestCreateInputI = z.input<
+  typeof signatureRequestCreateSchema
+>;
+export type SignatureRequestCreateOutputI = z.output<
+  typeof signatureRequestCreateSchema
+>;
