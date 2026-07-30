@@ -1,5 +1,19 @@
-import { InfinityIcon, Package, UserCheck } from "lucide-react";
+import {
+  Check,
+  InfinityIcon,
+  Package,
+  ShoppingCart,
+  UserCheck,
+} from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/shared/ui/shadcn/tooltip";
+import { useCart } from "../hooks/use-cart";
 import type { ProductI, VariantI } from "../model";
 
 function formatPrice(price: number): string {
@@ -7,21 +21,24 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 0,
-  }).format(price);
+    minimumFractionDigits: 2,
+  }).format(price / 100);
 }
 
 interface ProductCardProps {
   product: ProductI;
   variants: VariantI[];
   maxVariants?: number;
+  editionId?: string;
 }
 
 export function ProductCard({
   product,
   variants,
   maxVariants = 3,
+  editionId,
 }: ProductCardProps) {
+  const { addItem, items } = useCart(editionId ?? "");
   if (variants.length === 0) return null;
 
   const displayVariants = variants.slice(0, maxVariants);
@@ -63,17 +80,17 @@ export function ProductCard({
         </div>
 
         {product.requires_registration && (
-          <span
-            className={cn(
-              "shrink-0 inline-flex items-center gap-1",
-              "px-2 py-0.5 rounded-full",
-              "bg-primary/10 text-primary",
-              "text-[10px] font-bold uppercase tracking-wide",
-            )}
-          >
-            <UserCheck className="w-3 h-3" />
-            Cadastro
-          </span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                aria-label="Necessita cadastro no evento"
+                className="shrink-0 rounded-full bg-primary/10 p-1.5 text-primary transition-colors hover:bg-primary/20"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+              </TooltipTrigger>
+              <TooltipContent>Necessita cadastro no evento</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
 
@@ -102,16 +119,18 @@ export function ProductCard({
                   </p>
                 )}
               </div>
-              <span
-                className={cn(
-                  "shrink-0 text-sm font-bold",
-                  variant.price === 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-foreground",
-                )}
-              >
-                {formatPrice(variant.price)}
-              </span>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <span
+                  className={cn(
+                    "shrink-0 text-sm font-bold",
+                    variant.price === 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-foreground",
+                  )}
+                >
+                  {formatPrice(variant.price)}
+                </span>
+              </div>
             </div>
 
             {/* Stock */}
@@ -136,6 +155,41 @@ export function ProductCard({
                 </span>
               )}
             </div>
+            {editionId &&
+              (() => {
+                const inCart = items.find(
+                  (item) => item.id === variant.id && item.type === "product",
+                );
+                return (
+                  <Button
+                    size="sm"
+                    variant={inCart ? "secondary" : "default"}
+                    className="mt-4 h-9 w-full gap-2 text-xs font-semibold"
+                    onClick={() =>
+                      addItem(
+                        {
+                          id: variant.id,
+                          type: "product",
+                          name: `${product.vendor_code} - ${variant.name}`,
+                          price_cents: variant.price,
+                          inventory_remaining: variant.stock ?? 999,
+                          has_inventory: variant.stock !== null,
+                        },
+                        1,
+                      )
+                    }
+                  >
+                    {inCart ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                    )}
+                    {inCart
+                      ? `Adicionado (${inCart.quantity})`
+                      : "Adicionar ao carrinho"}
+                  </Button>
+                );
+              })()}
           </div>
         ))}
 

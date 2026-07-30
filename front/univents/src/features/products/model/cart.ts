@@ -1,9 +1,11 @@
 import { Store } from "@tanstack/react-store";
 
 export const GLOBAL_MAX_QUANTITY = 999;
+export type CartItemType = "ticket" | "product" | "activity";
 
 export interface CartItem {
   id: string;
+  type: CartItemType;
   name: string;
   price_cents: number;
   quantity: number;
@@ -69,7 +71,9 @@ export const cartActions = {
   ) => {
     cartStore.setState((prev) => {
       const currentItems = prev.carts[editionId] ?? [];
-      const existing = currentItems.find((i) => i.id === product.id);
+      const existing = currentItems.find(
+        (i) => i.id === product.id && i.type === product.type,
+      );
 
       let newItems: CartItem[];
       if (existing) {
@@ -79,7 +83,9 @@ export const cartActions = {
         );
 
         newItems = currentItems.map((i) =>
-          i.id === product.id ? { ...i, quantity: newQuantity } : i,
+          i.id === product.id && i.type === product.type
+            ? { ...i, quantity: newQuantity }
+            : i,
         );
       } else {
         const finalQuantity = getValidQuantity(product, quantity);
@@ -95,18 +101,25 @@ export const cartActions = {
       };
     });
   },
-  removeItem: (editionId: string, id: string) => {
+  removeItem: (editionId: string, id: string, type?: CartItemType) => {
     cartStore.setState((prev) => ({
       ...prev,
       carts: {
         ...prev.carts,
-        [editionId]: (prev.carts[editionId] ?? []).filter((i) => i.id !== id),
+        [editionId]: (prev.carts[editionId] ?? []).filter(
+          (i) => i.id !== id || (type !== undefined && i.type !== type),
+        ),
       },
     }));
   },
-  updateQuantity: (editionId: string, id: string, quantity: number) => {
+  updateQuantity: (
+    editionId: string,
+    id: string,
+    quantity: number,
+    type?: CartItemType,
+  ) => {
     if (quantity <= 0) {
-      cartActions.removeItem(editionId, id);
+      cartActions.removeItem(editionId, id, type);
       return;
     }
     cartStore.setState((prev) => ({
@@ -114,7 +127,7 @@ export const cartActions = {
       carts: {
         ...prev.carts,
         [editionId]: (prev.carts[editionId] ?? []).map((i) => {
-          if (i.id === id) {
+          if (i.id === id && (type === undefined || i.type === type)) {
             return { ...i, quantity: getValidQuantity(i, quantity) };
           }
           return i;

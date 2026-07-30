@@ -33,20 +33,24 @@ function RouteComponent() {
     if (!search) return signatures;
 
     return signatures.filter((signature) =>
-      [signature.title, signature.url].some((value) =>
+      [signature.signatory_name, signature.image_url].some((value) =>
         value.toLowerCase().includes(search),
       ),
     );
   }, [filter, signatures]);
 
   return (
-    <div className="flex flex-wrap p-6 pb-28!">
+    <>
       <PaginatedContainer<SignatureI>
         items={filteredSignatures}
         layout="grid"
         minItemWidth="16rem"
         pageSize={6}
         gap="6"
+        sortFields={[
+          { key: "signatory_name", label: "Signatário" },
+          { key: "created_at", label: "Data de criação" },
+        ]}
         filterValue={filter}
         onFilterChange={setFilter}
         filterPlaceholder="Buscar por título ou URL..."
@@ -58,7 +62,6 @@ function RouteComponent() {
             className={cn(
               "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
               "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
-              "sm:min-w-44 sm:px-5",
             )}
           >
             <Plus className="size-4 shrink-0" />
@@ -88,8 +91,8 @@ function RouteComponent() {
             >
               <div className="relative aspect-video overflow-hidden bg-muted">
                 <img
-                  src={signature.url}
-                  alt={signature.title}
+                  src={signature.image_url}
+                  alt={signature.signatory_name}
                   className={cn(
                     "h-full w-full object-contain bg-background transition-transform duration-700 ease-out",
                     "group-hover:scale-[1.03]",
@@ -111,7 +114,7 @@ function RouteComponent() {
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
                   <div className="min-w-0 space-y-1">
                     <h3 className="line-clamp-2 text-balance text-lg font-semibold leading-snug text-foreground transition-colors duration-300 group-hover:text-primary sm:text-xl">
-                      {signature.title}
+                      {signature.signatory_name}
                     </h3>
                   </div>
 
@@ -130,14 +133,13 @@ function RouteComponent() {
           ))
         }
       />
-
       <AlertModal
         open={Boolean(removingSignature)}
         onOpenChange={() => setRemovingSignature(null)}
         title="Remover assinatura?"
         description={
           removingSignature
-            ? `A assinatura "${removingSignature.title}" será removida da biblioteca.`
+            ? `A assinatura "${removingSignature.signatory_name}" será removida da biblioteca.`
             : undefined
         }
         confirmLabel="Remover assinatura"
@@ -153,6 +155,6 @@ function RouteComponent() {
           setRemovingSignature(null);
         }}
       />
-    </div>
+    </>
   );
 }

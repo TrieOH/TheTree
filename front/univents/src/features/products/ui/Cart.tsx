@@ -1,4 +1,12 @@
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import {
+  Activity,
+  Minus,
+  Package,
+  Plus,
+  ShoppingCart,
+  Ticket,
+  Trash2,
+} from "lucide-react";
 import { useRef } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -21,9 +29,19 @@ interface CartProps {
 
 interface CartItemProps {
   item: CartItemType;
-  onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemove: (id: string, type?: CartItemType["type"]) => void;
+  onUpdateQuantity: (
+    id: string,
+    quantity: number,
+    type?: CartItemType["type"],
+  ) => void;
   priceFormatted: (cents: number) => string;
+}
+
+function itemTypeLabel(type: CartItemType["type"]) {
+  if (type === "ticket") return { label: "Ingresso", Icon: Ticket };
+  if (type === "activity") return { label: "Atividade", Icon: Activity };
+  return { label: "Produto", Icon: Package };
 }
 
 function CartItem({
@@ -41,28 +59,33 @@ function CartItem({
   const maxReached = item.quantity >= max;
   const itemTotal = item.price_cents * item.quantity;
   const inputRef = useRef<HTMLInputElement>(null);
+  const { label, Icon } = itemTypeLabel(item.type);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = parseInt(e.target.value, 10);
     if (!Number.isNaN(value)) {
       if (value < 1) value = 1;
       if (value > max) value = max;
-      onUpdateQuantity(item.id, value);
+      onUpdateQuantity(item.id, value, item.type);
     }
   };
 
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
     if (Number.isNaN(value) || value < 1) {
-      onUpdateQuantity(item.id, 1);
+      onUpdateQuantity(item.id, 1, item.type);
     } else if (value > max) {
-      onUpdateQuantity(item.id, max);
+      onUpdateQuantity(item.id, max, item.type);
     }
   };
 
   return (
-    <div className="group flex gap-3 p-3 bg-secondary/30 hover:bg-secondary/50 transition-colors border-b border-border/50 last:border-b-0">
+    <div className="group flex gap-3 border-b border-border/60 bg-card p-4 transition-colors hover:bg-muted/40 last:border-b-0">
       <div className="flex-1 min-w-0">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <Icon className="h-3.5 w-3.5 text-primary" />
+          {label}
+        </div>
         <h4 className="font-medium text-sm text-foreground truncate leading-tight">
           {item.name}
         </h4>
@@ -75,7 +98,7 @@ function CartItem({
             type="button"
             onClick={() => {
               if (item.quantity > 1) {
-                onUpdateQuantity(item.id, item.quantity - 1);
+                onUpdateQuantity(item.id, item.quantity - 1, item.type);
               }
             }}
             className={cn(
@@ -110,7 +133,7 @@ function CartItem({
             type="button"
             onClick={() => {
               if (!maxReached) {
-                onUpdateQuantity(item.id, item.quantity + 1);
+                onUpdateQuantity(item.id, item.quantity + 1, item.type);
               }
             }}
             className={cn(
@@ -140,7 +163,7 @@ function CartItem({
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={() => {
-            onRemove(item.id);
+            onRemove(item.id, item.type);
           }}
         >
           <Trash2 className="h-4 w-4" />
@@ -186,18 +209,18 @@ export function Cart({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent className="min-w-[320px] max-w-100 w-full sm:w-90 p-0 flex flex-col">
-        <SheetHeader className="flex-row items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
+      <SheetContent className="flex w-full min-w-[320px] max-w-100 flex-col border-l border-border bg-background p-0 sm:w-90">
+        <SheetHeader className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-5 w-5 text-primary" />
               {items.length > 0 && (
                 <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center bg-accent text-accent-foreground text-[10px] font-bold border-2 border-primary">
                   {items.reduce((acc, item) => acc + item.quantity, 0)}
                 </span>
               )}
             </div>
-            <SheetTitle className="font-semibold text-sm tracking-wide uppercase text-primary-foreground">
+            <SheetTitle className="text-sm font-semibold uppercase tracking-wide text-foreground">
               Seu Carrinho
             </SheetTitle>
           </div>
@@ -223,10 +246,10 @@ export function Cart({
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/50 bg-muted/20">
               {items.map((item) => (
                 <CartItem
-                  key={item.id}
+                  key={`${item.type}:${item.id}`}
                   item={item}
                   onRemove={removeItem}
                   onUpdateQuantity={updateQuantity}
@@ -239,7 +262,7 @@ export function Cart({
         </div>
 
         {items.length > 0 && (
-          <SheetFooter className="border-t bg-secondary/20 p-4 space-y-4 flex-col">
+          <SheetFooter className="flex-col space-y-4 border-t border-border bg-card p-5">
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground uppercase tracking-wide">
                 <span>

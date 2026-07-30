@@ -48,6 +48,7 @@ export function ProductsSection({ editionId }: ProductsSectionProps) {
               product={product}
               variants={variants}
               maxVariants={3}
+              editionId={editionId}
             />
           ))}
         </div>

@@ -1,5 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import type { CartItem } from "../model/cart";
+import type { CartItem, CartItemType } from "../model/cart";
 import {
   cartActions,
   cartStore,
@@ -24,11 +24,11 @@ export function useCart(editionId: string) {
     addItem: (product: Omit<CartItem, "quantity">, quantity: number) => {
       cartActions.addItem(editionId, product, quantity);
     },
-    removeItem: (id: string) => {
-      cartActions.removeItem(editionId, id);
+    removeItem: (id: string, type?: CartItemType) => {
+      cartActions.removeItem(editionId, id, type);
     },
-    updateQuantity: (id: string, quantity: number) => {
-      cartActions.updateQuantity(editionId, id, quantity);
+    updateQuantity: (id: string, quantity: number, type?: CartItemType) => {
+      cartActions.updateQuantity(editionId, id, quantity, type);
     },
     replaceCart: (newItems: CartItem[]) => {
       cartActions.replaceCart(editionId, newItems);

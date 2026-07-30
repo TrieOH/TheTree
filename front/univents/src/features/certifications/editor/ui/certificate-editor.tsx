@@ -40,8 +40,8 @@ export function CertificateEditor({
     certificateEditorActions.setAvailableSignatures(
       signatures.map((signature) => ({
         id: signature.id,
-        url: signature.url,
-        name: signature.title,
+        url: signature.image_url,
+        name: signature.signatory_name,
       })),
     );
   }, [signatures]);

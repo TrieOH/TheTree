@@ -81,7 +81,12 @@ export function ProgramSection({ editionId, eventSlug }: ProgramSectionProps) {
               key={day.date.slice(0, 10)}
               className={cn("items-start gap-5", visibilityClasses[index])}
             >
-              <ProgramDayCard date={day.date} items={day.items} maxItems={3} />
+              <ProgramDayCard
+                date={day.date}
+                items={day.items}
+                maxItems={3}
+                editionId={editionId}
+              />
               {index < visibleDays.length - 1 && (
                 <div
                   className={cn(

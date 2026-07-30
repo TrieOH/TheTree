@@ -38,6 +38,7 @@ export default function CheckoutPaymentForm({
 
   const cartItems = reservedItems.map((item) => ({
     id: item.product_id,
+    type: "product" as const,
     name: item.name,
     price_cents: item.price_cents,
     quantity: item.quantity,

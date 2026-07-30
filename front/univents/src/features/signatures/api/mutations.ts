@@ -69,8 +69,8 @@ export function useCreateSignatureMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ eventId, editionId, data }: CreateSignatureInput) =>
-      createSignatureFn(eventId, editionId, data),
+    mutationFn: ({ editionId, data }: CreateSignatureInput) =>
+      createSignatureFn(editionId, data),
     onSuccess: (res, variables) => {
       if (!res.success) {
         toast.error(res.message || "Erro ao criar assinatura");
@@ -93,8 +93,8 @@ export function useRemoveSignatureMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ eventId, editionId, signatureId }: RemoveSignatureInput) =>
-      removeSignatureFn(eventId, editionId, signatureId),
+    mutationFn: ({ signatureId }: RemoveSignatureInput) =>
+      removeSignatureFn(signatureId),
     onSuccess: (res, variables) => {
       if (!res.success) {
         toast.error(res.message || "Erro ao remover assinatura");
