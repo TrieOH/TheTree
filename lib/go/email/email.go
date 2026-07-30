@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/smtp"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -15,6 +16,7 @@ type Config struct {
 	Password string
 	From     string
 	TLS      bool
+	Insecure bool
 }
 
 type Client struct {
@@ -49,34 +51,32 @@ func (c *Client) Send(msg Message) error {
 	sb.WriteString("\r\n")
 	sb.WriteString(msg.Body)
 
-	var client *smtp.Client
-	var conn net.Conn
-	var err error
-
-	if c.cfg.TLS {
-		tlsConfig := &tls.Config{
-			ServerName: c.cfg.Host,
-			MinVersion: tls.VersionTLS12,
-		}
-		conn, err = tls.Dial("tcp", addr, tlsConfig)
-	} else {
-		conn, err = net.Dial("tcp", addr)
-	}
+	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
 		return fmt.Errorf("email: failed to dial: %w", err)
 	}
 	defer conn.Close()
 
-	client, err = smtp.NewClient(conn, c.cfg.Host)
+	client, err := smtp.NewClient(conn, c.cfg.Host)
 	if err != nil {
 		return fmt.Errorf("email: failed to create SMTP client: %w", err)
 	}
 	defer client.Quit()
 
+	if c.cfg.TLS {
+		tlsConfig := &tls.Config{
+			ServerName:         c.cfg.Host,
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: c.cfg.Insecure,
+		}
+		if err := client.StartTLS(tlsConfig); err != nil {
+			return fmt.Errorf("email: STARTTLS failed: %w", err)
+		}
+	}
+
 	if c.cfg.Username != "" || c.cfg.Password != "" {
 		auth := smtp.PlainAuth("", c.cfg.Username, c.cfg.Password, c.cfg.Host)
-		err := client.Auth(auth)
-		if err != nil {
+		if err := client.Auth(auth); err != nil {
 			return fmt.Errorf("email: auth failed: %w", err)
 		}
 	}
