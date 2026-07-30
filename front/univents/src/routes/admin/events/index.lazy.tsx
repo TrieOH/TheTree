@@ -179,9 +179,12 @@ function RouteComponent() {
         title="Publicar evento?"
         description={`Ao publicar "${publishingEvent?.full_name}", ele ficará visível para o público.`}
         confirmLabel="Publicar"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!publishingEvent) return;
-          publishEventMutation.mutate(publishingEvent.id);
+          const response = await publishEventMutation.mutateAsync(
+            publishingEvent.id,
+          );
+          if (response.success) setPublishingEvent(null);
         }}
         variant="success"
         loading={publishEventMutation.isPending}
