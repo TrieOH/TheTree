@@ -39,6 +39,10 @@ func SetupConstraintMessages() {
 		"chk_signature_requests_status_valid":     "Signature request status must be one of: pending, completed, expired, cancelled.",
 		"uniq_signature_requests_idempotency_key": "This idempotency key has already been used.",
 
+		// signatures
+		"chk_signatures_status_valid":    "Signature status must be valid.",
+		"chk_signatures_ready_has_image": "A ready signature must have an image URL.",
+
 		// certification_templates
 		"chk_certification_templates_kind_valid": "Certification template kind must be one of: edition_attendance, program_attendance.",
 	})

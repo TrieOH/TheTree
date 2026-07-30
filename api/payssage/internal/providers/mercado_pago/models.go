@@ -46,7 +46,7 @@ func ParseCheckoutData(raw json.RawMessage) (*CheckoutData, error) {
 	}
 
 	var cd CheckoutData
-	err := json.Unmarshal(raw, &cd)
+	err = json.Unmarshal(raw, &cd)
 	if err != nil {
 		return nil, fmt.Errorf("mercadopago checkout_data: unmarshal: %w", err)
 	}

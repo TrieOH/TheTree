@@ -47,3 +47,21 @@ func RenderSignatureCreatedEmail(data SignatureCreatedEmailData) (string, error)
 	}
 	return buf.String(), nil
 }
+
+type CertGrantedEmailData struct {
+	AttendeeName string
+	EventName    string
+	EditionName  string
+	CertName     string
+	CertLink     string
+	VerifyLink   string
+}
+
+func RenderCertGrantedEmail(data CertGrantedEmailData) (string, error) {
+	var buf bytes.Buffer
+	err := templates.ExecuteTemplate(&buf, "cert_granted.html", data)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}

@@ -122,7 +122,7 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
 	log.Println("Running migrations...")
-	err := goose.Up(db, mPath)
+	err = goose.Up(db, mPath)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
