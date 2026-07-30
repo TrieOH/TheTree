@@ -105,6 +105,7 @@ export const variantCreateSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal("").transform(() => null)),
+  gallery_urls: z.array(z.string()).default([]),
 });
 
 export type VariantCreateInputI = z.input<typeof variantCreateSchema>;
@@ -122,6 +123,7 @@ export interface VariantI {
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;
+  gallery_urls: string[];
 }
 
 export const buyRequestItemSchema = z.object({

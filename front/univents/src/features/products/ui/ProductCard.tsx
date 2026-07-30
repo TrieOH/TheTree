@@ -109,6 +109,13 @@ export function ProductCard({
             )}
           >
             <div className="flex items-start justify-between gap-2">
+              {variant.gallery_urls?.[0] ? (
+                <img
+                  src={variant.gallery_urls[0]}
+                  alt=""
+                  className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-border/60"
+                />
+              ) : null}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground leading-snug">
                   {variant.name}

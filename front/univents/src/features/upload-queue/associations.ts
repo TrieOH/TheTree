@@ -3,3 +3,4 @@
 import "@/features/events/api/upload-association";
 import "@/features/editions/api/upload-association";
 import "@/features/programs/api/upload-association";
+import "@/features/products/api/upload-association";
