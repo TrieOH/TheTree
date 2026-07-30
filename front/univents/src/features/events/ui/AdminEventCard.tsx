@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   Ban,
@@ -12,6 +12,7 @@ import { motion } from "motion/react";
 import type React from "react";
 import { toast } from "sonner";
 import type { EventI, EventStatusI } from "@/features/events/model";
+import { EventImageActions } from "@/features/events/ui/EventImageActions";
 import { cn } from "@/shared/lib/utils";
 import {
   ContextMenu,
@@ -94,16 +95,35 @@ function MenuItems({
 
   return (
     <>
+      <Item onClick={stop(onOpenDashboard)}>
+        <ArrowUpRight className="size-4" />
+        <span>Ver dashboard</span>
+      </Item>
+      <Item onClick={stop(onOpenEditions)}>
+        <ArrowUpRight className="size-4" />
+        <span>Ver edições</span>
+      </Item>
+      <Item onClick={stop(copyLink)}>
+        <Copy className="size-4" />
+        <span>Copiar link</span>
+      </Item>
+      <Separator />
       {onEdit ? (
         <Item onClick={stop(onEdit)}>
           <Pencil className="size-4" />
           <span>Editar</span>
         </Item>
       ) : null}
-      <Item onClick={stop(onOpenDashboard)}>
-        <ArrowUpRight className="size-4" />
-        <span>Ver dashboard</span>
-      </Item>
+      <Separator />
+      <div className="flex items-center justify-center gap-2 px-2 py-1.5">
+        <div
+          className="flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <EventImageActions event={event} field="logo_url" compact />
+          <EventImageActions event={event} field="banner_url" compact />
+        </div>
+      </div>
       <Separator />
       {event.status === "draft" && (
         <Item onClick={stop(onPublish)}>
@@ -117,15 +137,6 @@ function MenuItems({
           <span>Descontinuar</span>
         </Item>
       )}
-      <Item onClick={stop(copyLink)}>
-        <Copy className="size-4" />
-        <span>Copiar link</span>
-      </Item>
-      <Separator />
-      <Item onClick={stop(onOpenEditions)}>
-        <ArrowUpRight className="size-4" />
-        <span>Ver edições</span>
-      </Item>
     </>
   );
 }
@@ -178,12 +189,11 @@ export default function AdminEventCard({
             )}
             role="button"
             tabIndex={0}
-            onClick={onEdit ? handleEdit : handleOpenDashboard}
+            onClick={handleOpenDashboard}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                if (onEdit) handleEdit();
-                else handleOpenDashboard();
+                handleOpenDashboard();
               }
             }}
           >
@@ -211,8 +221,7 @@ export default function AdminEventCard({
               <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm",
-                    status.pill,
+                    "inline-flex items-center gap-1 rounded-full border border-white/30 bg-black/75 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg backdrop-blur-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]",
                   )}
                 >
                   <span className={cn("size-1.5 rounded-full", status.dot)} />
@@ -253,11 +262,11 @@ export default function AdminEventCard({
 
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
                 <div className="min-w-0 space-y-1">
-                  <h3 className="line-clamp-2 text-balance text-lg font-semibold leading-snug text-foreground transition-colors duration-300 group-hover:text-primary sm:text-xl">
+                  <h3 className="line-clamp-2 text-balance text-lg font-semibold leading-snug text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] transition-colors duration-300 group-hover:text-white sm:text-xl">
                     {event.full_name}
                   </h3>
                   {event.description && (
-                    <p className="line-clamp-2 max-w-2xl text-xs text-muted-foreground">
+                    <p className="line-clamp-2 max-w-2xl text-xs text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                       {event.description}
                     </p>
                   )}
@@ -283,18 +292,20 @@ export default function AdminEventCard({
                 </code>
               </div>
 
-              <Link
-                to="/admin/events/$eventId"
-                params={{ eventId: event.id }}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit();
+                }}
                 className={cn(
                   "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
                   "bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary",
                 )}
-                onClick={(e) => e.stopPropagation()}
               >
-                Painel
+                Editar
                 <ArrowUpRight className="size-3.5" />
-              </Link>
+              </button>
             </div>
           </motion.article>
         }

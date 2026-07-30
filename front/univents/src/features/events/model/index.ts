@@ -23,6 +23,18 @@ export const eventCreateSchema = z.object({
     .nullable()
     .or(z.literal(""))
     .transform((val) => (val === "" ? null : val)),
+  logo_url: z
+    .string()
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((val) => (val === "" ? null : val)),
+  banner_url: z
+    .string()
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((val) => (val === "" ? null : val)),
 });
 
 export type EventCreateInputI = z.input<typeof eventCreateSchema>;

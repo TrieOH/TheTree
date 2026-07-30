@@ -2,7 +2,12 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { EventI } from "../model";
-import { createEventFn, discontinueEventFn, publishEventFn } from "./index";
+import {
+  createEventFn,
+  discontinueEventFn,
+  patchEventFn,
+  publishEventFn,
+} from "./index";
 import {
   addEventMemberFn,
   type EventMemberI,
@@ -29,7 +34,7 @@ function shouldBePublic(event: Pick<EventI, "status">) {
   return event.status !== "draft";
 }
 
-function syncEventCaches(queryClient: QueryClient, event: EventI) {
+export function syncEventCaches(queryClient: QueryClient, event: EventI) {
   queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) =>
     upsertById(old, event),
   );
@@ -38,6 +43,10 @@ function syncEventCaches(queryClient: QueryClient, event: EventI) {
     if (shouldBePublic(event)) return upsertById(old, event);
     return removeById(old, event.id);
   });
+
+  queryClient.setQueryData<EventI[]>(eventKeys.joinedLists(), (old) =>
+    old?.some((item) => item.id === event.id) ? upsertById(old, event) : old,
+  );
 }
 
 function syncEventStatusInCaches(
@@ -114,6 +123,28 @@ export function usePublishEventMutation() {
         new Date().toISOString(),
       );
       toast.success("Evento publicado com sucesso!");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+
+export function usePatchEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      eventId,
+      data,
+    }: {
+      eventId: string;
+      data: Parameters<typeof patchEventFn>[1];
+    }) => patchEventFn(eventId, data),
+    onSuccess: (res) => {
+      if (!res.success) {
+        toast.error(res.message || "Erro ao editar evento");
+        return;
+      }
+      syncEventCaches(queryClient, res.data);
+      toast.success("Evento atualizado com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
   });

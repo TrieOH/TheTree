@@ -19,6 +19,11 @@ export const createEventFn = createClientOnlyFn(
   },
 );
 
+export const patchEventFn = createClientOnlyFn(
+  (eventId: string, eventData: EventCreateOutputI) =>
+    authFetcher.patch<EventI>(`/events/${eventId}`, eventData),
+);
+
 /**
  * Publish a Event on the server.
  * @param eventId - The event id

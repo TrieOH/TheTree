@@ -11,6 +11,7 @@ export interface ManageEventModalProps {
   onCreate: (
     values: EventCreateOutputI,
   ) => Promise<EventI | null | boolean> | EventI | null | boolean;
+  event?: EventI | null;
 }
 
 const emptyDefaultValues: EventCreateInputI = {
@@ -42,15 +43,27 @@ export function ManageEventModal({
   open,
   onOpenChange,
   onCreate,
+  event,
 }: ManageEventModalProps) {
   const autoAcronymRef = useRef("");
   const autoSlugRef = useRef("");
 
+  const defaultValues: EventCreateInputI = event
+    ? {
+        full_name: event.full_name,
+        slug: event.slug,
+        acronym: event.acronym,
+        description: event.description,
+        contact_email: event.contact_email,
+        logo_url: event.logo_url,
+        banner_url: event.banner_url,
+      }
+    : emptyDefaultValues;
   const controller = useMultiStepForm({
     schema: eventCreateSchema,
     steps: createEventFormSteps(),
-    defaultValues: emptyDefaultValues,
-    resetOnSuccessValues: emptyDefaultValues,
+    defaultValues,
+    resetOnSuccessValues: defaultValues,
     onSubmit: async (values): Promise<boolean> => {
       return Boolean(await onCreate(values));
     },
@@ -90,9 +103,9 @@ export function ManageEventModal({
     <MultiStepFormModal
       open={open}
       onOpenChange={onOpenChange}
-      title="Criar Novo Evento"
+      title={event ? "Editar evento" : "Criar Novo Evento"}
       controller={controller}
-      submitLabel="Criar Evento"
+      submitLabel={event ? "Salvar alterações" : "Criar Evento"}
     />
   );
 }
