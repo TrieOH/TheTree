@@ -8,6 +8,7 @@ import {
   fulfillSignatureRequestFn,
   signatureRequestQueryOptions,
 } from "@/features/signatures/api";
+import type { SignatureRequestI } from "@/features/signatures/model";
 import { uploadFile } from "@/features/storage/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -80,6 +81,31 @@ function SignatureRequestPage() {
     );
   }
 
+  if (requestQuery.data.status !== "pending") {
+    const statusMessages = {
+      completed: {
+        title: "Solicitação já concluída",
+        message: "Esta solicitação de assinatura já foi concluída.",
+      },
+      expired: {
+        title: "Solicitação expirada",
+        message: "O prazo desta solicitação de assinatura terminou.",
+      },
+      cancelled: {
+        title: "Solicitação cancelada",
+        message: "Esta solicitação de assinatura foi cancelada.",
+      },
+    } as const;
+    const statusMessage = statusMessages[requestQuery.data.status];
+
+    return (
+      <SignatureRequestStatus
+        title={statusMessage.title}
+        message={statusMessage.message}
+      />
+    );
+  }
+
   return (
     <SignatureForm
       token={token}
@@ -95,14 +121,10 @@ function SignatureForm({
   onSigned,
 }: {
   token: string;
-  request?: {
-    signatory_name: string;
-    signatory_title?: string | null;
-    expires_at: string;
-    id: string;
-  } | null;
+  request: SignatureRequestI;
   onSigned: (timestamp: string) => void;
 }) {
+  const navigate = Route.useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -192,6 +214,7 @@ function SignatureForm({
           response.message || "Não foi possível recusar o convite",
         );
       toast.success("Solicitação recusada");
+      await navigate({ to: "/" });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -203,7 +226,7 @@ function SignatureForm({
     }
   };
 
-  const expiresLabel = request?.expires_at
+  const expiresLabel = request.expires_at
     ? new Date(request.expires_at).toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "2-digit",
@@ -242,7 +265,7 @@ function SignatureForm({
               Solicitação de assinatura eletrônica
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              ID do documento: {request?.id ?? "—"}
+              ID do documento: {request.id}
             </p>
           </div>
           {expiresLabel && (
@@ -258,13 +281,10 @@ function SignatureForm({
         </header>
 
         <div className="grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
-          <Field
-            label="Nome do signatário"
-            value={request?.signatory_name ?? "—"}
-          />
+          <Field label="Nome do signatário" value={request.signatory_name} />
           <Field
             label="Cargo do signatário"
-            value={request?.signatory_title ?? "—"}
+            value={request.signatory_title ?? "—"}
           />
         </div>
 
