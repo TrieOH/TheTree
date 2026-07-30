@@ -4,8 +4,9 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"github.com/MintzyG/fun"
 	"lib/telemetry"
+
+	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) AddMember(ctx context.Context, payload models.AddProjectMemberInput) error {

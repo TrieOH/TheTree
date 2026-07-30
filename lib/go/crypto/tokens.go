@@ -3,6 +3,7 @@ package crypto
 import (
 	"crypto/ed25519"
 	"encoding/base64"
+	"errors"
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -45,7 +46,7 @@ func VerifyToken(tokenStr string, publicKeyPEM string, claims jwt.Claims) (*jwt.
 		return nil, err
 	}
 	if !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+		return nil, errors.New("invalid token")
 	}
 	return token, nil
 }

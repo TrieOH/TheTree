@@ -12,7 +12,7 @@ import (
 
 func SetupValidator() *validator.Validate {
 	var v = validator.New()
-	if err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
+	err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
 		vv := fl.Field().String()
 
 		u, err := uuid.Parse(vv)
@@ -21,12 +21,13 @@ func SetupValidator() *validator.Validate {
 		}
 
 		return u.Version() == 7
-	}); err != nil {
+	})
+	if err != nil {
 		errx.Exit(err, "failed to register uuid7 validator")
 	}
 
 	// Custom password validation - requires uppercase, number, and symbol
-	if err := v.RegisterValidation("passwd", func(fl validator.FieldLevel) bool {
+	err := v.RegisterValidation("passwd", func(fl validator.FieldLevel) bool {
 		password := fl.Field().String()
 		var hasUpper, hasNumber, hasSymbol bool
 
@@ -42,7 +43,8 @@ func SetupValidator() *validator.Validate {
 		}
 
 		return hasUpper && hasNumber && hasSymbol
-	}); err != nil {
+	})
+	if err != nil {
 		errx.Exit(err, "failed to register passwd validator")
 	}
 

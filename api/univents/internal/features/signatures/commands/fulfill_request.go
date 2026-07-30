@@ -43,7 +43,8 @@ func (c *Commands) FulfillRequest(ctx context.Context, token string, imageURL st
 		return nil, err
 	}
 
-	if err := c.requests.CompleteRequest(ctx, request.ID, sig.ID); err != nil {
+	err = c.requests.CompleteRequest(ctx, request.ID, sig.ID)
+	if err != nil {
 		return nil, err
 	}
 

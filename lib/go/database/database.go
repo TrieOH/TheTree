@@ -51,7 +51,8 @@ func tryConnect(ctx context.Context, dsn string, maxAttempts int) (*pgxpool.Pool
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		log.Printf("waiting for database... attempt %d/%d\n", attempt, maxAttempts)
 
-		if err = pool.Ping(ctx); err == nil {
+		err = pool.Ping(ctx)
+		if err == nil {
 			log.Printf("database connected on attempt %d\n", attempt)
 			return pool, nil
 		}
@@ -116,11 +117,13 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	db := stdlib.OpenDBFromPool(pool)
 	defer db.Close()
 
-	if err := goose.SetDialect("postgres"); err != nil {
+	err := goose.SetDialect("postgres")
+	if err != nil {
 		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
 	log.Println("Running migrations...")
-	if err := goose.Up(db, mPath); err != nil {
+	err := goose.Up(db, mPath)
+	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 	log.Println("Migrations applied successfully")

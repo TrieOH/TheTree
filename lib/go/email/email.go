@@ -33,7 +33,7 @@ type Message struct {
 }
 
 func (c *Client) Send(msg Message) error {
-	addr := fmt.Sprintf("%s:%d", c.cfg.Host, c.cfg.Port)
+	addr := net.JoinHostPort(c.cfg.Host, fmt.Sprintf("%d", c.cfg.Port))
 
 	contentType := "text/plain"
 	if msg.HTML {
@@ -41,11 +41,11 @@ func (c *Client) Send(msg Message) error {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("From: %s\r\n", c.cfg.From))
-	sb.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(msg.To, ", ")))
-	sb.WriteString(fmt.Sprintf("Subject: %s\r\n", msg.Subject))
+	fmt.Fprintf(&sb, "From: %s\r\n", c.cfg.From)
+	fmt.Fprintf(&sb, "To: %s\r\n", strings.Join(msg.To, ", "))
+	fmt.Fprintf(&sb, "Subject: %s\r\n", msg.Subject)
 	sb.WriteString("MIME-Version: 1.0\r\n")
-	sb.WriteString(fmt.Sprintf("Content-Type: %s; charset=\"UTF-8\"\r\n", contentType))
+	fmt.Fprintf(&sb, "Content-Type: %s; charset=\"UTF-8\"\r\n", contentType)
 	sb.WriteString("\r\n")
 	sb.WriteString(msg.Body)
 
@@ -75,7 +75,8 @@ func (c *Client) Send(msg Message) error {
 
 	if c.cfg.Username != "" || c.cfg.Password != "" {
 		auth := smtp.PlainAuth("", c.cfg.Username, c.cfg.Password, c.cfg.Host)
-		if err := client.Auth(auth); err != nil {
+		err := client.Auth(auth)
+		if err != nil {
 			return fmt.Errorf("email: auth failed: %w", err)
 		}
 	}
@@ -85,7 +86,8 @@ func (c *Client) Send(msg Message) error {
 	}
 
 	for _, to := range msg.To {
-		if err := client.Rcpt(to); err != nil {
+		err := client.Rcpt(to)
+		if err != nil {
 			return fmt.Errorf("email: RCPT TO failed: %w", err)
 		}
 	}

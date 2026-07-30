@@ -5,8 +5,9 @@ import (
 	"context"
 	"lib/jsonschema"
 
-	"github.com/MintzyG/fun"
 	"lib/telemetry"
+
+	"github.com/MintzyG/fun"
 )
 
 // UpsertPlatformProfile upserts a platform-scoped actor's profile (project_id is NULL).

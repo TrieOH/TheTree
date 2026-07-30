@@ -60,8 +60,8 @@ type ProgramParticipation struct {
 }
 
 type CreateProgramRequest struct {
-	Kind           ProgramKind `json:"kind"            validate:"required,oneof=activity checkpoint"`
-	Name           string      `json:"name"            validate:"required,min=2"`
+	Kind           ProgramKind `json:"kind"             validate:"required,oneof=activity checkpoint"`
+	Name           string      `json:"name"             validate:"required,min=2"`
 	Description    *string     `json:"description"`
 	MinAccessLevel *int        `json:"min_access_level" validate:"omitempty,gte=0"`
 	StaffOnly      bool        `json:"staff_only"`
@@ -91,8 +91,8 @@ type CreateProgramInput struct {
 }
 
 type PatchProgramRequest struct {
-	Kind           ProgramKind `json:"kind"            validate:"required,oneof=activity checkpoint"`
-	Name           string      `json:"name"            validate:"required,min=2"`
+	Kind           ProgramKind `json:"kind"             validate:"required,oneof=activity checkpoint"`
+	Name           string      `json:"name"             validate:"required,min=2"`
 	Description    *string     `json:"description"`
 	MinAccessLevel *int        `json:"min_access_level" validate:"omitempty,gte=0"`
 	StaffOnly      bool        `json:"staff_only"`
@@ -125,9 +125,9 @@ type PatchProgramInput struct {
 }
 
 type CreateProgramOccurrenceRequest struct {
-	StartsAt    time.Time `json:"starts_at"     validate:"required"`
-	EndsAt      time.Time `json:"ends_at"       validate:"required"`
-	MaxCapacity *int      `json:"max_capacity"  validate:"omitempty,gt=0"`
+	StartsAt    time.Time `json:"starts_at"    validate:"required"`
+	EndsAt      time.Time `json:"ends_at"      validate:"required"`
+	MaxCapacity *int      `json:"max_capacity" validate:"omitempty,gt=0"`
 }
 
 func (r CreateProgramOccurrenceRequest) ToInput(programID uuid.UUID) CreateProgramOccurrenceInput {
@@ -147,9 +147,9 @@ type CreateProgramOccurrenceInput struct {
 }
 
 type PatchProgramOccurrenceRequest struct {
-	StartsAt    time.Time `json:"starts_at"     validate:"required"`
-	EndsAt      time.Time `json:"ends_at"       validate:"required"`
-	MaxCapacity *int      `json:"max_capacity"  validate:"omitempty,gt=0"`
+	StartsAt    time.Time `json:"starts_at"    validate:"required"`
+	EndsAt      time.Time `json:"ends_at"      validate:"required"`
+	MaxCapacity *int      `json:"max_capacity" validate:"omitempty,gt=0"`
 }
 
 func (r PatchProgramOccurrenceRequest) ToInput(occurrenceID uuid.UUID) PatchProgramOccurrenceInput {

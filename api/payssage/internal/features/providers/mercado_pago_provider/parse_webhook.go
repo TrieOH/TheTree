@@ -3,7 +3,6 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"lib/utils"
 	"net/http"
 	"payssage/models"
@@ -71,7 +70,7 @@ func (p *Provider) Parse(ctx context.Context, r *http.Request, rawBody []byte) (
 		SetHeader("Authorization", "Bearer "+creds.AccessToken).
 		SetResult(&mpResp).
 		SetResultError(&mpErr).
-		Get(fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", envelope.Data.ID))
+		Get("https://api.mercadopago.com/v1/payments/" + envelope.Data.ID)
 	if err != nil {
 		return nil, fun.Errf("mercadopago fetch payment request: %v", err).BadGateway()
 	}

@@ -4,8 +4,9 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"github.com/MintzyG/fun"
 	"lib/telemetry"
+
+	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateCapabilityInput) (*models.Capability, error) {

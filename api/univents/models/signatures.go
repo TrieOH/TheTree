@@ -49,7 +49,7 @@ type SignatureRequest struct {
 }
 
 type AddSignatureRequest struct {
-	SignatoryName   string     `json:"signatory_name"   validate:"required,min=2,max=256"`
+	SignatoryName   string     `json:"signatory_name"    validate:"required,min=2,max=256"`
 	SignatoryTitle  *string    `json:"signatory_title"`
 	SignatoryEmail  *string    `json:"signatory_email"`
 	SignatoryUserID *uuid.UUID `json:"signatory_user_id"`
@@ -77,7 +77,7 @@ type AddSignatureInput struct {
 }
 
 type CreateSignatureRequestRequest struct {
-	SignatoryName   string     `json:"signatory_name"   validate:"required,min=2,max=256"`
+	SignatoryName   string     `json:"signatory_name"    validate:"required,min=2,max=256"`
 	SignatoryTitle  *string    `json:"signatory_title"`
 	SignatoryEmail  *string    `json:"signatory_email"   validate:"required,email"`
 	SignatoryUserID *uuid.UUID `json:"signatory_user_id"`
@@ -109,13 +109,15 @@ type CreateSignatureRequestInput struct {
 }
 
 type SignatureRequestClaims struct {
+	jwt.RegisteredClaims
+
 	RequestID uuid.UUID `json:"request_id"`
 	EditionID uuid.UUID `json:"edition_id"`
-	jwt.RegisteredClaims
 }
 
 type SignatureRevocationClaims struct {
+	jwt.RegisteredClaims
+
 	SignatureID uuid.UUID `json:"signature_id"`
 	EditionID   uuid.UUID `json:"edition_id"`
-	jwt.RegisteredClaims
 }

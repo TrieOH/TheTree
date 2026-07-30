@@ -3,7 +3,7 @@ package oauth
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"os"
 	"strings"
@@ -80,5 +80,5 @@ func FetchGitHubEmail(ctx context.Context, accessToken string) (string, error) {
 			return e.Email, nil
 		}
 	}
-	return "", fmt.Errorf("no verified primary email found")
+	return "", errors.New("no verified primary email found")
 }

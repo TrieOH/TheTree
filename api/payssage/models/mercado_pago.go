@@ -16,7 +16,7 @@ type MercadoPagoIntentData struct {
 	TransactionStatusDetail string `json:"transaction_status_detail"`
 	PaymentMethodID         string `json:"payment_method_id"`
 	PaymentMethodType       string `json:"payment_method_type"`
-	PixQRCode               string `json:"pix_qr_code,omitempty"` //FIXME maybe dont send this or the one below
+	PixQRCode               string `json:"pix_qr_code,omitempty"` // FIXME maybe dont send this or the one below
 	PixQRCodeB64            string `json:"pix_qr_code_base64,omitempty"`
 }
 
