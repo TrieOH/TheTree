@@ -1,8 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Eraser, PenLine, Upload } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateSignatureMutation } from "@/features/signatures/api/mutations";
+import { SignatureCanvas } from "@/features/signatures/ui/SignatureCanvas";
 import { SignatureImageSelector } from "@/features/signatures/ui/SignatureImageSelector";
 import { uploadFile } from "@/features/storage/api";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -18,9 +19,6 @@ import { Label } from "@/shared/ui/shadcn/label";
 
 type Mode = "draw" | "upload";
 
-const SIGNATURE_CANVAS_WIDTH = 1200;
-const SIGNATURE_CANVAS_HEIGHT = 420;
-
 export interface SignatureEditorProps {
   eventId: string;
   editionId: string;
@@ -35,78 +33,6 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
   const [mode, setMode] = useState<Mode>("draw");
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawingRef = useRef(false);
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
-  const canvasReadyRef = useRef(false);
-
-  const syncCanvasSize = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || mode !== "draw") return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const nextWidth = SIGNATURE_CANVAS_WIDTH;
-    const nextHeight = SIGNATURE_CANVAS_HEIGHT;
-    if (canvas.width === nextWidth && canvas.height === nextHeight) return;
-    canvas.width = nextWidth;
-    canvas.height = nextHeight;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#111827";
-    ctx.clearRect(0, 0, nextWidth, nextHeight);
-    canvasReadyRef.current = true;
-  };
-
-  useLayoutEffect(() => {
-    syncCanvasSize();
-    const canvas = canvasRef.current;
-    if (!canvas || mode !== "draw" || typeof ResizeObserver === "undefined")
-      return;
-    const observer = new ResizeObserver(() => {
-      syncCanvasSize();
-    });
-    observer.observe(canvas);
-    return () => observer.disconnect();
-  }, [mode]);
-
-  const getPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (canvas.height / rect.height),
-    };
-  };
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const point = getPoint(e);
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!point || !ctx || !canvasReadyRef.current) return;
-    drawingRef.current = true;
-    lastPointRef.current = point;
-    ctx.beginPath();
-    ctx.moveTo(point.x, point.y);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!drawingRef.current) return;
-    const point = getPoint(e);
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    const last = lastPointRef.current;
-    if (!point || !ctx || !last) return;
-    ctx.lineTo(point.x, point.y);
-    ctx.stroke();
-    lastPointRef.current = point;
-  };
-
-  const stopDrawing = () => {
-    drawingRef.current = false;
-    lastPointRef.current = null;
-  };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -324,17 +250,9 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                   </Button>
                 </div>
                 <div className="rounded-2xl border bg-muted/10 p-2">
-                  <canvas
+                  <SignatureCanvas
                     ref={canvasRef}
-                    className="h-44 w-full min-w-full touch-none rounded-xl bg-white"
-                    style={{
-                      aspectRatio: `${SIGNATURE_CANVAS_WIDTH} / ${SIGNATURE_CANVAS_HEIGHT}`,
-                    }}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={stopDrawing}
-                    onPointerLeave={stopDrawing}
-                    onPointerCancel={stopDrawing}
+                    className="h-44 w-full min-w-full"
                   />
                 </div>
               </div>

@@ -9,6 +9,7 @@ import {
   signatureRequestQueryOptions,
 } from "@/features/signatures/api";
 import type { SignatureRequestI } from "@/features/signatures/model";
+import { SignatureCanvas } from "@/features/signatures/ui/SignatureCanvas";
 import { uploadFile } from "@/features/storage/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -23,9 +24,6 @@ export const Route = createFileRoute("/signature-requests/fulfill")({
   }),
   component: SignatureRequestPage,
 });
-
-const CANVAS_WIDTH = 1200;
-const CANVAS_HEIGHT = 340;
 
 type SignMethod = "draw" | "import";
 
@@ -126,8 +124,6 @@ function SignatureForm({
 }) {
   const navigate = Route.useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawingRef = useRef(false);
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
   const [method, setMethod] = useState<SignMethod>("draw");
   const [file, setFile] = useState<File | null>(null);
@@ -146,16 +142,6 @@ function SignatureForm({
     setFilePreview(previewUrl);
     return () => URL.revokeObjectURL(previewUrl);
   }, [file]);
-
-  const point = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (event.clientX - rect.left) * (canvas.width / rect.width),
-      y: (event.clientY - rect.top) * (canvas.height / rect.height),
-    };
-  };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -308,44 +294,9 @@ function SignatureForm({
         <div className="px-4 py-4 sm:px-6 sm:py-5">
           {method === "draw" && (
             <div className="relative rounded-lg border border-border bg-muted/40">
-              <canvas
-                ref={(canvas) => {
-                  canvasRef.current = canvas;
-                  if (canvas) {
-                    canvas.width = CANVAS_WIDTH;
-                    canvas.height = CANVAS_HEIGHT;
-                  }
-                }}
-                className="h-36 w-full touch-none rounded-lg sm:h-40"
-                onPointerDown={(event) => {
-                  const current = point(event);
-                  if (!current) return;
-                  drawingRef.current = true;
-                  lastPointRef.current = current;
-                }}
-                onPointerMove={(event) => {
-                  if (!drawingRef.current) return;
-                  const current = point(event);
-                  const previous = lastPointRef.current;
-                  const context = canvasRef.current?.getContext("2d");
-                  if (!current || !previous || !context) return;
-                  context.lineWidth = 4;
-                  context.lineCap = "round";
-                  context.strokeStyle = "#111827";
-                  context.beginPath();
-                  context.moveTo(previous.x, previous.y);
-                  context.lineTo(current.x, current.y);
-                  context.stroke();
-                  lastPointRef.current = current;
-                }}
-                onPointerUp={() => {
-                  drawingRef.current = false;
-                  lastPointRef.current = null;
-                }}
-                onPointerLeave={() => {
-                  drawingRef.current = false;
-                  lastPointRef.current = null;
-                }}
+              <SignatureCanvas
+                ref={canvasRef}
+                className="h-36 w-full sm:h-40"
               />
               <Button
                 type="button"
