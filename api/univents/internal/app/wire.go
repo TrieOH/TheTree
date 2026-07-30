@@ -1,27 +1,31 @@
 package app
 
 import (
-	"lib/email"
+	"context"
 	"lib/errx"
-	"lib/objectstorage"
 	"lib/telemetry"
 	"lib/xslices"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
+	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
+	"univents/internal/features/events"
 	"univents/internal/features/products"
 	"univents/internal/features/programs"
 	"univents/internal/features/signatures"
-	"univents/internal/sqlc"
-
-	idx "sdk/identityx"
-	"univents/internal/features/events"
 	"univents/internal/features/ticket_types"
+	"univents/internal/sqlc"
 	"univents/ports"
 
+	libriver "lib/river"
+
 	mws "github.com/MintzyG/fun/middlewares"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/riverqueue/river"
+	"riverqueue.com/riverui"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -35,6 +39,7 @@ type repos struct {
 	occurrences       ports.ProgramOccurrenceRepo
 	signatures        ports.SignatureRepo
 	signatureRequests ports.SignatureRequestRepo
+	certs             ports.CertificationRepo
 }
 
 type queries struct {
@@ -44,6 +49,7 @@ type queries struct {
 	products    *products.Queries
 	programs    *programs.Queries
 	signatures  *signatures.Queries
+	certs       *certifications.Queries
 }
 
 type commands struct {
@@ -53,6 +59,7 @@ type commands struct {
 	products    *products.Commands
 	programs    *programs.Commands
 	signatures  *signatures.Commands
+	certs       *certifications.Commands
 }
 
 type middlewares struct {
@@ -77,11 +84,13 @@ type handlers struct {
 	products    *products.Handlers
 	programs    *programs.Handlers
 	signatures  *signatures.Handlers
+	certs       *certifications.Handlers
 }
 
-// ── Init functions ────────────────────────────────────────────────────────
+// ── Init methods ──────────────────────────────────────────────────────────
 
-func initRepos(q *sqlc.Queries) repos {
+func (app *Univents) initRepos() repos {
+	q := sqlc.New(app.db)
 	programsRepo := programs.NewRepos(q)
 	sigRepo := signatures.NewRepos(q)
 	return repos{
@@ -93,10 +102,11 @@ func initRepos(q *sqlc.Queries) repos {
 		occurrences:       programsRepo,
 		signatures:        sigRepo,
 		signatureRequests: sigRepo,
+		certs:             certifications.NewRepos(q),
 	}
 }
 
-func initQueries(r repos) queries {
+func (app *Univents) initQueries(r repos) queries {
 	return queries{
 		events:      events.NewQueries(r.events),
 		editions:    editions.NewQueries(r.events, r.editions),
@@ -104,21 +114,23 @@ func initQueries(r repos) queries {
 		products:    products.NewQueries(r.editions, r.products),
 		programs:    programs.NewQueries(r.programs, r.occurrences),
 		signatures:  signatures.NewQueries(r.editions, r.signatures, r.signatureRequests),
+		certs:       certifications.NewQueries(r.certs),
 	}
 }
 
-func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client, email *email.Client) commands {
+func (app *Univents) initCommands(r repos) commands {
 	return commands{
-		events:      events.NewCommands(r.events, obj, idx),
+		events:      events.NewCommands(r.events, app.objStorage, app.idxClient),
 		editions:    editions.NewCommands(r.events, r.editions),
 		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes),
 		products:    products.NewCommands(r.events, r.editions, r.products),
 		programs:    programs.NewCommands(r.events, r.editions, r.programs, r.occurrences),
-		signatures:  signatures.NewCommands(r.events, r.editions, r.signatures, r.signatureRequests, email, app.cfg.HmacSecret),
+		signatures:  signatures.NewCommands(r.events, r.editions, r.signatures, r.signatureRequests, app.emailClient, app.cfg.HmacSecret),
+		certs:       certifications.NewCommands(r.events, r.editions, r.certs, r.programs, app.emailClient, app.cfg.AppUrl),
 	}
 }
 
-func initHandlers(q queries, c commands) handlers {
+func (app *Univents) initHandlers(q queries, c commands) handlers {
 	return handlers{
 		events:      events.NewHandlers(c.events, q.events),
 		editions:    editions.NewHandlers(c.editions, q.editions),
@@ -126,10 +138,11 @@ func initHandlers(q queries, c commands) handlers {
 		products:    products.NewHandlers(c.products, q.products),
 		programs:    programs.NewHandlers(c.programs, q.programs),
 		signatures:  signatures.NewHandlers(c.signatures, q.signatures),
+		certs:       certifications.NewHandlers(c.certs, q.certs),
 	}
 }
 
-func initMiddlewares() middlewares {
+func (app *Univents) initMiddlewares() middlewares {
 	var mw middlewares
 	authMW := SetupAuthMiddlewares()
 
@@ -156,4 +169,33 @@ func initMiddlewares() middlewares {
 		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
 	})
 	return mw
+}
+
+func (app *Univents) initRiver(ctx context.Context, r repos) (*river.Client[pgx.Tx], *riverui.Handler) {
+	libriver.Migrate(ctx, app.db)
+
+	client := libriver.NewClient(app.db, libriver.NewWorkers(
+		libriver.Register(certifications.NewGrantCertsWorker(r.certs, r.editions, r.events, app.emailClient, app.cfg.AppUrl)),
+		libriver.Register(certifications.NewGrantCertsForOccurrenceWorker(r.certs, r.editions, r.events, app.emailClient, app.cfg.AppUrl)),
+	), nil, nil)
+	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
+
+	if err := client.Start(ctx); err != nil {
+		errx.Exit(err, "failed to start river client")
+	}
+
+	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
+		DevMode:   false,
+		Endpoints: riverui.NewEndpoints[pgx.Tx](client, nil),
+		Logger:    slog.Default(),
+		Prefix:    "/riverui",
+	})
+	if err != nil {
+		errx.Exit(err, "failed to create river ui handler")
+	}
+	if err := riverUIHandler.Start(ctx); err != nil {
+		errx.Exit(err, "failed to start river ui handler")
+	}
+
+	return client, riverUIHandler
 }

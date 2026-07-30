@@ -33,7 +33,7 @@ func (app *Payssage) run() {
 	if err := riverClient.Start(ctx); err != nil {
 		loggr.Fatal("failed to start river client", zap.Error(err))
 	}
-	defer libriver.LogStop(ctx, riverClient, loggr)
+	defer libriver.LogStop(ctx, riverClient)
 
 	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
 		DevMode:   false,
