@@ -18,6 +18,10 @@ import {
 } from "@/features/certifications/api/mutations";
 import type { CertificationTemplateI } from "@/features/certifications/model";
 import { AdminCertificationTemplateCard } from "@/features/certifications/ui/AdminCertificationTemplateCard";
+import {
+  type CertificationSection,
+  CertificationSectionTabs,
+} from "@/features/certifications/ui/CertificationSectionTabs";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -195,6 +199,8 @@ function RouteComponent() {
   const [filter, setFilter] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [selectedActivityId, setSelectedActivityId] = useState("");
+  const [activeSection, setActiveSection] =
+    useState<CertificationSection>("templates");
 
   const { data: editions = [] } = useQuery(
     allAdminEditionsQueryOptions(eventId),
@@ -254,187 +260,196 @@ function RouteComponent() {
     editionTemplateMutation.isPending || activityTemplateMutation.isPending;
 
   return (
-    <div className="flex flex-wrap p-6 pb-28!">
-      <PaginatedContainer<CertificationTemplateI>
-        items={filteredTemplates}
-        layout="grid"
-        minItemWidth="16rem"
-        pageSize={6}
-        gap="6"
-        filterValue={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Buscar por título ou URL..."
-        itemLabel="templates"
-        headerActions={
-          <Link
-            to="/admin/events/$eventId/editions/$editionId/certifications/editor"
-            params={{ eventId, editionId }}
-            className={cn(
-              "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
-              "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
-              "sm:min-w-40 sm:px-5",
-            )}
-          >
-            <Plus className="size-4 shrink-0" />
-            <span className="whitespace-nowrap">Novo template</span>
-          </Link>
-        }
-        emptyState={
-          <EmptyState
-            icon={FileText}
-            eyebrow="Certificações"
-            title="Nenhum template encontrado"
-            description="Crie o primeiro template para começar a emitir certificados nessa edição."
-            className="border-0 bg-transparent px-0 py-4 shadow-none"
-          />
-        }
-        renderItems={(slice) =>
-          slice.map((template, index) => {
-            const isSelected = Boolean(
-              selectedTemplate && selectedTemplate.id === template.id,
-            );
-
-            return (
-              <AdminCertificationTemplateCard
-                key={template.id}
-                template={template}
-                selected={isSelected}
-                index={index}
-                onSelect={setSelectedTemplateId}
-                onEdit={() => {
-                  void navigate({
-                    to: "/admin/events/$eventId/editions/$editionId/certifications/editor",
-                    params: { eventId, editionId },
-                  });
-                }}
-                verifyUrl={window.location.href}
-                editionName={edition?.name ?? "Nome da edição"}
-              />
-            );
-          })
-        }
+    <div className="flex flex-wrap gap-6 p-6 pb-28!">
+      <CertificationSectionTabs
+        active={activeSection}
+        onChange={setActiveSection}
       />
+      {activeSection === "templates" ? (
+        <PaginatedContainer<CertificationTemplateI>
+          items={filteredTemplates}
+          layout="grid"
+          minItemWidth="16rem"
+          pageSize={6}
+          gap="6"
+          filterValue={filter}
+          onFilterChange={setFilter}
+          filterPlaceholder="Buscar por título ou URL..."
+          itemLabel="templates"
+          headerActions={
+            <Link
+              to="/admin/events/$eventId/editions/$editionId/certifications/editor"
+              params={{ eventId, editionId }}
+              className={cn(
+                "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
+                "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
+                "sm:min-w-40 sm:px-5",
+              )}
+            >
+              <Plus className="size-4 shrink-0" />
+              <span className="whitespace-nowrap">Novo template</span>
+            </Link>
+          }
+          emptyState={
+            <EmptyState
+              icon={FileText}
+              eyebrow="Certificações"
+              title="Nenhum template encontrado"
+              description="Crie o primeiro template para começar a emitir certificados nessa edição."
+              className="border-0 bg-transparent px-0 py-4 shadow-none"
+            />
+          }
+          renderItems={(slice) =>
+            slice.map((template, index) => {
+              const isSelected = Boolean(
+                selectedTemplate && selectedTemplate.id === template.id,
+              );
 
-      <section className="mx-auto mt-6 w-full max-w-7xl px-6">
-        <Card size="sm" className="border-border/60 bg-card/95 shadow-sm">
-          <CardHeader className="border-b border-border/60 pb-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Link2 className="size-4 text-muted-foreground" />
-                  <CardTitle className="text-sm font-semibold">
-                    Vínculo do template
-                  </CardTitle>
+              return (
+                <AdminCertificationTemplateCard
+                  key={template.id}
+                  template={template}
+                  selected={isSelected}
+                  index={index}
+                  onSelect={setSelectedTemplateId}
+                  onEdit={() => {
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/certifications/editor",
+                      params: { eventId, editionId },
+                    });
+                  }}
+                  verifyUrl={window.location.href}
+                  editionName={edition?.name ?? "Nome da edição"}
+                />
+              );
+            })
+          }
+        />
+      ) : (
+        <section className="mx-auto  w-full max-w-7xl">
+          <Card size="sm" className="border-border/60 bg-card/95 shadow-sm">
+            <CardHeader className="border-b border-border/60 pb-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="size-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-semibold">
+                      Vínculo do template
+                    </CardTitle>
+                  </div>
+                  <CardDescription className="max-w-2xl text-xs">
+                    Escolha um template na grade e aplique na edição inteira ou
+                    em uma atividade específica.
+                  </CardDescription>
                 </div>
-                <CardDescription className="max-w-2xl text-xs">
-                  Escolha um template na grade e aplique na edição inteira ou em
-                  uma atividade específica.
-                </CardDescription>
+
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+                  {selectedTemplate
+                    ? "Template pronto para aplicar"
+                    : "Selecione um template"}
+                </span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4 pt-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Template
+                  </Label>
+                  <SelectionCombobox
+                    value={selectedTemplate ? selectedTemplate.id : ""}
+                    options={templateOptions}
+                    placeholder="Selecione um template"
+                    searchPlaceholder="Buscar template..."
+                    onChange={setSelectedTemplateId}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Atividade
+                  </Label>
+                  <SelectionCombobox
+                    value={selectedActivityId}
+                    options={activitySelectOptions}
+                    placeholder="Aplicar na edição inteira"
+                    searchPlaceholder="Buscar atividade..."
+                    onChange={setSelectedActivityId}
+                  />
+                </div>
               </div>
 
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">
-                {selectedTemplate
-                  ? "Template pronto para aplicar"
-                  : "Selecione um template"}
-              </span>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-4 pt-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Template
-                </Label>
-                <SelectionCombobox
-                  value={selectedTemplate ? selectedTemplate.id : ""}
-                  options={templateOptions}
-                  placeholder="Selecione um template"
-                  searchPlaceholder="Buscar template..."
-                  onChange={setSelectedTemplateId}
-                />
+              <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/20 p-3 md:grid-cols-2">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Template ativo
+                  </p>
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {selectedTemplate?.title ?? "Nenhum template selecionado"}
+                  </p>
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Destino
+                  </p>
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {selectedActivityId
+                      ? (activityOptions.find(
+                          (activity) => activity.id === selectedActivityId,
+                        )?.title ?? "Atividade selecionada")
+                      : "Aplicação na edição inteira"}
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Atividade
-                </Label>
-                <SelectionCombobox
-                  value={selectedActivityId}
-                  options={activitySelectOptions}
-                  placeholder="Aplicar na edição inteira"
-                  searchPlaceholder="Buscar atividade..."
-                  onChange={setSelectedActivityId}
-                />
+              <div className="flex flex-col gap-2 md:flex-row md:justify-end">
+                <Button
+                  type="button"
+                  className="h-9 gap-2 md:min-w-44"
+                  disabled={selectedTemplate === null || isPending}
+                  onClick={() => {
+                    if (selectedTemplate === null) return;
+                    editionTemplateMutation.mutate({
+                      eventId,
+                      editionId,
+                      data: {
+                        certification_template_id: selectedTemplate.id,
+                      },
+                    });
+                  }}
+                >
+                  Definir para a edição
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 gap-2 md:min-w-44"
+                  disabled={
+                    selectedTemplate === null ||
+                    !selectedActivityId ||
+                    isPending
+                  }
+                  onClick={() => {
+                    if (selectedTemplate === null || !selectedActivityId)
+                      return;
+                    activityTemplateMutation.mutate({
+                      eventId,
+                      editionId,
+                      activityId: selectedActivityId,
+                      data: {
+                        certification_template_id: selectedTemplate.id,
+                      },
+                    });
+                  }}
+                >
+                  Definir para a atividade
+                </Button>
               </div>
-            </div>
-
-            <div className="grid gap-3 rounded-2xl border border-border/60 bg-muted/20 p-3 md:grid-cols-2">
-              <div className="min-w-0 space-y-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Template ativo
-                </p>
-                <p className="truncate text-sm font-medium text-foreground">
-                  {selectedTemplate?.title ?? "Nenhum template selecionado"}
-                </p>
-              </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Destino
-                </p>
-                <p className="truncate text-sm font-medium text-foreground">
-                  {selectedActivityId
-                    ? (activityOptions.find(
-                        (activity) => activity.id === selectedActivityId,
-                      )?.title ?? "Atividade selecionada")
-                    : "Aplicação na edição inteira"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:justify-end">
-              <Button
-                type="button"
-                className="h-9 gap-2 md:min-w-44"
-                disabled={selectedTemplate === null || isPending}
-                onClick={() => {
-                  if (selectedTemplate === null) return;
-                  editionTemplateMutation.mutate({
-                    eventId,
-                    editionId,
-                    data: {
-                      certification_template_id: selectedTemplate.id,
-                    },
-                  });
-                }}
-              >
-                Definir para a edição
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 gap-2 md:min-w-44"
-                disabled={
-                  selectedTemplate === null || !selectedActivityId || isPending
-                }
-                onClick={() => {
-                  if (selectedTemplate === null || !selectedActivityId) return;
-                  activityTemplateMutation.mutate({
-                    eventId,
-                    editionId,
-                    activityId: selectedActivityId,
-                    data: {
-                      certification_template_id: selectedTemplate.id,
-                    },
-                  });
-                }}
-              >
-                Definir para a atividade
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+            </CardContent>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }
