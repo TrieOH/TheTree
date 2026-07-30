@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
 	"univents/internal/features/products"
@@ -13,9 +14,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"riverqueue.com/riverui"
 )
 
-func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) http.Handler {
+func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers, riverUIHandler *riverui.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middlewares.realIP)
@@ -36,6 +38,11 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 	products.RegisterRoutes(r, handlers.products, middlewares.jwt)
 	programs.RegisterRoutes(r, handlers.programs, middlewares.jwt)
 	signatures.RegisterRoutes(r, handlers.signatures, middlewares.jwt)
+	certifications.RegisterRoutes(r, handlers.certs, middlewares.jwt)
+
+	r.Group(func(r chi.Router) {
+		r.Mount("/riverui", riverUIHandler)
+	})
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

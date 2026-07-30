@@ -27,7 +27,7 @@ func SetupValidator() *validator.Validate {
 	}
 
 	// Custom password validation - requires uppercase, number, and symbol
-	err := v.RegisterValidation("passwd", func(fl validator.FieldLevel) bool {
+	err = v.RegisterValidation("passwd", func(fl validator.FieldLevel) bool {
 		password := fl.Field().String()
 		var hasUpper, hasNumber, hasSymbol bool
 

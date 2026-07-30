@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 16px; color: #1a1a2e;">
+    <h2 style="margin: 0 0 4px 0; font-size: 20px;">Certificate Issued</h2>
+    <p style="margin: 0 0 24px 0; color: #64748b; font-size: 14px;">{{.EventName}} — {{.EditionName}}</p>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6;">Hello {{.AttendeeName}},</p>
+
+    <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6;">Your certificate <strong>{{.CertName}}</strong> for <strong>{{.EventName}} — {{.EditionName}}</strong> has been issued. You can view it at the link below:</p>
+
+    <a href="{{.CertLink}}" style="display: inline-block; padding: 12px 28px; background-color: #059669; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500; margin-bottom: 12px;">
+        View Certificate
+    </a>
+
+    <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;">Anyone can verify this certificate's authenticity:</p>
+
+    <a href="{{.VerifyLink}}" style="display: inline-block; padding: 10px 24px; background-color: #f1f5f9; color: #334155; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 500;">
+        Verify Certificate
+    </a>
+
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">
+    <p style="margin: 0; font-size: 12px; color: #94a3b8;">Share the verify link to allow anyone to confirm this certificate is authentic.</p>
+</body>
+</html>
