@@ -30,6 +30,7 @@ export type SignatureRequestStatus =
   | "completed"
   | "expired"
   | "cancelled";
+
 export interface SignatureRequestI {
   id: string;
   edition_id: string;
@@ -46,6 +47,7 @@ export interface SignatureRequestI {
   created_at: string;
   updated_at?: string | null;
 }
+
 export interface SignatureRequestCreateI {
   signatory_name: string;
   signatory_title?: string;
