@@ -12,7 +12,7 @@ type Config struct {
 	MercadoPagoConfig
 
 	// Server
-	Port      string `env:"PORT" envDefault:"8080"`
+	Port      string `env:"PORT"              envDefault:"8080"`
 	AppName   string `env:"APP_NAME,required"`
 	DebugMode bool   `env:"DEBUG_MODE"`
 
@@ -21,7 +21,7 @@ type Config struct {
 
 	// Postgres (own DB)
 	PostgresHost     string `env:"PAYSSAGE_POSTGRES_HOST,required"`
-	PostgresPort     string `env:"PAYSSAGE_POSTGRES_PORT" envDefault:"5432"`
+	PostgresPort     string `env:"PAYSSAGE_POSTGRES_PORT"              envDefault:"5432"`
 	PostgresDB       string `env:"PAYSSAGE_POSTGRES_DB,required"`
 	PostgresUser     string `env:"PAYSSAGE_POSTGRES_USER,required"`
 	PostgresPassword string `env:"PAYSSAGE_POSTGRES_PASSWORD,required"`
@@ -29,7 +29,7 @@ type Config struct {
 	// Postgres (root — from .env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
 	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
-	RootPostgresDB       string `env:"POSTGRES_DB" envDefault:"postgres"`
+	RootPostgresDB       string `env:"POSTGRES_DB"                envDefault:"postgres"`
 
 	// Identity-X
 	IdxURL       string    `env:"IDENTITY_X_URL,required"`

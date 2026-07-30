@@ -27,10 +27,7 @@ type CreateWalletRequest struct {
 }
 
 func (r CreateWalletRequest) ToInput() CreateWalletInput {
-	return CreateWalletInput{
-		Name:           r.Name,
-		OrganizationID: r.OrganizationID,
-	}
+	return CreateWalletInput(r)
 }
 
 type CreateWalletInput struct {

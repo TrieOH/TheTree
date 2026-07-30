@@ -45,6 +45,7 @@ func (c *Commands) PatchVariant(ctx context.Context, payload models.PatchProduct
 		Description: payload.Description,
 		Price:       payload.Price,
 		Stock:       payload.Stock,
+		GalleryURLs: payload.GalleryURLs,
 	}
 
 	return c.products.PatchVariant(ctx, existing.ID, variant)

@@ -12,7 +12,8 @@ import (
 func (repo *Repo) GetRequestByIdempotencyKey(ctx context.Context, idempotencyKey uuid.UUID) (*models.SignatureRequest, error) {
 	ctx, span := telemetry.StartSpan(ctx, "SignaturesRepo.GetRequestByIdempotencyKey")
 	defer span.End()
-	if err := repo.ExpireStaleRequests(ctx); err != nil {
+	err := repo.ExpireStaleRequests(ctx)
+	if err != nil {
 		return nil, err
 	}
 	result, err := database.Queries(ctx, repo.q).GetSignatureRequestByIdempotencyKey(ctx, idempotencyKey)

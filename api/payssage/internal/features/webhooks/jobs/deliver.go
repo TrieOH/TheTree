@@ -37,6 +37,7 @@ const maxDeliveryAttempts = 5
 
 type DeliverWebhookWorker struct {
 	river.WorkerDefaults[DeliverWebhookArgs]
+
 	deliveries ports.WebhookDeliveryRepo
 	events     ports.WebhookEventRepo
 	endpoints  ports.WebhookEndpointRepo

@@ -19,6 +19,7 @@ func (repo *Repo) PatchVariant(ctx context.Context, id uuid.UUID, variant *model
 		Description: variant.Description,
 		Price:       variant.Price,
 		Stock:       variant.Stock,
+		GalleryUrls: variant.GalleryURLs,
 		ID:          id,
 	})
 	if err != nil {

@@ -44,6 +44,7 @@ func mapVariant(src sqlc2.ProductVariant) models.ProductVariant {
 		Description: src.Description,
 		Price:       src.Price,
 		Stock:       src.Stock,
+		GalleryURLs: src.GalleryUrls,
 		CreatedAt:   src.CreatedAt,
 		UpdatedAt:   src.UpdatedAt,
 		DeletedAt:   src.DeletedAt,

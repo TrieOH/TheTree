@@ -9,8 +9,10 @@ import (
 
 	"lib/crypto"
 	"lib/email"
+	"lib/telemetry"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 )
 
 func (c *Commands) sendConfirmationEmail(ctx context.Context, sig *models.Signature) {
@@ -39,7 +41,7 @@ func (c *Commands) sendConfirmationEmail(ctx context.Context, sig *models.Signat
 		return
 	}
 
-	revokeLink := fmt.Sprintf("https://yourapp.com/signatures/revoke?token=%s", token)
+	revokeLink := "https://yourapp.com/signatures/revoke?token=" + token
 	body, err := assets.RenderSignatureCreatedEmail(assets.SignatureCreatedEmailData{
 		SignatoryName: sig.SignatoryName,
 		EventName:     event.FullName,
@@ -50,10 +52,13 @@ func (c *Commands) sendConfirmationEmail(ctx context.Context, sig *models.Signat
 		return
 	}
 
-	c.email.Send(email.Message{
+	err = c.email.Send(email.Message{
 		To:      []string{*sig.SignatoryEmail},
 		Subject: fmt.Sprintf("Your signature for %s — %s", event.FullName, edition.Name),
 		Body:    body,
 		HTML:    true,
 	})
+	if err != nil {
+		telemetry.Log().Error("failed to send signature confirmation email", zap.Error(err))
+	}
 }

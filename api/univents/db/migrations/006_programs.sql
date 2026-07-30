@@ -9,6 +9,7 @@ CREATE TABLE programs (
     min_access_level INT,
     staff_only       BOOLEAN NOT NULL DEFAULT FALSE,
     price            BIGINT NOT NULL DEFAULT 0, -- cents
+    banner_url       TEXT,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ,
     deleted_at       TIMESTAMPTZ

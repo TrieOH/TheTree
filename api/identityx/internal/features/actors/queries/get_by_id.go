@@ -4,9 +4,10 @@ import (
 	"IdentityX/models"
 	"context"
 
+	"lib/telemetry"
+
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"lib/telemetry"
 )
 
 func (q *Queries) GetByID(ctx context.Context, id, projectID uuid.UUID) (*models.Actor, error) {

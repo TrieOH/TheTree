@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -88,7 +89,8 @@ func SetTrustedProxies() error {
 
 func LoadProxyConfig() error {
 	SetTrustProxyHeaders()
-	if err := SetTrustedProxies(); err != nil {
+	err := SetTrustedProxies()
+	if err != nil {
 		return err
 	}
 	if HTTPProxyConfig.TrustProxyHeaders && len(HTTPProxyConfig.TrustedProxies) == 0 {
@@ -173,8 +175,8 @@ func isTrustedProxy(ip netip.Addr, trusted []netip.Prefix) bool {
 func parseXForwardedFor(xff string, trusted []netip.Prefix) (netip.Addr, bool) {
 	parts := strings.Split(xff, ",")
 
-	for i := len(parts) - 1; i >= 0; i-- {
-		part := parts[i]
+	for _, v := range slices.Backward(parts) {
+		part := v
 		part = strings.TrimSpace(part)
 
 		ip, err := netip.ParseAddr(part)

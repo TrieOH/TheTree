@@ -4,8 +4,9 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"github.com/MintzyG/fun"
 	"lib/telemetry"
+
+	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) UpsertSchema(ctx context.Context, payload models.UpsertProfileSchemaInput) (*models.ProjectProfileSchema, error) {

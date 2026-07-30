@@ -4,8 +4,9 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (q *Queries) List(ctx context.Context, projectID uuid.UUID) ([]models.Capability, error) {

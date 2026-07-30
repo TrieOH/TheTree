@@ -58,7 +58,7 @@ func isZero(val any) bool {
 	}
 	v := reflect.ValueOf(val)
 	switch v.Kind() {
-	case reflect.Ptr, reflect.Interface, reflect.Slice,
+	case reflect.Pointer, reflect.Interface, reflect.Slice,
 		reflect.Map, reflect.Chan, reflect.Func:
 		return v.IsNil()
 	}

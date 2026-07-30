@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"payssage/internal/providers"
 	"payssage/models"
+	"strconv"
 
 	"github.com/MintzyG/fun"
 )
@@ -40,7 +41,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 			OwnerID:        state.OwnerID,
 			OrganizationID: state.OrganizationID,
 			Provider:       providerStr,
-			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
+			ProviderUserID: strconv.Itoa(credentialData.ProviderUserID),
 			Credentials:    marshalCredentials(credentialData),
 		})
 		if err != nil {
@@ -54,7 +55,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 		seller, err := c.sellers.Create(ctx, models.Seller{
 			WalletID:       *state.WalletID,
 			Provider:       providerStr,
-			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
+			ProviderUserID: strconv.Itoa(credentialData.ProviderUserID),
 			Credentials:    marshalCredentials(credentialData),
 		})
 		if err != nil {

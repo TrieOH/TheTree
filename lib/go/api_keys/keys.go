@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -74,13 +75,13 @@ type APIKey struct {
 func ParseAPIKey(raw string) (*APIKey, error) {
 	parts := strings.SplitN(raw, "_", 4)
 	if len(parts) != 4 {
-		return nil, fmt.Errorf("invalid api key")
+		return nil, errors.New("invalid api key")
 	}
 
 	secret := parts[3]
 
 	if len(secret) < displayLength {
-		return nil, fmt.Errorf("invalid api key")
+		return nil, errors.New("invalid api key")
 	}
 
 	return &APIKey{

@@ -2,7 +2,7 @@ package commands
 
 import (
 	"context"
-	"sdk/identityx"
+	idx "sdk/identityx"
 
 	"Informd/models"
 

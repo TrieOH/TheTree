@@ -6,8 +6,9 @@ import (
 	"lib/database"
 	"lib/xslices"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (repo *Repo) ListJoined(ctx context.Context, userID uuid.UUID) ([]models.Project, error) {
