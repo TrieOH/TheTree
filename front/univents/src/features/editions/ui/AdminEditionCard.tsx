@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/shadcn/dropdown-menu";
 import type { EditionI } from "../model";
+import { EditionImageActions } from "./EditionImageActions";
 
 interface EditionCardProps {
   edition: EditionI;
@@ -111,19 +112,13 @@ function MenuItems({
         <ArrowUpRight className="size-4" />
         <span>Abrir edição</span>
       </Item>
+      <Separator />
       {onEdit ? (
         <Item onClick={stop(onEdit)}>
           <Pencil className="size-4" />
           <span>Editar</span>
         </Item>
       ) : null}
-      {onPublish ? (
-        <Item onClick={stop(onPublish)}>
-          <Send className="size-4" />
-          <span>Publicar</span>
-        </Item>
-      ) : null}
-      <Separator />
       <Item onClick={stop(openCertifications)}>
         <Award className="size-4" />
         <span>Certificações</span>
@@ -140,6 +135,35 @@ function MenuItems({
         <ShieldCheck className="size-4" />
         <span>Checkpoints</span>
       </Item>
+      <Separator />
+      <div className="flex items-center justify-center gap-2 px-2 py-1.5">
+        <div
+          className="flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <EditionImageActions
+            edition={edition}
+            eventId={eventId}
+            field="logo_url"
+            compact
+          />
+          <EditionImageActions
+            edition={edition}
+            eventId={eventId}
+            field="banner_url"
+            compact
+          />
+        </div>
+      </div>
+      {onPublish ? (
+        <>
+          <Separator />
+          <Item onClick={stop(onPublish)}>
+            <Send className="size-4" />
+            <span>Publicar</span>
+          </Item>
+        </>
+      ) : null}
     </>
   );
 }
@@ -186,12 +210,11 @@ export function AdminEditionCard({
             )}
             role="button"
             tabIndex={0}
-            onClick={onEdit ? handleEdit : openEdition}
+            onClick={openEdition}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                if (onEdit) handleEdit();
-                else openEdition();
+                openEdition();
               }
             }}
           >
@@ -291,14 +314,14 @@ export function AdminEditionCard({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openEdition();
+                  handleEdit();
                 }}
                 className={cn(
                   "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium",
                   "bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary",
                 )}
               >
-                Painel
+                Editar
                 <ArrowUpRight className="size-3.5" />
               </button>
             </div>
