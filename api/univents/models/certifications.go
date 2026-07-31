@@ -59,8 +59,8 @@ type CertEmissionError struct {
 }
 
 type CreateCertificationTemplateRequest struct {
-	Kind        string  `json:"kind"         validate:"required,oneof=edition_attendance program_attendance"`
-	Name        string  `json:"name"         validate:"required,min=2,max=256"`
+	Kind        string  `json:"kind"        validate:"required,oneof=edition_attendance program_attendance"`
+	Name        string  `json:"name"        validate:"required,min=2,max=256"`
 	Description *string `json:"description"`
 	DesignData  []byte  `json:"design_data"`
 }
@@ -84,8 +84,8 @@ type CreateCertificationTemplateInput struct {
 }
 
 type UpdateCertificationTemplateRequest struct {
-	Kind        string  `json:"kind"         validate:"required,oneof=edition_attendance program_attendance"`
-	Name        string  `json:"name"         validate:"required,min=2,max=256"`
+	Kind        string  `json:"kind"        validate:"required,oneof=edition_attendance program_attendance"`
+	Name        string  `json:"name"        validate:"required,min=2,max=256"`
 	Description *string `json:"description"`
 	DesignData  []byte  `json:"design_data"`
 }
@@ -119,6 +119,12 @@ type CertifyInput struct {
 
 type InvalidCertReason struct {
 	Reason string `json:"reason" validate:"required"`
+}
+
+type VerifyCertResponse struct {
+	Valid      bool           `json:"valid"`
+	TemplateID *uuid.UUID     `json:"template_id"`
+	Cert       *Certification `json:"cert"`
 }
 
 type CertEligibleAttendee struct {

@@ -11,10 +11,10 @@ import (
 
 type Config struct {
 	// Server
-	Port        string `env:"PORT"              envDefault:"8080"`
-	ProfilePort string `env:"PROFILE_PORT"      envDefault:"6060"`
+	Port        string `env:"PORT"                 envDefault:"8080"`
+	ProfilePort string `env:"PROFILE_PORT"         envDefault:"6060"`
 	AppName     string `env:"APP_NAME,required"`
-	AppUrl      string `env:"APP_URL,required"`
+	AppURL      string `env:"APP_URL,required"`
 	DebugMode   bool   `env:"DEBUG_MODE"`
 	HmacSecret  string `env:"HMAC_SECRET,required"`
 

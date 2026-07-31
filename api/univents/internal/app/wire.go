@@ -180,7 +180,8 @@ func (app *Univents) initRiver(ctx context.Context, r repos) (*river.Client[pgx.
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
 
-	if err := client.Start(ctx); err != nil {
+	err := client.Start(ctx)
+	if err != nil {
 		errx.Exit(err, "failed to start river client")
 	}
 
@@ -193,7 +194,8 @@ func (app *Univents) initRiver(ctx context.Context, r repos) (*river.Client[pgx.
 	if err != nil {
 		errx.Exit(err, "failed to create river ui handler")
 	}
-	if err := riverUIHandler.Start(ctx); err != nil {
+	err = riverUIHandler.Start(ctx)
+	if err != nil {
 		errx.Exit(err, "failed to start river ui handler")
 	}
 
