@@ -7,6 +7,7 @@ import (
 	"univents/internal/features/products"
 	"univents/internal/features/programs"
 	"univents/internal/features/ticket_types"
+	"univents/internal/features/badges"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -34,6 +35,7 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 	ticket_types.RegisterRoutes(r, handlers.ticketTypes, middlewares.jwt)
 	products.RegisterRoutes(r, handlers.products, middlewares.jwt)
 	programs.RegisterRoutes(r, handlers.programs, middlewares.jwt)
+	badges.RegisterRoutes(r, handlers.badges, middlewares.jwt)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
