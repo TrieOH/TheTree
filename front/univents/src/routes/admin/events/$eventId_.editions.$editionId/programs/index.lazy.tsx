@@ -263,7 +263,11 @@ function ProgramsRoute() {
         onConfirm={async () => {
           if (!programToUnlink) return;
           const templateId = linkedTemplateByProgram.get(programToUnlink.id);
-          if (templateId) await unlinkCertificate.mutateAsync({ templateId });
+          if (templateId)
+            await unlinkCertificate.mutateAsync({
+              templateId,
+              programId: programToUnlink.id,
+            });
           setProgramToUnlink(null);
         }}
       />

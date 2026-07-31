@@ -137,8 +137,13 @@ export function useInvalidateCertificationMutation() {
 export function useUnlinkCertificationTemplateMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ templateId }: { templateId: string }) =>
-      unlinkCertificationTemplateFn(templateId),
+    mutationFn: ({
+      templateId,
+      programId,
+    }: {
+      templateId: string;
+      programId: string;
+    }) => unlinkCertificationTemplateFn(templateId, programId),
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
         queryKey: [

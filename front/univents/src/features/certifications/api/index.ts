@@ -101,8 +101,10 @@ export const linkCertificationTemplateFn = createClientOnlyFn(
 );
 
 export const unlinkCertificationTemplateFn = createClientOnlyFn(
-  (templateId: string) =>
-    authFetcher.delete<null>(`/certifications/templates/${templateId}/link`),
+  (templateId: string, programId: string) =>
+    authFetcher.delete<null>(`/certifications/templates/${templateId}/link`, {
+      program_id: programId,
+    }),
 );
 
 export const getCertificationFn = createClientOnlyFn((certId: string) => {
