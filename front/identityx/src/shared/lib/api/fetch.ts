@@ -1,10 +1,8 @@
-import { createAppFetchers } from "@trieoh/api-client";
-import { env } from "@/env";
+import { createTanStackServerProxyFetchers } from "@trieoh/front-core/auth/tanstack/client";
+import { authenticatedProxyServerFn } from "@/integrations/auth/server-functions";
 
-const { authFetcher, authQueryFetcher } = createAppFetchers({
-  apiURL: env.VITE_API_URL,
-  authAPIURL: env.VITE_API_URL, // identityx uses same URL for both
-  timeout: 10_000,
-});
+const { authFetcher, authQueryFetcher } = createTanStackServerProxyFetchers(
+  authenticatedProxyServerFn,
+);
 
 export { authFetcher, authQueryFetcher as tanstackQueryFetcher };

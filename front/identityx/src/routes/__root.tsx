@@ -11,6 +11,7 @@ import { PHProvider } from "@/app/providers/posthog/RootProvider";
 import { Provider as TanStackQueryProvider } from "@/app/providers/tanstack-query/RootProvider";
 import { env } from "@/env";
 import { requireSetup } from "@/features/auth/lib/route-guard";
+import { identityXAuthAdapter } from "@/integrations/auth/adapter";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -65,7 +66,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-body antialiased wrap-anywhere">
         <PHProvider>
           <TanStackQueryProvider>
-            <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
+            <AuthProvider
+              baseURL={env.VITE_API_URL}
+              isProjectMode={false}
+              adapter={identityXAuthAdapter}
+            >
               <AuthContextUpdater>{children}</AuthContextUpdater>
             </AuthProvider>
           </TanStackQueryProvider>
