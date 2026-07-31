@@ -53,26 +53,32 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[DeliverW
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		if _, updateErr := w.deliveries.IncrementAttempt(context.Background(), args.DeliveryID); updateErr != nil {
+		_, updateErr := w.deliveries.IncrementAttempt(context.Background(), args.DeliveryID)
+		if updateErr != nil {
 			return updateErr
 		}
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		if _, err := w.deliveries.MarkDelivered(context.Background(), args.DeliveryID); err != nil {
+		_, err = w.deliveries.MarkDelivered(context.Background(), args.DeliveryID)
+		if err != nil {
 			return err
 		}
 		return nil
 	}
 
-	if _, err := w.deliveries.IncrementAttempt(context.Background(), args.DeliveryID); err != nil {
+	_, err = w.deliveries.IncrementAttempt(context.Background(), args.DeliveryID)
+	if err != nil {
 		return err
 	}
 
 	if job.Attempt >= job.MaxAttempts {
-		if _, err := w.deliveries.MarkFailed(context.Background(), args.DeliveryID); err != nil {
+		_, err = w.deliveries.MarkFailed(context.Background(), args.DeliveryID)
+		if err != nil {
 			return err
 		}
 		return nil

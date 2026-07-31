@@ -18,7 +18,8 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 			ID string `json:"id"`
 		} `json:"data"`
 	}
-	if err := json.Unmarshal(rawBody, &envelope); err != nil {
+	err := json.Unmarshal(rawBody, &envelope)
+	if err != nil {
 		return nil, fun.Errf("mercadopago webhook: decode envelope: %v", err).BadRequest()
 	}
 

@@ -18,12 +18,14 @@ func (c *Commands) Create(ctx context.Context, input models.CreateWebhookEndpoin
 		return nil, err
 	}
 
-	if err := c.checkWalletAccess(ctx, input.WalletID, ident.Sub.ID); err != nil {
+	err = c.checkWalletAccess(ctx, input.WalletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 
 	secretBytes := make([]byte, 32)
-	if _, err := rand.Read(secretBytes); err != nil {
+	_, err = rand.Read(secretBytes)
+	if err != nil {
 		return nil, fmt.Errorf("failed to generate secret: %w", err)
 	}
 	secret := hex.EncodeToString(secretBytes)

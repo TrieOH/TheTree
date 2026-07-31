@@ -42,9 +42,9 @@ func (p *Provider) ExchangeCode(ctx context.Context, code, redirectURI string) (
 		telemetry.Log().Error("error executing MP exchange code request", zap.Error(err))
 		return models.ProviderCredentialData{}, err
 	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -63,7 +63,8 @@ func (p *Provider) ExchangeCode(ctx context.Context, code, redirectURI string) (
 		PublicKey    string `json:"public_key"`
 		UserID       int    `json:"user_id"`
 	}
-	if err := json.Unmarshal(rawBody, &result); err != nil {
+	err = json.Unmarshal(rawBody, &result)
+	if err != nil {
 		telemetry.Log().Error("error unmarshaling MP exchange code response body", zap.Error(err))
 		return models.ProviderCredentialData{}, err
 	}

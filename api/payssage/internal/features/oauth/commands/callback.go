@@ -69,8 +69,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectURL, credentialID, credentialData.PublicKey), nil
 }
 
-// nolint:
 func marshalCredentials(data models.ProviderCredentialData) []byte {
-	b, _ := json.Marshal(data)
+	b, _ := json.Marshal(data) //nolint:gosec
 	return b
 }

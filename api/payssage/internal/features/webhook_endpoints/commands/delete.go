@@ -21,7 +21,8 @@ func (c *Commands) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	if err := c.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID); err != nil {
+	err = c.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID)
+	if err != nil {
 		return err
 	}
 

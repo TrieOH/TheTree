@@ -24,7 +24,8 @@ func (c *Commands) Receive(ctx context.Context, payload models.ReceiveWebhookInp
 		return fun.Err("webhook handling not implemented for this provider").BadRequest()
 	}
 
-	if err := handler.VerifySignature(ctx, payload.Request, payload.RawBody); err != nil {
+	err = handler.VerifySignature(ctx, payload.Request, payload.RawBody)
+	if err != nil {
 		return err // stays a real error — bad signature should NOT return 200
 	}
 

@@ -30,7 +30,8 @@ func (app *Payssage) run() {
 			repos.deliveries, repos.events, repos.endpoints, app.httpClient,
 		)),
 	), nil, nil)
-	if err := riverClient.Start(ctx); err != nil {
+	err := riverClient.Start(ctx)
+	if err != nil {
 		loggr.Fatal("failed to start river client", zap.Error(err))
 	}
 	defer libriver.LogStop(ctx, riverClient)
@@ -44,7 +45,8 @@ func (app *Payssage) run() {
 	if err != nil {
 		loggr.Fatal("failed to create river ui handler", zap.Error(err))
 	}
-	if err := riverUIHandler.Start(ctx); err != nil {
+	err = riverUIHandler.Start(ctx)
+	if err != nil {
 		loggr.Fatal("failed to start river ui handler", zap.Error(err))
 	}
 

@@ -85,7 +85,8 @@ func (c *Commands) checkAdminAccess(ctx context.Context, walletID, subID uuid.UU
 		return err
 	}
 
-	if err := c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin); err != nil {
+	err = c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin)
+	if err != nil {
 		return err
 	}
 

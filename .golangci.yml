@@ -129,6 +129,7 @@ linters:
       min-complexity: 20       # cyclomatic complexity threshold
     funlen:
       lines: 150               # max lines per function
+      statements: 80           # max statements per function
     nestif:
       min-complexity: 6         # max nested if depth
     sloglint:

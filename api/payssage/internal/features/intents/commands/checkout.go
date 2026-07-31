@@ -29,7 +29,8 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 		return nil, err
 	}
 
-	if err := c.checkAdminAccess(ctx, wallet.ID, ident.Sub.ID); err != nil {
+	err = c.checkAdminAccess(ctx, wallet.ID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -75,7 +76,8 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 		Metadata:    payload.Metadata,
 	}
 
-	if err := provider.Checkout(ctx, intent, payload.CheckoutData); err != nil {
+	err = provider.Checkout(ctx, intent, payload.CheckoutData)
+	if err != nil {
 		return nil, err
 	}
 
