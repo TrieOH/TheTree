@@ -3,8 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/MintzyG/fun"
 	idx "sdk/identityx"
+
+	"github.com/MintzyG/fun"
 )
 
 func (handler *Handlers) ListMyCerts(w http.ResponseWriter, r *http.Request) {

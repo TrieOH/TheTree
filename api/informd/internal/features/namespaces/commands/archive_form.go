@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (s *Commands) ArchiveForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.ArchiveForm")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.ArchiveForm")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

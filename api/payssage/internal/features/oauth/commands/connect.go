@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -12,7 +13,7 @@ import (
 )
 
 func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (string, error) {
-	ctx, span := c.tracer.Start(ctx, "Connect")
+	ctx, span := telemetry.StartSpan(ctx, "Connect")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -82,8 +83,8 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 		OwnerID:             ident.Sub.ID,
 		Provider:            provider.String(),
 		Flow:                payload.Flow,
-		FinalRedirectUrl:    payload.FinalRedirectURL,
-		ProviderRedirectUrl: payload.ProviderRedirectURL,
+		FinalRedirectURL:    payload.FinalRedirectURL,
+		ProviderRedirectURL: payload.ProviderRedirectURL,
 		ExpiresAt:           time.Now().Add(5 * time.Minute),
 	})
 	if err != nil {

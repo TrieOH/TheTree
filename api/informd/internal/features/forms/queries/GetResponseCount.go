@@ -4,12 +4,14 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"lib/telemetry"
+
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (q *Queries) GetResponseCount(ctx context.Context, formID uuid.UUID) (int, error) {
-	ctx, span := q.tracer.Start(ctx, "FormService.GetResponseCount")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.GetResponseCount")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

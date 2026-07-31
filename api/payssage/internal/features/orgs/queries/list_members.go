@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (q *Queries) ListMembers(ctx context.Context, orgID uuid.UUID) (members []models.OrganizationMember, err error) {
-	ctx, span := q.tracer.Start(ctx, "OrganizationService.GetMembers")
+	ctx, span := telemetry.StartSpan(ctx, "OrganizationService.GetMembers")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

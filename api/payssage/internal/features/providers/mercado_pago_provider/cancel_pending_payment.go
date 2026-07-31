@@ -9,7 +9,6 @@ import (
 
 	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
-	"resty.dev/v3"
 )
 
 func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Intent) error {
@@ -41,17 +40,13 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 
 	body := map[string]any{"status": "cancelled"}
 
-	// TODO: hoist into shared *resty.Client (see Checkout TODO)
-	client := resty.New()
-	defer client.Close()
-
 	var mpResp struct {
 		Status       string `json:"status"`
 		StatusDetail string `json:"status_detail"`
 	}
 	var mpErr map[string]any
 
-	resp, err := client.R().
+	resp, err := p.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Authorization", "Bearer "+creds.AccessToken).
 		SetBody(body).

@@ -5,10 +5,11 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 )
 
 func (q *Queries) ListForms(ctx context.Context) (forms []models.Form, err error) {
-	ctx, span := q.tracer.Start(ctx, "FormService.ListForms")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.ListForms")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

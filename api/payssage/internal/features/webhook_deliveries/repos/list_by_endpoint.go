@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
-func (r *repo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
-	ctx, span := r.tracer.Start(ctx, "ListByEndpoint")
+func (r *Repo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ListByEndpoint")
 	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListWebhookDeliveriesByEndpoint(ctx, endpointID)
 	if err != nil {

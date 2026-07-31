@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error) {
-	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Create")
+func (repo *Repo) Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error) {
+	ctx, span := telemetry.StartSpan(ctx, "IntentRepo.Create")
 	defer span.End()
 
 	var statusDetail *string

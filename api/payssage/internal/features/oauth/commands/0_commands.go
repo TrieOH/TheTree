@@ -5,13 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"lib/database"
 	"payssage/models"
 	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Commands struct {
@@ -20,8 +18,6 @@ type Commands struct {
 	oauth      ports.OAuthStateRepo
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
-	tracer     trace.Tracer
-	tx         database.TxRunner
 }
 
 func NewCommands(
@@ -30,8 +26,6 @@ func NewCommands(
 	oauth ports.OAuthStateRepo,
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
 		wallets:    wallets,
@@ -39,19 +33,19 @@ func NewCommands(
 		oauth:      oauth,
 		collectors: collectors,
 		sellers:    sellers,
-		tracer:     tracer,
-		tx:         tx,
 	}
 }
 
 func generateState() (string, error) {
 	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
+	_, err := rand.Read(b)
+	if err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
 }
 
+//nolint:unparam // TODO: extract into shared authzChecker service
 func (c *Commands) checkRole(ctx context.Context, org *models.Organization, subID uuid.UUID, minRole models.OrganizationRole) error {
 	if org == nil {
 		return fun.ErrForbidden("insufficient permissions")

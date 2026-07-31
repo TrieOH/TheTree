@@ -2,9 +2,6 @@ package queries
 
 import (
 	"Informd/ports"
-	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Queries struct {
@@ -15,8 +12,6 @@ type Queries struct {
 	answers    ports.AnswerRepo
 	responses  ports.ResponseRepo
 	responders ports.ResponderRepo
-	tx         database.TxRunner
-	tracer     trace.Tracer
 }
 
 func NewQueries(
@@ -27,8 +22,6 @@ func NewQueries(
 	answers ports.AnswerRepo,
 	responses ports.ResponseRepo,
 	responders ports.ResponderRepo,
-	tx database.TxRunner,
-	tracer trace.Tracer,
 ) *Queries {
 	return &Queries{
 		namespaces: namespaces,
@@ -38,7 +31,5 @@ func NewQueries(
 		answers:    answers,
 		responses:  responses,
 		responders: responders,
-		tx:         tx,
-		tracer:     tracer,
 	}
 }

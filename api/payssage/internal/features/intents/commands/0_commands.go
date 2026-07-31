@@ -2,14 +2,11 @@ package commands
 
 import (
 	"context"
-	"fmt"
-	"lib/database"
 	"payssage/models"
 	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Commands struct {
@@ -18,8 +15,6 @@ type Commands struct {
 	orgs       ports.OrganizationRepo
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
-	tracer     trace.Tracer
-	tx         database.TxRunner
 }
 
 func NewCommands(
@@ -28,8 +23,6 @@ func NewCommands(
 	orgs ports.OrganizationRepo,
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
 		intents:    intents,
@@ -37,8 +30,6 @@ func NewCommands(
 		orgs:       orgs,
 		collectors: collectors,
 		sellers:    sellers,
-		tracer:     tracer,
-		tx:         tx,
 	}
 }
 
@@ -86,31 +77,9 @@ func (c *Commands) checkAdminAccess(ctx context.Context, walletID, subID uuid.UU
 		return err
 	}
 
-	if err := c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin); err != nil {
+	err = c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin)
+	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (c *Commands) checkWalletAccess(wallet *models.Wallet, subID uuid.UUID, org ...*models.Organization) error {
-	if wallet == nil {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-
-	if len(org) > 1 {
-		return fmt.Errorf("checkWalletAccess: expected at most one org, got %d", len(org))
-	}
-
-	if len(org) == 1 && org[0] != nil {
-		if wallet.OrganizationID == nil || *wallet.OrganizationID != org[0].ID {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		return nil
-	}
-
-	if wallet.OwnerID != subID {
-		return fun.ErrForbidden("insufficient permissions")
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
@@ -9,7 +10,7 @@ import (
 )
 
 func (q *Queries) GetMemberByEmail(ctx context.Context, email string, orgID uuid.UUID) (*idx.Actor, error) {
-	ctx, span := q.tracer.Start(ctx, "OrganizationService.GetMemberByEmail")
+	ctx, span := telemetry.StartSpan(ctx, "OrganizationService.GetMemberByEmail")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

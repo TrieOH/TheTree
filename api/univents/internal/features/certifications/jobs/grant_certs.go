@@ -211,7 +211,8 @@ func (w *grantCertsDeps) emitCerts(ctx context.Context, editionID uuid.UUID, tem
 			continue
 		}
 
-		go w.sendCertEmail(context.Background(), cert, templateName, a.AttendeeEmail, a.AttendeeName)
+		//nolint:gosec // context.WithoutCancel is safe — it detaches cancellation while preserving values
+		go w.sendCertEmail(context.WithoutCancel(ctx), cert, templateName, a.AttendeeEmail, a.AttendeeName)
 	}
 
 	return errors

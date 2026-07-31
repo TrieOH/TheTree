@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error) {
-	ctx, span := repo.tracer.Start(ctx, "IntentRepo.ListByWallet")
+func (repo *Repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error) {
+	ctx, span := telemetry.StartSpan(ctx, "IntentRepo.ListByWallet")
 	defer span.End()
 
 	sqlcIntents, err := database.Queries(ctx, repo.q).ListIntentsByWallet(ctx, walletID)
