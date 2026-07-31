@@ -16,24 +16,18 @@ import { Skeleton } from "@/shared/ui/shadcn/skeleton";
 import { certificationsByUserQueryOptions } from "../api";
 
 interface UserCertificationsSectionProps {
-  eventId: string;
   editionId: string;
-  userId: string;
   title?: string;
   subtitle?: string;
 }
 
 export function UserCertificationsSection({
-  eventId,
   editionId,
-  userId,
   title = "Meus certificados",
   subtitle = "Certificados emitidos nesta edição.",
 }: UserCertificationsSectionProps) {
-  void eventId;
   const certificationsQuery = useQuery({
-    ...certificationsByUserQueryOptions(userId),
-    enabled: Boolean(userId),
+    ...certificationsByUserQueryOptions(),
   });
   const programsQuery = useQuery(programsQueryOptions(editionId));
   const programs = programsQuery.data ?? [];

@@ -1,5 +1,3 @@
-import type { CertificationTargetType } from "../model";
-
 export const certificationKeys = {
   all: ["certifications"] as const,
 
@@ -7,22 +5,13 @@ export const certificationKeys = {
   templateLists: () => [...certificationKeys.templates(), "list"] as const,
   templatesByEdition: (editionId: string) =>
     [...certificationKeys.templateLists(), editionId] as const,
-  templateById: (eventId: string, editionId: string, templateId: string) =>
-    [
-      ...certificationKeys.templates(),
-      "detail",
-      eventId,
-      editionId,
-      templateId,
-    ] as const,
+  templateById: (templateId: string) =>
+    [...certificationKeys.templates(), "detail", templateId] as const,
 
   issued: () => [...certificationKeys.all, "issued"] as const,
   issuedById: (certificationId: string) =>
     [...certificationKeys.issued(), certificationId] as const,
-  issuedByTarget: (targetType: CertificationTargetType, targetId: string) =>
-    [...certificationKeys.issued(), "target", targetType, targetId] as const,
-  issuedByUser: (userId: string) =>
-    [...certificationKeys.issued(), "user", userId] as const,
+  issuedByUser: () => [...certificationKeys.issued(), "user"] as const,
   issuedByEdition: (editionId: string) =>
     [...certificationKeys.issued(), "edition", editionId] as const,
   emissionErrorsByEdition: (editionId: string) =>

@@ -35,7 +35,7 @@ export function CertificateEditor({
     allSignaturesQueryOptions(eventId, editionId),
   );
   const templateQuery = useQuery({
-    ...certificationTemplateQueryOptions(eventId, editionId, templateId ?? ""),
+    ...certificationTemplateQueryOptions(templateId ?? ""),
     enabled: Boolean(templateId),
   });
 

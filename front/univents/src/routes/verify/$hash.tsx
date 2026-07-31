@@ -8,7 +8,10 @@ import {
 } from "@/features/certifications/api";
 import { certificationKeys } from "@/features/certifications/api/query-keys";
 import { getCertificationTemplateOrDefault } from "@/features/certifications/default-template";
-import type { CertificationTemplateI } from "@/features/certifications/model";
+import type {
+  CertificationI,
+  CertificationTemplateI,
+} from "@/features/certifications/model";
 import {
   CertificateTemplateStaticView,
   CertViewer,
@@ -55,12 +58,7 @@ type VerifiedTemplateSectionProps = {
     eventId: string;
     editionId: string;
   };
-  payload: {
-    target_type: "edition" | "activity";
-    target_id: string;
-    certified_at: string;
-    template_id?: string | null;
-  };
+  payload: CertificationI;
   activityLookup: Map<string, ProgramI>;
   editionLookup: Map<string, EditionI>;
 };
@@ -84,21 +82,21 @@ function VerifiedTemplateSection({
 
   const variables = useMemo(() => {
     const activity =
-      payload.target_type === "activity"
-        ? (activityLookup.get(payload.target_id) ?? null)
+      payload.program_id !== null
+        ? (activityLookup.get(payload.program_id) ?? null)
         : null;
     const editionId =
-      payload.target_type === "edition"
-        ? payload.target_id
+      payload.program_id === null
+        ? payload.edition_id
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
 
     return {
       activity_name:
-        payload.target_type === "edition"
+        payload.program_id === null
           ? (edition?.name ?? "")
           : (activity?.name ?? edition?.name ?? ""),
-      certified_at: formatCertifiedAt(payload.certified_at),
+      certified_at: formatCertifiedAt(payload.issued_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
     };
@@ -137,8 +135,8 @@ function VerifyCertificationPage() {
     retry: false,
   });
 
-  const verified = data?.is_verified === true;
-  const payload = data ?? null;
+  const verified = data?.valid === true;
+  const payload = data?.cert ?? null;
 
   const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
   const editionQueries = useQueries({
@@ -179,25 +177,21 @@ function VerifyCertificationPage() {
     if (!payload) return null;
 
     const activity =
-      payload.target_type === "activity"
-        ? (activityLookup.get(payload.target_id) ?? null)
+      payload.program_id !== null
+        ? (activityLookup.get(payload.program_id) ?? null)
         : null;
     const editionId =
-      payload.target_type === "edition"
-        ? payload.target_id
+      payload.program_id === null
+        ? payload.edition_id
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
-    const templateId = payload.template_id ?? null;
+    const templateId = payload.template_id;
 
     if (!edition?.event_id || !edition?.id) return null;
 
     return {
       query: templateId
-        ? certificationTemplateQueryOptions(
-            edition.event_id,
-            edition.id,
-            templateId,
-          )
+        ? certificationTemplateQueryOptions(templateId)
         : undefined,
       eventId: edition.event_id,
       editionId: edition.id,
@@ -272,7 +266,7 @@ function VerifyCertificationPage() {
                       Tipo
                     </p>
                     <p className="mt-1 text-sm font-medium capitalize">
-                      {payload?.target_type}
+                      {payload?.program_id === null ? "edition" : "program"}
                     </p>
                   </div>
                 </div>
@@ -282,7 +276,7 @@ function VerifyCertificationPage() {
                     Target
                   </p>
                   <p className="mt-1 font-mono text-sm break-all">
-                    {payload?.target_id}
+                    {payload?.program_id ?? payload?.edition_id}
                   </p>
                 </div>
 
@@ -291,7 +285,7 @@ function VerifyCertificationPage() {
                 <div className="text-sm text-muted-foreground">
                   Emitido em{" "}
                   <span className="font-medium text-foreground">
-                    {payload ? formatCertifiedAt(payload.certified_at) : "-"}
+                    {payload ? formatCertifiedAt(payload.issued_at) : "-"}
                   </span>
                 </div>
               </>
@@ -309,17 +303,17 @@ function VerifyCertificationPage() {
               </div>
             )}
 
-            {payload?.target_type && (
+            {payload && (
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="gap-1.5">
                   <Hash className="size-3.5" />
-                  {payload.target_type}
+                  {payload.program_id === null ? "edition" : "program"}
                 </Badge>
                 <Badge
                   variant="secondary"
                   className="font-mono text-[10px] uppercase tracking-wider"
                 >
-                  {payload.is_verified ? "verified" : "unverified"}
+                  {data?.valid ? "verified" : "unverified"}
                 </Badge>
               </div>
             )}

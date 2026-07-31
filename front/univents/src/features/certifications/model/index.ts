@@ -1,13 +1,5 @@
 import z from "zod";
 
-export const certificationTargetTypeSchema = z.enum(["edition", "activity"], {
-  error: "Tipo de target inválido",
-});
-
-export type CertificationTargetType = z.infer<
-  typeof certificationTargetTypeSchema
->;
-
 const hexColorSchema = z
   .string()
   .regex(/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, {
@@ -148,20 +140,7 @@ export interface CertificationEmissionErrorI {
 }
 
 export interface VerifyCertificationResponseI {
-  is_verified: boolean;
-  id: string;
-  user_id: string;
-  target_id: string;
-  target_type: CertificationTargetType;
-  certified_at: string;
-  template_id?: string | null;
-}
-
-export interface SetCertificationTemplateRequestI {
-  certification_template_id: string | null;
-}
-
-export interface CertifyUserRequestI {
-  target_id: string;
-  target_type: CertificationTargetType;
+  valid: boolean;
+  template_id: string | null;
+  cert: CertificationI | null;
 }

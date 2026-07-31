@@ -9,7 +9,6 @@ import {
 import type {
   CertificationEmissionErrorI,
   CertificationI,
-  CertificationTargetType,
   CertificationTemplateCreateI,
   CertificationTemplateI,
   CertificationTemplateProgramI,
@@ -69,13 +68,9 @@ export const getCertificationTemplateFn = createClientOnlyFn(
   },
 );
 
-export const certificationTemplateQueryOptions = (
-  eventId: string,
-  editionId: string,
-  templateId: string,
-) => {
+export const certificationTemplateQueryOptions = (templateId: string) => {
   return queryOptions({
-    queryKey: certificationKeys.templateById(eventId, editionId, templateId),
+    queryKey: certificationKeys.templateById(templateId),
     queryFn: () => getCertificationTemplateFn(templateId),
   });
 };
@@ -118,34 +113,14 @@ export const certificationQueryOptions = (certId: string) => {
   });
 };
 
-export const getAllCertificationsByTargetFn = createClientOnlyFn(
-  async (targetType: CertificationTargetType, targetId: string) => {
-    return tanstackQueryFetcher<CertificationI[]>(
-      `/certifications?target_type=${targetType}&target_id=${targetId}`,
-    );
-  },
-);
+export const getAllCertificationsByUserFn = createClientOnlyFn(async () => {
+  return tanstackQueryFetcher<CertificationI[]>(`/certifications`);
+});
 
-export const certificationsByTargetQueryOptions = (
-  targetType: CertificationTargetType,
-  targetId: string,
-) => {
+export const certificationsByUserQueryOptions = () => {
   return queryOptions({
-    queryKey: certificationKeys.issuedByTarget(targetType, targetId),
-    queryFn: () => getAllCertificationsByTargetFn(targetType, targetId),
-  });
-};
-
-export const getAllCertificationsByUserFn = createClientOnlyFn(
-  async (_userId: string) => {
-    return tanstackQueryFetcher<CertificationI[]>(`/certifications`);
-  },
-);
-
-export const certificationsByUserQueryOptions = (userId: string) => {
-  return queryOptions({
-    queryKey: certificationKeys.issuedByUser(userId),
-    queryFn: () => getAllCertificationsByUserFn(userId),
+    queryKey: certificationKeys.issuedByUser(),
+    queryFn: () => getAllCertificationsByUserFn(),
   });
 };
 
