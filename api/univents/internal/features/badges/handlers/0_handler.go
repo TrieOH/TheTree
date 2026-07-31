@@ -9,23 +9,26 @@ import (
 )
 
 type Handler struct {
-	cmds  *commands.Commands
-	quers *queries.Queries
+	commands *commands.Commands
+	queries  *queries.Queries
 }
 
-func NewHandler(cmds *commands.Commands, quers *queries.Queries) *Handler {
+func NewHandler(commands *commands.Commands, queries *queries.Queries) *Handler {
 	return &Handler{
-		cmds:  cmds,
-		quers: quers,
+		commands: commands,
+		queries:  queries,
 	}
 }
 
 func RegisterRoutes(r *chi.Mux, h *Handler, jwt func(http.Handler) http.Handler) {
-	r.Route("/events/{event_id}/editions/{edition_id}/badges", func(r chi.Router) {
+	r.Route("/editions/{edition_id}/badges", func(r chi.Router) {
 		r.Use(jwt)
 		r.Post("/", h.CreateTemplate)
 		r.Get("/", h.ListTemplates)
-		r.Get("/{template_id}", h.GetTemplate)
-		r.Delete("/{template_id}", h.DeleteTemplate)
+	})
+	r.Route("/badges/{template_id}", func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/", h.GetTemplate)
+		r.Delete("/", h.DeleteTemplate)
 	})
 }
