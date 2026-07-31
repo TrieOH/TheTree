@@ -19,5 +19,5 @@ func (c *Commands) CreateTemplate(ctx context.Context, input models.CreateBadgeT
 		DesignData:   input.DesignData,
 	}
 
-	return c.repo.CreateTemplate(ctx, template)
+	return c.repo.Create(ctx, template)
 }

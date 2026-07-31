@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *Repo) ListTemplatesByEdition(ctx context.Context, editionID uuid.UUID) ([]models.BadgeTemplate, error) {
+func (repo *Repo) ListByEdition(ctx context.Context, editionID uuid.UUID) ([]models.BadgeTemplate, error) {
 	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesRepo.ListTemplatesByEdition")
 	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).ListBadgeTemplatesByEdition(ctx, editionID)

@@ -11,5 +11,5 @@ import (
 func (q *Queries) GetTemplate(ctx context.Context, templateID uuid.UUID) (*models.BadgeTemplate, error) {
 	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesQueries.GetTemplate")
 	defer span.End()
-	return q.repo.GetTemplateByID(ctx, templateID)
+	return q.repo.GetByID(ctx, templateID)
 }

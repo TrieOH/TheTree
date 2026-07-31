@@ -8,7 +8,7 @@ import (
 	"univents/models"
 )
 
-func (repo *Repo) CreateTemplate(ctx context.Context, template *models.BadgeTemplate) (*models.BadgeTemplate, error) {
+func (repo *Repo) Create(ctx context.Context, template *models.BadgeTemplate) (*models.BadgeTemplate, error) {
 	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesRepo.CreateTemplate")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).CreateBadgeTemplate(ctx, sqlc.CreateBadgeTemplateParams{

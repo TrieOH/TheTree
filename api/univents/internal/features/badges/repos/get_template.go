@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *Repo) GetTemplateByID(ctx context.Context, id uuid.UUID) (*models.BadgeTemplate, error) {
+func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.BadgeTemplate, error) {
 	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesRepo.GetTemplateByID")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).GetBadgeTemplateByID(ctx, id)
