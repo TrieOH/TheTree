@@ -45,7 +45,8 @@ var Strong = Params{
 
 func Hash(password string, p Params) (string, error) {
 	salt := make([]byte, p.SaltLength)
-	if _, err := rand.Read(salt); err != nil {
+	_, err := rand.Read(salt)
+	if err != nil {
 		return "", fun.ErrInternal("argon2: failed to generate salt: " + err.Error())
 	}
 
@@ -121,7 +122,8 @@ func decode(encoded string) (Params, []byte, []byte, error) {
 	}
 
 	var version int
-	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil {
+	_, err := fmt.Sscanf(parts[2], "v=%d", &version)
+	if err != nil {
 		return Params{}, nil, nil, ErrInvalidHash
 	}
 	if version != argon2.Version {
@@ -129,7 +131,8 @@ func decode(encoded string) (Params, []byte, []byte, error) {
 	}
 
 	var p Params
-	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &p.Memory, &p.Iterations, &p.Parallelism); err != nil {
+	_, err = fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &p.Memory, &p.Iterations, &p.Parallelism)
+	if err != nil {
 		return Params{}, nil, nil, ErrInvalidHash
 	}
 
@@ -143,8 +146,8 @@ func decode(encoded string) (Params, []byte, []byte, error) {
 		return Params{}, nil, nil, ErrInvalidHash
 	}
 
-	p.KeyLength = uint32(len(hash))
-	p.SaltLength = uint32(len(salt))
+	p.KeyLength = uint32(len(hash))  //nolint:gosec
+	p.SaltLength = uint32(len(salt)) //nolint:gosec
 
 	return p, salt, hash, nil
 }

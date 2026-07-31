@@ -35,7 +35,7 @@ func MustProvide[T any](v *T) *T {
 	rt := rv.Type()
 
 	var missing []string
-	for i := 0; i < rv.NumField(); i++ {
+	for i := range rv.NumField() {
 		field := rv.Field(i)
 		if !field.CanInterface() {
 			continue // unexported — skip

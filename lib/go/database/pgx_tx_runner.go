@@ -18,7 +18,7 @@ type PgxTxRunner struct {
 	pool *pgxpool.Pool // Changed from *sql.DB
 }
 
-func NewPGXTxRunner(pool *pgxpool.Pool) TxRunner {
+func NewPGXTxRunner(pool *pgxpool.Pool) TxRunner { //nolint:ireturn
 	return &PgxTxRunner{pool: pool}
 }
 
@@ -69,7 +69,8 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 
 	ctx = context.WithValue(ctx, TxKeyValue, tx)
 
-	if err = fn(ctx); err != nil {
+	err = fn(ctx)
+	if err != nil {
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
 			telemetry.Log().Error("error during tx rollback after usecase error", zap.Error(rbErr))
@@ -77,7 +78,8 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 		return err
 	}
 
-	if err = tx.Commit(ctx); err != nil {
+	err = tx.Commit(ctx)
+	if err != nil {
 		telemetry.Log().Error("error during tx commit", zap.Error(err))
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {

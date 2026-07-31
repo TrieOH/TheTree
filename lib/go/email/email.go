@@ -1,10 +1,12 @@
 package email
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/smtp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -35,7 +37,7 @@ type Message struct {
 }
 
 func (c *Client) Send(msg Message) error {
-	addr := net.JoinHostPort(c.cfg.Host, fmt.Sprintf("%d", c.cfg.Port))
+	addr := net.JoinHostPort(c.cfg.Host, strconv.Itoa(c.cfg.Port))
 
 	contentType := "text/plain"
 	if msg.HTML {
@@ -51,23 +53,28 @@ func (c *Client) Send(msg Message) error {
 	sb.WriteString("\r\n")
 	sb.WriteString(msg.Body)
 
-	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	conn, err := dialer.DialContext(context.Background(), "tcp", addr)
 	if err != nil {
 		return fmt.Errorf("email: failed to dial: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 
 	client, err := smtp.NewClient(conn, c.cfg.Host)
 	if err != nil {
 		return fmt.Errorf("email: failed to create SMTP client: %w", err)
 	}
-	defer client.Quit()
+	defer func() {
+		_ = client.Quit()
+	}()
 
 	if c.cfg.TLS {
 		tlsConfig := &tls.Config{
 			ServerName:         c.cfg.Host,
 			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: c.cfg.Insecure,
+			InsecureSkipVerify: c.cfg.Insecure, //nolint:gosec
 		}
 		err = client.StartTLS(tlsConfig)
 		if err != nil {
@@ -77,7 +84,8 @@ func (c *Client) Send(msg Message) error {
 
 	if c.cfg.Username != "" || c.cfg.Password != "" {
 		auth := smtp.PlainAuth("", c.cfg.Username, c.cfg.Password, c.cfg.Host)
-		if err := client.Auth(auth); err != nil {
+		err := client.Auth(auth)
+		if err != nil {
 			return fmt.Errorf("email: auth failed: %w", err)
 		}
 	}

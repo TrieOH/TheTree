@@ -17,8 +17,8 @@ import (
 
 var serviceName string
 
-func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {
-	return otel.Tracer(serviceName).Start(ctx, name)
+func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) { //nolint:ireturn
+	return otel.Tracer(serviceName).Start(ctx, name) //nolint:spancheck
 }
 
 func InitTracer(ctx context.Context, appName string) func(context.Context) error {
