@@ -19,6 +19,7 @@ import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
 import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import { Provider as TanStackQueryProvider } from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
 
@@ -76,6 +77,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <TanStackQueryProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <AuthProvider
+                adapter={identityXAuthAdapter}
                 baseURL={env.VITE_AUTH_API_URL}
                 fallback={
                   <div className="h-screen w-screen flex items-center justify-center">

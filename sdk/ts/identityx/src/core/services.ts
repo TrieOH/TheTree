@@ -151,3 +151,5 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     return apiInstance.get<{ service: string; status: string; user_id: string }>("/protected/health");
   }
 });
+
+export type AuthService = ReturnType<typeof createAuthService>;

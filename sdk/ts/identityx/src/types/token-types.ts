@@ -7,14 +7,21 @@ export interface AuthTokens {
 }
 
 export type ActorType = "human" | "service" | "machine";
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 export interface TokenSubject {
   id: string;
   project_id: string | null;
   email: string | null;
   type: ActorType;
-  capabilities: Record<string, unknown> | null;
-  metadata: Record<string, unknown> | null;
+  capabilities: { [key: string]: JsonValue } | null;
+  metadata: { [key: string]: JsonValue } | null;
 }
 
 export interface TokenClaims {

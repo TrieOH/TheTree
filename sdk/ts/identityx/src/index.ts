@@ -10,6 +10,7 @@ export type {
   ActorType,
   AuthTokenClaims,
   AuthTokens,
+  JsonValue,
   TokenClaims,
   TokenSubject,
 } from "./types/token-types";
