@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { revokeSignatureFn } from "@/features/signatures/api";
-import { SignatureRequestStatus } from "@/routes/signature-requests/ui/SignatureRequestStatus";
+import { SignatureRequestStatus } from "@/features/signatures/ui/SignatureRequestStatus";
 import { cn } from "@/shared/lib/utils";
 
 export const Route = createFileRoute("/signatures/revoke")({
