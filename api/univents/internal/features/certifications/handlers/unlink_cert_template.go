@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"net/http"
+	"univents/models"
 
 	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
 )
 
 func (handler *Handlers) UnlinkCertTemplate(w http.ResponseWriter, r *http.Request) {
@@ -12,7 +14,11 @@ func (handler *Handlers) UnlinkCertTemplate(w http.ResponseWriter, r *http.Reque
 	if fun.Bail(w, err) {
 		return
 	}
-	err = handler.commands.UnlinkCertTemplate(r.Context(), templateID)
+	var payload models.CertTemplateProgramRequest
+	if bind.BailInto(w, req, &payload) {
+		return
+	}
+	err = handler.commands.UnlinkCertTemplate(r.Context(), templateID, payload.ProgramID)
 	if fun.Bail(w, err) {
 		return
 	}

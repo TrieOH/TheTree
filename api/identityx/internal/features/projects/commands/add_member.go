@@ -36,17 +36,9 @@ func (c *Commands) AddMember(ctx context.Context, payload models.AddProjectMembe
 		return fun.ErrBadRequest("owners can't be added to projects they own")
 	}
 
-	if ident.Sub.ID != project.OwnerID {
-		member, err := c.projects.GetMember(ctx, ident.Sub.ID, payload.ProjectID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.ProjectRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = c.authz.CheckProject(ctx, ident.Sub.ID, payload.ProjectID, nil, models.ProjectRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = c.actors.GetByID(ctx, actor.ID)

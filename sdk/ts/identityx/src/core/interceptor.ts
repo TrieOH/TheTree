@@ -57,7 +57,7 @@ export class AuthInterceptor {
           {
             method: "POST",
             credentials: "omit",
-            headers: { "refresh_token": refreshToken },
+            headers: { "Refresh-Token": refreshToken },
           }
         );
         const isSuccessfulCode = res.code >= 200 && res.code < 300;

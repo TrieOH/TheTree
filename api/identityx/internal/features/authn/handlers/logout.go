@@ -21,7 +21,7 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		fun.Error(fun.ErrUnauthorized("Invalid access token"))
 		return
 	}
-	refreshToken := req.Header("refresh_token").String()
+	refreshToken := req.Header("Refresh-Token").String()
 	err := h.commands.Logout(r.Context(), models.LogoutInput{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

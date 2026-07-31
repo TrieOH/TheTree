@@ -34,17 +34,9 @@ func (c *Commands) AddMember(ctx context.Context, payload models.AddOrganization
 		return fun.ErrBadRequest("owners can't be added to organizations they own")
 	}
 
-	if ident.Sub.ID != org.OwnerID {
-		member, err := c.orgs.GetMember(ctx, ident.Sub.ID, payload.OrganizationID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.OrganizationRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = c.authz.CheckOrg(ctx, ident.Sub.ID, payload.OrganizationID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = c.actors.GetByID(ctx, actor.ID)

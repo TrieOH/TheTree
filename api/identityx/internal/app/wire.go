@@ -1,6 +1,7 @@
 package app
 
 import (
+	"IdentityX/internal/authz"
 	"IdentityX/internal/features/actors"
 	apikeys "IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/authn"
@@ -102,27 +103,29 @@ func (app *IdentityX) initRepos(q *sqlc.Queries) *repos {
 }
 
 func (app *IdentityX) initQueries(r *repos) queries {
+	authzSvc := authz.New(r.orgs, r.projects)
 	return queries{
-		actors:         actors.NewQueries(r.projects, r.actors),
+		actors:         actors.NewQueries(r.projects, r.actors, authzSvc),
 		authn:          authn.NewQueries(r.projects, r.cryptoKeys),
-		orgs:           organizations.NewQueries(r.projects, r.actors, r.orgs),
-		projects:       projects.NewQueries(r.projects),
-		capabilities:   capabilities.NewQueries(r.capabilities, r.projects),
-		profiles:       profiles.NewQueries(r.profiles, r.projects),
-		profileSchemas: profile_schemas.NewQueries(r.profileSchemas, r.projects),
+		orgs:           organizations.NewQueries(r.projects, r.actors, r.orgs, authzSvc),
+		projects:       projects.NewQueries(r.projects, authzSvc),
+		capabilities:   capabilities.NewQueries(r.capabilities, r.projects, authzSvc),
+		profiles:       profiles.NewQueries(r.profiles, r.projects, authzSvc),
+		profileSchemas: profile_schemas.NewQueries(r.profileSchemas, r.projects, authzSvc),
 	}
 }
 
 func (app *IdentityX) initCommands(r *repos) commands {
+	authzSvc := authz.New(r.orgs, r.projects)
 	return commands{
 		authn:          authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities),
-		actors:         actors.NewCommands(r.actors, r.projects),
-		apiKeys:        apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects),
-		orgs:           organizations.NewCommands(r.projects, r.actors, r.orgs),
-		projects:       projects.NewCommands(r.cryptoKeys, r.projects, r.actors),
-		capabilities:   capabilities.NewCommands(r.actors, r.capabilities, r.projects),
-		profiles:       profiles.NewCommands(r.profiles, r.profileSchemas, r.projects),
-		profileSchemas: profile_schemas.NewCommands(r.profileSchemas, r.projects),
+		actors:         actors.NewCommands(r.actors, r.projects, authzSvc),
+		apiKeys:        apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, authzSvc),
+		orgs:           organizations.NewCommands(r.projects, r.actors, r.orgs, authzSvc),
+		projects:       projects.NewCommands(r.cryptoKeys, r.projects, r.actors, authzSvc),
+		capabilities:   capabilities.NewCommands(r.actors, r.capabilities, r.projects, authzSvc),
+		profiles:       profiles.NewCommands(r.profiles, r.profileSchemas, r.projects, authzSvc),
+		profileSchemas: profile_schemas.NewCommands(r.profileSchemas, r.projects, authzSvc),
 	}
 }
 
