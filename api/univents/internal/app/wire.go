@@ -11,6 +11,7 @@ import (
 	"univents/internal/features/editions"
 	"univents/internal/features/products"
 	"univents/internal/features/programs"
+	"univents/internal/features/badges"
 	"univents/internal/sqlc"
 
 	idx "sdk/identityx"
@@ -30,7 +31,8 @@ type repos struct {
 	ticketTypes ports.TicketTypeRepo
 	products    ports.ProductRepo
 	programs    ports.ProgramRepo
-	occurrences ports.ProgramOccurrenceRepo
+	occurrences  ports.ProgramOccurrenceRepo
+	badges       ports.BadgeTemplateRepo
 }
 
 type queries struct {
@@ -39,6 +41,7 @@ type queries struct {
 	ticketTypes *ticket_types.Queries
 	products    *products.Queries
 	programs    *programs.Queries
+	badges      *badges.Queries
 }
 
 type commands struct {
@@ -47,6 +50,7 @@ type commands struct {
 	ticketTypes *ticket_types.Commands
 	products    *products.Commands
 	programs    *programs.Commands
+	badges      *badges.Commands
 }
 
 type middlewares struct {
@@ -70,6 +74,7 @@ type handlers struct {
 	ticketTypes *ticket_types.Handlers
 	products    *products.Handlers
 	programs    *programs.Handlers
+	badges      *badges.Handler
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -83,6 +88,7 @@ func initRepos(q *sqlc.Queries) repos {
 		products:    products.NewRepos(q),
 		programs:    programsRepo,
 		occurrences: programsRepo,
+		badges:      badges.NewRepos(q),
 	}
 }
 
@@ -93,6 +99,7 @@ func initQueries(r repos) queries {
 		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes),
 		products:    products.NewQueries(r.editions, r.products),
 		programs:    programs.NewQueries(r.programs, r.occurrences),
+		badges:      badges.NewQueries(r.badges),
 	}
 }
 
@@ -103,6 +110,7 @@ func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client) commands 
 		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes),
 		products:    products.NewCommands(r.events, r.editions, r.products),
 		programs:    programs.NewCommands(r.events, r.editions, r.programs, r.occurrences),
+		badges:      badges.NewCommands(r.badges),
 	}
 }
 
@@ -113,6 +121,7 @@ func initHandlers(q queries, c commands) handlers {
 		ticketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
 		products:    products.NewHandlers(c.products, q.products),
 		programs:    programs.NewHandlers(c.programs, q.programs),
+		badges:      badges.NewHandlers(c.badges, q.badges),
 	}
 }
 
