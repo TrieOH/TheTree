@@ -35,17 +35,9 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveProjec
 		return fun.ErrBadRequest("cannot remove the owner of the project")
 	}
 
-	if ident.Sub.ID != project.OwnerID {
-		member, err := c.projects.GetMember(ctx, ident.Sub.ID, payload.ProjectID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.ProjectRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = c.authz.CheckProject(ctx, ident.Sub.ID, payload.ProjectID, nil, models.ProjectRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = c.projects.GetMember(ctx, actor.ID, project.ID)

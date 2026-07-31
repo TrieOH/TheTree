@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"net/http"
+	"univents/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
-	"github.com/google/uuid"
 )
 
 func (handler *Handlers) LinkCertTemplate(w http.ResponseWriter, r *http.Request) {
@@ -14,13 +14,11 @@ func (handler *Handlers) LinkCertTemplate(w http.ResponseWriter, r *http.Request
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload struct {
-		ProgramID string `json:"program_id" validate:"required,uuid"`
-	}
+	var payload models.CertTemplateProgramRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = handler.commands.LinkCertTemplate(r.Context(), templateID, uuid.MustParse(payload.ProgramID))
+	err = handler.commands.LinkCertTemplate(r.Context(), templateID, payload.ProgramID)
 	if fun.Bail(w, err) {
 		return
 	}

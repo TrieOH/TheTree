@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"time"
 
@@ -34,8 +35,8 @@ func (c Config) DSN() string {
 		ssl = "disable"
 	}
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		url.QueryEscape(c.User), url.QueryEscape(c.Password), c.Host, c.port(), c.DB, ssl,
+		"postgres://%s:%s@%s/%s?sslmode=%s",
+		url.QueryEscape(c.User), url.QueryEscape(c.Password), net.JoinHostPort(c.Host, c.port()), c.DB, ssl,
 	)
 }
 
@@ -53,8 +54,8 @@ func (c Config) RootDSN() string {
 		rootDB = "postgres"
 	}
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		url.QueryEscape(c.RootUser), url.QueryEscape(c.RootPassword), host, rootPort, rootDB,
+		"postgres://%s:%s@%s/%s?sslmode=disable",
+		url.QueryEscape(c.RootUser), url.QueryEscape(c.RootPassword), net.JoinHostPort(host, rootPort), rootDB,
 	)
 }
 
@@ -70,7 +71,8 @@ func SetupDB(cfg Config) *pgxpool.Pool {
 	if err != nil {
 		errx.Exit(err, "Failed to connect DB")
 	}
-	if err = RunMigrations(db, cfg.MigrationPath); err != nil {
+	err = RunMigrations(db, cfg.MigrationPath)
+	if err != nil {
 		errx.Exit(err, "Failed migrations")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -5,8 +5,6 @@ import (
 	"context"
 
 	"lib/telemetry"
-
-	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) UpsertSchema(ctx context.Context, payload models.UpsertProfileSchemaInput) (*models.ProjectProfileSchema, error) {
@@ -32,19 +30,9 @@ func (c *Commands) UpsertSchema(ctx context.Context, payload models.UpsertProfil
 		return nil, err
 	}
 
-	project, err := c.projects.GetByID(ctx, *payload.ProjectID)
+	err = c.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, nil, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != project.OwnerID {
-		member, err := c.projects.GetMember(ctx, ident.Sub.ID, project.ID)
-		if err != nil {
-			return nil, err
-		}
-		if member.Role != models.ProjectRoleAdmin {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
 	}
 
 	return c.schemas.Upsert(ctx, models.ProjectProfileSchema{

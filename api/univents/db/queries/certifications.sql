@@ -48,7 +48,7 @@ VALUES (@template_id, @program_id);
 
 -- name: DeleteCertificationTemplatePrograms :exec
 DELETE FROM certification_template_programs
-WHERE template_id = @template_id;
+WHERE template_id = @template_id AND program_id = @program_id;
 
 -- name: ListCertificationTemplateProgramsByTemplate :many
 SELECT *

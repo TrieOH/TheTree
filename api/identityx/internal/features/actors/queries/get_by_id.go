@@ -19,17 +19,9 @@ func (q *Queries) GetByID(ctx context.Context, id, projectID uuid.UUID) (*models
 		return nil, err
 	}
 
-	var project *models.Project
-	project, err = q.projects.GetByID(ctx, projectID)
+	err = q.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != project.OwnerID {
-		_, err = q.projects.GetMember(ctx, ident.Sub.ID, projectID)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	actor, err := q.actors.GetByID(ctx, id)

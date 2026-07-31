@@ -27,7 +27,7 @@ type CertificationRepo interface {
 	MarkEmailSent(ctx context.Context, id uuid.UUID) error
 
 	LinkCertTemplate(ctx context.Context, templateID, programID uuid.UUID) error
-	UnlinkCertTemplate(ctx context.Context, templateID uuid.UUID) error
+	UnlinkCertTemplate(ctx context.Context, templateID, programID uuid.UUID) error
 
 	RecordEmissionError(ctx context.Context, err *models.CertEmissionError) error
 	ListEmissionErrorsByEdition(ctx context.Context, editionID uuid.UUID) ([]models.CertEmissionError, error)

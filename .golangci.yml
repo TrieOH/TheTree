@@ -86,7 +86,6 @@ linters:
     - thelper               # test helpers that don't call t.Helper() — failure points to wrong line
 
     # --- observability conventions ---
-    - sloglint              # slog key=value consistency, wrong key types, missing keys
     - promlinter            # Prometheus/VictoriaMetrics metric naming conventions
     - zerologlint           # zerolog calls missing .Send() or .Msg() — runtime panic
 

@@ -23,7 +23,8 @@ type InitiateCheckoutRequest struct {
 
 func (c *Client) InitiateCheckout(ctx context.Context, req InitiateCheckoutRequest) (*Intent, error) {
 	var out Intent
-	if err := c.do(ctx, "POST", "/intents", req, &out); err != nil {
+	err := c.do(ctx, "POST", "/intents", req, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -31,7 +32,8 @@ func (c *Client) InitiateCheckout(ctx context.Context, req InitiateCheckoutReque
 
 func (c *Client) GetIntent(ctx context.Context, intentID string) (*Intent, error) {
 	var out Intent
-	if err := c.do(ctx, "GET", fmt.Sprintf("/intents/%s", intentID), nil, &out); err != nil {
+	err := c.do(ctx, "GET", "/intents/"+intentID, nil, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -39,7 +41,8 @@ func (c *Client) GetIntent(ctx context.Context, intentID string) (*Intent, error
 
 func (c *Client) ListIntents(ctx context.Context) ([]Intent, error) {
 	var out []Intent
-	if err := c.do(ctx, "GET", "/intents", nil, &out); err != nil {
+	err := c.do(ctx, "GET", "/intents", nil, &out)
+	if err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -47,7 +50,8 @@ func (c *Client) ListIntents(ctx context.Context) ([]Intent, error) {
 
 func (c *Client) CancelIntent(ctx context.Context, intentID string) (*Intent, error) {
 	var out Intent
-	if err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/cancel", intentID), nil, &out); err != nil {
+	err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/cancel", intentID), nil, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -60,7 +64,8 @@ type CancelPixRequest struct {
 
 func (c *Client) CancelPixIntent(ctx context.Context, intentID string, req CancelPixRequest) (*Intent, error) {
 	var out Intent
-	if err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/cancel-pix", intentID), req, &out); err != nil {
+	err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/cancel-pix", intentID), req, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -72,7 +77,8 @@ type ChargeRequest struct {
 
 func (c *Client) Charge(ctx context.Context, intentID string, req ChargeRequest) (*Intent, error) {
 	var out Intent
-	if err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/charge", intentID), req, &out); err != nil {
+	err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/charge", intentID), req, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil

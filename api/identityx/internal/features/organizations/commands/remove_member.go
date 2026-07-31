@@ -33,17 +33,9 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrgani
 		return fun.ErrBadRequest("cannot remove the owner of the organization")
 	}
 
-	if ident.Sub.ID != org.OwnerID {
-		member, err := c.orgs.GetMember(ctx, ident.Sub.ID, payload.OrganizationID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.OrganizationRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = c.authz.CheckOrg(ctx, ident.Sub.ID, payload.OrganizationID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = c.orgs.GetMember(ctx, actor.ID, org.ID)

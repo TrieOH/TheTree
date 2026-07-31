@@ -1,27 +1,27 @@
 package repos
 
 import (
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.ActorRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("actor"),
 	}
 }
 
-func mapActor(src sqlc2.Actor) models.Actor {
+func mapActor(src sqlc.Actor) models.Actor {
 	return models.Actor{
 		ID:           src.ID,
 		ProjectID:    src.ProjectID,

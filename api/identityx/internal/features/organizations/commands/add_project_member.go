@@ -34,17 +34,9 @@ func (c *Commands) AddProjectMember(ctx context.Context, payload models.AddOrgPr
 		return fun.ErrBadRequest("owner of the organization is already a member of the project")
 	}
 
-	if ident.Sub.ID != org.OwnerID {
-		member, err := c.orgs.GetMember(ctx, ident.Sub.ID, org.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.OrganizationRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = c.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = c.orgs.GetMember(ctx, actor.ID, org.ID)

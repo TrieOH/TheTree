@@ -18,16 +18,9 @@ func (q *Queries) GetProfile(ctx context.Context, actorID, projectID uuid.UUID) 
 		return nil, err
 	}
 
-	project, err := q.projects.GetByID(ctx, projectID)
+	err = q.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != project.OwnerID {
-		_, err = q.projects.GetMember(ctx, ident.Sub.ID, projectID)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return q.profiles.Get(ctx, actorID)

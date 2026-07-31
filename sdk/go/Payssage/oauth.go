@@ -23,7 +23,8 @@ type OAuthRedirectResponse struct {
 // Returns a redirect URL — the caller is responsible for redirecting the user to it.
 func (c *Client) SetupProvider(ctx context.Context, workspaceName, provider string, req SetupProviderRequest) (string, error) {
 	var out OAuthRedirectResponse
-	if err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/providers/%s/setup", workspaceName, provider), req, &out); err != nil {
+	err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/providers/%s/setup", workspaceName, provider), req, &out)
+	if err != nil {
 		return "", err
 	}
 	return out.RedirectURL, nil
@@ -33,7 +34,8 @@ func (c *Client) SetupProvider(ctx context.Context, workspaceName, provider stri
 // Returns a redirect URL — the caller is responsible for redirecting the user to it.
 func (c *Client) ConnectSeller(ctx context.Context, workspaceName, provider string, req ConnectSellerRequest) (string, error) {
 	var out OAuthRedirectResponse
-	if err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/providers/%s/connect", workspaceName, provider), req, &out); err != nil {
+	err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/providers/%s/connect", workspaceName, provider), req, &out)
+	if err != nil {
 		return "", err
 	}
 	return out.RedirectURL, nil
@@ -42,7 +44,8 @@ func (c *Client) ConnectSeller(ctx context.Context, workspaceName, provider stri
 // SetMarketplaceConfig sets the marketplace configuration for a workspace.
 func (c *Client) SetMarketplaceConfig(ctx context.Context, workspaceName string, req SetMarketplaceConfigRequest) (*MarketplaceConfig, error) {
 	var out MarketplaceConfig
-	if err := c.do(ctx, "PUT", fmt.Sprintf("/workspaces/%s/marketplace", workspaceName), req, &out); err != nil {
+	err := c.do(ctx, "PUT", fmt.Sprintf("/workspaces/%s/marketplace", workspaceName), req, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil

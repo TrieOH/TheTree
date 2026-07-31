@@ -2,26 +2,26 @@ package repos
 
 import (
 	"lib/database"
-	sqlc2 "payssage/internal/sqlc"
+	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.WebhookEventRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("webhook_event"),
 	}
 }
 
-func mapWebhookEvent(src sqlc2.WebhookEvent) models.WebhookEvent {
+func mapWebhookEvent(src sqlc.WebhookEvent) models.WebhookEvent {
 	var externalID string
 	if src.ExternalID != nil {
 		externalID = *src.ExternalID
