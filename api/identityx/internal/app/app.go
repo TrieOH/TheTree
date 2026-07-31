@@ -3,7 +3,7 @@ package app
 import (
 	"IdentityX/internal/config"
 	"IdentityX/internal/jobs"
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"context"
 
 	"lib/database"
@@ -35,7 +35,7 @@ func Start() {
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)
 
-	sqlcQueries := sqlc2.New(app.db)
+	sqlcQueries := sqlc.New(app.db)
 	has, err := sqlcQueries.HasAnyActor(ctx)
 	if err != nil {
 		errx.Exit(err, "failed to check setup state")
@@ -77,9 +77,9 @@ func Start() {
 }
 
 func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.Client[pgx.Tx]) {
-	q := sqlc2.New(db)
+	q := sqlc.New(db)
 	for _, keyType := range []string{"signing", "encryption"} {
-		exists, err := q.HasActiveCryptoKey(ctx, sqlc2.HasActiveCryptoKeyParams{Type: keyType})
+		exists, err := q.HasActiveCryptoKey(ctx, sqlc.HasActiveCryptoKeyParams{Type: keyType})
 		if err != nil {
 			errx.Exit(err, "failed to check global "+keyType+" key")
 		}
@@ -99,7 +99,7 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 	for _, p := range projects {
 		pid := p.ID
 		for _, keyType := range []string{"signing", "encryption"} {
-			exists, err := q.HasActiveCryptoKey(ctx, sqlc2.HasActiveCryptoKeyParams{
+			exists, err := q.HasActiveCryptoKey(ctx, sqlc.HasActiveCryptoKeyParams{
 				ProjectID: &pid,
 				Type:      keyType,
 			})
