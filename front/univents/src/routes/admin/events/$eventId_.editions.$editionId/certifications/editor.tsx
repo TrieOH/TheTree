@@ -4,10 +4,20 @@ import { CertificateEditor } from "@/features/certifications/editor/ui/certifica
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/certifications/editor",
 )({
+  validateSearch: (search: Record<string, unknown>) => ({
+    templateId: typeof search.templateId === "string" ? search.templateId : "",
+  }),
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams();
-  return <CertificateEditor eventId={eventId} editionId={editionId} />;
+  const { templateId } = Route.useSearch();
+  return (
+    <CertificateEditor
+      eventId={eventId}
+      editionId={editionId}
+      templateId={templateId || undefined}
+    />
+  );
 }

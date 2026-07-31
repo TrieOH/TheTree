@@ -31,13 +31,13 @@ export async function uploadCertificateAssets(
     return upload;
   }
 
-  const backgroundSource = draft.url ?? draft.data.background;
+  const backgroundSource = draft.design_data.background;
   const backgroundUrl = isDataImage(backgroundSource)
     ? await uploadDataImage(backgroundSource, "background")
     : backgroundSource;
 
   const elements = await Promise.all(
-    draft.data.elements.map(async (element) => {
+    draft.design_data.elements.map(async (element) => {
       if (
         (element.type === "image" || element.type === "signature") &&
         isDataImage(element.src)
@@ -56,9 +56,8 @@ export async function uploadCertificateAssets(
 
   return {
     ...draft,
-    url: backgroundUrl,
-    data: {
-      ...draft.data,
+    design_data: {
+      ...draft.design_data,
       background: backgroundUrl,
       elements,
     },

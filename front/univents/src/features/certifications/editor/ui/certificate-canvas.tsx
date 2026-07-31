@@ -21,10 +21,10 @@ const CHECKERBOARD_STYLE: CSSProperties = {
 
 export function CertificateCanvas() {
   const elements = useCertificateEditorState(
-    (state) => state.draft.data.elements,
+    (state) => state.draft.design_data.elements,
   );
   const backgroundUrl = useCertificateEditorState(
-    (state) => state.draft.url ?? state.draft.data.background,
+    (state) => state.draft.design_data.background,
   );
   const canvas = useCertificateEditorState((state) => state.canvas);
   const selectedElementId = useCertificateEditorState(

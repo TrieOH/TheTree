@@ -2,13 +2,13 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, FileX2, Hash, Loader2, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
-import { allPublicActivitiesQueryOptions } from "@/features/activities/api";
-import type { ActivityI } from "@/features/activities/model";
 import {
   certificationTemplateQueryOptions,
   verifyCertificationHashFn,
 } from "@/features/certifications/api";
 import { certificationKeys } from "@/features/certifications/api/query-keys";
+import { getCertificationTemplateOrDefault } from "@/features/certifications/default-template";
+import type { CertificationTemplateI } from "@/features/certifications/model";
 import {
   CertificateTemplateStaticView,
   CertViewer,
@@ -16,6 +16,8 @@ import {
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
+import { programsQueryOptions } from "@/features/programs/api";
+import type { ProgramI } from "@/features/programs/model";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import {
   Card,
@@ -49,7 +51,7 @@ function getOrigin() {
 type VerifiedTemplateSectionProps = {
   hash: string;
   templateQuery: {
-    query: ReturnType<typeof certificationTemplateQueryOptions>;
+    query?: ReturnType<typeof certificationTemplateQueryOptions>;
     eventId: string;
     editionId: string;
   };
@@ -57,8 +59,9 @@ type VerifiedTemplateSectionProps = {
     target_type: "edition" | "activity";
     target_id: string;
     certified_at: string;
+    template_id?: string | null;
   };
-  activityLookup: Map<string, ActivityI>;
+  activityLookup: Map<string, ProgramI>;
   editionLookup: Map<string, EditionI>;
 };
 
@@ -69,7 +72,15 @@ function VerifiedTemplateSection({
   activityLookup,
   editionLookup,
 }: VerifiedTemplateSectionProps) {
-  const { data: templateData } = useQuery(templateQuery.query);
+  const { data: linkedTemplate } = useQuery<CertificationTemplateI | null>({
+    queryKey: templateQuery.query?.queryKey ?? ["certifications", "default"],
+    queryFn: async (context): Promise<CertificationTemplateI | null> => {
+      const queryFn = templateQuery.query?.queryFn;
+      if (!queryFn) return null;
+      return (await queryFn(context as never)) as CertificationTemplateI;
+    },
+  });
+  const templateData = getCertificationTemplateOrDefault(linkedTemplate);
 
   const variables = useMemo(() => {
     const activity =
@@ -86,20 +97,18 @@ function VerifiedTemplateSection({
       activity_name:
         payload.target_type === "edition"
           ? (edition?.name ?? "")
-          : (activity?.title ?? edition?.name ?? ""),
+          : (activity?.name ?? edition?.name ?? ""),
       certified_at: formatCertifiedAt(payload.certified_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
     };
   }, [activityLookup, editionLookup, hash, payload]);
 
-  if (!templateData) return null;
-
   return (
     <div className="mb-6 overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{templateData.title}</p>
+          <p className="truncate text-sm font-medium">{templateData.name}</p>
           <p className="text-xs text-muted-foreground">
             Certificado verificado
           </p>
@@ -151,19 +160,19 @@ function VerifyCertificationPage() {
 
   const activityQueries = useQueries({
     queries: [...editionLookup.values()].map((edition) => ({
-      ...allPublicActivitiesQueryOptions(edition.event_id, edition.id),
+      ...programsQueryOptions(edition.id),
       enabled: !!edition.event_id,
     })),
   });
 
   const activityLookup = useMemo(() => {
-    const activities = new Map<string, ActivityI>();
+    const programs = new Map<string, ProgramI>();
     activityQueries.forEach((query) => {
-      for (const activity of (query.data ?? []) as ActivityI[]) {
-        activities.set(activity.id, activity);
+      for (const activity of query.data ?? []) {
+        programs.set(activity.id, activity);
       }
     });
-    return activities;
+    return programs;
   }, [activityQueries]);
 
   const templateQuery = useMemo(() => {
@@ -178,16 +187,18 @@ function VerifyCertificationPage() {
         ? payload.target_id
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
-    const templateId = activity?.certification_template_id ?? null;
+    const templateId = payload.template_id ?? null;
 
-    if (!templateId || !edition?.event_id || !edition?.id) return null;
+    if (!edition?.event_id || !edition?.id) return null;
 
     return {
-      query: certificationTemplateQueryOptions(
-        edition.event_id,
-        edition.id,
-        templateId,
-      ),
+      query: templateId
+        ? certificationTemplateQueryOptions(
+            edition.event_id,
+            edition.id,
+            templateId,
+          )
+        : undefined,
       eventId: edition.event_id,
       editionId: edition.id,
     };

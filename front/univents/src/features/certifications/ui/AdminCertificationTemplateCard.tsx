@@ -1,47 +1,40 @@
-import { Check, FileText, MoreVertical, Pencil } from "lucide-react";
+import { FileText, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
-import type React from "react";
 import { cn } from "@/shared/lib/utils";
-import { Badge } from "@/shared/ui/shadcn/badge";
-import { Button } from "@/shared/ui/shadcn/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui/shadcn/dropdown-menu";
 import type { CertificationTemplateI } from "../model";
-import { CertViewer } from "./CertViewer";
 
 interface AdminCertificationTemplateCardProps {
   template: CertificationTemplateI;
-  selected: boolean;
   index?: number;
-  onSelect: (templateId: string) => void;
   onEdit: () => void;
-  verifyUrl: string;
-  editionName: string;
+  onDelete: () => void;
+  onView: () => void;
 }
 
 function MenuItems({
   isContext = false,
-  onSelect,
   onEdit,
+  onView,
+  onDelete,
 }: {
   isContext?: boolean;
-  onSelect: () => void;
   onEdit: () => void;
+  onView: () => void;
+  onDelete: () => void;
 }) {
   const Item = isContext ? ContextMenuItem : DropdownMenuItem;
-  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
   const stop =
     (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
       e.preventDefault();
@@ -51,14 +44,20 @@ function MenuItems({
 
   return (
     <>
-      <Item onClick={stop(onSelect)}>
-        <Check className="size-4" />
-        <span>Selecionar template</span>
+      <Item onClick={stop(onView)}>
+        <FileText className="size-4" />
+        <span>Ver template</span>
       </Item>
-      <Separator />
       <Item onClick={stop(onEdit)}>
         <Pencil className="size-4" />
         <span>Editar template</span>
+      </Item>
+      <Item
+        onClick={stop(onDelete)}
+        className="text-destructive focus:text-destructive"
+      >
+        <Trash2 className="size-4" />
+        <span>Excluir template</span>
       </Item>
     </>
   );
@@ -66,15 +65,13 @@ function MenuItems({
 
 export function AdminCertificationTemplateCard({
   template,
-  selected,
   index = 0,
-  onSelect,
   onEdit,
-  verifyUrl,
-  editionName,
+  onDelete,
+  onView,
 }: AdminCertificationTemplateCardProps) {
-  const handleSelect = () => onSelect(template.id);
   const handleEdit = () => onEdit();
+  const handleView = () => onView();
 
   return (
     <ContextMenu>
@@ -98,19 +95,19 @@ export function AdminCertificationTemplateCard({
             )}
             role="button"
             tabIndex={0}
-            onClick={handleSelect}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelect();
+            onClick={handleView}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleView();
               }
             }}
           >
             <div className="relative h-24 overflow-hidden bg-muted">
-              {template.url ? (
+              {template.design_data.background ? (
                 <img
-                  src={template.url}
-                  alt={template.title}
+                  src={template.design_data.background}
+                  alt={template.name}
                   className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                   loading={index < 4 ? "eager" : "lazy"}
                 />
@@ -129,11 +126,6 @@ export function AdminCertificationTemplateCard({
                   <FileText className="size-3.5" />
                   Template
                 </span>
-                {selected && (
-                  <Badge className="bg-primary text-primary-foreground hover:bg-primary">
-                    Selecionado
-                  </Badge>
-                )}
               </div>
 
               <div className="absolute right-2 top-2">
@@ -148,14 +140,18 @@ export function AdminCertificationTemplateCard({
                           "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
                           "transition-colors hover:bg-background",
                         )}
-                        aria-label={`Abrir ações de ${template.title}`}
+                        aria-label={`Abrir ações de ${template.name}`}
                       >
                         <MoreVertical className="size-4" />
                       </button>
                     }
                   />
                   <DropdownMenuContent align="end" className="w-56">
-                    <MenuItems onSelect={handleSelect} onEdit={handleEdit} />
+                    <MenuItems
+                      onEdit={handleEdit}
+                      onView={handleView}
+                      onDelete={onDelete}
+                    />
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -165,38 +161,18 @@ export function AdminCertificationTemplateCard({
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="min-w-0 space-y-1">
                   <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-300 group-hover:text-primary">
-                    {template.title}
+                    {template.name}
                   </h3>
                   <p className="text-[11px] text-muted-foreground">
-                    {template.url ? "Com fundo configurado" : "Sem fundo"}
+                    {template.design_data.background
+                      ? "Com fundo configurado"
+                      : "Sem fundo"}
                   </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant={selected ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 flex-1 gap-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSelect();
-                    }}
-                  >
-                    <Check className="size-3.5" />
-                    {selected ? "Selecionado" : "Selecionar"}
-                  </Button>
-                  <CertViewer
-                    template={template}
-                    triggerLabel="Ver"
-                    variables={{
-                      activity_name: editionName,
-                      certified_at: "DD/MM/AAAA",
-                      cert_hash: "HASH-DE-EXEMPLO",
-                      verify_url: verifyUrl,
-                    }}
-                  />
+                  {template.description ? (
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
+                      {template.description}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -204,7 +180,12 @@ export function AdminCertificationTemplateCard({
         }
       />
       <ContextMenuContent className="w-56">
-        <MenuItems isContext onSelect={handleSelect} onEdit={handleEdit} />
+        <MenuItems
+          isContext
+          onEdit={handleEdit}
+          onView={handleView}
+          onDelete={onDelete}
+        />
       </ContextMenuContent>
     </ContextMenu>
   );

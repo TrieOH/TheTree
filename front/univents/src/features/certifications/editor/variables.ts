@@ -50,11 +50,16 @@ export function resolveCertificationTemplate(
   template: CertificationTemplateDraft,
   values: CertificateVariableValues,
 ): CertificationTemplateDraft {
+  const designData = template.design_data ?? {
+    canvas: undefined,
+    background: null,
+    elements: [],
+  };
   return {
     ...template,
-    data: {
-      ...template.data,
-      elements: template.data.elements.map((element) =>
+    design_data: {
+      ...designData,
+      elements: (designData.elements ?? []).map((element) =>
         resolveElement(element, values),
       ),
     },

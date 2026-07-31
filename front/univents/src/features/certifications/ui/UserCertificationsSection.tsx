@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Award, CalendarDays, ExternalLink, FileCheck2 } from "lucide-react";
-import { allPublicActivitiesQueryOptions } from "@/features/activities/api";
+import { programsQueryOptions } from "@/features/programs/api";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
@@ -30,26 +30,25 @@ export function UserCertificationsSection({
   title = "Meus certificados",
   subtitle = "Certificados emitidos nesta edição.",
 }: UserCertificationsSectionProps) {
+  void eventId;
   const certificationsQuery = useQuery({
     ...certificationsByUserQueryOptions(userId),
     enabled: Boolean(userId),
   });
-  const activitiesQuery = useQuery(
-    allPublicActivitiesQueryOptions(eventId, editionId),
-  );
-  const activities = activitiesQuery.data ?? [];
+  const programsQuery = useQuery(programsQueryOptions(editionId));
+  const programs = programsQuery.data ?? [];
   const activityNames = new Map(
-    activities.map((activity) => [activity.id, activity.title]),
+    programs.map((program) => [program.id, program.name]),
   );
   const activityIds = new Set(activityNames.keys());
   const certifications = (certificationsQuery.data ?? []).filter(
     (certification) =>
-      (certification.target_type === "edition" &&
-        certification.target_id === editionId) ||
-      (certification.target_type === "activity" &&
-        activityIds.has(certification.target_id)),
+      (certification.program_id === null &&
+        certification.edition_id === editionId) ||
+      (certification.program_id !== null &&
+        activityIds.has(certification.program_id)),
   );
-  const isLoading = certificationsQuery.isLoading || activitiesQuery.isLoading;
+  const isLoading = certificationsQuery.isLoading || programsQuery.isLoading;
 
   return (
     <section className="space-y-4">
@@ -79,9 +78,9 @@ export function UserCertificationsSection({
         <div className="grid gap-4 md:grid-cols-2">
           {certifications.map((certification) => {
             const targetName =
-              certification.target_type === "edition"
+              certification.program_id === null
                 ? "Certificado da edição"
-                : (activityNames.get(certification.target_id) ??
+                : (activityNames.get(certification.program_id ?? "") ??
                   "Certificado de atividade");
 
             return (
@@ -95,11 +94,11 @@ export function UserCertificationsSection({
                       <CardDescription className="mt-1 flex items-center gap-1.5 text-xs">
                         <CalendarDays className="size-3.5" />
                         Emitido em{" "}
-                        {formatCertificateDate(certification.certified_at)}
+                        {formatCertificateDate(certification.issued_at)}
                       </CardDescription>
                     </div>
                     <Badge variant="secondary">
-                      {certification.target_type === "edition"
+                      {certification.program_id === null
                         ? "Edição"
                         : "Atividade"}
                     </Badge>
@@ -111,13 +110,13 @@ export function UserCertificationsSection({
                       Código de verificação
                     </p>
                     <p className="mt-1 truncate font-mono text-xs">
-                      {certification.hash || "Código indisponível"}
+                      {certification.verification_hash || "Código indisponível"}
                     </p>
                   </div>
-                  {certification.hash ? (
+                  {certification.verification_hash ? (
                     <Link
                       to="/verify/$hash"
-                      params={{ hash: certification.hash }}
+                      params={{ hash: certification.verification_hash }}
                       className={cn(
                         buttonVariants({ variant: "outline", size: "sm" }),
                         "w-full",

@@ -27,12 +27,16 @@ interface CertViewerProps {
   template: CertificationTemplateI;
   triggerLabel?: string;
   variables?: CertificateVariableValues;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function CertViewer({
   template,
   triggerLabel = "Visualizar",
   variables = {},
+  open,
+  onOpenChange,
 }: CertViewerProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState<CertificateExportFormat | null>(
@@ -43,7 +47,7 @@ export function CertViewer({
     if (!canvasRef.current || exporting) return;
     setExporting(format);
     try {
-      await downloadCertificate(canvasRef.current, template.title, format);
+      await downloadCertificate(canvasRef.current, template.name, format);
     } catch {
       toast.error(
         `Não foi possível exportar o certificado em ${format.toUpperCase()}.`,
@@ -54,13 +58,15 @@ export function CertViewer({
   }
 
   return (
-    <Dialog>
-      <DialogTrigger
-        render={<Button type="button" variant="outline" size="sm" />}
-      >
-        <Eye className="size-4" />
-        {triggerLabel}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open === undefined ? (
+        <DialogTrigger
+          render={<Button type="button" variant="outline" size="sm" />}
+        >
+          <Eye className="size-4" />
+          {triggerLabel}
+        </DialogTrigger>
+      ) : null}
       <DialogContent
         className="z-100! grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 shadow-2xl"
         overlayClassName="!z-[99] bg-black/40 backdrop-blur-md"
@@ -74,7 +80,7 @@ export function CertViewer({
           <div className="min-w-0 space-y-1">
             <DialogTitle className="flex items-center gap-2 truncate">
               <FileText className="size-4 shrink-0 text-muted-foreground" />
-              {template.title}
+              {template.name}
             </DialogTitle>
             <DialogDescription>
               Pré-visualização no tamanho e proporção de emissão.
@@ -135,7 +141,7 @@ export const CertificateTemplateStaticView = forwardRef<
   canvasRef,
 ) {
   const { ref, size } = useElementSize<HTMLDivElement>();
-  const canvas = template.data.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
+  const canvas = template.design_data.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
   const scale = Math.max(
     0,
     Math.min(size.width / canvas.width, size.height / canvas.height),
@@ -144,8 +150,7 @@ export const CertificateTemplateStaticView = forwardRef<
     () => resolveCertificationTemplate(template, variables),
     [template, variables],
   );
-  const backgroundUrl =
-    resolvedTemplate.url ?? resolvedTemplate.data.background;
+  const backgroundUrl = resolvedTemplate.design_data.background;
 
   return (
     <div
@@ -175,7 +180,7 @@ export const CertificateTemplateStaticView = forwardRef<
               backgroundSize: "cover",
             }}
           >
-            {resolvedTemplate.data.elements.map((element) => (
+            {resolvedTemplate.design_data.elements.map((element) => (
               <div
                 key={element.id}
                 className="absolute overflow-hidden"

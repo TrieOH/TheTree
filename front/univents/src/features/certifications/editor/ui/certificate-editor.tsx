@@ -4,11 +4,14 @@ import { ArrowLeft, Loader2, Monitor, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/shadcn/button";
-import { Input } from "@/shared/ui/shadcn/input";
 import { allSignaturesQueryOptions } from "../../../signatures/api";
-import { useCreateCertificationTemplateMutation } from "../../api/mutations";
+import { certificationTemplateQueryOptions } from "../../api";
+import {
+  useCreateCertificationTemplateMutation,
+  useUpdateCertificationTemplateMutation,
+} from "../../api/mutations";
 import { certificationTemplateCreateSchema } from "../../model";
-import { certificateEditorActions, useCertificateEditorState } from "../store";
+import { certificateEditorActions } from "../store";
 import { uploadCertificateAssets } from "../upload-assets";
 import { CertificateCanvas } from "./certificate-canvas";
 import { CertificatePropertiesPanel } from "./certificate-properties-panel";
@@ -18,23 +21,30 @@ import { CertificateToolsSidebar } from "./certificate-tools-sidebar";
 interface CertificateEditorProps {
   eventId: string;
   editionId: string;
+  templateId?: string;
 }
 
 export function CertificateEditor({
   eventId,
   editionId,
+  templateId,
 }: CertificateEditorProps) {
   const navigate = useNavigate();
   const [uploadingAssets, setUploadingAssets] = useState(false);
-  const title = useCertificateEditorState((state) => state.draft.title);
   const { data: signatures = [] } = useQuery(
     allSignaturesQueryOptions(eventId, editionId),
   );
+  const templateQuery = useQuery({
+    ...certificationTemplateQueryOptions(eventId, editionId, templateId ?? ""),
+    enabled: Boolean(templateId),
+  });
 
   useEffect(() => {
     certificateEditorActions.reset();
+    if (templateQuery.data)
+      certificateEditorActions.loadDraft(templateQuery.data);
     return () => certificateEditorActions.reset();
-  }, []);
+  }, [templateQuery.data]);
 
   useEffect(() => {
     certificateEditorActions.setAvailableSignatures(
@@ -47,6 +57,7 @@ export function CertificateEditor({
   }, [signatures]);
 
   const createTemplate = useCreateCertificationTemplateMutation();
+  const updateTemplate = useUpdateCertificationTemplateMutation();
 
   async function saveTemplate() {
     const result = certificationTemplateCreateSchema.safeParse(
@@ -63,18 +74,18 @@ export function CertificateEditor({
         eventId,
         editionId,
       );
-      createTemplate.mutate(
-        { eventId, editionId, data },
-        {
-          onSuccess: (response) => {
-            if (!response.success) return;
-            void navigate({
-              to: "/admin/events/$eventId/editions/$editionId/certifications",
-              params: { eventId, editionId },
-            });
-          },
-        },
-      );
+      const onSuccess = (response: { success: boolean }) => {
+        if (!response.success) return;
+        void navigate({
+          to: "/admin/events/$eventId/editions/$editionId/certifications",
+          params: { eventId, editionId },
+        });
+      };
+      if (templateId) {
+        updateTemplate.mutate({ templateId, data }, { onSuccess });
+      } else {
+        createTemplate.mutate({ eventId, editionId, data }, { onSuccess });
+      }
     } catch {
       toast.error("Não foi possível enviar as imagens do certificado");
     } finally {
@@ -106,25 +117,21 @@ export function CertificateEditor({
             <span className="hidden shrink-0 text-sm font-semibold tracking-tight xl:inline">
               Editor de certificados
             </span>
-            <Input
-              value={title}
-              maxLength={160}
-              onChange={(event) =>
-                certificateEditorActions.setTitle(event.target.value)
-              }
-              placeholder="Título do certificado"
-              aria-label="Título do certificado"
-              className="max-w-sm border-border/60 bg-background/80 text-card-foreground placeholder:text-muted-foreground/70"
-            />
           </div>
 
           <Button
             type="button"
             variant="default"
-            disabled={uploadingAssets || createTemplate.isPending}
+            disabled={
+              uploadingAssets ||
+              createTemplate.isPending ||
+              updateTemplate.isPending
+            }
             onClick={() => void saveTemplate()}
           >
-            {uploadingAssets || createTemplate.isPending ? (
+            {uploadingAssets ||
+            createTemplate.isPending ||
+            updateTemplate.isPending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <Save className="size-4" />

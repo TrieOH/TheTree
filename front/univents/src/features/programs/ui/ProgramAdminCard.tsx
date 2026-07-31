@@ -1,4 +1,5 @@
 import {
+  Award,
   CalendarDays,
   Clock3,
   MoreVertical,
@@ -40,6 +41,9 @@ export function ProgramAdminCard({
   onEdit,
   onManageOccurrences,
   onDelete,
+  onManageCertificate,
+  onUnlinkCertificate,
+  hasCertificate = false,
 }: {
   program: ProgramI;
   occurrences: OccurrenceI[];
@@ -47,6 +51,9 @@ export function ProgramAdminCard({
   onEdit: () => void;
   onManageOccurrences: () => void;
   onDelete: () => void;
+  onManageCertificate: () => void;
+  onUnlinkCertificate: () => void;
+  hasCertificate?: boolean;
 }) {
   const card = (
     <motion.article
@@ -108,6 +115,18 @@ export function ProgramAdminCard({
                 <CalendarDays className="size-4" />
                 Gerenciar ocorrências
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (hasCertificate) onUnlinkCertificate();
+                  else onManageCertificate();
+                }}
+              >
+                <Award className="size-4" />
+                {hasCertificate
+                  ? "Desvincular certificado"
+                  : "Vincular certificado"}
+              </DropdownMenuItem>
               <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
                 Banner{" "}
                 <ProgramImageActions
@@ -152,6 +171,12 @@ export function ProgramAdminCard({
               Somente equipe
             </span>
           )}
+          {hasCertificate && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-emerald-600">
+              <Award className="size-3.5" />
+              Tem certificado
+            </span>
+          )}
         </div>
         <Button
           type="button"
@@ -176,6 +201,16 @@ export function ProgramAdminCard({
         <ContextMenuItem onClick={onManageOccurrences}>
           <CalendarDays className="size-4" />
           Gerenciar ocorrências
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={(event) => {
+            event.stopPropagation();
+            if (hasCertificate) onUnlinkCertificate();
+            else onManageCertificate();
+          }}
+        >
+          <Award className="size-4" />
+          {hasCertificate ? "Desvincular certificado" : "Vincular certificado"}
         </ContextMenuItem>
         <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
           Banner{" "}
