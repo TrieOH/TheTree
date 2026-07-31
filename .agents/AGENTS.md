@@ -119,3 +119,17 @@ Compose files are layered — never run alone:
 - `just test <svc>` — run Go tests per service
 - `just prod` — deploy production stack with versioned images
 - `pnpm -F <pkg> <script>` — run workspace scripts for a specific front-end package
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as Forgejo issues on the self-hosted instance at git.trieoh.com (repo TrieOH/TheTree); access via curl + token at `~/.config/trieoh/forgejo.token`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary, already created on the tracker: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` + `docs/adr/` at the repo root, created lazily. See `docs/agents/domain.md`.
