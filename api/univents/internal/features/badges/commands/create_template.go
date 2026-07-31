@@ -2,13 +2,15 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (c *Commands) CreateTemplate(ctx context.Context, input models.CreateBadgeTemplateInput) (*models.BadgeTemplate, error) {
-	// Skipping permission checks as requested
+	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesCommands.CreateTemplate")
+	defer span.End()
 	template := &models.BadgeTemplate{
 		ID:           uuid.New(),
 		EditionID:    input.EditionID,
