@@ -112,7 +112,8 @@ func EncryptPrivateKey(privBytes []byte) (string, error) {
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
 		return "", err
 	}
 
@@ -182,7 +183,7 @@ func PublicKeyToJWKS(keyID string, publicKey string) (map[string]any, error) {
 	case *rsa.PublicKey:
 		n := base64.RawURLEncoding.EncodeToString(key.N.Bytes())
 		e := make([]byte, 4)
-		binary.BigEndian.PutUint32(e, uint32(key.E))
+		binary.BigEndian.PutUint32(e, uint32(key.E)) //nolint:gosec
 		// trim leading zeros
 		e = bytes.TrimLeft(e, "\x00")
 		return map[string]any{

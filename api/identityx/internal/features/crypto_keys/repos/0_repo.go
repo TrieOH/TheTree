@@ -1,27 +1,27 @@
 package repos
 
 import (
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.CryptoKeysRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("crypto keys"),
 	}
 }
 
-func mapKeys(src sqlc2.CryptoKey) models.CryptoKey {
+func mapKeys(src sqlc.CryptoKey) models.CryptoKey {
 	return models.CryptoKey{
 		ID:                  src.ID,
 		ProjectID:           src.ProjectID,
@@ -38,7 +38,7 @@ func mapKeys(src sqlc2.CryptoKey) models.CryptoKey {
 	}
 }
 
-func mapToActiveSigningKey(src sqlc2.GetActiveSigningKeysRow) models.ActiveSigningKey {
+func mapToActiveSigningKey(src sqlc.GetActiveSigningKeysRow) models.ActiveSigningKey {
 	return models.ActiveSigningKey{
 		ID:        src.ID,
 		PublicKey: src.PublicKey,

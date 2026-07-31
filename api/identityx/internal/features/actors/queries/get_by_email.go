@@ -18,20 +18,12 @@ func (q *Queries) GetByEmail(ctx context.Context, email string, projectID uuid.U
 		return nil, err
 	}
 
-	var project *models.Project
-	project, err = q.projects.GetByID(ctx, projectID)
+	err = q.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}
 
-	if ident.Sub.ID != project.OwnerID {
-		_, err = q.projects.GetMember(ctx, ident.Sub.ID, projectID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	actor, err := q.actors.GetByEmail(ctx, email, &project.ID)
+	actor, err := q.actors.GetByEmail(ctx, email, &projectID)
 	if err != nil {
 		return nil, err
 	}

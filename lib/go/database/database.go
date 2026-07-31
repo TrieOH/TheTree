@@ -21,7 +21,8 @@ func WaitForDB(timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	if err := provisionDB(ctx, cfg); err != nil {
+	err := provisionDB(ctx, cfg)
+	if err != nil {
 		return nil, fmt.Errorf("failed to provision database: %w", err)
 	}
 
@@ -76,7 +77,9 @@ func provisionDB(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return fmt.Errorf("unable to connect to root postgres: %w", err)
 	}
-	defer conn.Close(ctx)
+	defer func() {
+		_ = conn.Close(ctx)
+	}()
 
 	_, err = conn.Exec(ctx, fmt.Sprintf(
 		`DO $$ BEGIN
@@ -92,16 +95,18 @@ func provisionDB(ctx context.Context, cfg Config) error {
 	log.Printf("role %q ensured\n", cfg.User)
 
 	var exists bool
-	if err = conn.QueryRow(ctx,
+	err = conn.QueryRow(ctx,
 		`SELECT EXISTS(SELECT FROM pg_database WHERE datname = $1)`, cfg.DB,
-	).Scan(&exists); err != nil {
+	).Scan(&exists)
+	if err != nil {
 		return fmt.Errorf("failed to check database existence: %w", err)
 	}
 
 	if !exists {
-		if _, err = conn.Exec(ctx, fmt.Sprintf(
+		_, err = conn.Exec(ctx, fmt.Sprintf(
 			`CREATE DATABASE "%s" OWNER "%s"`, cfg.DB, cfg.User,
-		)); err != nil {
+		))
+		if err != nil {
 			return fmt.Errorf("failed to create database: %w", err)
 		}
 		log.Printf("database %q created\n", cfg.DB)
@@ -115,7 +120,9 @@ func provisionDB(ctx context.Context, cfg Config) error {
 // RunMigrations uses pgx/stdlib to provide *sql.DB compatibility for goose
 func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	db := stdlib.OpenDBFromPool(pool)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	err := goose.SetDialect("postgres")
 	if err != nil {

@@ -18,7 +18,8 @@ type RegisterWebhookEndpointRequest struct {
 
 func (c *Client) RegisterWebhookEndpoint(ctx context.Context, workspaceName, url string) (*CreateWebhookEndpointResponse, error) {
 	var out CreateWebhookEndpointResponse
-	if err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/webhooks", workspaceName), RegisterWebhookEndpointRequest{URL: url}, &out); err != nil {
+	err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/webhooks", workspaceName), RegisterWebhookEndpointRequest{URL: url}, &out)
+	if err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -26,7 +27,8 @@ func (c *Client) RegisterWebhookEndpoint(ctx context.Context, workspaceName, url
 
 func (c *Client) ListWebhookEndpoints(ctx context.Context, workspaceName string) ([]WebhookEndpoint, error) {
 	var out []WebhookEndpoint
-	if err := c.do(ctx, "GET", fmt.Sprintf("/workspaces/%s/webhooks", workspaceName), nil, &out); err != nil {
+	err := c.do(ctx, "GET", fmt.Sprintf("/workspaces/%s/webhooks", workspaceName), nil, &out)
+	if err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -52,7 +54,7 @@ func VerifyWebhookSignature(r *http.Request, secret string) (*WebhookPayload, er
 	// decode signature from hex
 	sigBytes, err := hex.DecodeString(sig)
 	if err != nil {
-		return nil, fmt.Errorf("payssage: invalid signature encoding")
+		return nil, errors.New("payssage: invalid signature encoding")
 	}
 
 	// compute expected HMAC
@@ -66,7 +68,8 @@ func VerifyWebhookSignature(r *http.Request, secret string) (*WebhookPayload, er
 	}
 
 	var payload WebhookPayload
-	if err := json.Unmarshal(body, &payload); err != nil {
+	err = json.Unmarshal(body, &payload)
+	if err != nil {
 		return nil, fmt.Errorf("payssage: decode payload: %w", err)
 	}
 

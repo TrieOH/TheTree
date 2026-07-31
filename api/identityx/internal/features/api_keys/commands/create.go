@@ -40,14 +40,9 @@ func (c *Commands) createInternal(ctx context.Context, project models.Project, p
 	actorID := ident.Sub.ID
 	if payload.SubjectID != nil {
 		actorID = *payload.SubjectID
-		if ident.Sub.ID != project.OwnerID {
-			member, err := c.projects.GetMember(ctx, ident.Sub.ID, project.ID)
-			if err != nil {
-				return nil, nil, err
-			}
-			if member.Role != models.ProjectRoleAdmin {
-				return nil, nil, fun.ErrForbidden("insufficient permissions")
-			}
+		err = c.authz.CheckProject(ctx, ident.Sub.ID, project.ID, nil, models.ProjectRoleAdmin)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 

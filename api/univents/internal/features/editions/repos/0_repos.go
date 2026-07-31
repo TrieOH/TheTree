@@ -1,7 +1,7 @@
 package repos
 
 import (
-	sqlc2 "univents/internal/sqlc"
+	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
 
@@ -9,20 +9,20 @@ import (
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.EditionRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("edition"),
 	}
 }
 
-func mapEdition(src sqlc2.Edition) models.Edition {
+func mapEdition(src sqlc.Edition) models.Edition {
 	return models.Edition{
 		ID:                  src.ID,
 		EventID:             src.EventID,

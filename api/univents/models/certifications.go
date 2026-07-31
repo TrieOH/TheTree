@@ -118,6 +118,10 @@ type CertifyInput struct {
 	VerificationHash string
 }
 
+type CertTemplateProgramRequest struct {
+	ProgramID uuid.UUID `json:"program_id" validate:"required"`
+}
+
 type InvalidCertReason struct {
 	Reason string `json:"reason" validate:"required"`
 }

@@ -19,20 +19,9 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateActorInput) 
 		return nil, err
 	}
 
-	var project *models.Project
-	project, err = c.projects.GetByID(ctx, *payload.ProjectID)
+	err = c.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, nil, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != project.OwnerID {
-		member, err := c.projects.GetMember(ctx, ident.Sub.ID, project.ID)
-		if err != nil {
-			return nil, err
-		}
-		if member.Role != models.ProjectRoleAdmin {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
 	}
 
 	if payload.Type != models.HumanActorType && payload.AuthMethod == models.PasswordAuthMethod {

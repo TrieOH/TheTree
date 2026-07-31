@@ -1,27 +1,27 @@
 package repos
 
 import (
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.OrganizationRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("organization"),
 	}
 }
 
-func mapOrganization(src sqlc2.Organization) models.Organization {
+func mapOrganization(src sqlc.Organization) models.Organization {
 	return models.Organization{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -33,7 +33,7 @@ func mapOrganization(src sqlc2.Organization) models.Organization {
 	}
 }
 
-func mapOrganizationMember(src sqlc2.OrgMember) models.OrganizationMember {
+func mapOrganizationMember(src sqlc.OrgMember) models.OrganizationMember {
 	return models.OrganizationMember{
 		OrganizationID: src.OrganizationID,
 		ActorID:        src.ActorID,

@@ -13,7 +13,7 @@ func (h *Handlers) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := fun.From(r)
-	refreshToken := req.Header("refresh_token").String()
+	refreshToken := req.Header("Refresh-Token").String()
 	tokens, err := h.commands.Refresh(r.Context(), refreshToken)
 	if fun.Bail(w, err) {
 		return

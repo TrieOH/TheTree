@@ -1,7 +1,7 @@
 package repos
 
 import (
-	sqlc2 "univents/internal/sqlc"
+	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
 
@@ -9,20 +9,20 @@ import (
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.ProductRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("product"),
 	}
 }
 
-func mapProduct(src sqlc2.Product) models.Product {
+func mapProduct(src sqlc.Product) models.Product {
 	return models.Product{
 		ID:                   src.ID,
 		EditionID:            src.EditionID,
@@ -34,7 +34,7 @@ func mapProduct(src sqlc2.Product) models.Product {
 	}
 }
 
-func mapVariant(src sqlc2.ProductVariant) models.ProductVariant {
+func mapVariant(src sqlc.ProductVariant) models.ProductVariant {
 	return models.ProductVariant{
 		ID:          src.ID,
 		EditionID:   src.EditionID,
