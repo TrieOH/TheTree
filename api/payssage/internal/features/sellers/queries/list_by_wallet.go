@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (q *Queries) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Seller, error) {
-	ctx, span := q.tracer.Start(ctx, "ListByWallet")
+	ctx, span := telemetry.StartSpan(ctx, "ListByWallet")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

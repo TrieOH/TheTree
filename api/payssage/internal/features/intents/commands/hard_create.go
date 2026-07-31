@@ -2,13 +2,14 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
 func (c *Commands) HardCreate(ctx context.Context, req models.HardCreateIntentRequest) (*models.Intent, error) {
-	ctx, span := c.tracer.Start(ctx, "HardCreate")
+	ctx, span := telemetry.StartSpan(ctx, "HardCreate")
 	defer span.End()
 
 	id, err := uuid.NewV7()

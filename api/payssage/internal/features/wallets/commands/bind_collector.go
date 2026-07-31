@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (c *Commands) BindCollector(ctx context.Context, walletID, collectorID uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "BindCollector")
+	ctx, span := telemetry.StartSpan(ctx, "BindCollector")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

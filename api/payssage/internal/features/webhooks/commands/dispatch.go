@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/features/webhooks/jobs"
 	"payssage/models"
 
@@ -32,7 +33,7 @@ import (
 // own per-delivery retry budget) — so this should be a rare, infra-level
 // failure mode, not a routine one.
 func (c *Commands) dispatchDeliveries(ctx context.Context, event *models.WebhookEvent) error {
-	ctx, span := c.tracer.Start(ctx, "dispatchDeliveries")
+	ctx, span := telemetry.StartSpan(ctx, "dispatchDeliveries")
 	defer span.End()
 
 	endpoints, err := c.endpoints.ListByWallet(ctx, event.WalletID)
@@ -43,7 +44,7 @@ func (c *Commands) dispatchDeliveries(ctx context.Context, event *models.Webhook
 		return nil
 	}
 
-	return c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	return database.RunTx(ctx, func(ctx context.Context) error {
 		tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
 		if !ok {
 			return fun.Err("dispatchDeliveries: no transaction in context").Internal()

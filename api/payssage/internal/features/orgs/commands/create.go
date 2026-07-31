@@ -2,12 +2,14 @@ package commands
 
 import (
 	"context"
+	"lib/database"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 )
 
 func (c *Commands) Create(ctx context.Context, in models.CreateOrganizationInput) (*models.Organization, error) {
-	ctx, span := c.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -22,7 +24,7 @@ func (c *Commands) Create(ctx context.Context, in models.CreateOrganizationInput
 	}
 
 	var created *models.Organization
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		created, err = c.orgs.Create(ctx, org)
 		if err != nil {
 			return err

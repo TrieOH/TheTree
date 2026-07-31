@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 )
 
 func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr string) (string, error) {
-	ctx, span := c.tracer.Start(ctx, "Callback")
+	ctx, span := telemetry.StartSpan(ctx, "Callback")
 	defer span.End()
 
 	state, err := c.oauth.Get(ctx, stateStr)

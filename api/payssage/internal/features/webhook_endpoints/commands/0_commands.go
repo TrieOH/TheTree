@@ -3,35 +3,27 @@ package commands
 import (
 	"context"
 	"fmt"
-	"lib/database"
 	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Commands struct {
 	endpoints ports.WebhookEndpointRepo
 	wallets   ports.WalletRepo
 	orgs      ports.OrganizationRepo
-	tracer    trace.Tracer
-	tx        database.TxRunner
 }
 
 func NewCommands(
 	endpoints ports.WebhookEndpointRepo,
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
 		endpoints: endpoints,
 		wallets:   wallets,
 		orgs:      orgs,
-		tracer:    tracer,
-		tx:        tx,
 	}
 }
 

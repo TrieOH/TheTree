@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Commands) Receive(ctx context.Context, payload models.ReceiveWebhookInput) error {
-	ctx, span := c.tracer.Start(ctx, "ReceiveWebhook")
+	ctx, span := telemetry.StartSpan(ctx, "ReceiveWebhook")
 	defer span.End()
 
 	providerEnum, err := providers.FromString(payload.Provider)

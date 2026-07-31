@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -11,7 +12,7 @@ import (
 )
 
 func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInput) (*models.Intent, error) {
-	ctx, span := c.tracer.Start(ctx, "Checkout")
+	ctx, span := telemetry.StartSpan(ctx, "Checkout")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

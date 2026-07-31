@@ -5,12 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 )
 
 func (c *Commands) Create(ctx context.Context, input models.CreateWebhookEndpointInput) (*models.WebhookEndpoint, error) {
-	ctx, span := c.tracer.Start(ctx, "CreateWebhookEndpoint")
+	ctx, span := telemetry.StartSpan(ctx, "CreateWebhookEndpoint")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

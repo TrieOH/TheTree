@@ -3,6 +3,7 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (r *Repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.WebhookEvent, error) {
-	ctx, span := r.tracer.Start(ctx, "ListByWallet")
+	ctx, span := telemetry.StartSpan(ctx, "ListByWallet")
 	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListWebhookEventsByWallet(ctx, walletID)
 	if err != nil {

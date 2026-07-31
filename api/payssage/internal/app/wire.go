@@ -1,7 +1,6 @@
 package app
 
 import (
-	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
 	"lib/xslices"
@@ -26,8 +25,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/riverqueue/river"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -88,30 +85,22 @@ type handlers struct {
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func (app *Payssage) tracer() trace.Tracer {
-	return otel.Tracer(app.cfg.AppName)
-}
-
-func (app *Payssage) txRunner() database.TxRunner {
-	return database.NewPGXTxRunner(app.db)
-}
-
 func (app *Payssage) initRepos(q *sqlc.Queries) repos {
 	return repos{
-		orgs:       orgs.NewRepos(q, app.tracer()),
-		wallets:    wallets.NewRepos(q, app.tracer()),
-		oauth:      oauth.NewRepos(q, app.tracer()),
-		collectors: collectors.NewRepos(q, app.tracer()),
-		sellers:    sellers.NewRepos(q, app.tracer()),
-		intents:    intents.NewRepos(q, app.tracer()),
-		endpoints:  webhook_endpoints.NewRepos(q, app.tracer()),
-		deliveries: webhook_deliveries.NewRepos(q, app.tracer()),
-		events:     webhook_events.NewRepos(q, app.tracer()),
+		orgs:       orgs.NewRepos(q),
+		wallets:    wallets.NewRepos(q),
+		oauth:      oauth.NewRepos(q),
+		collectors: collectors.NewRepos(q),
+		sellers:    sellers.NewRepos(q),
+		intents:    intents.NewRepos(q),
+		endpoints:  webhook_endpoints.NewRepos(q),
+		deliveries: webhook_deliveries.NewRepos(q),
+		events:     webhook_events.NewRepos(q),
 	}
 }
 
 func (app *Payssage) initProviders(r repos) {
-	mercadoPago := providers.NewMercadoPago(app.cfg.MercadoPagoConfig, r.intents, r.collectors, r.sellers, r.wallets, app.tracer(), app.txRunner(), app.httpClient)
+	mercadoPago := providers.NewMercadoPago(app.cfg.MercadoPagoConfig, r.intents, r.collectors, r.sellers, r.wallets, app.httpClient)
 
 	providers2.PayssageProviders.OAuth = map[providers2.AvailableProviders]ports.OAuthProvider{
 		providers2.MercadoPagoProvider: mercadoPago,
@@ -128,25 +117,25 @@ func (app *Payssage) initProviders(r repos) {
 
 func (app *Payssage) initQueries(r repos) queries {
 	return queries{
-		orgs:       orgs.NewQueries(r.orgs, app.idxClient, app.tracer(), app.txRunner()),
-		wallets:    wallets.NewQueries(r.wallets, r.orgs, app.tracer(), app.txRunner()),
-		collectors: collectors.NewQueries(r.collectors, r.orgs, app.tracer(), app.txRunner()),
-		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, app.tracer(), app.txRunner()),
-		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs, app.tracer(), app.txRunner()),
-		endpoints:  webhook_endpoints.NewQueries(r.endpoints, r.wallets, r.orgs, app.tracer(), app.txRunner()),
-		events:     webhook_events.NewQueries(r.events, r.wallets, r.orgs, app.tracer(), app.txRunner()),
-		deliveries: webhook_deliveries.NewQueries(r.deliveries, r.endpoints, r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		orgs:       orgs.NewQueries(r.orgs, app.idxClient),
+		wallets:    wallets.NewQueries(r.wallets, r.orgs),
+		collectors: collectors.NewQueries(r.collectors, r.orgs),
+		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs),
+		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs),
+		endpoints:  webhook_endpoints.NewQueries(r.endpoints, r.wallets, r.orgs),
+		events:     webhook_events.NewQueries(r.events, r.wallets, r.orgs),
+		deliveries: webhook_deliveries.NewQueries(r.deliveries, r.endpoints, r.wallets, r.orgs),
 	}
 }
 
 func (app *Payssage) initCommands(riverClient *river.Client[pgx.Tx], r repos) commands {
 	return commands{
-		orgs:      orgs.NewCommands(r.orgs, app.idxClient, app.tracer(), app.txRunner()),
-		wallets:   wallets.NewCommands(r.wallets, r.orgs, app.tracer(), app.txRunner()),
-		oauth:     oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, app.tracer(), app.txRunner()),
-		intents:   intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, app.tracer(), app.txRunner()),
-		webhooks:  webhooks.NewCommands(riverClient, r.events, r.endpoints, r.deliveries, app.tracer(), app.txRunner()),
-		endpoints: webhook_endpoints.NewCommands(r.endpoints, r.wallets, r.orgs, app.tracer(), app.txRunner()),
+		orgs:      orgs.NewCommands(r.orgs, app.idxClient),
+		wallets:   wallets.NewCommands(r.wallets, r.orgs),
+		oauth:     oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers),
+		intents:   intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers),
+		webhooks:  webhooks.NewCommands(riverClient, r.events, r.endpoints, r.deliveries),
+		endpoints: webhook_endpoints.NewCommands(r.endpoints, r.wallets, r.orgs),
 	}
 }
 
@@ -157,11 +146,11 @@ func (app *Payssage) initMiddlewares() middlewares {
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
 	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
+	metricCollectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")
 	}
-	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
+	mw.metrics = mws.Metrics(metricCollectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = mws.CORS(mws.CORSConfig{
 		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
 		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),

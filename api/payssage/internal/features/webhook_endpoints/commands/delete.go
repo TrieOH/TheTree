@@ -2,13 +2,14 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"github.com/google/uuid"
 )
 
 func (c *Commands) Delete(ctx context.Context, id uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "DeleteWebhookEndpoint")
+	ctx, span := telemetry.StartSpan(ctx, "DeleteWebhookEndpoint")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

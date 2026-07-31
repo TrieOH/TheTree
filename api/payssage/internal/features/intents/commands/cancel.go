@@ -21,7 +21,7 @@ var cancellableStatuses = map[models.IntentStatus]bool{
 }
 
 func (c *Commands) Cancel(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
-	ctx, span := c.tracer.Start(ctx, "CancelIntent")
+	ctx, span := telemetry.StartSpan(ctx, "CancelIntent")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

@@ -3,6 +3,7 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (repo *Repo) GetMember(ctx context.Context, memberID, orgID uuid.UUID) (*models.OrganizationMember, error) {
-	ctx, span := repo.tracer.Start(ctx, "GetMember")
+	ctx, span := telemetry.StartSpan(ctx, "GetMember")
 	defer span.End()
 	sqlcMember, err := database.Queries(ctx, repo.q).GetOrganizationMember(ctx, sqlc.GetOrganizationMemberParams{
 		MemberID:       memberID,

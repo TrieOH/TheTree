@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -12,7 +13,7 @@ import (
 )
 
 func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (string, error) {
-	ctx, span := c.tracer.Start(ctx, "Connect")
+	ctx, span := telemetry.StartSpan(ctx, "Connect")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

@@ -3,35 +3,27 @@ package queries
 import (
 	"context"
 	"fmt"
-	"lib/database"
 	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Queries struct {
 	events  ports.WebhookEventRepo
 	wallets ports.WalletRepo
 	orgs    ports.OrganizationRepo
-	tracer  trace.Tracer
-	tx      database.TxRunner
 }
 
 func NewQueries(
 	events ports.WebhookEventRepo,
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Queries {
 	return &Queries{
 		events:  events,
 		wallets: wallets,
 		orgs:    orgs,
-		tracer:  tracer,
-		tx:      tx,
 	}
 }
 

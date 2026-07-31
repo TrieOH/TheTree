@@ -3,6 +3,7 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (repo *Repo) ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]models.Intent, error) {
-	ctx, span := repo.tracer.Start(ctx, "IntentRepo.ListByOwner")
+	ctx, span := telemetry.StartSpan(ctx, "IntentRepo.ListByOwner")
 	defer span.End()
 
 	sqlcIntents, err := database.Queries(ctx, repo.q).ListIntentsByOwner(ctx, ownerID)

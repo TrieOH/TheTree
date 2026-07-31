@@ -5,23 +5,19 @@ import (
 	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
-
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Repo struct {
-	q      *sqlc.Queries
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+	q   *sqlc.Queries
+	dbe database.ErrorHandler
 }
 
 var _ ports.SellerRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, tracer trace.Tracer) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
-		q:      q,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("seller"),
+		q:   q,
+		dbe: database.NewErrorHandler("seller"),
 	}
 }
 

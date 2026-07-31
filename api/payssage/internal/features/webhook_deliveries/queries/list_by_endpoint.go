@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (q *Queries) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
-	ctx, span := q.tracer.Start(ctx, "ListDeliveriesByEndpoint")
+	ctx, span := telemetry.StartSpan(ctx, "ListDeliveriesByEndpoint")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

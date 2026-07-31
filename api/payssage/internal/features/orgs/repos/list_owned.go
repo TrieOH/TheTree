@@ -3,6 +3,7 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (repo *Repo) ListOwned(ctx context.Context, userID uuid.UUID) ([]models.Organization, error) {
-	ctx, span := repo.tracer.Start(ctx, "ListOwned")
+	ctx, span := telemetry.StartSpan(ctx, "ListOwned")
 	defer span.End()
 	sqlcOrgs, err := database.Queries(ctx, repo.q).ListOwnedOrganizations(ctx, userID)
 	if err != nil {

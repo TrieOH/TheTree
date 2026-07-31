@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateWalletInput) (*models.Wallet, error) {
-	ctx, span := c.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
