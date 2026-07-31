@@ -2,16 +2,17 @@ package commands
 
 import (
 	"context"
-	"sdk/identityx"
+	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (s *Commands) Open(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.Open")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.Open")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

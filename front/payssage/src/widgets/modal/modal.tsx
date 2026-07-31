@@ -1,21 +1,21 @@
-import type * as React from 'react'
+import type * as React from "react";
+import { Button } from "#/shared/ui/shadcn/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '#/shared/ui/shadcn/dialog'
-import { Button } from '#/shared/ui/shadcn/button'
+} from "#/shared/ui/shadcn/dialog";
 
 interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  description?: string
-  children?: React.ReactNode
-  footer?: React.ReactNode
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 export function Modal({
@@ -24,7 +24,7 @@ export function Modal({
   title,
   description,
   children,
-  footer
+  footer,
 }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -39,28 +39,22 @@ export function Modal({
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="py-4">
-          {children}
-        </div>
-        {footer && (
-          <DialogFooter>
-            {footer}
-          </DialogFooter>
-        )}
+        <div className="py-4">{children}</div>
+        {footer && <DialogFooter>{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 interface ConfirmModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: () => void
-  title: string
-  description: string
-  confirmText?: string
-  variant?: 'default' | 'destructive'
-  isLoading?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  variant?: "default" | "destructive";
+  isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -69,9 +63,9 @@ export function ConfirmModal({
   onConfirm,
   title,
   description,
-  confirmText = 'Confirm',
-  variant = 'default',
-  isLoading
+  confirmText = "Confirm",
+  variant = "default",
+  isLoading,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -95,10 +89,10 @@ export function ConfirmModal({
             className="rounded-none font-black uppercase tracking-widest text-xs px-6"
             disabled={isLoading}
           >
-            {isLoading ? 'Processing...' : confirmText}
+            {isLoading ? "Processing..." : confirmText}
           </Button>
         </div>
       }
     />
-  )
+  );
 }

@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 )
 
-func (repo *repo) AddMember(ctx context.Context, toAdd models.OrganizationMember) error {
-	ctx, span := repo.tracer.Start(ctx, "AddMember")
+func (repo *Repo) AddMember(ctx context.Context, toAdd models.OrganizationMember) error {
+	ctx, span := telemetry.StartSpan(ctx, "AddMember")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).AddOrganizationMember(ctx, sqlc.AddOrganizationMemberParams{
 		MemberID:       toAdd.MemberID,

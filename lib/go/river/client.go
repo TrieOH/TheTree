@@ -3,6 +3,7 @@ package river
 import (
 	"context"
 	"lib/errx"
+	"lib/telemetry"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -32,9 +33,9 @@ func Stop(ctx context.Context, client *river.Client[pgx.Tx]) error {
 	return client.Stop(ctx)
 }
 
-func LogStop(ctx context.Context, client *river.Client[pgx.Tx], logger *zap.Logger) {
+func LogStop(ctx context.Context, client *river.Client[pgx.Tx]) {
 	err := client.Stop(ctx)
 	if err != nil {
-		logger.Warn("error stopping driver", zap.Error(err))
+		telemetry.Log().Warn("error stopping river", zap.Error(err))
 	}
 }

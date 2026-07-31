@@ -6,10 +6,11 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 )
 
-func (repo *repo) AddMember(ctx context.Context, toCreate models.FormMember) error {
-	ctx, span := repo.tracer.Start(ctx, "AddMember")
+func (repo *Repo) AddMember(ctx context.Context, toCreate models.FormMember) error {
+	ctx, span := telemetry.StartSpan(ctx, "AddMember")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).AddFormMember(ctx, sqlc.AddFormMemberParams{
 		UserID:  toCreate.UserID,

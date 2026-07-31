@@ -1,56 +1,56 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, ArrowLeft, Plus, Webhook } from 'lucide-react'
-import { toast } from 'sonner'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Input } from '#/shared/ui/shadcn/input'
-import { Label } from '#/shared/ui/shadcn/label'
-import { Badge } from '#/shared/ui/shadcn/badge'
-import { cn } from '#/shared/lib/utils'
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, ArrowLeft, Plus, Webhook } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { cn } from "#/shared/lib/utils";
+import { Badge } from "#/shared/ui/shadcn/badge";
+import { Button } from "#/shared/ui/shadcn/button";
+import { Input } from "#/shared/ui/shadcn/input";
+import { Label } from "#/shared/ui/shadcn/label";
 import {
   createWebhookEndpointFn,
   deleteWebhookEndpointFn,
   webhookDeliveriesQueryOptions,
   webhookEndpointsQueryOptions,
   webhookEventsQueryOptions,
-} from '../api'
-import { webhookEndpointCreateSchema } from '../model'
+} from "../api";
 import type {
   WebhookDelivery,
   WebhookEndpoint,
   WebhookEndpointCreateRequest,
-} from '../model'
-import { WebhookCreatedModal } from './webhook-created-modal'
-import { WebhookList } from './webhook-list'
+} from "../model";
+import { webhookEndpointCreateSchema } from "../model";
+import { WebhookCreatedModal } from "./webhook-created-modal";
+import { WebhookList } from "./webhook-list";
 
 const formatDate = (value: string | null) =>
   value
     ? new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+        dateStyle: "medium",
+        timeStyle: "short",
       }).format(new Date(value))
-    : 'Never'
+    : "Never";
 
 export function WebhooksDashboard({ walletId }: { walletId: string }) {
-  const queryClient = useQueryClient()
-  const [view, setView] = useState<'endpoints' | 'events'>('endpoints')
+  const queryClient = useQueryClient();
+  const [view, setView] = useState<"endpoints" | "events">("endpoints");
   const [selectedEndpoint, setSelectedEndpoint] =
-    useState<WebhookEndpoint | null>(null)
+    useState<WebhookEndpoint | null>(null);
   const [createdEndpoint, setCreatedEndpoint] =
-    useState<WebhookEndpoint | null>(null)
-  const endpointsOptions = webhookEndpointsQueryOptions(walletId)
-  const eventsOptions = webhookEventsQueryOptions(walletId)
-  const { data: endpoints = [], isLoading } = useQuery(endpointsOptions)
-  const { data: events = [] } = useQuery(eventsOptions)
+    useState<WebhookEndpoint | null>(null);
+  const endpointsOptions = webhookEndpointsQueryOptions(walletId);
+  const eventsOptions = webhookEventsQueryOptions(walletId);
+  const { data: endpoints = [], isLoading } = useQuery(endpointsOptions);
+  const { data: events = [] } = useQuery(eventsOptions);
   const deliveriesOptions = webhookDeliveriesQueryOptions(
-    selectedEndpoint?.id ?? '',
-  )
+    selectedEndpoint?.id ?? "",
+  );
   const { data: deliveries = [], isLoading: isLoadingDeliveries } = useQuery({
     ...deliveriesOptions,
     enabled: Boolean(selectedEndpoint),
-  })
+  });
   const {
     register,
     handleSubmit,
@@ -58,35 +58,35 @@ export function WebhooksDashboard({ walletId }: { walletId: string }) {
     formState: { errors },
   } = useForm<WebhookEndpointCreateRequest>({
     resolver: zodResolver(webhookEndpointCreateSchema),
-    defaultValues: { name: '', url: '' },
-  })
+    defaultValues: { name: "", url: "" },
+  });
 
   const { mutate: createEndpoint, isPending: isCreating } = useMutation({
     mutationFn: (payload: WebhookEndpointCreateRequest) =>
       createWebhookEndpointFn(walletId, payload),
     onSuccess: (response) => {
       if (!response.success)
-        return toast.error(response.message || 'Failed to create endpoint')
+        return toast.error(response.message || "Failed to create endpoint");
       void queryClient.invalidateQueries({
         queryKey: endpointsOptions.queryKey,
-      })
-      setCreatedEndpoint(response.data)
-      reset()
+      });
+      setCreatedEndpoint(response.data);
+      reset();
     },
-    onError: () => toast.error('Failed to create endpoint'),
-  })
+    onError: () => toast.error("Failed to create endpoint"),
+  });
   const { mutate: deleteEndpoint, isPending: isDeleting } = useMutation({
     mutationFn: (endpointId: string) => deleteWebhookEndpointFn(endpointId),
     onSuccess: (response) => {
       if (!response.success)
-        return toast.error(response.message || 'Failed to delete endpoint')
+        return toast.error(response.message || "Failed to delete endpoint");
       void queryClient.invalidateQueries({
         queryKey: endpointsOptions.queryKey,
-      })
-      toast.success('Webhook endpoint deleted')
+      });
+      toast.success("Webhook endpoint deleted");
     },
-    onError: () => toast.error('Failed to delete endpoint'),
-  })
+    onError: () => toast.error("Failed to delete endpoint"),
+  });
 
   if (selectedEndpoint) {
     return (
@@ -102,20 +102,20 @@ export function WebhooksDashboard({ walletId }: { walletId: string }) {
         </div>
         <DeliveryList deliveries={deliveries} isLoading={isLoadingDeliveries} />
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex gap-1 rounded-md bg-muted p-1 w-fit">
-        {(['endpoints', 'events'] as const).map((item) => (
+        {(["endpoints", "events"] as const).map((item) => (
           <Button
             key={item}
             size="sm"
             variant="ghost"
             className={cn(
-              'capitalize',
-              view === item && 'bg-background shadow-xs',
+              "capitalize",
+              view === item && "bg-background shadow-xs",
             )}
             onClick={() => setView(item)}
           >
@@ -124,7 +124,7 @@ export function WebhooksDashboard({ walletId }: { walletId: string }) {
         ))}
       </div>
 
-      {view === 'endpoints' ? (
+      {view === "endpoints" ? (
         <>
           <section className="rounded-sm border bg-card p-4">
             <div className="mb-4">
@@ -138,17 +138,17 @@ export function WebhooksDashboard({ walletId }: { walletId: string }) {
               onSubmit={handleSubmit((data) => createEndpoint(data))}
             >
               <FormField label="Name" error={errors.name?.message}>
-                <Input placeholder="Payments" {...register('name')} />
+                <Input placeholder="Payments" {...register("name")} />
               </FormField>
               <FormField label="URL" error={errors.url?.message}>
                 <Input
                   type="url"
                   placeholder="https://example.com/webhooks"
-                  {...register('url')}
+                  {...register("url")}
                 />
               </FormField>
               <Button type="submit" disabled={isCreating} className="mt-6">
-                <Plus /> {isCreating ? 'Creating...' : 'Create'}
+                <Plus /> {isCreating ? "Creating..." : "Create"}
               </Button>
             </form>
           </section>
@@ -202,7 +202,7 @@ export function WebhooksDashboard({ walletId }: { walletId: string }) {
         onClose={() => setCreatedEndpoint(null)}
       />
     </div>
-  )
+  );
 }
 
 function FormField({
@@ -210,9 +210,9 @@ function FormField({
   error,
   children,
 }: {
-  label: string
-  error?: string
-  children: React.ReactNode
+  label: string;
+  error?: string;
+  children: React.ReactNode;
 }) {
   return (
     <div className="space-y-2">
@@ -225,21 +225,21 @@ function FormField({
         </p>
       )}
     </div>
-  )
+  );
 }
 
 function DeliveryList({
   deliveries,
   isLoading,
 }: {
-  deliveries: WebhookDelivery[]
-  isLoading: boolean
+  deliveries: WebhookDelivery[];
+  isLoading: boolean;
 }) {
   if (isLoading)
     return (
       <p className="text-sm text-muted-foreground">Loading deliveries...</p>
-    )
-  if (!deliveries.length) return <EmptyState label="No deliveries found" />
+    );
+  if (!deliveries.length) return <EmptyState label="No deliveries found" />;
   return (
     <div className="space-y-3">
       {deliveries.map((delivery) => (
@@ -264,7 +264,7 @@ function DeliveryList({
             </div>
             <div>
               <dt className="text-muted-foreground">HTTP status</dt>
-              <dd>{delivery.response_status ?? 'No response'}</dd>
+              <dd>{delivery.response_status ?? "No response"}</dd>
             </div>
           </dl>
           {delivery.response_body && (
@@ -275,20 +275,20 @@ function DeliveryList({
         </article>
       ))}
     </div>
-  )
+  );
 }
 
-function DeliveryStatus({ status }: { status: WebhookDelivery['status'] }) {
+function DeliveryStatus({ status }: { status: WebhookDelivery["status"] }) {
   return (
     <Badge
       className={cn(
-        status === 'delivered' && 'bg-emerald-600',
-        status === 'failed' && 'bg-destructive',
+        status === "delivered" && "bg-emerald-600",
+        status === "failed" && "bg-destructive",
       )}
     >
       {status}
     </Badge>
-  )
+  );
 }
 
 function EmptyState({ label }: { label: string }) {
@@ -297,5 +297,5 @@ function EmptyState({ label }: { label: string }) {
       <Webhook className="size-7" />
       <p className="mt-2 text-sm">{label}</p>
     </div>
-  )
+  );
 }

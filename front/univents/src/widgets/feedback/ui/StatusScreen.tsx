@@ -1,15 +1,15 @@
 interface StatusAction {
-  label: string
-  onClick: () => void
-  variant: "primary" | "outline"
+  label: string;
+  onClick: () => void;
+  variant: "primary" | "outline";
 }
 
 interface StatusScreenProps {
-  icon: string
-  iconClass: string
-  title: string
-  description: string
-  actions: StatusAction[]
+  icon: string;
+  iconClass: string;
+  title: string;
+  description: string;
+  actions: StatusAction[];
 }
 
 export default function StatusScreen({
@@ -17,11 +17,13 @@ export default function StatusScreen({
   iconClass,
   title,
   description,
-  actions
+  actions,
 }: StatusScreenProps) {
   return (
     <main className="w-full min-w-75 max-w-sm mx-auto px-3 py-16 flex flex-col items-center gap-5 text-center">
-      <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold ${iconClass}`}>
+      <div
+        className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold ${iconClass}`}
+      >
         {icon}
       </div>
       <div className="space-y-1">
@@ -32,6 +34,7 @@ export default function StatusScreen({
         <div className="flex flex-col gap-2 w-full">
           {actions.map((action) => (
             <button
+              type="button"
               key={action.label}
               onClick={action.onClick}
               className={
@@ -46,5 +49,5 @@ export default function StatusScreen({
         </div>
       )}
     </main>
-  )
+  );
 }

@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (q *Queries) GetFull(ctx context.Context, formID uuid.UUID) (*models.FullForm, error) {
-	ctx, span := q.tracer.Start(ctx, "FormService.GetFull")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.GetFull")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

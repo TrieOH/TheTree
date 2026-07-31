@@ -1,4 +1,10 @@
-import { cn } from "#/shared/lib/utils";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  FormStatusArchived,
+  FormStatusClosed,
+  FormStatusDraft,
+  FormStatusOpen,
+} from "@trieoh/informd-models";
 import {
   Archive,
   ClipboardCheck,
@@ -7,18 +13,12 @@ import {
   ExternalLink,
   FileText,
   LayoutList,
-  User2
+  User2,
 } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { timeAgo } from "#/shared/lib/helpers/date-utils";
 import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "#/shared/ui/shadcn/dropdown-menu";
+import { timeAgo } from "#/shared/lib/helpers/date-utils";
+import { cn } from "#/shared/lib/utils";
+import { Button } from "#/shared/ui/shadcn/button";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -26,13 +26,13 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "#/shared/ui/shadcn/context-menu";
-import { Button } from "#/shared/ui/shadcn/button";
 import {
-  FormStatusArchived,
-  FormStatusClosed,
-  FormStatusDraft,
-  FormStatusOpen
-} from "@trieoh/informd-models";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "#/shared/ui/shadcn/dropdown-menu";
 import type { FormI, FormStatusI } from "../model";
 
 interface StatusMeta {
@@ -65,8 +65,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     iconBg: "bg-muted",
     iconColor: "text-muted-foreground",
     Icon: FileText,
-    badgeCn:
-      "bg-secondary text-secondary-foreground",
+    badgeCn: "bg-secondary text-secondary-foreground",
     label: "Draft",
   },
   [FormStatusClosed]: {
@@ -74,8 +73,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     iconBg: "bg-red-100 dark:bg-red-900/60",
     iconColor: "text-red-600 dark:text-red-400",
     Icon: ClipboardCheck,
-    badgeCn:
-      "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
+    badgeCn: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
     label: "Closed",
   },
   [FormStatusArchived]: {
@@ -99,14 +97,13 @@ function StatusBadge({ status }: { status: FormStatusI }) {
     <span
       className={cn(
         "ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none",
-        meta.badgeCn
+        meta.badgeCn,
       )}
     >
       {meta.label}
     </span>
   );
 }
-
 
 interface MenuItemsProps {
   data: FormI;
@@ -124,9 +121,9 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
         <>
           <Item
             onClick={() => {
-              const url = `${window.location.origin}/view/${data.id}${data.namespace_id ? `?namespace_id=${data.namespace_id}` : ""}`
-              navigator.clipboard.writeText(url)
-              toast.success("Link copied to clipboard")
+              const url = `${window.location.origin}/view/${data.id}${data.namespace_id ? `?namespace_id=${data.namespace_id}` : ""}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Link copied to clipboard");
             }}
           >
             <Copy className="mr-2 size-4" />
@@ -135,10 +132,10 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
           <Item
             onClick={() => {
               navigate({
-                to: '/view/$formID',
+                to: "/view/$formID",
                 params: { formID: data.id },
-                search: { namespace_id: data.namespace_id || undefined }
-              })
+                search: { namespace_id: data.namespace_id || undefined },
+              });
             }}
           >
             <ExternalLink className="mr-2 size-4" />
@@ -151,10 +148,10 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
       <Item
         onClick={() => {
           navigate({
-            to: '/admin/form/$formID',
+            to: "/admin/form/$formID",
             params: { formID: data.id },
-            search: { namespaceID: data.namespace_id || undefined }
-          })
+            search: { namespaceID: data.namespace_id || undefined },
+          });
         }}
       >
         <ExternalLink className="mr-2 size-4" />
@@ -164,10 +161,10 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
       <Item
         onClick={() => {
           navigate({
-            to: '/admin/form/$formID/submissions',
+            to: "/admin/form/$formID/submissions",
             params: { formID: data.id },
-            search: { namespaceID: data.namespace_id || undefined }
-          })
+            search: { namespaceID: data.namespace_id || undefined },
+          });
         }}
       >
         <ClipboardCheck className="mr-2 size-4" />
@@ -178,10 +175,10 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
       <Item
         onClick={() => {
           navigate({
-            to: '/admin/form/$formID/members',
+            to: "/admin/form/$formID/members",
             params: { formID: data.id },
-            search: { namespaceID: data.namespace_id || undefined }
-          })
+            search: { namespaceID: data.namespace_id || undefined },
+          });
         }}
       >
         <User2 className="mr-2 size-4" />
@@ -190,7 +187,6 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
     </>
   );
 }
-
 
 interface FormCardProps {
   data: FormI;
@@ -211,7 +207,7 @@ export function FormCard({ data }: FormCardProps) {
               "bg-card ring-1 ring-foreground/10 shadow-xs",
               "cursor-pointer select-none",
               "transition-all duration-150",
-              "hover:ring-primary hover:shadow-primary/20 hover:shadow-md"
+              "hover:ring-primary hover:shadow-primary/20 hover:shadow-md",
             )}
             to="/admin/form/$formID"
             params={{ formID: data.id }}
@@ -222,24 +218,24 @@ export function FormCard({ data }: FormCardProps) {
         <div
           className={cn(
             "flex h-32 items-center justify-center relative",
-            meta.headerBg
+            meta.headerBg,
           )}
         >
           <span
             className={cn(
-              'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
-              'absolute left-2.5 top-2.5 uppercase tracking-wider',
+              "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+              "absolute left-2.5 top-2.5 uppercase tracking-wider",
               isNamespaceForm
-                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
-                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
+                : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
             )}
           >
-            {isNamespaceForm ? 'Namespace' : 'Personal'}
+            {isNamespaceForm ? "Namespace" : "Personal"}
           </span>
           <div
             className={cn(
               "flex size-12 items-center justify-center rounded-full",
-              meta.iconBg
+              meta.iconBg,
             )}
           >
             <Icon className={cn("size-6", meta.iconColor)} strokeWidth={1.5} />
@@ -267,7 +263,7 @@ export function FormCard({ data }: FormCardProps) {
                     "size-7 rounded-sm",
                     "text-foreground/50 hover:text-foreground",
                     "transition-opacity duration-150",
-                    "cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    "cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
                   )}
                   onClick={(e) => {
                     e.preventDefault();

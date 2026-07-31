@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from "react";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
-import 'leaflet/dist/leaflet.css'
+import { useCallback, useEffect, useRef, useState } from "react";
+import "leaflet/dist/leaflet.css";
 
 export interface LocationInfo {
   name: string;
@@ -14,9 +14,9 @@ interface GeoResult {
 }
 
 interface NominatimResult {
-  lat: string
-  lon: string
-  display_name: string
+  lat: string;
+  lon: string;
+  display_name: string;
 }
 
 interface LocationMapProps {
@@ -98,7 +98,7 @@ async function geocode(location: LocationInfo): Promise<GeoResult> {
               headers: {
                 "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
               },
-            }
+            },
           );
 
           if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
@@ -149,8 +149,7 @@ export function LocationMap({
     L.Icon.Default.mergeOptions({
       iconRetinaUrl:
         "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-      iconUrl:
-        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
       shadowUrl:
         "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     });
@@ -210,7 +209,10 @@ export function LocationMap({
   }, [initMap]);
 
   return (
-    <div className={`location-map-wrapper ${className}`} style={{ position: "relative" }}>
+    <div
+      className={`location-map-wrapper ${className}`}
+      style={{ position: "relative" }}
+    >
       <div
         ref={mapContainerRef}
         style={{
@@ -237,13 +239,21 @@ export function LocationMap({
           <p style={{ margin: "8px 0 4px", fontWeight: 600, color: "#333" }}>
             {location.name}
           </p>
-          <p style={{ margin: 0, fontSize: 13, color: "#666", textAlign: "center" }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              color: "#666",
+              textAlign: "center",
+            }}
+          >
             {location.address}
           </p>
           <p style={{ margin: "12px 0 0", fontSize: 12, color: "#e55" }}>
             {errorMsg}
           </p>
           <button
+            type="button"
             onClick={() => void initMap()}
             style={retryButtonStyle}
           >
@@ -296,7 +306,6 @@ const retryButtonStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
-
 interface MultiLocationMapProps {
   locations: LocationInfo[];
   height?: string;
@@ -328,8 +337,7 @@ export function MultiLocationMap({
       L.Icon.Default.mergeOptions({
         iconRetinaUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
         shadowUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
@@ -383,16 +391,25 @@ export function MultiLocationMap({
   }, [locations]);
 
   return (
-    <div className={`location-map-wrapper ${className}`} style={{ position: "relative" }}>
+    <div
+      className={`location-map-wrapper ${className}`}
+      style={{ position: "relative" }}
+    >
       <div
         ref={mapContainerRef}
-        style={{ height, width: "100%", borderRadius: "12px", background: "#e8e0d8" }}
+        style={{
+          height,
+          width: "100%",
+          borderRadius: "12px",
+          background: "#e8e0d8",
+        }}
       />
       {status === "loading" && (
         <div style={overlayStyle}>
           <div style={spinnerStyle} />
           <span style={{ marginTop: 12, fontSize: 14, color: "#555" }}>
-            Geocodificando {locations.length} endereço{locations.length > 1 ? "s" : ""}…
+            Geocodificando {locations.length} endereço
+            {locations.length > 1 ? "s" : ""}…
           </span>
         </div>
       )}

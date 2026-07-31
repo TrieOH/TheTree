@@ -1,12 +1,12 @@
-import styles from "./spinner.module.css"
-import { cn } from "@/shared/lib/utils"
+import { cn } from "@/shared/lib/utils";
+import styles from "./spinner.module.css";
 
 interface SpinnerProps {
-  size?: number | string
-  activeColor?: string
-  trackColor?: string
-  duration?: string
-  className?: string
+  size?: number | string;
+  activeColor?: string;
+  trackColor?: string;
+  duration?: string;
+  className?: string;
 }
 
 export function Spinner({
@@ -18,6 +18,7 @@ export function Spinner({
 }: SpinnerProps) {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 384 384"
       style={
         {
@@ -29,7 +30,8 @@ export function Spinner({
       }
       className={cn(
         "origin-center overflow-visible -rotate-90 animate-[spin_2s_linear_infinite]",
-        styles.loader, className
+        styles.loader,
+        className,
       )}
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -53,5 +55,5 @@ export function Spinner({
         r={176}
       />
     </svg>
-  )
+  );
 }

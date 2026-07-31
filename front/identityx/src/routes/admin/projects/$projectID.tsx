@@ -1,55 +1,55 @@
-import { LayoutContext } from '@trieoh/ui-base'
-import { cn } from '@/shared/lib/utils'
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Component, Fingerprint, KeySquare, User2 } from 'lucide-react'
-import { useState } from 'react'
-import z from 'zod'
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { LayoutContext } from "@trieoh/ui-base";
+import { Component, Fingerprint, KeySquare, User2 } from "lucide-react";
+import { useState } from "react";
+import z from "zod";
+import { cn } from "@/shared/lib/utils";
 
 const projectSearchSchema = z.object({
   organizationID: z.string().optional(),
-})
+});
 
-export const Route = createFileRoute('/admin/projects/$projectID')({
+export const Route = createFileRoute("/admin/projects/$projectID")({
   validateSearch: (search) => projectSearchSchema.parse(search),
   component: ProjectLayout,
-})
+});
 
 function ProjectLayout() {
-  const { projectID } = Route.useParams()
-  const { organizationID } = Route.useSearch()
+  const { projectID } = Route.useParams();
+  const { organizationID } = Route.useSearch();
 
-  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null)
+  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null);
 
   const tabs = [
     {
-      label: 'Api Keys',
-      to: '/admin/projects/$projectID',
+      label: "Api Keys",
+      to: "/admin/projects/$projectID",
       params: { projectID },
       icon: KeySquare,
       exact: true,
     },
     {
-      label: 'Actors',
-      to: '/admin/projects/$projectID/actors',
+      label: "Actors",
+      to: "/admin/projects/$projectID/actors",
       params: { projectID },
       icon: Component,
       exact: true,
     },
     {
-      label: 'Capabilities',
-      to: '/admin/projects/$projectID/capabilities',
+      label: "Capabilities",
+      to: "/admin/projects/$projectID/capabilities",
       params: { projectID },
       icon: Fingerprint,
       exact: true,
     },
     {
-      label: 'Members',
-      to: '/admin/projects/$projectID/members',
+      label: "Members",
+      to: "/admin/projects/$projectID/members",
       params: { projectID },
       icon: User2,
       exact: true,
     },
-  ]
+  ];
 
   return (
     <LayoutContext.Provider value={{ setHeader: setHeaderSlot }}>
@@ -81,18 +81,18 @@ function ProjectLayout() {
                   <>
                     <tab.icon
                       className={cn(
-                        'size-3.5 transition-colors',
+                        "size-3.5 transition-colors",
                         isActive
-                          ? 'text-primary'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     />
                     <span
                       className={cn(
-                        'transition-colors whitespace-nowrap',
+                        "transition-colors whitespace-nowrap",
                         isActive
-                          ? 'text-foreground'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
                       {tab.label}
@@ -111,8 +111,7 @@ function ProjectLayout() {
         <div className="flex-1 p-6">
           <Outlet />
         </div>
-
       </div>
     </LayoutContext.Provider>
-  )
+  );
 }

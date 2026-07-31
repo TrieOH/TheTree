@@ -2,12 +2,13 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 )
 
 func (q *Queries) List(ctx context.Context) ([]models.Wallet, error) {
-	ctx, span := q.tracer.Start(ctx, "List")
+	ctx, span := telemetry.StartSpan(ctx, "List")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

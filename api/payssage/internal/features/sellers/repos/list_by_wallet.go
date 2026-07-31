@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Seller, error) {
-	ctx, span := repo.tracer.Start(ctx, "SellerRepo.ListByWallet")
+func (repo *Repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Seller, error) {
+	ctx, span := telemetry.StartSpan(ctx, "SellerRepo.ListByWallet")
 	defer span.End()
 
 	sqlcSellers, err := database.Queries(ctx, repo.q).ListSellersByWallet(ctx, walletID)

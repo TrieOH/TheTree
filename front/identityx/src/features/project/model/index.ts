@@ -2,40 +2,40 @@ import type {
   AddProjectMemberRequest,
   CreateProjectRequest,
   Project,
-  ProjectMember
-} from '@trieoh/identityx-models';
-import { ProjectRoleAdmin, ProjectRoleMember, ProjectRoleOwner } from '@trieoh/identityx-models';
-import { z } from 'zod';
+  ProjectMember,
+} from "@trieoh/identityx-models";
+import {
+  ProjectRoleAdmin,
+  ProjectRoleMember,
+  ProjectRoleOwner,
+} from "@trieoh/identityx-models";
+import { z } from "zod";
 
 export const projectCreateSchema = z.object({
   name: z.string().min(3, "Project name must be at least 3 characters long"),
   domain: z.url({ error: "Must be a valid URL (e.g., https://example.com)" }),
-  brand_slug: z.string().min(3, "Brand slug must be at least 3 characters long"),
+  brand_slug: z
+    .string()
+    .min(3, "Brand slug must be at least 3 characters long"),
 }) satisfies z.ZodType<CreateProjectRequest>;
 
 export type ProjectCreateI = CreateProjectRequest;
 
-export type ProjectI = Project
+export type ProjectI = Project;
 
 // Members
 
-export type ProjectMemberRoleI =
-  | "member"
-  | "admin"
-  | "owner";
+export type ProjectMemberRoleI = "member" | "admin" | "owner";
 
 export const memberAddToProjectSchema = z.object({
   actor_email: z.email({ error: "Must be a valid email address" }),
-  role: z.enum([
-    ProjectRoleMember,
-    ProjectRoleAdmin,
-    ProjectRoleOwner
-  ], { error: "Invalid role" }),
+  role: z.enum([ProjectRoleMember, ProjectRoleAdmin, ProjectRoleOwner], {
+    error: "Invalid role",
+  }),
 }) satisfies z.ZodType<AddProjectMemberRequest>;
 
 export type MemberAddToProjectI = AddProjectMemberRequest;
 
-export interface ProjectMemberI
-  extends Omit<ProjectMember, "role"> {
+export interface ProjectMemberI extends Omit<ProjectMember, "role"> {
   role: ProjectMemberRoleI;
 }

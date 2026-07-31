@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (q *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
-	ctx, span := q.tracer.Start(ctx, "NamespaceService.ListFormMembers")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.ListFormMembers")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

@@ -1,20 +1,20 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ApiError } from '@trieoh/identityx-sdk-ts'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { DefaultFailureEnvelope } from "@trieoh/envoy-fetch-ts";
-import type { ReactNode } from 'react'
+import { ApiError } from "@trieoh/identityx-sdk-ts";
+import type { ReactNode } from "react";
 
-let context: { queryClient: QueryClient } | undefined
+let context: { queryClient: QueryClient } | undefined;
 
 export function getContext() {
-  if (context) return context
+  if (context) return context;
 
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: (failureCount, error) => {
           if (error instanceof ApiError) {
-            const envelope = error.envelope as DefaultFailureEnvelope
-            if (envelope.code >= 400 && envelope.code < 500) return false
+            const envelope = error.envelope as DefaultFailureEnvelope;
+            if (envelope.code >= 400 && envelope.code < 500) return false;
           }
           if (error instanceof Error) {
             const err = error as unknown as DefaultFailureEnvelope;
@@ -29,21 +29,21 @@ export function getContext() {
         refetchOnReconnect: true,
       },
     },
-  })
+  });
 
-  context = { queryClient }
+  context = { queryClient };
 
-  return context
+  return context;
 }
 
 export default function TanStackQueryProvider({
   children,
 }: {
-  children: ReactNode
+  children: ReactNode;
 }) {
-  const { queryClient } = getContext()
+  const { queryClient } = getContext();
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
+  );
 }

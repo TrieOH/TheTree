@@ -1,61 +1,50 @@
-import z from 'zod'
-
-export interface SocialLinks {
-  twitter?: string | null
-  instagram?: string | null
-  linkedin?: string | null
-  website?: string | null
-}
-
-export type SocialPlatform = 'website' | 'instagram' | 'linkedin' | 'twitter'
+import z from "zod";
 
 export const eventCreateSchema = z.object({
-  organization_id: z.uuid().optional().nullable(),
-  name: z.string({ error: 'Name is required' })
-    .min(2, 'Name must be at least 2 characters long.'),
-  acronym: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  slug: z.string({ error: 'Slug is required' })
-    .min(2, 'Slug must be at least 2 characters long.'),
-  tagline: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  description: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  is_series: z.boolean().nullish().transform(val => val ?? false),
-  logo_url: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  banner_url: z.string().optional().nullable().transform(val => val === '' ? null : val),
-  gallery_urls: z.array(z.string()).nullish().transform(val => val ?? []),
-  contact_email: z.email(),
-  social_links: z.object({
-    twitter: z.url('Twitter link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
-    instagram: z.url('Instagram link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
-    linkedin: z.url('LinkedIn link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
-    website: z.url('Website link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
-  }).partial().optional().nullable(),
-})
+  full_name: z
+    .string({ error: "Nome é obrigatório" })
+    .min(2, "O nome deve ter pelo menos 2 caracteres."),
+  acronym: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val === "" ? null : val)),
+  slug: z
+    .string({ error: "Slug é obrigatório" })
+    .min(2, "O slug deve ter pelo menos 2 caracteres."),
+  description: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val === "" ? null : val)),
+  contact_email: z
+    .email("Informe um e-mail válido")
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((val) => (val === "" ? null : val)),
+});
 
-export type EventCreateInputI = z.input<typeof eventCreateSchema>
-export type EventCreateOutputI = z.output<typeof eventCreateSchema>
+export type EventCreateInputI = z.input<typeof eventCreateSchema>;
+export type EventCreateOutputI = z.output<typeof eventCreateSchema>;
 
-export type EventStatusI = 'draft' | 'active' | 'archived' | 'discontinued'
+export type EventStatusI = "draft" | "active" | "discontinued";
 
 export interface EventI {
-  id: string
-  owner_id: string | null
-  organization_id: string | null
-  goauth_scope_id: string
-  name: string
-  acronym: string | null
-  slug: string
-  tagline: string | null
-  description: string | null
-  is_series: boolean
-  editions_count: number
-  logo_url: string | null
-  banner_url: string | null
-  gallery_urls: string[] | null
-  contact_email: string
-  social_links: SocialLinks | null
-  status: EventStatusI
-  created_by: string
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
+  id: string;
+  owner_id: string;
+  full_name: string;
+  acronym: string | null;
+  slug: string;
+  description: string | null;
+  style: unknown | null;
+  payssage_seller_id: string | null;
+  payssage_wallet_id: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  contact_email: string | null;
+  status: EventStatusI;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
 }

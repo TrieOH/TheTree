@@ -8,8 +8,8 @@ import (
 
 type Step struct {
 	ID           uuid.UUID `json:"id"`
-	FormID       uuid.UUID `json:"form_id" validate:"required"`
-	Title        string    `json:"title" validate:"required"`
+	FormID       uuid.UUID `json:"form_id"       validate:"required"`
+	Title        string    `json:"title"         validate:"required"`
 	Description  *string   `json:"description"`
 	PositionHint int       `json:"position_hint" validate:"required,gte=1"`
 }
@@ -25,7 +25,7 @@ func NewStep(formID uuid.UUID, title string, description *string, positionHint i
 }
 
 type CreateStepRequest struct {
-	Title        string  `json:"title" validate:"required"`
+	Title        string  `json:"title"         validate:"required"`
 	Description  *string `json:"description"`
 	PositionHint int     `json:"position_hint" validate:"required"`
 }
@@ -75,8 +75,8 @@ func ToBulkEditStepsParams(s Step) sqlc.BulkEditStepsParams {
 }
 
 type UpdateStepRequest struct {
-	ID           uuid.UUID `json:"id" validate:"required"`
-	Title        string    `json:"title" validate:"required"`
+	ID           uuid.UUID `json:"id"            validate:"required"`
+	Title        string    `json:"title"         validate:"required"`
 	Description  *string   `json:"description"`
 	PositionHint int       `json:"position_hint" validate:"required,gte=1"`
 }

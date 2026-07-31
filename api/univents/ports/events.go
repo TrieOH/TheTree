@@ -16,6 +16,7 @@ type EventRepo interface {
 	ListJoined(ctx context.Context, userID uuid.UUID) ([]models.Event, error)
 	Publish(ctx context.Context, id uuid.UUID) error
 	Discontinue(ctx context.Context, id uuid.UUID) error
+	Patch(ctx context.Context, id uuid.UUID, event *models.Event) (*models.Event, error)
 
 	// Members
 	GetMember(ctx context.Context, eventID, userID uuid.UUID) (*models.EventMember, error)

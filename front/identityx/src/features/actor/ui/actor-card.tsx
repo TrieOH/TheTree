@@ -1,8 +1,8 @@
-import type { ActorI } from "../model";
-import { cn } from "@/shared/lib/utils";
 import { Copy, Cpu, Fingerprint, KeyRound, Shield, User2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/shared/lib/utils";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import type { ActorI } from "../model";
 
 interface ActorCardProps {
   data: ActorI;
@@ -71,13 +71,13 @@ export function ActorCard({ data }: ActorCardProps) {
               <span className="inline-flex items-center gap-1.5">
                 <AuthIcon className="size-3.5 shrink-0" />
                 <span className="truncate">
-                  {authMethodLabel[data.auth_method as keyof typeof authMethodLabel] ?? data.auth_method}
+                  {authMethodLabel[
+                    data.auth_method as keyof typeof authMethodLabel
+                  ] ?? data.auth_method}
                 </span>
               </span>
               {data.project_id && (
-                <span className="font-mono truncate">
-                  {data.project_id}
-                </span>
+                <span className="font-mono truncate">{data.project_id}</span>
               )}
             </div>
           </div>
@@ -91,9 +91,7 @@ export function ActorCard({ data }: ActorCardProps) {
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-          <span>
-            Created {new Date(data.created_at).toLocaleDateString()}
-          </span>
+          <span>Created {new Date(data.created_at).toLocaleDateString()}</span>
           {data.verified_at && (
             <span>
               Verified {new Date(data.verified_at).toLocaleDateString()}

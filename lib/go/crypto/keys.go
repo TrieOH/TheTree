@@ -12,6 +12,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -123,7 +124,7 @@ func EncryptPrivateKey(privBytes []byte) (string, error) {
 func DecryptPrivateKey(encrypted string) ([]byte, error) {
 	parts := strings.SplitN(encrypted, ":", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid encrypted key format")
+		return nil, errors.New("invalid encrypted key format")
 	}
 	nonce, err := hex.DecodeString(parts[0])
 	if err != nil {
@@ -169,7 +170,7 @@ func Sign(kp *KeyPair, payload []byte) ([]byte, error) {
 func PublicKeyToJWKS(keyID string, publicKey string) (map[string]any, error) {
 	block, _ := pem.Decode([]byte(publicKey))
 	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM block")
+		return nil, errors.New("failed to decode PEM block")
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)

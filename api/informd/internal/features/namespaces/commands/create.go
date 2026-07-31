@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"Informd/models"
+	"lib/database"
+	"lib/telemetry"
 )
 
 func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.Create")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -23,7 +25,7 @@ func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, 
 	}
 
 	var created *models.Namespace
-	if err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		created, err = s.namespaces.Create(ctx, *project)
 		if err != nil {
 			return err
@@ -36,7 +38,8 @@ func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, 
 			AddedAt:     time.Now(),
 			AddedBy:     ident.Sub.ID,
 		})
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 

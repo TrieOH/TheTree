@@ -6,6 +6,7 @@ import (
 	"context"
 	"dagger/thetree/internal/dagger"
 	"fmt"
+	"strings"
 )
 
 type Thetree struct{}
@@ -150,6 +151,76 @@ func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services str
 		out += fmt.Sprintf("--- %s ---\n%s\n", s, res)
 	}
 	return out, nil
+}
+
+const registry = "git.trieoh.com"
+
+// Publish builds a service image from its Dockerfile and pushes it to the registry.
+// tag is in the format "<service>/v<version>" (e.g. "identityx/v1.2.3").
+func (m *Thetree) Publish(
+	ctx context.Context,
+	source *dagger.Directory,
+	registryUsername string,
+	registryPassword *dagger.Secret,
+	tag string,
+) (string, error) {
+	parts := strings.SplitN(tag, "/", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid tag %q, expected <service>/v<version>", tag)
+	}
+	service, version := parts[0], parts[1]
+
+	if strings.HasSuffix(service, "-ui") || strings.Contains(service, "sdk") {
+		return "", nil
+	}
+
+	img := source.DockerBuild(dagger.DirectoryDockerBuildOpts{
+		Dockerfile: fmt.Sprintf("api/%s/Dockerfile", service),
+	})
+
+	versionAddr := fmt.Sprintf("%s/trieoh/%s:%s", registry, service, version)
+	digest, err := img.
+		WithRegistryAuth(registry, registryUsername, registryPassword).
+		Publish(ctx, versionAddr)
+	if err != nil {
+		return "", fmt.Errorf("publish %s: %w", versionAddr, err)
+	}
+
+	latestAddr := fmt.Sprintf("%s/trieoh/%s:latest", registry, service)
+	if _, err := img.
+		WithRegistryAuth(registry, registryUsername, registryPassword).
+		Publish(ctx, latestAddr); err != nil {
+		return "", fmt.Errorf("publish latest %s: %w", latestAddr, err)
+	}
+
+	return digest, nil
+}
+
+// FrontendLintTsc runs lint and TypeScript checks for the given frontend
+// services (comma-separated or "all").
+func (m *Thetree) FrontendLintTsc(
+	ctx context.Context,
+	// +ignore=["node_modules", "**/node_modules", "dist", "**/dist", ".git", ".wrangler", "**/.wrangler", ".env", "*.env"]
+	source *dagger.Directory,
+	services string,
+) (string, error) {
+	list := parseServices(services)
+	c := dag.Container().
+		From("node:24-bookworm").
+		WithMountedCache("/root/.local/share/pnpm/store", dag.CacheVolume("pnpm-store")).
+		WithDirectory("/workspace", source).
+		WithWorkdir("/workspace").
+		WithEnvVariable("CI", "true").
+		WithExec([]string{"corepack", "enable"}).
+		WithExec([]string{"corepack", "prepare", "pnpm@10", "--activate"}).
+		WithExec([]string{"pnpm", "install", "--frozen-lockfile"})
+
+	for _, service := range list {
+		c = c.WithExec([]string{"pnpm", "-F", service, "lint"})
+		c = c.WithExec([]string{"pnpm", "-F", service, "tsc"})
+	}
+
+	return c.Stdout(ctx)
 }
 
 func parseServices(services string) []string {

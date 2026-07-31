@@ -1,24 +1,24 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { sellersQueryOptions } from '#/features/sellers/api'
-import { createWalletIntentFn } from '../api'
-import { createIntentSchema } from '../model'
-import type { CreateIntentFormValues } from '../model'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Input } from '#/shared/ui/shadcn/input'
-import { Label } from '#/shared/ui/shadcn/label'
-import { cn } from '#/shared/lib/utils'
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { sellersQueryOptions } from "#/features/sellers/api";
+import { cn } from "#/shared/lib/utils";
+import { Button } from "#/shared/ui/shadcn/button";
+import { Input } from "#/shared/ui/shadcn/input";
+import { Label } from "#/shared/ui/shadcn/label";
+import { createWalletIntentFn } from "../api";
+import type { CreateIntentFormValues } from "../model";
+import { createIntentSchema } from "../model";
 
 const fieldClassName =
-  'rounded-none border-border font-mono focus-visible:border-primary focus-visible:ring-0'
+  "rounded-none border-border font-mono focus-visible:border-primary focus-visible:ring-0";
 
 export function CreateIntentForm({ walletId }: { walletId: string }) {
   const { data: sellers = [], isLoading: isLoadingSellers } = useQuery(
     sellersQueryOptions(walletId),
-  )
-  const activeSellers = sellers.filter((seller) => !seller.revoked_at)
+  );
+  const activeSellers = sellers.filter((seller) => !seller.revoked_at);
   const {
     register,
     handleSubmit,
@@ -27,12 +27,12 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
   } = useForm<CreateIntentFormValues>({
     resolver: zodResolver(createIntentSchema),
     defaultValues: {
-      seller_id: '',
-      currency: 'BRL',
+      seller_id: "",
+      currency: "BRL",
       amount_cents: 0,
-      checkout_provider_data: '{}',
+      checkout_provider_data: "{}",
     },
-  })
+  });
 
   const { mutate, isPending } = useMutation({
     mutationFn: (values: CreateIntentFormValues) =>
@@ -46,19 +46,19 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
       }),
     onSuccess: (response) => {
       if (!response.success) {
-        toast.error(response.message || 'Failed to create intent')
-        return
+        toast.error(response.message || "Failed to create intent");
+        return;
       }
-      toast.success('Payment intent created')
+      toast.success("Payment intent created");
       reset({
-        seller_id: '',
-        currency: 'BRL',
+        seller_id: "",
+        currency: "BRL",
         amount_cents: 0,
-        checkout_provider_data: '{}',
-      })
+        checkout_provider_data: "{}",
+      });
     },
-    onError: () => toast.error('Failed to create payment intent'),
-  })
+    onError: () => toast.error("Failed to create payment intent"),
+  });
 
   return (
     <section className="space-y-4 rounded-sm border bg-card p-4">
@@ -85,22 +85,22 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
               id="seller_id"
               disabled={isLoadingSellers || activeSellers.length === 0}
               className={cn(
-                'h-9 w-full border bg-background px-2.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                "h-9 w-full border bg-background px-2.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50",
                 fieldClassName,
-                errors.seller_id && 'border-destructive',
+                errors.seller_id && "border-destructive",
               )}
-              {...register('seller_id')}
+              {...register("seller_id")}
             >
               <option value="">
                 {isLoadingSellers
-                  ? 'Loading sellers...'
+                  ? "Loading sellers..."
                   : activeSellers.length
-                    ? 'Select a seller'
-                    : 'No active sellers available'}
+                    ? "Select a seller"
+                    : "No active sellers available"}
               </option>
               {activeSellers.map((seller) => (
                 <option key={seller.id} value={seller.id}>
-                  {seller.provider.replaceAll('_', ' ')} —{' '}
+                  {seller.provider.replaceAll("_", " ")} —{" "}
                   {seller.provider_user_id}
                 </option>
               ))}
@@ -123,7 +123,7 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
               id="currency"
               placeholder="BRL"
               className={fieldClassName}
-              {...register('currency')}
+              {...register("currency")}
             />
             {errors.currency && (
               <p className="text-xs text-destructive">
@@ -146,7 +146,7 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
               step={1}
               placeholder="1000"
               className={fieldClassName}
-              {...register('amount_cents', { valueAsNumber: true })}
+              {...register("amount_cents", { valueAsNumber: true })}
             />
             {errors.amount_cents && (
               <p className="text-xs text-destructive">
@@ -169,11 +169,11 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
             spellCheck={false}
             placeholder={'{\n  "key": "value"\n}'}
             className={cn(
-              'w-full resize-y border bg-transparent p-3 text-sm outline-none transition-colors',
+              "w-full resize-y border bg-transparent p-3 text-sm outline-none transition-colors",
               fieldClassName,
-              errors.checkout_provider_data && 'border-destructive',
+              errors.checkout_provider_data && "border-destructive",
             )}
-            {...register('checkout_provider_data')}
+            {...register("checkout_provider_data")}
           />
           {errors.checkout_provider_data && (
             <p className="text-xs text-destructive">
@@ -188,10 +188,10 @@ export function CreateIntentForm({ walletId }: { walletId: string }) {
             disabled={isPending || isLoadingSellers || !activeSellers.length}
             className="rounded-none font-black uppercase tracking-widest"
           >
-            {isPending ? 'Creating...' : 'Create intent'}
+            {isPending ? "Creating..." : "Create intent"}
           </Button>
         </div>
       </form>
     </section>
-  )
+  );
 }

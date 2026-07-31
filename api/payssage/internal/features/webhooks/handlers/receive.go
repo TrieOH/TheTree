@@ -17,7 +17,9 @@ func (h *Handlers) Receive(w http.ResponseWriter, r *http.Request) {
 		fun.BadRequest("failed to read webhook body").Send(w)
 		return
 	}
-	defer r.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
 
 	err = h.commands.Receive(r.Context(), models.ReceiveWebhookInput{
 		Provider: providerName,

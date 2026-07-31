@@ -1,13 +1,14 @@
-import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { EventI } from "../model";
-import { createEventFn, patchEventFn, publishEventFn } from "./index";
+import { createEventFn, discontinueEventFn, publishEventFn } from "./index";
+import {
+  addEventMemberFn,
+  type EventMemberI,
+  removeEventMemberFn,
+} from "./members";
 import { eventKeys } from "./query-keys";
-
-type PatchEventInput = {
-  id: string;
-  data: Partial<EventI>;
-};
 
 function upsertById(events: EventI[] | undefined, event: EventI) {
   const list = events ?? [];
@@ -29,7 +30,9 @@ function shouldBePublic(event: Pick<EventI, "status">) {
 }
 
 function syncEventCaches(queryClient: QueryClient, event: EventI) {
-  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) => upsertById(old, event));
+  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) =>
+    upsertById(old, event),
+  );
 
   queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) => {
     if (shouldBePublic(event)) return upsertById(old, event);
@@ -37,16 +40,42 @@ function syncEventCaches(queryClient: QueryClient, event: EventI) {
   });
 }
 
-function syncEventStatusInCaches(queryClient: QueryClient, eventId: string, status: EventI["status"]) {
-  const ownEvent = queryClient.getQueryData<EventI[]>(eventKeys.ownLists())?.find((event) => event.id === eventId);
+function syncEventStatusInCaches(
+  queryClient: QueryClient,
+  eventId: string,
+  status: EventI["status"],
+  updatedAt: string,
+) {
+  const ownEvent = queryClient
+    .getQueryData<EventI[]>(eventKeys.ownLists())
+    ?.find((event) => event.id === eventId);
+  const joinedEvent = queryClient
+    .getQueryData<EventI[]>(eventKeys.joinedLists())
+    ?.find((event) => event.id === eventId);
+  const publicEvent = queryClient
+    .getQueryData<EventI[]>(eventKeys.publicLists())
+    ?.find((event) => event.id === eventId);
+  const cachedEvent = ownEvent ?? joinedEvent ?? publicEvent;
 
-  if (!ownEvent) return;
+  if (!cachedEvent) return;
 
-  const nextEvent = { ...ownEvent, status };
+  const nextEvent = { ...cachedEvent, status, updated_at: updatedAt };
 
-  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) => upsertById(old, nextEvent));
+  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) =>
+    old?.some((event) => event.id === eventId)
+      ? upsertById(old, nextEvent)
+      : old,
+  );
 
-  queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) => upsertById(old, nextEvent));
+  queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) =>
+    upsertById(old, nextEvent),
+  );
+
+  queryClient.setQueryData<EventI[]>(eventKeys.joinedLists(), (old) =>
+    old?.some((event) => event.id === eventId)
+      ? upsertById(old, nextEvent)
+      : old,
+  );
 }
 
 export function useCreateEventMutation() {
@@ -67,24 +96,6 @@ export function useCreateEventMutation() {
   });
 }
 
-export function usePatchEventMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: PatchEventInput) => patchEventFn(id, data),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao atualizar evento");
-        return;
-      }
-
-      syncEventCaches(queryClient, res.data);
-      toast.success("Evento atualizado com sucesso!");
-    },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
-  });
-}
-
 export function usePublishEventMutation() {
   const queryClient = useQueryClient();
 
@@ -96,8 +107,81 @@ export function usePublishEventMutation() {
         return;
       }
 
-      syncEventStatusInCaches(queryClient, eventId, "active");
+      syncEventStatusInCaches(
+        queryClient,
+        eventId,
+        "active",
+        new Date().toISOString(),
+      );
       toast.success("Evento publicado com sucesso!");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+
+export function useDiscontinueEventMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (eventId: string) => discontinueEventFn(eventId),
+    onSuccess: (res, eventId) => {
+      if (!res.success) {
+        toast.error(res.message || "Erro ao descontinuar evento");
+        return;
+      }
+
+      syncEventStatusInCaches(
+        queryClient,
+        eventId,
+        "discontinued",
+        new Date().toISOString(),
+      );
+      toast.success("Evento descontinuado com sucesso!");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+
+export function useAddEventMemberMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addEventMemberFn,
+    onSuccess: (res, input) => {
+      if (!res.success) {
+        toast.error(res.message || "Erro ao adicionar membro");
+        return;
+      }
+
+      queryClient.setQueryData<EventMemberI[]>(
+        eventKeys.members(input.eventId),
+        (old = []) => [
+          ...old.filter((member) => member.id !== res.data.id),
+          res.data,
+        ],
+      );
+      toast.success("Membro adicionado com sucesso!");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+
+export function useRemoveEventMemberMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: removeEventMemberFn,
+    onSuccess: (res, input) => {
+      if (!res.success) {
+        toast.error(res.message || "Erro ao remover membro");
+        return;
+      }
+
+      queryClient.setQueryData<EventMemberI[]>(
+        eventKeys.members(input.eventId),
+        (old = []) => old.filter((member) => member.user_id !== input.userId),
+      );
+      toast.success("Membro removido com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
   });

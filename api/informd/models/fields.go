@@ -49,13 +49,13 @@ const (
 
 type Field struct {
 	ID           uuid.UUID        `json:"id"`
-	StepID       uuid.UUID        `json:"step_id"        validate:"required"`
-	Key          string           `json:"key"            validate:"required"`
-	Title        string           `json:"title"          validate:"required"`
+	StepID       uuid.UUID        `json:"step_id"                 validate:"required"`
+	Key          string           `json:"key"                     validate:"required"`
+	Title        string           `json:"title"                   validate:"required"`
 	Description  *string          `json:"description"`
-	PositionHint int              `json:"position_hint"  validate:"required,gte=1"`
+	PositionHint int              `json:"position_hint"           validate:"required,gte=1"`
 	Required     bool             `json:"required"`
-	Type         FieldType        `json:"type"           validate:"required"`
+	Type         FieldType        `json:"type"                    validate:"required"`
 	Placeholder  *json.RawMessage `json:"placeholder,omitempty"`
 	DefaultValue *json.RawMessage `json:"default_value,omitempty"`
 	Config       *json.RawMessage `json:"config,omitempty"`
@@ -89,9 +89,9 @@ func NewField(
 
 type FieldSelectConfig struct {
 	FieldID   uuid.UUID       `json:"field_id"`
-	Behaviour SelectBehaviour `json:"behaviour"   validate:"required"`
-	ValueType SelectValueType `json:"value_type"  validate:"required"`
-	Options   json.RawMessage `json:"options"     validate:"required"`
+	Behaviour SelectBehaviour `json:"behaviour"  validate:"required"`
+	ValueType SelectValueType `json:"value_type" validate:"required"`
+	Options   json.RawMessage `json:"options"    validate:"required"`
 }
 
 func NewFieldSelectConfig(
@@ -112,12 +112,12 @@ func NewFieldSelectConfig(
 // CreateFieldRequest is the HTTP request body for creating a field.
 // SelectConfig is only required when Type is "select".
 type CreateFieldRequest struct {
-	Key          string                          `json:"key"           validate:"required"`
-	Title        string                          `json:"title"         validate:"required"`
+	Key          string                          `json:"key"                     validate:"required"`
+	Title        string                          `json:"title"                   validate:"required"`
 	Description  *string                         `json:"description"`
-	PositionHint int                             `json:"position_hint" validate:"required,gte=1"`
+	PositionHint int                             `json:"position_hint"           validate:"required,gte=1"`
 	Required     bool                            `json:"required"`
-	Type         FieldType                       `json:"type"          validate:"required"`
+	Type         FieldType                       `json:"type"                    validate:"required"`
 	Placeholder  *json.RawMessage                `json:"placeholder,omitempty"`
 	DefaultValue *json.RawMessage                `json:"default_value,omitempty"`
 	Config       *json.RawMessage                `json:"config,omitempty"`
@@ -197,13 +197,13 @@ type CreateNamespacedStepFieldInput struct {
 }
 
 type UpdateFieldRequest struct {
-	ID           uuid.UUID                       `json:"id"            validate:"required"`
-	Key          string                          `json:"key"           validate:"required"`
-	Title        string                          `json:"title"         validate:"required"`
+	ID           uuid.UUID                       `json:"id"                      validate:"required"`
+	Key          string                          `json:"key"                     validate:"required"`
+	Title        string                          `json:"title"                   validate:"required"`
 	Description  *string                         `json:"description"`
-	PositionHint int                             `json:"position_hint" validate:"required,gte=1"`
+	PositionHint int                             `json:"position_hint"           validate:"required,gte=1"`
 	Required     bool                            `json:"required"`
-	Type         FieldType                       `json:"type"          validate:"required"`
+	Type         FieldType                       `json:"type"                    validate:"required"`
 	Placeholder  *json.RawMessage                `json:"placeholder,omitempty"`
 	DefaultValue *json.RawMessage                `json:"default_value,omitempty"`
 	Config       *json.RawMessage                `json:"config,omitempty"`

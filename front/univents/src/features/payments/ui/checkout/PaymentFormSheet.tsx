@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from "react"
-import { X, Loader2 } from "lucide-react"
-import { motion, AnimatePresence } from "motion/react"
-import type { PaymentMethodI } from "../../model"
-import { cn } from "@/shared/lib/utils"
-import { useIsMobile } from "@/shared/hooks/use-mobile"
+import { Loader2, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
+import { cn } from "@/shared/lib/utils";
+import type { PaymentMethodI } from "../../model";
 
 interface PaymentFormSheetProps {
-  open: boolean
-  method: PaymentMethodI | null
-  onClose: () => void
-  onReady: () => void
-  children: React.ReactNode
+  open: boolean;
+  method: PaymentMethodI | null;
+  onClose: () => void;
+  onReady: () => void;
+  children: React.ReactNode;
 }
 
 const methodLabel: Record<string, string> = {
   credit_card: "Cartão de crédito",
   pix: "Pix",
-}
+};
 
 export function PaymentFormSheet({
   open,
@@ -25,28 +25,30 @@ export function PaymentFormSheet({
   onReady,
   children,
 }: PaymentFormSheetProps) {
-  const isMobile = useIsMobile()
-  const [ready, setReady] = useState(false)
-  const onReadyRef = useRef(onReady)
-  onReadyRef.current = onReady
+  const isMobile = useIsMobile();
+  const [ready, setReady] = useState(false);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
 
   useEffect(() => {
     if (!open) {
-      setReady(false)
-      return
+      setReady(false);
+      return;
     }
 
     const timer = setTimeout(() => {
-      setReady(true)
-      onReadyRef.current()
-    }, 500)
-    return () => { clearTimeout(timer); }
-  }, [open])
+      setReady(true);
+      onReadyRef.current();
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [open]);
 
   const handleClose = () => {
-    setReady(false)
-    onClose()
-  }
+    setReady(false);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -74,7 +76,7 @@ export function PaymentFormSheet({
               className={cn(
                 "fixed inset-x-0 bottom-0 z-50",
                 "bg-background border-t border-border rounded-t-2xl shadow-2xl",
-                "max-h-[90dvh] flex flex-col"
+                "max-h-[90dvh] flex flex-col",
               )}
             >
               <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -85,13 +87,19 @@ export function PaymentFormSheet({
                 <span className="text-sm font-bold uppercase tracking-wide">
                   {method ? methodLabel[method] : ""}
                 </span>
-                <button onClick={handleClose} className="p-1 hover:bg-muted rounded-full transition-colors">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="p-1 hover:bg-muted rounded-full transition-colors"
+                >
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
 
               <div className="overflow-y-auto px-5 py-4 flex-1 min-h-75">
-                {ready ? children : (
+                {ready ? (
+                  children
+                ) : (
                   <div className="flex items-center justify-center h-48">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
@@ -108,20 +116,26 @@ export function PaymentFormSheet({
               className={cn(
                 "fixed top-0 right-0 bottom-0 z-50",
                 "w-105 flex flex-col",
-                "bg-background border-l border-border shadow-2xl"
+                "bg-background border-l border-border shadow-2xl",
               )}
             >
               <div className="flex items-center justify-between px-6 py-5 border-b border-border shrink-0">
                 <span className="text-sm font-bold uppercase tracking-wide">
                   {method ? methodLabel[method] : ""}
                 </span>
-                <button onClick={handleClose} className="p-1 hover:bg-muted rounded-full transition-colors">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="p-1 hover:bg-muted rounded-full transition-colors"
+                >
                   <X className="w-5 h-5 text-muted-foreground" />
                 </button>
               </div>
 
               <div className="overflow-y-auto px-6 py-5 flex-1">
-                {ready ? children : (
+                {ready ? (
+                  children
+                ) : (
                   <div className="flex items-center justify-center h-48">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
@@ -132,5 +146,5 @@ export function PaymentFormSheet({
         </>
       )}
     </AnimatePresence>
-  )
+  );
 }

@@ -1,8 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { allPublicEventsQueryOptions } from '@/features/events/api'
+import { createFileRoute } from "@tanstack/react-router";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
 
-export const Route = createFileRoute('/events/')({
+export const Route = createFileRoute("/events/")({
   loader: async ({ context }) => {
-    return await context.queryClient.ensureQueryData(allPublicEventsQueryOptions())
+    return await context.queryClient.ensureQueryData(
+      allPublicEventsQueryOptions(),
+    );
   },
-})
+});

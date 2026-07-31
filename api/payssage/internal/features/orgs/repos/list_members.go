@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListMembers(ctx context.Context, orgID uuid.UUID) ([]models.OrganizationMember, error) {
-	ctx, span := repo.tracer.Start(ctx, "ListMembers")
+func (repo *Repo) ListMembers(ctx context.Context, orgID uuid.UUID) ([]models.OrganizationMember, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ListMembers")
 	defer span.End()
 	sqlcMembers, err := database.Queries(ctx, repo.q).ListOrganizationMembers(ctx, orgID)
 	if err != nil {

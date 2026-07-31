@@ -1,93 +1,142 @@
 import z from "zod";
 
-const productTypeSchema = z
-  .enum(
-    ["merchandise", "ticket", "token", "bundle"],
-    { error: "Tipo do Produto inválido" }
-  ).default("merchandise");
-
-export type ProductType = z.infer<typeof productTypeSchema>
-
-export const productCreateSchema = z.object({
-  edition_scope_id: z.uuid(),
-  name: z.string({
-    error: "Nome é obrigatório",
-  }).min(3, {
-    message: "O nome deve ter pelo menos 3 caracteres",
-  }),
-  description: z.string().nullable().optional(),
-  type: productTypeSchema,
-  ticket_id: z.preprocess(
-    (val) => val === "" ? null : val,
-    z.uuid({
-      message: "ID do ticket inválido",
-    }).nullable().optional()
+export const createInitialProductSchema = z.object({
+  requires_registration: z.boolean().default(false),
+  vendor_code: z
+    .string()
+    .min(2, "Código precisa ter pelo menos 2 caracteres")
+    .max(255),
+  variant_vendor_code: z
+    .string()
+    .min(2, "Código da variação precisa ter pelo menos 2 caracteres")
+    .max(255),
+  name: z.string().min(2, "Nome precisa ter pelo menos 2 caracteres"),
+  description: z
+    .string()
+    .max(8000)
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((v) => (v === "" ? null : v)),
+  price: z.preprocess(
+    (value) =>
+      value === "" || value === null || value === undefined ? undefined : value,
+    z.coerce
+      .number({ error: "O preço é obrigatório" })
+      .int({ message: "O preço deve ser um número inteiro" })
+      .nonnegative({ message: "O preço não pode ser negativo" }),
   ),
-  price_cents: z.int({
-    message: "O preço deve ser um número inteiro",
-  }).nonnegative({
-    message: "O preço não pode ser negativo",
-  }),
-  available_from: z.preprocess(
-    (val) => val === "" ? null : val,
-    z.iso.datetime({
-      message: "Data de início inválida",
-    }).nullable().optional()
-  ),
-  available_until: z.preprocess(
-    (val) => val === "" ? null : val,
-    z.iso.datetime({
-      message: "Data de término inválida",
-    }).nullable().optional()
-  ),
-  thumbnail_url: z.string().optional().nullable().transform(val => val === "" ? null : val),
-  gallery_urls: z.array(z.string()).nullish().transform(val => val ?? []),
-  has_inventory: z.boolean().default(false),
-  inventory_quantity: z.int({
-    message: "Quantidade de estoque deve ser um número inteiro",
-  }).nonnegative({
-    message: "Quantidade de estoque não pode ser negativa",
-  }).default(0),
-})
+  stock: z
+    .preprocess(
+      (value) =>
+        value === "" || value === null || value === undefined
+          ? undefined
+          : value,
+      z.coerce
+        .number({ error: "Quantidade máxima é obrigatório" })
+        .int({ message: "Quantidade máxima precisa ser um número inteiro" })
+        .gt(0, { message: "Quantidade máxima precisa ser maior que zero" }),
+    )
+    .optional()
+    .nullable()
+    .or(z.literal("").transform(() => null)),
+});
 
-export type ProductCreateI = z.infer<typeof productCreateSchema>
+export type CreateInitialProductInputI = z.input<
+  typeof createInitialProductSchema
+>;
+export type CreateInitialProductOutputI = z.output<
+  typeof createInitialProductSchema
+>;
 
-export const buyRequestItemSchema = z.object({
-  product_id: z.uuid(),
-  quantity: z.int().nonnegative().default(1)
-})
+export const productPatchSchema = z.object({
+  requires_registration: z.boolean().default(false),
+  vendor_code: z
+    .string()
+    .min(2, "Código precisa ter pelo menos 2 caracteres")
+    .max(255),
+});
 
-export type BuyRequestItemI = z.infer<typeof buyRequestItemSchema>
+export type ProductPatchInputI = z.input<typeof productPatchSchema>;
+export type ProductPatchOutputI = z.output<typeof productPatchSchema>;
 
 export interface ProductI {
   id: string;
-  scope_id: string;
   edition_id: string;
+  vendor_code: string;
+  requires_registration: boolean;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+}
+
+export const variantCreateSchema = z.object({
+  vendor_code: z
+    .string()
+    .min(2, "Código precisa ter pelo menos 2 caracteres")
+    .max(255),
+  name: z.string().min(2, "Nome precisa ter pelo menos 2 caracteres"),
+  description: z
+    .string()
+    .max(8000)
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((v) => (v === "" ? null : v)),
+  price: z.preprocess(
+    (value) =>
+      value === "" || value === null || value === undefined ? undefined : value,
+    z.coerce
+      .number({ error: "O preço é obrigatório" })
+      .int({ message: "O preço deve ser um número inteiro" })
+      .nonnegative({ message: "O preço não pode ser negativo" }),
+  ),
+  stock: z
+    .preprocess(
+      (value) =>
+        value === "" || value === null || value === undefined
+          ? undefined
+          : value,
+      z.coerce
+        .number({ error: "Quantidade máxima é obrigatório" })
+        .int({ message: "Quantidade máxima precisa ser um número inteiro" })
+        .gt(0, { message: "Quantidade máxima precisa ser maior que zero" }),
+    )
+    .optional()
+    .nullable()
+    .or(z.literal("").transform(() => null)),
+});
+
+export type VariantCreateInputI = z.input<typeof variantCreateSchema>;
+export type VariantCreateOutputI = z.output<typeof variantCreateSchema>;
+
+export interface VariantI {
+  id: string;
+  edition_id: string;
+  product_id: string;
+  vendor_code: string;
   name: string;
   description: string | null;
-  type: ProductType;
-  ticket_id: string | null;
-  price_cents: number;
-  status: "draft" | "available" | "sold_out" | "unavailable";
-  available_from: string | null;
-  available_until: string | null;
-  has_inventory: boolean;
-  inventory_quantity: number;
-  inventory_remaining: number;
-  created_by: string;
+  price: number;
+  stock: number | null;
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
   deleted_at: string | null;
-  thumbnail_url: string | null;
-  gallery_urls: string[] | null;
 }
+
+export const buyRequestItemSchema = z.object({
+  product_id: z.uuid(),
+  quantity: z.int().nonnegative().default(1),
+});
+
+export type BuyRequestItemI = z.infer<typeof buyRequestItemSchema>;
 
 export interface ReservedItemI {
   product_id: string;
   name: string;
   quantity: number;
   price_cents: number;
-  product_type: ProductType;
+  product_type: string;
   ticket_id?: string;
 }
 

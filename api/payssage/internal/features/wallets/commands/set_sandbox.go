@@ -2,12 +2,13 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 )
 
 func (c *Commands) SetSandbox(ctx context.Context, payload models.SetSandboxInput) error {
-	ctx, span := c.tracer.Start(ctx, "SetSandbox")
+	ctx, span := telemetry.StartSpan(ctx, "SetSandbox")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

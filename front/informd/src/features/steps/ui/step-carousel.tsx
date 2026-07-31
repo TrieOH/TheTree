@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import { Plus } from "lucide-react";
-import type { StepI } from "../model";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FieldI } from "#/features/fields/model";
-import { StepCard } from "./step-card";
 import { cn } from "#/shared/lib/utils";
 import { Button } from "#/shared/ui/shadcn/button";
+import type { StepI } from "../model";
+import { StepCard } from "./step-card";
 
 interface StepCarouselProps {
   steps: StepI[];
   onAddAfter: (positionHint: number) => void;
   onStepClick?: (step: StepI) => void;
   onEditStep?: (step: StepI) => void;
-  onMoveStep?: (stepId: string, direction: 'left' | 'right') => void;
+  onMoveStep?: (stepId: string, direction: "left" | "right") => void;
   onAddField?: (step: StepI) => void;
   onEditField?: (field: FieldI) => void;
   onDeleteField?: (field: FieldI) => void;
@@ -21,7 +21,6 @@ interface StepCarouselProps {
   focusedStepId?: string | null;
   focusKey?: number;
 }
-
 
 export function StepCarousel({
   steps,
@@ -59,7 +58,7 @@ export function StepCarousel({
       const diff = forcedDirection ?? (targetPage > page ? 1 : -1);
       setPage([targetPage, diff]);
     },
-    [page]
+    [page],
   );
 
   useEffect(() => {
@@ -80,7 +79,7 @@ export function StepCarousel({
     if (!focusedStepId || count <= 1) return;
 
     setPage(([currentPage]) => {
-      const targetIndex = steps.findIndex(s => s.id === focusedStepId);
+      const targetIndex = steps.findIndex((s) => s.id === focusedStepId);
       if (targetIndex === -1) return [currentPage, 0];
 
       const currentWrap = ((currentPage % count) + count) % count;
@@ -92,7 +91,7 @@ export function StepCarousel({
     });
   }, [focusKey]);
 
-  const onDragEnd = (_: any, info: { offset: { x: number } }) => {
+  const onDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     const swipe = info.offset.x;
     const threshold = 50;
     if (swipe < -threshold) goTo(page + 1, 1);
@@ -116,15 +115,20 @@ export function StepCarousel({
     );
   }
 
-  const prevStep = steps[((activeIndex - 1) % count + count) % count];
-  const nextStep = steps[((activeIndex + 1) % count + count) % count];
+  const prevStep = steps[(((activeIndex - 1) % count) + count) % count];
+  const nextStep = steps[(((activeIndex + 1) % count) + count) % count];
   const activeStep = steps[activeIndex];
   const showSiblings = count > 1;
 
   const activeFields = fieldsByStepId?.[activeStep.id] ?? [];
-  const canMoveLeft = count > 1 && steps.some(s => s.position_hint === activeStep.position_hint - 1);
-  const canMoveRight = count > 1 && steps.some(s => s.position_hint === activeStep.position_hint + 1);
-  const maxPositionHint = count > 0 ? Math.max(...steps.map(s => s.position_hint)) : 0;
+  const canMoveLeft =
+    count > 1 &&
+    steps.some((s) => s.position_hint === activeStep.position_hint - 1);
+  const canMoveRight =
+    count > 1 &&
+    steps.some((s) => s.position_hint === activeStep.position_hint + 1);
+  const maxPositionHint =
+    count > 0 ? Math.max(...steps.map((s) => s.position_hint)) : 0;
 
   const variants = {
     enter: (dir: number) => ({
@@ -177,8 +181,12 @@ export function StepCarousel({
                     active
                     onClick={() => onStepClick?.(activeStep)}
                     onEdit={onEditStep}
-                    onMoveLeft={onMoveStep ? (s) => onMoveStep(s.id, 'left') : undefined}
-                    onMoveRight={onMoveStep ? (s) => onMoveStep(s.id, 'right') : undefined}
+                    onMoveLeft={
+                      onMoveStep ? (s) => onMoveStep(s.id, "left") : undefined
+                    }
+                    onMoveRight={
+                      onMoveStep ? (s) => onMoveStep(s.id, "right") : undefined
+                    }
                     onAddField={onAddField}
                     onEditField={onEditField}
                     onDeleteField={onDeleteField}
@@ -196,7 +204,11 @@ export function StepCarousel({
                     className="shrink-0 w-[18%] opacity-40 hover:opacity-70 transition-opacity cursor-pointer scale-[0.70]"
                     onClick={() => goTo(page - 1, -1)}
                   >
-                    <StepCard step={prevStep} active={false} className="pointer-events-none" />
+                    <StepCard
+                      step={prevStep}
+                      active={false}
+                      className="pointer-events-none"
+                    />
                   </div>
 
                   <div className="shrink-0 w-[56%] min-w-0">
@@ -206,8 +218,14 @@ export function StepCarousel({
                       active
                       onClick={() => onStepClick?.(activeStep)}
                       onEdit={onEditStep}
-                      onMoveLeft={onMoveStep ? (s) => onMoveStep(s.id, 'left') : undefined}
-                      onMoveRight={onMoveStep ? (s) => onMoveStep(s.id, 'right') : undefined}
+                      onMoveLeft={
+                        onMoveStep ? (s) => onMoveStep(s.id, "left") : undefined
+                      }
+                      onMoveRight={
+                        onMoveStep
+                          ? (s) => onMoveStep(s.id, "right")
+                          : undefined
+                      }
                       onAddField={onAddField}
                       onEditField={onEditField}
                       onDeleteField={onDeleteField}
@@ -223,7 +241,11 @@ export function StepCarousel({
                     className="shrink-0 w-[18%] opacity-40 hover:opacity-70 transition-opacity cursor-pointer scale-[0.70]"
                     onClick={() => goTo(page + 1, 1)}
                   >
-                    <StepCard step={nextStep} active={false} className="pointer-events-none" />
+                    <StepCard
+                      step={nextStep}
+                      active={false}
+                      className="pointer-events-none"
+                    />
                   </div>
                 </div>
               </>
@@ -235,8 +257,12 @@ export function StepCarousel({
                   active
                   onClick={() => onStepClick?.(activeStep)}
                   onEdit={onEditStep}
-                  onMoveLeft={onMoveStep ? (s) => onMoveStep(s.id, 'left') : undefined}
-                  onMoveRight={onMoveStep ? (s) => onMoveStep(s.id, 'right') : undefined}
+                  onMoveLeft={
+                    onMoveStep ? (s) => onMoveStep(s.id, "left") : undefined
+                  }
+                  onMoveRight={
+                    onMoveStep ? (s) => onMoveStep(s.id, "right") : undefined
+                  }
                   onAddField={onAddField}
                   onEditField={onEditField}
                   onDeleteField={onDeleteField}
@@ -255,9 +281,9 @@ export function StepCarousel({
       {/* Pagination dots */}
       {showSiblings && (
         <div className="flex justify-center gap-2" aria-hidden="true">
-          {steps.map((_, i) => (
+          {steps.map((step, i) => (
             <button
-              key={i}
+              key={step.id}
               type="button"
               onClick={() => {
                 // Calculate nearest page for this index
@@ -271,7 +297,7 @@ export function StepCarousel({
                 "h-1 rounded-full transition-all duration-300",
                 i === activeIndex
                   ? "bg-primary w-8"
-                  : "bg-muted-foreground/20 hover:bg-muted-foreground/40 w-2"
+                  : "bg-muted-foreground/20 hover:bg-muted-foreground/40 w-2",
               )}
             />
           ))}
@@ -289,7 +315,7 @@ export function StepCarousel({
               "border border-dashed border-border bg-transparent text-muted-foreground",
               "transition-all duration-150",
               "hover:border-primary/40 hover:text-primary hover:bg-primary/5",
-              "cursor-pointer"
+              "cursor-pointer",
             )}
           >
             <Plus size={14} strokeWidth={2.5} />

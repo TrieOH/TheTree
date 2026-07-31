@@ -1,31 +1,27 @@
 package repos
 
 import (
-	sqlc2 "Informd/internal/sqlc"
+	"Informd/internal/sqlc"
 	"Informd/models"
 	"Informd/ports"
 	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
 )
 
-type repo struct {
-	q      *sqlc2.Queries
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+type Repo struct {
+	q   *sqlc.Queries
+	dbe database.ErrorHandler
 }
 
-var _ ports.NamespaceRepo = (*repo)(nil)
+var _ ports.NamespaceRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.NamespaceRepo {
-	return &repo{
-		q:      q,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("namespace"),
+func NewRepo(q *sqlc.Queries) *Repo {
+	return &Repo{
+		q:   q,
+		dbe: database.NewErrorHandler("namespace"),
 	}
 }
 
-func mapNamespace(src sqlc2.Namespace) models.Namespace {
+func mapNamespace(src sqlc.Namespace) models.Namespace {
 	return models.Namespace{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -35,7 +31,7 @@ func mapNamespace(src sqlc2.Namespace) models.Namespace {
 	}
 }
 
-func mapNamespaceMember(src sqlc2.NamespaceMember) models.NamespaceMember {
+func mapNamespaceMember(src sqlc.NamespaceMember) models.NamespaceMember {
 	return models.NamespaceMember{
 		UserID:      src.UserID,
 		NamespaceID: src.NamespaceID,

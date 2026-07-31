@@ -5,12 +5,13 @@ import (
 	"context"
 
 	"lib/database"
+	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) RemoveMember(ctx context.Context, userID, formID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "RemoveMember")
+func (repo *Repo) RemoveMember(ctx context.Context, userID, formID uuid.UUID) error {
+	ctx, span := telemetry.StartSpan(ctx, "RemoveMember")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).RemoveFormMember(ctx, sqlc.RemoveFormMemberParams{
 		UserID: userID,

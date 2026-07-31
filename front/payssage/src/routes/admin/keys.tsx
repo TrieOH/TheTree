@@ -1,48 +1,53 @@
-import { useMemo, useState } from "react"
-import { createFileRoute } from "@tanstack/react-router"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useServerFn } from "@tanstack/react-start"
-import { toast } from "sonner"
-import { Key, Copy, Check, Plus } from "lucide-react"
-import { useAuth } from "@trieoh/identityx-sdk-ts/react"
-import { Button } from "#/shared/ui/shadcn/button"
-import { Card, CardContent } from "#/shared/ui/shadcn/card"
-import { Badge } from "#/shared/ui/shadcn/badge"
-import { Input } from "#/shared/ui/shadcn/input"
-import { cn } from "#/shared/lib/utils"
-import { createApiKeyServerFn, listCapabilitiesServerFn } from "#/features/keys/api"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { Check, Copy, Key, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+  createApiKeyServerFn,
+  listCapabilitiesServerFn,
+} from "#/features/keys/api";
+import { cn } from "#/shared/lib/utils";
+import { Badge } from "#/shared/ui/shadcn/badge";
+import { Button } from "#/shared/ui/shadcn/button";
+import { Card, CardContent } from "#/shared/ui/shadcn/card";
+import { Input } from "#/shared/ui/shadcn/input";
 
 export const Route = createFileRoute("/admin/keys")({
   component: RouteComponent,
-})
+});
 
 type CapabilityLike = {
-  id?: string
-  resource?: string
-  action?: string
-  name?: string
-}
+  id?: string;
+  resource?: string;
+  action?: string;
+  name?: string;
+};
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
-  const { auth } = useAuth()
-  const projectId = auth.profile()?.project_id ?? undefined
-  const [name, setName] = useState("")
-  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([])
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const listCapabilities = useServerFn(listCapabilitiesServerFn)
-  const createApiKey = useServerFn(createApiKeyServerFn)
+  const queryClient = useQueryClient();
+  const { auth } = useAuth();
+  const projectId = auth.profile()?.project_id ?? undefined;
+  const [name, setName] = useState("");
+  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>(
+    [],
+  );
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const listCapabilities = useServerFn(listCapabilitiesServerFn);
+  const createApiKey = useServerFn(createApiKeyServerFn);
 
   const { data: capabilities = [] } = useQuery({
     queryKey: ["identityx", projectId, "capabilities"],
     queryFn: () => listCapabilities({ data: { projectId: projectId ?? "" } }),
     enabled: !!projectId,
-  })
-  const [capabilitySearch, setCapabilitySearch] = useState("")
+  });
+  const [capabilitySearch, setCapabilitySearch] = useState("");
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!projectId) throw new Error("Missing project id")
+      if (!projectId) throw new Error("Missing project id");
       return createApiKey({
         data: {
           projectId,
@@ -51,70 +56,85 @@ function RouteComponent() {
             capabilities: selectedCapabilities,
           },
         },
-      })
+      });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["identityx", projectId, "api_keys"] })
-      toast.success("API key created")
-      setName("")
-      setSelectedCapabilities([])
-      navigator.clipboard.writeText(data.raw_key)
-      setCopiedId(data.key?.id ?? "new-key")
+      queryClient.invalidateQueries({
+        queryKey: ["identityx", projectId, "api_keys"],
+      });
+      toast.success("API key created");
+      setName("");
+      setSelectedCapabilities([]);
+      navigator.clipboard.writeText(data.raw_key);
+      setCopiedId(data.key?.id ?? "new-key");
     },
     onError: (error: Error) => toast.error(error.message),
-  })
+  });
 
-  const apiKey = createMutation.data?.key
+  const apiKey = createMutation.data?.key;
 
   const normalizedCapabilities = useMemo(() => {
     return capabilities
       .map((capability) => {
-        const item = capability as CapabilityLike
-        const id = String(item.id ?? item.name ?? item.resource ?? item.action ?? capability)
-        const label = item.name ?? ([item.resource, item.action].filter(Boolean).join(":") || id)
+        const item = capability as CapabilityLike;
+        const id = String(
+          item.id ?? item.name ?? item.resource ?? item.action ?? capability,
+        );
+        const label =
+          item.name ??
+          ([item.resource, item.action].filter(Boolean).join(":") || id);
 
         return {
           id,
           label,
-        }
+        };
       })
-      .filter((capability, index, self) => self.findIndex((item) => item.id === capability.id) === index)
-  }, [capabilities])
+      .filter(
+        (capability, index, self) =>
+          self.findIndex((item) => item.id === capability.id) === index,
+      );
+  }, [capabilities]);
 
   const visibleCapabilities = useMemo(() => {
-    const search = capabilitySearch.trim().toLowerCase()
-    if (!search) return normalizedCapabilities
-    return normalizedCapabilities.filter((capability) => capability.label.toLowerCase().includes(search) || capability.id.toLowerCase().includes(search))
-  }, [capabilitySearch, normalizedCapabilities])
+    const search = capabilitySearch.trim().toLowerCase();
+    if (!search) return normalizedCapabilities;
+    return normalizedCapabilities.filter(
+      (capability) =>
+        capability.label.toLowerCase().includes(search) ||
+        capability.id.toLowerCase().includes(search),
+    );
+  }, [capabilitySearch, normalizedCapabilities]);
 
-  const selectedCount = selectedCapabilities.length
-  const allVisibleSelected = visibleCapabilities.length > 0 && visibleCapabilities.every((capability) => selectedCapabilities.includes(capability.id))
+  const selectedCount = selectedCapabilities.length;
+  const allVisibleSelected =
+    visibleCapabilities.length > 0 &&
+    visibleCapabilities.every((capability) =>
+      selectedCapabilities.includes(capability.id),
+    );
 
   const toggleCapability = (capabilityId: string) => {
     setSelectedCapabilities((current) =>
       current.includes(capabilityId)
         ? current.filter((item) => item !== capabilityId)
         : [...current, capabilityId],
-    )
-  }
+    );
+  };
 
   return (
     <div className="py-4 px-6 space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">API Keys</h1>
-          <p className="text-sm text-muted-foreground">
-            Your keys
-          </p>
+          <p className="text-sm text-muted-foreground">Your keys</p>
         </div>
       </div>
 
       <Card>
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em]">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
               Key name
-            </label>
+            </span>
             <Input
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -133,7 +153,10 @@ function RouteComponent() {
                   Select the capabilities this key should carry.
                 </p>
               </div>
-              <Badge variant="outline" className="rounded-none uppercase tracking-widest">
+              <Badge
+                variant="outline"
+                className="rounded-none uppercase tracking-widest"
+              >
                 {selectedCount} selected
               </Badge>
             </div>
@@ -154,12 +177,16 @@ function RouteComponent() {
                     className="rounded-none"
                     onClick={() => {
                       setSelectedCapabilities((current) => {
-                        const merged = new Set(current)
-                        visibleCapabilities.forEach((capability) => merged.add(capability.id))
-                        return [...merged]
-                      })
+                        const merged = new Set(current);
+                        for (const capability of visibleCapabilities) {
+                          merged.add(capability.id);
+                        }
+                        return [...merged];
+                      });
                     }}
-                    disabled={visibleCapabilities.length === 0 || allVisibleSelected}
+                    disabled={
+                      visibleCapabilities.length === 0 || allVisibleSelected
+                    }
                   >
                     Select visible
                   </Button>
@@ -183,7 +210,7 @@ function RouteComponent() {
                   </div>
                 ) : (
                   visibleCapabilities.map((capability) => {
-                    const active = selectedCapabilities.includes(capability.id)
+                    const active = selectedCapabilities.includes(capability.id);
 
                     return (
                       <button
@@ -201,7 +228,9 @@ function RouteComponent() {
                           <span
                             className={cn(
                               "inline-flex size-4 items-center justify-center border text-[10px] font-black shrink-0",
-                              active ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground",
+                              active
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border text-muted-foreground",
                             )}
                           >
                             {active ? "✓" : ""}
@@ -211,7 +240,7 @@ function RouteComponent() {
                           </span>
                         </div>
                       </button>
-                    )
+                    );
                   })
                 )}
               </div>
@@ -249,7 +278,9 @@ function RouteComponent() {
                 {apiKey.display_prefix}
               </Badge>
               <span className="text-muted-foreground">
-                {copiedId === apiKey.id ? "Copied" : "Copy immediately, this value is shown once."}
+                {copiedId === apiKey.id
+                  ? "Copied"
+                  : "Copy immediately, this value is shown once."}
               </span>
               <Button
                 type="button"
@@ -257,13 +288,17 @@ function RouteComponent() {
                 variant="outline"
                 className="rounded-none ml-auto gap-2"
                 onClick={() => {
-                  const rawKey = createMutation.data?.raw_key ?? null
-                  if (!rawKey) return
-                  navigator.clipboard.writeText(rawKey)
-                  setCopiedId(apiKey.id)
+                  const rawKey = createMutation.data?.raw_key ?? null;
+                  if (!rawKey) return;
+                  navigator.clipboard.writeText(rawKey);
+                  setCopiedId(apiKey.id);
                 }}
               >
-                {copiedId === apiKey.id ? <Check className="size-4" /> : <Copy className="size-4" />}
+                {copiedId === apiKey.id ? (
+                  <Check className="size-4" />
+                ) : (
+                  <Copy className="size-4" />
+                )}
                 Copy
               </Button>
             </div>
@@ -271,5 +306,5 @@ function RouteComponent() {
         </Card>
       ) : null}
     </div>
-  )
+  );
 }

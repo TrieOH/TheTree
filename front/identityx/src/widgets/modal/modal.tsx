@@ -1,20 +1,20 @@
-import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/shared/ui/shadcn/dialog'
+} from "@/shared/ui/shadcn/dialog";
 
 interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  description?: string
-  children?: React.ReactNode
-  footer?: React.ReactNode
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 export function Modal({
@@ -23,43 +23,35 @@ export function Modal({
   title,
   description,
   children,
-  footer
+  footer,
 }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="rounded-sm border-border sm:max-w-106.25 gap-0 max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="text-lg font-bold">{title}</DialogTitle>
           {description && (
             <DialogDescription className="text-sm text-muted-foreground">
               {description}
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="py-4 px-2">
-          {children}
-        </div>
-        {footer && (
-          <DialogFooter>
-            {footer}
-          </DialogFooter>
-        )}
+        <div className="py-4 px-2">{children}</div>
+        {footer && <DialogFooter>{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 interface ConfirmModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: () => void
-  title: string
-  description: string
-  confirmText?: string
-  variant?: 'default' | 'destructive'
-  isLoading?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  variant?: "default" | "destructive";
+  isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -68,9 +60,9 @@ export function ConfirmModal({
   onConfirm,
   title,
   description,
-  confirmText = 'Confirm',
-  variant = 'default',
-  isLoading
+  confirmText = "Confirm",
+  variant = "default",
+  isLoading,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -85,17 +77,17 @@ export function ConfirmModal({
             onClick={onClose}
             className="rounded-sm font-medium text-xs"
             disabled={isLoading}
-            value='Cancel'
+            value="Cancel"
           />
           <ShadowButton
             variant={variant}
             onClick={onConfirm}
             className="rounded-sm font-bold text-xs px-6"
             disabled={isLoading}
-            value={isLoading ? 'Processing...' : confirmText}
+            value={isLoading ? "Processing..." : confirmText}
           />
         </div>
       }
     />
-  )
+  );
 }

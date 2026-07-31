@@ -1,22 +1,22 @@
-import type { OptionI } from "#/features/fields/model";
-import { cn } from "#/shared/lib/utils";
-import { formatPhoneMask } from "#/shared/lib/helpers/mask";
 import type { FieldAnswerable } from "@trieoh/informd-models";
 import {
-  Type,
-  Mail,
-  Hash,
-  CheckSquare,
-  Calendar as CalendarIcon,
-  Clock,
   CalendarClock,
+  Calendar as CalendarIcon,
+  CheckSquare,
+  ChevronDown,
+  Clock,
+  Hash,
+  Link,
   List,
+  Mail,
   Paperclip,
   Phone,
-  Link,
-  ChevronDown
+  Type,
 } from "lucide-react";
 import { motion } from "motion/react";
+import type { OptionI } from "#/features/fields/model";
+import { formatPhoneMask } from "#/shared/lib/helpers/mask";
+import { cn } from "#/shared/lib/utils";
 
 interface FieldRendererProps {
   field: FieldAnswerable;
@@ -27,8 +27,9 @@ interface FieldRendererProps {
 
 function getPlaceholder(field: FieldAnswerable): string {
   const p = field.field.placeholder;
-  if (typeof p === 'object' && p !== null && 'value' in p) return (p as { value: string }).value;
-  return typeof p === 'string' ? p : "";
+  if (typeof p === "object" && p !== null && "value" in p)
+    return (p as { value: string }).value;
+  return typeof p === "string" ? p : "";
 }
 
 function getInputType(fieldType: string): string {
@@ -61,24 +62,38 @@ function getStep(fieldType: string): string | undefined {
 
 function getIcon(fieldType: string) {
   switch (fieldType) {
-    case "email": return <Mail className="size-3.5" />;
-    case "phone": return <Phone className="size-3.5" />;
-    case "url": return <Link className="size-3.5" />;
-    case "date": return <CalendarIcon className="size-3.5" />;
-    case "time": return <Clock className="size-3.5" />;
-    case "datetime": return <CalendarClock className="size-3.5" />;
+    case "email":
+      return <Mail className="size-3.5" />;
+    case "phone":
+      return <Phone className="size-3.5" />;
+    case "url":
+      return <Link className="size-3.5" />;
+    case "date":
+      return <CalendarIcon className="size-3.5" />;
+    case "time":
+      return <Clock className="size-3.5" />;
+    case "datetime":
+      return <CalendarClock className="size-3.5" />;
     case "int":
-    case "float": return <Hash className="size-3.5" />;
-    case "select": return <List className="size-3.5" />;
-    case "file": return <Paperclip className="size-3.5" />;
-    case "bool": return <CheckSquare className="size-3.5" />;
-    default: return <Type className="size-3.5" />;
+    case "float":
+      return <Hash className="size-3.5" />;
+    case "select":
+      return <List className="size-3.5" />;
+    case "file":
+      return <Paperclip className="size-3.5" />;
+    case "bool":
+      return <CheckSquare className="size-3.5" />;
+    default:
+      return <Type className="size-3.5" />;
   }
 }
 
-
-
-export function FieldRenderer({ field, value, error, onChange }: FieldRendererProps) {
+export function FieldRenderer({
+  field,
+  value,
+  error,
+  onChange,
+}: FieldRendererProps) {
   const inputType = getInputType(field.field.type);
   const placeholder = getPlaceholder(field);
 
@@ -92,11 +107,12 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
     const config = field.field_select_config;
     const rawOptions = (config?.options ?? []) as (OptionI | string)[];
     const behaviour = config?.behaviour ?? "dropdown-radio";
-    const isMultiple = behaviour === "checkbox" || behaviour === "dropdown-checkbox";
+    const isMultiple =
+      behaviour === "checkbox" || behaviour === "dropdown-checkbox";
 
     // Normalize options: convert string[] to OptionI[]
-    const options = rawOptions.map(opt => {
-      if (typeof opt === 'string') return { label: opt, value: opt };
+    const options = rawOptions.map((opt) => {
+      if (typeof opt === "string") return { label: opt, value: opt };
       return opt;
     });
 
@@ -118,7 +134,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
                   "flex h-10 w-full cursor-pointer items-center gap-3 rounded-md border px-4 transition-all",
                   isSelected
                     ? "border-primary bg-primary/5 shadow-xs"
-                    : "border-border bg-card/50 hover:border-border/80 hover:bg-card hover:shadow-xs"
+                    : "border-border bg-card/50 hover:border-border/80 hover:bg-card hover:shadow-xs",
                 )}
               >
                 <input
@@ -129,11 +145,14 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
                   onChange={(e) => {
                     if (isMultiple) {
                       if (e.target.checked) {
-                        onChange(field.field.id, [...selectedValues, opt.value]);
+                        onChange(field.field.id, [
+                          ...selectedValues,
+                          opt.value,
+                        ]);
                       } else {
                         onChange(
                           field.field.id,
-                          selectedValues.filter((v) => v !== opt.value)
+                          selectedValues.filter((v) => v !== opt.value),
                         );
                       }
                     } else {
@@ -155,10 +174,14 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
       <div className="relative group w-full">
         <select
           value={selectedValues[0] || ""}
-          onChange={(e) => onChange(field.field.id, e.target.value ? [e.target.value] : [])}
+          onChange={(e) =>
+            onChange(field.field.id, e.target.value ? [e.target.value] : [])
+          }
           className={cn(
             "h-10 w-full appearance-none rounded-md border bg-card px-4 text-sm text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/5 focus:shadow-sm",
-            error ? "border-destructive bg-destructive/5" : "border-border group-hover:border-border/80"
+            error
+              ? "border-destructive bg-destructive/5"
+              : "border-border group-hover:border-border/80",
           )}
         >
           <option value="">{placeholder || "Select..."}</option>
@@ -183,7 +206,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
           "flex h-10 w-full cursor-pointer items-center gap-3 rounded-md border px-4 transition-all",
           checked
             ? "border-primary bg-primary/5 shadow-xs"
-            : "border-border bg-card/50 hover:border-border/80 hover:bg-card hover:shadow-xs"
+            : "border-border bg-card/50 hover:border-border/80 hover:bg-card hover:shadow-xs",
         )}
       >
         <input
@@ -206,7 +229,9 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
         <label
           className={cn(
             "flex h-20 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all",
-            error ? "border-destructive/30 bg-destructive/5" : "border-border bg-card hover:border-primary hover:bg-primary/5 hover:shadow-sm"
+            error
+              ? "border-destructive/30 bg-destructive/5"
+              : "border-border bg-card hover:border-primary hover:bg-primary/5 hover:shadow-sm",
           )}
         >
           <div className="flex items-center gap-2">
@@ -221,7 +246,8 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
             type="file"
             className="hidden"
             onChange={(e) => {
-              if (e.target.files?.[0]) onChange(field.field.id, e.target.files[0]);
+              if (e.target.files?.[0])
+                onChange(field.field.id, e.target.files[0]);
             }}
           />
         </label>
@@ -240,10 +266,14 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
             type="tel"
             placeholder={placeholder || "(dd) dddd-dddd"}
             value={currentValue ? formatPhoneMask(String(currentValue)) : ""}
-            onChange={(e) => onChange(field.field.id, formatPhoneMask(e.target.value))}
+            onChange={(e) =>
+              onChange(field.field.id, formatPhoneMask(e.target.value))
+            }
             className={cn(
               "h-10 w-full rounded-md border bg-card px-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/5 focus:shadow-sm",
-              error ? "border-destructive bg-destructive/5" : "border-border group-hover:border-border/80"
+              error
+                ? "border-destructive bg-destructive/5"
+                : "border-border group-hover:border-border/80",
             )}
           />
         </div>
@@ -253,7 +283,9 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
     // --- URL: https:// prefix badge ---
     if (fieldType === "url") {
       const rawValue = currentValue ? String(currentValue) : "";
-      const stored = rawValue.startsWith("https://") ? rawValue.slice(8) : rawValue;
+      const stored = rawValue.startsWith("https://")
+        ? rawValue.slice(8)
+        : rawValue;
 
       return (
         <div className="flex w-full rounded-md border border-border has-focus-within:border-primary has-focus-within:ring-2 has-focus-within:ring-primary/5 transition-all group hover:border-border/80">
@@ -284,7 +316,8 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
         inputValue = inputValue.split("T")[0];
       } else if (inputType === "datetime-local") {
         const date = new Date(inputValue);
-        if (!isNaN(date.getTime())) inputValue = date.toISOString().slice(0, 16);
+        if (!Number.isNaN(date.getTime()))
+          inputValue = date.toISOString().slice(0, 16);
       }
     } else inputValue = "";
     return (
@@ -297,7 +330,9 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
           onChange={handleTextChange}
           className={cn(
             "h-10 w-full rounded-md border bg-card px-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/5 focus:shadow-sm",
-            error ? "border-destructive bg-destructive/5" : "border-border group-hover:border-border/80"
+            error
+              ? "border-destructive bg-destructive/5"
+              : "border-border group-hover:border-border/80",
           )}
         />
       </div>
@@ -325,17 +360,21 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
       className="mb-5"
     >
       {field.field.type !== "bool" && (
-        <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-foreground">
+        <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-foreground">
           <span className="text-primary/70">{getIcon(field.field.type)}</span>
           {field.field.title}
           {field.field.required && <span className="text-destructive"> *</span>}
-        </label>
+        </span>
       )}
       {renderField()}
       {field.field.description && !error && (
-        <p className="mt-1 text-xs text-muted-foreground/80">{field.field.description}</p>
+        <p className="mt-1 text-xs text-muted-foreground/80">
+          {field.field.description}
+        </p>
       )}
-      {error && <p className="mt-1 text-xs text-destructive font-medium">{error}</p>}
+      {error && (
+        <p className="mt-1 text-xs text-destructive font-medium">{error}</p>
+      )}
     </motion.div>
   );
 }

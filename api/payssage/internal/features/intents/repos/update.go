@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 )
 
-func (repo *repo) Update(ctx context.Context, toUpdate models.Intent) (*models.Intent, error) {
-	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Update")
+func (repo *Repo) Update(ctx context.Context, toUpdate models.Intent) (*models.Intent, error) {
+	ctx, span := telemetry.StartSpan(ctx, "IntentRepo.Update")
 	defer span.End()
 
 	var statusDetail *string

@@ -79,7 +79,8 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 
 	if err = tx.Commit(ctx); err != nil {
 		telemetry.Log().Error("error during tx commit", zap.Error(err))
-		if rbErr := tx.Rollback(ctx); rbErr != nil {
+		rbErr := tx.Rollback(ctx)
+		if rbErr != nil {
 			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
 		return fun.Errf("error commiting transaction: %s", err.Error()).Internal()

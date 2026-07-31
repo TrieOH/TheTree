@@ -1,23 +1,19 @@
-import { createFetcher, createQueryFetcher } from "@trieoh/identityx-sdk-ts";
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts";
+import { createFetcher, createQueryFetcher } from "@trieoh/identityx-sdk-ts";
 import { env } from "#/env";
 
-export const authFetcher = createFetcher(
-  {
-    baseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_AUTH_API_URL,
-  }
-);
+export const authFetcher = createFetcher({
+  baseURL: env.VITE_API_URL,
+  authBaseURL: env.VITE_AUTH_API_URL,
+});
 
-export const tanstackQueryFetcher = createQueryFetcher(
-  {
-    baseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_AUTH_API_URL,
-  }
-);
+export const tanstackQueryFetcher = createQueryFetcher({
+  baseURL: env.VITE_API_URL,
+  authBaseURL: env.VITE_AUTH_API_URL,
+});
 
 /** Public/unauthenticated fetcher. */
 export const publicFetcher = createDefaultFetchClient({
   baseURL: env.VITE_API_URL,
-  credentials: 'omit',
+  credentials: "omit",
 });

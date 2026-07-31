@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,17 +18,18 @@ type Product struct {
 }
 
 type ProductVariant struct {
-	ID          uuid.UUID  `json:"id"`
-	EditionID   uuid.UUID  `json:"edition_id"`
-	ProductID   uuid.UUID  `json:"product_id"`
-	VendorCode  string     `json:"vendor_code"`
-	Name        string     `json:"name"`
-	Description *string    `json:"description"`
-	Price       int64      `json:"price"`
-	Stock       *int       `json:"stock"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   *time.Time `json:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at"`
+	ID          uuid.UUID       `json:"id"`
+	EditionID   uuid.UUID       `json:"edition_id"`
+	ProductID   uuid.UUID       `json:"product_id"`
+	VendorCode  string          `json:"vendor_code"`
+	Name        string          `json:"name"`
+	Description *string         `json:"description"`
+	Price       int64           `json:"price"`
+	Stock       *int            `json:"stock"`
+	GalleryURLs json.RawMessage `json:"gallery_urls"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   *time.Time      `json:"updated_at"`
+	DeletedAt   *time.Time      `json:"deleted_at"`
 }
 
 // ── Create Initial Product (product + first variant) ──────────────────────
@@ -120,11 +122,12 @@ type PatchProductInput struct {
 // ── Patch Product Variant ─────────────────────────────────────────────────
 
 type PatchProductVariantRequest struct {
-	VendorCode  string  `json:"vendor_code" validate:"required,min=2,max=255"`
-	Name        string  `json:"name"        validate:"required,min=2"`
-	Description *string `json:"description"`
-	Price       int64   `json:"price"       validate:"gte=0"`
-	Stock       *int    `json:"stock"       validate:"omitempty,gte=0"`
+	VendorCode  string          `json:"vendor_code"  validate:"required,min=2,max=255"`
+	Name        string          `json:"name"         validate:"required,min=2"`
+	Description *string         `json:"description"`
+	Price       int64           `json:"price"        validate:"gte=0"`
+	Stock       *int            `json:"stock"        validate:"omitempty,gte=0"`
+	GalleryURLs json.RawMessage `json:"gallery_urls"`
 }
 
 func (r PatchProductVariantRequest) ToInput(variantID uuid.UUID) PatchProductVariantInput {
@@ -135,6 +138,7 @@ func (r PatchProductVariantRequest) ToInput(variantID uuid.UUID) PatchProductVar
 		Description: r.Description,
 		Price:       r.Price,
 		Stock:       r.Stock,
+		GalleryURLs: r.GalleryURLs,
 	}
 }
 
@@ -145,4 +149,5 @@ type PatchProductVariantInput struct {
 	Description *string
 	Price       int64
 	Stock       *int
+	GalleryURLs json.RawMessage
 }

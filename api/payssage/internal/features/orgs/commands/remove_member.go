@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrganizationMemberInput) error {
-	ctx, span := c.tracer.Start(ctx, "OrganizationService.RemoveMember")
+	ctx, span := telemetry.StartSpan(ctx, "OrganizationService.RemoveMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

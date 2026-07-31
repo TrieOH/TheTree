@@ -1,9 +1,12 @@
-import { cn } from "@/shared/lib/utils";
-import { User2, Shield, Crown, UserMinus } from "lucide-react";
-import type { OrganizationMemberI } from "../model";
-import { OrganizationRoleAdmin, OrganizationRoleMember, OrganizationRoleOwner } from "@trieoh/payssage-models";
+import {
+  OrganizationRoleAdmin,
+  OrganizationRoleMember,
+  OrganizationRoleOwner,
+} from "@trieoh/payssage-models";
 import { timeAgo } from "@trieoh/shared-utils";
-
+import { Crown, Shield, User2, UserMinus } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
+import type { OrganizationMemberI } from "../model";
 
 interface PropsI {
   data: OrganizationMemberI;
@@ -39,7 +42,7 @@ export function MemberCard({ data, onRemove }: PropsI) {
         "bg-card rounded-sm w-full cursor-default",
         "ring-1 ring-foreground/10 shadow-xs",
         "flex items-center gap-3 px-4 py-3",
-        "hover:ring-foreground/20 duration-150"
+        "hover:ring-foreground/20 duration-150",
       )}
     >
       {/* Avatar */}
@@ -56,7 +59,7 @@ export function MemberCard({ data, onRemove }: PropsI) {
           <span
             className={cn(
               "inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-sm",
-              role.className
+              role.className,
             )}
           >
             <RoleIcon className="size-3" />
@@ -74,7 +77,7 @@ export function MemberCard({ data, onRemove }: PropsI) {
           type="button"
           className={cn(
             "shrink-0 text-muted-foreground p-2 rounded-sm border border-transparent transition-all duration-150 cursor-pointer outline-none",
-            "hover:text-destructive hover:bg-destructive/10"
+            "hover:text-destructive hover:bg-destructive/10",
           )}
           onClick={() => onRemove?.(data)}
           title="Remove member"

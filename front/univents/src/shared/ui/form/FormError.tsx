@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/shared/lib/utils";
 
 interface PropsI {
@@ -17,7 +17,7 @@ const FormError = ({ message, className }: PropsI) => {
           transition={{ duration: 0.2, ease: "easeOut" }}
           className={cn(
             "text-[11px] font-medium text-destructive tracking-tight leading-none px-1 overflow-hidden",
-            className
+            className,
           )}
         >
           {message}

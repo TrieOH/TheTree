@@ -1,12 +1,20 @@
+import type { DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { ChevronLeft, ChevronRight, Pencil, Plus } from "lucide-react";
 import { useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus, Pencil } from "lucide-react";
-import { DndContext,  PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import type {DragEndEvent} from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { StepI } from "../model";
 import type { FieldI } from "#/features/fields/model";
 import SortableFieldRow from "#/features/fields/ui/sortable-field-row";
 import { cn } from "#/shared/lib/utils";
+import type { StepI } from "../model";
 
 interface StepCardProps {
   step: StepI;
@@ -43,29 +51,37 @@ export function StepCard({
   canMoveRight = true,
   className,
 }: StepCardProps) {
-  const sortedFields = [...fields].sort((a, b) => a.position_hint - b.position_hint);
+  const sortedFields = [...fields].sort(
+    (a, b) => a.position_hint - b.position_hint,
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    onFieldDragChange?.(false);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      onFieldDragChange?.(false);
 
-    const { active: activeItem, over } = event;
-    if (!over || activeItem.id === over.id) return;
+      const { active: activeItem, over } = event;
+      if (!over || activeItem.id === over.id) return;
 
-    const oldIndex = sortedFields.findIndex(f => f.id === activeItem.id);
-    const newIndex = sortedFields.findIndex(f => f.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
+      const oldIndex = sortedFields.findIndex((f) => f.id === activeItem.id);
+      const newIndex = sortedFields.findIndex((f) => f.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
 
-    // Reorder the sortedFields array
-    const reordered = [...sortedFields];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
+      // Reorder the sortedFields array
+      const reordered = [...sortedFields];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
 
-    onReorderFields?.(step, reordered.map(f => f.id));
-  }, [sortedFields, step, onReorderFields, onFieldDragChange]);
+      onReorderFields?.(
+        step,
+        reordered.map((f) => f.id),
+      );
+    },
+    [sortedFields, step, onReorderFields, onFieldDragChange],
+  );
 
   return (
     <div
@@ -87,7 +103,7 @@ export function StepCard({
           : "border-border opacity-40 scale-[0.96] hover:opacity-55",
         onClick && active && "cursor-default",
         onClick && !active && "cursor-pointer",
-        className
+        className,
       )}
     >
       {/* Header */}
@@ -97,13 +113,16 @@ export function StepCard({
             <button
               type="button"
               tabIndex={-1}
-              onClick={(e) => { e.stopPropagation(); onMoveLeft(step); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveLeft(step);
+              }}
               disabled={!canMoveLeft}
               className={cn(
                 "p-0.5 rounded-xs transition-colors",
                 canMoveLeft
                   ? "text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
-                  : "text-muted-foreground/20 cursor-not-allowed"
+                  : "text-muted-foreground/20 cursor-not-allowed",
               )}
               aria-label="Move step left"
             >
@@ -113,7 +132,7 @@ export function StepCard({
           <span
             className={cn(
               "text-[10px] font-bold tracking-[0.14em] uppercase transition-colors duration-300",
-              active ? "text-primary" : "text-muted-foreground"
+              active ? "text-primary" : "text-muted-foreground",
             )}
           >
             Step {String(step.position_hint).padStart(2, "0")}
@@ -122,13 +141,16 @@ export function StepCard({
             <button
               type="button"
               tabIndex={-1}
-              onClick={(e) => { e.stopPropagation(); onMoveRight(step); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveRight(step);
+              }}
               disabled={!canMoveRight}
               className={cn(
                 "p-0.5 rounded-xs transition-colors",
                 canMoveRight
                   ? "text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
-                  : "text-muted-foreground/20 cursor-not-allowed"
+                  : "text-muted-foreground/20 cursor-not-allowed",
               )}
               aria-label="Move step right"
             >
@@ -141,10 +163,13 @@ export function StepCard({
           <button
             type="button"
             tabIndex={-1}
-            onClick={(e) => { e.stopPropagation(); onEdit(step); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(step);
+            }}
             className={cn(
               "p-1 rounded-xs transition-colors",
-              "text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
+              "text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer",
             )}
             aria-label="Edit step"
           >
@@ -177,7 +202,7 @@ export function StepCard({
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={sortedFields.map(f => f.id)}
+              items={sortedFields.map((f) => f.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className="flex flex-col divide-y divide-border/40">

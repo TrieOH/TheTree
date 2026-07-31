@@ -6,8 +6,9 @@ import (
 	"lib/database"
 	"lib/xslices"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (repo *Repo) ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Project, error) {

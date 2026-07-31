@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { SortState } from "@trieoh/ui-base";
+import { PaginatedContainer } from "@trieoh/ui-base";
 import {
   Ban,
   CheckCircle2,
@@ -9,16 +10,16 @@ import {
   ReceiptText,
   TrendingUp,
   XCircle,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { PaginatedContainer } from '@trieoh/ui-base'
-import type { SortState } from '@trieoh/ui-base'
-import { Badge } from '#/shared/ui/shadcn/badge'
-import { Button } from '#/shared/ui/shadcn/button'
-import { cn } from '#/shared/lib/utils'
-import type { Intent, IntentStatus } from '../model'
-import { intentStatuses } from '../model'
-import { cancelIntentFn } from '../api'
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { cn } from "#/shared/lib/utils";
+import { Badge } from "#/shared/ui/shadcn/badge";
+import { Button } from "#/shared/ui/shadcn/button";
+import { cancelIntentFn } from "../api";
+import type { Intent, IntentStatus } from "../model";
+import { intentStatuses } from "../model";
+
 // import { mockIntents } from "../model/mock"
 
 const statusDetails: Record<
@@ -26,76 +27,76 @@ const statusDetails: Record<
   { label: string; icon: typeof Clock3; className: string; dot: string }
 > = {
   processing: {
-    label: 'Processing',
+    label: "Processing",
     icon: Clock3,
-    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-    dot: 'bg-amber-500',
+    className: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    dot: "bg-amber-500",
   },
   pending: {
-    label: 'Pending',
+    label: "Pending",
     icon: Clock3,
-    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-    dot: 'bg-amber-500',
+    className: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    dot: "bg-amber-500",
   },
   succeeded: {
-    label: 'Succeeded',
+    label: "Succeeded",
     icon: CheckCircle2,
-    className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-    dot: 'bg-emerald-500',
+    className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    dot: "bg-emerald-500",
   },
   cancelled: {
-    label: 'Cancelled',
+    label: "Cancelled",
     icon: Ban,
-    className: 'bg-muted text-muted-foreground',
-    dot: 'bg-muted-foreground',
+    className: "bg-muted text-muted-foreground",
+    dot: "bg-muted-foreground",
   },
   failed: {
-    label: 'Failed',
+    label: "Failed",
     icon: XCircle,
-    className: 'bg-destructive/10 text-destructive',
-    dot: 'bg-destructive',
+    className: "bg-destructive/10 text-destructive",
+    dot: "bg-destructive",
   },
-}
+};
 
 const formatAmount = (intent: Intent) =>
   new Intl.NumberFormat(undefined, {
-    style: 'currency',
+    style: "currency",
     currency: intent.currency,
-  }).format(intent.amount_cents / 100)
+  }).format(intent.amount_cents / 100);
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 
 const shortId = (value: string) =>
-  value.length > 22 ? `${value.slice(0, 12)}…${value.slice(-6)}` : value
+  value.length > 22 ? `${value.slice(0, 12)}…${value.slice(-6)}` : value;
 
 const formatBRL = (amountCents: number) =>
   new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(amountCents / 100)
+    style: "currency",
+    currency: "BRL",
+  }).format(amountCents / 100);
 
 function IntentCard({
   intent,
   onCancel,
   isCancelling,
 }: {
-  intent: Intent
-  onCancel: (intent: Intent) => void
-  isCancelling: boolean
+  intent: Intent;
+  onCancel: (intent: Intent) => void;
+  isCancelling: boolean;
 }) {
-  const status = statusDetails[intent.status]
+  const status = statusDetails[intent.status];
   const canCancel =
-    intent.status === 'pending' || intent.status === 'processing'
+    intent.status === "pending" || intent.status === "processing";
   return (
     <article className="w-full rounded-lg bg-card p-4 ring-1 ring-foreground/10">
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs capitalize text-muted-foreground">
-            {intent.provider.replaceAll('_', ' ')}
+            {intent.provider.replaceAll("_", " ")}
           </p>
           <p className="mt-1 text-xl font-semibold tracking-tight">
             {formatAmount(intent)}
@@ -107,8 +108,8 @@ function IntentCard({
               <FlaskConical /> Test
             </Badge>
           )}
-          <Badge className={cn('gap-1.5 border-0', status.className)}>
-            <span className={cn('size-1.5 rounded-full', status.dot)} />
+          <Badge className={cn("gap-1.5 border-0", status.className)}>
+            <span className={cn("size-1.5 rounded-full", status.dot)} />
             {status.label}
           </Badge>
         </div>
@@ -141,33 +142,33 @@ function IntentCard({
             disabled={isCancelling}
             onClick={() => onCancel(intent)}
           >
-            <Ban /> {isCancelling ? 'Cancelling...' : 'Cancel intent'}
+            <Ban /> {isCancelling ? "Cancelling..." : "Cancel intent"}
           </Button>
         </div>
       )}
     </article>
-  )
+  );
 }
 
 export function TransactionsDashboard({
-  title = 'Transactions',
-  description = 'Payment activity across your wallets.',
+  title = "Transactions",
+  description = "Payment activity across your wallets.",
   intents,
 }: {
-  title?: string
-  description?: string
-  intents: Intent[]
+  title?: string;
+  description?: string;
+  intents: Intent[];
 }) {
-  const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<IntentStatus | 'all'>('all')
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<IntentStatus | "all">("all");
   const [environmentFilter, setEnvironmentFilter] = useState<
-    'all' | 'production' | 'test'
-  >('all')
-  const [search, setSearch] = useState('')
+    "all" | "production" | "test"
+  >("all");
+  const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState<Intent>>({
-    field: 'created_at',
-    direction: 'desc',
-  })
+    field: "created_at",
+    direction: "desc",
+  });
   const {
     mutate: cancelIntent,
     isPending: isCancelling,
@@ -176,71 +177,71 @@ export function TransactionsDashboard({
     mutationFn: (intent: Intent) => cancelIntentFn(intent.id),
     onSuccess: (response) => {
       if (!response.success) {
-        toast.error(response.message || 'Failed to cancel intent')
-        return
+        toast.error(response.message || "Failed to cancel intent");
+        return;
       }
-      void queryClient.invalidateQueries({ queryKey: ['intents'] })
-      toast.success('Intent cancelled')
+      void queryClient.invalidateQueries({ queryKey: ["intents"] });
+      toast.success("Intent cancelled");
     },
-    onError: () => toast.error('Failed to cancel intent'),
-  })
-  const succeeded = intents.filter((intent) => intent.status === 'succeeded')
+    onError: () => toast.error("Failed to cancel intent"),
+  });
+  const succeeded = intents.filter((intent) => intent.status === "succeeded");
   const volume = succeeded.reduce(
     (total, intent) => total + intent.amount_cents,
     0,
-  )
+  );
   const productionVolume = succeeded
     .filter((intent) => !intent.sandbox)
-    .reduce((total, intent) => total + intent.amount_cents, 0)
+    .reduce((total, intent) => total + intent.amount_cents, 0);
   const testVolume = succeeded
     .filter((intent) => intent.sandbox)
-    .reduce((total, intent) => total + intent.amount_cents, 0)
+    .reduce((total, intent) => total + intent.amount_cents, 0);
   const successRate = intents.length
     ? Math.round((succeeded.length / intents.length) * 100)
-    : 0
+    : 0;
   const environmentIntents = intents.filter((intent) => {
-    if (environmentFilter === 'production') return !intent.sandbox
-    if (environmentFilter === 'test') return intent.sandbox
-    return true
-  })
+    if (environmentFilter === "production") return !intent.sandbox;
+    if (environmentFilter === "test") return intent.sandbox;
+    return true;
+  });
   const filtered = environmentIntents.filter((intent) => {
     const matchesStatus =
-      statusFilter === 'all' || intent.status === statusFilter
-    const term = search.trim().toLowerCase()
+      statusFilter === "all" || intent.status === statusFilter;
+    const term = search.trim().toLowerCase();
     const matchesSearch =
       !term ||
       [intent.id, intent.wallet_id, intent.provider, intent.status].some(
         (value) => value.toLowerCase().includes(term),
-      )
-    return matchesStatus && matchesSearch
-  })
+      );
+    return matchesStatus && matchesSearch;
+  });
 
   const stats = [
     {
-      label: 'Captured volume',
+      label: "Captured volume",
       value: formatBRL(volume),
-      detail: 'All succeeded payments',
+      detail: "All succeeded payments",
       icon: TrendingUp,
     },
     {
-      label: 'Production volume',
+      label: "Production volume",
       value: formatBRL(productionVolume),
-      detail: 'Live succeeded payments',
+      detail: "Live succeeded payments",
       icon: CheckCircle2,
     },
     {
-      label: 'Test volume',
+      label: "Test volume",
       value: formatBRL(testVolume),
-      detail: 'Sandbox succeeded payments',
+      detail: "Sandbox succeeded payments",
       icon: FlaskConical,
     },
     {
-      label: 'Success rate',
+      label: "Success rate",
       value: `${successRate}%`,
       detail: `${succeeded.length} of ${intents.length} intents`,
       icon: CircleGauge,
     },
-  ]
+  ];
 
   return (
     <div className="min-w-0 space-y-6">
@@ -256,25 +257,26 @@ export function TransactionsDashboard({
         </div>
         <div
           className="flex w-fit rounded-md bg-muted p-1"
+          role="radiogroup"
           aria-label="Transaction environment"
         >
-          {(['all', 'production', 'test'] as const).map((environment) => (
+          {(["all", "production", "test"] as const).map((environment) => (
             <Button
               key={environment}
               size="sm"
               variant="ghost"
               className={cn(
-                'h-8 px-3 text-xs',
+                "h-8 px-3 text-xs",
                 environmentFilter === environment &&
-                  'bg-background text-foreground shadow-xs hover:bg-background',
+                  "bg-background text-foreground shadow-xs hover:bg-background",
               )}
               onClick={() => setEnvironmentFilter(environment)}
             >
-              {environment === 'all'
-                ? 'All'
-                : environment === 'production'
-                  ? 'Production'
-                  : 'Test'}
+              {environment === "all"
+                ? "All"
+                : environment === "production"
+                  ? "Production"
+                  : "Test"}
             </Button>
           ))}
         </div>
@@ -314,11 +316,11 @@ export function TransactionsDashboard({
           {intentStatuses.map((status) => {
             const count = environmentIntents.filter(
               (intent) => intent.status === status,
-            ).length
+            ).length;
             const percentage = environmentIntents.length
               ? (count / environmentIntents.length) * 100
-              : 0
-            const details = statusDetails[status]
+              : 0;
+            const details = statusDetails[status];
             return (
               <div key={status}>
                 <div className="flex justify-between text-xs">
@@ -327,12 +329,12 @@ export function TransactionsDashboard({
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className={cn('h-full rounded-full', details.dot)}
+                    className={cn("h-full rounded-full", details.dot)}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       </section>
@@ -351,10 +353,10 @@ export function TransactionsDashboard({
           gap="3"
           minItemWidth="16rem"
           sortFields={[
-            { key: 'created_at', label: 'Created' },
-            { key: 'amount_cents', label: 'Amount' },
-            { key: 'status', label: 'Status' },
-            { key: 'provider', label: 'Provider' },
+            { key: "created_at", label: "Created" },
+            { key: "amount_cents", label: "Amount" },
+            { key: "status", label: "Status" },
+            { key: "provider", label: "Provider" },
           ]}
           sort={sort}
           onSortChange={setSort}
@@ -366,8 +368,8 @@ export function TransactionsDashboard({
             <div className="flex flex-wrap gap-1.5">
               <Button
                 size="sm"
-                variant={statusFilter === 'all' ? 'default' : 'ghost'}
-                onClick={() => setStatusFilter('all')}
+                variant={statusFilter === "all" ? "default" : "ghost"}
+                onClick={() => setStatusFilter("all")}
               >
                 All statuses
               </Button>
@@ -375,7 +377,7 @@ export function TransactionsDashboard({
                 <Button
                   key={status}
                   size="sm"
-                  variant={statusFilter === status ? 'default' : 'ghost'}
+                  variant={statusFilter === status ? "default" : "ghost"}
                   onClick={() => setStatusFilter(status)}
                 >
                   {statusDetails[status].label}
@@ -405,5 +407,5 @@ export function TransactionsDashboard({
         />
       </section>
     </div>
-  )
+  );
 }

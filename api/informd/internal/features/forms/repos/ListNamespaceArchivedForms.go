@@ -5,13 +5,14 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListFromNamespaceArchived(ctx context.Context, namespaceID uuid.UUID) ([]models.Form, error) {
-	ctx, span := repo.tracer.Start(ctx, "ListFromNamespaceArchived")
+func (repo *Repo) ListFromNamespaceArchived(ctx context.Context, namespaceID uuid.UUID) ([]models.Form, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ListFromNamespaceArchived")
 	defer span.End()
 	sqlcForms, err := database.Queries(ctx, repo.q).ListNamespaceArchivedForms(ctx, &namespaceID)
 	if err != nil {

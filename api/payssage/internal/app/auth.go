@@ -11,7 +11,6 @@ import (
 
 	fm "github.com/MintzyG/fun/middlewares"
 	"go.uber.org/zap"
-	"resty.dev/v3"
 )
 
 func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
@@ -37,7 +36,7 @@ func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
 		var ident idx.Identity
-		_, err := resty.New().R().
+		_, err := app.httpClient.R().
 			WithContext(ctx).
 			SetHeader("X-API-KEY", rawKey).
 			SetResult(&ident).

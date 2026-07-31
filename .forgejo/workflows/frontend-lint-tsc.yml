@@ -10,13 +10,14 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
 
-defaults:
-  run:
-    shell: bash
+concurrency:
+  group: frontend-lint-tsc-${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       identityx: ${{ steps.filter.outputs.identityx }}
       informd: ${{ steps.filter.outputs.informd }}
@@ -25,7 +26,6 @@ jobs:
       any: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.univents == 'true' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
-
       - uses: https://github.com/dorny/paths-filter@v4
         id: filter
         with:
@@ -43,50 +43,25 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: https://code.forgejo.org/actions/checkout@v7
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: build service list
+        id: services
+        run: |
+          list=""
+          [ "${{ needs.changes.outputs.identityx }}" == "true" ] && list="$list,identityx"
+          [ "${{ needs.changes.outputs.informd }}" == "true" ] && list="$list,informd"
+          [ "${{ needs.changes.outputs.payssage }}" == "true" ] && list="$list,payssage"
+          [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
+          echo "list=${list#,}" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node
-        uses: https://github.com/actions/setup-node@v6
+      - name: Set up Docker
+        run: curl -fsSL https://get.docker.com | sh
+
+      - uses: https://github.com/dagger/dagger-for-github@v6
         with:
-          node-version: 24
-
-      - name: Setup pnpm
-        uses: https://github.com/pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint IdentityX
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: pnpm -F identityx lint
-
-      - name: TypeScript IdentityX
-        if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: pnpm -F identityx tsc
-
-      - name: Lint Informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: pnpm -F informd lint
-
-      - name: TypeScript Informd
-        if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: pnpm -F informd tsc
-
-      - name: Lint Payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: pnpm -F payssage lint
-
-      - name: TypeScript Payssage
-        if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: pnpm -F payssage tsc
-
-      - name: Lint Univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: pnpm -F univents lint
-
-      - name: TypeScript Univents
-        if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: pnpm -F univents tsc
+          version: "v0.21.7"
+          verb: call
+          module: .dagger
+          args: frontend-lint-tsc --source=. --services=${{ steps.services.outputs.list }}

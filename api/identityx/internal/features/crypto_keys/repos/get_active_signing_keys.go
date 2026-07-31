@@ -6,8 +6,9 @@ import (
 	"lib/database"
 	"lib/xslices"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (repo *Repo) GetActiveSigningKeys(ctx context.Context, projectID *uuid.UUID) ([]models.ActiveSigningKey, error) {

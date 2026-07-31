@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
+	"strconv"
 
 	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr string) (string, error) {
-	ctx, span := c.tracer.Start(ctx, "Callback")
+	ctx, span := telemetry.StartSpan(ctx, "Callback")
 	defer span.End()
 
 	state, err := c.oauth.Get(ctx, stateStr)
@@ -28,7 +30,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 	}
 
 	oauthProvider := providers.PayssageProviders.OAuth[provider]
-	credentialData, err := oauthProvider.ExchangeCode(ctx, code, state.ProviderRedirectUrl)
+	credentialData, err := oauthProvider.ExchangeCode(ctx, code, state.ProviderRedirectURL)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +42,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 			OwnerID:        state.OwnerID,
 			OrganizationID: state.OrganizationID,
 			Provider:       providerStr,
-			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
+			ProviderUserID: strconv.Itoa(credentialData.ProviderUserID),
 			Credentials:    marshalCredentials(credentialData),
 		})
 		if err != nil {
@@ -54,7 +56,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 		seller, err := c.sellers.Create(ctx, models.Seller{
 			WalletID:       *state.WalletID,
 			Provider:       providerStr,
-			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
+			ProviderUserID: strconv.Itoa(credentialData.ProviderUserID),
 			Credentials:    marshalCredentials(credentialData),
 		})
 		if err != nil {
@@ -65,10 +67,10 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 		return "", fun.ErrBadRequest("invalid flow")
 	}
 
-	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectUrl, credentialID, credentialData.PublicKey), nil
+	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectURL, credentialID, credentialData.PublicKey), nil
 }
 
 func marshalCredentials(data models.ProviderCredentialData) []byte {
-	b, _ := json.Marshal(data)
+	b, _ := json.Marshal(data) //nolint:gosec
 	return b
 }

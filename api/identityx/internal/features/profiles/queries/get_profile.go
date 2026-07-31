@@ -4,8 +4,9 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (q *Queries) GetProfile(ctx context.Context, actorID, projectID uuid.UUID) (*models.ActorProfile, error) {

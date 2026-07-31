@@ -1,51 +1,56 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { allOrganizationsQueryOptions, createOrganizationFn } from '#/features/organizations/api'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import FormModal from '#/widgets/modal/form-modal'
-import { organizationCreateSchema } from '#/features/organizations/model'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import type { OrganizationCreateI, OrganizationI } from '#/features/organizations/model'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Plus } from 'lucide-react'
-import OrganizationCard from '#/features/organizations/ui/organization-card'
-import { PaginatedContainer } from '@trieoh/ui-base'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { PaginatedContainer } from "@trieoh/ui-base";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  allOrganizationsQueryOptions,
+  createOrganizationFn,
+} from "#/features/organizations/api";
+import type {
+  OrganizationCreateI,
+  OrganizationI,
+} from "#/features/organizations/model";
+import { organizationCreateSchema } from "#/features/organizations/model";
+import OrganizationCard from "#/features/organizations/ui/organization-card";
+import { Button } from "#/shared/ui/shadcn/button";
+import FormModal from "#/widgets/modal/form-modal";
 
-export const Route = createFileRoute('/admin/')({
+export const Route = createFileRoute("/admin/")({
   component: RouteComponent,
-})
-
+});
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
-  const [filter, setFilter] = useState('')
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const { data: orgs = [] } = useQuery(allOrganizationsQueryOptions())
+  const { data: orgs = [] } = useQuery(allOrganizationsQueryOptions());
 
   const filteredOrgs = orgs.filter((org) => {
-    const search = filter.toLowerCase()
+    const search = filter.toLowerCase();
 
-    return (
-      org.name.toLowerCase().includes(search) ||
-      org.slug.includes(search)
-    )
-  })
+    return org.name.toLowerCase().includes(search) || org.slug.includes(search);
+  });
 
-  const { mutate: createOrganization, isPending: isPendingCreate } = useMutation({
-    mutationFn: createOrganizationFn,
-    onSuccess: (response) => {
-      if (response.success) {
-        queryClient.setQueryData(
-          allOrganizationsQueryOptions().queryKey,
-          (old: OrganizationI[] = []) => [response.data, ...old],
-        )
-        setIsCreateOpen(false)
-        toast.success(response.message || 'Organization created successfully')
-      } else toast.error(response.message || "Failed to create namespace")
-    },
-    onError: (error: Error) => toast.error(error.message)
-  })
+  const { mutate: createOrganization, isPending: isPendingCreate } =
+    useMutation({
+      mutationFn: createOrganizationFn,
+      onSuccess: (response) => {
+        if (response.success) {
+          queryClient.setQueryData(
+            allOrganizationsQueryOptions().queryKey,
+            (old: OrganizationI[] = []) => [response.data, ...old],
+          );
+          setIsCreateOpen(false);
+          toast.success(
+            response.message || "Organization created successfully",
+          );
+        } else toast.error(response.message || "Failed to create namespace");
+      },
+      onError: (error: Error) => toast.error(error.message),
+    });
 
   return (
     <div className="flex flex-wrap p-4">
@@ -55,8 +60,8 @@ function RouteComponent() {
         minItemWidth="16rem"
         pageSize={10}
         sortFields={[
-          { key: 'name', label: 'Name' },
-          { key: 'slug', label: 'Slug' },
+          { key: "name", label: "Name" },
+          { key: "slug", label: "Slug" },
         ]}
         gap="6"
         filterValue={filter}
@@ -72,7 +77,9 @@ function RouteComponent() {
             Create Organization
           </Button>
         }
-        renderItems={(slice) => slice.map((item) => <OrganizationCard data={item} key={item.id} />)}
+        renderItems={(slice) =>
+          slice.map((item) => <OrganizationCard data={item} key={item.id} />)
+        }
       />
 
       <FormModal<OrganizationCreateI>
@@ -96,10 +103,10 @@ function RouteComponent() {
             label: "Slug",
             placeholder: "e.g. my-team",
             type: "text",
-          }
+          },
         ]}
         disabled={isPendingCreate}
       />
     </div>
-  )
+  );
 }

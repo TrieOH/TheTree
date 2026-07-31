@@ -21,7 +21,7 @@ var cancellableStatuses = map[models.IntentStatus]bool{
 }
 
 func (c *Commands) Cancel(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
-	ctx, span := c.tracer.Start(ctx, "CancelIntent")
+	ctx, span := telemetry.StartSpan(ctx, "CancelIntent")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -34,7 +34,8 @@ func (c *Commands) Cancel(ctx context.Context, intentID uuid.UUID) (*models.Inte
 		return nil, err
 	}
 
-	if err := c.checkAdminAccess(ctx, intent.WalletID, ident.Sub.ID); err != nil {
+	err = c.checkAdminAccess(ctx, intent.WalletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 

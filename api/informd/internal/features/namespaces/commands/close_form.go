@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (s *Commands) CloseForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.CloseForm")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.CloseForm")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

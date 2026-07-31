@@ -44,18 +44,20 @@ jobs:
             exit 1
           fi
 
-      - name: Setup Bun
-        uses: https://github.com/oven-sh/setup-bun@v2
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v6
         with:
-          bun-version: latest
+          version: 10
+      - name: Setup Node.js
+        uses: https://github.com/actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
 
       - name: Validate version and check NPM
         id: check
         run: |
-          PKG_INFO=$(bun -e '
-            const pkg = await Bun.file("./package.json").json();
-            console.log(pkg.name + "|" + pkg.version);
-          ')
+          PKG_INFO=$(node -e 'const pkg = require("./package.json"); console.log(pkg.name + "|" + pkg.version)')
 
           PKG_NAME="${PKG_INFO%|*}"
           PKG_VERSION="${PKG_INFO#*|}"
@@ -81,19 +83,17 @@ jobs:
 
       - name: Install dependencies
         if: steps.check.outputs.skip != 'true'
-        run: bun install --frozen-lockfile
-        working-directory: ${{ steps.tag.outputs.sdk_path }}
+        run: pnpm install --frozen-lockfile
 
       - name: Build
         if: steps.check.outputs.skip != 'true'
-        run: bun run build
-        working-directory: ${{ steps.tag.outputs.sdk_path }}
+        run: pnpm --filter "@trieoh/${{ steps.tag.outputs.sdk_name }}-sdk-ts" build
 
       - name: Publish to NPM
         if: steps.check.outputs.skip != 'true'
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          npm publish --access public
+          pnpm publish --access public --no-git-checks
           rm -f ~/.npmrc
         working-directory: ${{ steps.tag.outputs.sdk_path }}
         env:

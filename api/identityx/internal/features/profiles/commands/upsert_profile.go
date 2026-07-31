@@ -6,9 +6,10 @@ import (
 	"errors"
 	"lib/jsonschema"
 
+	"lib/telemetry"
+
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"lib/telemetry"
 )
 
 func (c *Commands) UpsertProfile(ctx context.Context, payload models.UpsertProfileInput, projectID uuid.UUID) (*models.ActorProfile, error) {

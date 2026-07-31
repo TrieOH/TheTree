@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -11,7 +12,7 @@ import (
 )
 
 func (s *Queries) ListNamespaced(ctx context.Context, formID, namespaceID, stepID uuid.UUID) ([]models.Field, error) {
-	ctx, span := s.tracer.Start(ctx, "FieldService.ListNamespaced")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.ListNamespaced")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

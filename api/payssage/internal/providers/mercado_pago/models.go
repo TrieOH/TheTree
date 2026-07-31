@@ -40,12 +40,14 @@ type Item struct {
 // it into a CheckoutData struct. Always use this instead of unmarshaling
 // provider_data directly.
 func ParseCheckoutData(raw json.RawMessage) (*CheckoutData, error) {
-	if err := jsonschema.Validate(CheckoutDataSchema, raw); err != nil {
+	err := jsonschema.Validate(CheckoutDataSchema, raw)
+	if err != nil {
 		return nil, fmt.Errorf("mercadopago checkout_data: %w", err)
 	}
 
 	var cd CheckoutData
-	if err := json.Unmarshal(raw, &cd); err != nil {
+	err = json.Unmarshal(raw, &cd)
+	if err != nil {
 		return nil, fmt.Errorf("mercadopago checkout_data: unmarshal: %w", err)
 	}
 	return &cd, nil

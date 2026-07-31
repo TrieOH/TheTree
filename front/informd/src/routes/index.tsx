@@ -1,51 +1,51 @@
-import { createFileRoute, useSearch } from '@tanstack/react-router'
-import { SignIn, SignUp } from '@trieoh/identityx-sdk-ts/react'
-import { useState } from 'react';
+import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { SignIn, SignUp } from "@trieoh/identityx-sdk-ts/react";
 import { motion } from "motion/react";
-import { toast } from 'sonner';
-import { requireGuest } from '#/features/auths/lib/route-guard';
-import z from 'zod';
-import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
+import { useState } from "react";
+import { toast } from "sonner";
+import z from "zod";
+import { useAuthActions } from "#/features/auths/hooks/use-auth-actions";
+import { requireGuest } from "#/features/auths/lib/route-guard";
 
 const authSearchSchema = z.object({
-  redirect: z.string().optional().catch(''),
-})
+  redirect: z.string().optional().catch(""),
+});
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   validateSearch: (search) => authSearchSchema.parse(search),
   beforeLoad: (ctx) => {
-    requireGuest(ctx)
+    requireGuest(ctx);
   },
   component: App,
-})
+});
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
 
-  const search = useSearch({ from: '/' });
+  const search = useSearch({ from: "/" });
   const { handleLoginSuccess } = useAuthActions();
 
   const onLoginSuccess = async () => {
-    await handleLoginSuccess(search.redirect)
-  }
+    await handleLoginSuccess(search.redirect);
+  };
 
   const handleSignUpSuccess = async () => {
     setIsLogin(true);
-    toast.success("Account successfully created!")
-  }
+    toast.success("Account successfully created!");
+  };
 
   const handleFailure = async (message: string, trace?: string[]) => {
-    const traceMsg = trace?.join("\n").replaceAll("trace: ", "")
-    toast.warning(`Auth Failed: ${message}`, { description: traceMsg })
-  }
+    const traceMsg = trace?.join("\n").replaceAll("trace: ", "");
+    toast.warning(`Auth Failed: ${message}`, { description: traceMsg });
+  };
 
   return (
     <motion.main
-      key={isLogin ? 'signin' : 'signup'}
+      key={isLogin ? "signin" : "signup"}
       initial={{ opacity: 0, scale: 0.8, y: 5 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className='flex justify-center items-center py-2 h-screen'
+      className="flex justify-center items-center py-2 h-screen"
     >
       {isLogin ? (
         <SignIn
@@ -61,5 +61,5 @@ function App() {
         />
       )}
     </motion.main>
-  )
+  );
 }

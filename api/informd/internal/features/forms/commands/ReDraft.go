@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (s *Commands) ReDraft(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.ReDraft")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.ReDraft")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

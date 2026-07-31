@@ -8,6 +8,8 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -15,27 +17,46 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ComparativeRouteImport } from './routes/comparative'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
-import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
+import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
+import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
-import { Route as EventsEventIdProfileRouteImport } from './routes/events/$eventId/profile'
-import { Route as EventsEventIdEditionsIndexRouteImport } from './routes/events/$eventId/editions/index'
-import { Route as EventsEventIdEditionsEditionIdIndexRouteImport } from './routes/events/$eventId/editions/$editionId/index'
+import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
+import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
+import { Route as EventsSlugProfileRouteImport } from './routes/events/$slug/profile'
+import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
+import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
-import { Route as EventsEventIdEditionsEditionIdProfileRouteImport } from './routes/events/$eventId/editions/$editionId/profile'
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events/$eventId/editions/$editionId/products'
-import { Route as EventsEventIdEditionsEditionIdCheckoutRouteImport } from './routes/events/$eventId/editions/$editionId/checkout'
-import { Route as EventsEventIdEditionsEditionIdActivitiesIndexRouteImport } from './routes/events/$eventId/editions/$editionId/activities/index'
-import { Route as AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/signatures/index'
-import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/products/index'
-import { Route as AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/checkpoints/index'
-import { Route as AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/certifications/index'
-import { Route as AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/activities/index'
-import { Route as AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport } from './routes/admin/events/$eventId/editions/$editionId/signatures/editor'
-import { Route as AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport } from './routes/admin/events/$eventId/editions/$editionId/certifications/editor'
-import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId/editions/$editionId/callback.payment'
+import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures'
+import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/tickets/index'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/index'
+import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
+import { Route as AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/index'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/invites'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/editor'
+import { Route as AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/editor'
+import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/callback.payment'
+import { Route as AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/$productId.variants/index'
+
+const AdminEventsEventIdIndexLazyRouteImport = createFileRoute(
+  '/admin/events/$eventId/',
+)()
+const AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRouteImport =
+  createFileRoute('/admin/events/$eventId_/editions/$editionId/programs/')()
+const AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRouteImport =
+  createFileRoute(
+    '/admin/events/$eventId_/editions/$editionId/programs/calendar',
+  )()
+const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRouteImport =
+  createFileRoute(
+    '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/',
+  )()
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -67,6 +88,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -82,344 +108,450 @@ const VerifyHashRoute = VerifyHashRouteImport.update({
   path: '/verify/$hash',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
-  id: '/events/$eventId/',
-  path: '/events/$eventId/',
+const SignatureRequestsFulfillRoute =
+  SignatureRequestsFulfillRouteImport.update({
+    id: '/signature-requests/fulfill',
+    path: '/signature-requests/fulfill',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AdminUploadsRoute = AdminUploadsRouteImport.update({
+  id: '/uploads',
+  path: '/uploads',
+  getParentRoute: () => AdminRoute,
+} as any)
+const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
+  id: '/events/$slug/',
+  path: '/events/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
-  import('./routes/events/$eventId/index.lazy').then((d) => d.Route),
+  import('./routes/events/$slug/index.lazy').then((d) => d.Route),
 )
 const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
-  id: '/admin/events/',
-  path: '/admin/events/',
-  getParentRoute: () => rootRouteImport,
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => AdminRoute,
 } as any).lazy(() =>
   import('./routes/admin/events/index.lazy').then((d) => d.Route),
 )
-const EventsEventIdProfileRoute = EventsEventIdProfileRouteImport.update({
-  id: '/events/$eventId/profile',
-  path: '/events/$eventId/profile',
+const EventsSlugTicketsRoute = EventsSlugTicketsRouteImport.update({
+  id: '/events/$slug/tickets',
+  path: '/events/$slug/tickets',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsEventIdEditionsIndexRoute =
-  EventsEventIdEditionsIndexRouteImport.update({
-    id: '/events/$eventId/editions/',
-    path: '/events/$eventId/editions/',
-    getParentRoute: () => rootRouteImport,
+const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
+  id: '/events/$slug/programs',
+  path: '/events/$slug/programs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsSlugProfileRoute = EventsSlugProfileRouteImport.update({
+  id: '/events/$slug/profile',
+  path: '/events/$slug/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEventsEventIdIndexLazyRoute =
+  AdminEventsEventIdIndexLazyRouteImport.update({
+    id: '/events/$eventId/',
+    path: '/events/$eventId/',
+    getParentRoute: () => AdminRoute,
   } as any).lazy(() =>
-    import('./routes/events/$eventId/editions/index.lazy').then((d) => d.Route),
+    import('./routes/admin/events/$eventId/index.lazy').then((d) => d.Route),
   )
-const EventsEventIdEditionsEditionIdIndexRoute =
-  EventsEventIdEditionsEditionIdIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/',
-    path: '/events/$eventId/editions/$editionId/',
-    getParentRoute: () => rootRouteImport,
+const EventsSlugEditionsIndexRoute = EventsSlugEditionsIndexRouteImport.update({
+  id: '/events/$slug/editions/',
+  path: '/events/$slug/editions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEventsEventIdMembersIndexRoute =
+  AdminEventsEventIdMembersIndexRouteImport.update({
+    id: '/events/$eventId/members/',
+    path: '/events/$eventId/members/',
+    getParentRoute: () => AdminRoute,
   } as any).lazy(() =>
-    import('./routes/events/$eventId/editions/$editionId/index.lazy').then(
+    import('./routes/admin/events/$eventId/members/index.lazy').then(
       (d) => d.Route,
     ),
   )
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
-    id: '/admin/events/$eventId/editions/',
-    path: '/admin/events/$eventId/editions/',
-    getParentRoute: () => rootRouteImport,
+    id: '/events/$eventId/editions/',
+    path: '/events/$eventId/editions/',
+    getParentRoute: () => AdminRoute,
   } as any).lazy(() =>
     import('./routes/admin/events/$eventId/editions/index.lazy').then(
       (d) => d.Route,
     ),
   )
-const EventsEventIdEditionsEditionIdProfileRoute =
-  EventsEventIdEditionsEditionIdProfileRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/profile',
-    path: '/events/$eventId/editions/$editionId/profile',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const EventsEventIdEditionsEditionIdProductsRoute =
   EventsEventIdEditionsEditionIdProductsRouteImport.update({
     id: '/events/$eventId/editions/$editionId/products',
     path: '/events/$eventId/editions/$editionId/products',
     getParentRoute: () => rootRouteImport,
   } as any)
-const EventsEventIdEditionsEditionIdCheckoutRoute =
-  EventsEventIdEditionsEditionIdCheckoutRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/checkout',
-    path: '/events/$eventId/editions/$editionId/checkout',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const EventsEventIdEditionsEditionIdActivitiesIndexRoute =
-  EventsEventIdEditionsEditionIdActivitiesIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/activities/',
-    path: '/events/$eventId/editions/$editionId/activities/',
-    getParentRoute: () => rootRouteImport,
+const AdminEventsEventIdEditionsEditionIdIndexRoute =
+  AdminEventsEventIdEditionsEditionIdIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/',
+    path: '/events/$eventId/editions/$editionId/',
+    getParentRoute: () => AdminRoute,
   } as any).lazy(() =>
-    import('./routes/events/$eventId/editions/$editionId/activities/index.lazy').then(
+    import('./routes/admin/events/$eventId_.editions.$editionId/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+const AdminEventsEventIdEditionsEditionIdSignaturesRoute =
+  AdminEventsEventIdEditionsEditionIdSignaturesRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/signatures',
+    path: '/events/$eventId/editions/$editionId/signatures',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/programs/',
+    path: '/events/$eventId/editions/$editionId/programs/',
+    getParentRoute: () => AdminRoute,
+  } as any).lazy(() =>
+    import('./routes/admin/events/$eventId_.editions.$editionId/programs/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+const AdminEventsEventIdEditionsEditionIdTicketsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/tickets/',
+    path: '/events/$eventId/editions/$editionId/tickets/',
+    getParentRoute: () => AdminRoute,
+  } as any).lazy(() =>
+    import('./routes/admin/events/$eventId_.editions.$editionId/tickets/index.lazy').then(
       (d) => d.Route,
     ),
   )
 const AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute =
   AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/signatures/',
-    path: '/admin/events/$eventId/editions/$editionId/signatures/',
-    getParentRoute: () => rootRouteImport,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminEventsEventIdEditionsEditionIdSignaturesRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
   AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/products/',
-    path: '/admin/events/$eventId/editions/$editionId/products/',
-    getParentRoute: () => rootRouteImport,
+    id: '/events/$eventId_/editions/$editionId/products/',
+    path: '/events/$eventId/editions/$editionId/products/',
+    getParentRoute: () => AdminRoute,
   } as any).lazy(() =>
-    import('./routes/admin/events/$eventId/editions/$editionId/products/index.lazy').then(
+    import('./routes/admin/events/$eventId_.editions.$editionId/products/index.lazy').then(
       (d) => d.Route,
     ),
   )
-const AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute =
-  AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/checkpoints/',
-    path: '/admin/events/$eventId/editions/$editionId/checkpoints/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute =
   AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/certifications/',
-    path: '/admin/events/$eventId/editions/$editionId/certifications/',
-    getParentRoute: () => rootRouteImport,
+    id: '/events/$eventId_/editions/$editionId/certifications/',
+    path: '/events/$eventId/editions/$editionId/certifications/',
+    getParentRoute: () => AdminRoute,
   } as any)
-const AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute =
-  AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/activities/',
-    path: '/admin/events/$eventId/editions/$editionId/activities/',
-    getParentRoute: () => rootRouteImport,
+const AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/programs/calendar',
+    path: '/events/$eventId/editions/$editionId/programs/calendar',
+    getParentRoute: () => AdminRoute,
   } as any).lazy(() =>
-    import('./routes/admin/events/$eventId/editions/$editionId/activities/index.lazy').then(
+    import('./routes/admin/events/$eventId_.editions.$editionId/programs/calendar.lazy').then(
       (d) => d.Route,
     ),
   )
+const AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute =
+  AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport.update({
+    id: '/invites',
+    path: '/invites',
+    getParentRoute: () => AdminEventsEventIdEditionsEditionIdSignaturesRoute,
+  } as any)
 const AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute =
   AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/signatures/editor',
-    path: '/admin/events/$eventId/editions/$editionId/signatures/editor',
-    getParentRoute: () => rootRouteImport,
+    id: '/editor',
+    path: '/editor',
+    getParentRoute: () => AdminEventsEventIdEditionsEditionIdSignaturesRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute =
   AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/certifications/editor',
-    path: '/admin/events/$eventId/editions/$editionId/certifications/editor',
-    getParentRoute: () => rootRouteImport,
+    id: '/events/$eventId_/editions/$editionId/certifications/editor',
+    path: '/events/$eventId/editions/$editionId/certifications/editor',
+    getParentRoute: () => AdminRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute =
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport.update({
-    id: '/admin/events/$eventId/editions/$editionId/callback/payment',
-    path: '/admin/events/$eventId/editions/$editionId/callback/payment',
-    getParentRoute: () => rootRouteImport,
+    id: '/events/$eventId_/editions/$editionId/callback/payment',
+    path: '/events/$eventId/editions/$editionId/callback/payment',
+    getParentRoute: () => AdminRoute,
   } as any)
+const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRouteImport.update(
+    {
+      id: '/events/$eventId_/editions/$editionId/programs/$programId/occurrences/',
+      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences/',
+      getParentRoute: () => AdminRoute,
+    } as any,
+  ).lazy(() =>
+    import('./routes/admin/events/$eventId_.editions.$editionId/programs/$programId.occurrences/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+const AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport.update(
+    {
+      id: '/events/$eventId_/editions/$editionId/products/$productId/variants/',
+      path: '/events/$eventId/editions/$editionId/products/$productId/variants/',
+      getParentRoute: () => AdminRoute,
+    } as any,
+  ).lazy(() =>
+    import('./routes/admin/events/$eventId_.editions.$editionId/products/$productId.variants/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
-  '/events/$eventId/profile': typeof EventsEventIdProfileRoute
+  '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/events/$slug/programs': typeof EventsSlugProgramsRoute
+  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
-  '/events/$eventId/': typeof EventsEventIdIndexRoute
-  '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
-  '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  '/events/$slug/': typeof EventsSlugIndexRoute
+  '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
+  '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
-  '/events/$eventId/editions/$editionId/profile': typeof EventsEventIdEditionsEditionIdProfileRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
-  '/events/$eventId/editions/$editionId/': typeof EventsEventIdEditionsEditionIdIndexRoute
-  '/events/$eventId/editions/$editionId/activities/': typeof EventsEventIdEditionsEditionIdActivitiesIndexRoute
+  '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
+  '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
+  '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   '/admin/events/$eventId/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
   '/admin/events/$eventId/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
-  '/admin/events/$eventId/editions/$editionId/activities/': typeof AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute
+  '/admin/events/$eventId/editions/$editionId/signatures/invites': typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
+  '/admin/events/$eventId/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
   '/admin/events/$eventId/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
-  '/admin/events/$eventId/editions/$editionId/checkpoints/': typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
   '/admin/events/$eventId/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
+  '/admin/events/$eventId/editions/$editionId/tickets/': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
+  '/admin/events/$eventId/editions/$editionId/products/$productId/variants/': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
-  '/events/$eventId/profile': typeof EventsEventIdProfileRoute
+  '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/events/$slug/programs': typeof EventsSlugProgramsRoute
+  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
-  '/events/$eventId': typeof EventsEventIdIndexRoute
-  '/events/$eventId/editions': typeof EventsEventIdEditionsIndexRoute
-  '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  '/events/$slug': typeof EventsSlugIndexRoute
+  '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
+  '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
-  '/events/$eventId/editions/$editionId/profile': typeof EventsEventIdEditionsEditionIdProfileRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
-  '/events/$eventId/editions/$editionId': typeof EventsEventIdEditionsEditionIdIndexRoute
-  '/events/$eventId/editions/$editionId/activities': typeof EventsEventIdEditionsEditionIdActivitiesIndexRoute
+  '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
+  '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   '/admin/events/$eventId/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
   '/admin/events/$eventId/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
-  '/admin/events/$eventId/editions/$editionId/activities': typeof AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute
+  '/admin/events/$eventId/editions/$editionId/signatures/invites': typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
+  '/admin/events/$eventId/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
   '/admin/events/$eventId/editions/$editionId/certifications': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
-  '/admin/events/$eventId/editions/$editionId/checkpoints': typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
   '/admin/events/$eventId/editions/$editionId/products': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
+  '/admin/events/$eventId/editions/$editionId/tickets': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/programs': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
+  '/admin/events/$eventId/editions/$editionId/products/$productId/variants': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
-  '/events/$eventId/profile': typeof EventsEventIdProfileRoute
+  '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/events/$slug/programs': typeof EventsSlugProgramsRoute
+  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
-  '/events/$eventId/': typeof EventsEventIdIndexRoute
-  '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
-  '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  '/events/$slug/': typeof EventsSlugIndexRoute
+  '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
+  '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
-  '/events/$eventId/editions/$editionId/profile': typeof EventsEventIdEditionsEditionIdProfileRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
-  '/events/$eventId/editions/$editionId/': typeof EventsEventIdEditionsEditionIdIndexRoute
-  '/events/$eventId/editions/$editionId/activities/': typeof EventsEventIdEditionsEditionIdActivitiesIndexRoute
-  '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
-  '/admin/events/$eventId/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
-  '/admin/events/$eventId/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
-  '/admin/events/$eventId/editions/$editionId/activities/': typeof AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute
-  '/admin/events/$eventId/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
-  '/admin/events/$eventId/editions/$editionId/checkpoints/': typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
-  '/admin/events/$eventId/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
-  '/admin/events/$eventId/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
+  '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
+  '/admin/events/$eventId_/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
+  '/admin/events/$eventId_/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
+  '/admin/events/$eventId_/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
+  '/admin/events/$eventId_/editions/$editionId/signatures/invites': typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
+  '/admin/events/$eventId_/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
+  '/admin/events/$eventId_/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/tickets/': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
+  '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/comparative'
     | '/contact'
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/admin/uploads'
+    | '/signature-requests/fulfill'
     | '/verify/$hash'
     | '/events/'
-    | '/events/$eventId/profile'
+    | '/events/$slug/profile'
+    | '/events/$slug/programs'
+    | '/events/$slug/tickets'
     | '/admin/events/'
-    | '/events/$eventId/'
-    | '/events/$eventId/editions/'
-    | '/events/$eventId/editions/$editionId/checkout'
+    | '/events/$slug/'
+    | '/events/$slug/editions/'
+    | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
-    | '/events/$eventId/editions/$editionId/profile'
     | '/admin/events/$eventId/editions/'
-    | '/events/$eventId/editions/$editionId/'
-    | '/events/$eventId/editions/$editionId/activities/'
+    | '/admin/events/$eventId/members/'
+    | '/admin/events/$eventId/editions/$editionId/signatures'
+    | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
     | '/admin/events/$eventId/editions/$editionId/certifications/editor'
     | '/admin/events/$eventId/editions/$editionId/signatures/editor'
-    | '/admin/events/$eventId/editions/$editionId/activities/'
+    | '/admin/events/$eventId/editions/$editionId/signatures/invites'
+    | '/admin/events/$eventId/editions/$editionId/programs/calendar'
     | '/admin/events/$eventId/editions/$editionId/certifications/'
-    | '/admin/events/$eventId/editions/$editionId/checkpoints/'
     | '/admin/events/$eventId/editions/$editionId/products/'
     | '/admin/events/$eventId/editions/$editionId/signatures/'
+    | '/admin/events/$eventId/editions/$editionId/tickets/'
+    | '/admin/events/$eventId/editions/$editionId/programs/'
+    | '/admin/events/$eventId/editions/$editionId/products/$productId/variants/'
+    | '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/comparative'
     | '/contact'
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/admin/uploads'
+    | '/signature-requests/fulfill'
     | '/verify/$hash'
     | '/events'
-    | '/events/$eventId/profile'
+    | '/events/$slug/profile'
+    | '/events/$slug/programs'
+    | '/events/$slug/tickets'
     | '/admin/events'
-    | '/events/$eventId'
-    | '/events/$eventId/editions'
-    | '/events/$eventId/editions/$editionId/checkout'
+    | '/events/$slug'
+    | '/events/$slug/editions'
+    | '/admin/events/$eventId'
     | '/events/$eventId/editions/$editionId/products'
-    | '/events/$eventId/editions/$editionId/profile'
     | '/admin/events/$eventId/editions'
-    | '/events/$eventId/editions/$editionId'
-    | '/events/$eventId/editions/$editionId/activities'
+    | '/admin/events/$eventId/members'
+    | '/admin/events/$eventId/editions/$editionId'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
     | '/admin/events/$eventId/editions/$editionId/certifications/editor'
     | '/admin/events/$eventId/editions/$editionId/signatures/editor'
-    | '/admin/events/$eventId/editions/$editionId/activities'
+    | '/admin/events/$eventId/editions/$editionId/signatures/invites'
+    | '/admin/events/$eventId/editions/$editionId/programs/calendar'
     | '/admin/events/$eventId/editions/$editionId/certifications'
-    | '/admin/events/$eventId/editions/$editionId/checkpoints'
     | '/admin/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/$editionId/signatures'
+    | '/admin/events/$eventId/editions/$editionId/tickets'
+    | '/admin/events/$eventId/editions/$editionId/programs'
+    | '/admin/events/$eventId/editions/$editionId/products/$productId/variants'
+    | '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/comparative'
     | '/contact'
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/admin/uploads'
+    | '/signature-requests/fulfill'
     | '/verify/$hash'
     | '/events/'
-    | '/events/$eventId/profile'
+    | '/events/$slug/profile'
+    | '/events/$slug/programs'
+    | '/events/$slug/tickets'
     | '/admin/events/'
-    | '/events/$eventId/'
-    | '/events/$eventId/editions/'
-    | '/events/$eventId/editions/$editionId/checkout'
+    | '/events/$slug/'
+    | '/events/$slug/editions/'
+    | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
-    | '/events/$eventId/editions/$editionId/profile'
     | '/admin/events/$eventId/editions/'
-    | '/events/$eventId/editions/$editionId/'
-    | '/events/$eventId/editions/$editionId/activities/'
-    | '/admin/events/$eventId/editions/$editionId/callback/payment'
-    | '/admin/events/$eventId/editions/$editionId/certifications/editor'
-    | '/admin/events/$eventId/editions/$editionId/signatures/editor'
-    | '/admin/events/$eventId/editions/$editionId/activities/'
-    | '/admin/events/$eventId/editions/$editionId/certifications/'
-    | '/admin/events/$eventId/editions/$editionId/checkpoints/'
-    | '/admin/events/$eventId/editions/$editionId/products/'
-    | '/admin/events/$eventId/editions/$editionId/signatures/'
+    | '/admin/events/$eventId/members/'
+    | '/admin/events/$eventId_/editions/$editionId/signatures'
+    | '/admin/events/$eventId_/editions/$editionId/'
+    | '/admin/events/$eventId_/editions/$editionId/callback/payment'
+    | '/admin/events/$eventId_/editions/$editionId/certifications/editor'
+    | '/admin/events/$eventId_/editions/$editionId/signatures/editor'
+    | '/admin/events/$eventId_/editions/$editionId/signatures/invites'
+    | '/admin/events/$eventId_/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId_/editions/$editionId/certifications/'
+    | '/admin/events/$eventId_/editions/$editionId/products/'
+    | '/admin/events/$eventId_/editions/$editionId/signatures/'
+    | '/admin/events/$eventId_/editions/$editionId/tickets/'
+    | '/admin/events/$eventId_/editions/$editionId/programs/'
+    | '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/'
+    | '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   ComparativeRoute: typeof ComparativeRoute
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
+  SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
-  EventsEventIdProfileRoute: typeof EventsEventIdProfileRoute
-  AdminEventsIndexRoute: typeof AdminEventsIndexRoute
-  EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute
-  EventsEventIdEditionsIndexRoute: typeof EventsEventIdEditionsIndexRoute
-  EventsEventIdEditionsEditionIdCheckoutRoute: typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  EventsSlugProfileRoute: typeof EventsSlugProfileRoute
+  EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
+  EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
+  EventsSlugIndexRoute: typeof EventsSlugIndexRoute
+  EventsSlugEditionsIndexRoute: typeof EventsSlugEditionsIndexRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
-  EventsEventIdEditionsEditionIdProfileRoute: typeof EventsEventIdEditionsEditionIdProfileRoute
-  AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
-  EventsEventIdEditionsEditionIdIndexRoute: typeof EventsEventIdEditionsEditionIdIndexRoute
-  EventsEventIdEditionsEditionIdActivitiesIndexRoute: typeof EventsEventIdEditionsEditionIdActivitiesIndexRoute
-  AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
-  AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
-  AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
-  AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute
-  AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
-  AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
-  AdminEventsEventIdEditionsEditionIdProductsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
-  AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -466,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -487,54 +626,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyHashRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId/': {
-      id: '/events/$eventId/'
-      path: '/events/$eventId'
-      fullPath: '/events/$eventId/'
-      preLoaderRoute: typeof EventsEventIdIndexRouteImport
+    '/signature-requests/fulfill': {
+      id: '/signature-requests/fulfill'
+      path: '/signature-requests/fulfill'
+      fullPath: '/signature-requests/fulfill'
+      preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/uploads': {
+      id: '/admin/uploads'
+      path: '/uploads'
+      fullPath: '/admin/uploads'
+      preLoaderRoute: typeof AdminUploadsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/events/$slug/': {
+      id: '/events/$slug/'
+      path: '/events/$slug'
+      fullPath: '/events/$slug/'
+      preLoaderRoute: typeof EventsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/': {
       id: '/admin/events/'
-      path: '/admin/events'
+      path: '/events'
       fullPath: '/admin/events/'
       preLoaderRoute: typeof AdminEventsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/events/$slug/tickets': {
+      id: '/events/$slug/tickets'
+      path: '/events/$slug/tickets'
+      fullPath: '/events/$slug/tickets'
+      preLoaderRoute: typeof EventsSlugTicketsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId/profile': {
-      id: '/events/$eventId/profile'
-      path: '/events/$eventId/profile'
-      fullPath: '/events/$eventId/profile'
-      preLoaderRoute: typeof EventsEventIdProfileRouteImport
+    '/events/$slug/programs': {
+      id: '/events/$slug/programs'
+      path: '/events/$slug/programs'
+      fullPath: '/events/$slug/programs'
+      preLoaderRoute: typeof EventsSlugProgramsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId/editions/': {
-      id: '/events/$eventId/editions/'
-      path: '/events/$eventId/editions'
-      fullPath: '/events/$eventId/editions/'
-      preLoaderRoute: typeof EventsEventIdEditionsIndexRouteImport
+    '/events/$slug/profile': {
+      id: '/events/$slug/profile'
+      path: '/events/$slug/profile'
+      fullPath: '/events/$slug/profile'
+      preLoaderRoute: typeof EventsSlugProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId/editions/$editionId/': {
-      id: '/events/$eventId/editions/$editionId/'
-      path: '/events/$eventId/editions/$editionId'
-      fullPath: '/events/$eventId/editions/$editionId/'
-      preLoaderRoute: typeof EventsEventIdEditionsEditionIdIndexRouteImport
+    '/admin/events/$eventId/': {
+      id: '/admin/events/$eventId/'
+      path: '/events/$eventId'
+      fullPath: '/admin/events/$eventId/'
+      preLoaderRoute: typeof AdminEventsEventIdIndexLazyRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/events/$slug/editions/': {
+      id: '/events/$slug/editions/'
+      path: '/events/$slug/editions'
+      fullPath: '/events/$slug/editions/'
+      preLoaderRoute: typeof EventsSlugEditionsIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/events/$eventId/members/': {
+      id: '/admin/events/$eventId/members/'
+      path: '/events/$eventId/members'
+      fullPath: '/admin/events/$eventId/members/'
+      preLoaderRoute: typeof AdminEventsEventIdMembersIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/events/$eventId/editions/': {
       id: '/admin/events/$eventId/editions/'
-      path: '/admin/events/$eventId/editions'
+      path: '/events/$eventId/editions'
       fullPath: '/admin/events/$eventId/editions/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$eventId/editions/$editionId/profile': {
-      id: '/events/$eventId/editions/$editionId/profile'
-      path: '/events/$eventId/editions/$editionId/profile'
-      fullPath: '/events/$eventId/editions/$editionId/profile'
-      preLoaderRoute: typeof EventsEventIdEditionsEditionIdProfileRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/events/$eventId/editions/$editionId/products': {
       id: '/events/$eventId/editions/$editionId/products'
@@ -543,120 +710,198 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdEditionsEditionIdProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId/editions/$editionId/checkout': {
-      id: '/events/$eventId/editions/$editionId/checkout'
-      path: '/events/$eventId/editions/$editionId/checkout'
-      fullPath: '/events/$eventId/editions/$editionId/checkout'
-      preLoaderRoute: typeof EventsEventIdEditionsEditionIdCheckoutRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/events/$eventId_/editions/$editionId/': {
+      id: '/admin/events/$eventId_/editions/$editionId/'
+      path: '/events/$eventId/editions/$editionId'
+      fullPath: '/admin/events/$eventId/editions/$editionId/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/events/$eventId/editions/$editionId/activities/': {
-      id: '/events/$eventId/editions/$editionId/activities/'
-      path: '/events/$eventId/editions/$editionId/activities'
-      fullPath: '/events/$eventId/editions/$editionId/activities/'
-      preLoaderRoute: typeof EventsEventIdEditionsEditionIdActivitiesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/events/$eventId_/editions/$editionId/signatures': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures'
+      path: '/events/$eventId/editions/$editionId/signatures'
+      fullPath: '/admin/events/$eventId/editions/$editionId/signatures'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId/editions/$editionId/signatures/': {
-      id: '/admin/events/$eventId/editions/$editionId/signatures/'
-      path: '/admin/events/$eventId/editions/$editionId/signatures'
+    '/admin/events/$eventId_/editions/$editionId/programs/': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/'
+      path: '/events/$eventId/editions/$editionId/programs'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/tickets/': {
+      id: '/admin/events/$eventId_/editions/$editionId/tickets/'
+      path: '/events/$eventId/editions/$editionId/tickets'
+      fullPath: '/admin/events/$eventId/editions/$editionId/tickets/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/signatures/': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures/'
+      path: '/'
       fullPath: '/admin/events/$eventId/editions/$editionId/signatures/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRoute
     }
-    '/admin/events/$eventId/editions/$editionId/products/': {
-      id: '/admin/events/$eventId/editions/$editionId/products/'
-      path: '/admin/events/$eventId/editions/$editionId/products'
+    '/admin/events/$eventId_/editions/$editionId/products/': {
+      id: '/admin/events/$eventId_/editions/$editionId/products/'
+      path: '/events/$eventId/editions/$editionId/products'
       fullPath: '/admin/events/$eventId/editions/$editionId/products/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId/editions/$editionId/checkpoints/': {
-      id: '/admin/events/$eventId/editions/$editionId/checkpoints/'
-      path: '/admin/events/$eventId/editions/$editionId/checkpoints'
-      fullPath: '/admin/events/$eventId/editions/$editionId/checkpoints/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/events/$eventId/editions/$editionId/certifications/': {
-      id: '/admin/events/$eventId/editions/$editionId/certifications/'
-      path: '/admin/events/$eventId/editions/$editionId/certifications'
+    '/admin/events/$eventId_/editions/$editionId/certifications/': {
+      id: '/admin/events/$eventId_/editions/$editionId/certifications/'
+      path: '/events/$eventId/editions/$editionId/certifications'
       fullPath: '/admin/events/$eventId/editions/$editionId/certifications/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId/editions/$editionId/activities/': {
-      id: '/admin/events/$eventId/editions/$editionId/activities/'
-      path: '/admin/events/$eventId/editions/$editionId/activities'
-      fullPath: '/admin/events/$eventId/editions/$editionId/activities/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/events/$eventId_/editions/$editionId/programs/calendar': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/calendar'
+      path: '/events/$eventId/editions/$editionId/programs/calendar'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/calendar'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId/editions/$editionId/signatures/editor': {
-      id: '/admin/events/$eventId/editions/$editionId/signatures/editor'
-      path: '/admin/events/$eventId/editions/$editionId/signatures/editor'
+    '/admin/events/$eventId_/editions/$editionId/signatures/invites': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures/invites'
+      path: '/invites'
+      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/invites'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport
+      parentRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/signatures/editor': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures/editor'
+      path: '/editor'
       fullPath: '/admin/events/$eventId/editions/$editionId/signatures/editor'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRoute
     }
-    '/admin/events/$eventId/editions/$editionId/certifications/editor': {
-      id: '/admin/events/$eventId/editions/$editionId/certifications/editor'
-      path: '/admin/events/$eventId/editions/$editionId/certifications/editor'
+    '/admin/events/$eventId_/editions/$editionId/certifications/editor': {
+      id: '/admin/events/$eventId_/editions/$editionId/certifications/editor'
+      path: '/events/$eventId/editions/$editionId/certifications/editor'
       fullPath: '/admin/events/$eventId/editions/$editionId/certifications/editor'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId/editions/$editionId/callback/payment': {
-      id: '/admin/events/$eventId/editions/$editionId/callback/payment'
-      path: '/admin/events/$eventId/editions/$editionId/callback/payment'
+    '/admin/events/$eventId_/editions/$editionId/callback/payment': {
+      id: '/admin/events/$eventId_/editions/$editionId/callback/payment'
+      path: '/events/$eventId/editions/$editionId/callback/payment'
       fullPath: '/admin/events/$eventId/editions/$editionId/callback/payment'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/'
+      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/': {
+      id: '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/'
+      path: '/events/$eventId/editions/$editionId/products/$productId/variants'
+      fullPath: '/admin/events/$eventId/editions/$editionId/products/$productId/variants/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
   }
 }
 
+interface AdminEventsEventIdEditionsEditionIdSignaturesRouteChildren {
+  AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
+  AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
+  AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
+}
+
+const AdminEventsEventIdEditionsEditionIdSignaturesRouteChildren: AdminEventsEventIdEditionsEditionIdSignaturesRouteChildren =
+  {
+    AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute:
+      AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute,
+    AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute:
+      AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute,
+    AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute:
+      AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute,
+  }
+
+const AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren =
+  AdminEventsEventIdEditionsEditionIdSignaturesRoute._addFileChildren(
+    AdminEventsEventIdEditionsEditionIdSignaturesRouteChildren,
+  )
+
+interface AdminRouteChildren {
+  AdminUploadsRoute: typeof AdminUploadsRoute
+  AdminEventsIndexRoute: typeof AdminEventsIndexRoute
+  AdminEventsEventIdIndexLazyRoute: typeof AdminEventsEventIdIndexLazyRoute
+  AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
+  AdminEventsEventIdMembersIndexRoute: typeof AdminEventsEventIdMembersIndexRoute
+  AdminEventsEventIdEditionsEditionIdSignaturesRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
+  AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
+  AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
+  AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
+  AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
+  AdminEventsEventIdEditionsEditionIdProductsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
+  AdminEventsEventIdEditionsEditionIdTicketsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
+  AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminUploadsRoute: AdminUploadsRoute,
+  AdminEventsIndexRoute: AdminEventsIndexRoute,
+  AdminEventsEventIdIndexLazyRoute: AdminEventsEventIdIndexLazyRoute,
+  AdminEventsEventIdEditionsIndexRoute: AdminEventsEventIdEditionsIndexRoute,
+  AdminEventsEventIdMembersIndexRoute: AdminEventsEventIdMembersIndexRoute,
+  AdminEventsEventIdEditionsEditionIdSignaturesRoute:
+    AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren,
+  AdminEventsEventIdEditionsEditionIdIndexRoute:
+    AdminEventsEventIdEditionsEditionIdIndexRoute,
+  AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
+    AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute,
+  AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute:
+    AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute,
+  AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute:
+    AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute,
+  AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute,
+  AdminEventsEventIdEditionsEditionIdProductsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdProductsIndexRoute,
+  AdminEventsEventIdEditionsEditionIdTicketsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdTicketsIndexRoute,
+  AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute:
+    AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute,
+  AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute,
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute:
+    AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   ComparativeRoute: ComparativeRoute,
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
+  SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
-  EventsEventIdProfileRoute: EventsEventIdProfileRoute,
-  AdminEventsIndexRoute: AdminEventsIndexRoute,
-  EventsEventIdIndexRoute: EventsEventIdIndexRoute,
-  EventsEventIdEditionsIndexRoute: EventsEventIdEditionsIndexRoute,
-  EventsEventIdEditionsEditionIdCheckoutRoute:
-    EventsEventIdEditionsEditionIdCheckoutRoute,
+  EventsSlugProfileRoute: EventsSlugProfileRoute,
+  EventsSlugProgramsRoute: EventsSlugProgramsRoute,
+  EventsSlugTicketsRoute: EventsSlugTicketsRoute,
+  EventsSlugIndexRoute: EventsSlugIndexRoute,
+  EventsSlugEditionsIndexRoute: EventsSlugEditionsIndexRoute,
   EventsEventIdEditionsEditionIdProductsRoute:
     EventsEventIdEditionsEditionIdProductsRoute,
-  EventsEventIdEditionsEditionIdProfileRoute:
-    EventsEventIdEditionsEditionIdProfileRoute,
-  AdminEventsEventIdEditionsIndexRoute: AdminEventsEventIdEditionsIndexRoute,
-  EventsEventIdEditionsEditionIdIndexRoute:
-    EventsEventIdEditionsEditionIdIndexRoute,
-  EventsEventIdEditionsEditionIdActivitiesIndexRoute:
-    EventsEventIdEditionsEditionIdActivitiesIndexRoute,
-  AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
-    AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute,
-  AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute:
-    AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute,
-  AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute:
-    AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute,
-  AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute:
-    AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute,
-  AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute:
-    AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute,
-  AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute:
-    AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute,
-  AdminEventsEventIdEditionsEditionIdProductsIndexRoute:
-    AdminEventsEventIdEditionsEditionIdProductsIndexRoute,
-  AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute:
-    AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

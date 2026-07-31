@@ -13,6 +13,7 @@ var NewQueries = queries.NewQueries
 var NewCommands = commands.NewCommands
 var RegisterRoutes = handlers.RegisterRoutes
 
+type Repo = repos.Repo
 type Commands = commands.Commands
 type Queries = queries.Queries
 type Handlers = handlers.Handlers

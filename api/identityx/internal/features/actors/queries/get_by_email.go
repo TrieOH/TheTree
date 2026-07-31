@@ -4,8 +4,9 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (q *Queries) GetByEmail(ctx context.Context, email string, projectID uuid.UUID) (*models.Actor, error) {

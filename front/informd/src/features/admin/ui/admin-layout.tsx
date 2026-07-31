@@ -1,35 +1,35 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 import {
-  LogOut,
   ChevronLeft,
   ChevronRight,
-  FolderKanban,
   // KeySquare,
-  FileText
-} from 'lucide-react'
-import { useState } from 'react'
-import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
-import { cn } from '#/shared/lib/utils'
-import { motion } from 'motion/react'
-import { Button } from '#/shared/ui/shadcn/button'
-import { Breadcrumb } from '#/shared/ui/breadcrumb'
+  FileText,
+  FolderKanban,
+  LogOut,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useState } from "react";
+import { useAuthActions } from "#/features/auths/hooks/use-auth-actions";
+import { cn } from "#/shared/lib/utils";
+import { Breadcrumb } from "#/shared/ui/breadcrumb";
+import { Button } from "#/shared/ui/shadcn/button";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { handleLogout } = useAuthActions()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { handleLogout } = useAuthActions();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     {
-      to: '/admin',
+      to: "/admin",
       icon: FolderKanban,
-      label: 'Namespaces',
-      exact: true
+      label: "Namespaces",
+      exact: true,
     },
     {
-      to: '/admin/form',
+      to: "/admin/form",
       icon: FileText,
-      label: 'Forms',
-      exact: true
+      label: "Forms",
+      exact: true,
     },
     // {
     //   to: '/admin/keys',
@@ -37,7 +37,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     //   label: 'API Keys',
     //   exact: true
     // },
-  ]
+  ];
 
   return (
     <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
@@ -57,7 +57,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={cn('hover:bg-transparent', isCollapsed ? 'mx-auto' : 'ml-auto')}
+            className={cn(
+              "hover:bg-transparent",
+              isCollapsed ? "mx-auto" : "ml-auto",
+            )}
           >
             {isCollapsed ? (
               <ChevronRight className="w-4 h-4" />
@@ -79,20 +82,20 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 <>
                   <item.icon
                     className={cn(
-                      'w-4 h-4 transition-colors duration-300',
-                      isCollapsed && 'mx-auto',
+                      "w-4 h-4 transition-colors duration-300",
+                      isCollapsed && "mx-auto",
                       isActive
-                        ? 'text-primary'
-                        : 'text-muted-foreground group-hover:text-foreground',
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground",
                     )}
                   />
                   {!isCollapsed && (
                     <span
                       className={cn(
-                        'transition-colors duration-300 truncate',
+                        "transition-colors duration-300 truncate",
                         isActive
-                          ? 'text-foreground'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     >
                       {item.label}
@@ -102,8 +105,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   {/* Desktop Indicator (Right) */}
                   <div
                     className={cn(
-                      'absolute -right-px transition-all duration-300 ease-in-out bg-primary w-0.5',
-                      isActive ? 'top-2 bottom-2 opacity-100' : 'top-1/2 bottom-1/2 opacity-0',
+                      "absolute -right-px transition-all duration-300 ease-in-out bg-primary w-0.5",
+                      isActive
+                        ? "top-2 bottom-2 opacity-100"
+                        : "top-1/2 bottom-1/2 opacity-0",
                     )}
                   />
                 </>
@@ -112,16 +117,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           ))}
 
           <button
+            type="button"
             onClick={handleLogout}
             className="mt-auto flex items-center gap-3 px-4 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors relative group text-muted-foreground hover:text-destructive cursor-pointer"
           >
             <LogOut
               className={cn(
-                'w-4 h-4 transition-colors duration-300',
-                isCollapsed && 'mx-auto',
+                "w-4 h-4 transition-colors duration-300",
+                isCollapsed && "mx-auto",
               )}
             />
-            {!isCollapsed && <span className='truncate'>Logout</span>}
+            {!isCollapsed && <span className="truncate">Logout</span>}
           </button>
         </nav>
       </motion.aside>
@@ -147,18 +153,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <>
                 <item.icon
                   className={cn(
-                    'w-5 h-5 transition-colors',
+                    "w-5 h-5 transition-colors",
                     isActive
-                      ? 'text-primary'
-                      : 'text-muted-foreground group-hover:text-foreground',
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
                   )}
                 />
                 <span
                   className={cn(
-                    'text-[9px] font-bold uppercase tracking-tighter transition-colors truncate',
+                    "text-[9px] font-bold uppercase tracking-tighter transition-colors truncate",
                     isActive
-                      ? 'text-primary'
-                      : 'text-muted-foreground group-hover:text-foreground',
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
                   )}
                 >
                   {item.label}
@@ -166,8 +172,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 {/* Mobile Indicator (Top of the bar) */}
                 <div
                   className={cn(
-                    'absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full transition-all duration-300 ease-in-out',
-                    isActive ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0',
+                    "absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full transition-all duration-300 ease-in-out",
+                    isActive
+                      ? "opacity-100 scale-x-100"
+                      : "opacity-0 scale-x-0",
                   )}
                 />
               </>
@@ -175,6 +183,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           </Link>
         ))}
         <button
+          type="button"
           onClick={handleLogout}
           className="flex flex-col items-center gap-1 px-3 justify-center group cursor-pointer"
         >
@@ -185,5 +194,5 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </button>
       </nav>
     </div>
-  )
+  );
 }

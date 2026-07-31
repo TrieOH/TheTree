@@ -74,6 +74,40 @@ type CreateEventRequest struct {
 	ContactEmail *string `json:"contact_email"`
 }
 
+type PatchEventRequest struct {
+	FullName     string  `json:"full_name"     validate:"required,min=2"`
+	Acronym      *string `json:"acronym"`
+	Slug         string  `json:"slug"          validate:"required,min=2"`
+	Description  *string `json:"description"`
+	LogoURL      *string `json:"logo_url"`
+	BannerURL    *string `json:"banner_url"`
+	ContactEmail *string `json:"contact_email"`
+}
+
+func (r PatchEventRequest) ToInput(eventID uuid.UUID) PatchEventInput {
+	return PatchEventInput{
+		EventID:      eventID,
+		FullName:     r.FullName,
+		Acronym:      r.Acronym,
+		Slug:         r.Slug,
+		Description:  r.Description,
+		LogoURL:      r.LogoURL,
+		BannerURL:    r.BannerURL,
+		ContactEmail: r.ContactEmail,
+	}
+}
+
+type PatchEventInput struct {
+	EventID      uuid.UUID
+	FullName     string
+	Acronym      *string
+	Slug         string
+	Description  *string
+	LogoURL      *string
+	BannerURL    *string
+	ContactEmail *string
+}
+
 type AddEventMemberRequest struct {
 	Email string          `json:"email" validate:"required,email"`
 	Role  EventMemberRole `json:"role"  validate:"required,oneof=owner admin staff"`

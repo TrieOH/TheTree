@@ -2,33 +2,25 @@ package queries
 
 import (
 	"context"
-	"lib/database"
 	"payssage/models"
 	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Queries struct {
 	wallets ports.WalletRepo
 	orgs    ports.OrganizationRepo
-	tracer  trace.Tracer
-	tx      database.TxRunner
 }
 
 func NewQueries(
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Queries {
 	return &Queries{
 		wallets: wallets,
 		orgs:    orgs,
-		tracer:  tracer,
-		tx:      tx,
 	}
 }
 

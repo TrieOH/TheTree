@@ -5,10 +5,11 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 )
 
-func (repo *repo) GetByEmail(ctx context.Context, email string) (*models.Responder, error) {
-	ctx, span := repo.tracer.Start(ctx, "ResponderRepo.GetByEmail")
+func (repo *Repo) GetByEmail(ctx context.Context, email string) (*models.Responder, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ResponderRepo.GetByEmail")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).GetResponderByEmail(ctx, email)
 	if err != nil {

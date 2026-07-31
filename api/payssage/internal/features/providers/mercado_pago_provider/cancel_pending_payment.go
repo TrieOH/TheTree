@@ -3,14 +3,12 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"lib/telemetry"
 	"lib/utils"
 	"payssage/models"
 
 	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
-	"resty.dev/v3"
 )
 
 func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Intent) error {
@@ -42,23 +40,19 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 
 	body := map[string]any{"status": "cancelled"}
 
-	// TODO: hoist into shared *resty.Client (see Checkout TODO)
-	client := resty.New()
-	defer client.Close()
-
 	var mpResp struct {
 		Status       string `json:"status"`
 		StatusDetail string `json:"status_detail"`
 	}
 	var mpErr map[string]any
 
-	resp, err := client.R().
+	resp, err := p.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Authorization", "Bearer "+creds.AccessToken).
 		SetBody(body).
 		SetResult(&mpResp).
 		SetResultError(&mpErr).
-		Put(fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", providerData.TransactionID))
+		Put("https://api.mercadopago.com/v1/payments/" + providerData.TransactionID)
 	if err != nil {
 		return fun.Errf("mercadopago cancel payment request: %v", err).BadGateway()
 	}

@@ -1,94 +1,109 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { PaginatedContainer, useLayoutHeader } from "@trieoh/ui-base";
+import { Crown, Plus, Shield, User2 } from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   addMemberToOrganizationFn,
   allOrganizationsMembersQueryOptions,
-  removeMemberFromOrganizationFn
-} from '@/features/organizations/api'
-import { memberAddToOrganizationSchema } from '@/features/organizations/model'
-import type { MemberAddToOrganizationI, OrganizationMemberI } from '@/features/organizations/model'
-import { MemberCard } from '@/features/organizations/ui/member-card'
-import { useLayoutHeader, PaginatedContainer } from '@trieoh/ui-base'
-import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
-import { FormModal } from '@/widgets/modal/FormModal'
-import { Modal } from '@/widgets/modal/modal'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { Plus, User2, Shield, Crown } from 'lucide-react'
-import { useMemo, useState, useId } from 'react'
-import { toast } from 'sonner'
+  removeMemberFromOrganizationFn,
+} from "@/features/organizations/api";
+import type {
+  MemberAddToOrganizationI,
+  OrganizationMemberI,
+} from "@/features/organizations/model";
+import { memberAddToOrganizationSchema } from "@/features/organizations/model";
+import { MemberCard } from "@/features/organizations/ui/member-card";
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import { FormModal } from "@/widgets/modal/FormModal";
+import { Modal } from "@/widgets/modal/modal";
 
-export const Route = createFileRoute('/admin/$organizationID/members')({
+export const Route = createFileRoute("/admin/$organizationID/members")({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
-  const { organizationID } = Route.useParams()
-  const { data: members = [] } = useQuery(allOrganizationsMembersQueryOptions(organizationID))
+  const queryClient = useQueryClient();
+  const { organizationID } = Route.useParams();
+  const { data: members = [] } = useQuery(
+    allOrganizationsMembersQueryOptions(organizationID),
+  );
 
-  const [filter, setFilter] = useState('')
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [memberToRemove, setMemberToRemove] = useState<OrganizationMemberI | null>(null)
-  const [confirmEmail, setConfirmEmail] = useState('')
-  const confirmEmailInputId = useId()
+  const [filter, setFilter] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] =
+    useState<OrganizationMemberI | null>(null);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const confirmEmailInputId = useId();
 
-  const count = members.length
+  const count = members.length;
 
-  const header = useMemo(() => (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Members</h1>
-        <p className="text-sm text-muted-foreground">
-          {count === 0
-            ? 'No members yet in this organization'
-            : `${count} member${count !== 1 ? 's' : ''} in this organization`}
-        </p>
+  const header = useMemo(
+    () => (
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Members</h1>
+          <p className="text-sm text-muted-foreground">
+            {count === 0
+              ? "No members yet in this organization"
+              : `${count} member${count !== 1 ? "s" : ""} in this organization`}
+          </p>
+        </div>
       </div>
-    </div>
-  ), [count])
+    ),
+    [count],
+  );
 
-  useLayoutHeader(header)
+  useLayoutHeader(header);
 
   const filteredMembers = members.filter((member) => {
-    const search = filter.toLowerCase().trim()
+    const search = filter.toLowerCase().trim();
 
-    if (!search) return true
+    if (!search) return true;
 
     return (
       member.role.toLowerCase().includes(search) ||
       member.actor_id.toLowerCase().includes(search)
-    )
-  })
+    );
+  });
 
-  const { mutate: addMemberToOrganization, isPending: isCreating } = useMutation({
-    mutationFn: (data: MemberAddToOrganizationI) => addMemberToOrganizationFn(organizationID, data),
-    onSuccess: (response) => {
-      if (response.success) {
-        queryClient.invalidateQueries({
-          queryKey: allOrganizationsMembersQueryOptions(organizationID).queryKey
-        })
-        setIsCreateOpen(false)
-        toast.success(response.message || "Member added successfully")
-      } else toast.error(response.message || "Failed to add member")
-    },
-    onError: (error: Error) => toast.error(error.message)
-  })
+  const { mutate: addMemberToOrganization, isPending: isCreating } =
+    useMutation({
+      mutationFn: (data: MemberAddToOrganizationI) =>
+        addMemberToOrganizationFn(organizationID, data),
+      onSuccess: (response) => {
+        if (response.success) {
+          queryClient.invalidateQueries({
+            queryKey:
+              allOrganizationsMembersQueryOptions(organizationID).queryKey,
+          });
+          setIsCreateOpen(false);
+          toast.success(response.message || "Member added successfully");
+        } else toast.error(response.message || "Failed to add member");
+      },
+      onError: (error: Error) => toast.error(error.message),
+    });
 
-  const { mutate: removeMemberFromOrganization, isPending: isRemoving } = useMutation({
-    mutationFn: (email: string) => removeMemberFromOrganizationFn(organizationID, email),
-    onSuccess: (response) => {
-      if (response.success) {
-        queryClient.invalidateQueries({
-          queryKey: allOrganizationsMembersQueryOptions(organizationID).queryKey
-        })
-        setMemberToRemove(null)
-        setConfirmEmail('')
-        toast.success("Member removed successfully")
-      } else {
-        toast.error(response.message || "Failed to remove member")
-      }
-    },
-    onError: (error: Error) => toast.error(error.message)
-  })
+  const { mutate: removeMemberFromOrganization, isPending: isRemoving } =
+    useMutation({
+      mutationFn: (email: string) =>
+        removeMemberFromOrganizationFn(organizationID, email),
+      onSuccess: (response) => {
+        if (response.success) {
+          queryClient.invalidateQueries({
+            queryKey:
+              allOrganizationsMembersQueryOptions(organizationID).queryKey,
+          });
+          setMemberToRemove(null);
+          setConfirmEmail("");
+          toast.success("Member removed successfully");
+        } else {
+          toast.error(response.message || "Failed to remove member");
+        }
+      },
+      onError: (error: Error) => toast.error(error.message),
+    });
 
   return (
     <div>
@@ -96,9 +111,7 @@ function RouteComponent() {
         items={filteredMembers}
         layout="list"
         pageSize={10}
-        sortFields={[
-          { key: "role", label: "Role" },
-        ]}
+        sortFields={[{ key: "role", label: "Role" }]}
         filterValue={filter}
         onFilterChange={setFilter}
         filterPlaceholder="Filter by role or actor…"
@@ -112,11 +125,17 @@ function RouteComponent() {
             value="Add Member"
           />
         }
-        renderItems={(slice) => slice.map(item => {
-          return (
-            <MemberCard key={item.actor_id} data={item} onRemove={setMemberToRemove} />
-          )
-        })}
+        renderItems={(slice) =>
+          slice.map((item) => {
+            return (
+              <MemberCard
+                key={item.actor_id}
+                data={item}
+                onRemove={setMemberToRemove}
+              />
+            );
+          })
+        }
       />
 
       <FormModal<MemberAddToOrganizationI>
@@ -128,35 +147,35 @@ function RouteComponent() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={addMemberToOrganization}
-        defaultValues={{ actor_email: '', role: 'member' }}
+        defaultValues={{ actor_email: "", role: "member" }}
         isLoading={isCreating}
         fields={[
           {
-            name: 'actor_email',
-            label: 'Actor Email',
-            type: 'text',
-            placeholder: 'e.g. member@example.com',
+            name: "actor_email",
+            label: "Actor Email",
+            type: "text",
+            placeholder: "e.g. member@example.com",
             required: true,
           },
           {
-            name: 'role',
-            label: 'Role',
-            type: 'option-picker',
+            name: "role",
+            label: "Role",
+            type: "option-picker",
             options: [
-              { value: 'member', label: 'Member', icon: User2 },
-              { value: 'admin', label: 'Admin', icon: Shield },
-              { value: 'owner', label: 'Owner', icon: Crown },
+              { value: "member", label: "Member", icon: User2 },
+              { value: "admin", label: "Admin", icon: Shield },
+              { value: "owner", label: "Owner", icon: Crown },
             ],
             required: true,
-          }
+          },
         ]}
       />
 
       <Modal
         isOpen={memberToRemove !== null}
         onClose={() => {
-          setMemberToRemove(null)
-          setConfirmEmail('')
+          setMemberToRemove(null);
+          setConfirmEmail("");
         }}
         title="Remove Member"
         description="To remove this member from the organization, please confirm by typing their email address. This action cannot be undone."
@@ -165,8 +184,8 @@ function RouteComponent() {
             <ShadowButton
               variant="ghost"
               onClick={() => {
-                setMemberToRemove(null)
-                setConfirmEmail('')
+                setMemberToRemove(null);
+                setConfirmEmail("");
               }}
               className="rounded-sm font-medium text-xs"
               disabled={isRemoving}
@@ -176,22 +195,28 @@ function RouteComponent() {
               variant="destructive"
               onClick={() => {
                 if (confirmEmail.trim()) {
-                  removeMemberFromOrganization(confirmEmail.trim())
+                  removeMemberFromOrganization(confirmEmail.trim());
                 }
               }}
               className="rounded-sm font-bold text-xs px-6"
               disabled={isRemoving || !confirmEmail.trim()}
-              value={isRemoving ? 'Removing...' : 'Remove Member'}
+              value={isRemoving ? "Removing..." : "Remove Member"}
             />
           </div>
         }
       >
         <div className="space-y-4">
           <div className="text-xs text-muted-foreground">
-            Removing member: <span className="font-semibold text-foreground">{memberToRemove?.actor_id}</span>
+            Removing member:{" "}
+            <span className="font-semibold text-foreground">
+              {memberToRemove?.actor_id}
+            </span>
           </div>
           <div className="space-y-2">
-            <label htmlFor={confirmEmailInputId} className="text-xs font-medium text-foreground">
+            <label
+              htmlFor={confirmEmailInputId}
+              className="text-xs font-medium text-foreground"
+            >
               Member Email Address
             </label>
             <input
@@ -206,5 +231,5 @@ function RouteComponent() {
         </div>
       </Modal>
     </div>
-  )
+  );
 }

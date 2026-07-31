@@ -2,6 +2,7 @@ package config
 
 import (
 	"lib/database"
+	"lib/email"
 	"lib/errx"
 
 	"github.com/caarlos0/env/v11"
@@ -10,12 +11,12 @@ import (
 
 type Config struct {
 	// Server
-	Port        string `env:"PORT"              envDefault:"8080"`
-	ProfilePort string `env:"PROFILE_PORT"      envDefault:"6060"`
+	Port        string `env:"PORT"                 envDefault:"8080"`
+	ProfilePort string `env:"PROFILE_PORT"         envDefault:"6060"`
 	AppName     string `env:"APP_NAME,required"`
-	// AppUrl      string `env:"APP_URL,required"`
-	DebugMode  bool   `env:"DEBUG_MODE"`
-	HmacSecret string `env:"HMAC_SECRET,required"`
+	AppURL      string `env:"APP_URL,required"`
+	DebugMode   bool   `env:"DEBUG_MODE"`
+	HmacSecret  string `env:"HMAC_SECRET,required"`
 
 	// Security
 	// WsJwtSecret string `env:"WS_JWT_SECRET,required"`
@@ -59,6 +60,14 @@ type Config struct {
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
+
+	// SMTP / Email
+	SMTPHost     string `env:"SMTP_HOST,required"`
+	SMTPPort     int    `env:"SMTP_PORT"          envDefault:"587"`
+	SMTPUsername string `env:"SMTP_USERNAME"`
+	SMTPPassword string `env:"SMTP_PASSWORD"`
+	SMTPFrom     string `env:"SMTP_FROM,required"`
+	SMTPTLS      bool   `env:"SMTPTLS"            envDefault:"true"`
 }
 
 func (cfg Config) ToDBConfig() database.Config {
@@ -75,6 +84,17 @@ func (cfg Config) ToDBConfig() database.Config {
 		RootHost:      "postgres",
 		RootPort:      "5432",
 		MigrationPath: cfg.MigrationPath,
+	}
+}
+
+func (cfg Config) ToEmailConfig() email.Config {
+	return email.Config{
+		Host:     cfg.SMTPHost,
+		Port:     cfg.SMTPPort,
+		Username: cfg.SMTPUsername,
+		Password: cfg.SMTPPassword,
+		From:     cfg.SMTPFrom,
+		TLS:      cfg.SMTPTLS,
 	}
 }
 

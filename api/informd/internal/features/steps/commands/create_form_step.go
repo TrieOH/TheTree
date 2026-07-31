@@ -5,12 +5,13 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (s *Command) Create(ctx context.Context, payload models.CreateFormStepInput) (*models.Step, error) {
-	ctx, span := s.tracer.Start(ctx, "StepService.Create")
+	ctx, span := telemetry.StartSpan(ctx, "StepService.Create")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

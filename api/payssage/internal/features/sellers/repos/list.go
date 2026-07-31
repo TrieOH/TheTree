@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 )
 
-func (repo *repo) List(ctx context.Context) ([]models.Seller, error) {
-	ctx, span := repo.tracer.Start(ctx, "SellerRepo.List")
+func (repo *Repo) List(ctx context.Context) ([]models.Seller, error) {
+	ctx, span := telemetry.StartSpan(ctx, "SellerRepo.List")
 	defer span.End()
 
 	sqlcSellers, err := database.Queries(ctx, repo.q).ListSellers(ctx)

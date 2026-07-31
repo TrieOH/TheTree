@@ -4,8 +4,9 @@ import (
 	"context"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
 func (repo *Repo) UpdateLastLoginAt(ctx context.Context, actorID uuid.UUID) error {

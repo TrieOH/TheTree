@@ -1,13 +1,32 @@
 import { useCallback, useReducer, useRef } from "react";
-import { getWebsocketAuthToken } from "../api";
 import type { SubmitPaymentPayloadI } from "@/features/payments/model";
-import type { BuyRequestItemI, ReservedItemI, UnavailableItemI } from "../model";
+import { getWebsocketAuthToken } from "../api";
+import type {
+  BuyRequestItemI,
+  ReservedItemI,
+  UnavailableItemI,
+} from "../model";
 
 // ─── Server → Client Messages ─────────────────────────────────────────────────
 
 type ServerMessage =
-  | { type: "reservation_confirmed"; payload: { session_id: string; expires_at: string; reserved_items: ReservedItemI[]; total_cents: number } }
-  | { type: "partial_reservation"; payload: { reserved: ReservedItemI[]; unavailable: UnavailableItemI[]; confirm_deadline: string } }
+  | {
+      type: "reservation_confirmed";
+      payload: {
+        session_id: string;
+        expires_at: string;
+        reserved_items: ReservedItemI[];
+        total_cents: number;
+      };
+    }
+  | {
+      type: "partial_reservation";
+      payload: {
+        reserved: ReservedItemI[];
+        unavailable: UnavailableItemI[];
+        confirm_deadline: string;
+      };
+    }
   | { type: "reservation_failed"; payload: { unavailable: UnavailableItemI[] } }
   | { type: "reservation_cancelled" }
   | { type: "session_expired" }
@@ -16,8 +35,17 @@ type ServerMessage =
   | { type: "purchase_cancelled" }
   | { type: "payment_confirmed"; payload: { purchase_id: string } }
   | { type: "payment_pending"; payload: string }
-  | { type: "pix_created"; payload: { qr_code: string; qr_code_base64: string } }
-  | { type: "purchase_failed"; payload: { reason: string; product_ids: string[] } | { invalid_products: UnavailableItemI[] } | string }
+  | {
+      type: "pix_created";
+      payload: { qr_code: string; qr_code_base64: string };
+    }
+  | {
+      type: "purchase_failed";
+      payload:
+        | { reason: string; product_ids: string[] }
+        | { invalid_products: UnavailableItemI[] }
+        | string;
+    }
   | { type: "error"; payload: string };
 
 // ─── Checkout Phase ───────────────────────────────────────────────────────────
@@ -46,11 +74,11 @@ const TERMINAL_PHASES = new Set<CheckoutPhase>([
   "payment_confirmed",
   "payment_failed",
   "purchase_cancelled",
-  "payment_pending",    // card: backend closes after this, webhook handles the rest
-  "pix_pending",        // pix: backend deletes session before emitting, then closes
+  "payment_pending", // card: backend closes after this, webhook handles the rest
+  "pix_pending", // pix: backend deletes session before emitting, then closes
   "reservation_failed", // backend closes after sending this
-  "session_expired",    // backend closes after sending this
-  "error",              // backend closes after sending this
+  "session_expired", // backend closes after sending this
+  "error", // backend closes after sending this
 ]);
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -94,8 +122,19 @@ type Action =
   | { type: "CONNECTING" }
   | { type: "AWAITING_RESERVATION" }
   | { type: "AWAITING_PAYMENT" }
-  | { type: "RESERVATION_CONFIRMED"; sessionId: string; expiresAt: string; items: ReservedItemI[]; totalCents: number }
-  | { type: "PARTIAL_RESERVATION"; reserved: ReservedItemI[]; unavailable: UnavailableItemI[]; confirmDeadline: string }
+  | {
+      type: "RESERVATION_CONFIRMED";
+      sessionId: string;
+      expiresAt: string;
+      items: ReservedItemI[];
+      totalCents: number;
+    }
+  | {
+      type: "PARTIAL_RESERVATION";
+      reserved: ReservedItemI[];
+      unavailable: UnavailableItemI[];
+      confirmDeadline: string;
+    }
   | { type: "RESERVATION_FAILED" }
   | { type: "SESSION_EXPIRED" }
   | { type: "PAYMENT_PROCESSING" }
@@ -172,7 +211,8 @@ function reducer(state: CheckoutState, action: Action): CheckoutState {
       return {
         ...state,
         phase: "payment_failed",
-        errorMessage: "Pagamento recusado. Verifique suas credenciais e tente novamente.",
+        errorMessage:
+          "Pagamento recusado. Verifique suas credenciais e tente novamente.",
       };
 
     case "PURCHASE_CANCELLED":
@@ -199,7 +239,12 @@ function reducer(state: CheckoutState, action: Action): CheckoutState {
       };
 
     case "PAYMENT_CONFIRMED":
-      return { ...state, phase: "payment_confirmed", errorMessage: null, purchaseId: action.purchase_id };
+      return {
+        ...state,
+        phase: "payment_confirmed",
+        errorMessage: null,
+        purchaseId: action.purchase_id,
+      };
 
     case "ERROR":
       return { ...state, phase: "error", errorMessage: action.message };
@@ -226,8 +271,10 @@ function reducer(state: CheckoutState, action: Action): CheckoutState {
  * Translates raw Go/network error strings into user-readable Portuguese messages.
  */
 function parseErrorMessage(raw: string): string {
-  if (raw.includes("i/o timeout")) return "Tempo esgotado para confirmar a reserva.";
-  if (raw.includes("connection reset")) return "Conexão encerrada inesperadamente.";
+  if (raw.includes("i/o timeout"))
+    return "Tempo esgotado para confirmar a reserva.";
+  if (raw.includes("connection reset"))
+    return "Conexão encerrada inesperadamente.";
   if (raw.includes("broken pipe")) return "Conexão encerrada inesperadamente.";
   return "Ocorreu um erro inesperado.";
 }
@@ -281,10 +328,16 @@ function toAction(msg: ServerMessage): Action | null {
       };
 
     case "purchase_failed":
-      return { type: "ERROR", message: "Não foi possível processar a compra. Tente novamente." };
+      return {
+        type: "ERROR",
+        message: "Não foi possível processar a compra. Tente novamente.",
+      };
 
     case "payment_confirmed":
-      return { type: "PAYMENT_CONFIRMED", purchase_id: msg.payload.purchase_id };
+      return {
+        type: "PAYMENT_CONFIRMED",
+        purchase_id: msg.payload.purchase_id,
+      };
 
     case "error":
       return { type: "ERROR", message: parseErrorMessage(msg.payload) };
@@ -357,7 +410,10 @@ export function useCheckoutSocket({
     if (!ws) return;
     closingCleanlyRef.current = true;
     wsRef.current = null;
-    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+    if (
+      ws.readyState === WebSocket.OPEN ||
+      ws.readyState === WebSocket.CONNECTING
+    ) {
       ws.close(1000, reason);
     }
   }, []);
@@ -376,7 +432,10 @@ export function useCheckoutSocket({
         return true;
       }
       if (!silent) {
-        dispatch({ type: "ERROR", message: "Conexão perdida. Tente novamente." });
+        dispatch({
+          type: "ERROR",
+          message: "Conexão perdida. Tente novamente.",
+        });
       }
       return false;
     },
@@ -397,7 +456,10 @@ export function useCheckoutSocket({
       try {
         const res = await getWebsocketAuthToken();
         if (!res.success) {
-          dispatch({ type: "ERROR", message: "Não foi possível autenticar. Tente novamente." });
+          dispatch({
+            type: "ERROR",
+            message: "Não foi possível autenticar. Tente novamente.",
+          });
           return;
         }
 
@@ -432,7 +494,10 @@ export function useCheckoutSocket({
 
         ws.onerror = () => {
           if (ws !== wsRef.current) return;
-          dispatch({ type: "ERROR", message: "Erro na conexão com o servidor." });
+          dispatch({
+            type: "ERROR",
+            message: "Erro na conexão com o servidor.",
+          });
         };
 
         ws.onclose = () => {
@@ -469,7 +534,10 @@ export function useCheckoutSocket({
   const resumeSession = useCallback(
     async (sessionId: string) => {
       dispatch({ type: "CONNECTING" });
-      await openSocket({ type: "resume_session", payload: { session_id: sessionId } });
+      await openSocket({
+        type: "resume_session",
+        payload: { session_id: sessionId },
+      });
     },
     [openSocket],
   );

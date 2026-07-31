@@ -5,16 +5,10 @@ import (
 	"fmt"
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
-	"strconv"
 )
 
 func formatAmount(centavos int64) string {
 	return fmt.Sprintf("%d.%02d", centavos/100, centavos%100)
-}
-
-func parseAmount(s string) int64 {
-	f, _ := strconv.ParseFloat(s, 64)
-	return int64(f * 100)
 }
 
 func calcApplicationFee(amountCents int64, feeBps int) int64 {

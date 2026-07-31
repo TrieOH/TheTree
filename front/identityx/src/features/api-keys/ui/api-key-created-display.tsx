@@ -8,7 +8,11 @@ interface ApiKeyCreatedDisplayProps {
   onClose: () => void;
 }
 
-export function ApiKeyCreatedDisplay({ name, rawKey, onClose }: ApiKeyCreatedDisplayProps) {
+export function ApiKeyCreatedDisplay({
+  name,
+  rawKey,
+  onClose,
+}: ApiKeyCreatedDisplayProps) {
   const handleCopy = () => {
     navigator.clipboard.writeText(rawKey);
     toast.success("API key copied to clipboard");
@@ -24,12 +28,16 @@ export function ApiKeyCreatedDisplay({ name, rawKey, onClose }: ApiKeyCreatedDis
       </div>
 
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-1">Key Name</p>
+        <p className="text-xs font-medium text-muted-foreground mb-1">
+          Key Name
+        </p>
         <p className="text-sm font-semibold">{name}</p>
       </div>
 
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-1">API Key</p>
+        <p className="text-xs font-medium text-muted-foreground mb-1">
+          API Key
+        </p>
         <div className="flex items-center gap-2 p-3 rounded-sm bg-muted border border-border">
           <code className="flex-1 text-xs font-mono break-all select-all">
             {rawKey}

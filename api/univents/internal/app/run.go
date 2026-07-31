@@ -1,22 +1,27 @@
 package app
 
 import (
+	"context"
 	"lib/database"
-	"univents/internal/sqlc"
+	libriver "lib/river"
 )
 
 func (app *Univents) run() {
-	q := sqlc.New(app.db)
+	ctx := context.Background()
+
 	tx := database.NewPGXTxRunner(app.db)
 	database.SetDefaultRunner(tx)
 
-	repos := initRepos(q)
-	queries := initQueries(repos)
-	commands := initCommands(repos, app.objStorage, app.idxClient)
-	middlewares := initMiddlewares()
-	handlers := initHandlers(queries, commands)
+	repos := app.initRepos()
+	queries := app.initQueries(repos)
+	commands := app.initCommands(repos)
+	middlewares := app.initMiddlewares()
+	handlers := app.initHandlers(queries, commands)
+
+	riverClient, riverUIHandler := app.initRiver(ctx, repos)
+	defer libriver.LogStop(ctx, riverClient)
 
 	go servePprof(app.cfg.ProfilePort)
-	mux := app.CreateRouter(middlewares, handlers)
+	mux := app.CreateRouter(middlewares, handlers, riverUIHandler)
 	app.startServer(mux)
 }

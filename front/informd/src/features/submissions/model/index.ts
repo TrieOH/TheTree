@@ -1,8 +1,13 @@
+import type {
+  Answer,
+  FormAnswerable,
+  SubmitAnswer,
+  SubmitRequest,
+} from "@trieoh/informd-models";
+import { z } from "zod";
 import type { FieldI } from "#/features/fields/model";
 import type { FormI } from "#/features/forms/model";
 import type { StepI } from "#/features/steps/model";
-import type { Answer, FormAnswerable, SubmitAnswer, SubmitRequest } from "@trieoh/informd-models";
-import { z } from "zod";
 
 export const answerSchema = z.object({
   field_id: z.string().optional(),
@@ -63,7 +68,9 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
   const submissions: SubmissionSummaryI[] = [];
 
   for (const [responder, answers] of byResponder) {
-    const timestamps = answers.map((a) => new Date(a.answer.answered_at).getTime());
+    const timestamps = answers.map((a) =>
+      new Date(a.answer.answered_at).getTime(),
+    );
     const lastTimestamp = Math.max(...timestamps);
     const completedAt = new Date(lastTimestamp).toISOString();
 
@@ -76,8 +83,8 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
           (a) =>
             a.responder === responder &&
             a.answer.answer !== undefined &&
-            a.answer.answer !== ""
-        )
+            a.answer.answer !== "",
+        ),
       );
       if (hasAny && step.step.position_hint > maxPosition) {
         maxPosition = step.step.position_hint;
@@ -101,10 +108,11 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
   }
 
   return submissions.sort(
-    (a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+    (a, b) =>
+      new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime(),
   );
 }
 
 // Answer
 
-export type FormAnswerableI = FormAnswerable
+export type FormAnswerableI = FormAnswerable;

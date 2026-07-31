@@ -25,6 +25,7 @@ SET
     min_access_level = @min_access_level,
     staff_only       = @staff_only,
     price            = @price,
+    banner_url       = @banner_url,
     updated_at       = now()
 WHERE id = @id
   AND deleted_at IS NULL

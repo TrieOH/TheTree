@@ -1,17 +1,24 @@
-import { Link } from "@tanstack/react-router";
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard } from "lucide-react";
+import {
+  Activity,
+  Minus,
+  Package,
+  Plus,
+  ShoppingCart,
+  Ticket,
+  Trash2,
+} from "lucide-react";
 import { useRef } from "react";
-import { useCart } from "../hooks/use-cart";
-import type { CartItem as CartItemType } from "../model/cart";
-import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetFooter,
+  SheetHeader,
   SheetTitle,
 } from "@/shared/ui/shadcn/sheet";
+import { useCart } from "../hooks/use-cart";
+import type { CartItem as CartItemType } from "../model/cart";
 
 interface CartProps {
   isOpen: boolean;
@@ -22,38 +29,63 @@ interface CartProps {
 
 interface CartItemProps {
   item: CartItemType;
-  onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemove: (id: string, type?: CartItemType["type"]) => void;
+  onUpdateQuantity: (
+    id: string,
+    quantity: number,
+    type?: CartItemType["type"],
+  ) => void;
   priceFormatted: (cents: number) => string;
 }
 
-function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuantity }: CartItemProps & { getMaxQuantity: (p: Pick<CartItemType, "has_inventory" | "inventory_remaining">) => number }) {
+function itemTypeLabel(type: CartItemType["type"]) {
+  if (type === "ticket") return { label: "Ingresso", Icon: Ticket };
+  if (type === "activity") return { label: "Atividade", Icon: Activity };
+  return { label: "Produto", Icon: Package };
+}
+
+function CartItem({
+  item,
+  onRemove,
+  onUpdateQuantity,
+  priceFormatted,
+  getMaxQuantity,
+}: CartItemProps & {
+  getMaxQuantity: (
+    p: Pick<CartItemType, "has_inventory" | "inventory_remaining">,
+  ) => number;
+}) {
   const max = getMaxQuantity(item);
   const maxReached = item.quantity >= max;
   const itemTotal = item.price_cents * item.quantity;
   const inputRef = useRef<HTMLInputElement>(null);
+  const { label, Icon } = itemTypeLabel(item.type);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = parseInt(e.target.value, 10);
-    if (!isNaN(value)) {
+    if (!Number.isNaN(value)) {
       if (value < 1) value = 1;
       if (value > max) value = max;
-      onUpdateQuantity(item.id, value);
+      onUpdateQuantity(item.id, value, item.type);
     }
   };
 
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
-    if (isNaN(value) || value < 1) {
-      onUpdateQuantity(item.id, 1);
+    if (Number.isNaN(value) || value < 1) {
+      onUpdateQuantity(item.id, 1, item.type);
     } else if (value > max) {
-      onUpdateQuantity(item.id, max);
+      onUpdateQuantity(item.id, max, item.type);
     }
   };
 
   return (
-    <div className="group flex gap-3 p-3 bg-secondary/30 hover:bg-secondary/50 transition-colors border-b border-border/50 last:border-b-0">
+    <div className="group flex gap-3 border-b border-border/60 bg-card p-4 transition-colors hover:bg-muted/40 last:border-b-0">
       <div className="flex-1 min-w-0">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <Icon className="h-3.5 w-3.5 text-primary" />
+          {label}
+        </div>
         <h4 className="font-medium text-sm text-foreground truncate leading-tight">
           {item.name}
         </h4>
@@ -63,16 +95,17 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
 
         <div className="flex items-center gap-1.5 mt-3">
           <button
+            type="button"
             onClick={() => {
               if (item.quantity > 1) {
-                onUpdateQuantity(item.id, item.quantity - 1);
+                onUpdateQuantity(item.id, item.quantity - 1, item.type);
               }
             }}
             className={cn(
               "h-8 w-8 flex items-center justify-center bg-background border border-border",
               "hover:bg-accent hover:text-accent-foreground hover:border-accent",
               "active:bg-accent/80 transition-colors select-none",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
             disabled={item.quantity <= 1}
             aria-label="Diminuir quantidade"
@@ -92,21 +125,23 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
               "w-12 h-8 text-center text-sm font-semibold tabular-nums bg-background border border-border",
               "focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent",
               "hover:border-accent/50 transition-colors",
-              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
             )}
           />
 
           <button
+            type="button"
             onClick={() => {
               if (!maxReached) {
-                onUpdateQuantity(item.id, item.quantity + 1);
+                onUpdateQuantity(item.id, item.quantity + 1, item.type);
               }
             }}
             className={cn(
               "h-8 w-8 flex items-center justify-center bg-background border border-border",
               "hover:bg-accent hover:text-accent-foreground hover:border-accent",
               "active:bg-accent/80 transition-colors select-none",
-              maxReached && "opacity-50 cursor-not-allowed hover:bg-background hover:border-border"
+              maxReached &&
+                "opacity-50 cursor-not-allowed hover:bg-background hover:border-border",
             )}
             disabled={maxReached}
             aria-label="Aumentar quantidade"
@@ -127,7 +162,9 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-          onClick={() => { onRemove(item.id); }}
+          onClick={() => {
+            onRemove(item.id, item.type);
+          }}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -139,8 +176,20 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
   );
 }
 
-export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
-  const { items, totalCents, removeItem, updateQuantity, clearCart, getMaxQuantity } = useCart(editionId);
+export function Cart({
+  isOpen,
+  eventId: _eventId,
+  editionId,
+  onClose,
+}: CartProps) {
+  const {
+    items,
+    totalCents,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    getMaxQuantity,
+  } = useCart(editionId);
 
   const handleClose = () => {
     onClose();
@@ -160,18 +209,18 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent className="min-w-[320px] max-w-100 w-full sm:w-90 p-0 flex flex-col">
-        <SheetHeader className="flex-row items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
+      <SheetContent className="flex w-full min-w-[320px] max-w-100 flex-col border-l border-border bg-background p-0 sm:w-90">
+        <SheetHeader className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-5 w-5 text-primary" />
               {items.length > 0 && (
                 <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center bg-accent text-accent-foreground text-[10px] font-bold border-2 border-primary">
                   {items.reduce((acc, item) => acc + item.quantity, 0)}
                 </span>
               )}
             </div>
-            <SheetTitle className="font-semibold text-sm tracking-wide uppercase text-primary-foreground">
+            <SheetTitle className="text-sm font-semibold uppercase tracking-wide text-foreground">
               Seu Carrinho
             </SheetTitle>
           </div>
@@ -181,8 +230,12 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground px-6 py-12">
               <ShoppingCart className="h-16 w-16 opacity-20 mb-4" />
-              <p className="font-medium text-foreground text-sm uppercase tracking-wide">Carrinho vazio</p>
-              <p className="text-xs text-muted-foreground mt-1 mb-6">Adicione produtos para começar</p>
+              <p className="font-medium text-foreground text-sm uppercase tracking-wide">
+                Carrinho vazio
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 mb-6">
+                Adicione produtos para começar
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -193,10 +246,10 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/50 bg-muted/20">
               {items.map((item) => (
                 <CartItem
-                  key={item.id}
+                  key={`${item.type}:${item.id}`}
                   item={item}
                   onRemove={removeItem}
                   onUpdateQuantity={updateQuantity}
@@ -209,14 +262,18 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
         </div>
 
         {items.length > 0 && (
-          <SheetFooter className="border-t bg-secondary/20 p-4 space-y-4 flex-col">
+          <SheetFooter className="flex-col space-y-4 border-t border-border bg-card p-5">
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground uppercase tracking-wide">
-                <span>{items.reduce((acc, i) => acc + i.quantity, 0)} itens</span>
+                <span>
+                  {items.reduce((acc, i) => acc + i.quantity, 0)} itens
+                </span>
                 <span>Subtotal {priceFormatted(totalCents)}</span>
               </div>
               <div className="flex justify-between items-center border-t border-border pt-2">
-                <span className="text-sm font-semibold text-foreground uppercase tracking-wide">Total</span>
+                <span className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Total
+                </span>
                 <span className="text-2xl font-bold text-primary tabular-nums">
                   {priceFormatted(totalCents)}
                 </span>
@@ -224,21 +281,6 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
             </div>
 
             <div className="space-y-2">
-              <Link
-                to="/events/$eventId/editions/$editionId/checkout"
-                params={{ eventId, editionId }}
-                onClick={handleClose}
-                className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 px-4",
-                  "bg-primary text-primary-foreground! font-semibold",
-                  "text-sm uppercase rounded-sm transition-colors duration-300",
-                  "hover:text-accent-foreground hover:bg-accent"
-                )}
-              >
-                <CreditCard className="h-4 w-4" />
-                Finalizar Compra
-              </Link>
-
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -247,7 +289,7 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
                     "flex-1 text-xs font-medium uppercase tracking-wide border-2",
                     "border-muted-foreground/30 hover:border-accent",
                     "hover:bg-accent hover:text-accent-foreground",
-                    "transition-colors duration-300 rounded-sm"
+                    "transition-colors duration-300 rounded-sm",
                   )}
                   onClick={handleClose}
                 >
@@ -260,7 +302,7 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
                     "flex-1 text-xs font-medium uppercase tracking-wide border-2",
                     "border-muted-foreground/30 hover:border-destructive",
                     "hover:bg-destructive hover:text-destructive-foreground",
-                    "transition-colors duration-300 rounded-sm"
+                    "transition-colors duration-300 rounded-sm",
                   )}
                   onClick={() => {
                     clearCart();

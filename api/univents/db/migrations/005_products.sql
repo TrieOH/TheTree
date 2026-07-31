@@ -19,6 +19,7 @@ CREATE TABLE product_variants (
     description  TEXT,
     price        BIGINT NOT NULL DEFAULT 0, -- cents
     stock        INT, -- null = unlimited
+    gallery_urls JSONB NOT NULL DEFAULT '[]',
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ,
     deleted_at   TIMESTAMPTZ,

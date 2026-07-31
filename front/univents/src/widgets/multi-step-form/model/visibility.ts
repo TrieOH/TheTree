@@ -28,7 +28,11 @@ function hasMeaningfulValue(value: unknown): boolean {
 
 function getPathValue(source: unknown, path: string): unknown {
   return path.split(".").reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === "object" && key in (acc as Record<string, unknown>))
+    if (
+      acc &&
+      typeof acc === "object" &&
+      key in (acc as Record<string, unknown>)
+    )
       return (acc as Record<string, unknown>)[key];
     return undefined;
   }, source);

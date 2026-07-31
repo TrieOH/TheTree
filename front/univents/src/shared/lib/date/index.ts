@@ -27,11 +27,11 @@ export function parseDatetimeLocal(localDateTimeString: string): Date {
  * @returns A formatted string representing the date range (e.g., "10 – 15 de set. de 2026").
  */
 export function formatDateRange(starts: string, ends: string) {
-  const s = new Date(starts)
-  const e = new Date(ends)
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+  const s = new Date(starts);
+  const e = new Date(ends);
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
   if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
-    return `${s.getDate()} – ${e.toLocaleDateString('pt-BR', { ...opts, year: 'numeric' })}`
+    return `${s.getDate()} – ${e.toLocaleDateString("pt-BR", { ...opts, year: "numeric" })}`;
   }
-  return `${s.toLocaleDateString('pt-BR', opts)} – ${e.toLocaleDateString('pt-BR', { ...opts, year: 'numeric' })}`
+  return `${s.toLocaleDateString("pt-BR", opts)} – ${e.toLocaleDateString("pt-BR", { ...opts, year: "numeric" })}`;
 }

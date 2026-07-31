@@ -5,12 +5,13 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveFormMemberInput) (err error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.RemoveMember")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.RemoveMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -23,7 +24,8 @@ func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveFormMe
 	}
 
 	var form *models.Form
-	if form, err = s.forms.GetByID(ctx, payload.FormID); err != nil {
+	form, err = s.forms.GetByID(ctx, payload.FormID)
+	if err != nil {
 		return err
 	}
 

@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (q *Queries) GetAnswerable(ctx context.Context, formID uuid.UUID) (*models.FormAnswerable, error) {
-	ctx, span := q.tracer.Start(ctx, "FormService.GetAnswerable")
+	ctx, span := telemetry.StartSpan(ctx, "FormService.GetAnswerable")
 	defer span.End()
 
 	form, err := q.forms.GetByID(ctx, formID)

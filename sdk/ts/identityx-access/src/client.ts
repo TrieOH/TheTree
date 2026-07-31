@@ -3,6 +3,8 @@ import type {
   ApiKeyCreateResponseI,
   // ApiKeyI,
   CapabilityI,
+  ActorI,
+  CreateActorRequestI,
   CreateIdentityXAccessClientConfig,
   CreateApiKeyRequest,
 } from "./types";
@@ -36,6 +38,19 @@ export class IdentityXAccessClient {
   capabilities = {
     list: (projectId: string) =>
       this.client.get<CapabilityI[]>(`/projects/${projectId}/capabilities`),
+  };
+
+  actors = {
+    list: (projectId: string) =>
+      this.client.get<ActorI[]>(`/projects/${projectId}/actors`),
+    getById: (projectId: string, actorId: string) =>
+      this.client.get<ActorI>(`/projects/${projectId}/actors/${actorId}`),
+    getByEmail: (projectId: string, email: string) =>
+      this.client.get<ActorI>(
+        `/projects/${projectId}/actors/${encodeURIComponent(email)}:by_email`,
+      ),
+    create: (projectId: string, payload: CreateActorRequestI) =>
+      this.client.post<ActorI>(`/projects/${projectId}/actors`, payload),
   };
 }
 

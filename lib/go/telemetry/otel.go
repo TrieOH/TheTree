@@ -43,7 +43,8 @@ func InitTracer(ctx context.Context, appName string) func(context.Context) error
 }
 
 func ShutdownTracer(ctx context.Context, shutdown func(context.Context) error, appName string) {
-	if err := shutdown(ctx); err != nil {
+	err := shutdown(ctx)
+	if err != nil {
 		Log().Error("error shutting down tracer for "+appName, zap.Error(err))
 	}
 }

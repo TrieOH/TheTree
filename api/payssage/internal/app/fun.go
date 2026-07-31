@@ -2,7 +2,6 @@ package app
 
 import (
 	"lib/validator"
-	"net/http"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
@@ -21,7 +20,5 @@ func SetupFUN() {
 
 	v := validator.SetupValidator()
 	bind.SetValidator(v)
-	fun.SetPathParamFunc(func(r *http.Request, key string) string {
-		return chi.URLParam(r, key)
-	})
+	fun.SetPathParamFunc(chi.URLParam)
 }
