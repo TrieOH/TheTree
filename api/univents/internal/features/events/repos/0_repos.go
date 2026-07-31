@@ -1,7 +1,7 @@
 package repos
 
 import (
-	sqlc2 "univents/internal/sqlc"
+	"univents/internal/sqlc"
 	"univents/models"
 
 	"lib/database"
@@ -9,20 +9,20 @@ import (
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.EventRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("event"),
 	}
 }
 
-func mapEventMember(src sqlc2.EventMember) models.EventMember {
+func mapEventMember(src sqlc.EventMember) models.EventMember {
 	return models.EventMember{
 		ID:        src.ID,
 		EventID:   src.EventID,
@@ -34,7 +34,7 @@ func mapEventMember(src sqlc2.EventMember) models.EventMember {
 	}
 }
 
-func mapEvent(src sqlc2.Event) models.Event {
+func mapEvent(src sqlc.Event) models.Event {
 	return models.Event{
 		ID:               src.ID,
 		OwnerID:          src.OwnerID,

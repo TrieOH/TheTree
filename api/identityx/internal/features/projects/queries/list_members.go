@@ -18,17 +18,9 @@ func (s *Queries) ListMembers(ctx context.Context, projectID uuid.UUID) (members
 		return nil, err
 	}
 
-	var project *models.Project
-	project, err = s.projects.GetByID(ctx, projectID)
+	err = s.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != project.OwnerID {
-		_, err = s.projects.GetMember(ctx, ident.Sub.ID, projectID)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	members, err = s.projects.ListMembers(ctx, projectID)

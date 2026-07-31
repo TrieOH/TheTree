@@ -69,10 +69,13 @@ func FetchGitHubEmail(ctx context.Context, accessToken string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	var emails []GitHubEmail
-	if err = json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&emails)
+	if err != nil {
 		return "", err
 	}
 	for _, e := range emails {

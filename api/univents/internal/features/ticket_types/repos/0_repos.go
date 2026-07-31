@@ -1,7 +1,7 @@
 package repos
 
 import (
-	sqlc2 "univents/internal/sqlc"
+	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
 
@@ -9,20 +9,20 @@ import (
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.TicketTypeRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("ticket_type"),
 	}
 }
 
-func mapTicketType(src sqlc2.TicketType) models.TicketType {
+func mapTicketType(src sqlc.TicketType) models.TicketType {
 	return models.TicketType{
 		ID:          src.ID,
 		EditionID:   src.EditionID,

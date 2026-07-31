@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (c *Commands) UnlinkCertTemplate(ctx context.Context, templateID uuid.UUID) error {
+func (c *Commands) UnlinkCertTemplate(ctx context.Context, templateID, programID uuid.UUID) error {
 	ctx, span := telemetry.StartSpan(ctx, "CertificationsService.UnlinkCertTemplate")
 	defer span.End()
 
@@ -41,5 +41,5 @@ func (c *Commands) UnlinkCertTemplate(ctx context.Context, templateID uuid.UUID)
 		return fun.ErrForbidden("insufficient permissions")
 	}
 
-	return c.certs.UnlinkCertTemplate(ctx, templateID)
+	return c.certs.UnlinkCertTemplate(ctx, templateID, programID)
 }

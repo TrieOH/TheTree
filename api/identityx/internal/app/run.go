@@ -3,8 +3,6 @@ package app
 import (
 	"IdentityX/internal/sqlc"
 	"lib/database"
-	"log"
-	"net/http"
 )
 
 func (app *IdentityX) run() {
@@ -23,7 +21,5 @@ func (app *IdentityX) run() {
 	}
 
 	mux := app.CreateRouter(middlewares, handlers)
-
-	log.Printf("IdentityX listening on :%s", app.cfg.Port)
-	log.Fatal(http.ListenAndServe(":"+app.cfg.Port, mux))
+	app.startServer(mux)
 }

@@ -61,7 +61,9 @@ func BatchExec(br interface {
 	Exec(func(int, error))
 	Close() error
 }, dbe ErrorHandler, getID func(int) string) error {
-	defer br.Close()
+	defer func() {
+		_ = br.Close()
+	}()
 	var msgs []string
 	br.Exec(func(i int, err error) {
 		if err != nil {

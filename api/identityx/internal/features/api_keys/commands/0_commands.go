@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"IdentityX/internal/authz"
 	"IdentityX/ports"
 )
 
@@ -10,6 +11,7 @@ type Commands struct {
 	apiKeys      ports.APIKeysRepo
 	capabilities ports.CapabilityRepo
 	projects     ports.ProjectRepo
+	authz        *authz.Service
 }
 
 func NewCommands(
@@ -18,6 +20,7 @@ func NewCommands(
 	apiKeys ports.APIKeysRepo,
 	capabilities ports.CapabilityRepo,
 	projects ports.ProjectRepo,
+	authz *authz.Service,
 ) *Commands {
 	return &Commands{
 		hmacSecret:   hmacSecret,
@@ -25,5 +28,6 @@ func NewCommands(
 		apiKeys:      apiKeys,
 		capabilities: capabilities,
 		projects:     projects,
+		authz:        authz,
 	}
 }

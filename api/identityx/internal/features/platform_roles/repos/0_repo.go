@@ -1,27 +1,27 @@
 package repos
 
 import (
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.PlatformRolesRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("platform role"),
 	}
 }
 
-func mapPlatformRole(src sqlc2.PlatformRole) models.PlatformRoleRelation {
+func mapPlatformRole(src sqlc.PlatformRole) models.PlatformRoleRelation {
 	return models.PlatformRoleRelation{
 		ActorID:   src.ActorID,
 		Role:      models.PlatformRole(src.Role),

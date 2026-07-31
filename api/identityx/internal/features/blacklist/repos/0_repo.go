@@ -1,27 +1,27 @@
 package repos
 
 import (
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/database"
 )
 
 type Repo struct {
-	q   *sqlc2.Queries
+	q   *sqlc.Queries
 	dbe database.ErrorHandler
 }
 
 var _ ports.BlacklistRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler("blacklist entry"),
 	}
 }
 
-func mapEntry(src sqlc2.BlacklistEntry) models.BlacklistEntry {
+func mapEntry(src sqlc.BlacklistEntry) models.BlacklistEntry {
 	return models.BlacklistEntry{
 		ID:               src.ID,
 		CreatedByActorID: src.CreatedByActorID,

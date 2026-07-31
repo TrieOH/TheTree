@@ -45,7 +45,7 @@ type TokenExpiredError struct {
 }
 
 func (e *TokenExpiredError) Error() string {
-	return fmt.Sprintf("idx: token expired at %s", e.ExpiredAt.UTC().Format(time.RFC3339))
+	return "idx: token expired at " + e.ExpiredAt.UTC().Format(time.RFC3339)
 }
 
 // TokenNotYetValidError is returned when the token's nbf claim is in the future.
@@ -54,7 +54,7 @@ type TokenNotYetValidError struct {
 }
 
 func (e *TokenNotYetValidError) Error() string {
-	return fmt.Sprintf("idx: token not valid until %s", e.ValidAt.UTC().Format(time.RFC3339))
+	return "idx: token not valid until " + e.ValidAt.UTC().Format(time.RFC3339)
 }
 
 // InvalidIssuerError is returned when the token's iss claim does not match

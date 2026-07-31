@@ -24,7 +24,8 @@ func Validate(schema, instance json.RawMessage) error {
 	}
 
 	c := jsonschema.NewCompiler()
-	if err := c.AddResource("schema.json", schemaDoc); err != nil {
+	err = c.AddResource("schema.json", schemaDoc)
+	if err != nil {
 		return fmt.Errorf("invalid schema: %w", err)
 	}
 
