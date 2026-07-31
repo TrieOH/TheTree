@@ -20,8 +20,8 @@ type BadgeTemplate struct {
 
 type CreateBadgeTemplateRequest struct {
 	TicketTypeID *uuid.UUID      `json:"ticket_type_id"`
-	Name         string          `json:"name" validate:"required,max=256"`
-	DesignData   json.RawMessage `json:"design_data" validate:"required"`
+	Name         string          `json:"name"           validate:"required,max=256"`
+	DesignData   json.RawMessage `json:"design_data"    validate:"required"`
 }
 
 type CreateBadgeTemplateInput struct {

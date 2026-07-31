@@ -14,18 +14,18 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	
+
 	var payload models.CreateBadgeTemplateRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	
+
 	input := payload.ToInput(editionID)
-	
+
 	template, err := h.commands.CreateTemplate(r.Context(), input)
 	if fun.Bail(w, err) {
 		return
 	}
-	
+
 	fun.Respond(w, template, http.StatusCreated)
 }

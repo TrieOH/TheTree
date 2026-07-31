@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"univents/internal/features/badges"
 	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
@@ -9,7 +10,6 @@ import (
 	"univents/internal/features/programs"
 	"univents/internal/features/signatures"
 	"univents/internal/features/ticket_types"
-	"univents/internal/features/badges"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"

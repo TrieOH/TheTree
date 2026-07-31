@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"univents/internal/features/badges"
 	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
@@ -18,7 +19,6 @@ import (
 	"univents/internal/features/ticket_types"
 	"univents/internal/sqlc"
 	"univents/ports"
-	"univents/internal/features/badges"
 
 	libriver "lib/river"
 
@@ -38,7 +38,7 @@ type repos struct {
 	products          ports.ProductRepo
 	programs          ports.ProgramRepo
 	occurrences       ports.ProgramOccurrenceRepo
-	badges       	  ports.BadgeTemplateRepo
+	badges            ports.BadgeTemplateRepo
 	signatures        ports.SignatureRepo
 	signatureRequests ports.SignatureRequestRepo
 	certs             ports.CertificationRepo
@@ -105,7 +105,7 @@ func (app *Univents) initRepos() repos {
 		products:          products.NewRepos(q),
 		programs:          programsRepo,
 		occurrences:       programsRepo,
-		badges:      badges.NewRepos(q),
+		badges:            badges.NewRepos(q),
 		signatures:        sigRepo,
 		signatureRequests: sigRepo,
 		certs:             certifications.NewRepos(q),
