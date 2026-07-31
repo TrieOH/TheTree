@@ -2,7 +2,6 @@ package repos
 
 import (
 	"context"
-	"encoding/json"
 	"lib/database"
 	"lib/telemetry"
 	"univents/internal/sqlc"
@@ -18,7 +17,7 @@ func (repo *Repo) CreateTemplate(ctx context.Context, input models.CreateCertifi
 		Kind:        string(input.Kind),
 		Name:        input.Name,
 		Description: input.Description,
-		DesignData:  json.RawMessage(input.DesignData),
+		DesignData:  input.DesignData,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)
