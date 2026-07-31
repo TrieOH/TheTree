@@ -18,5 +18,5 @@ func (h *Handler) ListTemplates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fun.Respond(w, templates, http.StatusOK)
+	fun.Respond(w, templates)
 }

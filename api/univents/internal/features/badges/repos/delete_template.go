@@ -2,17 +2,18 @@ package repos
 
 import (
 	"context"
+	"lib/database"
 	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
-func (r *Repo) DeleteTemplate(ctx context.Context, id uuid.UUID) error {
+func (repo *Repo) DeleteTemplate(ctx context.Context, id uuid.UUID) error {
 	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesRepo.DeleteTemplate")
 	defer span.End()
-	err := r.q.DeleteBadgeTemplate(ctx, id)
+	err := database.Queries(ctx, repo.q).DeleteBadgeTemplate(ctx, id)
 	if err != nil {
-		return r.dbe(err)
+		return repo.dbe(err)
 	}
 
 	return nil

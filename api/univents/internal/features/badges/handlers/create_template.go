@@ -20,12 +20,7 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	input := models.CreateBadgeTemplateInput{
-		EditionID:    editionID,
-		TicketTypeID: payload.TicketTypeID,
-		Name:         payload.Name,
-		DesignData:   payload.DesignData,
-	}
+	input := payload.ToInput(editionID)
 	
 	template, err := h.commands.CreateTemplate(r.Context(), input)
 	if fun.Bail(w, err) {

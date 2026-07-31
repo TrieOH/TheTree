@@ -30,3 +30,12 @@ type CreateBadgeTemplateInput struct {
 	Name         string
 	DesignData   json.RawMessage
 }
+
+func (req *CreateBadgeTemplateRequest) ToInput(editionID uuid.UUID) CreateBadgeTemplateInput {
+	return CreateBadgeTemplateInput{
+		EditionID:    editionID,
+		TicketTypeID: req.TicketTypeID,
+		Name:         req.Name,
+		DesignData:   req.DesignData,
+	}
+}

@@ -18,5 +18,5 @@ func (h *Handler) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	fun.NoContent().Send(w)
 }

@@ -2,18 +2,19 @@ package repos
 
 import (
 	"context"
+	"lib/database"
 	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (r *Repo) GetTemplateByID(ctx context.Context, id uuid.UUID) (*models.BadgeTemplate, error) {
+func (repo *Repo) GetTemplateByID(ctx context.Context, id uuid.UUID) (*models.BadgeTemplate, error) {
 	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesRepo.GetTemplateByID")
 	defer span.End()
-	row, err := r.q.GetBadgeTemplateByID(ctx, id)
+	row, err := database.Queries(ctx, repo.q).GetBadgeTemplateByID(ctx, id)
 	if err != nil {
-		return nil, r.dbe(err)
+		return nil, repo.dbe(err)
 	}
 
 	result := mapBadgeTemplate(row)

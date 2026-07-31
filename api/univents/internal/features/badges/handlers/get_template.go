@@ -18,5 +18,5 @@ func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fun.Respond(w, template, http.StatusOK)
+	fun.Respond(w, template)
 }
