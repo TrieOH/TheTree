@@ -13,7 +13,7 @@ type AuthMethod string
 
 const (
 	PasswordAuthMethod AuthMethod = "password"
-	ApiKeyAuthMethod   AuthMethod = "api_key"
+	APIKeyAuthMethod   AuthMethod = "api_key"
 	GoogleAuthMethod   AuthMethod = "google_auth"
 	GithubAuthMethod   AuthMethod = "github_auth"
 )
@@ -46,7 +46,8 @@ type ActorService struct {
 func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, error) {
 	var res Actor
 	path := fmt.Sprintf("/projects/%s/actors/%s:by_email", s.client.projectID, email)
-	if err := s.client.DoRequest(ctx, "GET", path, nil, &res); err != nil {
+	err := s.client.DoRequest(ctx, "GET", path, nil, &res)
+	if err != nil {
 		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
 	}
 	return &res, nil
@@ -55,7 +56,8 @@ func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, er
 func (s *ActorService) GetByID(ctx context.Context, id uuid.UUID) (*Actor, error) {
 	var res Actor
 	path := fmt.Sprintf("/projects/%s/actors/%s", s.client.projectID, id.String())
-	if err := s.client.DoRequest(ctx, "GET", path, nil, &res); err != nil {
+	err := s.client.DoRequest(ctx, "GET", path, nil, &res)
+	if err != nil {
 		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
 	}
 	return &res, nil

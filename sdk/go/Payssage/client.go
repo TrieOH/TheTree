@@ -48,7 +48,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	if err != nil {
 		return fmt.Errorf("payssage: http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 {
 		var apiErr APIError
@@ -61,10 +63,12 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		raw := struct {
 			Data json.RawMessage `json:"data"`
 		}{}
-		if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		err = json.NewDecoder(resp.Body).Decode(&raw)
+		if err != nil {
 			return fmt.Errorf("payssage: decode envelope: %w", err)
 		}
-		if err := json.Unmarshal(raw.Data, out); err != nil {
+		err = json.Unmarshal(raw.Data, out)
+		if err != nil {
 			return fmt.Errorf("payssage: decode data: %w", err)
 		}
 	}
@@ -89,21 +93,21 @@ func IsNotFound(err error) bool {
 		return false
 	}
 	if e, ok := errors.AsType[*APIError](err); ok {
-		return e.StatusCode == 404 || errors.Is(e, apiErr)
+		return e.StatusCode == http.StatusNotFound || errors.Is(e, apiErr)
 	}
 	return false
 }
 
 func IsUnauthorized(err error) bool {
 	if e, ok := errors.AsType[*APIError](err); ok {
-		return e.StatusCode == 401
+		return e.StatusCode == http.StatusUnauthorized
 	}
 	return false
 }
 
 func IsConflict(err error) bool {
 	if e, ok := errors.AsType[*APIError](err); ok {
-		return e.StatusCode == 409
+		return e.StatusCode == http.StatusConflict
 	}
 	return false
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -95,7 +96,8 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 
 	var res JWKS
 	path := fmt.Sprintf("/.well-known/jwks.json?project_id=%s", s.client.projectID)
-	if err := s.client.DoRequestRaw(ctx, "GET", path, nil, &res); err != nil {
+	err := s.client.DoRequestRaw(ctx, "GET", path, nil, &res)
+	if err != nil {
 		if s.jwks != nil {
 			return s.jwks, nil // stale cache fallback on network error
 		}
@@ -111,14 +113,14 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 // returning the raw *jwt.Token. Prefer VerifyAccessToken for full claim
 // validation.
 func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt.Token, error) {
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
+	keyFunc := func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, &InvalidTokenError{Cause: fmt.Errorf("unexpected signing method: %T", token.Method)}
 		}
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid == "" {
-			return nil, &InvalidTokenError{Cause: fmt.Errorf("missing kid header")}
+			return nil, &InvalidTokenError{Cause: errors.New("missing kid header")}
 		}
 
 		jwks, err := s.GetJWKS(ctx, false)
@@ -152,7 +154,7 @@ func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt
 	return token, nil
 }
 
-func (s *TokenService) decodeKey(key JWK) (interface{}, error) {
+func (s *TokenService) decodeKey(key JWK) (any, error) {
 	if key.Kty != "OKP" || key.Crv != "Ed25519" {
 		return nil, &UnsupportedKeyError{Kty: key.Kty, Crv: key.Crv}
 	}
@@ -187,10 +189,10 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return nil, &InvalidTokenError{Cause: fmt.Errorf("missing kid header")}
+		return nil, &InvalidTokenError{Cause: errors.New("missing kid header")}
 	}
 
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
+	keyFunc := func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, &InvalidTokenError{Cause: fmt.Errorf("unexpected signing method: %T", token.Method)}
 		}
