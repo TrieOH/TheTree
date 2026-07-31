@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -11,7 +12,7 @@ import (
 )
 
 func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInput) (*models.Intent, error) {
-	ctx, span := c.tracer.Start(ctx, "Checkout")
+	ctx, span := telemetry.StartSpan(ctx, "Checkout")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -29,7 +30,8 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 		return nil, err
 	}
 
-	if err := c.checkAdminAccess(ctx, wallet.ID, ident.Sub.ID); err != nil {
+	err = c.checkAdminAccess(ctx, wallet.ID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -75,7 +77,8 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 		Metadata:    payload.Metadata,
 	}
 
-	if err := provider.Checkout(ctx, intent, payload.CheckoutData); err != nil {
+	err = provider.Checkout(ctx, intent, payload.CheckoutData)
+	if err != nil {
 		return nil, err
 	}
 

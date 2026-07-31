@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,7 +20,7 @@ type CertificationTemplate struct {
 	Kind        CertificationTemplateKind `json:"kind"`
 	Name        string                    `json:"name"`
 	Description *string                   `json:"description"`
-	DesignData  []byte                    `json:"design_data"`
+	DesignData  json.RawMessage           `json:"design_data"`
 	CreatedAt   time.Time                 `json:"created_at"`
 	UpdatedAt   *time.Time                `json:"updated_at"`
 	DeletedAt   *time.Time                `json:"deleted_at"`
@@ -59,10 +60,10 @@ type CertEmissionError struct {
 }
 
 type CreateCertificationTemplateRequest struct {
-	Kind        string  `json:"kind"         validate:"required,oneof=edition_attendance program_attendance"`
-	Name        string  `json:"name"         validate:"required,min=2,max=256"`
-	Description *string `json:"description"`
-	DesignData  []byte  `json:"design_data"`
+	Kind        string          `json:"kind"        validate:"required,oneof=edition_attendance program_attendance"`
+	Name        string          `json:"name"        validate:"required,min=2,max=256"`
+	Description *string         `json:"description"`
+	DesignData  json.RawMessage `json:"design_data"`
 }
 
 func (r CreateCertificationTemplateRequest) ToInput(editionID uuid.UUID) CreateCertificationTemplateInput {
@@ -80,14 +81,14 @@ type CreateCertificationTemplateInput struct {
 	Kind        CertificationTemplateKind
 	Name        string
 	Description *string
-	DesignData  []byte
+	DesignData  json.RawMessage
 }
 
 type UpdateCertificationTemplateRequest struct {
-	Kind        string  `json:"kind"         validate:"required,oneof=edition_attendance program_attendance"`
-	Name        string  `json:"name"         validate:"required,min=2,max=256"`
-	Description *string `json:"description"`
-	DesignData  []byte  `json:"design_data"`
+	Kind        string          `json:"kind"        validate:"required,oneof=edition_attendance program_attendance"`
+	Name        string          `json:"name"        validate:"required,min=2,max=256"`
+	Description *string         `json:"description"`
+	DesignData  json.RawMessage `json:"design_data"`
 }
 
 func (r UpdateCertificationTemplateRequest) ToInput(templateID uuid.UUID) UpdateCertificationTemplateInput {
@@ -105,7 +106,7 @@ type UpdateCertificationTemplateInput struct {
 	Kind        CertificationTemplateKind
 	Name        string
 	Description *string
-	DesignData  []byte
+	DesignData  json.RawMessage
 }
 
 type CertifyInput struct {
@@ -119,6 +120,12 @@ type CertifyInput struct {
 
 type InvalidCertReason struct {
 	Reason string `json:"reason" validate:"required"`
+}
+
+type VerifyCertResponse struct {
+	Valid      bool           `json:"valid"`
+	TemplateID *uuid.UUID     `json:"template_id"`
+	Cert       *Certification `json:"cert"`
 }
 
 type CertEligibleAttendee struct {

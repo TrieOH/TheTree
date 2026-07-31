@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"Informd/models"
+	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 
 	"github.com/MintzyG/fun"
@@ -11,7 +13,7 @@ import (
 )
 
 func (c *Commands) Submit(ctx context.Context, payload models.SubmitInput) error {
-	ctx, span := c.tracer.Start(ctx, "ResponseService.Submit")
+	ctx, span := telemetry.StartSpan(ctx, "ResponseService.Submit")
 	defer span.End()
 
 	form, err := c.forms.GetByID(ctx, payload.FormID)
@@ -24,7 +26,7 @@ func (c *Commands) Submit(ctx context.Context, payload models.SubmitInput) error
 	}
 
 	var responderID *uuid.UUID
-	return c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	return database.RunTx(ctx, func(ctx context.Context) error {
 		if payload.Email != nil {
 			responder, err := c.responders.GetByEmail(ctx, *payload.Email)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {

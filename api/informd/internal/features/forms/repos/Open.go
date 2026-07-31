@@ -5,12 +5,13 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) Open(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.Open")
+func (repo *Repo) Open(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
+	ctx, span := telemetry.StartSpan(ctx, "FormRepo.Open")
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).OpenForm(ctx, formID)
 	if err != nil {

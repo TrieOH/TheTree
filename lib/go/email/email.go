@@ -69,7 +69,8 @@ func (c *Client) Send(msg Message) error {
 			MinVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: c.cfg.Insecure,
 		}
-		if err := client.StartTLS(tlsConfig); err != nil {
+		err = client.StartTLS(tlsConfig)
+		if err != nil {
 			return fmt.Errorf("email: STARTTLS failed: %w", err)
 		}
 	}
@@ -81,12 +82,13 @@ func (c *Client) Send(msg Message) error {
 		}
 	}
 
-	if err := client.Mail(c.cfg.From); err != nil {
+	err = client.Mail(c.cfg.From)
+	if err != nil {
 		return fmt.Errorf("email: MAIL FROM failed: %w", err)
 	}
 
 	for _, to := range msg.To {
-		err := client.Rcpt(to)
+		err = client.Rcpt(to)
 		if err != nil {
 			return fmt.Errorf("email: RCPT TO failed: %w", err)
 		}
@@ -102,7 +104,8 @@ func (c *Client) Send(msg Message) error {
 		return fmt.Errorf("email: write failed: %w", err)
 	}
 
-	if err := wc.Close(); err != nil {
+	err = wc.Close()
+	if err != nil {
 		return fmt.Errorf("email: close failed: %w", err)
 	}
 

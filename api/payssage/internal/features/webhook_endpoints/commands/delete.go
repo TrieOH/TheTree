@@ -2,13 +2,14 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"github.com/google/uuid"
 )
 
 func (c *Commands) Delete(ctx context.Context, id uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "DeleteWebhookEndpoint")
+	ctx, span := telemetry.StartSpan(ctx, "DeleteWebhookEndpoint")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -21,7 +22,8 @@ func (c *Commands) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	if err := c.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID); err != nil {
+	err = c.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID)
+	if err != nil {
 		return err
 	}
 

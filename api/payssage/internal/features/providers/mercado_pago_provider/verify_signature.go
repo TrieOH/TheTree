@@ -13,7 +13,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (p *Provider) VerifySignature(ctx context.Context, r *http.Request, rawBody []byte) error {
+func (p *Provider) VerifySignature(_ context.Context, r *http.Request, _ []byte) error {
 	req := fun.From(r)
 	signatureHeader, err := req.Header("x-signature").StringRequired()
 	if err != nil {

@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.WebhookEndpoint, error) {
-	ctx, span := q.tracer.Start(ctx, "GetEndpointByID")
+	ctx, span := telemetry.StartSpan(ctx, "GetEndpointByID")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -22,7 +23,8 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.WebhookEnd
 		return nil, err
 	}
 
-	if err := q.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID); err != nil {
+	err = q.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (c *Commands) AddMember(ctx context.Context, payload models.AddOrganizationMemberInput) error {
-	ctx, span := c.tracer.Start(ctx, "OrganizationService.AddMember")
+	ctx, span := telemetry.StartSpan(ctx, "OrganizationService.AddMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

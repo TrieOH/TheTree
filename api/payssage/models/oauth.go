@@ -33,8 +33,8 @@ type OAuthState struct {
 	OwnerID             uuid.UUID  `json:"owner_id"`
 	Provider            string     `json:"provider"`
 	Flow                OAuthFlow  `json:"flow"`
-	FinalRedirectUrl    string     `json:"final_redirect_url"`
-	ProviderRedirectUrl string     `json:"provider_redirect_url"`
+	FinalRedirectURL    string     `json:"final_redirect_url"`
+	ProviderRedirectURL string     `json:"provider_redirect_url"`
 	CreatedAt           time.Time  `json:"created_at"`
 	ExpiresAt           time.Time  `json:"expires_at"`
 }

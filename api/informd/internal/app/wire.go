@@ -10,7 +10,6 @@ import (
 	"Informd/internal/features/steps"
 	"Informd/internal/sqlc"
 	"Informd/ports"
-	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
 	"lib/xslices"
@@ -20,8 +19,6 @@ import (
 
 	fm "github.com/MintzyG/fun/middlewares"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -76,42 +73,34 @@ type middlewares struct {
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func (app *Informd) tracer() trace.Tracer {
-	return otel.Tracer(app.cfg.AppName)
-}
-
-func (app *Informd) txRunner() database.TxRunner {
-	return database.NewPGXTxRunner(app.db)
-}
-
 func (app *Informd) initRepos(q *sqlc.Queries) repos {
 	return repos{
-		namespaces: namespaces.NewRepo(q, app.tracer()),
-		forms:      forms.NewRepo(q, app.tracer()),
-		steps:      steps.NewRepo(q, app.tracer()),
-		fields:     fields.NewRepos(q, app.tracer()),
-		answers:    answers.NewRepo(q, app.tracer()),
-		responders: responders.NewRepo(q, app.tracer()),
-		responses:  responses.NewRepo(q, app.tracer()),
+		namespaces: namespaces.NewRepo(q),
+		forms:      forms.NewRepo(q),
+		steps:      steps.NewRepo(q),
+		fields:     fields.NewRepos(q),
+		answers:    answers.NewRepo(q),
+		responders: responders.NewRepo(q),
+		responses:  responses.NewRepo(q),
 	}
 }
 
 func (app *Informd) initQueries(r repos) queries {
 	return queries{
-		namespaces: namespaces.NewQueries(r.namespaces, r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, app.txRunner(), app.tracer()),
-		forms:      forms.NewQueries(r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, r.namespaces, app.txRunner(), app.tracer()),
-		steps:      steps.NewQueries(r.forms, r.steps, r.namespaces, app.txRunner(), app.tracer()),
-		fields:     fields.NewQueries(r.forms, r.steps, r.fields, r.namespaces, app.txRunner(), app.tracer()),
+		namespaces: namespaces.NewQueries(r.namespaces, r.forms, r.steps, r.fields, r.answers, r.responses, r.responders),
+		forms:      forms.NewQueries(r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, r.namespaces),
+		steps:      steps.NewQueries(r.forms, r.steps, r.namespaces),
+		fields:     fields.NewQueries(r.forms, r.steps, r.fields, r.namespaces),
 	}
 }
 
 func (app *Informd) initCommands(r repos) commands {
 	return commands{
-		namespaces: namespaces.NewCommands(r.namespaces, r.forms, app.txRunner(), app.tracer()),
-		forms:      forms.NewCommands(r.forms, r.steps, r.namespaces, app.txRunner(), app.tracer()),
-		steps:      steps.NewCommands(r.forms, r.steps, r.namespaces, app.txRunner(), app.tracer()),
-		fields:     fields.NewCommands(r.forms, r.steps, r.fields, r.namespaces, app.txRunner(), app.tracer()),
-		responses:  responses.NewCommands(r.responders, r.responses, r.answers, r.forms, app.txRunner(), app.tracer()),
+		namespaces: namespaces.NewCommands(r.namespaces, r.forms),
+		forms:      forms.NewCommands(r.forms, r.steps, r.namespaces),
+		steps:      steps.NewCommands(r.forms, r.steps, r.namespaces),
+		fields:     fields.NewCommands(r.forms, r.steps, r.fields, r.namespaces),
+		responses:  responses.NewCommands(r.responders, r.responses, r.answers, r.forms),
 	}
 }
 

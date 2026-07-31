@@ -3,36 +3,29 @@ package commands
 import (
 	"context"
 	"fmt"
-	"lib/database"
 	"payssage/models"
 	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Commands struct {
 	wallets ports.WalletRepo
 	orgs    ports.OrganizationRepo
-	tracer  trace.Tracer
-	tx      database.TxRunner
 }
 
 func NewCommands(
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
-	tracer trace.Tracer,
-	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
 		wallets: wallets,
 		orgs:    orgs,
-		tracer:  tracer,
-		tx:      tx,
 	}
 }
 
+//nolint:unparam // TODO: extract into shared authzChecker service
 func (c *Commands) checkRole(ctx context.Context, org *models.Organization, subID uuid.UUID, minRole models.OrganizationRole) error {
 	if org == nil {
 		return fun.ErrForbidden("insufficient permissions")

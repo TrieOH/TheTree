@@ -14,7 +14,6 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"resty.dev/v3"
 )
 
 func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, providerCheckoutData json.RawMessage) error {
@@ -81,11 +80,6 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		return fun.Errf("generate idempotency key: %v", err).Internal()
 	}
 
-	// TODO: hoist this into a shared *resty.Client on Provider (constructed once,
-	// with base URL / timeout / retry policy) instead of creating one per call.
-	client := resty.New()
-	defer client.Close()
-
 	var mpResp struct {
 		ID                 int64  `json:"id"`
 		Status             string `json:"status"`
@@ -99,7 +93,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	}
 	var mpErr map[string]any
 
-	resp, err := client.R().
+	resp, err := p.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Authorization", "Bearer "+creds.AccessToken).
 		SetHeader("X-Idempotency-Key", idempotencyKey.String()).

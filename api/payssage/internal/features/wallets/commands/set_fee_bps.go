@@ -2,12 +2,13 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 )
 
 func (c *Commands) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput) error {
-	ctx, span := c.tracer.Start(ctx, "SetFeeBPS")
+	ctx, span := telemetry.StartSpan(ctx, "SetFeeBPS")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

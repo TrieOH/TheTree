@@ -10,11 +10,13 @@ import (
 	idx "sdk/identityx"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"resty.dev/v3"
 )
 
 type Payssage struct {
-	db        *pgxpool.Pool
-	idxClient *idx.Client
+	db         *pgxpool.Pool
+	idxClient  *idx.Client
+	httpClient *resty.Client
 
 	cfg config.Config
 }
@@ -30,6 +32,8 @@ func Start() {
 	SetupFUN()
 
 	app.idxClient = SetupIdentityX(app.cfg)
+
+	app.httpClient = SetupHTTPClient()
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)

@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetMember(ctx context.Context, memberID, orgID uuid.UUID) (*models.OrganizationMember, error) {
-	ctx, span := repo.tracer.Start(ctx, "GetMember")
+func (repo *Repo) GetMember(ctx context.Context, memberID, orgID uuid.UUID) (*models.OrganizationMember, error) {
+	ctx, span := telemetry.StartSpan(ctx, "GetMember")
 	defer span.End()
 	sqlcMember, err := database.Queries(ctx, repo.q).GetOrganizationMember(ctx, sqlc.GetOrganizationMemberParams{
 		MemberID:       memberID,

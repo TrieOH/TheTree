@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (s *Commands) AddFormMember(ctx context.Context, payload models.AddNamespaceFormMemberInput) error {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddFormMember")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.AddFormMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

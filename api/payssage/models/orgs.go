@@ -29,8 +29,8 @@ var roleRank = map[OrganizationRole]int{
 	OrganizationRoleOwner:  3,
 }
 
-func (r OrganizationRole) AtLeast(min OrganizationRole) bool {
-	return roleRank[r] >= roleRank[min]
+func (r OrganizationRole) AtLeast(minimum OrganizationRole) bool {
+	return roleRank[r] >= roleRank[minimum]
 }
 
 type OrganizationMember struct {

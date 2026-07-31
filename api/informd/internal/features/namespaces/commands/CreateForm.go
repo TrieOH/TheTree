@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (s *Commands) CreateForm(ctx context.Context, title string, namespaceID uuid.UUID) (*models.Form, error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.CreateForm")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.CreateForm")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

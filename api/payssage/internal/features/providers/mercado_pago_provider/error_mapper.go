@@ -36,7 +36,8 @@ var knownMPErrorCodes = map[int]string{
 // populated via resty's SetResultError (map[string]any or similar).
 func mapMPError(statusCode int, resultErr any) *fun.AppError {
 	var body mpErrorBody
-	if raw, err := json.Marshal(resultErr); err == nil {
+	raw, err := json.Marshal(resultErr)
+	if err == nil {
 		_ = json.Unmarshal(raw, &body)
 	}
 

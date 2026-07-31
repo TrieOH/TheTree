@@ -5,13 +5,14 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (s *Queries) ListNamespaced(ctx context.Context, formID, namespaceID uuid.UUID) ([]models.Step, error) {
-	ctx, span := s.tracer.Start(ctx, "StepService.ListNamespaced")
+	ctx, span := telemetry.StartSpan(ctx, "StepService.ListNamespaced")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

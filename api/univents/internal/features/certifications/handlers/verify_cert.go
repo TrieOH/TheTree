@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"univents/models"
+
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 )
@@ -13,9 +15,9 @@ func (handler *Handlers) VerifyCert(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	fun.Respond(w, map[string]interface{}{
-		"valid":       cert.Valid,
-		"template_id": cert.TemplateID,
-		"cert":        cert,
+	fun.Respond(w, models.VerifyCertResponse{
+		Valid:      cert.Valid,
+		TemplateID: cert.TemplateID,
+		Cert:       cert,
 	})
 }

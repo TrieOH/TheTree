@@ -41,17 +41,20 @@ type DeliverWebhookWorker struct {
 	deliveries ports.WebhookDeliveryRepo
 	events     ports.WebhookEventRepo
 	endpoints  ports.WebhookEndpointRepo
+	httpClient *resty.Client
 }
 
 func NewDeliverWebhookWorker(
 	deliveries ports.WebhookDeliveryRepo,
 	events ports.WebhookEventRepo,
 	endpoints ports.WebhookEndpointRepo,
+	httpClient *resty.Client,
 ) *DeliverWebhookWorker {
 	return &DeliverWebhookWorker{
 		deliveries: deliveries,
 		events:     events,
 		endpoints:  endpoints,
+		httpClient: httpClient,
 	}
 }
 
@@ -70,20 +73,19 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[DeliverW
 
 	event, err := w.events.GetByID(ctx, delivery.EventID)
 	if err != nil {
-		return w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("event not found: %v", err))
+		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("event not found: %v", err))
+		return err
 	}
 
 	endpoint, err := w.endpoints.GetByID(ctx, delivery.EndpointID)
 	if err != nil {
-		return w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("endpoint not found: %v", err))
+		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("endpoint not found: %v", err))
+		return err
 	}
 
 	signature := signPayload(endpoint.Secret, event.Payload)
 
-	client := resty.New().SetTimeout(10 * time.Second)
-	defer client.Close()
-
-	resp, reqErr := client.R().
+	resp, reqErr := w.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Payssage-Signature", signature).
@@ -180,16 +182,16 @@ func (w *DeliverWebhookWorker) recordAttempt(
 
 // giveUp marks a delivery failed immediately, for errors that will never
 // resolve by retrying (missing event/endpoint row).
-func (w *DeliverWebhookWorker) giveUp(ctx context.Context, delivery *models.WebhookDelivery, responseStatus int, responseBody, reason string) error {
+func (w *DeliverWebhookWorker) giveUp(ctx context.Context, delivery *models.WebhookDelivery, responseStatus int, responseBody, reason string) {
 	telemetry.Log().Error("webhook delivery: giving up", zap.String("delivery_id", delivery.ID.String()), zap.String("reason", reason))
 	_, _ = w.deliveries.Update(ctx, models.UpdateDeliveryParams{
 		ID:              delivery.ID,
 		Status:          models.WebhookDeliveryStatusFailed,
 		Attempts:        delivery.Attempts + 1,
 		LastAttemptedAt: new(time.Now()),
-		ResponseBody:    &reason,
+		ResponseBody:    &responseBody,
+		ResponseStatus:  &responseStatus,
 	})
-	return nil
 }
 
 func signPayload(secret string, payload []byte) string {

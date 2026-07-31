@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (c *Commands) Revoke(ctx context.Context, input models.RevokeInput) error {
-	ctx, span := c.tracer.Start(ctx, "Revoke")
+	ctx, span := telemetry.StartSpan(ctx, "Revoke")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	idx "sdk/identityx"
+
+	"resty.dev/v3"
 )
 
 func SetupIdentityX(cfg config.Config) *idx.Client {
@@ -28,4 +30,8 @@ func SetupIdentityX(cfg config.Config) *idx.Client {
 		}
 	}()
 	return client
+}
+
+func SetupHTTPClient() *resty.Client {
+	return resty.New().SetTimeout(15 * time.Second)
 }
