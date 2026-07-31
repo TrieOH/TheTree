@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	sqlc2 "IdentityX/internal/sqlc"
+	"IdentityX/internal/sqlc"
 	"context"
 	"lib/crypto"
 	"time"
@@ -20,10 +20,10 @@ func (CreateCryptoKeyArgs) Kind() string { return "crypto_key.create" }
 type CreateCryptoKeyWorker struct {
 	river.WorkerDefaults[CreateCryptoKeyArgs]
 
-	queries *sqlc2.Queries
+	queries *sqlc.Queries
 }
 
-func NewCreateCryptoKeyWorker(queries *sqlc2.Queries) *CreateCryptoKeyWorker {
+func NewCreateCryptoKeyWorker(queries *sqlc.Queries) *CreateCryptoKeyWorker {
 	return &CreateCryptoKeyWorker{queries: queries}
 }
 
@@ -33,7 +33,7 @@ func (w *CreateCryptoKeyWorker) Work(ctx context.Context, job *river.Job[CreateC
 		return err
 	}
 
-	_, err = w.queries.CreateCryptoKey(ctx, sqlc2.CreateCryptoKeyParams{
+	_, err = w.queries.CreateCryptoKey(ctx, sqlc.CreateCryptoKeyParams{
 		ProjectID:           job.Args.ProjectID,
 		Type:                job.Args.KeyType,
 		PublicKey:           key.Public,
