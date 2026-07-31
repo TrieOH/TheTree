@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) UnbindCollector(ctx context.Context, walletID uuid.UUID) error {
+func (repo *Repo) UnbindCollector(ctx context.Context, walletID uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "WalletRepo.UnbindCollector")
 	defer span.End()
 

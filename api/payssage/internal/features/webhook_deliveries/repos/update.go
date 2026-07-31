@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (r *repo) Update(ctx context.Context, params models.UpdateDeliveryParams) (*models.WebhookDelivery, error) {
+func (r *Repo) Update(ctx context.Context, params models.UpdateDeliveryParams) (*models.WebhookDelivery, error) {
 	ctx, span := r.tracer.Start(ctx, "Update")
 	defer span.End()
 	row, err := database.Queries(ctx, r.q).UpdateWebhookDelivery(ctx, sqlc.UpdateWebhookDeliveryParams{

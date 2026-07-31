@@ -82,8 +82,8 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 		OwnerID:             ident.Sub.ID,
 		Provider:            provider.String(),
 		Flow:                payload.Flow,
-		FinalRedirectUrl:    payload.FinalRedirectURL,
-		ProviderRedirectUrl: payload.ProviderRedirectURL,
+		FinalRedirectURL:    payload.FinalRedirectURL,
+		ProviderRedirectURL: payload.ProviderRedirectURL,
 		ExpiresAt:           time.Now().Add(5 * time.Minute),
 	})
 	if err != nil {

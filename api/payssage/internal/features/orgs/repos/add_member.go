@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) AddMember(ctx context.Context, toAdd models.OrganizationMember) error {
+func (repo *Repo) AddMember(ctx context.Context, toAdd models.OrganizationMember) error {
 	ctx, span := repo.tracer.Start(ctx, "AddMember")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).AddOrganizationMember(ctx, sqlc.AddOrganizationMemberParams{

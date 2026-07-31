@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListJoined(ctx context.Context, userID uuid.UUID) ([]models.Organization, error) {
+func (repo *Repo) ListJoined(ctx context.Context, userID uuid.UUID) ([]models.Organization, error) {
 	ctx, span := repo.tracer.Start(ctx, "ListJoined")
 	defer span.End()
 	sqlcOrgs, err := database.Queries(ctx, repo.q).ListJoinedOrganizations(ctx, userID)

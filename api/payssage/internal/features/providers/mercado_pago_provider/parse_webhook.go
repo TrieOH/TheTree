@@ -8,10 +8,9 @@ import (
 	"payssage/models"
 
 	"github.com/MintzyG/fun"
-	"resty.dev/v3"
 )
 
-func (p *Provider) Parse(ctx context.Context, r *http.Request, rawBody []byte) (*models.WebhookParseResult, error) {
+func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (*models.WebhookParseResult, error) {
 	var envelope struct {
 		Type   string `json:"type"`
 		Action string `json:"action"`
@@ -54,10 +53,6 @@ func (p *Provider) Parse(ctx context.Context, r *http.Request, rawBody []byte) (
 		return nil, fun.Errf("seller %s has no mercadopago access token; cannot resolve webhook for intent %s", seller.ID, intent.ID).Conflict()
 	}
 
-	// TODO: hoist into shared *resty.Client (see Checkout TODO)
-	client := resty.New()
-	defer client.Close()
-
 	var mpResp struct {
 		ID           int64  `json:"id"`
 		Status       string `json:"status"`
@@ -65,7 +60,7 @@ func (p *Provider) Parse(ctx context.Context, r *http.Request, rawBody []byte) (
 	}
 	var mpErr map[string]any
 
-	resp, err := client.R().
+	resp, err := p.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Authorization", "Bearer "+creds.AccessToken).
 		SetResult(&mpResp).

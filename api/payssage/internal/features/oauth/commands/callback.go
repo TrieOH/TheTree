@@ -29,7 +29,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 	}
 
 	oauthProvider := providers.PayssageProviders.OAuth[provider]
-	credentialData, err := oauthProvider.ExchangeCode(ctx, code, state.ProviderRedirectUrl)
+	credentialData, err := oauthProvider.ExchangeCode(ctx, code, state.ProviderRedirectURL)
 	if err != nil {
 		return "", err
 	}
@@ -66,9 +66,10 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 		return "", fun.ErrBadRequest("invalid flow")
 	}
 
-	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectUrl, credentialID, credentialData.PublicKey), nil
+	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectURL, credentialID, credentialData.PublicKey), nil
 }
 
+// nolint:
 func marshalCredentials(data models.ProviderCredentialData) []byte {
 	b, _ := json.Marshal(data)
 	return b

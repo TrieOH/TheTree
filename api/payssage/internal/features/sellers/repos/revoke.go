@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) Revoke(ctx context.Context, id uuid.UUID) error {
+func (repo *Repo) Revoke(ctx context.Context, id uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "SellerRepo.Revoke")
 	defer span.End()
 

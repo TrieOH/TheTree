@@ -42,7 +42,9 @@ func (p *Provider) ExchangeCode(ctx context.Context, code, redirectURI string) (
 		telemetry.Log().Error("error executing MP exchange code request", zap.Error(err))
 		return models.ProviderCredentialData{}, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {

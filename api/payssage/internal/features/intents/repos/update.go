@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) Update(ctx context.Context, toUpdate models.Intent) (*models.Intent, error) {
+func (repo *Repo) Update(ctx context.Context, toUpdate models.Intent) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Update")
 	defer span.End()
 

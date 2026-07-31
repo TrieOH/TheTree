@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) SetSandboxState(ctx context.Context, walletID uuid.UUID, state bool) error {
+func (repo *Repo) SetSandboxState(ctx context.Context, walletID uuid.UUID, state bool) error {
 	ctx, span := repo.tracer.Start(ctx, "SetSandboxState")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).SetWalletSandboxState(ctx, sqlc.SetWalletSandboxStateParams{

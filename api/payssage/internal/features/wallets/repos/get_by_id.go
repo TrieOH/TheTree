@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByID(ctx context.Context, walletID uuid.UUID) (*models.Wallet, error) {
+func (repo *Repo) GetByID(ctx context.Context, walletID uuid.UUID) (*models.Wallet, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByID")
 	defer span.End()
 	sqlcWallet, err := database.Queries(ctx, repo.q).GetWalletByID(ctx, walletID)

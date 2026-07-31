@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (r *repo) Create(ctx context.Context, toCreate models.WebhookDelivery) (*models.WebhookDelivery, error) {
+func (r *Repo) Create(ctx context.Context, toCreate models.WebhookDelivery) (*models.WebhookDelivery, error) {
 	ctx, span := r.tracer.Start(ctx, "Create")
 	defer span.End()
 	row, err := database.Queries(ctx, r.q).CreateWebhookDelivery(ctx, sqlc.CreateWebhookDeliveryParams{

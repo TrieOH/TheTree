@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models.Wallet, error) {
+func (repo *Repo) ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models.Wallet, error) {
 	ctx, span := repo.tracer.Start(ctx, "ListFromOrg")
 	defer span.End()
 	sqlcWallets, err := database.Queries(ctx, repo.q).ListOrgWallets(ctx, &orgID)

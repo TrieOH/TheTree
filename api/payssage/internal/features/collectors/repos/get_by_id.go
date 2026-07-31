@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Collector, error) {
+func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Collector, error) {
 	ctx, span := repo.tracer.Start(ctx, "CollectorRepo.GetByID")
 	defer span.End()
 

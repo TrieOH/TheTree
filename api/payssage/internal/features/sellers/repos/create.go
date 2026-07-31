@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.Seller) (*models.Seller, error) {
+func (repo *Repo) Create(ctx context.Context, toCreate models.Seller) (*models.Seller, error) {
 	ctx, span := repo.tracer.Start(ctx, "SellerRepo.Create")
 	defer span.End()
 

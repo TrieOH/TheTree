@@ -22,7 +22,8 @@ func (q *Queries) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]m
 		return nil, err
 	}
 
-	if err := q.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID); err != nil {
+	err = q.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 

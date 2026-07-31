@@ -65,14 +65,12 @@ type commands struct {
 }
 
 type middlewares struct {
-	logger            func(http.Handler) http.Handler
-	cors              func(http.Handler) http.Handler
-	jwtAuth           func(http.Handler) http.Handler
-	apiKeyAuth        func(http.Handler) http.Handler
-	anyAuth           func(http.Handler) http.Handler
-	clientOnly        func(http.Handler) http.Handler
-	projectClientOnly func(http.Handler) http.Handler
-	metrics           func(http.Handler) http.Handler
+	logger     func(http.Handler) http.Handler
+	cors       func(http.Handler) http.Handler
+	jwtAuth    func(http.Handler) http.Handler
+	apiKeyAuth func(http.Handler) http.Handler
+	anyAuth    func(http.Handler) http.Handler
+	metrics    func(http.Handler) http.Handler
 }
 
 type handlers struct {
@@ -113,7 +111,7 @@ func (app *Payssage) initRepos(q *sqlc.Queries) repos {
 }
 
 func (app *Payssage) initProviders(r repos) {
-	mercadoPago := providers.NewMercadoPago(app.cfg.MercadoPagoConfig, r.intents, r.collectors, r.sellers, r.wallets, app.tracer(), app.txRunner())
+	mercadoPago := providers.NewMercadoPago(app.cfg.MercadoPagoConfig, r.intents, r.collectors, r.sellers, r.wallets, app.tracer(), app.txRunner(), app.httpClient)
 
 	providers2.PayssageProviders.OAuth = map[providers2.AvailableProviders]ports.OAuthProvider{
 		providers2.MercadoPagoProvider: mercadoPago,

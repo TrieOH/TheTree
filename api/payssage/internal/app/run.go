@@ -27,7 +27,7 @@ func (app *Payssage) run() {
 
 	riverClient := libriver.NewClient(app.db, libriver.NewWorkers(
 		libriver.Register[webhooksjobs.DeliverWebhookArgs](webhooksjobs.NewDeliverWebhookWorker(
-			repos.deliveries, repos.events, repos.endpoints,
+			repos.deliveries, repos.events, repos.endpoints, app.httpClient,
 		)),
 	), nil, nil)
 	if err := riverClient.Start(ctx); err != nil {

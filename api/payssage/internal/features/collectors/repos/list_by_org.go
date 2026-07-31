@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListByOrg(ctx context.Context, orgID uuid.UUID) ([]models.Collector, error) {
+func (repo *Repo) ListByOrg(ctx context.Context, orgID uuid.UUID) ([]models.Collector, error) {
 	ctx, span := repo.tracer.Start(ctx, "CollectorRepo.ListByOrg")
 	defer span.End()
 

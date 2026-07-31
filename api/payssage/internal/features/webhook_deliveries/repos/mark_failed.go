@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (r *repo) MarkFailed(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
+func (r *Repo) MarkFailed(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
 	ctx, span := r.tracer.Start(ctx, "MarkFailed")
 	defer span.End()
 	row, err := database.Queries(ctx, r.q).MarkDeliveryFailed(ctx, id)

@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error) {
+func (repo *Repo) Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Create")
 	defer span.End()
 

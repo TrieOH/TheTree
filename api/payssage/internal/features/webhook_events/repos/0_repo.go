@@ -9,16 +9,16 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type repo struct {
+type Repo struct {
 	q      *sqlc2.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.WebhookEventRepo = (*repo)(nil)
+var _ ports.WebhookEventRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.WebhookEventRepo {
-	return &repo{
+func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) *Repo {
+	return &Repo{
 		q:      q,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("webhook_event"),

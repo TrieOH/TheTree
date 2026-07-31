@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) List(ctx context.Context) ([]models.Seller, error) {
+func (repo *Repo) List(ctx context.Context) ([]models.Seller, error) {
 	ctx, span := repo.tracer.Start(ctx, "SellerRepo.List")
 	defer span.End()
 

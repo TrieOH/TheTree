@@ -22,7 +22,8 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Intent, er
 		return nil, err
 	}
 
-	if err := q.checkWalletAccess(ctx, intent.WalletID, ident.Sub.ID); err != nil {
+	err = q.checkWalletAccess(ctx, intent.WalletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"lib/database"
 	"payssage/models"
 	"payssage/ports"
@@ -88,29 +87,6 @@ func (c *Commands) checkAdminAccess(ctx context.Context, walletID, subID uuid.UU
 
 	if err := c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (c *Commands) checkWalletAccess(wallet *models.Wallet, subID uuid.UUID, org ...*models.Organization) error {
-	if wallet == nil {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-
-	if len(org) > 1 {
-		return fmt.Errorf("checkWalletAccess: expected at most one org, got %d", len(org))
-	}
-
-	if len(org) == 1 && org[0] != nil {
-		if wallet.OrganizationID == nil || *wallet.OrganizationID != org[0].ID {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		return nil
-	}
-
-	if wallet.OwnerID != subID {
-		return fun.ErrForbidden("insufficient permissions")
 	}
 
 	return nil

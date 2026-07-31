@@ -9,6 +9,7 @@ import (
 	mpconfig "github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
 	"go.opentelemetry.io/otel/trace"
+	"resty.dev/v3"
 )
 
 var _ ports.PaymentAbstractionLayer = (*Provider)(nil)
@@ -22,6 +23,7 @@ type Provider struct {
 	oauthClient oauth.Client
 	tracer      trace.Tracer
 	tx          database.TxRunner
+	httpClient  *resty.Client
 }
 
 func NewProvider(
@@ -32,6 +34,7 @@ func NewProvider(
 	wallets ports.WalletRepo,
 	tracer trace.Tracer,
 	tx database.TxRunner,
+	httpClient *resty.Client,
 ) *Provider {
 	mpCfg, err := mpconfig.New(cfg.MpAccessToken)
 	if err != nil {
@@ -46,5 +49,6 @@ func NewProvider(
 		oauthClient: oauth.NewClient(mpCfg),
 		tracer:      tracer,
 		tx:          tx,
+		httpClient:  httpClient,
 	}
 }

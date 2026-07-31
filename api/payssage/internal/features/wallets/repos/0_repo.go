@@ -2,30 +2,30 @@ package repos
 
 import (
 	"lib/database"
-	sqlc2 "payssage/internal/sqlc"
+	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
 
 	"go.opentelemetry.io/otel/trace"
 )
 
-type repo struct {
-	q      *sqlc2.Queries
+type Repo struct {
+	q      *sqlc.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.WalletRepo = (*repo)(nil)
+var _ ports.WalletRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.WalletRepo {
-	return &repo{
+func NewRepo(q *sqlc.Queries, tracer trace.Tracer) *Repo {
+	return &Repo{
 		q:      q,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("wallet"),
 	}
 }
 
-func mapWallet(src sqlc2.Wallet) models.Wallet {
+func mapWallet(src sqlc.Wallet) models.Wallet {
 	return models.Wallet{
 		ID:             src.ID,
 		OwnerID:        src.OwnerID,

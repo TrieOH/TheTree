@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) GetByProviderTransactionID(ctx context.Context, provider string, transactionID string) (*models.Intent, error) {
+func (repo *Repo) GetByProviderTransactionID(ctx context.Context, provider string, transactionID string) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByProviderTransactionID")
 	defer span.End()
 

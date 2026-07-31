@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (r *repo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
+func (r *Repo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
 	ctx, span := r.tracer.Start(ctx, "ListByEndpoint")
 	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListWebhookDeliveriesByEndpoint(ctx, endpointID)

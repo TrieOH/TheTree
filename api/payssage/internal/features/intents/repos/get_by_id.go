@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Intent, error) {
+func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByID")
 	defer span.End()
 

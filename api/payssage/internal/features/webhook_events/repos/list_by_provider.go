@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (r *repo) ListByProvider(ctx context.Context, provider string) ([]models.WebhookEvent, error) {
+func (r *Repo) ListByProvider(ctx context.Context, provider string) ([]models.WebhookEvent, error) {
 	ctx, span := r.tracer.Start(ctx, "ListByProvider")
 	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListWebhookEventsByProvider(ctx, provider)

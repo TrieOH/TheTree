@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (r *repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.WebhookEvent, error) {
+func (r *Repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.WebhookEvent, error) {
 	ctx, span := r.tracer.Start(ctx, "ListByWallet")
 	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListWebhookEventsByWallet(ctx, walletID)

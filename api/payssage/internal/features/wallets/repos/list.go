@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]models.Wallet, error) {
+func (repo *Repo) List(ctx context.Context, ownerID uuid.UUID) ([]models.Wallet, error) {
 	ctx, span := repo.tracer.Start(ctx, "List")
 	defer span.End()
 	sqlcWallets, err := database.Queries(ctx, repo.q).ListWallets(ctx, ownerID)

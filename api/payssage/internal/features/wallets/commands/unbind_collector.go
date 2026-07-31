@@ -28,7 +28,8 @@ func (c *Commands) UnbindCollector(ctx context.Context, walletID uuid.UUID) erro
 		if err != nil {
 			return err
 		}
-		if err := c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin); err != nil {
+		err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
+		if err != nil {
 			return err
 		}
 	} else if wallet.OwnerID != ident.Sub.ID {

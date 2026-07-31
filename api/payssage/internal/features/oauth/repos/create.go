@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) Create(ctx context.Context, state models.OAuthState) (*models.OAuthState, error) {
+func (repo *Repo) Create(ctx context.Context, state models.OAuthState) (*models.OAuthState, error) {
 	ctx, span := repo.tracer.Start(ctx, "Create")
 	defer span.End()
 	sqlcState, err := database.Queries(ctx, repo.q).CreateOAuthState(ctx, sqlc.CreateOAuthStateParams{
@@ -17,8 +17,8 @@ func (repo *repo) Create(ctx context.Context, state models.OAuthState) (*models.
 		OwnerID:             state.OwnerID,
 		Provider:            state.Provider,
 		Flow:                state.Flow.String(),
-		FinalRedirectUrl:    state.FinalRedirectUrl,
-		ProviderRedirectUrl: state.ProviderRedirectUrl,
+		FinalRedirectUrl:    state.FinalRedirectURL,
+		ProviderRedirectUrl: state.ProviderRedirectURL,
 		ExpiresAt:           state.ExpiresAt,
 	})
 	return new(mapState(sqlcState)), repo.dbe(err)

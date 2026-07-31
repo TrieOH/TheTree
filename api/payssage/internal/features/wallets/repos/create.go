@@ -7,7 +7,7 @@ import (
 	"payssage/models"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.Wallet) (*models.Wallet, error) {
+func (repo *Repo) Create(ctx context.Context, toCreate models.Wallet) (*models.Wallet, error) {
 	ctx, span := repo.tracer.Start(ctx, "Create")
 	defer span.End()
 	sqlcWallet, err := database.Queries(ctx, repo.q).CreateWallet(ctx, sqlc.CreateWalletParams{

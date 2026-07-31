@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]models.Intent, error) {
+func (repo *Repo) ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.ListByOwner")
 	defer span.End()
 

@@ -17,7 +17,8 @@ func (q *Queries) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]model
 		return nil, err
 	}
 
-	if err := q.checkWalletAccess(ctx, walletID, ident.Sub.ID); err != nil {
+	err = q.checkWalletAccess(ctx, walletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 

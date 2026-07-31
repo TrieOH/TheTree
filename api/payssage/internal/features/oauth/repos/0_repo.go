@@ -2,30 +2,30 @@ package repos
 
 import (
 	"lib/database"
-	sqlc2 "payssage/internal/sqlc"
+	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
 
 	"go.opentelemetry.io/otel/trace"
 )
 
-type repo struct {
-	q      *sqlc2.Queries
+type Repo struct {
+	q      *sqlc.Queries
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.OAuthStateRepo = (*repo)(nil)
+var _ ports.OAuthStateRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.OAuthStateRepo {
-	return &repo{
+func NewRepo(q *sqlc.Queries, tracer trace.Tracer) *Repo {
+	return &Repo{
 		q:      q,
 		tracer: tracer,
 		dbe:    database.NewErrorHandler("state"),
 	}
 }
 
-func mapState(src sqlc2.OauthState) models.OAuthState {
+func mapState(src sqlc.OauthState) models.OAuthState {
 	return models.OAuthState{
 		State:               src.State,
 		WalletID:            src.WalletID,
@@ -33,8 +33,8 @@ func mapState(src sqlc2.OauthState) models.OAuthState {
 		OwnerID:             src.OwnerID,
 		Provider:            src.Provider,
 		Flow:                models.OAuthFlow(src.Flow),
-		FinalRedirectUrl:    src.FinalRedirectUrl,
-		ProviderRedirectUrl: src.ProviderRedirectUrl,
+		FinalRedirectURL:    src.FinalRedirectUrl,
+		ProviderRedirectURL: src.ProviderRedirectUrl,
 		CreatedAt:           src.CreatedAt,
 		ExpiresAt:           src.ExpiresAt,
 	}

@@ -27,7 +27,8 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.WebhookDel
 		return nil, err
 	}
 
-	if err := q.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID); err != nil {
+	err = q.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID)
+	if err != nil {
 		return nil, err
 	}
 

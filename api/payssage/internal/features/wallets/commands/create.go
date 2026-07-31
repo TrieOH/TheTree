@@ -31,7 +31,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateWalletInput)
 	}
 
 	ownerID := ident.Sub.ID
-	var orgID *uuid.UUID = nil
+	var orgID *uuid.UUID
 	if org != nil {
 		ownerID = org.OwnerID
 		orgID = &org.ID

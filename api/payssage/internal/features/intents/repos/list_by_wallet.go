@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error) {
+func (repo *Repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.ListByWallet")
 	defer span.End()
 
