@@ -1,4 +1,3 @@
-import type { CurrentSessionI, SessionI } from "../types/sessions-types";
 import { clearAuthTokens, getUserInfo, saveAuthSession } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
@@ -99,18 +98,6 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     }
 
     return res;
-  },
-
-  // FIXME: This is not being used for now
-  sessions: async () => apiInstance.get<SessionI[]>("/sessions"),
-
-  currentSession: async () => apiInstance.get<CurrentSessionI>("/sessions/me"),
-
-  revokeASession: async (id: string) => apiInstance.delete<void>(`/sessions/${id}`),
-
-  revokeSessions: async (revokeAll: boolean = false) => {
-    const path = revokeAll ? "/sessions" : "/sessions/others"
-    return apiInstance.delete<void>(path);
   },
 
   profile: () => getUserInfo(),
