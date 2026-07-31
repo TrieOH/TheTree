@@ -6,10 +6,11 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 )
 
-func (repo *repo) UpdateSelectConfig(ctx context.Context, toUpdate models.FieldSelectConfig) (*models.FieldSelectConfig, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "FieldRepo.UpdateSelectConfig")
+func (repo *Repo) UpdateSelectConfig(ctx context.Context, toUpdate models.FieldSelectConfig) (*models.FieldSelectConfig, error) {
+	ctx, span := telemetry.StartSpan(ctx, "FieldRepo.UpdateSelectConfig")
 	defer span.End()
 	sqlcConfig, err := database.Queries(ctx, repo.q).UpdateFieldSelectConfig(ctx, sqlc.UpdateFieldSelectConfigParams{
 		FieldID:   toUpdate.FieldID,

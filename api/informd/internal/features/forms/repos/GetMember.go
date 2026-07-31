@@ -6,12 +6,13 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetMember(ctx context.Context, userID, formID uuid.UUID) (*models.FormMember, error) {
-	ctx, span := repo.tracer.Start(ctx, "GetMember")
+func (repo *Repo) GetMember(ctx context.Context, userID, formID uuid.UUID) (*models.FormMember, error) {
+	ctx, span := telemetry.StartSpan(ctx, "GetMember")
 	defer span.End()
 	sqlcMember, err := database.Queries(ctx, repo.q).GetFormMember(ctx, sqlc.GetFormMemberParams{
 		UserID: userID,

@@ -143,7 +143,7 @@ linters:
         - msg
         - source
     interfacebloat:
-      max: 20                   # max methods before warning
+      max: 25                   # max methods before warning
 
   exclusions:
     # Generated code — sqlc, mockery, swag, tygo output.

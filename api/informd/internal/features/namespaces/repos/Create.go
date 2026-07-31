@@ -6,10 +6,11 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.Namespace) (*models.Namespace, error) {
-	ctx, span := repo.tracer.Start(ctx, "Create")
+func (repo *Repo) Create(ctx context.Context, toCreate models.Namespace) (*models.Namespace, error) {
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 	sqlcProject, err := database.Queries(ctx, repo.q).CreateNamespace(ctx, sqlc.CreateNamespaceParams{
 		OwnerID: toCreate.OwnerID,

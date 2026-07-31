@@ -6,10 +6,11 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.Form) (*models.Form, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.Create")
+func (repo *Repo) Create(ctx context.Context, toCreate models.Form) (*models.Form, error) {
+	ctx, span := telemetry.StartSpan(ctx, "FormRepo.Create")
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).CreateForm(ctx, sqlc.CreateFormParams{
 		NamespaceID: toCreate.NamespaceID,

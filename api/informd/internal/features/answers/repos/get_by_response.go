@@ -5,13 +5,14 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByResponse(ctx context.Context, responseID uuid.UUID) ([]models.Answer, error) {
-	ctx, span := repo.tracer.Start(ctx, "AnswerRepo.GetByResponse")
+func (repo *Repo) GetByResponse(ctx context.Context, responseID uuid.UUID) ([]models.Answer, error) {
+	ctx, span := telemetry.StartSpan(ctx, "AnswerRepo.GetByResponse")
 	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).GetAnswersByResponse(ctx, responseID)
 	if err != nil {

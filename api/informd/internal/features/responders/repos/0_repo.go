@@ -1,31 +1,27 @@
 package repos
 
 import (
-	sqlc2 "Informd/internal/sqlc"
+	"Informd/internal/sqlc"
 	"Informd/models"
 	"Informd/ports"
 	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
 )
 
-type repo struct {
-	q      *sqlc2.Queries
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+type Repo struct {
+	q   *sqlc.Queries
+	dbe database.ErrorHandler
 }
 
-var _ ports.ResponderRepo = (*repo)(nil)
+var _ ports.ResponderRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc2.Queries, tracer trace.Tracer) ports.ResponderRepo {
-	return &repo{
-		q:      q,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("responder"),
+func NewRepo(q *sqlc.Queries) *Repo {
+	return &Repo{
+		q:   q,
+		dbe: database.NewErrorHandler("responder"),
 	}
 }
 
-func mapResponder(src sqlc2.Responder) models.Responder {
+func mapResponder(src sqlc.Responder) models.Responder {
 	return models.Responder{
 		ID:     src.ID,
 		UserID: src.UserID,

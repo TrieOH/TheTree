@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -12,7 +13,7 @@ import (
 )
 
 func (s *Command) BulkEditNamespaced(ctx context.Context, formID, namespaceID uuid.UUID, payload []models.UpdateNamespacedStepFieldInput) error {
-	ctx, span := s.tracer.Start(ctx, "FieldService.BulkEditNamespaced")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.BulkEditNamespaced")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

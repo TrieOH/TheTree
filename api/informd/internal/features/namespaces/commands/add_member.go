@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMemberInput) error {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddMember")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.AddMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -61,7 +62,8 @@ func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMem
 		AddedBy:     ident.Sub.ID,
 	}
 
-	if err = s.namespaces.AddMember(ctx, newMember); err != nil {
+	err = s.namespaces.AddMember(ctx, newMember)
+	if err != nil {
 		return err
 	}
 	return nil

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -11,7 +12,7 @@ import (
 )
 
 func (s *Command) Delete(ctx context.Context, formID, fieldID uuid.UUID) error {
-	ctx, span := s.tracer.Start(ctx, "FieldService.Delete")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.Delete")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

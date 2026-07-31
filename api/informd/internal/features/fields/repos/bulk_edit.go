@@ -6,11 +6,12 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 )
 
-func (repo *repo) BulkEdit(ctx context.Context, fields []models.Field) error {
-	ctx, span := database.Span(ctx, repo.tracer, "FieldRepo.BulkEdit")
+func (repo *Repo) BulkEdit(ctx context.Context, fields []models.Field) error {
+	ctx, span := telemetry.StartSpan(ctx, "FieldRepo.BulkEdit")
 	defer span.End()
 	params := xslices.MapSlice(fields, ToBulkEditFieldsParams)
 	return database.BatchExec(

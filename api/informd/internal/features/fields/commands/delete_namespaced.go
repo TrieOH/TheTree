@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -11,7 +12,7 @@ import (
 )
 
 func (s *Command) DeleteNamespaced(ctx context.Context, namespaceID, formID, fieldID uuid.UUID) error {
-	ctx, span := s.tracer.Start(ctx, "FieldService.DeleteNamespaced")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.DeleteNamespaced")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

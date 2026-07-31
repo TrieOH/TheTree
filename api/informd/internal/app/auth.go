@@ -30,7 +30,7 @@ func (app *Informd) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 		}), nil
 	}
 
-	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
+	apiKeyHook := func(_ context.Context, _ string) (context.Context, error) {
 		return nil, fun.ErrNotImplemented("api keys are not yet supported")
 	}
 

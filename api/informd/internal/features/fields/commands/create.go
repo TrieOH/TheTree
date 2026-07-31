@@ -2,6 +2,8 @@ package commands
 
 import (
 	"context"
+	"lib/database"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -10,7 +12,7 @@ import (
 )
 
 func (s *Command) Create(ctx context.Context, payload models.CreateStepFieldInput) (*models.Field, error) {
-	ctx, span := s.tracer.Start(ctx, "FieldService.Create")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.Create")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -43,7 +45,7 @@ func (s *Command) Create(ctx context.Context, payload models.CreateStepFieldInpu
 	}
 
 	var created *models.Field
-	if err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		created, err = s.fields.Create(ctx, *field)
 		if err != nil {
 			return err
@@ -60,7 +62,8 @@ func (s *Command) Create(ctx context.Context, payload models.CreateStepFieldInpu
 			}
 		}
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 	return created, nil

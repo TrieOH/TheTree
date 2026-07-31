@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -11,7 +12,7 @@ import (
 )
 
 func (s *Command) EditSelectConfig(ctx context.Context, formID uuid.UUID, payload models.FieldSelectConfig) (*models.FieldSelectConfig, error) {
-	ctx, span := s.tracer.Start(ctx, "FieldService.EditSelectConfig")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.EditSelectConfig")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

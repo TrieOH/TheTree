@@ -53,10 +53,10 @@ func TestNewNamespace_ValidationErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			f, err := NewNamespace(tc.ownerID, tc.namespaceName)
 			if tc.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, f)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, f)
 			}
 		})

@@ -2,6 +2,8 @@ package commands
 
 import (
 	"context"
+	"lib/database"
+	"lib/telemetry"
 	idx "sdk/identityx"
 
 	"Informd/models"
@@ -10,7 +12,7 @@ import (
 )
 
 func (s *Command) CreateNamespaced(ctx context.Context, payload models.CreateNamespacedStepFieldInput) (*models.Field, error) {
-	ctx, span := s.tracer.Start(ctx, "FieldService.CreateNamespaced")
+	ctx, span := telemetry.StartSpan(ctx, "FieldService.CreateNamespaced")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -54,7 +56,7 @@ func (s *Command) CreateNamespaced(ctx context.Context, payload models.CreateNam
 	}
 
 	var created *models.Field
-	if err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		created, err = s.fields.Create(ctx, *field)
 		if err != nil {
 			return err
@@ -71,7 +73,8 @@ func (s *Command) CreateNamespaced(ctx context.Context, payload models.CreateNam
 			}
 		}
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 

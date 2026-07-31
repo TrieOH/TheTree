@@ -12,7 +12,7 @@ type Config struct {
 	// Server
 	Port      string `env:"PORT"              envDefault:"8080"`
 	AppName   string `env:"APP_NAME,required"`
-	AppUrl    string `env:"APP_URL,required"`
+	AppURL    string `env:"APP_URL,required"`
 	DebugMode bool   `env:"DEBUG_MODE"`
 
 	// Migration

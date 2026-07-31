@@ -5,12 +5,13 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) error {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.RemoveMember")
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.RemoveMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

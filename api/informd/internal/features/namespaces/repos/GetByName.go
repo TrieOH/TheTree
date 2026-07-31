@@ -6,12 +6,13 @@ import (
 
 	"Informd/models"
 	"lib/database"
+	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*models.Namespace, error) {
-	ctx, span := repo.tracer.Start(ctx, "GetByName")
+func (repo *Repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*models.Namespace, error) {
+	ctx, span := telemetry.StartSpan(ctx, "GetByName")
 	defer span.End()
 	sqlcProject, err := database.Queries(ctx, repo.q).GetNamespaceByName(ctx, sqlc.GetNamespaceByNameParams{
 		OwnerID: ownerID,
