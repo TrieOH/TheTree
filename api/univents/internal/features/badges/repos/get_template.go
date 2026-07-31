@@ -8,7 +8,7 @@ import (
 )
 
 func (r *Repo) GetTemplateByID(ctx context.Context, id uuid.UUID) (*models.BadgeTemplate, error) {
-	row, err := r.q.GetBadgeTemplate(ctx, id)
+	row, err := r.q.GetBadgeTemplateByID(ctx, id)
 	if err != nil {
 		return nil, r.dbe(err)
 	}
