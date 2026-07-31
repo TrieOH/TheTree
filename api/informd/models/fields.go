@@ -181,6 +181,7 @@ type CreateStepFieldInput struct {
 }
 
 type CreateNamespacedStepFieldInput struct {
+	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 	NamespaceID  uuid.UUID
 	FormID       uuid.UUID
 	StepID       uuid.UUID
@@ -262,6 +263,7 @@ type UpdateStepFieldInput struct {
 }
 
 type UpdateNamespacedStepFieldInput struct {
+	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 	NamespaceID  uuid.UUID
 	FormID       uuid.UUID
 	StepID       uuid.UUID

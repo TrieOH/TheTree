@@ -35,8 +35,8 @@ CREATE TABLE form_members (
     user_id UUID NOT NULL,
 
     role VARCHAR(32) NOT NULL,
-    CONSTRAINT chk_valid_namespace_member_role CHECK (
-        role in ('viewer', 'editor', 'admin', 'owner')
+    CONSTRAINT chk_valid_form_member_role CHECK (
+        role in ('member', 'admin', 'owner')
     ),
 
     added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -45,7 +45,7 @@ CREATE TABLE form_members (
     PRIMARY KEY (user_id, form_id)
 );
 
-CREATE INDEX idx_form_members_role ON namespace_members (role);
+CREATE INDEX idx_form_members_role ON form_members (role);
 
 -- +goose Down
 DROP INDEX IF EXISTS idx_form_members_role;

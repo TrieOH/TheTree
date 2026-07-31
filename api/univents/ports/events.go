@@ -20,6 +20,7 @@ type EventRepo interface {
 
 	// Members
 	GetMember(ctx context.Context, eventID, userID uuid.UUID) (*models.EventMember, error)
+	GetRole(ctx context.Context, actorID, eventID uuid.UUID) (models.EventMemberRole, error)
 	AddEventMember(ctx context.Context, eventID, userID uuid.UUID, role models.EventMemberRole) (*models.EventMember, error)
 	RemoveEventMember(ctx context.Context, eventID, userID uuid.UUID) error
 	ListEventMembers(ctx context.Context, eventID uuid.UUID) ([]models.EventMember, error)

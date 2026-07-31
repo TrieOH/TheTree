@@ -5,6 +5,7 @@ import (
 	idx "sdk/identityx"
 	"time"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -33,17 +34,9 @@ func (s *Commands) AddMember(ctx context.Context, payload models.AddFormMemberIn
 	if payload.UserID == form.OwnerID {
 		return fun.ErrBadRequest("owner of the form is already a member of the form")
 	}
-	if ident.Sub.ID != form.OwnerID {
-		member, err := s.forms.GetMember(ctx, ident.Sub.ID, form.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.FormMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = s.forms.GetMember(ctx, payload.UserID, form.ID)

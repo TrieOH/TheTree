@@ -5,13 +5,14 @@ import (
 	"lib/telemetry"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
-func (s *Command) EditSelectConfigNamespaced(ctx context.Context, formID, namespaceID uuid.UUID, payload models.FieldSelectConfig) (*models.FieldSelectConfig, error) {
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+func (s *Command) EditSelectConfigNamespaced(ctx context.Context, formID, _ uuid.UUID, payload models.FieldSelectConfig) (*models.FieldSelectConfig, error) {
 	ctx, span := telemetry.StartSpan(ctx, "FieldService.EditSelectConfigNamespaced")
 	defer span.End()
 
@@ -20,23 +21,9 @@ func (s *Command) EditSelectConfigNamespaced(ctx context.Context, formID, namesp
 		return nil, err
 	}
 
-	namespaceMember, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	if err != nil {
 		return nil, err
-	}
-	if fun.Is(err, fun.CodeNotFound) {
-		if namespaceMember.Role == models.NamespaceMemberRoleViewer {
-			member, err := s.forms.GetMember(ctx, ident.Sub.ID, formID)
-			if err != nil && !fun.Is(err, fun.CodeNotFound) {
-				return nil, err
-			}
-			if err != nil {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-			if member.Role == models.FormMemberRoleViewer {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-		}
 	}
 
 	return s.fields.UpdateSelectConfig(ctx, payload)

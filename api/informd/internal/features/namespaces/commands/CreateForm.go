@@ -4,10 +4,10 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -25,15 +25,9 @@ func (s *Commands) CreateForm(ctx context.Context, title string, namespaceID uui
 		return nil, err
 	}
 
-	var member *models.NamespaceMember
-	if ident.Sub.ID != namespace.OwnerID {
-		member, err = s.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
-		if err != nil {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role == models.NamespaceMemberRoleViewer {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
+	if err != nil {
+		return nil, err
 	}
 
 	form, err := models.NewForm(&namespaceID, namespace.OwnerID, ident.Sub.ID, title)

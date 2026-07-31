@@ -13,6 +13,7 @@ type NamespaceRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Namespace, error)
 	GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*models.Namespace, error)
 	GetMember(ctx context.Context, id, namespaceID uuid.UUID) (*models.NamespaceMember, error)
+	GetRole(ctx context.Context, actorID, namespaceID uuid.UUID) (models.NamespaceMemberRole, error)
 	ListMembers(ctx context.Context, namespaceID uuid.UUID) ([]models.NamespaceMember, error)
 	AddMember(ctx context.Context, toAdd models.NamespaceMember) error
 	RemoveMember(ctx context.Context, id, namespaceID uuid.UUID) error

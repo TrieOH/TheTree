@@ -3,11 +3,11 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"univents/internal/authz"
 	"univents/models"
 
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -34,15 +34,9 @@ func (c *Commands) GetCertByID(ctx context.Context, id uuid.UUID) (*models.Certi
 		return nil, err
 	}
 
-	member, err := c.events.GetMember(ctx, edition.EventID, ident.Sub.ID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
-	}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleStaff)
 	if err != nil {
 		return nil, err
-	}
-	if !member.Role.Minimum(models.EventMemberRoleStaff) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return cert, nil

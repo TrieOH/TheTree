@@ -4,6 +4,7 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -23,11 +24,9 @@ func (q *Queries) ListMembers(ctx context.Context, eventID uuid.UUID) ([]models.
 		return nil, err
 	}
 
-	if event.OwnerID != ident.Sub.ID {
-		_, err := q.events.GetMember(ctx, event.ID, ident.Sub.ID)
-		if err != nil {
-			return nil, err
-		}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleStaff)
+	if err != nil {
+		return nil, err
 	}
 
 	members, err := q.events.ListEventMembers(ctx, eventID)

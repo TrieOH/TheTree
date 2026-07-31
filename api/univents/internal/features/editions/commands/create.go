@@ -4,9 +4,8 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
-
-	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateEditionInput) (*models.Edition, error) {
@@ -23,15 +22,9 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateEditionInput
 		return nil, err
 	}
 
-	member, err := c.events.GetMember(ctx, event.ID, ident.Sub.ID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
-	}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-	if !member.Role.Minimum(models.EventMemberRoleAdmin) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	edition := &models.Edition{

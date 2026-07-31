@@ -4,6 +4,7 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -32,17 +33,9 @@ func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveFormMe
 	if payload.UserID == form.OwnerID {
 		return fun.ErrBadRequest("cannot remove owner of the form")
 	}
-	if ident.Sub.ID != form.OwnerID {
-		member, err := s.forms.GetMember(ctx, ident.Sub.ID, form.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.FormMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = s.forms.GetMember(ctx, payload.UserID, form.ID)

@@ -29,11 +29,25 @@ func NewNamespace(ownerID uuid.UUID, name string) (*Namespace, error) {
 type NamespaceMemberRole string
 
 const (
-	NamespaceMemberRoleViewer NamespaceMemberRole = "viewer"
-	NamespaceMemberRoleEditor NamespaceMemberRole = "editor"
+	NamespaceMemberRoleMember NamespaceMemberRole = "member"
 	NamespaceMemberRoleAdmin  NamespaceMemberRole = "admin"
 	NamespaceMemberRoleOwner  NamespaceMemberRole = "owner"
 )
+
+func (r NamespaceMemberRole) Rank() int {
+	switch r {
+	case NamespaceMemberRoleMember:
+		return 0
+	case NamespaceMemberRoleAdmin:
+		return 1
+	case NamespaceMemberRoleOwner:
+		return 2
+	default:
+		return 0
+	}
+}
+
+func (r NamespaceMemberRole) String() string { return string(r) }
 
 type NamespaceMember struct {
 	UserID      uuid.UUID           `json:"user_id"`

@@ -51,11 +51,25 @@ type CreateFormRequest struct {
 type FormMemberRole string
 
 const (
-	FormMemberRoleViewer FormMemberRole = "viewer"
-	FormMemberRoleEditor FormMemberRole = "editor"
+	FormMemberRoleMember FormMemberRole = "member"
 	FormMemberRoleAdmin  FormMemberRole = "admin"
 	FormMemberRoleOwner  FormMemberRole = "owner"
 )
+
+func (r FormMemberRole) Rank() int {
+	switch r {
+	case FormMemberRoleMember:
+		return 0
+	case FormMemberRoleAdmin:
+		return 1
+	case FormMemberRoleOwner:
+		return 2
+	default:
+		return 0
+	}
+}
+
+func (r FormMemberRole) String() string { return string(r) }
 
 type FormMember struct {
 	UserID  uuid.UUID      `json:"user_id"`

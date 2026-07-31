@@ -4,9 +4,9 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -29,15 +29,9 @@ func (c *Commands) DeleteProduct(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	member, err := c.events.GetMember(ctx, edition.EventID, ident.Sub.ID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return fun.ErrForbidden("insufficient permissions")
-	}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
-	}
-	if !member.Role.Minimum(models.EventMemberRoleAdmin) {
-		return fun.ErrForbidden("insufficient permissions")
 	}
 
 	return c.products.DeleteProduct(ctx, id)

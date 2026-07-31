@@ -3,10 +3,10 @@ package queries
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -24,22 +24,9 @@ func (q *Queries) GetByID(ctx context.Context, walletID uuid.UUID) (*models.Wall
 		return nil, err
 	}
 
-	if wallet.OrganizationID != nil {
-		org, err := q.orgs.GetByID(ctx, *wallet.OrganizationID)
-		if err != nil {
-			return nil, err
-		}
-
-		err = q.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleMember)
-		if err != nil {
-			return nil, err
-		}
-
-		return wallet, nil
-	}
-
-	if !wallet.OwnedBy(ident.Sub.ID) {
-		return nil, fun.ErrForbidden("insufficient permissions")
+	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleMember)
+	if err != nil {
+		return nil, err
 	}
 
 	return wallet, nil

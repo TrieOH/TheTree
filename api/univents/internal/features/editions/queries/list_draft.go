@@ -4,9 +4,9 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -24,15 +24,9 @@ func (q *Queries) ListDraft(ctx context.Context, eventID uuid.UUID) ([]models.Ed
 		return nil, err
 	}
 
-	member, err := q.events.GetMember(ctx, event.ID, ident.Sub.ID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
-	}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleStaff)
 	if err != nil {
 		return nil, err
-	}
-	if !member.Role.Minimum(models.EventMemberRoleStaff) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return q.editions.ListDraft(ctx, event.ID)

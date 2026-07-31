@@ -4,10 +4,9 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
-
-	"github.com/MintzyG/fun"
 )
 
 func (s *Command) Create(ctx context.Context, payload models.CreateFormStepInput) (*models.Step, error) {
@@ -24,13 +23,9 @@ func (s *Command) Create(ctx context.Context, payload models.CreateFormStepInput
 		return nil, err
 	}
 
-	member, err := s.forms.GetMember(ctx, ident.Sub.ID, payload.FormID)
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, payload.FormID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-
-	if member.Role == models.FormMemberRoleViewer {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	created, err := s.steps.Create(ctx, *step)

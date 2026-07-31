@@ -4,9 +4,8 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
-
-	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) CreateVariant(ctx context.Context, payload models.CreateProductVariantInput) (*models.ProductVariant, error) {
@@ -28,15 +27,9 @@ func (c *Commands) CreateVariant(ctx context.Context, payload models.CreateProdu
 		return nil, err
 	}
 
-	member, err := c.events.GetMember(ctx, edition.EventID, ident.Sub.ID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
-	}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-	if !member.Role.Minimum(models.EventMemberRoleAdmin) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	variant := &models.ProductVariant{

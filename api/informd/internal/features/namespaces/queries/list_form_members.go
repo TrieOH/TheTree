@@ -4,13 +4,14 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (q *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.ListFormMembers")
 	defer span.End()
@@ -20,40 +21,18 @@ func (q *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.
 		return nil, err
 	}
 
-	namespace, err := q.namespaces.GetByID(ctx, namespaceID)
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != namespace.OwnerID {
-		_, err = q.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return nil, err
-		}
-		if err != nil {
-			_, err = q.forms.GetMember(ctx, ident.Sub.ID, formID)
-			if err != nil && !fun.Is(err, fun.CodeNotFound) {
-				return nil, err
-			}
-			if err != nil {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-		}
 	}
 
 	members, err := q.forms.ListDirectMembers(ctx, formID)
 	if err != nil {
 		return nil, err
 	}
-	namespaceMembers, err := q.namespaces.ListMembers(ctx, namespace.ID)
+	namespaceMembers, err := q.namespaces.ListMembers(ctx, namespaceID)
 	if err != nil {
 		return nil, err
-	}
-
-	var formRoleRank = map[models.FormMemberRole]int{
-		models.FormMemberRoleViewer: 0,
-		models.FormMemberRoleEditor: 1,
-		models.FormMemberRoleAdmin:  2,
 	}
 
 	// Index direct members by UserID for O(1) lookup during dedup.
@@ -70,7 +49,7 @@ func (q *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.
 			AddedAt: m.AddedAt,
 			AddedBy: m.AddedBy,
 		}
-		if existing, ok := merged[m.UserID]; !ok || formRoleRank[ns.Role] >= formRoleRank[existing.Role] {
+		if existing, ok := merged[m.UserID]; !ok || ns.Role.Rank() >= existing.Role.Rank() {
 			merged[m.UserID] = ns
 		}
 	}

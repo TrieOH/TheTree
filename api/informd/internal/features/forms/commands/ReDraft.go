@@ -4,6 +4,7 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -39,17 +40,9 @@ func (s *Commands) ReDraft(ctx context.Context, formID uuid.UUID) (*models.Form,
 		return nil, fun.ErrBadRequest("cannot redraft a form with responses")
 	}
 
-	if ident.Sub.ID != form.OwnerID {
-		member, err := s.forms.GetMember(ctx, ident.Sub.ID, form.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return nil, err
-		}
-		if err != nil {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.FormMemberRoleAdmin {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	if err != nil {
+		return nil, err
 	}
 
 	return s.forms.ReDraft(ctx, formID)

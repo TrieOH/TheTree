@@ -21,19 +21,11 @@ func (c *Commands) UpsertProfile(ctx context.Context, payload models.UpsertProfi
 		return nil, err
 	}
 
-	project, err := c.projects.GetByID(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-
 	// self or project admin
-	if ident.Sub.ID != project.OwnerID && ident.Sub.ID != payload.ActorID {
-		member, err := c.projects.GetMember(ctx, ident.Sub.ID, projectID)
+	if ident.Sub.ID != payload.ActorID {
+		err = c.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleAdmin)
 		if err != nil {
 			return nil, err
-		}
-		if member.Role != models.ProjectRoleAdmin {
-			return nil, fun.ErrForbidden("insufficient permissions")
 		}
 	}
 

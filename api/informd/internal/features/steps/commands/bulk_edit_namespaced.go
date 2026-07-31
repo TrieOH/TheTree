@@ -4,6 +4,7 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 	"lib/xslices"
@@ -12,7 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Command) BulkEditNamespaced(ctx context.Context, formID, namespaceID uuid.UUID, payload []models.UpdateNamespacedFormStepInput) error {
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+func (s *Command) BulkEditNamespaced(ctx context.Context, formID, _ uuid.UUID, payload []models.UpdateNamespacedFormStepInput) error {
 	ctx, span := telemetry.StartSpan(ctx, "StepService.BulkEditNamespaced")
 	defer span.End()
 
@@ -21,23 +23,9 @@ func (s *Command) BulkEditNamespaced(ctx context.Context, formID, namespaceID uu
 		return err
 	}
 
-	namespaceMember, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	if err != nil {
 		return err
-	}
-	if fun.Is(err, fun.CodeNotFound) {
-		if namespaceMember.Role == models.NamespaceMemberRoleViewer {
-			member, err := s.forms.GetMember(ctx, ident.Sub.ID, formID)
-			if err != nil && !fun.Is(err, fun.CodeNotFound) {
-				return err
-			}
-			if err != nil {
-				return fun.ErrForbidden("insufficient permissions")
-			}
-			if member.Role == models.FormMemberRoleViewer {
-				return fun.ErrForbidden("insufficient permissions")
-			}
-		}
 	}
 
 	for _, p := range payload {

@@ -22,6 +22,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms/{form_id}/archive [post]
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (h *Handlers) Archive(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()

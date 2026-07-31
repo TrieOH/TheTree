@@ -3,6 +3,8 @@ package queries
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
+	"payssage/models"
 	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
@@ -18,19 +20,9 @@ func (q *Queries) GetMemberByEmail(ctx context.Context, email string, orgID uuid
 		return nil, err
 	}
 
-	org, err := q.orgs.GetByID(ctx, orgID)
+	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, orgID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != org.OwnerID {
-		_, err = q.orgs.GetMember(ctx, ident.Sub.ID, orgID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return nil, err
-		}
-		if err != nil {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
 	}
 
 	actor, err := q.idx.Actors.GetByEmail(ctx, email)

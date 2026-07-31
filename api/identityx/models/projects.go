@@ -51,19 +51,20 @@ const (
 	ProjectRoleOwner  ProjectRole = "owner"
 )
 
-var projectRoleRank = map[ProjectRole]int{
-	ProjectRoleMember: 0,
-	ProjectRoleAdmin:  1,
-	ProjectRoleOwner:  2,
-}
-
 func (r ProjectRole) Rank() int {
-	return projectRoleRank[r]
+	switch r {
+	case ProjectRoleMember:
+		return 0
+	case ProjectRoleAdmin:
+		return 1
+	case ProjectRoleOwner:
+		return 2
+	default:
+		return 0
+	}
 }
 
-func (r ProjectRole) Minimum(req ProjectRole) bool {
-	return r.Rank() >= req.Rank()
-}
+func (r ProjectRole) String() string { return string(r) }
 
 type ProjectMember struct {
 	ProjectID uuid.UUID       `json:"project_id"`

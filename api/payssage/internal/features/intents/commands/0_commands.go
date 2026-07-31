@@ -1,12 +1,7 @@
 package commands
 
 import (
-	"context"
-	"payssage/models"
 	"payssage/ports"
-
-	"github.com/MintzyG/fun"
-	"github.com/google/uuid"
 )
 
 type Commands struct {
@@ -31,56 +26,4 @@ func NewCommands(
 		collectors: collectors,
 		sellers:    sellers,
 	}
-}
-
-func (c *Commands) checkRole(ctx context.Context, org *models.Organization, subID uuid.UUID, minRole models.OrganizationRole) error {
-	if org == nil {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-
-	if org.OwnerID == subID {
-		return nil
-	}
-
-	member, err := c.orgs.GetMember(ctx, subID, org.ID)
-	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		return err
-	}
-
-	if !member.Role.AtLeast(minRole) {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-
-	return nil
-}
-
-func (c *Commands) checkAdminAccess(ctx context.Context, walletID, subID uuid.UUID) error {
-	wallet, err := c.wallets.GetByID(ctx, walletID)
-	if err != nil {
-		return err
-	}
-
-	// personal wallet: owner is admin
-	if wallet.OrganizationID == nil {
-		if wallet.OwnerID != subID {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		return nil
-	}
-
-	// org wallet: check org admin role
-	org, err := c.orgs.GetByID(ctx, *wallet.OrganizationID)
-	if err != nil {
-		return err
-	}
-
-	err = c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

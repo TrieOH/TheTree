@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -39,9 +40,9 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 			}
 		}
 		if org != nil {
-			err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
+			err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 		} else {
-			err = c.checkWalletAccess(wallet, ident.Sub.ID)
+			err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleMember)
 		}
 		if err != nil {
 			return "", err
@@ -55,7 +56,7 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 			if err != nil {
 				return "", err
 			}
-			err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
+			err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return "", err
 			}

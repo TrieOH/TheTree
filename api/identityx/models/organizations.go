@@ -25,19 +25,20 @@ const (
 	OrganizationRoleOwner  OrganizationRole = "owner"
 )
 
-var organizationRoleRank = map[OrganizationRole]int{
-	OrganizationRoleMember: 0,
-	OrganizationRoleAdmin:  1,
-	OrganizationRoleOwner:  2,
-}
-
 func (r OrganizationRole) Rank() int {
-	return organizationRoleRank[r]
+	switch r {
+	case OrganizationRoleMember:
+		return 0
+	case OrganizationRoleAdmin:
+		return 1
+	case OrganizationRoleOwner:
+		return 2
+	default:
+		return 0
+	}
 }
 
-func (r OrganizationRole) Minimum(req OrganizationRole) bool {
-	return r.Rank() >= req.Rank()
-}
+func (r OrganizationRole) String() string { return string(r) }
 
 type OrganizationMember struct {
 	OrganizationID uuid.UUID        `json:"organization_id"`

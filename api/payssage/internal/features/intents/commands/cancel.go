@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -33,8 +34,7 @@ func (c *Commands) Cancel(ctx context.Context, intentID uuid.UUID) (*models.Inte
 	if err != nil {
 		return nil, err
 	}
-
-	err = c.checkAdminAccess(ctx, intent.WalletID, ident.Sub.ID)
+	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, intent.WalletID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

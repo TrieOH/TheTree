@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -23,11 +24,7 @@ func (q *Queries) ListByOrg(ctx context.Context, orgID uuid.UUID) ([]models.Inte
 		return nil, err
 	}
 
-	if org.OwnerID == ident.Sub.ID {
-		return q.intents.ListByOrg(ctx, org.ID)
-	}
-
-	_, err = q.orgs.GetMember(ctx, ident.Sub.ID, org.ID)
+	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

@@ -16,5 +16,6 @@ type ProjectRepo interface {
 	AddMember(ctx context.Context, toCreate models.ProjectMember) error
 	RemoveMember(ctx context.Context, actorID, projectID uuid.UUID) error
 	GetMember(ctx context.Context, actorID, projectID uuid.UUID) (*models.ProjectMember, error)
+	GetRole(ctx context.Context, actorID, projectID uuid.UUID) (models.ProjectRole, error)
 	ListMembers(ctx context.Context, projectID uuid.UUID) ([]models.ProjectMember, error)
 }

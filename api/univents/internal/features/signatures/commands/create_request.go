@@ -10,9 +10,9 @@ import (
 	idx "sdk/identityx"
 	"time"
 	"univents/assets"
+	"univents/internal/authz"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -32,15 +32,9 @@ func (c *Commands) CreateRequest(ctx context.Context, payload models.CreateSigna
 		return nil, err
 	}
 
-	member, err := c.events.GetMember(ctx, edition.EventID, ident.Sub.ID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
-	}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-	if !member.Role.Minimum(models.EventMemberRoleAdmin) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	idempotencyKey := uuid.New()

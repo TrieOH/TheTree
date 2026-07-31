@@ -4,9 +4,10 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
+	"Informd/models"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -24,14 +25,9 @@ func (q *Queries) GetResponseCount(ctx context.Context, formID uuid.UUID) (int, 
 		return 0, err
 	}
 
-	if ident.Sub.ID != form.OwnerID {
-		_, err := q.forms.GetMember(ctx, ident.Sub.ID, form.ID)
-		if err != nil && fun.Is(err, fun.CodeNotFound) {
-			return 0, err
-		}
-		if err != nil {
-			return 0, fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleMember)
+	if err != nil {
+		return 0, err
 	}
 
 	return q.forms.ResponsesCount(ctx, formID)
