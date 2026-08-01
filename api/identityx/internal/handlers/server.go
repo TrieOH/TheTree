@@ -10,7 +10,6 @@ package handlers
 import (
 	"context"
 
-	"IdentityX/internal/handler"
 	"IdentityX/internal/handlers/actors"
 	"IdentityX/internal/handlers/api_keys"
 	"IdentityX/internal/handlers/authn"
@@ -19,10 +18,11 @@ import (
 	"IdentityX/internal/handlers/profile_schemas"
 	"IdentityX/internal/handlers/profiles"
 	"IdentityX/internal/handlers/projects"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 )
 
-// Server implements handler.StrictServerInterface.
+// Server implements openapi.StrictServerInterface.
 type Server struct {
 	actors         *actors.Handlers
 	apiKeys        *api_keys.Handlers
@@ -50,174 +50,174 @@ func NewServer(ops *services.Operations) *Server {
 
 // ── StrictServerInterface ────────────────────────────────────────────────
 
-func (s *Server) ListActors(ctx context.Context, req handler.ListActorsRequestObject) (handler.ListActorsResponseObject, error) {
+func (s *Server) ListActors(ctx context.Context, req openapi.ListActorsRequestObject) (openapi.ListActorsResponseObject, error) {
 	return s.actors.ListActors(ctx, req)
 }
 
-func (s *Server) CreateActor(ctx context.Context, req handler.CreateActorRequestObject) (handler.CreateActorResponseObject, error) {
+func (s *Server) CreateActor(ctx context.Context, req openapi.CreateActorRequestObject) (openapi.CreateActorResponseObject, error) {
 	return s.actors.CreateActor(ctx, req)
 }
 
-func (s *Server) GetActor(ctx context.Context, req handler.GetActorRequestObject) (handler.GetActorResponseObject, error) {
+func (s *Server) GetActor(ctx context.Context, req openapi.GetActorRequestObject) (openapi.GetActorResponseObject, error) {
 	return s.actors.GetActor(ctx, req)
 }
 
-func (s *Server) GetActorByEmail(ctx context.Context, req handler.GetActorByEmailRequestObject) (handler.GetActorByEmailResponseObject, error) {
+func (s *Server) GetActorByEmail(ctx context.Context, req openapi.GetActorByEmailRequestObject) (openapi.GetActorByEmailResponseObject, error) {
 	return s.actors.GetActorByEmail(ctx, req)
 }
 
-func (s *Server) CreateAPIKey(ctx context.Context, req handler.CreateAPIKeyRequestObject) (handler.CreateAPIKeyResponseObject, error) {
+func (s *Server) CreateAPIKey(ctx context.Context, req openapi.CreateAPIKeyRequestObject) (openapi.CreateAPIKeyResponseObject, error) {
 	return s.apiKeys.CreateAPIKey(ctx, req)
 }
 
-func (s *Server) GetSetup(ctx context.Context, req handler.GetSetupRequestObject) (handler.GetSetupResponseObject, error) {
+func (s *Server) GetSetup(ctx context.Context, req openapi.GetSetupRequestObject) (openapi.GetSetupResponseObject, error) {
 	return s.authn.GetSetup(ctx, req)
 }
 
-func (s *Server) PostSetup(ctx context.Context, req handler.PostSetupRequestObject) (handler.PostSetupResponseObject, error) {
+func (s *Server) PostSetup(ctx context.Context, req openapi.PostSetupRequestObject) (openapi.PostSetupResponseObject, error) {
 	return s.authn.PostSetup(ctx, req)
 }
 
-func (s *Server) PostRegister(ctx context.Context, req handler.PostRegisterRequestObject) (handler.PostRegisterResponseObject, error) {
+func (s *Server) PostRegister(ctx context.Context, req openapi.PostRegisterRequestObject) (openapi.PostRegisterResponseObject, error) {
 	return s.authn.PostRegister(ctx, req)
 }
 
-func (s *Server) PostLogin(ctx context.Context, req handler.PostLoginRequestObject) (handler.PostLoginResponseObject, error) {
+func (s *Server) PostLogin(ctx context.Context, req openapi.PostLoginRequestObject) (openapi.PostLoginResponseObject, error) {
 	return s.authn.PostLogin(ctx, req)
 }
 
-func (s *Server) PostLogout(ctx context.Context, req handler.PostLogoutRequestObject) (handler.PostLogoutResponseObject, error) {
+func (s *Server) PostLogout(ctx context.Context, req openapi.PostLogoutRequestObject) (openapi.PostLogoutResponseObject, error) {
 	return s.authn.PostLogout(ctx, req)
 }
 
-func (s *Server) PostRefresh(ctx context.Context, req handler.PostRefreshRequestObject) (handler.PostRefreshResponseObject, error) {
+func (s *Server) PostRefresh(ctx context.Context, req openapi.PostRefreshRequestObject) (openapi.PostRefreshResponseObject, error) {
 	return s.authn.PostRefresh(ctx, req)
 }
 
-func (s *Server) GetOAuthConnect(ctx context.Context, req handler.GetOAuthConnectRequestObject) (handler.GetOAuthConnectResponseObject, error) {
+func (s *Server) GetOAuthConnect(ctx context.Context, req openapi.GetOAuthConnectRequestObject) (openapi.GetOAuthConnectResponseObject, error) {
 	return s.authn.GetOAuthConnect(ctx, req)
 }
 
-func (s *Server) GetOAuthCallback(ctx context.Context, req handler.GetOAuthCallbackRequestObject) (handler.GetOAuthCallbackResponseObject, error) {
+func (s *Server) GetOAuthCallback(ctx context.Context, req openapi.GetOAuthCallbackRequestObject) (openapi.GetOAuthCallbackResponseObject, error) {
 	return s.authn.GetOAuthCallback(ctx, req)
 }
 
-func (s *Server) GetJWKS(ctx context.Context, req handler.GetJWKSRequestObject) (handler.GetJWKSResponseObject, error) {
+func (s *Server) GetJWKS(ctx context.Context, req openapi.GetJWKSRequestObject) (openapi.GetJWKSResponseObject, error) {
 	return s.authn.GetJWKS(ctx, req)
 }
 
-func (s *Server) GetIntrospect(ctx context.Context, req handler.GetIntrospectRequestObject) (handler.GetIntrospectResponseObject, error) {
+func (s *Server) GetIntrospect(ctx context.Context, req openapi.GetIntrospectRequestObject) (openapi.GetIntrospectResponseObject, error) {
 	return s.authn.GetIntrospect(ctx, req)
 }
 
-func (s *Server) ListOrganizations(ctx context.Context, req handler.ListOrganizationsRequestObject) (handler.ListOrganizationsResponseObject, error) {
+func (s *Server) ListOrganizations(ctx context.Context, req openapi.ListOrganizationsRequestObject) (openapi.ListOrganizationsResponseObject, error) {
 	return s.organizations.ListOrganizations(ctx, req)
 }
 
-func (s *Server) CreateOrganization(ctx context.Context, req handler.CreateOrganizationRequestObject) (handler.CreateOrganizationResponseObject, error) {
+func (s *Server) CreateOrganization(ctx context.Context, req openapi.CreateOrganizationRequestObject) (openapi.CreateOrganizationResponseObject, error) {
 	return s.organizations.CreateOrganization(ctx, req)
 }
 
-func (s *Server) ListOrganizationMembers(ctx context.Context, req handler.ListOrganizationMembersRequestObject) (handler.ListOrganizationMembersResponseObject, error) {
+func (s *Server) ListOrganizationMembers(ctx context.Context, req openapi.ListOrganizationMembersRequestObject) (openapi.ListOrganizationMembersResponseObject, error) {
 	return s.organizations.ListOrganizationMembers(ctx, req)
 }
 
-func (s *Server) AddOrganizationMember(ctx context.Context, req handler.AddOrganizationMemberRequestObject) (handler.AddOrganizationMemberResponseObject, error) {
+func (s *Server) AddOrganizationMember(ctx context.Context, req openapi.AddOrganizationMemberRequestObject) (openapi.AddOrganizationMemberResponseObject, error) {
 	return s.organizations.AddOrganizationMember(ctx, req)
 }
 
-func (s *Server) RemoveOrganizationMember(ctx context.Context, req handler.RemoveOrganizationMemberRequestObject) (handler.RemoveOrganizationMemberResponseObject, error) {
+func (s *Server) RemoveOrganizationMember(ctx context.Context, req openapi.RemoveOrganizationMemberRequestObject) (openapi.RemoveOrganizationMemberResponseObject, error) {
 	return s.organizations.RemoveOrganizationMember(ctx, req)
 }
 
-func (s *Server) ListOrganizationProjects(ctx context.Context, req handler.ListOrganizationProjectsRequestObject) (handler.ListOrganizationProjectsResponseObject, error) {
+func (s *Server) ListOrganizationProjects(ctx context.Context, req openapi.ListOrganizationProjectsRequestObject) (openapi.ListOrganizationProjectsResponseObject, error) {
 	return s.organizations.ListOrganizationProjects(ctx, req)
 }
 
-func (s *Server) CreateOrganizationProject(ctx context.Context, req handler.CreateOrganizationProjectRequestObject) (handler.CreateOrganizationProjectResponseObject, error) {
+func (s *Server) CreateOrganizationProject(ctx context.Context, req openapi.CreateOrganizationProjectRequestObject) (openapi.CreateOrganizationProjectResponseObject, error) {
 	return s.organizations.CreateOrganizationProject(ctx, req)
 }
 
-func (s *Server) ListOrganizationProjectActors(ctx context.Context, req handler.ListOrganizationProjectActorsRequestObject) (handler.ListOrganizationProjectActorsResponseObject, error) {
+func (s *Server) ListOrganizationProjectActors(ctx context.Context, req openapi.ListOrganizationProjectActorsRequestObject) (openapi.ListOrganizationProjectActorsResponseObject, error) {
 	return s.organizations.ListOrganizationProjectActors(ctx, req)
 }
 
-func (s *Server) CreateOrganizationProjectActor(ctx context.Context, req handler.CreateOrganizationProjectActorRequestObject) (handler.CreateOrganizationProjectActorResponseObject, error) {
+func (s *Server) CreateOrganizationProjectActor(ctx context.Context, req openapi.CreateOrganizationProjectActorRequestObject) (openapi.CreateOrganizationProjectActorResponseObject, error) {
 	return s.organizations.CreateOrganizationProjectActor(ctx, req)
 }
 
-func (s *Server) ListOrganizationProjectMembers(ctx context.Context, req handler.ListOrganizationProjectMembersRequestObject) (handler.ListOrganizationProjectMembersResponseObject, error) {
+func (s *Server) ListOrganizationProjectMembers(ctx context.Context, req openapi.ListOrganizationProjectMembersRequestObject) (openapi.ListOrganizationProjectMembersResponseObject, error) {
 	return s.organizations.ListOrganizationProjectMembers(ctx, req)
 }
 
-func (s *Server) AddOrganizationProjectMember(ctx context.Context, req handler.AddOrganizationProjectMemberRequestObject) (handler.AddOrganizationProjectMemberResponseObject, error) {
+func (s *Server) AddOrganizationProjectMember(ctx context.Context, req openapi.AddOrganizationProjectMemberRequestObject) (openapi.AddOrganizationProjectMemberResponseObject, error) {
 	return s.organizations.AddOrganizationProjectMember(ctx, req)
 }
 
-func (s *Server) RemoveOrganizationProjectMember(ctx context.Context, req handler.RemoveOrganizationProjectMemberRequestObject) (handler.RemoveOrganizationProjectMemberResponseObject, error) {
+func (s *Server) RemoveOrganizationProjectMember(ctx context.Context, req openapi.RemoveOrganizationProjectMemberRequestObject) (openapi.RemoveOrganizationProjectMemberResponseObject, error) {
 	return s.organizations.RemoveOrganizationProjectMember(ctx, req)
 }
 
-func (s *Server) GetOrganizationProjectActor(ctx context.Context, req handler.GetOrganizationProjectActorRequestObject) (handler.GetOrganizationProjectActorResponseObject, error) {
+func (s *Server) GetOrganizationProjectActor(ctx context.Context, req openapi.GetOrganizationProjectActorRequestObject) (openapi.GetOrganizationProjectActorResponseObject, error) {
 	return s.organizations.GetOrganizationProjectActor(ctx, req)
 }
 
-func (s *Server) GetPlatformProfile(ctx context.Context, req handler.GetPlatformProfileRequestObject) (handler.GetPlatformProfileResponseObject, error) {
+func (s *Server) GetPlatformProfile(ctx context.Context, req openapi.GetPlatformProfileRequestObject) (openapi.GetPlatformProfileResponseObject, error) {
 	return s.profiles.GetPlatformProfile(ctx, req)
 }
 
-func (s *Server) UpsertPlatformProfile(ctx context.Context, req handler.UpsertPlatformProfileRequestObject) (handler.UpsertPlatformProfileResponseObject, error) {
+func (s *Server) UpsertPlatformProfile(ctx context.Context, req openapi.UpsertPlatformProfileRequestObject) (openapi.UpsertPlatformProfileResponseObject, error) {
 	return s.profiles.UpsertPlatformProfile(ctx, req)
 }
 
-func (s *Server) GetProjectProfile(ctx context.Context, req handler.GetProjectProfileRequestObject) (handler.GetProjectProfileResponseObject, error) {
+func (s *Server) GetProjectProfile(ctx context.Context, req openapi.GetProjectProfileRequestObject) (openapi.GetProjectProfileResponseObject, error) {
 	return s.profiles.GetProjectProfile(ctx, req)
 }
 
-func (s *Server) UpsertProjectProfile(ctx context.Context, req handler.UpsertProjectProfileRequestObject) (handler.UpsertProjectProfileResponseObject, error) {
+func (s *Server) UpsertProjectProfile(ctx context.Context, req openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	return s.profiles.UpsertProjectProfile(ctx, req)
 }
 
-func (s *Server) GetPlatformProfileSchema(ctx context.Context, req handler.GetPlatformProfileSchemaRequestObject) (handler.GetPlatformProfileSchemaResponseObject, error) {
+func (s *Server) GetPlatformProfileSchema(ctx context.Context, req openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {
 	return s.profileSchemas.GetPlatformProfileSchema(ctx, req)
 }
 
-func (s *Server) UpsertPlatformProfileSchema(ctx context.Context, req handler.UpsertPlatformProfileSchemaRequestObject) (handler.UpsertPlatformProfileSchemaResponseObject, error) {
+func (s *Server) UpsertPlatformProfileSchema(ctx context.Context, req openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
 	return s.profileSchemas.UpsertPlatformProfileSchema(ctx, req)
 }
 
-func (s *Server) GetProjectProfileSchema(ctx context.Context, req handler.GetProjectProfileSchemaRequestObject) (handler.GetProjectProfileSchemaResponseObject, error) {
+func (s *Server) GetProjectProfileSchema(ctx context.Context, req openapi.GetProjectProfileSchemaRequestObject) (openapi.GetProjectProfileSchemaResponseObject, error) {
 	return s.profileSchemas.GetProjectProfileSchema(ctx, req)
 }
 
-func (s *Server) UpsertProjectProfileSchema(ctx context.Context, req handler.UpsertProjectProfileSchemaRequestObject) (handler.UpsertProjectProfileSchemaResponseObject, error) {
+func (s *Server) UpsertProjectProfileSchema(ctx context.Context, req openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
 	return s.profileSchemas.UpsertProjectProfileSchema(ctx, req)
 }
 
-func (s *Server) ListProjects(ctx context.Context, req handler.ListProjectsRequestObject) (handler.ListProjectsResponseObject, error) {
+func (s *Server) ListProjects(ctx context.Context, req openapi.ListProjectsRequestObject) (openapi.ListProjectsResponseObject, error) {
 	return s.projects.ListProjects(ctx, req)
 }
 
-func (s *Server) CreateProject(ctx context.Context, req handler.CreateProjectRequestObject) (handler.CreateProjectResponseObject, error) {
+func (s *Server) CreateProject(ctx context.Context, req openapi.CreateProjectRequestObject) (openapi.CreateProjectResponseObject, error) {
 	return s.projects.CreateProject(ctx, req)
 }
 
-func (s *Server) ListProjectMembers(ctx context.Context, req handler.ListProjectMembersRequestObject) (handler.ListProjectMembersResponseObject, error) {
+func (s *Server) ListProjectMembers(ctx context.Context, req openapi.ListProjectMembersRequestObject) (openapi.ListProjectMembersResponseObject, error) {
 	return s.projects.ListProjectMembers(ctx, req)
 }
 
-func (s *Server) AddProjectMember(ctx context.Context, req handler.AddProjectMemberRequestObject) (handler.AddProjectMemberResponseObject, error) {
+func (s *Server) AddProjectMember(ctx context.Context, req openapi.AddProjectMemberRequestObject) (openapi.AddProjectMemberResponseObject, error) {
 	return s.projects.AddProjectMember(ctx, req)
 }
 
-func (s *Server) RemoveProjectMember(ctx context.Context, req handler.RemoveProjectMemberRequestObject) (handler.RemoveProjectMemberResponseObject, error) {
+func (s *Server) RemoveProjectMember(ctx context.Context, req openapi.RemoveProjectMemberRequestObject) (openapi.RemoveProjectMemberResponseObject, error) {
 	return s.projects.RemoveProjectMember(ctx, req)
 }
 
-func (s *Server) ListCapabilities(ctx context.Context, req handler.ListCapabilitiesRequestObject) (handler.ListCapabilitiesResponseObject, error) {
+func (s *Server) ListCapabilities(ctx context.Context, req openapi.ListCapabilitiesRequestObject) (openapi.ListCapabilitiesResponseObject, error) {
 	return s.capabilities.ListCapabilities(ctx, req)
 }
 
-func (s *Server) CreateCapability(ctx context.Context, req handler.CreateCapabilityRequestObject) (handler.CreateCapabilityResponseObject, error) {
+func (s *Server) CreateCapability(ctx context.Context, req openapi.CreateCapabilityRequestObject) (openapi.CreateCapabilityResponseObject, error) {
 	return s.capabilities.CreateCapability(ctx, req)
 }

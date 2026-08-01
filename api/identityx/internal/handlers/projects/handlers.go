@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 	"IdentityX/models"
 )
@@ -19,17 +19,17 @@ type Handlers struct {
 
 func New(ops *services.Projects) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) ListProjects(ctx context.Context, _ handler.ListProjectsRequestObject) (handler.ListProjectsResponseObject, error) {
+func (h *Handlers) ListProjects(ctx context.Context, _ openapi.ListProjectsRequestObject) (openapi.ListProjectsResponseObject, error) {
 	projects, err := h.ops.ListProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListProjects200JSONResponse{
+	return openapi.ListProjects200JSONResponse{
 		Code: 200, Data: &projects, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) CreateProject(ctx context.Context, req handler.CreateProjectRequestObject) (handler.CreateProjectResponseObject, error) {
+func (h *Handlers) CreateProject(ctx context.Context, req openapi.CreateProjectRequestObject) (openapi.CreateProjectResponseObject, error) {
 	project, err := h.ops.Create(ctx, models.CreateProjectInput{
 		Name:      req.Body.Name,
 		Domain:    req.Body.Domain,
@@ -38,22 +38,22 @@ func (h *Handlers) CreateProject(ctx context.Context, req handler.CreateProjectR
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateProject201JSONResponse{
+	return openapi.CreateProject201JSONResponse{
 		Code: 201, Data: project, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) ListProjectMembers(ctx context.Context, req handler.ListProjectMembersRequestObject) (handler.ListProjectMembersResponseObject, error) {
+func (h *Handlers) ListProjectMembers(ctx context.Context, req openapi.ListProjectMembersRequestObject) (openapi.ListProjectMembersResponseObject, error) {
 	members, err := h.ops.ListMembers(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListProjectMembers200JSONResponse{
+	return openapi.ListProjectMembers200JSONResponse{
 		Code: 200, Data: &members, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) AddProjectMember(ctx context.Context, req handler.AddProjectMemberRequestObject) (handler.AddProjectMemberResponseObject, error) {
+func (h *Handlers) AddProjectMember(ctx context.Context, req openapi.AddProjectMemberRequestObject) (openapi.AddProjectMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddProjectMemberInput{
 		ActorEmail: req.Body.ActorEmail,
 		Role:       req.Body.Role,
@@ -62,10 +62,10 @@ func (h *Handlers) AddProjectMember(ctx context.Context, req handler.AddProjectM
 	if err != nil {
 		return nil, err
 	}
-	return handler.AddProjectMember201Response{}, nil
+	return openapi.AddProjectMember201Response{}, nil
 }
 
-func (h *Handlers) RemoveProjectMember(ctx context.Context, req handler.RemoveProjectMemberRequestObject) (handler.RemoveProjectMemberResponseObject, error) {
+func (h *Handlers) RemoveProjectMember(ctx context.Context, req openapi.RemoveProjectMemberRequestObject) (openapi.RemoveProjectMemberResponseObject, error) {
 	err := h.ops.RemoveMember(ctx, models.RemoveProjectMemberInput{
 		ActorEmail: req.Body.ActorEmail,
 		ProjectID:  req.ProjectId,
@@ -73,7 +73,7 @@ func (h *Handlers) RemoveProjectMember(ctx context.Context, req handler.RemovePr
 	if err != nil {
 		return nil, err
 	}
-	return handler.RemoveProjectMember200JSONResponse{
+	return openapi.RemoveProjectMember200JSONResponse{
 		Code: 200, Timestamp: time.Now(), Module: module,
 	}, nil
 }

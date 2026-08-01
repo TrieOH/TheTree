@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"slices"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"lib/globals"
 
 	"github.com/MintzyG/fun"
@@ -91,10 +91,10 @@ func authChains(mw middlewares) map[string][]func(http.Handler) http.Handler {
 
 // authDispatch is the strict-server middleware that resolves the auth
 // chain for each operation (by operationId) and runs it around the
-// handler. Public operations (empty chain) pass through untouched.
-func authDispatch(mw middlewares) handler.StrictMiddlewareFunc {
+// openapi. Public operations (empty chain) pass through untouched.
+func authDispatch(mw middlewares) openapi.StrictMiddlewareFunc {
 	chains := authChains(mw)
-	return func(f handler.StrictHandlerFunc, operationID string) handler.StrictHandlerFunc {
+	return func(f openapi.StrictHandlerFunc, operationID string) openapi.StrictHandlerFunc {
 		chain := chains[operationID]
 		if len(chain) == 0 {
 			return f

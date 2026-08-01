@@ -11,145 +11,145 @@ import (
 	"strings"
 	"testing"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// stubStrict implements handler.StrictServerInterface for route walking;
+// stubStrict implements openapi.StrictServerInterface for route walking;
 // registration only stores handlers, they are never served.
 type stubStrict struct{}
 
 // errStub is returned by the walk-only stub; it is never served.
 var errStub = errors.New("parity stub")
 
-func (stubStrict) GetJWKS(_ context.Context, _ handler.GetJWKSRequestObject) (handler.GetJWKSResponseObject, error) {
+func (stubStrict) GetJWKS(_ context.Context, _ openapi.GetJWKSRequestObject) (openapi.GetJWKSResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetPlatformProfile(_ context.Context, _ handler.GetPlatformProfileRequestObject) (handler.GetPlatformProfileResponseObject, error) {
+func (stubStrict) GetPlatformProfile(_ context.Context, _ openapi.GetPlatformProfileRequestObject) (openapi.GetPlatformProfileResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) UpsertPlatformProfile(_ context.Context, _ handler.UpsertPlatformProfileRequestObject) (handler.UpsertPlatformProfileResponseObject, error) {
+func (stubStrict) UpsertPlatformProfile(_ context.Context, _ openapi.UpsertPlatformProfileRequestObject) (openapi.UpsertPlatformProfileResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetIntrospect(_ context.Context, _ handler.GetIntrospectRequestObject) (handler.GetIntrospectResponseObject, error) {
+func (stubStrict) GetIntrospect(_ context.Context, _ openapi.GetIntrospectRequestObject) (openapi.GetIntrospectResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) PostLogin(_ context.Context, _ handler.PostLoginRequestObject) (handler.PostLoginResponseObject, error) {
+func (stubStrict) PostLogin(_ context.Context, _ openapi.PostLoginRequestObject) (openapi.PostLoginResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) PostLogout(_ context.Context, _ handler.PostLogoutRequestObject) (handler.PostLogoutResponseObject, error) {
+func (stubStrict) PostLogout(_ context.Context, _ openapi.PostLogoutRequestObject) (openapi.PostLogoutResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) PostRefresh(_ context.Context, _ handler.PostRefreshRequestObject) (handler.PostRefreshResponseObject, error) {
+func (stubStrict) PostRefresh(_ context.Context, _ openapi.PostRefreshRequestObject) (openapi.PostRefreshResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) PostRegister(_ context.Context, _ handler.PostRegisterRequestObject) (handler.PostRegisterResponseObject, error) {
+func (stubStrict) PostRegister(_ context.Context, _ openapi.PostRegisterRequestObject) (openapi.PostRegisterResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetSetup(_ context.Context, _ handler.GetSetupRequestObject) (handler.GetSetupResponseObject, error) {
+func (stubStrict) GetSetup(_ context.Context, _ openapi.GetSetupRequestObject) (openapi.GetSetupResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) PostSetup(_ context.Context, _ handler.PostSetupRequestObject) (handler.PostSetupResponseObject, error) {
+func (stubStrict) PostSetup(_ context.Context, _ openapi.PostSetupRequestObject) (openapi.PostSetupResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetOAuthCallback(_ context.Context, _ handler.GetOAuthCallbackRequestObject) (handler.GetOAuthCallbackResponseObject, error) {
+func (stubStrict) GetOAuthCallback(_ context.Context, _ openapi.GetOAuthCallbackRequestObject) (openapi.GetOAuthCallbackResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetOAuthConnect(_ context.Context, _ handler.GetOAuthConnectRequestObject) (handler.GetOAuthConnectResponseObject, error) {
+func (stubStrict) GetOAuthConnect(_ context.Context, _ openapi.GetOAuthConnectRequestObject) (openapi.GetOAuthConnectResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListOrganizations(_ context.Context, _ handler.ListOrganizationsRequestObject) (handler.ListOrganizationsResponseObject, error) {
+func (stubStrict) ListOrganizations(_ context.Context, _ openapi.ListOrganizationsRequestObject) (openapi.ListOrganizationsResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateOrganization(_ context.Context, _ handler.CreateOrganizationRequestObject) (handler.CreateOrganizationResponseObject, error) {
+func (stubStrict) CreateOrganization(_ context.Context, _ openapi.CreateOrganizationRequestObject) (openapi.CreateOrganizationResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListOrganizationProjectActors(_ context.Context, _ handler.ListOrganizationProjectActorsRequestObject) (handler.ListOrganizationProjectActorsResponseObject, error) {
+func (stubStrict) ListOrganizationProjectActors(_ context.Context, _ openapi.ListOrganizationProjectActorsRequestObject) (openapi.ListOrganizationProjectActorsResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateOrganizationProjectActor(_ context.Context, _ handler.CreateOrganizationProjectActorRequestObject) (handler.CreateOrganizationProjectActorResponseObject, error) {
+func (stubStrict) CreateOrganizationProjectActor(_ context.Context, _ openapi.CreateOrganizationProjectActorRequestObject) (openapi.CreateOrganizationProjectActorResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) RemoveOrganizationMember(_ context.Context, _ handler.RemoveOrganizationMemberRequestObject) (handler.RemoveOrganizationMemberResponseObject, error) {
+func (stubStrict) RemoveOrganizationMember(_ context.Context, _ openapi.RemoveOrganizationMemberRequestObject) (openapi.RemoveOrganizationMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListOrganizationMembers(_ context.Context, _ handler.ListOrganizationMembersRequestObject) (handler.ListOrganizationMembersResponseObject, error) {
+func (stubStrict) ListOrganizationMembers(_ context.Context, _ openapi.ListOrganizationMembersRequestObject) (openapi.ListOrganizationMembersResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) AddOrganizationMember(_ context.Context, _ handler.AddOrganizationMemberRequestObject) (handler.AddOrganizationMemberResponseObject, error) {
+func (stubStrict) AddOrganizationMember(_ context.Context, _ openapi.AddOrganizationMemberRequestObject) (openapi.AddOrganizationMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListOrganizationProjects(_ context.Context, _ handler.ListOrganizationProjectsRequestObject) (handler.ListOrganizationProjectsResponseObject, error) {
+func (stubStrict) ListOrganizationProjects(_ context.Context, _ openapi.ListOrganizationProjectsRequestObject) (openapi.ListOrganizationProjectsResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateOrganizationProject(_ context.Context, _ handler.CreateOrganizationProjectRequestObject) (handler.CreateOrganizationProjectResponseObject, error) {
+func (stubStrict) CreateOrganizationProject(_ context.Context, _ openapi.CreateOrganizationProjectRequestObject) (openapi.CreateOrganizationProjectResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetOrganizationProjectActor(_ context.Context, _ handler.GetOrganizationProjectActorRequestObject) (handler.GetOrganizationProjectActorResponseObject, error) {
+func (stubStrict) GetOrganizationProjectActor(_ context.Context, _ openapi.GetOrganizationProjectActorRequestObject) (openapi.GetOrganizationProjectActorResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) RemoveOrganizationProjectMember(_ context.Context, _ handler.RemoveOrganizationProjectMemberRequestObject) (handler.RemoveOrganizationProjectMemberResponseObject, error) {
+func (stubStrict) RemoveOrganizationProjectMember(_ context.Context, _ openapi.RemoveOrganizationProjectMemberRequestObject) (openapi.RemoveOrganizationProjectMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListOrganizationProjectMembers(_ context.Context, _ handler.ListOrganizationProjectMembersRequestObject) (handler.ListOrganizationProjectMembersResponseObject, error) {
+func (stubStrict) ListOrganizationProjectMembers(_ context.Context, _ openapi.ListOrganizationProjectMembersRequestObject) (openapi.ListOrganizationProjectMembersResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) AddOrganizationProjectMember(_ context.Context, _ handler.AddOrganizationProjectMemberRequestObject) (handler.AddOrganizationProjectMemberResponseObject, error) {
+func (stubStrict) AddOrganizationProjectMember(_ context.Context, _ openapi.AddOrganizationProjectMemberRequestObject) (openapi.AddOrganizationProjectMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetPlatformProfileSchema(_ context.Context, _ handler.GetPlatformProfileSchemaRequestObject) (handler.GetPlatformProfileSchemaResponseObject, error) {
+func (stubStrict) GetPlatformProfileSchema(_ context.Context, _ openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) UpsertPlatformProfileSchema(_ context.Context, _ handler.UpsertPlatformProfileSchemaRequestObject) (handler.UpsertPlatformProfileSchemaResponseObject, error) {
+func (stubStrict) UpsertPlatformProfileSchema(_ context.Context, _ openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListProjects(_ context.Context, _ handler.ListProjectsRequestObject) (handler.ListProjectsResponseObject, error) {
+func (stubStrict) ListProjects(_ context.Context, _ openapi.ListProjectsRequestObject) (openapi.ListProjectsResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateProject(_ context.Context, _ handler.CreateProjectRequestObject) (handler.CreateProjectResponseObject, error) {
+func (stubStrict) CreateProject(_ context.Context, _ openapi.CreateProjectRequestObject) (openapi.CreateProjectResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListActors(_ context.Context, _ handler.ListActorsRequestObject) (handler.ListActorsResponseObject, error) {
+func (stubStrict) ListActors(_ context.Context, _ openapi.ListActorsRequestObject) (openapi.ListActorsResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateActor(_ context.Context, _ handler.CreateActorRequestObject) (handler.CreateActorResponseObject, error) {
+func (stubStrict) CreateActor(_ context.Context, _ openapi.CreateActorRequestObject) (openapi.CreateActorResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetActorByEmail(_ context.Context, _ handler.GetActorByEmailRequestObject) (handler.GetActorByEmailResponseObject, error) {
+func (stubStrict) GetActorByEmail(_ context.Context, _ openapi.GetActorByEmailRequestObject) (openapi.GetActorByEmailResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetActor(_ context.Context, _ handler.GetActorRequestObject) (handler.GetActorResponseObject, error) {
+func (stubStrict) GetActor(_ context.Context, _ openapi.GetActorRequestObject) (openapi.GetActorResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetProjectProfile(_ context.Context, _ handler.GetProjectProfileRequestObject) (handler.GetProjectProfileResponseObject, error) {
+func (stubStrict) GetProjectProfile(_ context.Context, _ openapi.GetProjectProfileRequestObject) (openapi.GetProjectProfileResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) UpsertProjectProfile(_ context.Context, _ handler.UpsertProjectProfileRequestObject) (handler.UpsertProjectProfileResponseObject, error) {
+func (stubStrict) UpsertProjectProfile(_ context.Context, _ openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateAPIKey(_ context.Context, _ handler.CreateAPIKeyRequestObject) (handler.CreateAPIKeyResponseObject, error) {
+func (stubStrict) CreateAPIKey(_ context.Context, _ openapi.CreateAPIKeyRequestObject) (openapi.CreateAPIKeyResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListCapabilities(_ context.Context, _ handler.ListCapabilitiesRequestObject) (handler.ListCapabilitiesResponseObject, error) {
+func (stubStrict) ListCapabilities(_ context.Context, _ openapi.ListCapabilitiesRequestObject) (openapi.ListCapabilitiesResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) CreateCapability(_ context.Context, _ handler.CreateCapabilityRequestObject) (handler.CreateCapabilityResponseObject, error) {
+func (stubStrict) CreateCapability(_ context.Context, _ openapi.CreateCapabilityRequestObject) (openapi.CreateCapabilityResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) RemoveProjectMember(_ context.Context, _ handler.RemoveProjectMemberRequestObject) (handler.RemoveProjectMemberResponseObject, error) {
+func (stubStrict) RemoveProjectMember(_ context.Context, _ openapi.RemoveProjectMemberRequestObject) (openapi.RemoveProjectMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListProjectMembers(_ context.Context, _ handler.ListProjectMembersRequestObject) (handler.ListProjectMembersResponseObject, error) {
+func (stubStrict) ListProjectMembers(_ context.Context, _ openapi.ListProjectMembersRequestObject) (openapi.ListProjectMembersResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) AddProjectMember(_ context.Context, _ handler.AddProjectMemberRequestObject) (handler.AddProjectMemberResponseObject, error) {
+func (stubStrict) AddProjectMember(_ context.Context, _ openapi.AddProjectMemberRequestObject) (openapi.AddProjectMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetProjectProfileSchema(_ context.Context, _ handler.GetProjectProfileSchemaRequestObject) (handler.GetProjectProfileSchemaResponseObject, error) {
+func (stubStrict) GetProjectProfileSchema(_ context.Context, _ openapi.GetProjectProfileSchemaRequestObject) (openapi.GetProjectProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) UpsertProjectProfileSchema(_ context.Context, _ handler.UpsertProjectProfileSchemaRequestObject) (handler.UpsertProjectProfileSchemaResponseObject, error) {
+func (stubStrict) UpsertProjectProfileSchema(_ context.Context, _ openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
 
@@ -269,7 +269,7 @@ func TestRouterParity(t *testing.T) {
 	// harness-owned routes; mirror their registration
 	r.Get("/health", http.NotFoundHandler().ServeHTTP)
 	r.Get("/docs/openapi.yml", http.NotFoundHandler().ServeHTTP)
-	handler.HandlerWithOptions(handler.NewStrictHandler(stubStrict{}, nil), handler.ChiServerOptions{
+	openapi.HandlerWithOptions(openapi.NewStrictHandler(stubStrict{}, nil), openapi.ChiServerOptions{
 		BaseRouter: r,
 	})
 

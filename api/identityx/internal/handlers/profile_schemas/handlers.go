@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 	"IdentityX/models"
 )
@@ -20,17 +20,17 @@ type Handlers struct {
 
 func New(ops *services.ProfileSchemas) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) GetPlatformProfileSchema(ctx context.Context, _ handler.GetPlatformProfileSchemaRequestObject) (handler.GetPlatformProfileSchemaResponseObject, error) {
+func (h *Handlers) GetPlatformProfileSchema(ctx context.Context, _ openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {
 	schema, err := h.ops.GetSchema(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	return handler.GetPlatformProfileSchema200JSONResponse{
+	return openapi.GetPlatformProfileSchema200JSONResponse{
 		Code: 200, Data: schema, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req handler.UpsertPlatformProfileSchemaRequestObject) (handler.UpsertPlatformProfileSchemaResponseObject, error) {
+func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
 	schema, err := h.ops.UpsertSchema(ctx, models.UpsertProfileSchemaInput{
 		Schema: json.RawMessage(req.Body.Schema),
 		Active: req.Body.Active,
@@ -38,22 +38,22 @@ func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req handler.
 	if err != nil {
 		return nil, err
 	}
-	return handler.UpsertPlatformProfileSchema200JSONResponse{
+	return openapi.UpsertPlatformProfileSchema200JSONResponse{
 		Code: 200, Data: schema, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) GetProjectProfileSchema(ctx context.Context, req handler.GetProjectProfileSchemaRequestObject) (handler.GetProjectProfileSchemaResponseObject, error) {
+func (h *Handlers) GetProjectProfileSchema(ctx context.Context, req openapi.GetProjectProfileSchemaRequestObject) (openapi.GetProjectProfileSchemaResponseObject, error) {
 	schema, err := h.ops.GetSchema(ctx, &req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.GetProjectProfileSchema200JSONResponse{
+	return openapi.GetProjectProfileSchema200JSONResponse{
 		Code: 200, Data: schema, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) UpsertProjectProfileSchema(ctx context.Context, req handler.UpsertProjectProfileSchemaRequestObject) (handler.UpsertProjectProfileSchemaResponseObject, error) {
+func (h *Handlers) UpsertProjectProfileSchema(ctx context.Context, req openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
 	schema, err := h.ops.UpsertSchema(ctx, models.UpsertProfileSchemaInput{
 		ProjectID: &req.ProjectId,
 		Schema:    json.RawMessage(req.Body.Schema),
@@ -62,7 +62,7 @@ func (h *Handlers) UpsertProjectProfileSchema(ctx context.Context, req handler.U
 	if err != nil {
 		return nil, err
 	}
-	return handler.UpsertProjectProfileSchema200JSONResponse{
+	return openapi.UpsertProjectProfileSchema200JSONResponse{
 		Code: 200, Data: schema, Timestamp: time.Now(), Module: module,
 	}, nil
 }

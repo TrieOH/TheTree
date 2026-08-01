@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 	"IdentityX/models"
 )
@@ -19,17 +19,17 @@ type Handlers struct {
 
 func New(ops *services.Organizations) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) ListOrganizations(ctx context.Context, _ handler.ListOrganizationsRequestObject) (handler.ListOrganizationsResponseObject, error) {
+func (h *Handlers) ListOrganizations(ctx context.Context, _ openapi.ListOrganizationsRequestObject) (openapi.ListOrganizationsResponseObject, error) {
 	orgs, err := h.ops.ListOrgs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListOrganizations200JSONResponse{
+	return openapi.ListOrganizations200JSONResponse{
 		Code: 200, Data: &orgs, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) CreateOrganization(ctx context.Context, req handler.CreateOrganizationRequestObject) (handler.CreateOrganizationResponseObject, error) {
+func (h *Handlers) CreateOrganization(ctx context.Context, req openapi.CreateOrganizationRequestObject) (openapi.CreateOrganizationResponseObject, error) {
 	org, err := h.ops.Create(ctx, models.CreateOrganizationInput{
 		Name: req.Body.Name,
 		Slug: req.Body.Slug,
@@ -37,22 +37,22 @@ func (h *Handlers) CreateOrganization(ctx context.Context, req handler.CreateOrg
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateOrganization201JSONResponse{
+	return openapi.CreateOrganization201JSONResponse{
 		Code: 201, Data: org, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) ListOrganizationMembers(ctx context.Context, req handler.ListOrganizationMembersRequestObject) (handler.ListOrganizationMembersResponseObject, error) {
+func (h *Handlers) ListOrganizationMembers(ctx context.Context, req openapi.ListOrganizationMembersRequestObject) (openapi.ListOrganizationMembersResponseObject, error) {
 	members, err := h.ops.ListMembers(ctx, req.OrganizationId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListOrganizationMembers200JSONResponse{
+	return openapi.ListOrganizationMembers200JSONResponse{
 		Code: 200, Data: &members, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) AddOrganizationMember(ctx context.Context, req handler.AddOrganizationMemberRequestObject) (handler.AddOrganizationMemberResponseObject, error) {
+func (h *Handlers) AddOrganizationMember(ctx context.Context, req openapi.AddOrganizationMemberRequestObject) (openapi.AddOrganizationMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddOrganizationMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		Role:           req.Body.Role,
@@ -61,10 +61,10 @@ func (h *Handlers) AddOrganizationMember(ctx context.Context, req handler.AddOrg
 	if err != nil {
 		return nil, err
 	}
-	return handler.AddOrganizationMember201Response{}, nil
+	return openapi.AddOrganizationMember201Response{}, nil
 }
 
-func (h *Handlers) RemoveOrganizationMember(ctx context.Context, req handler.RemoveOrganizationMemberRequestObject) (handler.RemoveOrganizationMemberResponseObject, error) {
+func (h *Handlers) RemoveOrganizationMember(ctx context.Context, req openapi.RemoveOrganizationMemberRequestObject) (openapi.RemoveOrganizationMemberResponseObject, error) {
 	err := h.ops.RemoveMember(ctx, models.RemoveOrganizationMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		OrganizationID: req.OrganizationId,
@@ -72,22 +72,22 @@ func (h *Handlers) RemoveOrganizationMember(ctx context.Context, req handler.Rem
 	if err != nil {
 		return nil, err
 	}
-	return handler.RemoveOrganizationMember200JSONResponse{
+	return openapi.RemoveOrganizationMember200JSONResponse{
 		Code: 200, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) ListOrganizationProjects(ctx context.Context, req handler.ListOrganizationProjectsRequestObject) (handler.ListOrganizationProjectsResponseObject, error) {
+func (h *Handlers) ListOrganizationProjects(ctx context.Context, req openapi.ListOrganizationProjectsRequestObject) (openapi.ListOrganizationProjectsResponseObject, error) {
 	projects, err := h.ops.ListOrgProjects(ctx, req.OrganizationId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListOrganizationProjects200JSONResponse{
+	return openapi.ListOrganizationProjects200JSONResponse{
 		Code: 200, Data: &projects, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) CreateOrganizationProject(ctx context.Context, req handler.CreateOrganizationProjectRequestObject) (handler.CreateOrganizationProjectResponseObject, error) {
+func (h *Handlers) CreateOrganizationProject(ctx context.Context, req openapi.CreateOrganizationProjectRequestObject) (openapi.CreateOrganizationProjectResponseObject, error) {
 	project, err := h.ops.CreateProject(ctx, models.CreateOrgProjectInput{
 		OrganizationID: req.OrganizationId,
 		Name:           req.Body.Name,
@@ -97,22 +97,22 @@ func (h *Handlers) CreateOrganizationProject(ctx context.Context, req handler.Cr
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateOrganizationProject201JSONResponse{
+	return openapi.CreateOrganizationProject201JSONResponse{
 		Code: 201, Data: project, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) ListOrganizationProjectActors(ctx context.Context, req handler.ListOrganizationProjectActorsRequestObject) (handler.ListOrganizationProjectActorsResponseObject, error) {
+func (h *Handlers) ListOrganizationProjectActors(ctx context.Context, req openapi.ListOrganizationProjectActorsRequestObject) (openapi.ListOrganizationProjectActorsResponseObject, error) {
 	actors, err := h.ops.ListProjectActors(ctx, req.OrgId, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListOrganizationProjectActors200JSONResponse{
+	return openapi.ListOrganizationProjectActors200JSONResponse{
 		Code: 200, Data: &actors, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) CreateOrganizationProjectActor(ctx context.Context, req handler.CreateOrganizationProjectActorRequestObject) (handler.CreateOrganizationProjectActorResponseObject, error) {
+func (h *Handlers) CreateOrganizationProjectActor(ctx context.Context, req openapi.CreateOrganizationProjectActorRequestObject) (openapi.CreateOrganizationProjectActorResponseObject, error) {
 	actor, err := h.ops.CreateProjectActor(ctx, req.OrgId, models.CreateActorInput{
 		ProjectID:  &req.ProjectId,
 		AuthMethod: req.Body.AuthMethod,
@@ -122,22 +122,22 @@ func (h *Handlers) CreateOrganizationProjectActor(ctx context.Context, req handl
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateOrganizationProjectActor201JSONResponse{
+	return openapi.CreateOrganizationProjectActor201JSONResponse{
 		Code: 201, Data: actor, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) ListOrganizationProjectMembers(ctx context.Context, req handler.ListOrganizationProjectMembersRequestObject) (handler.ListOrganizationProjectMembersResponseObject, error) {
+func (h *Handlers) ListOrganizationProjectMembers(ctx context.Context, req openapi.ListOrganizationProjectMembersRequestObject) (openapi.ListOrganizationProjectMembersResponseObject, error) {
 	members, err := h.ops.ListOrgProjectMembers(ctx, req.OrganizationId, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListOrganizationProjectMembers200JSONResponse{
+	return openapi.ListOrganizationProjectMembers200JSONResponse{
 		Code: 200, Data: &members, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) AddOrganizationProjectMember(ctx context.Context, req handler.AddOrganizationProjectMemberRequestObject) (handler.AddOrganizationProjectMemberResponseObject, error) {
+func (h *Handlers) AddOrganizationProjectMember(ctx context.Context, req openapi.AddOrganizationProjectMemberRequestObject) (openapi.AddOrganizationProjectMemberResponseObject, error) {
 	err := h.ops.AddProjectMember(ctx, models.AddOrgProjectMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		Role:           req.Body.Role,
@@ -147,10 +147,10 @@ func (h *Handlers) AddOrganizationProjectMember(ctx context.Context, req handler
 	if err != nil {
 		return nil, err
 	}
-	return handler.AddOrganizationProjectMember201Response{}, nil
+	return openapi.AddOrganizationProjectMember201Response{}, nil
 }
 
-func (h *Handlers) RemoveOrganizationProjectMember(ctx context.Context, req handler.RemoveOrganizationProjectMemberRequestObject) (handler.RemoveOrganizationProjectMemberResponseObject, error) {
+func (h *Handlers) RemoveOrganizationProjectMember(ctx context.Context, req openapi.RemoveOrganizationProjectMemberRequestObject) (openapi.RemoveOrganizationProjectMemberResponseObject, error) {
 	err := h.ops.RemoveProjectMember(ctx, models.RemoveOrgProjectMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		OrganizationID: req.OrganizationId,
@@ -159,17 +159,17 @@ func (h *Handlers) RemoveOrganizationProjectMember(ctx context.Context, req hand
 	if err != nil {
 		return nil, err
 	}
-	return handler.RemoveOrganizationProjectMember200JSONResponse{
+	return openapi.RemoveOrganizationProjectMember200JSONResponse{
 		Code: 200, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) GetOrganizationProjectActor(ctx context.Context, req handler.GetOrganizationProjectActorRequestObject) (handler.GetOrganizationProjectActorResponseObject, error) {
+func (h *Handlers) GetOrganizationProjectActor(ctx context.Context, req openapi.GetOrganizationProjectActorRequestObject) (openapi.GetOrganizationProjectActorResponseObject, error) {
 	actor, err := h.ops.GetActorByID(ctx, req.ActorId, req.OrganizationId, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.GetOrganizationProjectActor200JSONResponse{
+	return openapi.GetOrganizationProjectActor200JSONResponse{
 		Code: 200, Data: actor, Timestamp: time.Now(), Module: module,
 	}, nil
 }

@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 	"IdentityX/models"
 
@@ -22,7 +22,7 @@ func deref(v *string) string {
 	return *v
 }
 
-func derefSlice(v *[]handler.UUID) []uuid.UUID {
+func derefSlice(v *[]openapi.UUID) []uuid.UUID {
 	if v == nil {
 		return nil
 	}
@@ -35,7 +35,7 @@ type Handlers struct {
 
 func New(ops *services.APIKeys) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) CreateAPIKey(ctx context.Context, req handler.CreateAPIKeyRequestObject) (handler.CreateAPIKeyResponseObject, error) {
+func (h *Handlers) CreateAPIKey(ctx context.Context, req openapi.CreateAPIKeyRequestObject) (openapi.CreateAPIKeyResponseObject, error) {
 	key, raw, err := h.ops.Create(ctx, models.CreateAPIKeyInput{
 		SubjectID:    req.Body.SubjectId,
 		Capabilities: derefSlice(req.Body.Capabilities),
@@ -48,7 +48,7 @@ func (h *Handlers) CreateAPIKey(ctx context.Context, req handler.CreateAPIKeyReq
 		return nil, err
 	}
 	resp := models.CreateAPIKeyResponse{Key: key, RawKey: raw}
-	return handler.CreateAPIKey201JSONResponse{
+	return openapi.CreateAPIKey201JSONResponse{
 		Code: 201, Data: &resp, Timestamp: time.Now(), Module: module,
 	}, nil
 }

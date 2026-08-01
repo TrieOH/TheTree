@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"lib/validator"
 )
 
@@ -15,8 +15,8 @@ import (
 // operations without a body pass through. Validation errors are returned
 // as *fun.AppError and flow through the strict server's
 // ResponseErrorHandlerFunc.
-func ValidateMiddleware() handler.StrictMiddlewareFunc {
-	return func(f handler.StrictHandlerFunc, _ string) handler.StrictHandlerFunc {
+func ValidateMiddleware() openapi.StrictMiddlewareFunc {
+	return func(f openapi.StrictHandlerFunc, _ string) openapi.StrictHandlerFunc {
 		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 			body := bodyOf(request)
 			if body != nil {

@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 	"IdentityX/models"
 )
@@ -20,17 +20,17 @@ type Handlers struct {
 
 func New(ops *services.Actors) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) ListActors(ctx context.Context, req handler.ListActorsRequestObject) (handler.ListActorsResponseObject, error) {
+func (h *Handlers) ListActors(ctx context.Context, req openapi.ListActorsRequestObject) (openapi.ListActorsResponseObject, error) {
 	actors, err := h.ops.List(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListActors200JSONResponse{
+	return openapi.ListActors200JSONResponse{
 		Code: 200, Data: &actors, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) CreateActor(ctx context.Context, req handler.CreateActorRequestObject) (handler.CreateActorResponseObject, error) {
+func (h *Handlers) CreateActor(ctx context.Context, req openapi.CreateActorRequestObject) (openapi.CreateActorResponseObject, error) {
 	actor, err := h.ops.Create(ctx, models.CreateActorInput{
 		ProjectID:  &req.ProjectId,
 		AuthMethod: req.Body.AuthMethod,
@@ -40,27 +40,27 @@ func (h *Handlers) CreateActor(ctx context.Context, req handler.CreateActorReque
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateActor201JSONResponse{
+	return openapi.CreateActor201JSONResponse{
 		Code: 201, Data: actor, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) GetActor(ctx context.Context, req handler.GetActorRequestObject) (handler.GetActorResponseObject, error) {
+func (h *Handlers) GetActor(ctx context.Context, req openapi.GetActorRequestObject) (openapi.GetActorResponseObject, error) {
 	actor, err := h.ops.GetByID(ctx, req.ActorId, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.GetActor200JSONResponse{
+	return openapi.GetActor200JSONResponse{
 		Code: 200, Data: actor, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) GetActorByEmail(ctx context.Context, req handler.GetActorByEmailRequestObject) (handler.GetActorByEmailResponseObject, error) {
+func (h *Handlers) GetActorByEmail(ctx context.Context, req openapi.GetActorByEmailRequestObject) (openapi.GetActorByEmailResponseObject, error) {
 	actor, err := h.ops.GetByEmail(ctx, req.ActorEmail, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.GetActorByEmail200JSONResponse{
+	return openapi.GetActorByEmail200JSONResponse{
 		Code: 200, Data: actor, Timestamp: time.Now(), Module: module,
 	}, nil
 }

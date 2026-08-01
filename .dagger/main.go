@@ -121,7 +121,7 @@ func (m *Thetree) withOapiCodegen(c *dagger.Container) *dagger.Container {
 	})
 }
 
-// oapiGenerate regenerates the OpenAPI handler bindings (internal/handler)
+// oapiGenerate regenerates the OpenAPI handler bindings (internal/openapi)
 // from api-spec.yml for a service. Generated bindings import
 // github.com/oapi-codegen/runtime; since the code is not committed (and
 // `go mod tidy` would drop an unimported require), the dep is pinned here
@@ -131,8 +131,8 @@ func (m *Thetree) oapiGenerate(c *dagger.Container, service string) *dagger.Cont
 		"sh", "-c",
 		fmt.Sprintf(
 			"cd api/%s && "+
-				"oapi-codegen --config oapi-codegen.yaml -generate types -o internal/handler/types.gen.go api-spec.yml && "+
-				"oapi-codegen --config oapi-codegen.yaml -generate chi-server -o internal/handler/server.gen.go api-spec.yml && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate chi-server -o internal/openapi/server.gen.go api-spec.yml && "+
 				"go get github.com/oapi-codegen/runtime@v1.6.0",
 			service,
 		),
@@ -173,7 +173,7 @@ func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service st
 }
 
 // CI runs compile, lint, and test for the given services (comma-separated or "all").
-// Generated OpenAPI bindings (internal/handler) are not committed; every
+// Generated OpenAPI bindings (internal/openapi) are not committed; every
 // build path regenerates them from api-spec.yml (see oapiGenerate).
 func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services string) (string, error) {
 	list := parseServices(services)

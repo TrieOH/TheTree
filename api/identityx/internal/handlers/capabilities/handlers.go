@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"IdentityX/internal/handler"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/services"
 	"IdentityX/models"
 )
@@ -19,17 +19,17 @@ type Handlers struct {
 
 func New(ops *services.Capabilities) *Handlers { return &Handlers{ops: ops} }
 
-func (h *Handlers) ListCapabilities(ctx context.Context, req handler.ListCapabilitiesRequestObject) (handler.ListCapabilitiesResponseObject, error) {
+func (h *Handlers) ListCapabilities(ctx context.Context, req openapi.ListCapabilitiesRequestObject) (openapi.ListCapabilitiesResponseObject, error) {
 	caps, err := h.ops.List(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
-	return handler.ListCapabilities200JSONResponse{
+	return openapi.ListCapabilities200JSONResponse{
 		Code: 200, Data: &caps, Timestamp: time.Now(), Module: module,
 	}, nil
 }
 
-func (h *Handlers) CreateCapability(ctx context.Context, req handler.CreateCapabilityRequestObject) (handler.CreateCapabilityResponseObject, error) {
+func (h *Handlers) CreateCapability(ctx context.Context, req openapi.CreateCapabilityRequestObject) (openapi.CreateCapabilityResponseObject, error) {
 	capability, err := h.ops.Create(ctx, models.CreateCapabilityInput{
 		Resource:  req.Body.Resource,
 		Action:    req.Body.Action,
@@ -38,7 +38,7 @@ func (h *Handlers) CreateCapability(ctx context.Context, req handler.CreateCapab
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateCapability201JSONResponse{
+	return openapi.CreateCapability201JSONResponse{
 		Code: 201, Data: capability, Timestamp: time.Now(), Module: module,
 	}, nil
 }

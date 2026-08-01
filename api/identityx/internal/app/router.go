@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	spec "IdentityX"
-	"IdentityX/internal/handler"
 	"IdentityX/internal/handlers"
+	"IdentityX/internal/openapi"
 	"lib/httpserver"
 
 	"github.com/MintzyG/fun"
@@ -26,9 +26,9 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server) 
 // mountStrict registers the generated strict handler on r with the
 // validation + auth middleware stack and the fun-envelope error handlers.
 func mountStrict(r *chi.Mux, h *handlers.Server, mw middlewares) {
-	strict := handler.NewStrictHandlerWithOptions(h,
-		[]handler.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(mw)},
-		handler.StrictHTTPServerOptions{
+	strict := openapi.NewStrictHandlerWithOptions(h,
+		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(mw)},
+		openapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 				// body decode failures — known client error
 				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
@@ -39,12 +39,12 @@ func mountStrict(r *chi.Mux, h *handlers.Server, mw middlewares) {
 				fun.Error(err).SendWithCtx(r.Context(), w)
 			},
 		})
-	handler.HandlerWithOptions(strict, handler.ChiServerOptions{
+	openapi.HandlerWithOptions(strict, openapi.ChiServerOptions{
 		BaseRouter: r,
 		// param binding failures from the generated wrapper
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
-			var required *handler.RequiredParamError
-			var invalid *handler.InvalidParamFormatError
+			var required *openapi.RequiredParamError
+			var invalid *openapi.InvalidParamFormatError
 			switch {
 			case errors.As(err, &required):
 				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: required.ParamName, Message: "parameter is required"}).Validation()).Send(w)
