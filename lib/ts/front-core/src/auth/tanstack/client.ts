@@ -54,7 +54,7 @@ function authResponse<T>(result: ServerAuthResult): ApiResponse<T> {
   return {
     ...base,
     success: false,
-    error_id: "IDENTITYX_BFF_ERROR",
+    error_id: result.error_id ?? "IDENTITYX_BFF_ERROR",
     ...(result.trace ? { trace: result.trace } : {}),
   };
 }
@@ -142,7 +142,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
             setProfile(result.profile ?? getProfile());
             setAuthenticated(true);
             callbacks.onRefresh?.(response);
-          } else {
+          } else if (result.code === 401 || result.code === 403) {
             setProfile(null);
             setAuthenticated(false);
           }
@@ -188,10 +188,19 @@ export function createTanStackServerProxyFetchers(
       timestamp: new Date().toISOString(),
       code: result.code,
       ...(result.data === undefined ? {} : { data: result.data }),
-      ...(result.success ? {} : { error_id: "SERVER_PROXY_ERROR" }),
+      ...(result.success
+        ? {}
+        : { error_id: result.error_id ?? "SERVER_PROXY_ERROR" }),
       ...(result.trace ? { trace: result.trace } : {}),
     };
-    return Response.json(payload, { status: result.code });
+    // Response.json cannot construct a response with a body for null-body
+    // statuses such as 204. The proxy transport still needs a JSON envelope
+    // for the fetch client, so use 200 while preserving the upstream code in
+    // the payload.
+    const transportStatus = [204, 205, 304].includes(result.code)
+      ? 200
+      : result.code;
+    return Response.json(payload, { status: transportStatus });
   };
 
   const client = createDefaultFetchClient({ adapter });

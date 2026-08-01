@@ -15,6 +15,22 @@ export class UploadAssociationError extends Error {
   }
 }
 
+type FailedApiResponse = {
+  code?: number;
+  error_id?: string;
+  message?: string;
+};
+
+export function uploadAssociationErrorFromResponse(
+  response: FailedApiResponse,
+  fallbackMessage: string,
+) {
+  return new UploadAssociationError(response.message || fallbackMessage, {
+    code: response.error_id ?? "ASSOCIATION_FAILED",
+    status: response.code,
+  });
+}
+
 export function classifyUploadError(error: unknown): UploadTaskError {
   const occurredAt = Date.now();
 
@@ -128,6 +144,36 @@ export function classifyUploadError(error: unknown): UploadTaskError {
       requiresReplacement: false,
       occurredAt,
     };
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const result = error as FailedApiResponse;
+    if (
+      typeof result.code === "number" ||
+      typeof result.message === "string" ||
+      typeof result.error_id === "string"
+    ) {
+      const status = result.code;
+      return {
+        kind:
+          status === 401 || status === 403
+            ? "authentication"
+            : status === 404
+              ? "not_found"
+              : status && status >= 500
+                ? "server"
+                : "unknown",
+        code: result.error_id ?? "ASSOCIATION_REQUEST_FAILED",
+        message: result.message || "Não foi possível associar a imagem.",
+        retryable:
+          status === undefined ||
+          status === 408 ||
+          status === 429 ||
+          status >= 500,
+        requiresReplacement: false,
+        occurredAt,
+      };
+    }
   }
 
   return {

@@ -1,6 +1,7 @@
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
+  uploadAssociationErrorFromResponse,
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import { authQueryFetcher } from "@/shared/lib/api/fetch";
@@ -50,8 +51,9 @@ async function associateEventImage(
     patchData(event, field, uploadedUrl),
   );
   if (!response.success) {
-    throw new UploadAssociationError(
-      response.message || "Não foi possível associar a imagem.",
+    throw uploadAssociationErrorFromResponse(
+      response,
+      "Não foi possível associar a imagem.",
     );
   }
   syncEventCaches(getContext().queryClient, response.data);

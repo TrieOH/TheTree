@@ -13,10 +13,19 @@ interface IdentityXSessionData {
   tokens: AuthTokens;
 }
 
+type TokenResolution =
+  | { success: true; tokens: AuthTokens }
+  | { success: false; error: ServerAuthResult; sessionInvalid: boolean };
+
 interface ApiEnvelope<T> {
   code?: number;
   data?: T;
   message?: string;
+  error_id?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
   trace?: string[];
 }
 
@@ -50,25 +59,39 @@ function decodeClaims(token: string): TokenClaims | null {
   }
 }
 
-function getProfile(tokens?: AuthTokens): TokenSubject | null {
+function getProfile(
+  tokens?: AuthTokens,
+  options: { allowExpired?: boolean } = {},
+): TokenSubject | null {
   if (!tokens) return null;
   const claims = decodeClaims(tokens.access_token);
-  if (!claims || claims.exp * 1000 <= Date.now()) return null;
+  if (
+    !claims ||
+    (!options.allowExpired && claims.exp * 1000 <= Date.now())
+  )
+    return null;
   return claims.subject;
 }
 
 function normalize<T>(response: Response, envelope: ApiEnvelope<T>): ServerProxyResult<T> {
   const code = envelope.code ?? response.status;
+  const message = envelope.message ?? envelope.error?.message;
+  const errorId = envelope.error_id ?? envelope.error?.code;
   return {
     success: response.ok && code >= 200 && code < 300,
     code,
     ...(envelope.data === undefined ? {} : { data: envelope.data }),
-    ...(envelope.message ? { message: envelope.message } : {}),
+    ...(message ? { message } : {}),
+    ...(errorId ? { error_id: errorId } : {}),
     ...(envelope.trace ? { trace: envelope.trace } : {}),
   };
 }
 
 async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T>> {
+  if (response.status === 204 || response.body === null) {
+    return { code: response.status };
+  }
+
   try {
     return await response.json() as ApiEnvelope<T>;
   } catch {
@@ -113,33 +136,86 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     return { ...normalized, profile: getProfile(envelope.data) };
   }
 
-  async function refreshTokens(): Promise<AuthTokens | null> {
+  async function refreshTokens(): Promise<TokenResolution> {
     const current = await session();
     const refreshToken = current.data.tokens?.refresh_token;
-    if (!refreshToken) return null;
+    if (!refreshToken) {
+      return {
+        success: false,
+        sessionInvalid: true,
+        error: {
+          success: false,
+          code: 401,
+          error_id: "REFRESH_TOKEN_MISSING",
+          message: "Session expired",
+        },
+      };
+    }
 
-    const response = await fetch(joinURL(config.identityX.baseURL, "/auth/refresh"), {
-      method: "POST",
-      headers: { "Refresh-Token": refreshToken },
-    });
+    let response: Response;
+    try {
+      response = await fetch(
+        joinURL(config.identityX.baseURL, "/auth/refresh"),
+        {
+          method: "POST",
+          headers: { "Refresh-Token": refreshToken },
+        },
+      );
+    } catch {
+      return {
+        success: false,
+        sessionInvalid: false,
+        error: {
+          success: false,
+          code: 503,
+          error_id: "AUTH_SERVICE_UNAVAILABLE",
+          message: "Authentication service unavailable",
+        },
+      };
+    }
+
     const envelope = await readEnvelope<AuthTokens>(response);
     if (!response.ok || !envelope.data?.access_token) {
-      if (response.status >= 400 && response.status < 500) await current.clear();
-      return null;
+      const normalized = normalize(response, envelope);
+      const sessionInvalid = response.status === 401 || response.status === 403;
+      if (sessionInvalid) await current.clear();
+      return {
+        success: false,
+        sessionInvalid,
+        error: response.ok
+          ? {
+              success: false,
+              code: 502,
+              error_id: "INVALID_REFRESH_RESPONSE",
+              message: "Authentication service returned invalid tokens",
+            }
+          : normalized,
+      };
     }
 
     await current.update({ tokens: envelope.data });
-    return envelope.data;
+    return { success: true, tokens: envelope.data };
   }
 
-  async function validTokens(): Promise<AuthTokens | null> {
+  async function validTokens(): Promise<TokenResolution> {
     const current = await session();
     const tokens = current.data.tokens;
-    if (!tokens) return null;
+    if (!tokens) {
+      return {
+        success: false,
+        sessionInvalid: true,
+        error: {
+          success: false,
+          code: 401,
+          error_id: "SESSION_MISSING",
+          message: "Session expired",
+        },
+      };
+    }
 
     const accessExpiry = new Date(tokens.access_expires_at).getTime();
     if (Number.isFinite(accessExpiry) && accessExpiry > Date.now() + 30_000) {
-      return tokens;
+      return { success: true, tokens };
     }
     return refreshTokens();
   }
@@ -200,7 +276,10 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
 
     async logout(): Promise<ServerAuthResult> {
       const current = await session();
-      const accessToken = (await validTokens())?.access_token;
+      const resolution = await validTokens();
+      const accessToken = resolution.success
+        ? resolution.tokens.access_token
+        : undefined;
       let result: ServerAuthResult = { success: true, code: 204 };
 
       if (accessToken) {
@@ -216,16 +295,28 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     },
 
     async refresh(): Promise<ServerAuthResult> {
-      const tokens = await refreshTokens();
-      return tokens
-        ? { success: true, code: 200, profile: getProfile(tokens) }
-        : { success: false, code: 401, message: "Session expired" };
+      const resolution = await refreshTokens();
+      return resolution.success
+        ? {
+            success: true,
+            code: 200,
+            profile: getProfile(resolution.tokens),
+          }
+        : resolution.error;
     },
 
     async restore(): Promise<ServerSessionSnapshot> {
-      const tokens = await validTokens();
-      const profile = getProfile(tokens ?? undefined);
-      return { isAuthenticated: !!tokens && !!profile, profile };
+      const current = await session();
+      const resolution = await validTokens();
+      if (resolution.success) {
+        const profile = getProfile(resolution.tokens);
+        return { isAuthenticated: !!profile, profile };
+      }
+      if (!resolution.sessionInvalid) {
+        const profile = getProfile(current.data.tokens, { allowExpired: true });
+        return { isAuthenticated: !!profile, profile };
+      }
+      return { isAuthenticated: false, profile: null };
     },
 
     async request<T extends SerializableValue = SerializableValue>(
@@ -244,11 +335,11 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         }
       }
 
-      const tokens = await validTokens();
-      if (!tokens) return { success: false, code: 401, message: "Session expired" };
+      const resolution = await validTokens();
+      if (!resolution.success) return resolution.error;
 
       const headers = new Headers(input.headers);
-      headers.set("Authorization", `Bearer ${tokens.access_token}`);
+      headers.set("Authorization", `Bearer ${resolution.tokens.access_token}`);
       if (input.body !== undefined && !headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }

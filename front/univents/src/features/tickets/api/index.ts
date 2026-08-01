@@ -49,6 +49,7 @@ export const allTicketsQueryOptions = (editionId: string) => {
   return queryOptions({
     queryKey: ticketKeys.listByEdition(editionId),
     queryFn: () => getAllTicketsFn(editionId),
+    enabled: Boolean(editionId),
   });
 };
 
