@@ -126,7 +126,6 @@ externalDocs:
 
 security:
   - bearerAuth: []
-  - apiKeyAuth: []
 
 paths:
   /docs/openapi.yml:
@@ -462,7 +461,6 @@ paths:
         archived). Accepts JWT or API key.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       responses:
         '200':
           description: Forms owned by the actor
@@ -490,7 +488,6 @@ paths:
         are standalone (no namespace) until moved into one.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -527,7 +524,6 @@ paths:
         Lists the archived forms owned by the authenticated actor.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       responses:
         '200':
           description: Archived forms owned by the actor
@@ -588,7 +584,6 @@ paths:
         of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -622,7 +617,6 @@ paths:
         form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -656,7 +650,6 @@ paths:
         actor must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       requestBody:
@@ -692,7 +685,6 @@ paths:
         an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       requestBody:
@@ -731,7 +723,6 @@ paths:
         actor must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -767,7 +758,6 @@ paths:
         must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -803,7 +793,6 @@ paths:
         actor must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -839,7 +828,6 @@ paths:
         The actor must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -875,7 +863,6 @@ paths:
         must be a member of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -921,7 +908,6 @@ paths:
         actor must be a member of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       responses:
@@ -955,7 +941,6 @@ paths:
         owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       requestBody:
@@ -1001,7 +986,6 @@ paths:
         owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
       requestBody:
@@ -1049,7 +1033,6 @@ paths:
         actor must be a member of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
@@ -1085,7 +1068,6 @@ paths:
         of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
@@ -1134,7 +1116,6 @@ paths:
         attributes. The actor must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
@@ -1175,7 +1156,6 @@ paths:
         form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
@@ -1209,7 +1189,6 @@ paths:
         must be an admin or owner of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
@@ -1261,7 +1240,6 @@ paths:
         of the form.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/FormID'
         - $ref: '#/components/parameters/StepID'
@@ -1634,7 +1612,6 @@ paths:
       description: Namespaced duplicate of `GET /forms/{form_id}/steps`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1667,7 +1644,6 @@ paths:
       description: Namespaced duplicate of `POST /forms/{form_id}/steps`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1706,7 +1682,6 @@ paths:
       description: Namespaced duplicate of `PUT /forms/{form_id}/steps`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1744,7 +1719,6 @@ paths:
       description: Namespaced duplicate of `GET /forms/{form_id}/steps/{step_id}/fields`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1778,7 +1752,6 @@ paths:
       description: Namespaced duplicate of `POST /forms/{form_id}/steps/{step_id}/fields`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1818,7 +1791,6 @@ paths:
       description: Namespaced duplicate of `PUT /forms/{form_id}/steps/{step_id}/fields`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1857,7 +1829,6 @@ paths:
       description: Namespaced duplicate of `GET /forms/{form_id}/steps/{step_id}/fields/{field_id}/select`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1890,7 +1861,6 @@ paths:
       description: Namespaced duplicate of `PUT /forms/{form_id}/steps/{step_id}/fields/{field_id}/select`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'
@@ -1933,7 +1903,6 @@ paths:
       description: Namespaced duplicate of `DELETE /forms/{form_id}/steps/{step_id}/fields/{field_id}`. Scheduled for removal.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/NamespaceID'
         - $ref: '#/components/parameters/FormID'

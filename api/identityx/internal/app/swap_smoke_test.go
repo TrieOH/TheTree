@@ -15,8 +15,9 @@ import (
 func TestSwapSmokeSetupFlow(t *testing.T) {
 	validator.SetupValidator() // normally done by httpserver.SetupFUN at startup
 	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(server, middlewares{
+	r := newTestRouter(t, server, middlewares{
 		jwtAuth:    mwJWT,
+		apiKeyAuth: mwJWT,
 		anyAuth:    mwAnyAuth,
 		clientOnly: mwClientOnly,
 	})

@@ -3,15 +3,16 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"reflect"
-	"runtime"
+	"net/http/httptest"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
 
+	spec "Informd"
 	"Informd/internal/openapi"
+	"lib/authz"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -171,200 +172,114 @@ func (stubStrict) AddNamespaceMember(_ context.Context, _ openapi.AddNamespaceMe
 	return nil, errStub
 }
 
-func mwJWT(next http.Handler) http.Handler     { return next }
-func mwAnyAuth(next http.Handler) http.Handler { return next }
+// labeled middleware stubs record their names when run.
+var parityInvocations []string
 
-func mwName(mw func(http.Handler) http.Handler) string {
-	fn := runtime.FuncForPC(reflect.ValueOf(mw).Pointer())
-	name := fn.Name()
-	if i := strings.LastIndex(name, "."); i >= 0 {
-		name = name[i+1:]
+func labelMW(name string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			parityInvocations = append(parityInvocations, name)
+			next.ServeHTTP(w, r)
+		})
 	}
-	return strings.TrimPrefix(name, "mw")
 }
 
-// routeOperation maps every walked route to its spec operationId.
-var routeOperation = map[string]string{
-	"DELETE /forms/{form_id}/members":                                                     "removeFormMember",
-	"DELETE /forms/{form_id}/steps/{step_id}/fields/{field_id}":                           "deleteField",
-	"DELETE /namespaces/{namespace_id}/forms/{form_id}/members":                           "removeFormMemberNamespaced",
-	"DELETE /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}": "deleteFieldNamespaced",
-	"DELETE /namespaces/{namespace_id}/members":                                           "removeNamespaceMember",
-	"GET /docs/openapi.yml":                                                               "getOpenAPISpec",
-	"GET /forms":                                                                          "listMyForms",
-	"GET /forms/archived":                                                                 "listMyArchivedForms",
-	"GET /forms/{form_id}/asnwerable":                                                     "getAnswerableForm",
-	"GET /forms/{form_id}/full":                                                           "getFullForm",
-	"GET /forms/{form_id}/members":                                                        "listFormMembers",
-	"GET /forms/{form_id}/responses/count":                                                "getFormResponseCount",
-	"GET /forms/{form_id}/steps":                                                          "listSteps",
-	"GET /forms/{form_id}/steps/{step_id}/fields":                                         "listFields",
-	"GET /forms/{form_id}/steps/{step_id}/fields/{field_id}/select":                       "getSelectConfig",
-	"GET /health":                                                                             "getHealth",
-	"GET /namespaces":                                                                         "listNamespaces",
-	"GET /namespaces/{namespace_id}/forms":                                                    "listNamespaceForms",
-	"GET /namespaces/{namespace_id}/forms/archived":                                           "listNamespaceArchivedForms",
-	"GET /namespaces/{namespace_id}/forms/{form_id}/full":                                     "getFullFormNamespaced",
-	"GET /namespaces/{namespace_id}/forms/{form_id}/members":                                  "listFormMembersNamespaced",
-	"GET /namespaces/{namespace_id}/forms/{form_id}/responses/count":                          "getFormResponseCountNamespaced",
-	"GET /namespaces/{namespace_id}/forms/{form_id}/steps":                                    "listStepsNamespaced",
-	"GET /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields":                   "listFieldsNamespaced",
-	"GET /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}/select": "getSelectConfigNamespaced",
-	"GET /namespaces/{namespace_id}/members":                                                  "listNamespaceMembers",
-	"POST /forms":                                                                             "createForm",
-	"POST /forms/{form_id}/archive":                                                           "archiveForm",
-	"POST /forms/{form_id}/close":                                                             "closeForm",
-	"POST /forms/{form_id}/members":                                                           "addFormMember",
-	"POST /forms/{form_id}/open":                                                              "openForm",
-	"POST /forms/{form_id}/redraft":                                                           "redraftForm",
-	"POST /forms/{form_id}/responses":                                                         "submitResponse",
-	"POST /forms/{form_id}/steps":                                                             "createStep",
-	"POST /forms/{form_id}/steps/{step_id}/fields":                                            "createField",
-	"POST /namespaces":                                                                        "createNamespace",
-	"POST /namespaces/{namespace_id}/forms":                                                   "createNamespaceForm",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/archive":                                 "archiveFormNamespaced",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/close":                                   "closeFormNamespaced",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/members":                                 "addFormMemberNamespaced",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/open":                                    "openFormNamespaced",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/redraft":                                 "redraftFormNamespaced",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/steps":                                   "createStepNamespaced",
-	"POST /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields":                  "createFieldNamespaced",
-	"POST /namespaces/{namespace_id}/members":                                                 "addNamespaceMember",
-	"PUT /forms/{form_id}/steps":                                                              "bulkEditSteps",
-	"PUT /forms/{form_id}/steps/{step_id}/fields":                                             "bulkEditFields",
-	"PUT /forms/{form_id}/steps/{step_id}/fields/{field_id}/select":                           "editSelectConfig",
-	"PUT /namespaces/{namespace_id}/forms/{form_id}/steps":                                    "bulkEditStepsNamespaced",
-	"PUT /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields":                   "bulkEditFieldsNamespaced",
-	"PUT /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}/select": "editSelectConfigNamespaced",
+// runChain executes a chain and returns the middleware names that ran.
+func runChain(chain []func(http.Handler) http.Handler) []string {
+	parityInvocations = nil
+	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for i := len(chain) - 1; i >= 0; i-- {
+		next = chain[i](next)
+	}
+	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	return parityInvocations
 }
 
-// expectedOps is the auth matrix keyed by operationId: "public" when the
-// operation runs with no auth middleware, otherwise the chain names joined
-// with "+". Harness-owned routes (getHealth, getOpenAPISpec) are excluded —
-// they never run through the dispatch.
-var expectedOps = map[string]string{
-	"addFormMemberNamespaced":        "JWT",
-	"addNamespaceMember":             "JWT",
-	"archiveFormNamespaced":          "JWT",
-	"closeFormNamespaced":            "JWT",
-	"createNamespace":                "JWT",
-	"createNamespaceForm":            "JWT",
-	"getFormResponseCountNamespaced": "JWT",
-	"getFullFormNamespaced":          "JWT",
-	"listFormMembersNamespaced":      "JWT",
-	"listNamespaceArchivedForms":     "JWT",
-	"listNamespaceForms":             "JWT",
-	"listNamespaceMembers":           "JWT",
-	"listNamespaces":                 "JWT",
-	"openFormNamespaced":             "JWT",
-	"redraftFormNamespaced":          "JWT",
-	"removeFormMemberNamespaced":     "JWT",
-	"removeNamespaceMember":          "JWT",
-	"addFormMember":                  "AnyAuth",
-	"archiveForm":                    "AnyAuth",
-	"bulkEditFields":                 "AnyAuth",
-	"bulkEditFieldsNamespaced":       "AnyAuth",
-	"bulkEditSteps":                  "AnyAuth",
-	"bulkEditStepsNamespaced":        "AnyAuth",
-	"closeForm":                      "AnyAuth",
-	"createField":                    "AnyAuth",
-	"createFieldNamespaced":          "AnyAuth",
-	"createForm":                     "AnyAuth",
-	"createStep":                     "AnyAuth",
-	"createStepNamespaced":           "AnyAuth",
-	"deleteField":                    "AnyAuth",
-	"deleteFieldNamespaced":          "AnyAuth",
-	"editSelectConfig":               "AnyAuth",
-	"editSelectConfigNamespaced":     "AnyAuth",
-	"getFormResponseCount":           "AnyAuth",
-	"getFullForm":                    "AnyAuth",
-	"getSelectConfig":                "AnyAuth",
-	"getSelectConfigNamespaced":      "AnyAuth",
-	"listFields":                     "AnyAuth",
-	"listFieldsNamespaced":           "AnyAuth",
-	"listFormMembers":                "AnyAuth",
-	"listMyArchivedForms":            "AnyAuth",
-	"listMyForms":                    "AnyAuth",
-	"listSteps":                      "AnyAuth",
-	"listStepsNamespaced":            "AnyAuth",
-	"openForm":                       "AnyAuth",
-	"redraftForm":                    "AnyAuth",
-	"removeFormMember":               "AnyAuth",
-	"getAnswerableForm":              "public",
-	"submitResponse":                 "public",
-}
-
-func TestRouterParity(t *testing.T) {
+// TestRouterRoutesMatchSpec asserts the router serves exactly the spec's
+// paths, and nothing else. The harness-owned routes are declared in the
+// spec (getHealth, getOpenAPISpec) and registered by the harness.
+func TestRouterRoutesMatchSpec(t *testing.T) {
 	r := chi.NewRouter()
-	// harness-owned routes; mirror their registration
+	// harness-owned routes (excluded from codegen); the harness registers
+	// them, mirroring httpserver.NewRouter.
 	r.Get("/health", http.NotFoundHandler().ServeHTTP)
 	r.Get("/docs/openapi.yml", http.NotFoundHandler().ServeHTTP)
 	openapi.HandlerWithOptions(openapi.NewStrictHandler(stubStrict{}, nil), openapi.ChiServerOptions{
 		BaseRouter: r,
 	})
 
-	got := map[string]string{}
+	walked := map[string]bool{}
 	_ = chi.Walk(r, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
-		got[normalizeRoute(method+" "+route)] = "public"
+		walked[normalizeRoute(method+" "+route)] = true
 		return nil
 	})
 
+	ops, err := authz.SpecOperations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("SpecOperations: %v", err)
+	}
+	expected := make(map[string]bool, len(ops))
+	for _, op := range ops {
+		expected[normalizeRoute(op.Method+" "+op.Path)] = true
+	}
+
 	var missing, extra []string
-	for want := range routeOperation {
-		if _, ok := got[want]; !ok {
+	for want := range expected {
+		if !walked[want] {
 			missing = append(missing, want)
 		}
 	}
-	for gotRoute := range got {
-		if _, ok := routeOperation[gotRoute]; !ok {
-			extra = append(extra, gotRoute)
+	for got := range walked {
+		if !expected[got] {
+			extra = append(extra, got)
 		}
 	}
 	sort.Strings(missing)
 	sort.Strings(extra)
 	if len(missing) > 0 || len(extra) > 0 {
-		t.Fatalf("route parity mismatch\nroutes expected but not walked:\n%s\nroutes walked but not expected:\n%s",
+		t.Fatalf("route parity mismatch\nroutes in spec but not served:\n%s\nroutes served but not in spec:\n%s",
 			strings.Join(missing, "\n"), strings.Join(extra, "\n"))
 	}
+	t.Logf("route parity ok: %d routes", len(walked))
+}
 
-	chains := authChains(middlewares{jwt: mwJWT, anyAuth: mwAnyAuth})
-	var authMismatch, missingChain []string
-	for opID, want := range expectedOps {
-		chain, ok := chains[opID]
-		if !ok {
-			missingChain = append(missingChain, opID)
-			continue
-		}
-		names := make([]string, 0, len(chain))
-		for _, mw := range chain {
-			if n := mwName(mw); n != "" && !strings.HasPrefix(n, "func") {
-				names = append(names, n)
+// TestAuthMatrixMatchesSpec asserts every operation's chain, composed from
+// the spec's security blocks, runs exactly the middlewares the spec
+// declares: public operations get none, protected operations get the JWT
+// middleware.
+func TestAuthMatrixMatchesSpec(t *testing.T) {
+	mw := middlewares{jwt: labelMW("JWT")}
+	resolver, err := authResolver(mw)
+	if err != nil {
+		t.Fatalf("authResolver: %v", err)
+	}
+	chains := resolver.Chains()
+
+	ops, err := authz.SpecOperations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("SpecOperations: %v", err)
+	}
+	var mismatches []string
+	for _, op := range ops {
+		var want []string
+		if len(op.Schemes) > 0 {
+			switch strings.Join(op.Schemes, "+") {
+			case "bearerAuth":
+				want = append(want, "JWT")
+			default:
+				mismatches = append(mismatches, op.OperationID+": unexpected scheme combination "+strings.Join(op.Schemes, "+"))
+				continue
 			}
 		}
-		gotAuth := strings.Join(names, "+")
-		if gotAuth == "" {
-			gotAuth = "public"
-		}
-		if gotAuth != want {
-			authMismatch = append(authMismatch, fmt.Sprintf("%s: want %s, got %s", opID, want, gotAuth))
+		if got := runChain(chains[op.OperationID]); !slices.Equal(got, want) {
+			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))
 		}
 	}
-	for opID := range chains {
-		if opID == "getHealth" || opID == "getOpenAPISpec" {
-			continue
-		}
-		if _, ok := expectedOps[opID]; !ok {
-			authMismatch = append(authMismatch, "chain present but not expected: "+opID)
-		}
+	sort.Strings(mismatches)
+	if len(mismatches) > 0 {
+		t.Fatalf("auth matrix mismatch\n%s", strings.Join(mismatches, "\n"))
 	}
-	sort.Strings(missingChain)
-	sort.Strings(authMismatch)
-	if len(missingChain) > 0 || len(authMismatch) > 0 {
-		t.Fatalf("auth matrix mismatch\noperations without a chain:\n%s\nmismatches:\n%s",
-			strings.Join(missingChain, "\n"), strings.Join(authMismatch, "\n"))
-	}
-
-	t.Logf("parity ok: %d routes, %d operations with matching auth chains", len(got), len(chains))
+	t.Logf("auth matrix ok: %d operations match the spec", len(ops))
 }
 
 func normalizeRoute(r string) string {

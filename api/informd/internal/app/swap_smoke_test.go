@@ -20,7 +20,7 @@ func rejectJWT(_ http.Handler) http.Handler {
 
 func TestSwapSmokeAuthDispatch(t *testing.T) {
 	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(server, middlewares{jwt: rejectJWT})
+	r := newTestRouter(t, server, middlewares{jwt: rejectJWT})
 
 	// JWT-only namespace route without a token -> 401 fun envelope
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/namespaces", nil)

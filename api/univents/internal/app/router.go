@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"lib/errx"
 	"lib/httpserver"
 	spec "univents"
 	"univents/internal/handlers"
@@ -15,12 +16,14 @@ import (
 )
 
 func (app *Univents) CreateRouter(middlewares middlewares, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
+	chains, err := resolveAuthChains(middlewares)
+	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:         app.cfg.AppName,
 		OpenAPISpec:     spec.OpenAPISpec,
 		SkipLogPrefixes: []string{"/admin/asynq"},
 		Routes: func(r *chi.Mux) {
-			mountStrict(r, h, middlewares)
+			mountStrict(r, h, chains)
 
 			r.Group(func(r chi.Router) {
 				r.Mount("/riverui", riverUIHandler)
@@ -31,9 +34,9 @@ func (app *Univents) CreateRouter(middlewares middlewares, h *handlers.Server, r
 
 // mountStrict registers the generated strict handler on r with the
 // validation + auth middleware stack and the fun-envelope error handlers.
-func mountStrict(r *chi.Mux, h *handlers.Server, mw middlewares) {
+func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.Handler) http.Handler) {
 	strict := openapi.NewStrictHandlerWithOptions(h,
-		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(mw)},
+		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(chains)},
 		openapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)

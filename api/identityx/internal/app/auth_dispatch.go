@@ -6,18 +6,19 @@ import (
 	"slices"
 	"strings"
 
+	spec "IdentityX"
 	"IdentityX/internal/openapi"
+	"lib/authz"
 	"lib/globals"
 
 	"github.com/MintzyG/fun"
 )
 
-// authChains maps every operationId to the middleware chain it must run
-// through, mirroring the parity-test matrix. The setup guard runs on every
-// operation except the two /auth/setup routes, which manage the flag
-// themselves.
-func authChains(mw middlewares) map[string][]func(http.Handler) http.Handler {
-	setupGuard := func(next http.Handler) http.Handler {
+// setupGuard returns the middleware that gates every operation (except the
+// two /auth/setup routes, which manage the flag themselves) until setup has
+// completed.
+func setupGuard() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !globals.SetupComplete() {
 				fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)
@@ -26,75 +27,61 @@ func authChains(mw middlewares) map[string][]func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
 
-	chains := map[string][]func(http.Handler) http.Handler{
-		// authn — public except where noted
-		"getSetup":         {},
-		"postSetup":        {},
-		"postRegister":     {},
-		"postLogin":        {},
-		"postRefresh":      {},
-		"getOAuthConnect":  {},
-		"getOAuthCallback": {},
-		"getJWKS":          {},
-		"postLogout":       {mw.jwtAuth},
-		"getIntrospect":    {mw.anyAuth},
-		// actors
-		"listActors":      {mw.anyAuth, mw.clientOnly},
-		"createActor":     {mw.anyAuth, mw.clientOnly},
-		"getActor":        {mw.anyAuth, mw.clientOnly},
-		"getActorByEmail": {mw.anyAuth, mw.clientOnly},
-		// api_keys
-		"createAPIKey": {mw.anyAuth, mw.clientOnly},
-		// capabilities
-		"listCapabilities": {mw.anyAuth},
-		"createCapability": {mw.jwtAuth, mw.clientOnly},
-		// organizations
-		"listOrganizations":               {mw.jwtAuth, mw.clientOnly},
-		"createOrganization":              {mw.jwtAuth, mw.clientOnly},
-		"listOrganizationMembers":         {mw.jwtAuth, mw.clientOnly},
-		"addOrganizationMember":           {mw.jwtAuth, mw.clientOnly},
-		"removeOrganizationMember":        {mw.jwtAuth, mw.clientOnly},
-		"listOrganizationProjects":        {mw.jwtAuth, mw.clientOnly},
-		"createOrganizationProject":       {mw.jwtAuth, mw.clientOnly},
-		"listOrganizationProjectActors":   {mw.jwtAuth, mw.clientOnly},
-		"createOrganizationProjectActor":  {mw.jwtAuth, mw.clientOnly},
-		"listOrganizationProjectMembers":  {mw.jwtAuth, mw.clientOnly},
-		"addOrganizationProjectMember":    {mw.jwtAuth, mw.clientOnly},
-		"removeOrganizationProjectMember": {mw.jwtAuth, mw.clientOnly},
-		"getOrganizationProjectActor":     {mw.jwtAuth, mw.clientOnly},
-		// projects
-		"listProjects":        {mw.anyAuth, mw.clientOnly},
-		"createProject":       {mw.anyAuth, mw.clientOnly},
-		"listProjectMembers":  {mw.anyAuth, mw.clientOnly},
-		"addProjectMember":    {mw.anyAuth, mw.clientOnly},
-		"removeProjectMember": {mw.anyAuth, mw.clientOnly},
-		// profiles
-		"getPlatformProfile":    {mw.jwtAuth, mw.clientOnly},
-		"upsertPlatformProfile": {mw.jwtAuth, mw.clientOnly},
-		"getProjectProfile":     {mw.jwtAuth, mw.clientOnly},
-		"upsertProjectProfile":  {mw.jwtAuth, mw.clientOnly},
-		// profile_schemas
-		"getPlatformProfileSchema":    {mw.jwtAuth, mw.clientOnly},
-		"upsertPlatformProfileSchema": {mw.jwtAuth, mw.clientOnly},
-		"getProjectProfileSchema":     {mw.jwtAuth, mw.clientOnly},
-		"upsertProjectProfileSchema":  {mw.jwtAuth, mw.clientOnly},
-	}
+// clientOnlyOps are the operations requiring a platform-level client
+// identity (nil ProjectID). The scope requirement lives here until the
+// authorize module absorbs it as a per-operation requirement.
+var clientOnlyOps = []string{
+	"listActors", "createActor", "getActor", "getActorByEmail",
+	"createAPIKey",
+	"createCapability",
+	"listOrganizations", "createOrganization", "listOrganizationMembers",
+	"addOrganizationMember", "removeOrganizationMember",
+	"listOrganizationProjects", "createOrganizationProject",
+	"listOrganizationProjectActors", "createOrganizationProjectActor",
+	"listOrganizationProjectMembers", "addOrganizationProjectMember",
+	"removeOrganizationProjectMember", "getOrganizationProjectActor",
+	"listProjects", "createProject", "listProjectMembers",
+	"addProjectMember", "removeProjectMember",
+	"getPlatformProfile", "upsertPlatformProfile",
+	"getProjectProfile", "upsertProjectProfile",
+	"getPlatformProfileSchema", "upsertPlatformProfileSchema",
+	"getProjectProfileSchema", "upsertProjectProfileSchema",
+}
 
-	for key, chain := range chains {
-		if key == "getSetup" || key == "postSetup" {
-			continue
-		}
-		chains[key] = append([]func(http.Handler) http.Handler{setupGuard}, chain...)
+// authResolver derives every operation's chain from the spec's security
+// blocks, keyed by spec-form operationId.
+func authResolver(mw middlewares, guard func(http.Handler) http.Handler) (*authz.Resolver, error) {
+	return authz.NewResolver(spec.OpenAPISpec, authz.Registry{
+		"bearerAuth":            mw.jwtAuth,
+		"apiKeyAuth":            mw.apiKeyAuth,
+		"apiKeyAuth+bearerAuth": mw.anyAuth,
+	}, authz.Options{
+		SetupGuard:     guard,
+		SkipSetupGuard: []string{"getSetup", "postSetup"},
+	})
+}
+
+// resolveAuthChains composes the spec-derived chains with the platform
+// client scope guard. Fails at boot when the spec and the middleware
+// registry disagree.
+func resolveAuthChains(mw middlewares) (map[string][]func(http.Handler) http.Handler, error) {
+	resolver, err := authResolver(mw, setupGuard())
+	if err != nil {
+		return nil, err
 	}
-	return chains
+	chains := resolver.Chains()
+	for _, op := range clientOnlyOps {
+		chains[op] = append(chains[op], mw.clientOnly)
+	}
+	return chains, nil
 }
 
 // authDispatch is the strict-server middleware that resolves the auth
 // chain for each operation (by operationId) and runs it around the
 // openapi. Public operations (empty chain) pass through untouched.
-func authDispatch(mw middlewares) openapi.StrictMiddlewareFunc {
-	chains := authChains(mw)
+func authDispatch(chains map[string][]func(http.Handler) http.Handler) openapi.StrictMiddlewareFunc {
 	return func(f openapi.StrictHandlerFunc, operationID string) openapi.StrictHandlerFunc {
 		if operationID != "" {
 			operationID = strings.ToLower(operationID[:1]) + operationID[1:]

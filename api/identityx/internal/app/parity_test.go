@@ -3,15 +3,16 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"reflect"
-	"runtime"
+	"net/http/httptest"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
 
+	spec "IdentityX"
 	"IdentityX/internal/openapi"
+	"lib/authz"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -86,22 +87,16 @@ func (stubStrict) ListOrganizationProjects(_ context.Context, _ openapi.ListOrga
 func (stubStrict) CreateOrganizationProject(_ context.Context, _ openapi.CreateOrganizationProjectRequestObject) (openapi.CreateOrganizationProjectResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetOrganizationProjectActor(_ context.Context, _ openapi.GetOrganizationProjectActorRequestObject) (openapi.GetOrganizationProjectActorResponseObject, error) {
-	return nil, errStub
-}
-func (stubStrict) RemoveOrganizationProjectMember(_ context.Context, _ openapi.RemoveOrganizationProjectMemberRequestObject) (openapi.RemoveOrganizationProjectMemberResponseObject, error) {
-	return nil, errStub
-}
 func (stubStrict) ListOrganizationProjectMembers(_ context.Context, _ openapi.ListOrganizationProjectMembersRequestObject) (openapi.ListOrganizationProjectMembersResponseObject, error) {
 	return nil, errStub
 }
 func (stubStrict) AddOrganizationProjectMember(_ context.Context, _ openapi.AddOrganizationProjectMemberRequestObject) (openapi.AddOrganizationProjectMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetPlatformProfileSchema(_ context.Context, _ openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {
+func (stubStrict) RemoveOrganizationProjectMember(_ context.Context, _ openapi.RemoveOrganizationProjectMemberRequestObject) (openapi.RemoveOrganizationProjectMemberResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) UpsertPlatformProfileSchema(_ context.Context, _ openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
+func (stubStrict) GetOrganizationProjectActor(_ context.Context, _ openapi.GetOrganizationProjectActorRequestObject) (openapi.GetOrganizationProjectActorResponseObject, error) {
 	return nil, errStub
 }
 func (stubStrict) ListProjects(_ context.Context, _ openapi.ListProjectsRequestObject) (openapi.ListProjectsResponseObject, error) {
@@ -110,22 +105,25 @@ func (stubStrict) ListProjects(_ context.Context, _ openapi.ListProjectsRequestO
 func (stubStrict) CreateProject(_ context.Context, _ openapi.CreateProjectRequestObject) (openapi.CreateProjectResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) ListProjectMembers(_ context.Context, _ openapi.ListProjectMembersRequestObject) (openapi.ListProjectMembersResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) AddProjectMember(_ context.Context, _ openapi.AddProjectMemberRequestObject) (openapi.AddProjectMemberResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) RemoveProjectMember(_ context.Context, _ openapi.RemoveProjectMemberRequestObject) (openapi.RemoveProjectMemberResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListActors(_ context.Context, _ openapi.ListActorsRequestObject) (openapi.ListActorsResponseObject, error) {
 	return nil, errStub
 }
 func (stubStrict) CreateActor(_ context.Context, _ openapi.CreateActorRequestObject) (openapi.CreateActorResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetActorByEmail(_ context.Context, _ openapi.GetActorByEmailRequestObject) (openapi.GetActorByEmailResponseObject, error) {
-	return nil, errStub
-}
 func (stubStrict) GetActor(_ context.Context, _ openapi.GetActorRequestObject) (openapi.GetActorResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) GetProjectProfile(_ context.Context, _ openapi.GetProjectProfileRequestObject) (openapi.GetProjectProfileResponseObject, error) {
-	return nil, errStub
-}
-func (stubStrict) UpsertProjectProfile(_ context.Context, _ openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
+func (stubStrict) GetActorByEmail(_ context.Context, _ openapi.GetActorByEmailRequestObject) (openapi.GetActorByEmailResponseObject, error) {
 	return nil, errStub
 }
 func (stubStrict) CreateAPIKey(_ context.Context, _ openapi.CreateAPIKeyRequestObject) (openapi.CreateAPIKeyResponseObject, error) {
@@ -137,13 +135,10 @@ func (stubStrict) ListCapabilities(_ context.Context, _ openapi.ListCapabilities
 func (stubStrict) CreateCapability(_ context.Context, _ openapi.CreateCapabilityRequestObject) (openapi.CreateCapabilityResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) RemoveProjectMember(_ context.Context, _ openapi.RemoveProjectMemberRequestObject) (openapi.RemoveProjectMemberResponseObject, error) {
+func (stubStrict) GetPlatformProfileSchema(_ context.Context, _ openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
-func (stubStrict) ListProjectMembers(_ context.Context, _ openapi.ListProjectMembersRequestObject) (openapi.ListProjectMembersResponseObject, error) {
-	return nil, errStub
-}
-func (stubStrict) AddProjectMember(_ context.Context, _ openapi.AddProjectMemberRequestObject) (openapi.AddProjectMemberResponseObject, error) {
+func (stubStrict) UpsertPlatformProfileSchema(_ context.Context, _ openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
 func (stubStrict) GetProjectProfileSchema(_ context.Context, _ openapi.GetProjectProfileSchemaRequestObject) (openapi.GetProjectProfileSchemaResponseObject, error) {
@@ -152,192 +147,143 @@ func (stubStrict) GetProjectProfileSchema(_ context.Context, _ openapi.GetProjec
 func (stubStrict) UpsertProjectProfileSchema(_ context.Context, _ openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) GetProjectProfile(_ context.Context, _ openapi.GetProjectProfileRequestObject) (openapi.GetProjectProfileResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) UpsertProjectProfile(_ context.Context, _ openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
+	return nil, errStub
+}
 
-func mwJWT(next http.Handler) http.Handler        { return next }
-func mwAnyAuth(next http.Handler) http.Handler    { return next }
-func mwClientOnly(next http.Handler) http.Handler { return next }
+// labeled middleware stubs record their names when run.
+var parityInvocations []string
 
-func mwName(mw func(http.Handler) http.Handler) string {
-	fn := runtime.FuncForPC(reflect.ValueOf(mw).Pointer())
-	name := fn.Name()
-	if i := strings.LastIndex(name, "."); i >= 0 {
-		name = name[i+1:]
+func labelMW(name string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			parityInvocations = append(parityInvocations, name)
+			next.ServeHTTP(w, r)
+		})
 	}
-	return strings.TrimPrefix(name, "mw")
 }
 
-var routeOperation = map[string]string{
-	"GET /health":                                  "getHealth",
-	"GET /docs/openapi.yml":                        "getOpenAPISpec",
-	"GET /auth/setup":                              "getSetup",
-	"POST /auth/setup":                             "postSetup",
-	"POST /auth/register":                          "postRegister",
-	"POST /auth/login":                             "postLogin",
-	"POST /auth/logout":                            "postLogout",
-	"POST /auth/refresh":                           "postRefresh",
-	"GET /auth/{provider}/connect":                 "getOAuthConnect",
-	"GET /auth/{provider}/callback":                "getOAuthCallback",
-	"GET /.well-known/jwks.json":                   "getJWKS",
-	"GET /auth/introspect":                         "getIntrospect",
-	"GET /projects/{project_id}/actors/{actor_id}": "getActor",
-	"GET /projects/{project_id}/actors/{actor_email}:by_email":                     "getActorByEmail",
-	"POST /projects/{project_id}/actors":                                           "createActor",
-	"GET /projects/{project_id}/actors":                                            "listActors",
-	"POST /projects/{project_id}/api_keys":                                         "createAPIKey",
-	"GET /projects/{project_id}/capabilities":                                      "listCapabilities",
-	"POST /projects/{project_id}/capabilities":                                     "createCapability",
-	"GET /organizations":                                                           "listOrganizations",
-	"POST /organizations":                                                          "createOrganization",
-	"GET /organizations/{organization_id}/members":                                 "listOrganizationMembers",
-	"POST /organizations/{organization_id}/members":                                "addOrganizationMember",
-	"DELETE /organizations/{organization_id}/members":                              "removeOrganizationMember",
-	"GET /organizations/{organization_id}/projects":                                "listOrganizationProjects",
-	"POST /organizations/{organization_id}/projects":                               "createOrganizationProject",
-	"POST /organizations/{org_id}/projects/{project_id}/actors":                    "createOrganizationProjectActor",
-	"GET /organizations/{org_id}/projects/{project_id}/actors":                     "listOrganizationProjectActors",
-	"GET /organizations/{organization_id}/projects/{project_id}/members":           "listOrganizationProjectMembers",
-	"POST /organizations/{organization_id}/projects/{project_id}/members":          "addOrganizationProjectMember",
-	"DELETE /organizations/{organization_id}/projects/{project_id}/members":        "removeOrganizationProjectMember",
-	"GET /organizations/{organization_id}/projects/{project_id}/actors/{actor_id}": "getOrganizationProjectActor",
-	"GET /projects":                                        "listProjects",
-	"POST /projects":                                       "createProject",
-	"GET /projects/{project_id}/members":                   "listProjectMembers",
-	"POST /projects/{project_id}/members":                  "addProjectMember",
-	"DELETE /projects/{project_id}/members":                "removeProjectMember",
-	"GET /actors/{actor_id}/profile":                       "getPlatformProfile",
-	"PUT /actors/{actor_id}/profile":                       "upsertPlatformProfile",
-	"GET /projects/{project_id}/actors/{actor_id}/profile": "getProjectProfile",
-	"PUT /projects/{project_id}/actors/{actor_id}/profile": "upsertProjectProfile",
-	"GET /projects/{project_id}/profile-schema":            "getProjectProfileSchema",
-	"PUT /projects/{project_id}/profile-schema":            "upsertProjectProfileSchema",
-	"GET /profile-schema":                                  "getPlatformProfileSchema",
-	"PUT /profile-schema":                                  "upsertPlatformProfileSchema",
+// runChain executes a chain and returns the middleware names that ran.
+func runChain(chain []func(http.Handler) http.Handler) []string {
+	parityInvocations = nil
+	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for i := len(chain) - 1; i >= 0; i-- {
+		next = chain[i](next)
+	}
+	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	return parityInvocations
 }
 
-//nolint:gosec // auth-chain labels ("JWT"), not credentials
-var expectedOps = map[string]string{
-	"getSetup":                        "public",
-	"postSetup":                       "public",
-	"postRegister":                    "public",
-	"postLogin":                       "public",
-	"postRefresh":                     "public",
-	"getOAuthConnect":                 "public",
-	"getOAuthCallback":                "public",
-	"getJWKS":                         "public",
-	"postLogout":                      "JWT",
-	"getIntrospect":                   "AnyAuth",
-	"getActor":                        "AnyAuth+ClientOnly",
-	"getActorByEmail":                 "AnyAuth+ClientOnly",
-	"createActor":                     "AnyAuth+ClientOnly",
-	"listActors":                      "AnyAuth+ClientOnly",
-	"createAPIKey":                    "AnyAuth+ClientOnly",
-	"listCapabilities":                "AnyAuth",
-	"createCapability":                "JWT+ClientOnly",
-	"listOrganizations":               "JWT+ClientOnly",
-	"createOrganization":              "JWT+ClientOnly",
-	"listOrganizationMembers":         "JWT+ClientOnly",
-	"addOrganizationMember":           "JWT+ClientOnly",
-	"removeOrganizationMember":        "JWT+ClientOnly",
-	"listOrganizationProjects":        "JWT+ClientOnly",
-	"createOrganizationProject":       "JWT+ClientOnly",
-	"createOrganizationProjectActor":  "JWT+ClientOnly",
-	"listOrganizationProjectActors":   "JWT+ClientOnly",
-	"listOrganizationProjectMembers":  "JWT+ClientOnly",
-	"addOrganizationProjectMember":    "JWT+ClientOnly",
-	"removeOrganizationProjectMember": "JWT+ClientOnly",
-	"getOrganizationProjectActor":     "JWT+ClientOnly",
-	"listProjects":                    "AnyAuth+ClientOnly",
-	"createProject":                   "AnyAuth+ClientOnly",
-	"listProjectMembers":              "AnyAuth+ClientOnly",
-	"addProjectMember":                "AnyAuth+ClientOnly",
-	"removeProjectMember":             "AnyAuth+ClientOnly",
-	"getPlatformProfile":              "JWT+ClientOnly",
-	"upsertPlatformProfile":           "JWT+ClientOnly",
-	"getProjectProfile":               "JWT+ClientOnly",
-	"upsertProjectProfile":            "JWT+ClientOnly",
-	"getProjectProfileSchema":         "JWT+ClientOnly",
-	"upsertProjectProfileSchema":      "JWT+ClientOnly",
-	"getPlatformProfileSchema":        "JWT+ClientOnly",
-	"upsertPlatformProfileSchema":     "JWT+ClientOnly",
-}
-
-// operation runs with no auth middleware, otherwise the chain names joined
-// with "+". Mirrors the pre-swap parity matrix.
-
-func TestRouterParity(t *testing.T) {
+// TestRouterRoutesMatchSpec asserts the router serves exactly the spec's
+// paths, and nothing else. The harness-owned routes are declared in the
+// spec (getHealth, getOpenAPISpec) and registered by the harness.
+func TestRouterRoutesMatchSpec(t *testing.T) {
 	r := chi.NewRouter()
-	// harness-owned routes; mirror their registration
+	// harness-owned routes (excluded from codegen); the harness registers
+	// them, mirroring httpserver.NewRouter.
 	r.Get("/health", http.NotFoundHandler().ServeHTTP)
 	r.Get("/docs/openapi.yml", http.NotFoundHandler().ServeHTTP)
 	openapi.HandlerWithOptions(openapi.NewStrictHandler(stubStrict{}, nil), openapi.ChiServerOptions{
 		BaseRouter: r,
 	})
 
-	got := map[string]string{}
+	walked := map[string]bool{}
 	_ = chi.Walk(r, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
-		got[normalizeRoute(method+" "+route)] = "public"
+		walked[normalizeRoute(method+" "+route)] = true
 		return nil
 	})
 
-	// route coverage: walked == routeOperation keys
+	ops, err := authz.SpecOperations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("SpecOperations: %v", err)
+	}
+	expected := make(map[string]bool, len(ops))
+	for _, op := range ops {
+		expected[normalizeRoute(op.Method+" "+op.Path)] = true
+	}
+
 	var missing, extra []string
-	for want := range routeOperation {
-		if _, ok := got[want]; !ok {
+	for want := range expected {
+		if !walked[want] {
 			missing = append(missing, want)
 		}
 	}
-	for gotRoute := range got {
-		if _, ok := routeOperation[gotRoute]; !ok {
-			extra = append(extra, gotRoute)
+	for got := range walked {
+		if !expected[got] {
+			extra = append(extra, got)
 		}
 	}
 	sort.Strings(missing)
 	sort.Strings(extra)
 	if len(missing) > 0 || len(extra) > 0 {
-		t.Fatalf("route parity mismatch\nroutes expected but not walked:\n%s\nroutes walked but not expected:\n%s",
+		t.Fatalf("route parity mismatch\nroutes in spec but not served:\n%s\nroutes served but not in spec:\n%s",
 			strings.Join(missing, "\n"), strings.Join(extra, "\n"))
 	}
+	t.Logf("route parity ok: %d routes", len(walked))
+}
 
-	// auth matrix: every operation must have a dispatch chain matching expectedOps
-	chains := authChains(middlewares{
-		jwtAuth:    mwJWT,
-		anyAuth:    mwAnyAuth,
-		clientOnly: mwClientOnly,
-	})
-	var authMismatch, missingChain []string
-	for opID, want := range expectedOps {
-		chain, ok := chains[opID]
-		if !ok {
-			missingChain = append(missingChain, opID)
-			continue
+// TestAuthMatrixMatchesSpec asserts every operation's chain, composed from
+// the spec's security blocks, runs the middlewares the spec declares: the
+// setup guard (except the two setup routes), the scheme combination's
+// middleware, and the platform-client scope guard for client-only
+// operations.
+func TestAuthMatrixMatchesSpec(t *testing.T) {
+	mw := middlewares{
+		jwtAuth:    labelMW("JWT"),
+		apiKeyAuth: labelMW("APIKey"),
+		anyAuth:    labelMW("AnyAuth"),
+		clientOnly: labelMW("ClientOnly"),
+	}
+	resolver, err := authResolver(mw, labelMW("setupGuard"))
+	if err != nil {
+		t.Fatalf("authResolver: %v", err)
+	}
+	chains := resolver.Chains()
+	for _, op := range clientOnlyOps {
+		chains[op] = append(chains[op], mw.clientOnly)
+	}
+
+	ops, err := authz.SpecOperations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("SpecOperations: %v", err)
+	}
+	clientOnly := make(map[string]bool, len(clientOnlyOps))
+	for _, op := range clientOnlyOps {
+		clientOnly[op] = true
+	}
+
+	var mismatches []string
+	for _, op := range ops {
+		var want []string
+		if op.OperationID != "getSetup" && op.OperationID != "postSetup" {
+			want = append(want, "setupGuard")
 		}
-		names := make([]string, 0, len(chain))
-		for _, mw := range chain {
-			if n := mwName(mw); n != "" && !strings.HasPrefix(n, "func") {
-				names = append(names, n)
+		if len(op.Schemes) > 0 {
+			switch strings.Join(op.Schemes, "+") {
+			case "bearerAuth":
+				want = append(want, "JWT")
+			case "apiKeyAuth+bearerAuth":
+				want = append(want, "AnyAuth")
+			default:
+				mismatches = append(mismatches, op.OperationID+": unexpected scheme combination "+strings.Join(op.Schemes, "+"))
+				continue
 			}
 		}
-		gotAuth := strings.Join(names, "+")
-		if gotAuth == "" {
-			gotAuth = "public"
+		if clientOnly[op.OperationID] {
+			want = append(want, "ClientOnly")
 		}
-		if gotAuth != want {
-			authMismatch = append(authMismatch, fmt.Sprintf("%s: want %s, got %s", opID, want, gotAuth))
-		}
-	}
-	for opID := range chains {
-		if _, ok := expectedOps[opID]; !ok {
-			authMismatch = append(authMismatch, "chain present but not expected: "+opID)
+		if got := runChain(chains[op.OperationID]); !slices.Equal(got, want) {
+			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))
 		}
 	}
-	sort.Strings(missingChain)
-	sort.Strings(authMismatch)
-	if len(missingChain) > 0 || len(authMismatch) > 0 {
-		t.Fatalf("auth matrix mismatch\noperations without a chain:\n%s\nmismatches:\n%s",
-			strings.Join(missingChain, "\n"), strings.Join(authMismatch, "\n"))
+	sort.Strings(mismatches)
+	if len(mismatches) > 0 {
+		t.Fatalf("auth matrix mismatch\n%s", strings.Join(mismatches, "\n"))
 	}
-
-	t.Logf("parity ok: %d routes, %d operations with matching auth chains", len(got), len(chains))
+	t.Logf("auth matrix ok: %d operations match the spec", len(ops))
 }
 
 func normalizeRoute(r string) string {

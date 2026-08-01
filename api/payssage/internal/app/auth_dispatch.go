@@ -6,71 +6,33 @@ import (
 	"slices"
 	"strings"
 
+	"lib/authz"
+	spec "payssage"
 	"payssage/internal/openapi"
 )
 
-// authChains maps every operationId to the middleware chain it must run
-// through, mirroring the parity-test matrix. Everything is JWT-protected
-// except the provider webhook receive and the OAuth callback (browser
-// redirect target), which are public.
-func authChains(mw middlewares) map[string][]func(http.Handler) http.Handler {
-	chains := map[string][]func(http.Handler) http.Handler{
-		"providerCallback": {},
-		"receiveWebhook":   {},
+// authResolver derives every operation's chain from the spec's security
+// blocks, keyed by spec-form operationId.
+func authResolver(mw middlewares) (*authz.Resolver, error) {
+	return authz.NewResolver(spec.OpenAPISpec, authz.Registry{
+		"bearerAuth": mw.jwtAuth,
+	}, authz.Options{})
+}
 
-		"listOrganizations":            {mw.jwtAuth},
-		"createOrganization":           {mw.jwtAuth},
-		"listOrganizationMembers":      {mw.jwtAuth},
-		"addOrganizationMember":        {mw.jwtAuth},
-		"removeOrganizationMember":     {mw.jwtAuth},
-		"getOrganizationMemberByID":    {mw.jwtAuth},
-		"getOrganizationMemberByEmail": {mw.jwtAuth},
-
-		"createWallet":            {mw.jwtAuth},
-		"listWallets":             {mw.jwtAuth},
-		"getWallet":               {mw.jwtAuth},
-		"setWalletFee":            {mw.jwtAuth},
-		"setWalletSandbox":        {mw.jwtAuth},
-		"listOrganizationWallets": {mw.jwtAuth},
-		"bindCollector":           {mw.jwtAuth},
-		"unbindCollector":         {mw.jwtAuth},
-
-		"listCollectors":             {mw.jwtAuth},
-		"getCollector":               {mw.jwtAuth},
-		"listOrganizationCollectors": {mw.jwtAuth},
-
-		"listWalletSellers": {mw.jwtAuth},
-
-		"listIntentsByProfile":    {mw.jwtAuth},
-		"getIntent":               {mw.jwtAuth},
-		"cancelIntent":            {mw.jwtAuth},
-		"listWalletIntents":       {mw.jwtAuth},
-		"listOrganizationIntents": {mw.jwtAuth},
-		"checkout":                {mw.jwtAuth},
-		"hardCreateIntent":        {mw.jwtAuth},
-
-		"connectProvider": {mw.jwtAuth},
-		"revokeProvider":  {mw.jwtAuth},
-
-		"createWebhookEndpoint": {mw.jwtAuth},
-		"listWebhookEndpoints":  {mw.jwtAuth},
-		"getWebhookEndpoint":    {mw.jwtAuth},
-		"deleteWebhookEndpoint": {mw.jwtAuth},
-
-		"listWebhookEvents": {mw.jwtAuth},
-		"getWebhookEvent":   {mw.jwtAuth},
-
-		"listWebhookDeliveries": {mw.jwtAuth},
-		"getWebhookDelivery":    {mw.jwtAuth},
+// resolveAuthChains resolves the spec-derived chains. Fails at boot when
+// the spec and the middleware registry disagree.
+func resolveAuthChains(mw middlewares) (map[string][]func(http.Handler) http.Handler, error) {
+	resolver, err := authResolver(mw)
+	if err != nil {
+		return nil, err
 	}
-	return chains
+	return resolver.Chains(), nil
 }
 
 // authDispatch is the strict-server middleware that resolves the auth
 // chain for each operation (by operationId) and runs it around the
 // handler. Public operations (empty chain) pass through untouched.
-func authDispatch(mw middlewares) openapi.StrictMiddlewareFunc {
-	chains := authChains(mw)
+func authDispatch(chains map[string][]func(http.Handler) http.Handler) openapi.StrictMiddlewareFunc {
 	return func(f openapi.StrictHandlerFunc, operationID string) openapi.StrictHandlerFunc {
 		if operationID != "" {
 			operationID = strings.ToLower(operationID[:1]) + operationID[1:]

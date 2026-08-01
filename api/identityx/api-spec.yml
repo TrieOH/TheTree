@@ -568,7 +568,6 @@ paths:
         (non-project-scoped) actor.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       responses:
         '200':
           description: Organizations the actor belongs to
@@ -598,7 +597,6 @@ paths:
         actor. The actor becomes the organization owner.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -639,7 +637,6 @@ paths:
         actor that is a member of the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
       responses:
@@ -676,7 +673,6 @@ paths:
         the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
       requestBody:
@@ -715,7 +711,6 @@ paths:
         organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
       requestBody:
@@ -756,7 +751,6 @@ paths:
         platform-level actor that is a member of the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
       responses:
@@ -792,7 +786,6 @@ paths:
         organization member with admin or owner role.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
       requestBody:
@@ -840,7 +833,6 @@ paths:
         actor must belong to the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrgID'
         - $ref: '#/components/parameters/ProjectID'
@@ -877,7 +869,6 @@ paths:
         actor must belong to the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrgID'
         - $ref: '#/components/parameters/ProjectID'
@@ -926,7 +917,6 @@ paths:
         must belong to the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
         - $ref: '#/components/parameters/ProjectID'
@@ -964,7 +954,6 @@ paths:
         of the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
         - $ref: '#/components/parameters/ProjectID'
@@ -1003,7 +992,6 @@ paths:
         The actor must be an admin or owner of the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
         - $ref: '#/components/parameters/ProjectID'
@@ -1045,7 +1033,6 @@ paths:
         The actor must belong to the organization.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/OrganizationID'
         - $ref: '#/components/parameters/ProjectID'
@@ -1563,7 +1550,6 @@ paths:
         platform-level client.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       responses:
         '200':
           description: Platform profile schema
@@ -1593,7 +1579,6 @@ paths:
         profiles. Requires a platform-level client.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -1638,7 +1623,6 @@ paths:
         the project. Requires a platform-level client.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
       responses:
@@ -1670,7 +1654,6 @@ paths:
         project. Requires a platform-level client.
       security:
         - bearerAuth: []
-        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
       requestBody:

@@ -29,7 +29,9 @@ func TestAuthDispatchRunsChainForProtectedOperation(t *testing.T) {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), adSentinelKey, adSentinel)))
 		})
 	}
-	dispatch := authDispatch(middlewares{jwt: jwt})
+	dispatch := authDispatch(map[string][]func(http.Handler) http.Handler{
+		"createNamespace": {jwt},
+	})
 
 	handler := dispatch(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 		if got := ctx.Value(adSentinelKey); got != adSentinel {
@@ -52,30 +54,30 @@ func TestAuthDispatchRunsChainForProtectedOperation(t *testing.T) {
 
 func TestAuthDispatchSkipsPublicOperation(t *testing.T) {
 	var ran bool
-	dispatch := authDispatch(middlewares{jwt: func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ran = true
-			next.ServeHTTP(w, r)
-		})
-	}})
+	dispatch := authDispatch(map[string][]func(http.Handler) http.Handler{
+		"getAnswerableForm": nil, // public operation — empty chain
+	})
 	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		ran = true
 		return "ok", nil
 	}, "GetAnswerableForm")
 	_, err := handler(context.Background(), httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/forms/{formID}/answerable", nil), nil)
 	if err != nil {
 		t.Fatalf("public operation must pass through: %v", err)
 	}
-	if ran {
-		t.Fatal("public operation must not run the auth chain")
+	if !ran {
+		t.Fatal("public operation handler must run")
 	}
 }
 
 func TestAuthDispatchRejectionShortCircuits(t *testing.T) {
-	dispatch := authDispatch(middlewares{jwt: func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-		})
-	}})
+	dispatch := authDispatch(map[string][]func(http.Handler) http.Handler{
+		"createNamespace": {func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+			})
+		}},
+	})
 	var called bool
 	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 		called = true

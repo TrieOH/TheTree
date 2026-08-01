@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"lib/errx"
 	"lib/httpserver"
 	spec "payssage"
 	"payssage/internal/handlers"
@@ -16,11 +17,13 @@ import (
 )
 
 func (app *Payssage) CreateRouter(middlewares middlewares, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
+	chains, err := resolveAuthChains(middlewares)
+	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:     app.cfg.AppName,
 		OpenAPISpec: spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
-			mountStrict(r, h, middlewares)
+			mountStrict(r, h, chains)
 
 			r.Group(func(r chi.Router) {
 				r.Use(basicAuth)
@@ -34,9 +37,9 @@ func (app *Payssage) CreateRouter(middlewares middlewares, h *handlers.Server, r
 // validation + auth middleware stack and the fun-envelope error handlers.
 // The raw-request capture middleware runs first so the provider webhook
 // receive can verify signatures against the exact body bytes.
-func mountStrict(r *chi.Mux, h *handlers.Server, mw middlewares) {
+func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.Handler) http.Handler) {
 	strict := openapi.NewStrictHandlerWithOptions(h,
-		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(mw)},
+		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(chains)},
 		openapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)

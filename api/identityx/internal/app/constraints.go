@@ -24,7 +24,7 @@ func SetupConstraintMessages() {
 		"uniq_projects_slug":    "a project with this slug already exists",
 		"uniq_verified_domain":  "this domain is already verified by another project",
 		"chk_brand_slug_format": "brand slug must contain only lowercase letters",
-		"chk_brand_slug_length": "brand slug length must be between 3 and 48 characters",
+		"chk_brand_slug_length": "brand slug length must be between 3 and 32 characters",
 
 		// project_members
 		"chk_project_members_role": "project role must be one of: owner, admin, member",

@@ -3,14 +3,15 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
-	"reflect"
-	"runtime"
+	"net/http/httptest"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
 
+	"lib/authz"
+	spec "univents"
 	"univents/internal/openapi"
 
 	"github.com/go-chi/chi/v5"
@@ -249,251 +250,114 @@ func (stubStrict) VerifyCertification(_ context.Context, _ openapi.VerifyCertifi
 	return nil, errStub
 }
 
-func mwJWT(next http.Handler) http.Handler { return next }
+// labeled middleware stubs record their names when run.
+var parityInvocations []string
 
-func mwName(mw func(http.Handler) http.Handler) string {
-	fn := runtime.FuncForPC(reflect.ValueOf(mw).Pointer())
-	name := fn.Name()
-	if i := strings.LastIndex(name, "."); i >= 0 {
-		name = name[i+1:]
+func labelMW(name string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			parityInvocations = append(parityInvocations, name)
+			next.ServeHTTP(w, r)
+		})
 	}
-	return strings.TrimPrefix(name, "mw")
 }
 
-// routeOperation maps every walked route to its spec operationId.
-var routeOperation = map[string]string{
-	"DELETE /badges/{template_id}":                              "deleteBadgeTemplate",
-	"DELETE /certifications/templates/{template_id}":            "deleteCertificationTemplate",
-	"DELETE /certifications/templates/{template_id}/link":       "unlinkCertificationTemplate",
-	"DELETE /events/{event_id}/members/{user_id}":               "removeEventMember",
-	"DELETE /occurrences/{occurrence_id}":                       "deleteOccurrence",
-	"DELETE /products/{product_id}":                             "deleteProduct",
-	"DELETE /programs/{program_id}":                             "deleteProgram",
-	"DELETE /signatures/{signature_id}":                         "deleteSignature",
-	"DELETE /variants/{variant_id}":                             "deleteProductVariant",
-	"GET /badges/{template_id}":                                 "getBadgeTemplate",
-	"GET /certifications":                                       "listMyCertifications",
-	"GET /certifications/templates/{template_id}":               "getCertificationTemplate",
-	"GET /certifications/templates/{template_id}/links":         "listCertificationTemplateLinks",
-	"GET /certifications/{cert_id}":                             "getCertification",
-	"GET /docs/openapi.yml":                                     "getOpenAPISpec",
-	"GET /editions/{edition_id}/badges":                         "listBadgeTemplates",
-	"GET /editions/{edition_id}/certifications":                 "listEditionCertifications",
-	"GET /editions/{edition_id}/certifications/emission-errors": "listCertificationEmissionErrors",
-	"GET /editions/{edition_id}/certifications/templates":       "listCertificationTemplates",
-	"GET /editions/{edition_id}/occurrences":                    "listEditionOccurrences",
-	"GET /editions/{edition_id}/products":                       "listEditionProducts",
-	"GET /editions/{edition_id}/products/{vendor_code}:by-code": "getProductByVendorCode",
-	"GET /editions/{edition_id}/programs":                       "listEditionPrograms",
-	"GET /editions/{edition_id}/signature-requests":             "listEditionSignatureRequests",
-	"GET /editions/{edition_id}/signatures":                     "listEditionSignatures",
-	"GET /editions/{edition_id}/ticket-types":                   "listTicketTypes",
-	"GET /editions/{edition_id}/variants/{vendor_code}:by-code": "getVariantByVendorCode",
-	"GET /events":                                                      "listPublicEvents",
-	"GET /events/joined":                                               "listJoinedEvents",
-	"GET /events/owned":                                                "listOwnedEvents",
-	"GET /events/{event_id}/editions":                                  "listPublicEditions",
-	"GET /events/{event_id}/editions/active":                           "getActiveEdition",
-	"GET /events/{event_id}/editions/draft":                            "listDraftEditions",
-	"GET /events/{event_id}/editions/past":                             "listPastEditions",
-	"GET /events/{event_id}/editions/upcoming":                         "listUpcomingEditions",
-	"GET /events/{event_id}/members":                                   "listEventMembers",
-	"GET /events/{event_slug}:by-slug":                                 "getEventBySlug",
-	"GET /events/{event_slug}:by-slug/editions/{edition_slug}:by-slug": "getEditionBySlug",
-	"GET /health":                                                      "getHealth",
-	"GET /occurrences/{occurrence_id}":                                 "getOccurrence",
-	"GET /products/{product_id}":                                       "getProduct",
-	"GET /products/{product_id}/variants":                              "listProductVariants",
-	"GET /programs/{program_id}":                                       "getProgram",
-	"GET /programs/{program_id}/occurrences":                           "listProgramOccurrences",
-	"GET /signature-requests/{request_id}":                             "getSignatureRequest",
-	"GET /signatures/{signature_id}":                                   "getSignature",
-	"GET /ticket-types/{ticket_type_id}":                               "getTicketType",
-	"GET /verify/{hash}":                                               "verifyCertification",
-	"PATCH /events/{event_id}":                                         "patchEvent",
-	"PATCH /events/{event_id}/editions/{edition_id}":                   "patchEdition",
-	"PATCH /occurrences/{occurrence_id}":                               "patchOccurrence",
-	"PATCH /products/{product_id}":                                     "patchProduct",
-	"PATCH /programs/{program_id}":                                     "patchProgram",
-	"PATCH /ticket-types/{ticket_type_id}":                             "patchTicketType",
-	"PATCH /variants/{variant_id}":                                     "patchProductVariant",
-	"POST /certifications/templates/{template_id}/link":                "linkCertificationTemplate",
-	"POST /certifications/{cert_id}/invalidate":                        "invalidateCertification",
-	"POST /editions/{edition_id}/badges":                               "createBadgeTemplate",
-	"POST /editions/{edition_id}/certifications/templates":             "createCertificationTemplate",
-	"POST /editions/{edition_id}/products":                             "createInitialProduct",
-	"POST /editions/{edition_id}/programs":                             "createProgram",
-	"POST /editions/{edition_id}/signature-requests":                   "createSignatureRequest",
-	"POST /editions/{edition_id}/signatures":                           "createSignature",
-	"POST /editions/{edition_id}/ticket-types":                         "createTicketType",
-	"POST /events":                                                     "createEvent",
-	"POST /events/{event_id}/discontinue":                              "discontinueEvent",
-	"POST /events/{event_id}/editions":                                 "createEdition",
-	"POST /events/{event_id}/editions/{edition_id}/publish":            "publishEdition",
-	"POST /events/{event_id}/members":                                  "addEventMember",
-	"POST /events/{event_id}/publish":                                  "publishEvent",
-	"POST /products/{product_id}/variants":                             "createProductVariant",
-	"POST /programs/{program_id}/occurrences":                          "createProgramOccurrence",
-	"POST /signature-requests/deny":                                    "denySignatureRequest",
-	"POST /signature-requests/fulfill":                                 "fulfillSignatureRequest",
-	"POST /signature-requests/{request_id}/cancel":                     "cancelSignatureRequest",
-	"POST /signatures/revoke":                                          "revokeSignature",
-	"PUT /certifications/templates/{template_id}":                      "updateCertificationTemplate",
+// runChain executes a chain and returns the middleware names that ran.
+func runChain(chain []func(http.Handler) http.Handler) []string {
+	parityInvocations = nil
+	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for i := len(chain) - 1; i >= 0; i-- {
+		next = chain[i](next)
+	}
+	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	return parityInvocations
 }
 
-// expectedOps is the auth matrix keyed by operationId: "public" when the
-// operation runs with no auth middleware, otherwise the chain names joined
-// with "+". Harness-owned routes (getHealth, getOpenAPISpec) are excluded —
-// they never run through the dispatch.
-var expectedOps = map[string]string{
-	"addEventMember":                  "JWT",
-	"cancelSignatureRequest":          "JWT",
-	"createBadgeTemplate":             "JWT",
-	"createCertificationTemplate":     "JWT",
-	"createEdition":                   "JWT",
-	"createEvent":                     "JWT",
-	"createInitialProduct":            "JWT",
-	"createProductVariant":            "JWT",
-	"createProgram":                   "JWT",
-	"createProgramOccurrence":         "JWT",
-	"createSignature":                 "JWT",
-	"createSignatureRequest":          "JWT",
-	"createTicketType":                "JWT",
-	"deleteBadgeTemplate":             "JWT",
-	"deleteCertificationTemplate":     "JWT",
-	"deleteOccurrence":                "JWT",
-	"deleteProduct":                   "JWT",
-	"deleteProductVariant":            "JWT",
-	"deleteProgram":                   "JWT",
-	"deleteSignature":                 "JWT",
-	"discontinueEvent":                "JWT",
-	"getBadgeTemplate":                "JWT",
-	"getCertification":                "JWT",
-	"invalidateCertification":         "JWT",
-	"linkCertificationTemplate":       "JWT",
-	"listBadgeTemplates":              "JWT",
-	"listCertificationEmissionErrors": "JWT",
-	"listDraftEditions":               "JWT",
-	"listEditionCertifications":       "JWT",
-	"listEventMembers":                "JWT",
-	"listJoinedEvents":                "JWT",
-	"listMyCertifications":            "JWT",
-	"listOwnedEvents":                 "JWT",
-	"patchEdition":                    "JWT",
-	"patchEvent":                      "JWT",
-	"patchOccurrence":                 "JWT",
-	"patchProduct":                    "JWT",
-	"patchProductVariant":             "JWT",
-	"patchProgram":                    "JWT",
-	"patchTicketType":                 "JWT",
-	"publishEdition":                  "JWT",
-	"publishEvent":                    "JWT",
-	"removeEventMember":               "JWT",
-	"unlinkCertificationTemplate":     "JWT",
-	"updateCertificationTemplate":     "JWT",
-	"denySignatureRequest":            "public",
-	"fulfillSignatureRequest":         "public",
-	"getActiveEdition":                "public",
-	"getCertificationTemplate":        "public",
-	"getEditionBySlug":                "public",
-	"getEventBySlug":                  "public",
-	"getOccurrence":                   "public",
-	"getProduct":                      "public",
-	"getProductByVendorCode":          "public",
-	"getProgram":                      "public",
-	"getSignature":                    "public",
-	"getSignatureRequest":             "public",
-	"getTicketType":                   "public",
-	"getVariantByVendorCode":          "public",
-	"listCertificationTemplateLinks":  "public",
-	"listCertificationTemplates":      "public",
-	"listEditionOccurrences":          "public",
-	"listEditionProducts":             "public",
-	"listEditionPrograms":             "public",
-	"listEditionSignatureRequests":    "public",
-	"listEditionSignatures":           "public",
-	"listPastEditions":                "public",
-	"listProductVariants":             "public",
-	"listProgramOccurrences":          "public",
-	"listPublicEditions":              "public",
-	"listPublicEvents":                "public",
-	"listTicketTypes":                 "public",
-	"listUpcomingEditions":            "public",
-	"revokeSignature":                 "public",
-	"verifyCertification":             "public",
-}
-
-func TestRouterParity(t *testing.T) {
+// TestRouterRoutesMatchSpec asserts the router serves exactly the spec's
+// paths, and nothing else. The harness-owned routes are declared in the
+// spec (getHealth, getOpenAPISpec) and registered by the harness.
+func TestRouterRoutesMatchSpec(t *testing.T) {
 	r := chi.NewRouter()
-	// harness-owned routes; mirror their registration
+	// harness-owned routes (excluded from codegen); the harness registers
+	// them, mirroring httpserver.NewRouter.
 	r.Get("/health", http.NotFoundHandler().ServeHTTP)
 	r.Get("/docs/openapi.yml", http.NotFoundHandler().ServeHTTP)
 	openapi.HandlerWithOptions(openapi.NewStrictHandler(stubStrict{}, nil), openapi.ChiServerOptions{
 		BaseRouter: r,
 	})
 
-	got := map[string]string{}
+	walked := map[string]bool{}
 	_ = chi.Walk(r, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
-		got[normalizeRoute(method+" "+route)] = "public"
+		walked[normalizeRoute(method+" "+route)] = true
 		return nil
 	})
 
+	ops, err := authz.SpecOperations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("SpecOperations: %v", err)
+	}
+	expected := make(map[string]bool, len(ops))
+	for _, op := range ops {
+		expected[normalizeRoute(op.Method+" "+op.Path)] = true
+	}
+
 	var missing, extra []string
-	for want := range routeOperation {
-		if _, ok := got[want]; !ok {
+	for want := range expected {
+		if !walked[want] {
 			missing = append(missing, want)
 		}
 	}
-	for gotRoute := range got {
-		if _, ok := routeOperation[gotRoute]; !ok {
-			extra = append(extra, gotRoute)
+	for got := range walked {
+		if !expected[got] {
+			extra = append(extra, got)
 		}
 	}
 	sort.Strings(missing)
 	sort.Strings(extra)
 	if len(missing) > 0 || len(extra) > 0 {
-		t.Fatalf("route parity mismatch\nroutes expected but not walked:\n%s\nroutes walked but not expected:\n%s",
+		t.Fatalf("route parity mismatch\nroutes in spec but not served:\n%s\nroutes served but not in spec:\n%s",
 			strings.Join(missing, "\n"), strings.Join(extra, "\n"))
 	}
+	t.Logf("route parity ok: %d routes", len(walked))
+}
 
-	chains := authChains(middlewares{jwt: mwJWT})
-	var authMismatch, missingChain []string
-	for opID, want := range expectedOps {
-		chain, ok := chains[opID]
-		if !ok {
-			missingChain = append(missingChain, opID)
-			continue
-		}
-		names := make([]string, 0, len(chain))
-		for _, mw := range chain {
-			if n := mwName(mw); n != "" && !strings.HasPrefix(n, "func") {
-				names = append(names, n)
+// TestAuthMatrixMatchesSpec asserts every operation's chain, composed from
+// the spec's security blocks, runs exactly the middlewares the spec
+// declares: public operations get none, protected operations get the JWT
+// middleware.
+func TestAuthMatrixMatchesSpec(t *testing.T) {
+	mw := middlewares{jwt: labelMW("JWT")}
+	resolver, err := authResolver(mw)
+	if err != nil {
+		t.Fatalf("authResolver: %v", err)
+	}
+	chains := resolver.Chains()
+
+	ops, err := authz.SpecOperations(spec.OpenAPISpec)
+	if err != nil {
+		t.Fatalf("SpecOperations: %v", err)
+	}
+	var mismatches []string
+	for _, op := range ops {
+		var want []string
+		if len(op.Schemes) > 0 {
+			switch strings.Join(op.Schemes, "+") {
+			case "bearerAuth":
+				want = append(want, "JWT")
+			default:
+				mismatches = append(mismatches, op.OperationID+": unexpected scheme combination "+strings.Join(op.Schemes, "+"))
+				continue
 			}
 		}
-		gotAuth := strings.Join(names, "+")
-		if gotAuth == "" {
-			gotAuth = "public"
-		}
-		if gotAuth != want {
-			authMismatch = append(authMismatch, fmt.Sprintf("%s: want %s, got %s", opID, want, gotAuth))
+		if got := runChain(chains[op.OperationID]); !slices.Equal(got, want) {
+			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))
 		}
 	}
-	for opID := range chains {
-		if opID == "getHealth" || opID == "getOpenAPISpec" {
-			continue
-		}
-		if _, ok := expectedOps[opID]; !ok {
-			authMismatch = append(authMismatch, "chain present but not expected: "+opID)
-		}
+	sort.Strings(mismatches)
+	if len(mismatches) > 0 {
+		t.Fatalf("auth matrix mismatch\n%s", strings.Join(mismatches, "\n"))
 	}
-	sort.Strings(missingChain)
-	sort.Strings(authMismatch)
-	if len(missingChain) > 0 || len(authMismatch) > 0 {
-		t.Fatalf("auth matrix mismatch\noperations without a chain:\n%s\nmismatches:\n%s",
-			strings.Join(missingChain, "\n"), strings.Join(authMismatch, "\n"))
-	}
-
-	t.Logf("parity ok: %d routes, %d operations with matching auth chains", len(got), len(chains))
+	t.Logf("auth matrix ok: %d operations match the spec", len(ops))
 }
 
 func normalizeRoute(r string) string {

@@ -7,6 +7,7 @@ import (
 	spec "Informd"
 	"Informd/internal/handlers"
 	"Informd/internal/openapi"
+	"lib/errx"
 	"lib/httpserver"
 
 	"github.com/MintzyG/fun"
@@ -14,20 +15,22 @@ import (
 )
 
 func (app *Informd) CreateRouter(handlers *handlers.Server, middlewares middlewares) http.Handler {
+	chains, err := resolveAuthChains(middlewares)
+	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:     app.cfg.AppName,
 		OpenAPISpec: spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
-			mountStrict(r, handlers, middlewares)
+			mountStrict(r, handlers, chains)
 		},
 	})
 }
 
 // mountStrict registers the generated strict handler on r with the
 // validation + auth middleware stack and the fun-envelope error handlers.
-func mountStrict(r *chi.Mux, h *handlers.Server, mw middlewares) {
+func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.Handler) http.Handler) {
 	strict := openapi.NewStrictHandlerWithOptions(h,
-		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(mw)},
+		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(chains)},
 		openapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)

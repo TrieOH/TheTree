@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"lib/globals"
 )
 
 type adKey string
@@ -17,14 +15,13 @@ const adSentinelKey adKey = "auth-dispatch-sentinel"
 var adSentinel = &struct{}{}
 
 // Regression: oapi-codegen passes the operationID in generated (PascalCase)
-// form (e.g. "PostLogout"), while the chains map is keyed camelCase
+// form (e.g. "PostLogout"), while the chains are keyed camelCase
 // ("postLogout"). If the casing is not normalized, the lookup misses and no
 // auth middleware runs — every protected operation becomes public.
 // Additionally, auth middlewares replace the request (and its context) via
 // r.WithContext(...); the handler must observe that modified context, not
 // the pre-middleware one.
 func TestAuthDispatchRunsChainForProtectedOperation(t *testing.T) {
-	globals.MarkSetupComplete() // chains are prefixed with the setup guard
 	var ran bool
 	jwt := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +29,9 @@ func TestAuthDispatchRunsChainForProtectedOperation(t *testing.T) {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), adSentinelKey, adSentinel)))
 		})
 	}
-	dispatch := authDispatch(middlewares{jwtAuth: jwt})
+	dispatch := authDispatch(map[string][]func(http.Handler) http.Handler{
+		"postLogout": {jwt},
+	})
 
 	handler := dispatch(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 		if got := ctx.Value(adSentinelKey); got != adSentinel {
@@ -55,31 +54,30 @@ func TestAuthDispatchRunsChainForProtectedOperation(t *testing.T) {
 
 func TestAuthDispatchSkipsPublicOperation(t *testing.T) {
 	var ran bool
-	dispatch := authDispatch(middlewares{jwtAuth: func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ran = true
-			next.ServeHTTP(w, r)
-		})
-	}})
+	dispatch := authDispatch(map[string][]func(http.Handler) http.Handler{
+		"getJWKS": nil, // public operation — empty chain
+	})
 	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		ran = true
 		return "ok", nil
 	}, "GetJWKS")
 	_, err := handler(context.Background(), httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/.well-known/jwks.json", nil), nil)
 	if err != nil {
 		t.Fatalf("public operation must pass through: %v", err)
 	}
-	if ran {
-		t.Fatal("public operation must not run the auth chain")
+	if !ran {
+		t.Fatal("public operation handler must run")
 	}
 }
 
 func TestAuthDispatchRejectionShortCircuits(t *testing.T) {
-	globals.MarkSetupComplete() // chains are prefixed with the setup guard
-	dispatch := authDispatch(middlewares{jwtAuth: func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-		})
-	}})
+	dispatch := authDispatch(map[string][]func(http.Handler) http.Handler{
+		"postLogout": {func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+			})
+		}},
+	})
 	var called bool
 	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 		called = true
