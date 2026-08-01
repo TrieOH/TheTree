@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"univents/internal/authz"
+	"univents/internal/features/badges"
 	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
@@ -31,6 +32,7 @@ type repos struct {
 	products          ports.ProductRepo
 	programs          ports.ProgramRepo
 	occurrences       ports.ProgramOccurrenceRepo
+	badges            ports.BadgeTemplateRepo
 	signatures        ports.SignatureRepo
 	signatureRequests ports.SignatureRequestRepo
 	certs             ports.CertificationRepo
@@ -42,6 +44,7 @@ type queries struct {
 	ticketTypes *ticket_types.Queries
 	products    *products.Queries
 	programs    *programs.Queries
+	badges      *badges.Queries
 	signatures  *signatures.Queries
 	certs       *certifications.Queries
 }
@@ -52,6 +55,7 @@ type commands struct {
 	ticketTypes *ticket_types.Commands
 	products    *products.Commands
 	programs    *programs.Commands
+	badges      *badges.Commands
 	signatures  *signatures.Commands
 	certs       *certifications.Commands
 }
@@ -68,25 +72,26 @@ type handlers struct {
 	ticketTypes *ticket_types.Handlers
 	products    *products.Handlers
 	programs    *programs.Handlers
+	badges      *badges.Handler
 	signatures  *signatures.Handlers
 	certs       *certifications.Handlers
 }
 
 // ── Init methods ──────────────────────────────────────────────────────────
 
+// TODO: Split the duplicate repos
 func (app *Univents) initRepos() repos {
 	q := sqlc.New(app.db)
-	programsRepo := programs.NewRepos(q)
-	sigRepo := signatures.NewRepos(q)
 	r := repos{
 		events:            events.NewRepos(q),
 		editions:          editions.NewRepos(q),
 		ticketTypes:       ticket_types.NewRepos(q),
 		products:          products.NewRepos(q),
-		programs:          programsRepo,
-		occurrences:       programsRepo,
-		signatures:        sigRepo,
-		signatureRequests: sigRepo,
+		programs:          programs.NewRepos(q),
+		occurrences:       programs.NewRepos(q),
+		badges:            badges.NewRepos(q),
+		signatures:        signatures.NewRepos(q),
+		signatureRequests: signatures.NewRepos(q),
 		certs:             certifications.NewRepos(q),
 	}
 	authz.Service = authz.New(r.events)
@@ -100,6 +105,7 @@ func (app *Univents) initQueries(r repos) queries {
 		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes),
 		products:    products.NewQueries(r.editions, r.products),
 		programs:    programs.NewQueries(r.programs, r.occurrences),
+		badges:      badges.NewQueries(r.badges),
 		signatures:  signatures.NewQueries(r.editions, r.signatures, r.signatureRequests),
 		certs:       certifications.NewQueries(r.certs),
 	}
@@ -112,6 +118,7 @@ func (app *Univents) initCommands(r repos) commands {
 		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes),
 		products:    products.NewCommands(r.events, r.editions, r.products),
 		programs:    programs.NewCommands(r.events, r.editions, r.programs, r.occurrences),
+		badges:      badges.NewCommands(r.badges),
 		signatures:  signatures.NewCommands(r.events, r.editions, r.signatures, r.signatureRequests, app.emailClient, app.cfg.HmacSecret),
 		certs:       certifications.NewCommands(r.events, r.editions, r.certs, r.programs, app.emailClient),
 	}
@@ -124,6 +131,7 @@ func (app *Univents) initHandlers(q queries, c commands) handlers {
 		ticketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
 		products:    products.NewHandlers(c.products, q.products),
 		programs:    programs.NewHandlers(c.programs, q.programs),
+		badges:      badges.NewHandlers(c.badges, q.badges),
 		signatures:  signatures.NewHandlers(c.signatures, q.signatures),
 		certs:       certifications.NewHandlers(c.certs, q.certs),
 	}

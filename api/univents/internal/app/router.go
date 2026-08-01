@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"univents/internal/features/badges"
 	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
@@ -26,6 +27,7 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers, ri
 			ticket_types.RegisterRoutes(r, handlers.ticketTypes, middlewares.jwt)
 			products.RegisterRoutes(r, handlers.products, middlewares.jwt)
 			programs.RegisterRoutes(r, handlers.programs, middlewares.jwt)
+			badges.RegisterRoutes(r, handlers.badges, middlewares.jwt)
 			signatures.RegisterRoutes(r, handlers.signatures, middlewares.jwt)
 			certifications.RegisterRoutes(r, handlers.certs, middlewares.jwt)
 
