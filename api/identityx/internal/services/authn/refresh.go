@@ -30,6 +30,13 @@ func (o *Operations) Refresh(ctx context.Context, refreshToken string) (*models.
 		return nil, fun.ErrUnauthorized("invalid access token")
 	}
 
+	// a refresh token blacklisted at logout must not issue a new pair
+	if _, err := o.blacklist.GetByTargetAndType(ctx, refreshClaims.ID, models.BlacklistEntryTypeToken); err == nil {
+		return nil, fun.ErrUnauthorized("refresh token has been revoked")
+	} else if !fun.Is(err, fun.CodeNotFound) {
+		return nil, err
+	}
+
 	err = o.blacklist.Append(ctx, refreshClaims.ToRefreshBlacklistEntry())
 	if err != nil {
 		telemetry.Log().Error("error appending refresh token to blacklist", zap.Error(err))

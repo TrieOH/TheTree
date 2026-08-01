@@ -1,5 +1,5 @@
 import type { CurrentSessionI, SessionI } from "../types/sessions-types";
-import { clearAuthTokens, getUserInfo, saveAuthSession } from "../utils/token-utils";
+import { clearAuthTokens, getStoredRefreshToken, getUserInfo, saveAuthSession } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
@@ -81,7 +81,9 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
   logout: async (options?: { forceLogout?: boolean }) => {
     const url = `/auth/logout${env.PROJECT_ID ? `?project_id=${env.PROJECT_ID}` : ""}`;
-    const res = await apiInstance.post<void>(url);
+    const res = await apiInstance.post<void>(url, undefined, {
+      headers: { "Refresh-Token": getStoredRefreshToken() ?? "" },
+    });
     if (res.success || options?.forceLogout) clearAuthTokens();
     return res;
   },

@@ -44,11 +44,14 @@ func (o *Operations) Logout(ctx context.Context, in models.LogoutInput) error {
 		telemetry.Log().Error("error appending access token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
 	}
 
+	// A dead refresh token (expired, revoked, garbage) must not fail the
+	// logout: the access token is already blacklisted, so the session is
+	// over either way. Only a verified refresh token gets blacklisted.
 	refreshClaims := &models.RefreshClaims{}
 	_, err = crypto.VerifyToken(in.RefreshToken, cryptoKey.PublicKey, refreshClaims)
 	if err != nil {
-		telemetry.Log().Error("refresh token verification failed", zap.Error(err))
-		return fun.ErrUnauthorized("invalid refresh token")
+		telemetry.Log().Warn("refresh token not blacklisted at logout (unverifiable)", zap.Error(err))
+		return nil
 	}
 
 	refreshEntry := models.BlacklistEntry{

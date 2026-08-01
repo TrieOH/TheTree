@@ -32,7 +32,7 @@ func (app *IdentityX) initOperations(r *repos.Repos) *services.Operations {
 
 func (app *IdentityX) initMiddlewares(r *repos.Repos) middlewares {
 	var mw middlewares
-	authMW := app.SetupAuthMiddlewares(r.CryptoKeys, r.APIKeys, r.Actors, r.Capabilities)
+	authMW := app.SetupAuthMiddlewares(r.CryptoKeys, r.APIKeys, r.Actors, r.Capabilities, r.Blacklist)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()

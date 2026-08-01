@@ -48,11 +48,14 @@ func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.H
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 			var required *openapi.RequiredParamError
 			var invalid *openapi.InvalidParamFormatError
+			var requiredHeader *openapi.RequiredHeaderError
 			switch {
 			case errors.As(err, &required):
 				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: required.ParamName, Message: "parameter is required"}).Validation()).Send(w)
 			case errors.As(err, &invalid):
 				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: invalid.ParamName, Message: "invalid format"}).Validation()).Send(w)
+			case errors.As(err, &requiredHeader):
+				fun.Error(fun.Err("invalid request header").WithFields(&fun.FieldError{Field: requiredHeader.ParamName, Message: "header is required"}).Validation()).Send(w)
 			default:
 				fun.InternalServerError("internal error").Send(w)
 			}
