@@ -359,7 +359,7 @@ paths:
       operationId: getOrganizationMemberByID
       summary: Get an organization member by ID
       description: |
-        Fetches a single organization member by member ID.
+        Fetches a single organization member row by member ID.
       security:
         - bearerAuth: []
       parameters:
@@ -372,7 +372,7 @@ paths:
             $ref: '#/components/schemas/UUID'
       responses:
         '200':
-          description: The requested member
+          description: The requested organization member row
           content:
             application/json:
               schema:
@@ -413,7 +413,7 @@ paths:
             format: email
       responses:
         '200':
-          description: The requested member
+          description: The requested organization member row
           content:
             application/json:
               schema:
@@ -620,6 +620,14 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindCollectorRequest'
+            example:
+              collector_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       responses:
         '204':
           description: Collector bound
@@ -1164,8 +1172,21 @@ paths:
           schema:
             type: string
       responses:
-        '302':
-          description: Redirect to the final redirect URL
+        '200':
+          description: |
+            The final redirect URL the browser should be sent to after
+            the OAuth flow completes (returned as the envelope `data`
+            string — the browser client performs the redirect).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+                        format: uri
         '400':
           $ref: '#/components/responses/BadRequest'
 
@@ -1765,8 +1786,12 @@ components:
       required: [name, slug]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
 
     OrganizationRole:
@@ -1801,10 +1826,14 @@ components:
       required: [actor_email, role]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
           $ref: '#/components/schemas/OrganizationRole'
 
     RemoveOrganizationMemberRequest:
@@ -1813,6 +1842,8 @@ components:
       required: [actor_email]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
@@ -1852,6 +1883,8 @@ components:
       required: [name]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         organization_id:
           $ref: '#/components/schemas/NullableUUID'
@@ -1862,10 +1895,22 @@ components:
       required: [fee_bps]
       properties:
         fee_bps:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           description: Fee in basis points (100 bps = 1%).
         organization_id:
           $ref: '#/components/schemas/NullableUUID'
+
+    BindCollectorRequest:
+      type: object
+      description: Request body for binding a collector to a wallet. Mirrors the handler's `bindCollectorRequest`.
+      required: [collector_id]
+      properties:
+        collector_id:
+          $ref: '#/components/schemas/UUID'
+          x-oapi-codegen-extra-tags:
+            validate: "required"
 
     SetSandboxRequest:
       type: object
@@ -2011,11 +2056,17 @@ components:
       required: [seller_id, currency, amount_cents]
       properties:
         seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         currency:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
           description: ISO 4217 currency code (e.g. `BRL`).
         amount_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
           description: Amount in integer cents.
@@ -2035,21 +2086,33 @@ components:
       required: [wallet_id, seller_id, amount_cents, currency, provider, status]
       properties:
         wallet_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         collector_id:
           $ref: '#/components/schemas/NullableUUID'
         amount_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
         currency:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         sandbox:
           type: boolean
         provider:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         status:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/IntentStatus'
         provider_data:
           type: object
@@ -2071,12 +2134,18 @@ components:
       required: [flow, provider_redirect_url, final_redirect_url]
       properties:
         flow:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/OAuthFlow'
         provider_redirect_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
           type: string
           format: uri
           description: The Payssage callback URL the provider redirects to.
         final_redirect_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
           type: string
           format: uri
           description: Where the user lands after the OAuth flow completes.
@@ -2091,8 +2160,12 @@ components:
       required: [flow, id]
       properties:
         flow:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/OAuthFlow'
         id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
           description: Collector or seller ID to revoke.
 
@@ -2129,8 +2202,12 @@ components:
       required: [name, url]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
           type: string
           format: uri
 
