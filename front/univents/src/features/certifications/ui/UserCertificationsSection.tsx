@@ -16,7 +16,7 @@ import { Skeleton } from "@/shared/ui/shadcn/skeleton";
 import { certificationsByUserQueryOptions } from "../api";
 
 interface UserCertificationsSectionProps {
-  editionId: string;
+  editionId?: string;
   title?: string;
   subtitle?: string;
 }
@@ -24,35 +24,44 @@ interface UserCertificationsSectionProps {
 export function UserCertificationsSection({
   editionId,
   title = "Meus certificados",
-  subtitle = "Certificados emitidos nesta edição.",
+  subtitle = editionId
+    ? "Certificados emitidos nesta edição."
+    : "Todos os certificados emitidos para sua conta.",
 }: UserCertificationsSectionProps) {
   const certificationsQuery = useQuery({
     ...certificationsByUserQueryOptions(),
   });
-  const programsQuery = useQuery(programsQueryOptions(editionId));
+  const programsQuery = useQuery({
+    ...programsQueryOptions(editionId ?? ""),
+    enabled: Boolean(editionId),
+  });
   const programs = programsQuery.data ?? [];
   const activityNames = new Map(
     programs.map((program) => [program.id, program.name]),
   );
   const activityIds = new Set(activityNames.keys());
-  const certifications = (certificationsQuery.data ?? []).filter(
-    (certification) =>
-      (certification.program_id === null &&
-        certification.edition_id === editionId) ||
-      (certification.program_id !== null &&
-        activityIds.has(certification.program_id)),
-  );
+  const certifications = editionId
+    ? (certificationsQuery.data ?? []).filter(
+        (certification) =>
+          (certification.program_id === null &&
+            certification.edition_id === editionId) ||
+          (certification.program_id !== null &&
+            activityIds.has(certification.program_id)),
+      )
+    : (certificationsQuery.data ?? []);
   const isLoading = certificationsQuery.isLoading || programsQuery.isLoading;
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Award className="size-5 text-primary" />
-          {title}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-      </div>
+      {editionId ? (
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Award className="size-5 text-primary" />
+            {title}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
@@ -60,12 +69,18 @@ export function UserCertificationsSection({
           <Skeleton className="h-44 rounded-xl" />
         </div>
       ) : certifications.length === 0 ? (
-        <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 px-6 text-center">
-          <FileCheck2 className="mb-3 size-8 text-muted-foreground" />
-          <p className="text-sm font-medium">Nenhum certificado nesta edição</p>
+        <div className="flex min-h-36 flex-col items-center justify-center rounded-lg border border-border/40 bg-card px-6 py-7 text-center shadow-sm">
+          <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <FileCheck2 className="size-5" />
+          </div>
+          <p className="text-sm font-medium">
+            {editionId
+              ? "Nenhum certificado nesta edição"
+              : "Nenhum certificado encontrado"}
+          </p>
           <p className="mt-1 max-w-md text-xs text-muted-foreground">
-            Quando um certificado for emitido para a edição ou uma de suas
-            atividades, ele aparecerá aqui.
+            Seus certificados emitidos aparecerão aqui assim que estiverem
+            disponíveis.
           </p>
         </div>
       ) : (

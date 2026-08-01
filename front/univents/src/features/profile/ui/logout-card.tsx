@@ -22,7 +22,7 @@ export function LogoutCard() {
 
   return (
     <div className="pt-4 pb-2">
-      <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 bg-card sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-destructive/20 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm font-medium leading-none">Encerrar sessão</p>
           <p className="text-sm text-muted-foreground">
@@ -33,7 +33,7 @@ export function LogoutCard() {
           variant="destructive"
           onClick={onLogout}
           disabled={isLoading}
-          className="w-full sm:w-auto"
+          className="w-full shadow-sm sm:w-auto"
         >
           <LogOut className="mr-2 size-4" />
           {isLoading ? "Saindo..." : "Sair da conta"}
