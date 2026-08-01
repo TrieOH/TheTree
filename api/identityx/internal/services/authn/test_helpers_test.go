@@ -2,7 +2,6 @@ package authn
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"IdentityX/models"
 	"lib/crypto"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -25,127 +23,6 @@ func testActor() models.Actor {
 	return models.Actor{ID: uuid.New(), Email: &email, Type: models.HumanActorType}
 }
 
-// ── in-memory fakes ───────────────────────────────────────────────────────
-
-type fakeBlacklist struct {
-	entries []models.BlacklistEntry
-}
-
-func (f *fakeBlacklist) Append(_ context.Context, e models.BlacklistEntry) error {
-	f.entries = append(f.entries, e)
-	return nil
-}
-
-func (f *fakeBlacklist) find(target string, entryType models.BlacklistEntryType) (*models.BlacklistEntry, error) {
-	for i := range f.entries {
-		if f.entries[i].Target == target && f.entries[i].Type == entryType {
-			return &f.entries[i], nil
-		}
-	}
-	return nil, fun.ErrNotFound("not blacklisted")
-}
-
-func (f *fakeBlacklist) GetByTarget(ctx context.Context, target string) (*models.BlacklistEntry, error) {
-	return f.find(target, "")
-}
-
-func (f *fakeBlacklist) GetByTargetAndType(ctx context.Context, target string, entryType models.BlacklistEntryType) (*models.BlacklistEntry, error) {
-	return f.find(target, entryType)
-}
-
-type fakeCryptoKeys struct {
-	keys map[uuid.UUID]models.CryptoKey
-}
-
-func (f *fakeCryptoKeys) GetActive(_ context.Context, keyType models.CryptoKeyType, projectID *uuid.UUID) (*models.CryptoKey, error) {
-	for _, k := range f.keys {
-		if k.Type == keyType && k.Status == models.CryptoKeyStatusActive {
-			return &k, nil
-		}
-	}
-	return nil, fun.ErrNotFound("no active key")
-}
-
-func (f *fakeCryptoKeys) GetByID(_ context.Context, id uuid.UUID) (*models.CryptoKey, error) {
-	k, ok := f.keys[id]
-	if !ok {
-		return nil, fun.ErrNotFound("key not found")
-	}
-	return &k, nil
-}
-
-func (f *fakeCryptoKeys) GetActiveSigningKeys(_ context.Context, projectID *uuid.UUID) ([]models.ActiveSigningKey, error) {
-	return nil, nil
-}
-
-func (f *fakeCryptoKeys) Create(_ context.Context, projectID *uuid.UUID, pair *crypto.KeyPair, keyType string) (*models.CryptoKey, error) {
-	return nil, nil
-}
-
-type fakeActors struct{ actor models.Actor }
-
-func (f *fakeActors) Register(context.Context, models.Actor) (*models.Actor, error) {
-	return &f.actor, nil
-}
-func (f *fakeActors) GetByEmail(context.Context, string, *uuid.UUID) (*models.Actor, error) {
-	return &f.actor, nil
-}
-func (f *fakeActors) GetByID(context.Context, uuid.UUID) (*models.Actor, error) { return &f.actor, nil }
-func (f *fakeActors) List(context.Context, uuid.UUID) ([]models.Actor, error)   { return nil, nil }
-func (f *fakeActors) GetProjectServiceAccount(context.Context, uuid.UUID) (*models.Actor, error) {
-	return nil, fun.ErrNotFound("no service account")
-}
-func (f *fakeActors) UpdateLastLoginAt(context.Context, uuid.UUID) error { return nil }
-
-type fakeProjects struct{}
-
-func (f *fakeProjects) Create(context.Context, models.Project) (*models.Project, error) {
-	return nil, fun.ErrNotImplemented("unused in tests")
-}
-func (f *fakeProjects) GetByID(context.Context, uuid.UUID) (*models.Project, error) {
-	return nil, fun.ErrNotFound("no project")
-}
-func (f *fakeProjects) ListByOrganization(context.Context, uuid.UUID) ([]models.Project, error) {
-	return nil, nil
-}
-func (f *fakeProjects) ListJoined(context.Context, uuid.UUID) ([]models.Project, error) {
-	return nil, nil
-}
-func (f *fakeProjects) ListOwned(context.Context, uuid.UUID) ([]models.Project, error) {
-	return nil, nil
-}
-func (f *fakeProjects) AddMember(context.Context, models.ProjectMember) error    { return nil }
-func (f *fakeProjects) RemoveMember(context.Context, uuid.UUID, uuid.UUID) error { return nil }
-func (f *fakeProjects) GetMember(context.Context, uuid.UUID, uuid.UUID) (*models.ProjectMember, error) {
-	return nil, fun.ErrNotFound("no member")
-}
-func (f *fakeProjects) GetRole(context.Context, uuid.UUID, uuid.UUID) (models.ProjectRole, error) {
-	return models.ProjectRoleMember, nil
-}
-func (f *fakeProjects) ListMembers(context.Context, uuid.UUID) ([]models.ProjectMember, error) {
-	return nil, nil
-}
-
-type fakePlatformRoles struct{}
-
-func (f *fakePlatformRoles) Give(context.Context, uuid.UUID, models.PlatformRole, *json.RawMessage) (*models.PlatformRoleRelation, error) {
-	return nil, fun.ErrNotImplemented("unused in tests")
-}
-
-type fakeExternalIdentities struct{}
-
-func (f *fakeExternalIdentities) GetByProviderAndSubject(context.Context, string, string) (*models.ActorExternalIdentities, error) {
-	return nil, fun.ErrNotFound("no identity")
-}
-func (f *fakeExternalIdentities) Create(context.Context, models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
-	return nil, fun.ErrNotImplemented("unused in tests")
-}
-func (f *fakeExternalIdentities) UpdateTokens(context.Context, models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
-	return nil, fun.ErrNotImplemented("unused in tests")
-}
-
-// ── token minting ──────────────────────────────────────────────────────────
-
 // mintPayload builds the signing string (header.payload) of a token, the
 // same way the service's newAccessToken/newIDXRefreshToken do.
 func mintPayload(t *testing.T, claims jwt.Claims, kid uuid.UUID) []byte {
@@ -159,16 +36,17 @@ func mintPayload(t *testing.T, claims jwt.Claims, kid uuid.UUID) []byte {
 	return []byte(payload)
 }
 
-type signedPair struct {
+// testPair is a freshly signed access/refresh pair plus the key and actor
+// they were minted for. Pure crypto — no mocks involved.
+type testPair struct {
 	accessToken, refreshToken string
 	accessJTI, refreshJTI     uuid.UUID
-	keyID                     uuid.UUID
+	key                       models.CryptoKey
 	kp                        *crypto.KeyPair
+	actor                     models.Actor
 }
 
-// newTestOps wires an authn Operations over in-memory fakes with a fresh
-// signing key, and mints a valid access/refresh pair signed by it.
-func newTestOps(t *testing.T, bl *fakeBlacklist) (*Operations, *signedPair) {
+func mintPair(t *testing.T) *testPair {
 	t.Helper()
 	testEnv(t)
 	kp, err := crypto.GenerateKeyPair("signing")
@@ -177,16 +55,10 @@ func newTestOps(t *testing.T, bl *fakeBlacklist) (*Operations, *signedPair) {
 	}
 	keyID := uuid.New()
 	actor := testActor()
-	cryptoKeys := &fakeCryptoKeys{keys: map[uuid.UUID]models.CryptoKey{
-		keyID: {
-			ID: keyID, Type: models.SigningCryptoKeyType, Status: models.CryptoKeyStatusActive,
-			PublicKey: kp.Public, EncryptedPrivateKey: kp.EncryptedPrivate, Algorithm: kp.Algorithm,
-		},
-	}}
-	if bl == nil {
-		bl = &fakeBlacklist{}
+	key := models.CryptoKey{
+		ID: keyID, Type: models.SigningCryptoKeyType, Status: models.CryptoKeyStatusActive,
+		PublicKey: kp.Public, EncryptedPrivateKey: kp.EncryptedPrivate, Algorithm: kp.Algorithm,
 	}
-	ops := NewOperations(&fakeActors{actor: actor}, &fakeProjects{}, &fakePlatformRoles{}, cryptoKeys, bl, &fakeExternalIdentities{})
 
 	accessJTI, refreshJTI := uuid.New(), uuid.New()
 	accessPayload := mintPayload(t, models.AccessClaims{
@@ -211,10 +83,29 @@ func newTestOps(t *testing.T, bl *fakeBlacklist) (*Operations, *signedPair) {
 	if err != nil {
 		t.Fatalf("SignToken refresh: %v", err)
 	}
-	return ops, &signedPair{
+	return &testPair{
 		accessToken: accessToken, refreshToken: refreshToken,
-		accessJTI: accessJTI, refreshJTI: refreshJTI, keyID: keyID, kp: kp,
+		accessJTI: accessJTI, refreshJTI: refreshJTI,
+		key: key, kp: kp, actor: actor,
 	}
+}
+
+// mintExpiredRefresh builds a refresh token signed with the pair's key
+// that is already expired.
+func mintExpiredRefresh(t *testing.T, pair *testPair) string {
+	t.Helper()
+	payload := mintPayload(t, models.RefreshClaims{
+		Sub: models.RefreshSub{ID: pair.actor.ID, ProjectID: nil, AccessJTI: pair.accessJTI},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+			Issuer:    "test-issuer", ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+		},
+	}, pair.key.ID)
+	token, err := crypto.SignToken(payload, pair.kp)
+	if err != nil {
+		t.Fatalf("SignToken: %v", err)
+	}
+	return token
 }
 
 func ctxWithIdentity() context.Context {

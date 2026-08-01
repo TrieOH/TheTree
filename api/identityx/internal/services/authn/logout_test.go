@@ -2,166 +2,235 @@ package authn
 
 import (
 	"context"
-	"strings"
 	"testing"
-	"time"
 
 	"IdentityX/models"
-	"lib/crypto"
+	"IdentityX/ports"
 
 	"github.com/MintzyG/fun"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/ovechkin-dm/mockio/matchers"
+	"github.com/ovechkin-dm/mockio/mock"
 )
 
-func blacklistTargets(bl *fakeBlacklist) map[string]bool {
-	targets := make(map[string]bool)
-	for _, e := range bl.entries {
-		targets[e.Target] = true
+// stubBlacklist creates a fresh blacklist repo mock per test: appends are
+// captured, and the given target jtis (strings) are reported as revoked.
+func stubBlacklist(revoked map[string]bool) (ports.BlacklistRepo, matchers.ArgumentCaptor[models.BlacklistEntry]) {
+	bl := mock.Mock[ports.BlacklistRepo]()
+	captor := mock.Captor[models.BlacklistEntry]()
+	mock.When(bl.Append(mock.AnyContext(), captor.Capture())).ThenReturn(nil)
+	mock.When(bl.GetByTargetAndType(mock.AnyContext(), mock.Any[string](), mock.Any[models.BlacklistEntryType]())).
+		ThenAnswer(func(args []any) []any {
+			target := args[1].(string)
+			if revoked[target] {
+				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeToken}, nil}
+			}
+			return []any{nil, fun.ErrNotFound("not blacklisted")}
+		})
+	return bl, captor
+}
+
+// stubCryptoKeys creates a fresh crypto-keys repo mock per test that
+// resolves the pair's signing key by id and as the active key.
+func stubCryptoKeys(pair *testPair) ports.CryptoKeysRepo {
+	keys := mock.Mock[ports.CryptoKeysRepo]()
+	mock.When(keys.GetByID(mock.AnyContext(), mock.Equal(pair.key.ID))).ThenReturn(&pair.key, nil)
+	mock.When(keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
+		ThenReturn(&pair.key, nil)
+	return keys
+}
+
+func appendTargets(captor matchers.ArgumentCaptor[models.BlacklistEntry]) []string {
+	var targets []string
+	for _, e := range captor.Values() {
+		targets = append(targets, e.Target)
 	}
 	return targets
 }
 
-func TestLogoutAppendsAccessAndRefresh(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
+func hasTarget(captor matchers.ArgumentCaptor[models.BlacklistEntry], target string) bool {
+	for _, e := range captor.Values() {
+		if e.Target == target {
+			return true
+		}
+	}
+	return false
+}
 
-	err := ops.Logout(ctxWithIdentity(), models.LogoutInput{
-		AccessToken:  pair.accessToken,
-		RefreshToken: pair.refreshToken,
-	})
-	if err != nil {
-		t.Fatalf("Logout: %v", err)
+func TestLogout(t *testing.T) {
+	pair := mintPair(t)
+	expiredRefresh := mintExpiredRefresh(t, pair)
+
+	tests := []struct {
+		name         string
+		ctx          context.Context
+		accessToken  string
+		refreshToken string
+		wantErr      bool
+		wantAccess   bool // access jti expected in the blacklist
+		wantRefresh  bool // refresh jti expected in the blacklist
+	}{
+		{
+			name:         "valid pair appends both tokens",
+			ctx:          ctxWithIdentity(),
+			accessToken:  pair.accessToken,
+			refreshToken: pair.refreshToken,
+			wantAccess:   true,
+			wantRefresh:  true,
+		},
+		{
+			name:         "invalid access token rejected without side effects",
+			ctx:          ctxWithIdentity(),
+			accessToken:  "garbage",
+			refreshToken: pair.refreshToken,
+			wantErr:      true,
+		},
+		{
+			name:         "missing identity rejected",
+			ctx:          context.Background(),
+			accessToken:  pair.accessToken,
+			refreshToken: pair.refreshToken,
+			wantErr:      true,
+		},
+		{
+			name:         "invalid refresh token still logs out the access token",
+			ctx:          ctxWithIdentity(),
+			accessToken:  pair.accessToken,
+			refreshToken: "garbage-refresh-token",
+			wantAccess:   true,
+		},
+		{
+			name:         "expired refresh token still logs out the access token",
+			ctx:          ctxWithIdentity(),
+			accessToken:  pair.accessToken,
+			refreshToken: expiredRefresh,
+			wantAccess:   true,
+		},
 	}
-	targets := blacklistTargets(bl)
-	if len(bl.entries) != 2 {
-		t.Fatalf("want 2 blacklist entries, got %d", len(bl.entries))
-	}
-	if !targets[pair.accessJTI.String()] {
-		t.Fatal("access token jti not blacklisted")
-	}
-	if !targets[pair.refreshJTI.String()] {
-		t.Fatal("refresh token jti not blacklisted")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock.SetUp(t)
+
+			keys := stubCryptoKeys(pair)
+			bl, captor := stubBlacklist(nil)
+			ops := NewOperations(
+				mock.Mock[ports.ActorRepo](),
+				mock.Mock[ports.ProjectRepo](),
+				mock.Mock[ports.PlatformRolesRepo](),
+				keys, bl,
+				mock.Mock[ports.ExternalIdentitiesRepo](),
+			)
+
+			err := ops.Logout(tt.ctx, models.LogoutInput{
+				AccessToken:  tt.accessToken,
+				RefreshToken: tt.refreshToken,
+			})
+			if tt.wantErr && err == nil {
+				t.Fatal("want error, got nil")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("want no error, got %v", err)
+			}
+			if got := hasTarget(captor, pair.accessJTI.String()); got != tt.wantAccess {
+				t.Fatalf("access token blacklisted = %v, want %v (entries: %v)", got, tt.wantAccess, appendTargets(captor))
+			}
+			if got := hasTarget(captor, pair.refreshJTI.String()); got != tt.wantRefresh {
+				t.Fatalf("refresh token blacklisted = %v, want %v (entries: %v)", got, tt.wantRefresh, appendTargets(captor))
+			}
+		})
 	}
 }
 
-func TestLogoutInvalidAccessRejected(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
+func TestLogoutErrorIsUnauthorized(t *testing.T) {
+	mock.SetUp(t)
+	pair := mintPair(t)
+
+	keys := stubCryptoKeys(pair)
+	bl, _ := stubBlacklist(nil)
+	ops := NewOperations(
+		mock.Mock[ports.ActorRepo](),
+		mock.Mock[ports.ProjectRepo](),
+		mock.Mock[ports.PlatformRolesRepo](),
+		keys, bl,
+		mock.Mock[ports.ExternalIdentitiesRepo](),
+	)
 
 	err := ops.Logout(ctxWithIdentity(), models.LogoutInput{
 		AccessToken:  "garbage",
 		RefreshToken: pair.refreshToken,
 	})
-	if err == nil {
-		t.Fatal("want error for invalid access token, got nil")
-	}
-	if len(bl.entries) != 0 {
-		t.Fatalf("nothing must be blacklisted on invalid access, got %d entries", len(bl.entries))
-	}
-}
-
-func TestLogoutMissingIdentityRejected(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
-
-	err := ops.Logout(context.Background(), models.LogoutInput{
-		AccessToken:  pair.accessToken,
-		RefreshToken: pair.refreshToken,
-	})
-	if err == nil {
-		t.Fatal("want error without identity in context, got nil")
-	}
-}
-
-func TestLogoutInvalidRefreshStillLogsOut(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
-
-	err := ops.Logout(ctxWithIdentity(), models.LogoutInput{
-		AccessToken:  pair.accessToken,
-		RefreshToken: "garbage-refresh-token",
-	})
-	if err != nil {
-		t.Fatalf("logout must succeed even with an invalid refresh token, got %v", err)
-	}
-	targets := blacklistTargets(bl)
-	if !targets[pair.accessJTI.String()] {
-		t.Fatal("access token jti must still be blacklisted")
-	}
-	if targets[pair.refreshJTI.String()] {
-		t.Fatal("unverifiable refresh token must not be blacklisted")
-	}
-}
-
-func TestLogoutExpiredRefreshStillLogsOut(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
-
-	expiredPayload := mintPayload(t, models.RefreshClaims{
-		Sub: models.RefreshSub{ID: uuid.New(), ProjectID: nil, AccessJTI: pair.accessJTI},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-			Issuer:    "test-issuer", ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
-		},
-	}, pair.keyID)
-	expiredRefresh, err := crypto.SignToken(expiredPayload, pair.kp)
-	if err != nil {
-		t.Fatalf("SignToken: %v", err)
-	}
-
-	err = ops.Logout(ctxWithIdentity(), models.LogoutInput{
-		AccessToken:  pair.accessToken,
-		RefreshToken: expiredRefresh,
-	})
-	if err != nil {
-		t.Fatalf("logout must succeed even with an expired refresh token, got %v", err)
-	}
-	if !blacklistTargets(bl)[pair.accessJTI.String()] {
-		t.Fatal("access token jti must still be blacklisted")
-	}
-}
-
-func TestLogoutErrorIsUnauthorized(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
-
-	err := ops.Logout(ctxWithIdentity(), models.LogoutInput{AccessToken: "garbage", RefreshToken: pair.refreshToken})
 	if !fun.Is(err, fun.CodeUnauthorized) {
 		t.Fatalf("want unauthorized error, got %v", err)
 	}
 }
 
-func TestRefreshRejectsBlacklistedRefreshToken(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
+func TestRefresh(t *testing.T) {
+	pair := mintPair(t)
+	expiredRefresh := mintExpiredRefresh(t, pair)
 
-	// simulate a previous logout/rotation blacklisting the refresh token
-	if err := bl.Append(context.Background(), models.BlacklistEntry{
-		Type: models.BlacklistEntryTypeToken, Target: pair.refreshJTI.String(),
-		ExpiresAt: func() *time.Time { t := time.Now().Add(time.Hour); return &t }(),
-	}); err != nil {
-		t.Fatalf("seed blacklist: %v", err)
+	tests := []struct {
+		name         string
+		refreshToken string
+		revoked      map[string]bool
+		wantErr      bool
+		wantRotated  bool
+	}{
+		{
+			name:         "clean token issues a fresh pair",
+			refreshToken: pair.refreshToken,
+			wantRotated:  true,
+		},
+		{
+			name:         "blacklisted token rejected",
+			refreshToken: pair.refreshToken,
+			revoked:      map[string]bool{pair.refreshJTI.String(): true},
+			wantErr:      true,
+		},
+		{
+			name:         "garbage token rejected",
+			refreshToken: "garbage",
+			wantErr:      true,
+		},
+		{
+			name:         "expired token rejected",
+			refreshToken: expiredRefresh,
+			wantErr:      true,
+		},
 	}
 
-	_, err := ops.Refresh(context.Background(), pair.refreshToken)
-	if !fun.Is(err, fun.CodeUnauthorized) {
-		t.Fatalf("want unauthorized for blacklisted refresh token, got %v", err)
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock.SetUp(t)
 
-func TestRefreshAcceptsCleanRefreshToken(t *testing.T) {
-	bl := &fakeBlacklist{}
-	ops, pair := newTestOps(t, bl)
+			keys := stubCryptoKeys(pair)
+			bl, _ := stubBlacklist(tt.revoked)
+			actors := mock.Mock[ports.ActorRepo]()
+			mock.When(actors.GetByID(mock.AnyContext(), mock.Equal(pair.actor.ID))).ThenReturn(&pair.actor, nil)
 
-	out, err := ops.Refresh(context.Background(), pair.refreshToken)
-	if err != nil {
-		t.Fatalf("Refresh with clean token: %v", err)
-	}
-	if out.AccessToken == "" || out.RefreshToken == "" {
-		t.Fatal("want a fresh token pair")
-	}
-	if strings.TrimSpace(out.RefreshToken) == pair.refreshToken {
-		t.Fatal("refresh must rotate: new refresh token must differ")
+			ops := NewOperations(
+				actors,
+				mock.Mock[ports.ProjectRepo](),
+				mock.Mock[ports.PlatformRolesRepo](),
+				keys, bl,
+				mock.Mock[ports.ExternalIdentitiesRepo](),
+			)
+
+			out, err := ops.Refresh(context.Background(), tt.refreshToken)
+			if tt.wantErr && err == nil {
+				t.Fatal("want error, got nil")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("want no error, got %v", err)
+			}
+			if !tt.wantErr && tt.wantRotated {
+				if out.AccessToken == "" || out.RefreshToken == "" {
+					t.Fatal("want a fresh token pair")
+				}
+				if out.RefreshToken == tt.refreshToken {
+					t.Fatal("refresh must rotate: new refresh token must differ")
+				}
+			}
+		})
 	}
 }

@@ -4,37 +4,51 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"IdentityX/models"
+	"IdentityX/ports"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
+	"github.com/ovechkin-dm/mockio/mock"
 )
 
-// newAuthMW wires the real JWT middleware over in-memory fakes.
-func newAuthMW(t *testing.T, bl *fakeBlacklistRepo, kp models.CryptoKey, actor models.Actor) func(http.Handler) http.Handler {
+// newAuthMW wires the real JWT middleware over per-test mockio mocks.
+func newAuthMW(t *testing.T, key models.CryptoKey, blacklisted func(jti string) bool) func(http.Handler) http.Handler {
 	t.Helper()
-	app := &IdentityX{}
-	mw := app.SetupAuthMiddlewares(
-		&fakeCryptoKeysRepo{keys: map[uuid.UUID]models.CryptoKey{kp.ID: kp}},
-		&fakeAPIKeysRepo{},
-		&fakeActorsRepo{actor: actor},
-		&fakeCapabilitiesRepo{},
+	cryptoKeys := mock.Mock[ports.CryptoKeysRepo]()
+	mock.When(cryptoKeys.GetByID(mock.AnyContext(), mock.Equal(key.ID))).ThenReturn(&key, nil)
+
+	bl := mock.Mock[ports.BlacklistRepo]()
+	mock.When(bl.GetByTargetAndType(mock.AnyContext(), mock.Any[string](), mock.Any[models.BlacklistEntryType]())).
+		ThenAnswer(func(args []any) []any {
+			target := args[1].(string)
+			if blacklisted(target) {
+				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeToken}, nil}
+			}
+			return []any{nil, fun.ErrNotFound("not blacklisted")}
+		})
+
+	mw := (&IdentityX{}).SetupAuthMiddlewares(
+		cryptoKeys,
+		mock.Mock[ports.APIKeysRepo](),
+		mock.Mock[ports.ActorRepo](),
+		mock.Mock[ports.CapabilityRepo](),
 		bl,
 	)
 	return mw.JWT()
 }
 
-func serveThroughJWT(t *testing.T, jwt func(http.Handler) http.Handler, token string) *httptest.ResponseRecorder {
+func serveThroughJWT(t *testing.T, jwt func(http.Handler) http.Handler, token string) (*httptest.ResponseRecorder, string) {
 	t.Helper()
-	var gotIdentity *models.Identity
+	var identityID string
 	handler := jwt(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ident, err := models.RequireIdentity(r.Context())
 		if err != nil {
 			http.Error(w, "identity missing", http.StatusInternalServerError)
 			return
 		}
-		gotIdentity = ident
+		identityID = ident.Sub.ID.String()
 		w.WriteHeader(http.StatusOK)
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -43,51 +57,58 @@ func serveThroughJWT(t *testing.T, jwt func(http.Handler) http.Handler, token st
 	}
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
-	if gotIdentity != nil {
-		rec.Header().Set("X-Test-Identity", gotIdentity.Sub.ID.String())
-	}
-	return rec
+	return rec, identityID
 }
 
-func TestJWTAuthAcceptsCleanToken(t *testing.T) {
+func TestJWTAuth(t *testing.T) {
 	kp, keyID := newSigningKey(t)
 	actor := testActor()
 	jti := uuid.New()
 	accessToken := mintAccessToken(t, kp, keyID, jti, actor)
-
-	jwt := newAuthMW(t, &fakeBlacklistRepo{}, models.CryptoKey{
+	key := models.CryptoKey{
 		ID: keyID, Type: models.SigningCryptoKeyType, Status: models.CryptoKeyStatusActive,
 		PublicKey: kp.Public, EncryptedPrivateKey: kp.EncryptedPrivate, Algorithm: kp.Algorithm,
-	}, actor)
-	rec := serveThroughJWT(t, jwt, accessToken)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("want 200 for clean token, got %d %s", rec.Code, rec.Body.String())
 	}
-	if rec.Header().Get("X-Test-Identity") != actor.ID.String() {
-		t.Fatalf("want identity %s, got %s", actor.ID, rec.Header().Get("X-Test-Identity"))
+
+	tests := []struct {
+		name        string
+		token       string
+		blacklisted bool
+		wantCode    int
+		wantActor   bool
+	}{
+		{
+			name:      "clean token authenticates",
+			token:     accessToken,
+			wantCode:  http.StatusOK,
+			wantActor: true,
+		},
+		{
+			name:        "blacklisted token rejected",
+			token:       accessToken,
+			blacklisted: true,
+			wantCode:    http.StatusUnauthorized,
+		},
+		{
+			name:     "missing token rejected",
+			wantCode: http.StatusUnauthorized,
+		},
 	}
-}
 
-// TestJWTAuthRejectsBlacklistedToken pins the logout contract: a token
-// whose jti was blacklisted at logout must no longer authenticate.
-func TestJWTAuthRejectsBlacklistedToken(t *testing.T) {
-	kp, keyID := newSigningKey(t)
-	actor := testActor()
-	jti := uuid.New()
-	accessToken := mintAccessToken(t, kp, keyID, jti, actor)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock.SetUp(t)
+			jwt := newAuthMW(t, key, func(got string) bool {
+				return tt.blacklisted && got == jti.String()
+			})
 
-	bl := &fakeBlacklistRepo{}
-	expiresAt := time.Now().Add(time.Hour)
-	_ = bl.Append(t.Context(), models.BlacklistEntry{
-		Type: models.BlacklistEntryTypeToken, Target: jti.String(), ExpiresAt: &expiresAt,
-	})
-
-	jwt := newAuthMW(t, bl, models.CryptoKey{
-		ID: keyID, Type: models.SigningCryptoKeyType, Status: models.CryptoKeyStatusActive,
-		PublicKey: kp.Public, EncryptedPrivateKey: kp.EncryptedPrivate, Algorithm: kp.Algorithm,
-	}, actor)
-	rec := serveThroughJWT(t, jwt, accessToken)
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("want 401 for blacklisted token, got %d %s", rec.Code, rec.Body.String())
+			rec, identityID := serveThroughJWT(t, jwt, tt.token)
+			if rec.Code != tt.wantCode {
+				t.Fatalf("want %d, got %d %s", tt.wantCode, rec.Code, rec.Body.String())
+			}
+			if tt.wantActor && identityID != actor.ID.String() {
+				t.Fatalf("want identity %s, got %s", actor.ID, identityID)
+			}
+		})
 	}
 }
