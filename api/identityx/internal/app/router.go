@@ -1,42 +1,58 @@
 package app
 
 import (
-	actorsHandlers "IdentityX/internal/features/actors/handlers"
-	apiKeysHandlers "IdentityX/internal/features/api_keys/handlers"
-	authnHandlers "IdentityX/internal/features/authn/handlers"
-	capabilitiesHandlers "IdentityX/internal/features/capabilities/handlers"
-	orgsHandlers "IdentityX/internal/features/organizations/handlers"
-	profileSchemasHandlers "IdentityX/internal/features/profile_schemas/handlers"
-	profilesHandlers "IdentityX/internal/features/profiles/handlers"
-	projectsHandlers "IdentityX/internal/features/projects/handlers"
+	"errors"
 	"net/http"
 
 	spec "IdentityX"
-
+	"IdentityX/internal/handler"
+	"IdentityX/internal/handlers"
 	"lib/httpserver"
 
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) http.Handler {
+func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server) http.Handler {
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:     app.cfg.AppName,
 		OpenAPISpec: spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
-			registerRoutes(r, middlewares, handlers)
+			mountStrict(r, h, middlewares)
 		},
 	})
 }
 
-// registerRoutes wires every feature's routes onto r. Kept package-level so
-// the router-parity test can walk the same registration the app serves.
-func registerRoutes(r *chi.Mux, middlewares middlewares, handlers handlers) {
-	actorsHandlers.RegisterRoutes(r, handlers.Actors, middlewares.anyAuth, middlewares.clientOnly)
-	apiKeysHandlers.RegisterRoutes(r, handlers.APIKeys, middlewares.anyAuth, middlewares.clientOnly)
-	authnHandlers.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
-	orgsHandlers.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
-	projectsHandlers.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
-	capabilitiesHandlers.RegisterRoutes(r, handlers.Capabilities, middlewares.jwtAuth, middlewares.anyAuth, middlewares.clientOnly)
-	profilesHandlers.RegisterRoutes(r, handlers.Profiles, middlewares.jwtAuth, middlewares.clientOnly)
-	profileSchemasHandlers.RegisterRoutes(r, handlers.ProfileSchemas, middlewares.jwtAuth, middlewares.clientOnly)
+// mountStrict registers the generated strict handler on r with the
+// validation + auth middleware stack and the fun-envelope error handlers.
+func mountStrict(r *chi.Mux, h *handlers.Server, mw middlewares) {
+	strict := handler.NewStrictHandlerWithOptions(h,
+		[]handler.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(mw)},
+		handler.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+				// body decode failures — known client error
+				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				// *fun.AppError carries its status (code -> HTTP);
+				// anything unknown resolves to 500.
+				fun.Error(err).SendWithCtx(r.Context(), w)
+			},
+		})
+	handler.HandlerWithOptions(strict, handler.ChiServerOptions{
+		BaseRouter: r,
+		// param binding failures from the generated wrapper
+		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+			var required *handler.RequiredParamError
+			var invalid *handler.InvalidParamFormatError
+			switch {
+			case errors.As(err, &required):
+				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: required.ParamName, Message: "parameter is required"}).Validation()).Send(w)
+			case errors.As(err, &invalid):
+				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: invalid.ParamName, Message: "invalid format"}).Validation()).Send(w)
+			default:
+				fun.InternalServerError("internal error").Send(w)
+			}
+		},
+	})
 }

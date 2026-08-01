@@ -331,9 +331,22 @@ paths:
       description: |
         Logs out the current session, blacklisting the presented access
         and refresh tokens. Requires a valid bearer token; the tokens to
-        blacklist are read from the request itself.
+        blacklist are read from the request headers.
       security:
         - bearerAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: The access token to blacklist, as `Bearer <token>`.
+          schema:
+            type: string
+        - name: Refresh-Token
+          in: header
+          required: true
+          description: The refresh token to blacklist.
+          schema:
+            type: string
       responses:
         '200':
           description: Logged out successfully
@@ -354,10 +367,17 @@ paths:
       operationId: postRefresh
       summary: Refresh a user session
       description: |
-        Exchanges a refresh token (sent as the bearer credential) for a
-        fresh access/refresh token pair. Use when the access token is
+        Exchanges a refresh token (sent in the `Refresh-Token` header) for
+        a fresh access/refresh token pair. Use when the access token is
         about to expire or has expired.
       security: []
+      parameters:
+        - name: Refresh-Token
+          in: header
+          required: true
+          description: The refresh token to exchange.
+          schema:
+            type: string
       responses:
         '200':
           description: New token pair issued
@@ -2313,6 +2333,7 @@ components:
           type: object
           description: Profile data to store, validated against the active schema.
           additionalProperties: true
+          x-go-type: '[]byte'
 
     ProjectProfileSchema:
       x-go-type: models.ProjectProfileSchema
@@ -2351,6 +2372,7 @@ components:
           type: object
           description: The JSON Schema to store.
           additionalProperties: true
+          x-go-type: '[]byte'
         active:
           type: boolean
           description: Whether the schema should become active immediately.
