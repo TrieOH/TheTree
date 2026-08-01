@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"strings"
 
 	"Informd/internal/openapi"
 )
@@ -73,6 +74,9 @@ func authChains(mw middlewares) map[string][]func(http.Handler) http.Handler {
 func authDispatch(mw middlewares) openapi.StrictMiddlewareFunc {
 	chains := authChains(mw)
 	return func(f openapi.StrictHandlerFunc, operationID string) openapi.StrictHandlerFunc {
+		if operationID != "" {
+			operationID = strings.ToLower(operationID[:1]) + operationID[1:]
+		}
 		chain := chains[operationID]
 		if len(chain) == 0 {
 			return f
@@ -83,7 +87,7 @@ func authDispatch(mw middlewares) openapi.StrictMiddlewareFunc {
 			var called bool
 			var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				called = true
-				resp, ferr = f(ctx, w, r, request)
+				resp, ferr = f(r.Context(), w, r, request)
 			})
 			for i := range slices.Backward(chain) {
 				next = chain[i](next)
