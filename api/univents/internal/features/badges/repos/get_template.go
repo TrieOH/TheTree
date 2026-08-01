@@ -17,6 +17,5 @@ func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.BadgeTempl
 		return nil, repo.dbe(err)
 	}
 
-	result := mapBadgeTemplate(row)
-	return &result, nil
+	return new(mapBadgeTemplate(row)), nil
 }

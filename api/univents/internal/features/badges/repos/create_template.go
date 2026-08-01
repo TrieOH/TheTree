@@ -21,6 +21,5 @@ func (repo *Repo) Create(ctx context.Context, template *models.BadgeTemplate) (*
 		return nil, repo.dbe(err)
 	}
 
-	result := mapBadgeTemplate(row)
-	return &result, nil
+	return new(mapBadgeTemplate(row)), nil
 }
