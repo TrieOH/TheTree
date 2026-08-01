@@ -15,6 +15,7 @@ export interface ServerAuthResult {
   success: boolean;
   code: number;
   message?: string;
+  error_id?: string;
   trace?: string[];
   profile?: TokenSubject | null;
 }
@@ -41,5 +42,6 @@ export interface ServerProxyResult<T = SerializableValue> {
   code: number;
   data?: T;
   message?: string;
+  error_id?: string;
   trace?: string[];
 }

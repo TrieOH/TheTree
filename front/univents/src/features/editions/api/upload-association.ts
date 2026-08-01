@@ -1,6 +1,7 @@
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
+  uploadAssociationErrorFromResponse,
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import { authQueryFetcher } from "@/shared/lib/api/fetch";
@@ -21,12 +22,8 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
       status: 400,
     });
   const [publicEditions, draftEditions] = await Promise.all([
-    authQueryFetcher<EditionApiI[]>(`/events/${eventId}/editions`).catch(
-      () => [],
-    ),
-    authQueryFetcher<EditionApiI[]>(`/events/${eventId}/editions/draft`).catch(
-      () => [],
-    ),
+    authQueryFetcher<EditionApiI[]>(`/events/${eventId}/editions`),
+    authQueryFetcher<EditionApiI[]>(`/events/${eventId}/editions/draft`),
   ]);
   const editions = [...publicEditions, ...draftEditions];
   const edition = editions.find((item) => item.id === task.owner.id) as
@@ -49,8 +46,9 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
     banner_url: field === "banner_url" ? url : edition.banner_url,
   });
   if (!response.success)
-    throw new UploadAssociationError(
-      response.message || "Não foi possível associar a imagem.",
+    throw uploadAssociationErrorFromResponse(
+      response,
+      "Não foi possível associar a imagem.",
     );
   getContext().queryClient.setQueryData<EditionI[]>(
     editionKeys.adminListByEvent(response.data.event_id),

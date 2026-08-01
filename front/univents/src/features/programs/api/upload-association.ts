@@ -1,6 +1,7 @@
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
+  uploadAssociationErrorFromResponse,
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import { authQueryFetcher } from "@/shared/lib/api/fetch";
@@ -32,8 +33,9 @@ registerUploadAssociationHandler("program-image", async (task, url) => {
     banner_url: url,
   });
   if (!response.success)
-    throw new UploadAssociationError(
-      response.message || "Não foi possível associar a imagem.",
+    throw uploadAssociationErrorFromResponse(
+      response,
+      "Não foi possível associar a imagem.",
     );
   getContext().queryClient.setQueryData<ProgramI[]>(
     programKeys.byEdition(editionId),

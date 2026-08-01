@@ -12,6 +12,24 @@ export interface QueryClientConfig {
   maxRetries?: number
 }
 
+function getErrorStatus(error: unknown): number | undefined {
+  if (error instanceof ApiError) {
+    const envelope = error.envelope as { code?: unknown };
+    return typeof envelope.code === "number" ? envelope.code : undefined;
+  }
+
+  if (typeof error !== "object" || error === null) return undefined;
+
+  const candidate = error as {
+    code?: unknown;
+    envelope?: { code?: unknown };
+  };
+  if (typeof candidate.code === "number") return candidate.code;
+  return typeof candidate.envelope?.code === "number"
+    ? candidate.envelope.code
+    : undefined;
+}
+
 /**
  * Create a new QueryClient with standard TrieOH defaults.
  * The consumer should create this and pass to TanStackQueryProvider
@@ -27,15 +45,8 @@ export function createQueryClient(config?: QueryClientConfig) {
     defaultOptions: {
       queries: {
         retry: (failureCount, error) => {
-          if (error instanceof ApiError) {
-            const envelope = error.envelope as { code: number }
-            if (envelope.code >= 400 && envelope.code < 500) return false
-          }
-          if (error instanceof Error) {
-            const err = error as unknown as { code: number }
-            const status = err.code
-            if (status >= 400 && status < 500) return false
-          }
+          const status = getErrorStatus(error)
+          if (status && status >= 400 && status < 500) return false
           return failureCount < maxRetries
         },
         staleTime,

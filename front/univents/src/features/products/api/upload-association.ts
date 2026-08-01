@@ -1,6 +1,7 @@
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
+  uploadAssociationErrorFromResponse,
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import { authQueryFetcher } from "@/shared/lib/api/fetch";
@@ -31,8 +32,9 @@ registerUploadAssociationHandler("variant-gallery", async (task, url) => {
     gallery_urls: [...(variant.gallery_urls ?? []), url],
   });
   if (!response.success)
-    throw new UploadAssociationError(
-      response.message || "Não foi possível associar a imagem.",
+    throw uploadAssociationErrorFromResponse(
+      response,
+      "Não foi possível associar a imagem.",
     );
   getContext().queryClient.setQueryData<VariantI[]>(
     productKeys.variants.byProduct(productId),
