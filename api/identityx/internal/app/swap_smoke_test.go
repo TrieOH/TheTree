@@ -40,7 +40,7 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 
 	allowed := rec.Header().Get("Access-Control-Allow-Headers")
 	found := false
-	for _, h := range strings.Split(allowed, ",") {
+	for h := range strings.SplitSeq(allowed, ",") {
 		if strings.EqualFold(strings.TrimSpace(h), "Refresh-Token") {
 			found = true
 			break
