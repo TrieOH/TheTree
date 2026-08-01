@@ -23,6 +23,7 @@ import (
 // @Failure 401 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms/{form_id}/members [delete]
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (h *Handlers) RemoveFormMember(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	formID, err := req.Path("form_id").UUID()
@@ -37,7 +38,7 @@ func (h *Handlers) RemoveFormMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.RemoveFormMember(r.Context(), payload.ToNamespaceInput(namespaceID, formID))
+	err = h.ops.RemoveFormMember(r.Context(), payload.ToNamespaceInput(namespaceID, formID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -11,7 +11,7 @@ type cancelRequestPayload struct {
 	Reason *string `json:"reason"`
 }
 
-func (handler *Handlers) CancelRequest(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) CancelRequest(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	requestID, err := req.Path("request_id").UUID()
 	if fun.Bail(w, err) {
@@ -21,7 +21,7 @@ func (handler *Handlers) CancelRequest(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = handler.commands.CancelRequest(r.Context(), requestID, payload.Reason)
+	err = h.ops.CancelRequest(r.Context(), requestID, payload.Reason)
 	if fun.Bail(w, err) {
 		return
 	}

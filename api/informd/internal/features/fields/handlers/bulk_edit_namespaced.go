@@ -25,6 +25,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields [put]
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (h *Handlers) BulkEditNamespacedFields(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()
@@ -46,7 +47,7 @@ func (h *Handlers) BulkEditNamespacedFields(w http.ResponseWriter, r *http.Reque
 	inputs := xslices.MapSlice(payload, func(f models.UpdateFieldRequest) models.UpdateNamespacedStepFieldInput {
 		return f.ToNamespacedStepInput(namespaceID, formID, stepID)
 	})
-	err = h.commands.BulkEditNamespaced(r.Context(), formID, namespaceID, inputs)
+	err = h.ops.BulkEditNamespaced(r.Context(), formID, namespaceID, inputs)
 	if fun.Bail(w, err) {
 		return
 	}

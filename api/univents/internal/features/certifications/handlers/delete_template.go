@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	templateID, err := req.Path("template_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	err = handler.commands.DeleteTemplate(r.Context(), templateID)
+	err = h.ops.DeleteTemplate(r.Context(), templateID)
 	if fun.Bail(w, err) {
 		return
 	}

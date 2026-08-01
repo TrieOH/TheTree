@@ -6,8 +6,8 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) ListPublic(w http.ResponseWriter, r *http.Request) {
-	events, err := handler.queries.ListPublic(r.Context())
+func (h *Handlers) ListPublic(w http.ResponseWriter, r *http.Request) {
+	events, err := h.ops.ListPublic(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

@@ -27,7 +27,7 @@ func (h *Handlers) CreateProjectActor(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	actors, err := h.commands.CreateProjectActor(r.Context(), orgID, payload.ToInput(&projectID))
+	actors, err := h.ops.CreateProjectActor(r.Context(), orgID, payload.ToInput(&projectID))
 	if fun.Bail(w, err) {
 		return
 	}

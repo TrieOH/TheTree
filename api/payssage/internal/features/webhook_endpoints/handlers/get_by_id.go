@@ -12,7 +12,7 @@ func (h *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	endpoint, err := h.queries.GetByID(r.Context(), endpointID)
+	endpoint, err := h.ops.GetByID(r.Context(), endpointID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -30,7 +30,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	fields, err := h.queries.List(r.Context(), formID, stepID)
+	fields, err := h.ops.List(r.Context(), formID, stepID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -21,7 +21,7 @@ func (h *Handlers) Receive(w http.ResponseWriter, r *http.Request) {
 		_ = Body.Close()
 	}(r.Body)
 
-	err = h.commands.Receive(r.Context(), models.ReceiveWebhookInput{
+	err = h.ops.Receive(r.Context(), models.ReceiveWebhookInput{
 		Provider: providerName,
 		Request:  r,
 		RawBody:  rawBody,

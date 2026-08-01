@@ -4,6 +4,7 @@ import (
 	"context"
 	"lib/database"
 	"lib/email"
+	"lib/httpserver"
 	"lib/objectstorage"
 	"lib/telemetry"
 	"univents/internal/config"
@@ -30,7 +31,7 @@ func Start() {
 
 	app.cfg = config.Load()
 
-	SetupFUN(app.cfg.AppName)
+	httpserver.SetupFUN(app.cfg.AppName)
 
 	app.idxClient = SetupIdentityX(app.cfg)
 	app.objStorage = SetupObjectStorage(app.cfg)

@@ -3,27 +3,39 @@ package app
 import (
 	"context"
 	"lib/errx"
-	"lib/telemetry"
-	"lib/xslices"
+	libriver "lib/river"
 	"log/slog"
 	"net/http"
-	"strings"
-	"time"
+	"univents/internal/authz"
+	"univents/internal/features/badges"
+	badgesHandlers "univents/internal/features/badges/handlers"
+	badgesRepos "univents/internal/features/badges/repos"
 	"univents/internal/features/certifications"
+	certificationsHandlers "univents/internal/features/certifications/handlers"
+	certsJobs "univents/internal/features/certifications/jobs"
+	certificationsRepos "univents/internal/features/certifications/repos"
 	"univents/internal/features/editions"
+	editionsHandlers "univents/internal/features/editions/handlers"
+	editionsRepos "univents/internal/features/editions/repos"
 	"univents/internal/features/events"
+	eventsHandlers "univents/internal/features/events/handlers"
+	eventsRepos "univents/internal/features/events/repos"
 	"univents/internal/features/products"
+	productsHandlers "univents/internal/features/products/handlers"
+	productsRepos "univents/internal/features/products/repos"
 	"univents/internal/features/programs"
+	programsHandlers "univents/internal/features/programs/handlers"
+	programsRepos "univents/internal/features/programs/repos"
 	"univents/internal/features/signatures"
+	signaturesHandlers "univents/internal/features/signatures/handlers"
+	signaturesRepos "univents/internal/features/signatures/repos"
 	"univents/internal/features/ticket_types"
+	ticketTypesHandlers "univents/internal/features/ticket_types/handlers"
+	ticketTypesRepos "univents/internal/features/ticket_types/repos"
 	"univents/internal/sqlc"
 	"univents/ports"
 
-	libriver "lib/river"
-
-	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/jackc/pgx/v5"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/riverqueue/river"
 	"riverqueue.com/riverui"
 )
@@ -37,108 +49,83 @@ type repos struct {
 	products          ports.ProductRepo
 	programs          ports.ProgramRepo
 	occurrences       ports.ProgramOccurrenceRepo
+	badges            ports.BadgeTemplateRepo
 	signatures        ports.SignatureRepo
 	signatureRequests ports.SignatureRequestRepo
 	certs             ports.CertificationRepo
 }
 
-type queries struct {
-	events      *events.Queries
-	editions    *editions.Queries
-	ticketTypes *ticket_types.Queries
-	products    *products.Queries
-	programs    *programs.Queries
-	signatures  *signatures.Queries
-	certs       *certifications.Queries
-}
-
-type commands struct {
-	events      *events.Commands
-	editions    *editions.Commands
-	ticketTypes *ticket_types.Commands
-	products    *products.Commands
-	programs    *programs.Commands
-	signatures  *signatures.Commands
-	certs       *certifications.Commands
+type operations struct {
+	events      *events.Operations
+	editions    *editions.Operations
+	ticketTypes *ticket_types.Operations
+	products    *products.Operations
+	programs    *programs.Operations
+	badges      *badges.Operations
+	signatures  *signatures.Operations
+	certs       *certifications.Operations
 }
 
 type middlewares struct {
-	logger    func(http.Handler) http.Handler
-	requestID func(http.Handler) http.Handler
-	bodySize  func(http.Handler) http.Handler
-	metrics   func(http.Handler) http.Handler
-	cors      func(http.Handler) http.Handler
-	realIP    func(http.Handler) http.Handler
-	recover   func(http.Handler) http.Handler
-	timeout   func(http.Handler) http.Handler
-	ratelimit func(http.Handler) http.Handler
-	jwt       func(http.Handler) http.Handler
-	apiKey    func(http.Handler) http.Handler
-	anyAuth   func(http.Handler) http.Handler
+	jwt     func(http.Handler) http.Handler
+	apiKey  func(http.Handler) http.Handler
+	anyAuth func(http.Handler) http.Handler
 }
 
 type handlers struct {
-	events      *events.Handlers
-	editions    *editions.Handlers
-	ticketTypes *ticket_types.Handlers
-	products    *products.Handlers
-	programs    *programs.Handlers
-	signatures  *signatures.Handlers
-	certs       *certifications.Handlers
+	events      *eventsHandlers.Handlers
+	editions    *editionsHandlers.Handlers
+	ticketTypes *ticketTypesHandlers.Handlers
+	products    *productsHandlers.Handlers
+	programs    *programsHandlers.Handlers
+	badges      *badgesHandlers.Handlers
+	signatures  *signaturesHandlers.Handlers
+	certs       *certificationsHandlers.Handlers
 }
 
 // ── Init methods ──────────────────────────────────────────────────────────
 
 func (app *Univents) initRepos() repos {
 	q := sqlc.New(app.db)
-	programsRepo := programs.NewRepos(q)
-	sigRepo := signatures.NewRepos(q)
-	return repos{
-		events:            events.NewRepos(q),
-		editions:          editions.NewRepos(q),
-		ticketTypes:       ticket_types.NewRepos(q),
-		products:          products.NewRepos(q),
-		programs:          programsRepo,
-		occurrences:       programsRepo,
-		signatures:        sigRepo,
-		signatureRequests: sigRepo,
-		certs:             certifications.NewRepos(q),
+	r := repos{
+		events:            eventsRepos.NewRepo(q),
+		editions:          editionsRepos.NewRepo(q),
+		ticketTypes:       ticketTypesRepos.NewRepo(q),
+		products:          productsRepos.NewRepo(q),
+		programs:          programsRepos.NewRepo(q),
+		occurrences:       programsRepos.NewRepo(q),
+		badges:            badgesRepos.NewRepo(q),
+		signatures:        signaturesRepos.NewRepo(q),
+		signatureRequests: signaturesRepos.NewRepo(q),
+		certs:             certificationsRepos.NewRepo(q),
+	}
+	authz.Service = authz.New(r.events)
+	return r
+}
+
+func (app *Univents) initOperations(r repos) operations {
+	return operations{
+		events:      events.NewOperations(r.events, app.objStorage, app.idxClient),
+		editions:    editions.NewOperations(r.events, r.editions),
+		ticketTypes: ticket_types.NewOperations(r.events, r.editions, r.ticketTypes),
+		products:    products.NewOperations(r.events, r.editions, r.products),
+		programs:    programs.NewOperations(r.events, r.editions, r.programs, r.occurrences),
+		badges:      badges.NewOperations(r.badges),
+		signatures:  signatures.NewOperations(r.events, r.editions, r.signatures, r.signatureRequests, app.emailClient, app.cfg.HmacSecret),
+		certs:       certifications.NewOperations(r.events, r.editions, r.certs, r.programs, app.emailClient),
 	}
 }
 
-func (app *Univents) initQueries(r repos) queries {
-	return queries{
-		events:      events.NewQueries(r.events),
-		editions:    editions.NewQueries(r.events, r.editions),
-		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes),
-		products:    products.NewQueries(r.editions, r.products),
-		programs:    programs.NewQueries(r.programs, r.occurrences),
-		signatures:  signatures.NewQueries(r.editions, r.signatures, r.signatureRequests),
-		certs:       certifications.NewQueries(r.certs),
-	}
-}
-
-func (app *Univents) initCommands(r repos) commands {
-	return commands{
-		events:      events.NewCommands(r.events, app.objStorage, app.idxClient),
-		editions:    editions.NewCommands(r.events, r.editions),
-		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes),
-		products:    products.NewCommands(r.events, r.editions, r.products),
-		programs:    programs.NewCommands(r.events, r.editions, r.programs, r.occurrences),
-		signatures:  signatures.NewCommands(r.events, r.editions, r.signatures, r.signatureRequests, app.emailClient, app.cfg.HmacSecret),
-		certs:       certifications.NewCommands(r.events, r.editions, r.certs, r.programs, app.emailClient),
-	}
-}
-
-func (app *Univents) initHandlers(q queries, c commands) handlers {
+func (app *Univents) initHandlers(ops operations) handlers {
 	return handlers{
-		events:      events.NewHandlers(c.events, q.events),
-		editions:    editions.NewHandlers(c.editions, q.editions),
-		ticketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
-		products:    products.NewHandlers(c.products, q.products),
-		programs:    programs.NewHandlers(c.programs, q.programs),
-		signatures:  signatures.NewHandlers(c.signatures, q.signatures),
-		certs:       certifications.NewHandlers(c.certs, q.certs),
+		events:      eventsHandlers.NewHandlers(ops.events),
+		editions:    editionsHandlers.NewHandlers(ops.editions),
+		ticketTypes: ticketTypesHandlers.NewHandlers(ops.ticketTypes),
+		products:    productsHandlers.NewHandlers(ops.products),
+		programs:    programsHandlers.NewHandlers(ops.programs),
+		badges:      badgesHandlers.NewHandler(ops.badges),
+		signatures:  signaturesHandlers.NewHandlers(ops.signatures),
+		certs:       certificationsHandlers.NewHandlers(ops.certs),
 	}
 }
 
@@ -149,25 +136,6 @@ func (app *Univents) initMiddlewares() middlewares {
 	mw.jwt = authMW.JWT()
 	mw.apiKey = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	mw.bodySize = mws.MaxBodySize(1 << 20)
-	mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/health", "/metrics", "/admin/asynq"}, RequestIDHeader: "X-Request-ID"})
-	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
-	if err != nil {
-		errx.Exit(err, "Failed to create collectors")
-	}
-	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
-	mw.cors = mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
-		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),
-		AllowCredentials: true,
-	})
-	mw.realIP = mws.RealIP()
-	mw.recover = mws.Recover(telemetry.Log())
-	mw.timeout = mws.Timeout(60 * time.Second)
-	mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
-		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	})
 	return mw
 }
 
@@ -175,8 +143,8 @@ func (app *Univents) initRiver(ctx context.Context, r repos) (*river.Client[pgx.
 	libriver.Migrate(ctx, app.db)
 
 	client := libriver.NewClient(app.db, libriver.NewWorkers(
-		libriver.Register(certifications.NewGrantCertsWorker(r.certs, r.editions, r.events, app.emailClient)),
-		libriver.Register(certifications.NewGrantCertsForOccurrenceWorker(r.certs, r.editions, r.events, app.emailClient)),
+		libriver.Register(certsJobs.NewGrantCertsWorker(r.certs, r.editions, r.events, app.emailClient)),
+		libriver.Register(certsJobs.NewGrantCertsForOccurrenceWorker(r.certs, r.editions, r.events, app.emailClient)),
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
 

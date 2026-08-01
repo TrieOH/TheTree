@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (handler *Handlers) Create(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	editionID, err := req.Path("edition_id").UUID()
 	if fun.Bail(w, err) {
@@ -18,7 +18,7 @@ func (handler *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	ticketType, err := handler.commands.Create(r.Context(), payload.ToInput(editionID))
+	ticketType, err := h.ops.Create(r.Context(), payload.ToInput(editionID))
 	if fun.Bail(w, err) {
 		return
 	}

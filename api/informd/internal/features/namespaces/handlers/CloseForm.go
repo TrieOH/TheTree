@@ -22,6 +22,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms/{form_id}/close [post]
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (h *Handlers) Close(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()
@@ -32,7 +33,7 @@ func (h *Handlers) Close(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.CloseForm(r.Context(), namespaceID, formID)
+	form, err := h.ops.CloseForm(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

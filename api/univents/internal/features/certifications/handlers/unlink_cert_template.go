@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (handler *Handlers) UnlinkCertTemplate(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) UnlinkCertTemplate(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	templateID, err := req.Path("template_id").UUID()
 	if fun.Bail(w, err) {
@@ -18,7 +18,7 @@ func (handler *Handlers) UnlinkCertTemplate(w http.ResponseWriter, r *http.Reque
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = handler.commands.UnlinkCertTemplate(r.Context(), templateID, payload.ProgramID)
+	err = h.ops.UnlinkCertTemplate(r.Context(), templateID, payload.ProgramID)
 	if fun.Bail(w, err) {
 		return
 	}

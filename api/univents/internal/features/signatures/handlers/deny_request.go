@@ -11,7 +11,7 @@ type denyRequestPayload struct {
 	Reason *string `json:"reason"`
 }
 
-func (handler *Handlers) DenyRequest(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) DenyRequest(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	token, err := req.Query("token").StringRequired()
 	if fun.Bail(w, err) {
@@ -21,7 +21,7 @@ func (handler *Handlers) DenyRequest(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = handler.commands.DenyRequest(r.Context(), token, payload.Reason)
+	err = h.ops.DenyRequest(r.Context(), token, payload.Reason)
 	if fun.Bail(w, err) {
 		return
 	}

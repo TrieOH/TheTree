@@ -6,7 +6,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) GetByVendorCode(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetByVendorCode(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	editionID, err := req.Path("edition_id").UUID()
 	if fun.Bail(w, err) {
@@ -16,7 +16,7 @@ func (handler *Handlers) GetByVendorCode(w http.ResponseWriter, r *http.Request)
 	if fun.Bail(w, err) {
 		return
 	}
-	product, err := handler.queries.GetProductByVendorCode(r.Context(), editionID, vendorCode)
+	product, err := h.ops.GetProductByVendorCode(r.Context(), editionID, vendorCode)
 	if fun.Bail(w, err) {
 		return
 	}

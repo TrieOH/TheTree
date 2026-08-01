@@ -17,7 +17,7 @@ func (h *Handlers) ListMembers(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.ListMembers(r.Context(), orgID)
+	members, err := h.ops.ListMembers(r.Context(), orgID)
 	if fun.Bail(w, err) {
 		return
 	}

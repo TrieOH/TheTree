@@ -12,23 +12,15 @@ import (
 )
 
 func SetupIdentityX(cfg config.Config) *idx.Client {
-	client, err := idx.NewClient(idx.Config{
+	client, err := idx.Bootstrap(context.Background(), idx.Config{
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
 		ProjectID: cfg.IdxProjectID,
 		Debug:     true,
 	})
 	if err != nil {
-		errx.Exit(err, "error creating identity_x client")
+		errx.Exit(err, "error creating identityx client")
 	}
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, err = client.Tokens.GetJWKS(ctx, true)
-		if err != nil {
-			errx.Exit(err, "error fetching initial JWKS")
-		}
-	}()
 	return client
 }
 

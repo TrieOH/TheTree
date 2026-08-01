@@ -27,7 +27,7 @@ func (h *Handlers) ReDraft(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.ReDraft(r.Context(), formID)
+	form, err := h.ops.ReDraft(r.Context(), formID)
 	if fun.Bail(w, err) {
 		return
 	}

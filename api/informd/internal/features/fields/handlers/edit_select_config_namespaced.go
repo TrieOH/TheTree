@@ -25,6 +25,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}/select [put]
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (h *Handlers) EditSelectConfigNamespaced(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()
@@ -44,7 +45,7 @@ func (h *Handlers) EditSelectConfigNamespaced(w http.ResponseWriter, r *http.Req
 		return
 	}
 	payload.FieldID = fieldID
-	config, err := h.commands.EditSelectConfigNamespaced(r.Context(), formID, namespaceID, payload)
+	config, err := h.ops.EditSelectConfigNamespaced(r.Context(), formID, namespaceID, payload)
 	if fun.Bail(w, err) {
 		return
 	}

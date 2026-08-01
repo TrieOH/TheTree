@@ -21,7 +21,7 @@ func (h *Handlers) GetByEmail(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.GetByEmail(r.Context(), email, projectID)
+	members, err := h.ops.GetByEmail(r.Context(), email, projectID)
 	if fun.Bail(w, err) {
 		return
 	}

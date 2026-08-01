@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) ListTemplates(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	editionID, err := req.Path("edition_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	templates, err := handler.queries.ListTemplates(r.Context(), editionID)
+	templates, err := h.ops.ListTemplates(r.Context(), editionID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -42,19 +42,20 @@ const (
 	EventMemberRoleStaff EventMemberRole = "staff"
 )
 
-var eventMemberRoleRank = map[EventMemberRole]int{
-	EventMemberRoleStaff: 0,
-	EventMemberRoleAdmin: 1,
-	EventMemberRoleOwner: 2,
-}
-
 func (r EventMemberRole) Rank() int {
-	return eventMemberRoleRank[r]
+	switch r {
+	case EventMemberRoleStaff:
+		return 0
+	case EventMemberRoleAdmin:
+		return 1
+	case EventMemberRoleOwner:
+		return 2
+	default:
+		return 0
+	}
 }
 
-func (r EventMemberRole) Minimum(minimum EventMemberRole) bool {
-	return r.Rank() >= minimum.Rank()
-}
+func (r EventMemberRole) String() string { return string(r) }
 
 type EventMember struct {
 	ID        uuid.UUID       `json:"id"`

@@ -21,6 +21,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields [get]
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (h *Handlers) ListNamespaced(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()
@@ -35,7 +36,7 @@ func (h *Handlers) ListNamespaced(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	fields, err := h.queries.ListNamespaced(r.Context(), formID, namespaceID, stepID)
+	fields, err := h.ops.ListNamespaced(r.Context(), formID, namespaceID, stepID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -20,7 +20,7 @@ import (
 // @Failure 500 {object} fun.Response
 // @Router /namespaces [get]
 func (h *Handlers) ListNamespaces(w http.ResponseWriter, r *http.Request) {
-	namespaces, err := h.queries.ListNamespaces(r.Context())
+	namespaces, err := h.ops.ListNamespaces(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

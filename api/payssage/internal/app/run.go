@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/httpserver"
 	libriver "lib/river"
 	"lib/telemetry"
 	"log/slog"
@@ -50,14 +51,15 @@ func (app *Payssage) run() {
 		loggr.Fatal("failed to start river ui handler", zap.Error(err))
 	}
 
-	queries := app.initQueries(repos)
-	commands := app.initCommands(riverClient, repos)
-	middlewares := app.initMiddlewares()
-	handlers := app.initHandlers(commands, queries)
+	ops := app.initOperations(riverClient, repos)
 
-	if app.cfg.ProfilePort != "" {
-		go servePprof(app.cfg.ProfilePort)
-	}
+	middlewares := app.initMiddlewares()
+	handlers := app.initHandlers(ops)
+
 	mux := app.CreateRouter(handlers, middlewares, riverUIHandler)
-	app.startServer(mux)
+	httpserver.Start(mux, httpserver.Config{
+		AppName:     app.cfg.AppName,
+		Port:        app.cfg.Port,
+		ProfilePort: app.cfg.ProfilePort,
+	})
 }

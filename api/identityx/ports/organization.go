@@ -15,5 +15,6 @@ type OrganizationRepo interface {
 	AddMember(ctx context.Context, toCreate models.OrganizationMember) error
 	RemoveMember(ctx context.Context, actorID, orgID uuid.UUID) error
 	GetMember(ctx context.Context, actorID, orgID uuid.UUID) (*models.OrganizationMember, error)
+	GetRole(ctx context.Context, actorID, orgID uuid.UUID) (models.OrganizationRole, error)
 	ListMembers(ctx context.Context, orgID uuid.UUID) ([]models.OrganizationMember, error)
 }

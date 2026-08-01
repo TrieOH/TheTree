@@ -25,7 +25,7 @@ func (h *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	wallet, err := h.queries.GetByID(r.Context(), walletID)
+	wallet, err := h.ops.GetByID(r.Context(), walletID)
 	if fun.Bail(w, err) {
 		return
 	}

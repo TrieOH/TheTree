@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"time"
 
 	"lib/errx"
 	"lib/objectstorage"
@@ -12,24 +11,15 @@ import (
 )
 
 func SetupIdentityX(cfg config.Config) *idx.Client {
-	projectID := cfg.IdxProjectID
-	client, err := idx.NewClient(idx.Config{
+	client, err := idx.Bootstrap(context.Background(), idx.Config{
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
-		ProjectID: projectID,
+		ProjectID: cfg.IdxProjectID,
 		Debug:     cfg.DebugMode,
 	})
 	if err != nil {
 		errx.Exit(err, "error creating identityx client")
 	}
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, err = client.Tokens.GetJWKS(ctx, false)
-		if err != nil {
-			errx.Exit(err, "error fetching initial JWKS")
-		}
-	}()
 	return client
 }
 

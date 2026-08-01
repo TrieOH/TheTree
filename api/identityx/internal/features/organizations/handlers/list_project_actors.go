@@ -21,7 +21,7 @@ func (h *Handlers) ListProjectActors(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	actors, err := h.queries.ListProjectActors(r.Context(), orgID, projectID)
+	actors, err := h.ops.ListProjectActors(r.Context(), orgID, projectID)
 	if fun.Bail(w, err) {
 		return
 	}

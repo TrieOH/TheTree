@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (handler *Handlers) PatchProduct(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) PatchProduct(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	productID, err := req.Path("product_id").UUID()
 	if fun.Bail(w, err) {
@@ -18,7 +18,7 @@ func (handler *Handlers) PatchProduct(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	product, err := handler.commands.PatchProduct(r.Context(), payload.ToInput(productID))
+	product, err := h.ops.PatchProduct(r.Context(), payload.ToInput(productID))
 	if fun.Bail(w, err) {
 		return
 	}

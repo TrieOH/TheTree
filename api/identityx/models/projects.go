@@ -20,6 +20,7 @@ type Project struct {
 	DeletedAt        *time.Time      `json:"deleted_at"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewProject(ownerID uuid.UUID, slug, name string, domain *string, orgID *uuid.UUID) (*Project, error) {
 	p := &Project{
 		OrganizationID:   orgID,
@@ -30,7 +31,11 @@ func NewProject(ownerID uuid.UUID, slug, name string, domain *string, orgID *uui
 		Metadata:         json.RawMessage("{}"),
 		DomainVerifiedAt: nil,
 	}
-	return p, validate.Struct(p)
+	err := validate.Struct(p)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 type ProjectDomainChallenges struct {
@@ -51,19 +56,20 @@ const (
 	ProjectRoleOwner  ProjectRole = "owner"
 )
 
-var projectRoleRank = map[ProjectRole]int{
-	ProjectRoleMember: 0,
-	ProjectRoleAdmin:  1,
-	ProjectRoleOwner:  2,
-}
-
 func (r ProjectRole) Rank() int {
-	return projectRoleRank[r]
+	switch r {
+	case ProjectRoleMember:
+		return 0
+	case ProjectRoleAdmin:
+		return 1
+	case ProjectRoleOwner:
+		return 2
+	default:
+		return 0
+	}
 }
 
-func (r ProjectRole) Minimum(req ProjectRole) bool {
-	return r.Rank() >= req.Rank()
-}
+func (r ProjectRole) String() string { return string(r) }
 
 type ProjectMember struct {
 	ProjectID uuid.UUID       `json:"project_id"`
@@ -73,6 +79,7 @@ type ProjectMember struct {
 	JoinedAt  time.Time       `json:"joined_at"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewProjectMember(projectID, actorID uuid.UUID, role ProjectRole) (*ProjectMember, error) {
 	pm := &ProjectMember{
 		ProjectID: projectID,
@@ -80,7 +87,11 @@ func NewProjectMember(projectID, actorID uuid.UUID, role ProjectRole) (*ProjectM
 		Role:      role,
 		Metadata:  json.RawMessage("{}"),
 	}
-	return pm, validate.Struct(pm)
+	err := validate.Struct(pm)
+	if err != nil {
+		return nil, err
+	}
+	return pm, nil
 }
 
 type ProjectOAuthProviders struct {

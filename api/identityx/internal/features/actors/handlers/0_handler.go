@@ -1,25 +1,19 @@
 package handlers
 
 import (
-	"IdentityX/internal/features/actors/commands"
-	"IdentityX/internal/features/actors/queries"
+	"IdentityX/internal/features/actors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	queries  *queries.Queries
-	commands *commands.Commands
+	ops *actors.Operations
 }
 
-func NewHandlers(
-	queries *queries.Queries,
-	commands *commands.Commands,
-) *Handlers {
+func NewHandlers(ops *actors.Operations) *Handlers {
 	return &Handlers{
-		queries:  queries,
-		commands: commands,
+		ops: ops,
 	}
 }
 

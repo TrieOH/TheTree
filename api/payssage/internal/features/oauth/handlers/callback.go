@@ -20,7 +20,7 @@ func (h *Handlers) Callback(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	finalRedirectURI, err := h.commands.Callback(r.Context(), provider, code, state)
+	finalRedirectURI, err := h.ops.Callback(r.Context(), provider, code, state)
 	if fun.Bail(w, err) {
 		return
 	}

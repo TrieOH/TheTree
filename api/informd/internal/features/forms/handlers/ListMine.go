@@ -20,7 +20,7 @@ import (
 // @Failure 500 {object} fun.Response
 // @Router /forms [get]
 func (h *Handlers) ListMine(w http.ResponseWriter, r *http.Request) {
-	forms, err := h.queries.ListForms(r.Context())
+	forms, err := h.ops.ListForms(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

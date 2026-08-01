@@ -25,7 +25,7 @@ func (h *Handlers) ListForms(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	forms, err := h.queries.ListForms(r.Context(), namespaceID)
+	forms, err := h.ops.ListForms(r.Context(), namespaceID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -14,6 +14,7 @@ type Step struct {
 	PositionHint int       `json:"position_hint" validate:"required,gte=1"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewStep(formID uuid.UUID, title string, description *string, positionHint int) (*Step, error) {
 	s := &Step{
 		FormID:       formID,
@@ -21,7 +22,11 @@ func NewStep(formID uuid.UUID, title string, description *string, positionHint i
 		Description:  description,
 		PositionHint: positionHint,
 	}
-	return s, validate.Struct(s)
+	err := validate.Struct(s)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 type CreateStepRequest struct {
@@ -57,6 +62,7 @@ type CreateFormStepInput struct {
 }
 
 type CreateNamespacedFormStepInput struct {
+	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 	NamespaceID  uuid.UUID `json:"namespace_id"`
 	FormID       uuid.UUID `json:"form_id"`
 	Title        string    `json:"title"`
@@ -111,6 +117,7 @@ type UpdateFormStepInput struct {
 }
 
 type UpdateNamespacedFormStepInput struct {
+	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 	NamespaceID  uuid.UUID
 	FormID       uuid.UUID
 	ID           uuid.UUID

@@ -12,7 +12,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)
 		return
 	}
-	namespaces, err := h.queries.ListProjects(r.Context())
+	namespaces, err := h.ops.ListProjects(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

@@ -39,7 +39,7 @@ func (h *Handlers) EditSelectConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	payload.FieldID = fieldID
-	config, err := h.commands.EditSelectConfig(r.Context(), formID, payload)
+	config, err := h.ops.EditSelectConfig(r.Context(), formID, payload)
 	if fun.Bail(w, err) {
 		return
 	}

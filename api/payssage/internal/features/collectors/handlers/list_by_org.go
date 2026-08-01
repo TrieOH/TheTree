@@ -12,7 +12,7 @@ func (h *Handlers) ListByOrg(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	collectors, err := h.queries.ListByOrg(r.Context(), orgID)
+	collectors, err := h.ops.ListByOrg(r.Context(), orgID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) GetCertByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetCertByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	id, err := req.Path("cert_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	cert, err := handler.commands.GetCertByID(r.Context(), id)
+	cert, err := h.ops.GetCertByID(r.Context(), id)
 	if fun.Bail(w, err) {
 		return
 	}

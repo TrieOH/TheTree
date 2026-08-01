@@ -37,7 +37,7 @@ func (h *Handlers) CreateField(w http.ResponseWriter, r *http.Request) {
 	if fun.BailInto(w, req, &payload) {
 		return
 	}
-	field, err := h.commands.Create(r.Context(), payload.ToStepInput(formID, stepID))
+	field, err := h.ops.Create(r.Context(), payload.ToStepInput(formID, stepID))
 	if fun.Bail(w, err) {
 		return
 	}

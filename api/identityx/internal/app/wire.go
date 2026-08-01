@@ -3,26 +3,35 @@ package app
 import (
 	"IdentityX/internal/authz"
 	"IdentityX/internal/features/actors"
+	actorsHandlers "IdentityX/internal/features/actors/handlers"
+	actorsRepos "IdentityX/internal/features/actors/repos"
 	apikeys "IdentityX/internal/features/api_keys"
+	apikeysHandlers "IdentityX/internal/features/api_keys/handlers"
+	apikeysRepos "IdentityX/internal/features/api_keys/repos"
 	"IdentityX/internal/features/authn"
-	"IdentityX/internal/features/blacklist"
+	authnHandlers "IdentityX/internal/features/authn/handlers"
+	authnRepos "IdentityX/internal/features/authn/repos"
+	blacklistRepos "IdentityX/internal/features/blacklist/repos"
 	"IdentityX/internal/features/capabilities"
-	"IdentityX/internal/features/crypto_keys"
+	capabilitiesHandlers "IdentityX/internal/features/capabilities/handlers"
+	capabilitiesRepos "IdentityX/internal/features/capabilities/repos"
+	cryptoKeysRepos "IdentityX/internal/features/crypto_keys/repos"
 	"IdentityX/internal/features/organizations"
-	"IdentityX/internal/features/platform_roles"
+	orgsHandlers "IdentityX/internal/features/organizations/handlers"
+	orgsRepos "IdentityX/internal/features/organizations/repos"
+	platformRolesRepos "IdentityX/internal/features/platform_roles/repos"
 	"IdentityX/internal/features/profile_schemas"
+	profileSchemasHandlers "IdentityX/internal/features/profile_schemas/handlers"
+	profileSchemasRepos "IdentityX/internal/features/profile_schemas/repos"
 	"IdentityX/internal/features/profiles"
+	profilesHandlers "IdentityX/internal/features/profiles/handlers"
+	profilesRepos "IdentityX/internal/features/profiles/repos"
 	"IdentityX/internal/features/projects"
+	projectsHandlers "IdentityX/internal/features/projects/handlers"
+	projectsRepos "IdentityX/internal/features/projects/repos"
 	"IdentityX/internal/sqlc"
 	"IdentityX/ports"
-	"lib/errx"
-	"lib/telemetry"
-	"lib/xslices"
 	"net/http"
-	"strings"
-
-	mws "github.com/MintzyG/fun/middlewares"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -41,91 +50,65 @@ type repos struct {
 	profiles           ports.ProfileRepo
 }
 
-type queries struct {
-	authn          *authn.Queries
-	orgs           *organizations.Queries
-	projects       *projects.Queries
-	actors         *actors.Queries
-	capabilities   *capabilities.Queries
-	profiles       *profiles.Queries
-	profileSchemas *profile_schemas.Queries
-}
-
-type commands struct {
-	authn          *authn.Commands
-	actors         *actors.Commands
-	apiKeys        *apikeys.Commands
-	capabilities   *capabilities.Commands
-	orgs           *organizations.Commands
-	projects       *projects.Commands
-	profiles       *profiles.Commands
-	profileSchemas *profile_schemas.Commands
+type operations struct {
+	authn          *authn.Operations
+	orgs           *organizations.Operations
+	projects       *projects.Operations
+	actors         *actors.Operations
+	apiKeys        *apikeys.Operations
+	capabilities   *capabilities.Operations
+	profiles       *profiles.Operations
+	profileSchemas *profile_schemas.Operations
 }
 
 type middlewares struct {
-	logger            func(http.Handler) http.Handler
-	cors              func(http.Handler) http.Handler
 	jwtAuth           func(http.Handler) http.Handler
 	apiKeyAuth        func(http.Handler) http.Handler
 	anyAuth           func(http.Handler) http.Handler
 	clientOnly        func(http.Handler) http.Handler
 	projectClientOnly func(http.Handler) http.Handler
-	metrics           func(http.Handler) http.Handler
 }
 
 type handlers struct {
-	Actors         *actors.Handlers
-	APIKeys        *apikeys.Handlers
-	Authn          *authn.Handlers
-	Orgs           *organizations.Handlers
-	Projects       *projects.Handlers
-	Capabilities   *capabilities.Handlers
-	Profiles       *profiles.Handlers
-	ProfileSchemas *profile_schemas.Handlers
+	Actors         *actorsHandlers.Handlers
+	APIKeys        *apikeysHandlers.Handlers
+	Authn          *authnHandlers.Handlers
+	Orgs           *orgsHandlers.Handlers
+	Projects       *projectsHandlers.Handlers
+	Capabilities   *capabilitiesHandlers.Handlers
+	Profiles       *profilesHandlers.Handlers
+	ProfileSchemas *profileSchemasHandlers.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
 
 func (app *IdentityX) initRepos(q *sqlc.Queries) *repos {
 	return &repos{
-		actors:             actors.NewRepo(q),
-		apiKeys:            apikeys.NewRepo(q),
-		capabilities:       capabilities.NewRepos(q),
-		platformRoles:      platform_roles.NewRepo(q),
-		cryptoKeys:         crypto_keys.NewRepo(q),
-		blacklist:          blacklist.NewRepo(q),
-		externalIdentities: authn.NewRepo(q),
-		orgs:               organizations.NewRepo(q),
-		projects:           projects.NewRepos(q),
-		profileSchemas:     profile_schemas.NewRepo(q),
-		profiles:           profiles.NewRepo(q),
+		actors:             actorsRepos.NewRepo(q),
+		apiKeys:            apikeysRepos.NewRepo(q),
+		capabilities:       capabilitiesRepos.NewRepo(q),
+		platformRoles:      platformRolesRepos.NewRepo(q),
+		cryptoKeys:         cryptoKeysRepos.NewRepo(q),
+		blacklist:          blacklistRepos.NewRepo(q),
+		externalIdentities: authnRepos.NewRepo(q),
+		orgs:               orgsRepos.NewRepo(q),
+		projects:           projectsRepos.NewRepo(q),
+		profileSchemas:     profileSchemasRepos.NewSchemaRepo(q),
+		profiles:           profilesRepos.NewProfileRepo(q),
 	}
 }
 
-func (app *IdentityX) initQueries(r *repos) queries {
+func (app *IdentityX) initOperations(r *repos) operations {
 	authzSvc := authz.New(r.orgs, r.projects)
-	return queries{
-		actors:         actors.NewQueries(r.projects, r.actors, authzSvc),
-		authn:          authn.NewQueries(r.projects, r.cryptoKeys),
-		orgs:           organizations.NewQueries(r.projects, r.actors, r.orgs, authzSvc),
-		projects:       projects.NewQueries(r.projects, authzSvc),
-		capabilities:   capabilities.NewQueries(r.capabilities, r.projects, authzSvc),
-		profiles:       profiles.NewQueries(r.profiles, r.projects, authzSvc),
-		profileSchemas: profile_schemas.NewQueries(r.profileSchemas, r.projects, authzSvc),
-	}
-}
-
-func (app *IdentityX) initCommands(r *repos) commands {
-	authzSvc := authz.New(r.orgs, r.projects)
-	return commands{
-		authn:          authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities),
-		actors:         actors.NewCommands(r.actors, r.projects, authzSvc),
-		apiKeys:        apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, authzSvc),
-		orgs:           organizations.NewCommands(r.projects, r.actors, r.orgs, authzSvc),
-		projects:       projects.NewCommands(r.cryptoKeys, r.projects, r.actors, authzSvc),
-		capabilities:   capabilities.NewCommands(r.actors, r.capabilities, r.projects, authzSvc),
-		profiles:       profiles.NewCommands(r.profiles, r.profileSchemas, r.projects, authzSvc),
-		profileSchemas: profile_schemas.NewCommands(r.profileSchemas, r.projects, authzSvc),
+	return operations{
+		authn:          authn.NewOperations(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities),
+		orgs:           organizations.NewOperations(r.projects, r.actors, r.orgs, authzSvc),
+		projects:       projects.NewOperations(r.cryptoKeys, r.projects, r.actors, authzSvc),
+		actors:         actors.NewOperations(r.actors, r.projects, authzSvc),
+		apiKeys:        apikeys.NewOperations([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, authzSvc),
+		capabilities:   capabilities.NewOperations(r.actors, r.capabilities, r.projects, authzSvc),
+		profiles:       profiles.NewOperations(r.profiles, r.profileSchemas, r.projects, authzSvc),
+		profileSchemas: profile_schemas.NewOperations(r.profileSchemas, r.projects, authzSvc),
 	}
 }
 
@@ -135,39 +118,20 @@ func (app *IdentityX) initMiddlewares(r *repos) middlewares {
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
-	if err != nil {
-		errx.Exit(err, "Failed to create collectors")
-	}
-	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
-	mw.cors = mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
-		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),
-		AllowCredentials: true,
-	})
-	// mw.bodySize = mws.MaxBodySize(1 << 20)
-	// mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
-	// mw.realIP = mws.RealIP()
-	// mw.recover = mws.Recover(telemetry.Log())
-	// mw.timeout = mws.Timeout(60 * time.Second)
-	// mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
-	//	 KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	// })
 	mw.clientOnly = ClientOnly()
 	mw.projectClientOnly = ProjectClientOnly()
 	return mw
 }
 
-func (app *IdentityX) initHandlers(q queries, c commands) handlers {
+func (app *IdentityX) initHandlers(ops operations) handlers {
 	return handlers{
-		Actors:         actors.NewHandlers(q.actors, c.actors),
-		APIKeys:        apikeys.NewHandlers(c.apiKeys),
-		Authn:          authn.NewHandlers(c.authn, q.authn),
-		Orgs:           organizations.NewHandlers(c.orgs, q.orgs),
-		Projects:       projects.NewHandlers(c.projects, q.projects),
-		Capabilities:   capabilities.NewHandlers(c.capabilities, q.capabilities),
-		Profiles:       profiles.NewHandlers(q.profiles, c.profiles),
-		ProfileSchemas: profile_schemas.NewHandlers(q.profileSchemas, c.profileSchemas),
+		Actors:         actorsHandlers.NewHandlers(ops.actors),
+		APIKeys:        apikeysHandlers.NewHandlers(ops.apiKeys),
+		Authn:          authnHandlers.NewHandlers(ops.authn),
+		Orgs:           orgsHandlers.NewHandlers(ops.orgs),
+		Projects:       projectsHandlers.NewHandlers(ops.projects),
+		Capabilities:   capabilitiesHandlers.NewHandlers(ops.capabilities),
+		Profiles:       profilesHandlers.New(ops.profiles),
+		ProfileSchemas: profileSchemasHandlers.New(ops.profileSchemas),
 	}
 }

@@ -25,7 +25,7 @@ func (h *Handlers) GetActorByID(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.GetActorByID(r.Context(), orgID, projectID, actorID)
+	members, err := h.ops.GetActorByID(r.Context(), orgID, projectID, actorID)
 	if fun.Bail(w, err) {
 		return
 	}

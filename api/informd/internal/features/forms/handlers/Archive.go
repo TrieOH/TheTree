@@ -27,7 +27,7 @@ func (h *Handlers) Archive(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.Archive(r.Context(), formID)
+	form, err := h.ops.Archive(r.Context(), formID)
 	if fun.Bail(w, err) {
 		return
 	}

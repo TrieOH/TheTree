@@ -31,7 +31,7 @@ func (h *Handlers) DeleteField(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	err = h.commands.Delete(r.Context(), formID, fieldID)
+	err = h.ops.Delete(r.Context(), formID, fieldID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -1,26 +1,19 @@
 package handlers
 
 import (
+	"Informd/internal/features/fields"
 	"net/http"
-
-	"Informd/internal/features/fields/commands"
-	"Informd/internal/features/fields/queries"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Command
-	queries  *queries.Queries
+	ops *fields.Operations
 }
 
-func NewHandlers(
-	commands *commands.Command,
-	queries *queries.Queries,
-) *Handlers {
+func NewHandlers(ops *fields.Operations) *Handlers {
 	return &Handlers{
-		commands: commands,
-		queries:  queries,
+		ops: ops,
 	}
 }
 
@@ -38,6 +31,7 @@ func RegisterRoutes(
 		r.Delete("/forms/{form_id}/steps/{step_id}/fields/{field_id}", h.DeleteField)
 		r.Put("/forms/{form_id}/steps/{step_id}/fields/{field_id}/select", h.EditSelectConfig)
 
+		// TODO: kill these duplicated namespaced routes — CheckForm already anchors via the form's namespace.
 		r.Post("/namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields", h.CreateNamespacedField)
 		r.Put("/namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields", h.BulkEditNamespacedFields)
 		r.Get("/namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields", h.ListNamespaced)

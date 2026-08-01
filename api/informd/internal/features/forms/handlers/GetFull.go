@@ -26,7 +26,7 @@ func (h *Handlers) GetFull(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.queries.GetFull(r.Context(), formID)
+	form, err := h.ops.GetFull(r.Context(), formID)
 	if fun.Bail(w, err) {
 		return
 	}

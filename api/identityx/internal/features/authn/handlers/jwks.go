@@ -28,7 +28,7 @@ func (h *Handlers) JWKS(w http.ResponseWriter, r *http.Request) {
 		pid = &projectID
 	}
 
-	jwks, err := h.queries.JWKS(r.Context(), pid)
+	jwks, err := h.ops.JWKS(r.Context(), pid)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -1,24 +1,27 @@
 package app
 
 import (
-	"Informd/internal/features/answers"
+	"Informd/internal/authz"
+	answersRepos "Informd/internal/features/answers/repos"
 	"Informd/internal/features/fields"
+	fieldsHandlers "Informd/internal/features/fields/handlers"
+	fieldsRepos "Informd/internal/features/fields/repos"
 	"Informd/internal/features/forms"
+	formsHandlers "Informd/internal/features/forms/handlers"
+	formsRepos "Informd/internal/features/forms/repos"
 	"Informd/internal/features/namespaces"
-	"Informd/internal/features/responders"
+	namespacesHandlers "Informd/internal/features/namespaces/handlers"
+	namespacesRepos "Informd/internal/features/namespaces/repos"
+	respondersRepos "Informd/internal/features/responders/repos"
 	"Informd/internal/features/responses"
+	responsesHandlers "Informd/internal/features/responses/handlers"
+	responsesRepos "Informd/internal/features/responses/repos"
 	"Informd/internal/features/steps"
+	stepsHandlers "Informd/internal/features/steps/handlers"
+	stepsRepos "Informd/internal/features/steps/repos"
 	"Informd/internal/sqlc"
 	"Informd/ports"
-	"lib/errx"
-	"lib/telemetry"
-	"lib/xslices"
 	"net/http"
-	"strings"
-	"time"
-
-	fm "github.com/MintzyG/fun/middlewares"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -33,74 +36,51 @@ type repos struct {
 	responses  ports.ResponseRepo
 }
 
-type queries struct {
-	namespaces *namespaces.Queries
-	forms      *forms.Queries
-	steps      *steps.Queries
-	fields     *fields.Queries
-}
-
-type commands struct {
-	namespaces *namespaces.Commands
-	forms      *forms.Commands
-	steps      *steps.Commands
-	fields     *fields.Commands
-	responses  *responses.Commands
+type operations struct {
+	namespaces *namespaces.Operations
+	forms      *forms.Operations
+	steps      *steps.Operations
+	fields     *fields.Operations
+	responses  *responses.Operations
 }
 
 type handlers struct {
-	namespaces *namespaces.Handlers
-	forms      *forms.Handlers
-	steps      *steps.Handlers
-	fields     *fields.Handlers
-	responses  *responses.Handlers
+	namespaces *namespacesHandlers.Handlers
+	forms      *formsHandlers.Handlers
+	steps      *stepsHandlers.Handlers
+	fields     *fieldsHandlers.Handlers
+	responses  *responsesHandlers.Handlers
 }
 
 type middlewares struct {
-	logger    func(http.Handler) http.Handler
-	requestID func(http.Handler) http.Handler
-	bodySize  func(http.Handler) http.Handler
-	metrics   func(http.Handler) http.Handler
-	cors      func(http.Handler) http.Handler
-	realIP    func(http.Handler) http.Handler
-	recover   func(http.Handler) http.Handler
-	timeout   func(http.Handler) http.Handler
-	ratelimit func(http.Handler) http.Handler
-	jwt       func(http.Handler) http.Handler
-	apiKey    func(http.Handler) http.Handler
-	anyAuth   func(http.Handler) http.Handler
+	jwt     func(http.Handler) http.Handler
+	apiKey  func(http.Handler) http.Handler
+	anyAuth func(http.Handler) http.Handler
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
 
 func (app *Informd) initRepos(q *sqlc.Queries) repos {
-	return repos{
-		namespaces: namespaces.NewRepo(q),
-		forms:      forms.NewRepo(q),
-		steps:      steps.NewRepo(q),
-		fields:     fields.NewRepos(q),
-		answers:    answers.NewRepo(q),
-		responders: responders.NewRepo(q),
-		responses:  responses.NewRepo(q),
+	r := repos{
+		namespaces: namespacesRepos.NewRepo(q),
+		forms:      formsRepos.NewRepo(q),
+		steps:      stepsRepos.NewRepo(q),
+		fields:     fieldsRepos.NewRepo(q),
+		answers:    answersRepos.NewRepo(q),
+		responders: respondersRepos.NewRepo(q),
+		responses:  responsesRepos.NewRepo(q),
 	}
+	authz.Service = authz.New(r.forms, r.namespaces)
+	return r
 }
 
-func (app *Informd) initQueries(r repos) queries {
-	return queries{
-		namespaces: namespaces.NewQueries(r.namespaces, r.forms, r.steps, r.fields, r.answers, r.responses, r.responders),
-		forms:      forms.NewQueries(r.forms, r.steps, r.fields, r.answers, r.responses, r.responders, r.namespaces),
-		steps:      steps.NewQueries(r.forms, r.steps, r.namespaces),
-		fields:     fields.NewQueries(r.forms, r.steps, r.fields, r.namespaces),
-	}
-}
-
-func (app *Informd) initCommands(r repos) commands {
-	return commands{
-		namespaces: namespaces.NewCommands(r.namespaces, r.forms),
-		forms:      forms.NewCommands(r.forms, r.steps, r.namespaces),
-		steps:      steps.NewCommands(r.forms, r.steps, r.namespaces),
-		fields:     fields.NewCommands(r.forms, r.steps, r.fields, r.namespaces),
-		responses:  responses.NewCommands(r.responders, r.responses, r.answers, r.forms),
+func (app *Informd) initOperations(r repos) operations {
+	return operations{
+		namespaces: namespaces.NewOperations(r.namespaces, r.forms, r.steps, r.fields, r.answers, r.responses, r.responders),
+		forms:      forms.NewOperations(r.forms, r.steps, r.namespaces, r.fields, r.answers, r.responses, r.responders),
+		steps:      steps.NewOperations(r.forms, r.steps, r.namespaces),
+		fields:     fields.NewOperations(r.forms, r.steps, r.fields, r.namespaces),
+		responses:  responses.NewOperations(r.responders, r.responses, r.answers, r.forms),
 	}
 }
 
@@ -110,33 +90,15 @@ func (app *Informd) initMiddlewares() middlewares {
 	mw.jwt = authMW.JWT()
 	mw.apiKey = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	mw.bodySize = fm.MaxBodySize(1 << 20)
-	mw.requestID = fm.RequestID(fm.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = fm.Logs(fm.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	collectors, err := fm.NewCollectors(prometheus.DefaultRegisterer)
-	if err != nil {
-		errx.Exit(err, "Failed to create collectors")
-	}
-	mw.metrics = fm.Metrics(collectors, fm.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
-	mw.cors = fm.CORS(fm.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
-		AllowCredentials: true,
-	})
-	mw.realIP = fm.RealIP()
-	mw.recover = fm.Recover(telemetry.Log())
-	mw.timeout = fm.Timeout(60 * time.Second)
-	mw.ratelimit = fm.RateLimit(fm.RateLimitConfig{RPS: 400, Burst: 20,
-		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	})
 	return mw
 }
 
-func (app *Informd) initHandlers(c commands, q queries) handlers {
+func (app *Informd) initHandlers(ops operations) handlers {
 	return handlers{
-		namespaces: namespaces.NewHandler(c.namespaces, q.namespaces),
-		forms:      forms.NewHandlers(c.forms, q.forms),
-		steps:      steps.NewHandlers(c.steps, q.steps),
-		fields:     fields.NewHandlers(c.fields, q.fields),
-		responses:  responses.NewHandlers(c.responses),
+		namespaces: namespacesHandlers.NewHandler(ops.namespaces),
+		forms:      formsHandlers.NewHandlers(ops.forms),
+		steps:      stepsHandlers.NewHandlers(ops.steps),
+		fields:     fieldsHandlers.NewHandlers(ops.fields),
+		responses:  responsesHandlers.NewHandlers(ops.responses),
 	}
 }

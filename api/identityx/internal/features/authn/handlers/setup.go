@@ -20,11 +20,11 @@ func (h *Handlers) Setup(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err := h.commands.Setup(ctx, payload.ToSetupInput())
+	err := h.ops.Setup(ctx, payload.ToSetupInput())
 	if fun.Bail(w, err) {
 		return
 	}
-	tokens, err := h.commands.Login(ctx, payload.ToInput(nil))
+	tokens, err := h.ops.Login(ctx, payload.ToInput(nil))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -32,7 +32,7 @@ func (h *Handlers) CreateStep(w http.ResponseWriter, r *http.Request) {
 	if fun.BailInto(w, req, &payload) {
 		return
 	}
-	step, err := h.commands.Create(r.Context(), payload.ToFormInput(formID))
+	step, err := h.ops.Create(r.Context(), payload.ToFormInput(formID))
 	if fun.Bail(w, err) {
 		return
 	}

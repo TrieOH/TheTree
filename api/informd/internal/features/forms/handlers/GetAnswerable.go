@@ -26,7 +26,7 @@ func (h *Handlers) GetAnswerable(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.queries.GetAnswerable(r.Context(), formID)
+	form, err := h.ops.GetAnswerable(r.Context(), formID)
 	if fun.Bail(w, err) {
 		return
 	}
