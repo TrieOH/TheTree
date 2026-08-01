@@ -64,21 +64,6 @@ type ActorExternalIdentities struct {
 	UpdatedAt             time.Time     `json:"updated_at"`
 }
 
-type CreateActorRequest struct {
-	AuthMethod AuthMethod `json:"auth_method" validate:"required,oneof=password api_key"`
-	Type       ActorType  `json:"type"        validate:"required,oneof=human service machine"`
-	Email      *string    `json:"email"`
-}
-
-func (r CreateActorRequest) ToInput(projectID *uuid.UUID) CreateActorInput {
-	return CreateActorInput{
-		AuthMethod: r.AuthMethod,
-		Type:       r.Type,
-		Email:      r.Email,
-		ProjectID:  projectID,
-	}
-}
-
 type CreateActorInput struct {
 	ProjectID  *uuid.UUID `json:"project_id"`
 	AuthMethod AuthMethod `json:"auth_method" validate:"required,oneof=password api_key"`

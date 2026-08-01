@@ -1,0 +1,22 @@
+package profiles
+
+import (
+	"IdentityX/models"
+	"context"
+	"lib/database"
+
+	"lib/telemetry"
+
+	"github.com/google/uuid"
+)
+
+func (r *Repo) Get(ctx context.Context, actorID uuid.UUID) (*models.ActorProfile, error) {
+	ctx, span := telemetry.StartSpan(ctx, "Get")
+	defer span.End()
+
+	result, err := database.Queries(ctx, r.q).GetActorProfile(ctx, actorID)
+	if err != nil {
+		return nil, r.dbe(err)
+	}
+	return new(mapActorProfile(result)), nil
+}

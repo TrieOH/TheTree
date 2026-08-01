@@ -1,6 +1,6 @@
 # TheTree / TrieOH — Project Summary
 
-> Last updated 2026-05-27. Hand-curated; update as the project evolves.
+> Last updated 2026-08-01. Hand-curated; update as the project evolves.
 
 TheTree is the monorepo for **TrieOH**, a SaaS platform built as a suite of domain-specific Go microservices behind a single Caddy API gateway, with React front-ends deployed to Cloudflare Workers. It is a hybrid Go / TypeScript monorepo orchestrated via Docker Compose with self-hosted infrastructure for observability, source control, email, and object storage.
 
@@ -109,6 +109,12 @@ Compose files are layered — never run alone:
 - **Prometheus** — metrics scraped by VictoriaMetrics
 - **River / Asynq** — durable job queues (IdentityX uses River; rest use Asynq)
 - **`just`** — command runner
+
+## Go 1.26 language features in use
+
+The whole Go workspace is on Go 1.26 (`go 1.26.x` in every `go.mod`). Code uses post-1.22 language features that may look like errors — do not flag them:
+
+- **`new(EXPR)`** — the `new` builtin accepts a value expression and returns a pointer to it: `new("logout")` is a `*string` initialized to `"logout"` (equivalent to `s := "logout"; &s`). Used for pointer-to-literal fields, e.g. `Reason: new("logout")` in IdentityX's blacklist entries.
 
 ## Development Workflow
 

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"lib/xslices"
-
 	"github.com/google/uuid"
 )
 
@@ -27,11 +25,6 @@ func ToBatchUpsertAnswersParams(a Answer) sqlc.BatchUpsertAnswersParams {
 	}
 }
 
-type SubmitAnswer struct {
-	FieldID *uuid.UUID       `json:"field_id"`
-	Answer  *json.RawMessage `json:"answer"`
-}
-
 type SubmitAnswerInput struct {
 	FieldID    *uuid.UUID       `json:"field_id"`
 	Answer     *json.RawMessage `json:"answer"`
@@ -43,26 +36,6 @@ func SubmitAnswerInputToAnswer(input SubmitAnswerInput) Answer {
 		FieldID:    input.FieldID,
 		Answer:     input.Answer,
 		ResponseID: input.ResponseID,
-	}
-}
-
-func toSubmitAnswerInput(a SubmitAnswer) SubmitAnswerInput {
-	return SubmitAnswerInput{
-		FieldID: a.FieldID,
-		Answer:  a.Answer,
-	}
-}
-
-type SubmitRequest struct {
-	Email   *string        `json:"email"`
-	Answers []SubmitAnswer `json:"answers"`
-}
-
-func (r SubmitRequest) ToInput(formID uuid.UUID) SubmitInput {
-	return SubmitInput{
-		FormID:  formID,
-		Email:   r.Email,
-		Answers: xslices.MapSlice(r.Answers, toSubmitAnswerInput),
 	}
 }
 
