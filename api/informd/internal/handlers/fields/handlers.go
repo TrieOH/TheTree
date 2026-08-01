@@ -232,12 +232,12 @@ func mustMarshal(v *map[string]any) *json.RawMessage {
 	return &raw
 }
 
-func mapSelectConfig(sc *openapi.CreateFieldSelectConfigRequest) *models.CreateFieldSelectConfigRequest {
+func mapSelectConfig(sc *openapi.CreateFieldSelectConfigRequest) *models.CreateFieldSelectConfigInput {
 	if sc == nil {
 		return nil
 	}
 	options, _ := json.Marshal(sc.Options)
-	return &models.CreateFieldSelectConfigRequest{
+	return &models.CreateFieldSelectConfigInput{
 		Behaviour: sc.Behaviour,
 		ValueType: sc.ValueType,
 		Options:   options,

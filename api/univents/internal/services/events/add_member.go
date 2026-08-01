@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (o *Operations) AddMember(ctx context.Context, eventID uuid.UUID, payload models.AddEventMemberRequest) (*models.EventMember, error) {
+func (o *Operations) AddMember(ctx context.Context, eventID uuid.UUID, payload models.AddEventMemberInput) (*models.EventMember, error) {
 	ctx, span := telemetry.StartSpan(ctx, "AddMember")
 	defer span.End()
 

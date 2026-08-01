@@ -59,46 +59,12 @@ type CertEmissionError struct {
 	CreatedAt    time.Time  `json:"created_at"`
 }
 
-type CreateCertificationTemplateRequest struct {
-	Kind        string          `json:"kind"        validate:"required,oneof=edition_attendance program_attendance"`
-	Name        string          `json:"name"        validate:"required,min=2,max=256"`
-	Description *string         `json:"description"`
-	DesignData  json.RawMessage `json:"design_data"`
-}
-
-func (r CreateCertificationTemplateRequest) ToInput(editionID uuid.UUID) CreateCertificationTemplateInput {
-	return CreateCertificationTemplateInput{
-		EditionID:   editionID,
-		Kind:        CertificationTemplateKind(r.Kind),
-		Name:        r.Name,
-		Description: r.Description,
-		DesignData:  r.DesignData,
-	}
-}
-
 type CreateCertificationTemplateInput struct {
 	EditionID   uuid.UUID
 	Kind        CertificationTemplateKind
 	Name        string
 	Description *string
 	DesignData  json.RawMessage
-}
-
-type UpdateCertificationTemplateRequest struct {
-	Kind        string          `json:"kind"        validate:"required,oneof=edition_attendance program_attendance"`
-	Name        string          `json:"name"        validate:"required,min=2,max=256"`
-	Description *string         `json:"description"`
-	DesignData  json.RawMessage `json:"design_data"`
-}
-
-func (r UpdateCertificationTemplateRequest) ToInput(templateID uuid.UUID) UpdateCertificationTemplateInput {
-	return UpdateCertificationTemplateInput{
-		TemplateID:  templateID,
-		Kind:        CertificationTemplateKind(r.Kind),
-		Name:        r.Name,
-		Description: r.Description,
-		DesignData:  r.DesignData,
-	}
 }
 
 type UpdateCertificationTemplateInput struct {
@@ -116,14 +82,6 @@ type CertifyInput struct {
 	UserID           uuid.UUID
 	ProgramID        *uuid.UUID
 	VerificationHash string
-}
-
-type CertTemplateProgramRequest struct {
-	ProgramID uuid.UUID `json:"program_id" validate:"required"`
-}
-
-type InvalidCertReason struct {
-	Reason string `json:"reason" validate:"required"`
 }
 
 type VerifyCertResponse struct {

@@ -120,7 +120,7 @@ func (h *Handlers) HardCreateIntent(ctx context.Context, req openapi.HardCreateI
 	if req.Body.Sandbox != nil {
 		sandbox = *req.Body.Sandbox
 	}
-	intent, err := h.ops.HardCreate(ctx, models.HardCreateIntentRequest{
+	intent, err := h.ops.HardCreate(ctx, models.HardCreateIntentInput{
 		WalletID:     req.Body.WalletId,
 		SellerID:     req.Body.SellerId,
 		CollectorID:  req.Body.CollectorId,

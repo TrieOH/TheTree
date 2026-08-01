@@ -39,7 +39,7 @@ func TestAddMember_StaffForbidden(t *testing.T) {
 	mock.When(repo.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(models.EventMemberRoleStaff, nil)
 
-	_, err := cmd.AddMember(ctx, eventID, models.AddEventMemberRequest{
+	_, err := cmd.AddMember(ctx, eventID, models.AddEventMemberInput{
 		Email: "someone@example.com",
 		Role:  models.EventMemberRoleStaff,
 	})
@@ -81,7 +81,7 @@ func TestAddMember_OwnerGetsPastAuth(t *testing.T) {
 		}
 	}()
 
-	_, _ = cmd.AddMember(ctx, eventID, models.AddEventMemberRequest{
+	_, _ = cmd.AddMember(ctx, eventID, models.AddEventMemberInput{
 		Email: "someone@example.com",
 		Role:  models.EventMemberRoleStaff,
 	})
@@ -94,7 +94,7 @@ func TestAddMember_NoIdentity(t *testing.T) {
 
 	cmd := events.NewOperations(repo, nil, nil)
 
-	_, err := cmd.AddMember(context.Background(), uuid.New(), models.AddEventMemberRequest{
+	_, err := cmd.AddMember(context.Background(), uuid.New(), models.AddEventMemberInput{
 		Email: "someone@example.com",
 		Role:  models.EventMemberRoleStaff,
 	})

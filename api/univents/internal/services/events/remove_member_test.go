@@ -39,7 +39,7 @@ func TestRemoveMember_StaffForbidden(t *testing.T) {
 	mock.When(repo.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(models.EventMemberRoleStaff, nil)
 
-	err := cmd.RemoveMember(ctx, eventID, models.RemoveMemberRequest{
+	err := cmd.RemoveMember(ctx, eventID, models.RemoveMemberInput{
 		Email: "someone@example.com",
 	})
 	if err == nil {
@@ -77,7 +77,7 @@ func TestRemoveMember_OwnerGetsPastAuth(t *testing.T) {
 		}
 	}()
 
-	_ = cmd.RemoveMember(ctx, eventID, models.RemoveMemberRequest{
+	_ = cmd.RemoveMember(ctx, eventID, models.RemoveMemberInput{
 		Email: "someone@example.com",
 	})
 }
@@ -89,7 +89,7 @@ func TestRemoveMember_NoIdentity(t *testing.T) {
 
 	cmd := events.NewOperations(repo, nil, nil)
 
-	err := cmd.RemoveMember(context.Background(), uuid.New(), models.RemoveMemberRequest{
+	err := cmd.RemoveMember(context.Background(), uuid.New(), models.RemoveMemberInput{
 		Email: "someone@example.com",
 	})
 	if err == nil {

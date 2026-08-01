@@ -8,7 +8,7 @@ import (
 	"univents/models"
 )
 
-func (o *Operations) Create(ctx context.Context, payload models.CreateEventRequest) (*models.Event, error) {
+func (o *Operations) Create(ctx context.Context, payload models.CreateEventInput) (*models.Event, error) {
 	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 

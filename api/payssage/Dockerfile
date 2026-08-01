@@ -24,7 +24,7 @@ WORKDIR /app/api/payssage
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     sqlc generate && \
     oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
-    oapi-codegen --config oapi-codegen.yaml -generate chi-server -o internal/openapi/server.gen.go api-spec.yml && \
+    oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
     # generated bindings import oapi-codegen/runtime; not committed, so go mod tidy would drop it -- pin it at build time
     go get github.com/oapi-codegen/runtime@v1.6.0
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \

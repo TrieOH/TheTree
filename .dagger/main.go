@@ -132,7 +132,7 @@ func (m *Thetree) oapiGenerate(c *dagger.Container, service string) *dagger.Cont
 		fmt.Sprintf(
 			"cd api/%s && "+
 				"oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && "+
-				"oapi-codegen --config oapi-codegen.yaml -generate chi-server -o internal/openapi/server.gen.go api-spec.yml && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && "+
 				"go get github.com/oapi-codegen/runtime@v1.6.0",
 			service,
 		),

@@ -40,7 +40,7 @@ func (h *Handlers) GetEventBySlug(ctx context.Context, req openapi.GetEventBySlu
 }
 
 func (h *Handlers) CreateEvent(ctx context.Context, req openapi.CreateEventRequestObject) (openapi.CreateEventResponseObject, error) {
-	event, err := h.ops.Create(ctx, models.CreateEventRequest{
+	event, err := h.ops.Create(ctx, models.CreateEventInput{
 		FullName:     req.Body.FullName,
 		Acronym:      req.Body.Acronym,
 		Slug:         req.Body.Slug,
@@ -121,7 +121,7 @@ func (h *Handlers) ListEventMembers(ctx context.Context, req openapi.ListEventMe
 }
 
 func (h *Handlers) AddEventMember(ctx context.Context, req openapi.AddEventMemberRequestObject) (openapi.AddEventMemberResponseObject, error) {
-	member, err := h.ops.AddMember(ctx, req.EventId, models.AddEventMemberRequest{
+	member, err := h.ops.AddMember(ctx, req.EventId, models.AddEventMemberInput{
 		Email: req.Body.Email,
 		Role:  req.Body.Role,
 	})
@@ -134,7 +134,7 @@ func (h *Handlers) AddEventMember(ctx context.Context, req openapi.AddEventMembe
 }
 
 func (h *Handlers) RemoveEventMember(ctx context.Context, req openapi.RemoveEventMemberRequestObject) (openapi.RemoveEventMemberResponseObject, error) {
-	err := h.ops.RemoveMember(ctx, req.EventId, models.RemoveMemberRequest{
+	err := h.ops.RemoveMember(ctx, req.EventId, models.RemoveMemberInput{
 		Email: req.Body.Email,
 	})
 	if err != nil {

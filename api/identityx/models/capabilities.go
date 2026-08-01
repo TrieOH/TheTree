@@ -15,19 +15,6 @@ type Capability struct {
 	CreatedAt time.Time  `json:"created_at"`
 }
 
-type CreateCapabilityRequest struct {
-	Resource string `json:"resource" validate:"required,min=3"`
-	Action   string `json:"action"   validate:"required,min=3"`
-}
-
-func (r *CreateCapabilityRequest) ToInput(projectID uuid.UUID) CreateCapabilityInput {
-	return CreateCapabilityInput{
-		Resource:  r.Resource,
-		Action:    r.Action,
-		ProjectID: &projectID,
-	}
-}
-
 type CreateCapabilityInput struct {
 	Resource  string     `json:"resource"`
 	Action    string     `json:"action"`

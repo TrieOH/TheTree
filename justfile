@@ -76,7 +76,7 @@ generate-oapi +SERVICES="identityx informd payssage univents":
         go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
           --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
         go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
-          --config oapi-codegen.yaml -generate chi-server -o internal/openapi/server.gen.go api-spec.yml && \
+          --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
         go get github.com/oapi-codegen/runtime@{{oapi-runtime-version}})
     done
 

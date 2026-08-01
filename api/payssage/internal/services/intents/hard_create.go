@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (o *Operations) HardCreate(ctx context.Context, req models.HardCreateIntentRequest) (*models.Intent, error) {
+func (o *Operations) HardCreate(ctx context.Context, req models.HardCreateIntentInput) (*models.Intent, error) {
 	ctx, span := telemetry.StartSpan(ctx, "HardCreate")
 	defer span.End()
 

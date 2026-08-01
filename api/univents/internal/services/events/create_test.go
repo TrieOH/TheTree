@@ -31,7 +31,7 @@ func TestCreate_Success(t *testing.T) {
 		Sub: idx.Subject{ID: ownerID},
 	})
 
-	payload := models.CreateEventRequest{
+	payload := models.CreateEventInput{
 		FullName: "Test Event",
 		Slug:     "test-event",
 	}
@@ -74,7 +74,7 @@ func TestCreate_NoIdentity(t *testing.T) {
 
 	cmd := events.NewOperations(repo, nil, nil)
 
-	_, err := cmd.Create(context.Background(), models.CreateEventRequest{
+	_, err := cmd.Create(context.Background(), models.CreateEventInput{
 		FullName: "Test Event",
 		Slug:     "test-event",
 	})
@@ -99,7 +99,7 @@ func TestCreate_RepoCreateFails(t *testing.T) {
 		Sub: idx.Subject{ID: ownerID},
 	})
 
-	payload := models.CreateEventRequest{
+	payload := models.CreateEventInput{
 		FullName: "Test Event",
 		Slug:     "test-event",
 	}
