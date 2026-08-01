@@ -20,8 +20,10 @@ func (app *Payssage) CreateRouter(middlewares middlewares, h *handlers.Server, r
 	chains, err := resolveAuthChains(middlewares)
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
-		AppName:     app.cfg.AppName,
-		OpenAPISpec: spec.OpenAPISpec,
+		AppName:            app.cfg.AppName,
+		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
+		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, chains)
 

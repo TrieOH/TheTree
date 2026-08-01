@@ -100,6 +100,59 @@ func TestCORSHeaders(t *testing.T) {
 	}
 }
 
+// TestCORSPreflightAllowsConfiguredHeaders pins the contract the backends
+// rely on: a header configured in CorsAllowedHeaders (e.g. Refresh-Token
+// for logout/refresh) must come back in Access-Control-Allow-Headers, or
+// the browser blocks the request.
+func TestCORSPreflightAllowsConfiguredHeaders(t *testing.T) {
+	h := testRouter(t, Config{
+		CorsAllowedOrigins: "https://app.trieoh.com",
+		CorsAllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
+	})
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodOptions, "/auth/logout", nil)
+	req.Header.Set("Origin", "https://app.trieoh.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "authorization, refresh-token")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	allowed := rec.Header().Get("Access-Control-Allow-Headers")
+	for _, want := range []string{"Refresh-Token", "Authorization"} {
+		found := false
+		for _, h := range strings.Split(allowed, ",") {
+			if strings.EqualFold(strings.TrimSpace(h), want) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Access-Control-Allow-Headers %q missing %q", allowed, want)
+		}
+	}
+}
+
+// TestCORSPreflightRejectsUnconfiguredHeaders pins the failure mode the
+// backends hit before the CORS wiring landed: a requested header that is
+// not in the allowed list must not be echoed back.
+func TestCORSPreflightRejectsUnconfiguredHeaders(t *testing.T) {
+	h := testRouter(t, Config{
+		CorsAllowedOrigins: "https://app.trieoh.com",
+		CorsAllowedHeaders: "Content-Type",
+	})
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodOptions, "/auth/logout", nil)
+	req.Header.Set("Origin", "https://app.trieoh.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "refresh-token")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if got := rec.Header().Get("Access-Control-Allow-Headers"); strings.Contains(got, "Refresh-Token") {
+		t.Fatalf("Refresh-Token must not be allowed when unconfigured, got %q", got)
+	}
+}
+
 func TestRecoverReturnsError(t *testing.T) {
 	h := testRouter(t, Config{
 		Routes: func(r *chi.Mux) {

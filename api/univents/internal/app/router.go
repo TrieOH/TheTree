@@ -19,9 +19,11 @@ func (app *Univents) CreateRouter(middlewares middlewares, h *handlers.Server, r
 	chains, err := resolveAuthChains(middlewares)
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
-		AppName:         app.cfg.AppName,
-		OpenAPISpec:     spec.OpenAPISpec,
-		SkipLogPrefixes: []string{"/admin/asynq"},
+		AppName:            app.cfg.AppName,
+		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
+		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
+		SkipLogPrefixes:    []string{"/admin/asynq"},
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, chains)
 

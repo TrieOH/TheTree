@@ -6,11 +6,50 @@ import (
 	"strings"
 	"testing"
 
+	"IdentityX/internal/config"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
 	"lib/globals"
 	"lib/validator"
 )
+
+// TestCORSWiringThroughCreateRouter pins that the CORS values read from
+// env (config) actually reach the harness: a preflight requesting the
+// Refresh-Token header must be answered with it allowed, or the browser
+// blocks logout/refresh.
+func TestCORSWiringThroughCreateRouter(t *testing.T) {
+	validator.SetupValidator()
+	server := handlers.NewServer(&services.Operations{})
+	app := &IdentityX{cfg: config.Config{
+		CorsAllowedOrigins: "http://localhost:3000",
+		CorsAllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
+	}}
+	r := app.CreateRouter(middlewares{
+		jwtAuth:    mwJWT,
+		apiKeyAuth: mwJWT,
+		anyAuth:    mwAnyAuth,
+		clientOnly: mwClientOnly,
+	}, server)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/auth/logout", nil)
+	req.Header.Set("Origin", "http://localhost:3000")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "authorization, refresh-token")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	allowed := rec.Header().Get("Access-Control-Allow-Headers")
+	found := false
+	for _, h := range strings.Split(allowed, ",") {
+		if strings.EqualFold(strings.TrimSpace(h), "Refresh-Token") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Access-Control-Allow-Headers %q missing Refresh-Token — CORS config not wired to the harness", allowed)
+	}
+}
 
 func TestSwapSmokeSetupFlow(t *testing.T) {
 	validator.SetupValidator() // normally done by httpserver.SetupFUN at startup
