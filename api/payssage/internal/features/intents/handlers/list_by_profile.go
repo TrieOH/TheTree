@@ -7,7 +7,7 @@ import (
 )
 
 func (h *Handlers) ListByProfile(w http.ResponseWriter, r *http.Request) {
-	intents, err := h.queries.ListByProfile(r.Context())
+	intents, err := h.ops.ListByProfile(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

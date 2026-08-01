@@ -14,7 +14,7 @@ func (h *Handlers) OAuthConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	provider := chi.URLParam(r, "provider")
-	url, err := h.commands.OAuthConnect(r.Context(), provider)
+	url, err := h.ops.OAuthConnect(r.Context(), provider)
 	if fun.Bail(w, err) {
 		return
 	}

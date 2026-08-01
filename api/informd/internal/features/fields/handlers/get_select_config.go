@@ -31,7 +31,7 @@ func (h *Handlers) GetSelectConfig(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	config, err := h.queries.GetSelectConfig(r.Context(), formID, fieldID)
+	config, err := h.ops.GetSelectConfig(r.Context(), formID, fieldID)
 	if fun.Bail(w, err) {
 		return
 	}

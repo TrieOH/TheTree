@@ -25,7 +25,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	steps, err := h.queries.List(r.Context(), formID)
+	steps, err := h.ops.List(r.Context(), formID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -38,7 +38,7 @@ func (h *Handlers) AddFormMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.AddFormMember(r.Context(), payload.ToNamespaceInput(namespaceID, formID))
+	err = h.ops.AddFormMember(r.Context(), payload.ToNamespaceInput(namespaceID, formID))
 	if fun.Bail(w, err) {
 		return
 	}

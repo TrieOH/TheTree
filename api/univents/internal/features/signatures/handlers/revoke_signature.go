@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) RevokeSignature(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) RevokeSignature(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	token, err := req.Query("token").StringRequired()
 	if fun.Bail(w, err) {
 		return
 	}
-	err = handler.commands.RevokeSignature(r.Context(), token)
+	err = h.ops.RevokeSignature(r.Context(), token)
 	if fun.Bail(w, err) {
 		return
 	}

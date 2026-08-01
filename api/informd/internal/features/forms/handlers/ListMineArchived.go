@@ -20,7 +20,7 @@ import (
 // @Failure 500 {object} fun.Response
 // @Router /forms/archived [get]
 func (h *Handlers) ListMineArchived(w http.ResponseWriter, r *http.Request) {
-	forms, err := h.queries.ListArchivedForms(r.Context())
+	forms, err := h.ops.ListArchivedForms(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

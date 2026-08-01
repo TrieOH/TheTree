@@ -2,22 +2,17 @@ package handlers
 
 import (
 	"net/http"
-
-	"payssage/internal/features/webhook_deliveries/queries"
+	"payssage/internal/features/webhook_deliveries"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	queries *queries.Queries
+	ops *webhook_deliveries.Operations
 }
 
-func NewHandlers(
-	queries *queries.Queries,
-) *Handlers {
-	return &Handlers{
-		queries: queries,
-	}
+func NewHandlers(ops *webhook_deliveries.Operations) *Handlers {
+	return &Handlers{ops: ops}
 }
 
 func RegisterRoutes(

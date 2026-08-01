@@ -21,7 +21,7 @@ func (h *Handlers) GetProfile(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	profile, err := h.queries.GetProfile(r.Context(), actorID, projectID)
+	profile, err := h.ops.GetProfile(r.Context(), actorID, projectID)
 	if fun.Bail(w, err) {
 		return
 	}

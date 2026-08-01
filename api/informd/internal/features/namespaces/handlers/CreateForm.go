@@ -34,7 +34,7 @@ func (h *Handlers) CreateForm(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	form, err := h.commands.CreateForm(r.Context(), payload.Title, namespaceID)
+	form, err := h.ops.CreateForm(r.Context(), payload.Title, namespaceID)
 	if fun.Bail(w, err) {
 		return
 	}

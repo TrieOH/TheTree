@@ -21,7 +21,7 @@ func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err := h.commands.Register(r.Context(), payload.ToInput(projectID.ProjectID))
+	err := h.ops.Register(r.Context(), payload.ToInput(projectID.ProjectID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -1,26 +1,19 @@
 package handlers
 
 import (
+	"Informd/internal/features/namespaces"
 	"net/http"
-
-	"Informd/internal/features/namespaces/commands"
-	"Informd/internal/features/namespaces/queries"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
-	queries  *queries.Queries
+	ops *namespaces.Operations
 }
 
-func NewHandler(
-	commands *commands.Commands,
-	queries *queries.Queries,
-) *Handlers {
+func NewHandler(ops *namespaces.Operations) *Handlers {
 	return &Handlers{
-		commands: commands,
-		queries:  queries,
+		ops: ops,
 	}
 }
 

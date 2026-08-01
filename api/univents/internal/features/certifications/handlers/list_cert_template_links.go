@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) ListCertTemplateLinks(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) ListCertTemplateLinks(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	templateID, err := req.Path("template_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	links, err := handler.queries.ListCertTemplateLinks(r.Context(), templateID)
+	links, err := h.ops.ListCertTemplateLinks(r.Context(), templateID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -21,7 +21,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	tokens, err := h.commands.Login(r.Context(), payload.ToInput(projectID.ProjectID))
+	tokens, err := h.ops.Login(r.Context(), payload.ToInput(projectID.ProjectID))
 	if fun.Bail(w, err) {
 		return
 	}

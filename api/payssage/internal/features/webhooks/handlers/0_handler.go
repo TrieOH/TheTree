@@ -1,21 +1,17 @@
 package handlers
 
 import (
-	"payssage/internal/features/webhooks/commands"
+	"payssage/internal/features/webhooks"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
+	ops *webhooks.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-) *Handlers {
-	return &Handlers{
-		commands: commands,
-	}
+func NewHandlers(ops *webhooks.Operations) *Handlers {
+	return &Handlers{ops: ops}
 }
 
 func RegisterRoutes(

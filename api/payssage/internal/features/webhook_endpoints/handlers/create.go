@@ -17,7 +17,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if fun.BailInto(w, req, &payload) {
 		return
 	}
-	endpoint, err := h.commands.Create(r.Context(), payload.ToInput(walletID))
+	endpoint, err := h.ops.Create(r.Context(), payload.ToInput(walletID))
 	if fun.Bail(w, err) {
 		return
 	}

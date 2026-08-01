@@ -12,7 +12,7 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	err = h.commands.Delete(r.Context(), endpointID)
+	err = h.ops.Delete(r.Context(), endpointID)
 	if fun.Bail(w, err) {
 		return
 	}

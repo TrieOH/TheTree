@@ -31,7 +31,7 @@ func (h *Handlers) Submit(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.Submit(r.Context(), payload.ToInput(formID))
+	err = h.ops.Submit(r.Context(), payload.ToInput(formID))
 	if fun.Bail(w, err) {
 		return
 	}

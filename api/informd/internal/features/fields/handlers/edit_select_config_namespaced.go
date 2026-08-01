@@ -45,7 +45,7 @@ func (h *Handlers) EditSelectConfigNamespaced(w http.ResponseWriter, r *http.Req
 		return
 	}
 	payload.FieldID = fieldID
-	config, err := h.commands.EditSelectConfigNamespaced(r.Context(), formID, namespaceID, payload)
+	config, err := h.ops.EditSelectConfigNamespaced(r.Context(), formID, namespaceID, payload)
 	if fun.Bail(w, err) {
 		return
 	}

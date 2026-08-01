@@ -8,13 +8,13 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (handler *Handlers) Create(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	var payload models.CreateEventRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	event, err := handler.commands.Create(r.Context(), payload)
+	event, err := h.ops.Create(r.Context(), payload)
 	if fun.Bail(w, err) {
 		return
 	}

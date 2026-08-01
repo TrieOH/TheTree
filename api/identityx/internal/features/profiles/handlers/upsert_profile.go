@@ -27,7 +27,7 @@ func (h *Handlers) UpsertProfile(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	profile, err := h.commands.UpsertProfile(r.Context(), payload.ToInput(actorID), projectID)
+	profile, err := h.ops.UpsertProfile(r.Context(), payload.ToInput(actorID), projectID)
 	if fun.Bail(w, err) {
 		return
 	}

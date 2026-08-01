@@ -36,7 +36,7 @@ func (h *Handlers) BulkEditSteps(w http.ResponseWriter, r *http.Request) {
 	inputs := xslices.MapSlice(payload, func(s models.UpdateStepRequest) models.UpdateFormStepInput {
 		return s.ToFormInput(formID)
 	})
-	err = h.commands.BulkEdit(r.Context(), formID, inputs)
+	err = h.ops.BulkEdit(r.Context(), formID, inputs)
 	if fun.Bail(w, err) {
 		return
 	}

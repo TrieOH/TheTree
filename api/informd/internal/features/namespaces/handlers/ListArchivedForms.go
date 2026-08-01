@@ -25,7 +25,7 @@ func (h *Handlers) ListArchivedForms(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	forms, err := h.queries.ListArchivedForms(r.Context(), namespaceID)
+	forms, err := h.ops.ListArchivedForms(r.Context(), namespaceID)
 	if fun.Bail(w, err) {
 		return
 	}

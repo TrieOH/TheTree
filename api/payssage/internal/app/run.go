@@ -51,10 +51,10 @@ func (app *Payssage) run() {
 		loggr.Fatal("failed to start river ui handler", zap.Error(err))
 	}
 
-	queries := app.initQueries(repos)
-	commands := app.initCommands(riverClient, repos)
+	ops := app.initOperations(riverClient, repos)
+
 	middlewares := app.initMiddlewares()
-	handlers := app.initHandlers(commands, queries)
+	handlers := app.initHandlers(ops)
 
 	mux := app.CreateRouter(handlers, middlewares, riverUIHandler)
 	httpserver.Start(mux, httpserver.Config{

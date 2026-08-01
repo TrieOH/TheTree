@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) GetTemplateByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetTemplateByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	id, err := req.Path("template_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	template, err := handler.queries.GetTemplateByID(r.Context(), id)
+	template, err := h.ops.GetTemplateByID(r.Context(), id)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -17,7 +17,7 @@ func (h *Handlers) ListProjects(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	projects, err := h.queries.ListOrgProjects(r.Context(), orgID)
+	projects, err := h.ops.ListOrgProjects(r.Context(), orgID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -20,7 +20,7 @@ import (
 // @Failure 503 {object} fun.Response "Internal Server Error"
 // @Router /wallets [get]
 func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
-	wallet, err := h.queries.List(r.Context())
+	wallet, err := h.ops.List(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

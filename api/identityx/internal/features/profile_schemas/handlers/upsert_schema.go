@@ -28,7 +28,7 @@ func (h *Handlers) UpsertSchema(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schema, err := h.commands.UpsertSchema(r.Context(), payload.ToInput(projectID))
+	schema, err := h.ops.UpsertSchema(r.Context(), payload.ToInput(projectID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -2,22 +2,17 @@ package handlers
 
 import (
 	"net/http"
-
-	"payssage/internal/features/oauth/commands"
+	"payssage/internal/features/oauth"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
+	ops *oauth.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-) *Handlers {
-	return &Handlers{
-		commands: commands,
-	}
+func NewHandlers(ops *oauth.Operations) *Handlers {
+	return &Handlers{ops: ops}
 }
 
 func RegisterRoutes(

@@ -33,7 +33,7 @@ func (h *Handlers) Close(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.CloseForm(r.Context(), namespaceID, formID)
+	form, err := h.ops.CloseForm(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

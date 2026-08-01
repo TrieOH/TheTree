@@ -43,7 +43,7 @@ func (h *Handlers) CreateNamespacedField(w http.ResponseWriter, r *http.Request)
 	if fun.BailInto(w, req, &payload) {
 		return
 	}
-	field, err := h.commands.CreateNamespaced(r.Context(), payload.ToNamespacedStepInput(namespaceID, formID, stepID))
+	field, err := h.ops.CreateNamespaced(r.Context(), payload.ToNamespacedStepInput(namespaceID, formID, stepID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -25,7 +25,7 @@ func (h *Handlers) ListFromOrg(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	wallet, err := h.queries.ListFromOrg(r.Context(), orgID)
+	wallet, err := h.ops.ListFromOrg(r.Context(), orgID)
 	if fun.Bail(w, err) {
 		return
 	}

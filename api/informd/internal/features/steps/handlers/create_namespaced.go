@@ -38,7 +38,7 @@ func (h *Handlers) CreateNamespacedStep(w http.ResponseWriter, r *http.Request) 
 	if fun.BailInto(w, req, &payload) {
 		return
 	}
-	step, err := h.commands.CreateNamespaced(r.Context(), payload.ToNamespacedFormInput(namespaceID, formID))
+	step, err := h.ops.CreateNamespaced(r.Context(), payload.ToNamespacedFormInput(namespaceID, formID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	editionID, err := req.Path("edition_id").UUID()
 	if fun.Bail(w, err) {
@@ -22,7 +22,7 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 
 	input := payload.ToInput(editionID)
 
-	template, err := h.commands.CreateTemplate(r.Context(), input)
+	template, err := h.ops.CreateTemplate(r.Context(), input)
 	if fun.Bail(w, err) {
 		return
 	}

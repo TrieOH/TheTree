@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) GetActive(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetActive(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	eventID, err := req.Path("event_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	edition, err := handler.queries.GetActive(r.Context(), eventID)
+	edition, err := h.ops.GetActive(r.Context(), eventID)
 	if fun.Bail(w, err) {
 		return
 	}

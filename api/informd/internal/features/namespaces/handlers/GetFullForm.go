@@ -32,7 +32,7 @@ func (h *Handlers) GetFullFormNamespaced(w http.ResponseWriter, r *http.Request)
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.queries.GetFullForm(r.Context(), namespaceID, formID)
+	form, err := h.ops.GetFullForm(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

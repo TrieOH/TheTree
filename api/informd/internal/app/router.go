@@ -1,11 +1,11 @@
 package app
 
 import (
-	"Informd/internal/features/fields"
-	"Informd/internal/features/forms"
-	"Informd/internal/features/namespaces"
-	"Informd/internal/features/responses"
-	"Informd/internal/features/steps"
+	fieldsHandlers "Informd/internal/features/fields/handlers"
+	formsHandlers "Informd/internal/features/forms/handlers"
+	namespacesHandlers "Informd/internal/features/namespaces/handlers"
+	responsesHandlers "Informd/internal/features/responses/handlers"
+	stepsHandlers "Informd/internal/features/steps/handlers"
 	"net/http"
 
 	"lib/httpserver"
@@ -17,11 +17,11 @@ func (app *Informd) CreateRouter(handlers handlers, middlewares middlewares) htt
 	return httpserver.NewRouter(httpserver.Config{
 		AppName: app.cfg.AppName,
 		Routes: func(r *chi.Mux) {
-			namespaces.RegisterRoutes(r, handlers.namespaces, middlewares.jwt)
-			forms.RegisterRoutes(r, handlers.forms, middlewares.anyAuth)
-			steps.RegisterRoutes(r, handlers.steps, middlewares.anyAuth)
-			fields.RegisterRoutes(r, handlers.fields, middlewares.anyAuth)
-			responses.RegisterRoutes(r, handlers.responses)
+			namespacesHandlers.RegisterRoutes(r, handlers.namespaces, middlewares.jwt)
+			formsHandlers.RegisterRoutes(r, handlers.forms, middlewares.anyAuth)
+			stepsHandlers.RegisterRoutes(r, handlers.steps, middlewares.anyAuth)
+			fieldsHandlers.RegisterRoutes(r, handlers.fields, middlewares.anyAuth)
+			responsesHandlers.RegisterRoutes(r, handlers.responses)
 		},
 	})
 }

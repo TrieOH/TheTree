@@ -33,7 +33,7 @@ func (h *Handlers) ResponseCount(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	count, err := h.queries.GetFormResponseCount(r.Context(), namespaceID, formID)
+	count, err := h.ops.GetFormResponseCount(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

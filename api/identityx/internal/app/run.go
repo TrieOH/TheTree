@@ -12,9 +12,8 @@ func (app *IdentityX) run() {
 	database.SetDefaultRunner(tx)
 
 	repos := app.initRepos(q)
-	queries := app.initQueries(repos)
-	commands := app.initCommands(repos)
-	handlers := app.initHandlers(queries, commands)
+	ops := app.initOperations(repos)
+	handlers := app.initHandlers(ops)
 	middlewares := app.initMiddlewares(repos)
 
 	mux := app.CreateRouter(middlewares, handlers)

@@ -29,7 +29,7 @@ func (h *Handlers) GetMemberByEmail(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.GetMemberByEmail(r.Context(), memberEmail, orgID)
+	members, err := h.ops.GetMemberByEmail(r.Context(), memberEmail, orgID)
 	if fun.Bail(w, err) {
 		return
 	}

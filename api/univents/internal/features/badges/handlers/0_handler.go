@@ -2,25 +2,20 @@ package handlers
 
 import (
 	"net/http"
-	"univents/internal/features/badges/commands"
-	"univents/internal/features/badges/queries"
+	"univents/internal/features/badges"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct {
-	commands *commands.Commands
-	queries  *queries.Queries
+type Handlers struct {
+	ops *badges.Operations
 }
 
-func NewHandler(commands *commands.Commands, queries *queries.Queries) *Handler {
-	return &Handler{
-		commands: commands,
-		queries:  queries,
-	}
+func NewHandler(ops *badges.Operations) *Handlers {
+	return &Handlers{ops: ops}
 }
 
-func RegisterRoutes(r *chi.Mux, h *Handler, jwt func(http.Handler) http.Handler) {
+func RegisterRoutes(r *chi.Mux, h *Handlers, jwt func(http.Handler) http.Handler) {
 	r.Route("/editions/{edition_id}/badges", func(r chi.Router) {
 		r.Use(jwt)
 		r.Post("/", h.CreateTemplate)
