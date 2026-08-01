@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 )
@@ -16,25 +17,12 @@ func (c *Commands) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput)
 		return err
 	}
 
-	var org *models.Organization
-	if payload.OrganizationID != nil {
-		org, err = c.orgs.GetByID(ctx, *payload.OrganizationID)
-		if err != nil {
-			return err
-		}
-
-		err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
-		if err != nil {
-			return err
-		}
-	}
-
 	wallet, err := c.wallets.GetByID(ctx, payload.WalletID)
 	if err != nil {
 		return err
 	}
 
-	err = c.checkWalletAccess(wallet, ident.Sub.ID, org)
+	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

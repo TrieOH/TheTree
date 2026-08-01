@@ -39,6 +39,7 @@ func RegisterRoutes(
 		r.Post("/namespaces/{namespace_id}/forms", h.CreateForm)
 		r.Get("/namespaces/{namespace_id}/forms", h.ListForms)
 		r.Get("/namespaces/{namespace_id}/forms/archived", h.ListArchivedForms)
+		// TODO: kill these duplicated namespaced routes — CheckForm already anchors via the form's namespace.
 		r.Get("/namespaces/{namespace_id}/forms/{form_id}/full", h.GetFullFormNamespaced)
 		r.Get("/namespaces/{namespace_id}/forms/{form_id}/members", h.ListFormMembers)
 		r.Post("/namespaces/{namespace_id}/forms/{form_id}/members", h.AddFormMember)

@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -36,17 +37,9 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrgani
 		return fun.ErrBadRequest("cannot remove the owner of the organization")
 	}
 
-	if ident.Sub.ID != org.OwnerID {
-		member, err := c.orgs.GetMember(ctx, ident.Sub.ID, payload.OrganizationID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.OrganizationRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = c.orgs.GetMember(ctx, actor.ID, org.ID)

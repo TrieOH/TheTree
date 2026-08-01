@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -22,8 +23,7 @@ func (q *Queries) ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models.Wa
 	if err != nil {
 		return nil, err
 	}
-
-	err = q.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleMember)
+	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

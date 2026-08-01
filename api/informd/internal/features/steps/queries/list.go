@@ -4,10 +4,10 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -20,12 +20,9 @@ func (s *Queries) List(ctx context.Context, formID uuid.UUID) ([]models.Step, er
 		return nil, err
 	}
 
-	_, err = s.forms.GetMember(ctx, ident.Sub.ID, formID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
+	if err != nil {
 		return nil, err
-	}
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return s.steps.List(ctx, formID)

@@ -4,14 +4,15 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
-func (q *Queries) GetFullForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.FullForm, error) {
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+func (q *Queries) GetFullForm(ctx context.Context, _, formID uuid.UUID) (*models.FullForm, error) {
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.GetFullForm")
 	defer span.End()
 
@@ -20,7 +21,7 @@ func (q *Queries) GetFullForm(ctx context.Context, namespaceID, formID uuid.UUID
 		return nil, err
 	}
 
-	namespace, err := q.namespaces.GetByID(ctx, namespaceID)
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
 	if err != nil {
 		return nil, err
 	}
@@ -28,22 +29,6 @@ func (q *Queries) GetFullForm(ctx context.Context, namespaceID, formID uuid.UUID
 	form, err := q.forms.GetByID(ctx, formID)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != namespace.OwnerID {
-		_, err = q.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return nil, err
-		}
-		if err != nil {
-			_, err = q.forms.GetMember(ctx, ident.Sub.ID, formID)
-			if err != nil && !fun.Is(err, fun.CodeNotFound) {
-				return nil, err
-			}
-			if err != nil {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-		}
 	}
 
 	steps, err := q.steps.List(ctx, formID)

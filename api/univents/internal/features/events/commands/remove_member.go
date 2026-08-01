@@ -4,9 +4,9 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -24,14 +24,9 @@ func (c *Commands) RemoveMember(ctx context.Context, eventID uuid.UUID, payload 
 		return err
 	}
 
-	if event.OwnerID != ident.Sub.ID {
-		member, err := c.events.GetMember(ctx, event.ID, ident.Sub.ID)
-		if err != nil {
-			return err
-		}
-		if member.Role != models.EventMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	actor, err := c.idx.Actors.GetByEmail(ctx, payload.Email)

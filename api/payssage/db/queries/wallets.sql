@@ -8,6 +8,12 @@ SELECT *
 FROM wallets
 WHERE id = @id;
 
+-- name: GetWalletRole :one
+SELECT 'owner'::text AS role
+FROM wallets
+WHERE id = @id
+  AND owner_id = @actor_id;
+
 -- name: ListWallets :many
 SELECT *
 FROM wallets

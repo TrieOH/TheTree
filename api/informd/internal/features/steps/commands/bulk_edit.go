@@ -4,6 +4,7 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 	"lib/xslices"
@@ -21,12 +22,9 @@ func (s *Command) BulkEdit(ctx context.Context, formID uuid.UUID, payload []mode
 		return err
 	}
 
-	member, err := s.forms.GetMember(ctx, ident.Sub.ID, formID)
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
-	}
-	if member.Role == models.FormMemberRoleViewer {
-		return fun.ErrForbidden("insufficient permissions")
 	}
 
 	for _, p := range payload {

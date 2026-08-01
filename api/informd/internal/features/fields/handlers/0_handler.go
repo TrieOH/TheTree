@@ -38,6 +38,7 @@ func RegisterRoutes(
 		r.Delete("/forms/{form_id}/steps/{step_id}/fields/{field_id}", h.DeleteField)
 		r.Put("/forms/{form_id}/steps/{step_id}/fields/{field_id}/select", h.EditSelectConfig)
 
+		// TODO: kill these duplicated namespaced routes — CheckForm already anchors via the form's namespace.
 		r.Post("/namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields", h.CreateNamespacedField)
 		r.Put("/namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields", h.BulkEditNamespacedFields)
 		r.Get("/namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields", h.ListNamespaced)

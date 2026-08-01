@@ -1,6 +1,7 @@
 package app
 
 import (
+	"Informd/internal/authz"
 	"Informd/internal/features/answers"
 	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
@@ -74,7 +75,7 @@ type middlewares struct {
 // ── Init functions ────────────────────────────────────────────────────────
 
 func (app *Informd) initRepos(q *sqlc.Queries) repos {
-	return repos{
+	r := repos{
 		namespaces: namespaces.NewRepo(q),
 		forms:      forms.NewRepo(q),
 		steps:      steps.NewRepo(q),
@@ -83,6 +84,8 @@ func (app *Informd) initRepos(q *sqlc.Queries) repos {
 		responders: responders.NewRepo(q),
 		responses:  responses.NewRepo(q),
 	}
+	authz.Service = authz.New(r.forms, r.namespaces)
+	return r
 }
 
 func (app *Informd) initQueries(r repos) queries {

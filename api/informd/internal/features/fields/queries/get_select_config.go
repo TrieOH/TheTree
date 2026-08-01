@@ -5,9 +5,9 @@ import (
 	"lib/telemetry"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -20,12 +20,9 @@ func (s *Queries) GetSelectConfig(ctx context.Context, formID, fieldID uuid.UUID
 		return nil, err
 	}
 
-	_, err = s.forms.GetMember(ctx, ident.Sub.ID, formID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
+	if err != nil {
 		return nil, err
-	}
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return s.fields.GetSelectConfig(ctx, fieldID)

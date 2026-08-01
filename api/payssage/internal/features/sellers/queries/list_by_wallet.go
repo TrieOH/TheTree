@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -23,24 +24,10 @@ func (q *Queries) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]model
 		return nil, err
 	}
 
-	if wallet.OwnerID == ident.Sub.ID {
-		return q.sellers.ListByWallet(ctx, wallet.ID)
+	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleMember)
+	if err != nil {
+		return nil, err
 	}
 
-	if wallet.OrganizationID != nil {
-		org, err := q.orgs.GetByID(ctx, *wallet.OrganizationID)
-		if err != nil {
-			return nil, err
-		}
-		if org.OwnerID == ident.Sub.ID {
-			return q.sellers.ListByWallet(ctx, wallet.ID)
-		}
-		_, err = q.orgs.GetMember(ctx, ident.Sub.ID, org.ID)
-		if err != nil {
-			return nil, err
-		}
-		return q.sellers.ListByWallet(ctx, wallet.ID)
-	}
-
-	return nil, nil
+	return q.sellers.ListByWallet(ctx, wallet.ID)
 }

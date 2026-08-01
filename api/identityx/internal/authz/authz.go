@@ -5,6 +5,8 @@ import (
 	"IdentityX/ports"
 	"context"
 
+	libauthz "lib/authz"
+
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
@@ -19,83 +21,34 @@ func New(orgs ports.OrganizationRepo, projects ports.ProjectRepo) *Service {
 }
 
 func (s *Service) CheckProject(ctx context.Context, userID, projectID uuid.UUID, orgID *uuid.UUID, minRole models.ProjectRole) error {
+	// TODO: investigate collapsing the org-scope into the project check —
+	// the project knows its own organization, so the orgID param and the
+	// four org-scoped call sites could go the way of informd's CheckForm.
 	if orgID != nil {
-		err := s.checkProjectOrgAccess(ctx, userID, projectID, *orgID)
+		project, err := s.projects.GetByID(ctx, projectID)
+		if err != nil {
+			return err
+		}
+		if project.OrganizationID == nil || *project.OrganizationID != *orgID {
+			return fun.ErrForbidden("insufficient permissions")
+		}
+		err = s.CheckOrg(ctx, userID, *orgID, models.OrganizationRoleMember)
 		if err != nil {
 			return err
 		}
 	}
 
-	return s.checkProjectAccess(ctx, userID, projectID, minRole)
-}
-
-func (s *Service) checkProjectOrgAccess(ctx context.Context, userID, projectID, orgID uuid.UUID) error {
-	project, err := s.projects.GetByID(ctx, projectID)
+	role, err := s.projects.GetRole(ctx, userID, projectID)
 	if err != nil {
-		return err
+		return libauthz.ForbiddenIfNotFound(err)
 	}
-	if project.OrganizationID == nil || *project.OrganizationID != orgID {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-
-	org, err := s.orgs.GetByID(ctx, orgID)
-	if err != nil {
-		return err
-	}
-	if userID == org.OwnerID {
-		return nil
-	}
-
-	_, err = s.orgs.GetMember(ctx, userID, orgID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
-		return err
-	}
-	if err == nil {
-		return nil
-	}
-	return nil
-}
-
-func (s *Service) checkProjectAccess(ctx context.Context, userID, projectID uuid.UUID, minRole models.ProjectRole) error {
-	project, err := s.projects.GetByID(ctx, projectID)
-	if err != nil {
-		return err
-	}
-	if userID == project.OwnerID {
-		return nil
-	}
-
-	member, err := s.projects.GetMember(ctx, userID, projectID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
-		return err
-	}
-	if err != nil {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-	if !member.Role.Minimum(minRole) {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-	return nil
+	return libauthz.Min(role, minRole)
 }
 
 func (s *Service) CheckOrg(ctx context.Context, userID, orgID uuid.UUID, minRole models.OrganizationRole) error {
-	org, err := s.orgs.GetByID(ctx, orgID)
+	role, err := s.orgs.GetRole(ctx, userID, orgID)
 	if err != nil {
-		return err
+		return libauthz.ForbiddenIfNotFound(err)
 	}
-	if userID == org.OwnerID {
-		return nil
-	}
-
-	member, err := s.orgs.GetMember(ctx, userID, orgID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
-		return err
-	}
-	if err != nil {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-	if !member.Role.Minimum(minRole) {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-	return nil
+	return libauthz.Min(role, minRole)
 }

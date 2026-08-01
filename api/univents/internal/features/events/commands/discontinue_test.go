@@ -8,6 +8,7 @@ import (
 	"github.com/ovechkin-dm/mockio/mock"
 
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/internal/features/events/commands"
 	"univents/models"
 	"univents/ports"
@@ -17,6 +18,7 @@ func TestDiscontinue_OwnerCanDiscontinueActive(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authz.Service = authz.New(repo)
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -34,6 +36,8 @@ func TestDiscontinue_OwnerCanDiscontinueActive(t *testing.T) {
 	}
 
 	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(event, nil)
+	mock.When(repo.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
+		ThenReturn(models.EventMemberRoleOwner, nil)
 	mock.When(repo.Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 
 	err := cmd.Discontinue(ctx, eventID)
@@ -48,6 +52,7 @@ func TestDiscontinue_AdminCanDiscontinueActive(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authz.Service = authz.New(repo)
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -66,8 +71,8 @@ func TestDiscontinue_AdminCanDiscontinueActive(t *testing.T) {
 	}
 
 	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(event, nil)
-	mock.When(repo.GetMember(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
-		ThenReturn(&models.EventMember{Role: models.EventMemberRoleAdmin}, nil)
+	mock.When(repo.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
+		ThenReturn(models.EventMemberRoleAdmin, nil)
 	mock.When(repo.Discontinue(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 
 	err := cmd.Discontinue(ctx, eventID)
@@ -112,6 +117,7 @@ func TestDiscontinue_StaffForbidden(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authz.Service = authz.New(repo)
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
@@ -130,8 +136,8 @@ func TestDiscontinue_StaffForbidden(t *testing.T) {
 	}
 
 	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(event, nil)
-	mock.When(repo.GetMember(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
-		ThenReturn(&models.EventMember{Role: models.EventMemberRoleStaff}, nil)
+	mock.When(repo.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
+		ThenReturn(models.EventMemberRoleStaff, nil)
 
 	err := cmd.Discontinue(ctx, eventID)
 	if err == nil {

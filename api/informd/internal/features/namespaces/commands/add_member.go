@@ -5,6 +5,7 @@ import (
 	idx "sdk/identityx"
 	"time"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -33,17 +34,9 @@ func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMem
 		return fun.ErrBadRequest("owners can't be added to namespaces they own")
 	}
 
-	if ident.Sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, payload.NamespaceID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.NamespaceMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = s.namespaces.GetMember(ctx, payload.UserID, namespace.ID)

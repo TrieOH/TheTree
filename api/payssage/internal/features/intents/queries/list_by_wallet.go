@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -17,8 +18,7 @@ func (q *Queries) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]model
 	if err != nil {
 		return nil, err
 	}
-
-	err = q.checkWalletAccess(ctx, walletID, ident.Sub.ID)
+	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, walletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

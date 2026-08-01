@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -29,7 +30,7 @@ func (c *Commands) BindCollector(ctx context.Context, walletID, collectorID uuid
 		if err != nil {
 			return err
 		}
-		err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
+		err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 		if err != nil {
 			return err
 		}

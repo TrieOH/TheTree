@@ -4,12 +4,14 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (s *Commands) RemoveFormMember(ctx context.Context, payload models.RemoveNamespaceFormMemberInput) error {
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.RemoveFormMember")
 	defer span.End()
@@ -32,17 +34,9 @@ func (s *Commands) RemoveFormMember(ctx context.Context, payload models.RemoveNa
 		return fun.ErrBadRequest("cannot remove owner of the namespace from form")
 	}
 
-	if ident.Sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
-		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.NamespaceMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	_, err = s.namespaces.GetMember(ctx, payload.UserID, namespace.ID)

@@ -3,6 +3,8 @@ package commands
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/internal/authz"
+	"payssage/models"
 	idx "sdk/identityx"
 
 	"github.com/google/uuid"
@@ -21,8 +23,7 @@ func (c *Commands) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-
-	err = c.checkWalletAccess(ctx, endpoint.WalletID, ident.Sub.ID)
+	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, endpoint.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return err
 	}

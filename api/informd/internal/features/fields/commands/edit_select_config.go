@@ -5,9 +5,9 @@ import (
 	"lib/telemetry"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -20,12 +20,9 @@ func (s *Command) EditSelectConfig(ctx context.Context, formID uuid.UUID, payloa
 		return nil, err
 	}
 
-	member, err := s.forms.GetMember(ctx, ident.Sub.ID, formID)
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
-	}
-	if member.Role == models.FormMemberRoleViewer {
-		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return s.fields.UpdateSelectConfig(ctx, payload)

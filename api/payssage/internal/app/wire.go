@@ -5,6 +5,7 @@ import (
 	"lib/telemetry"
 	"lib/xslices"
 	"net/http"
+	"payssage/internal/authz"
 	"payssage/internal/features/collectors"
 	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
@@ -86,7 +87,7 @@ type handlers struct {
 // ── Init functions ────────────────────────────────────────────────────────
 
 func (app *Payssage) initRepos(q *sqlc.Queries) repos {
-	return repos{
+	r := repos{
 		orgs:       orgs.NewRepos(q),
 		wallets:    wallets.NewRepos(q),
 		oauth:      oauth.NewRepos(q),
@@ -97,6 +98,8 @@ func (app *Payssage) initRepos(q *sqlc.Queries) repos {
 		deliveries: webhook_deliveries.NewRepos(q),
 		events:     webhook_events.NewRepos(q),
 	}
+	authz.Service = authz.New(r.orgs, r.wallets)
+	return r
 }
 
 func (app *Payssage) initProviders(r repos) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -19,17 +20,9 @@ func (q *Queries) ListMembers(ctx context.Context, namespaceID uuid.UUID) (membe
 		return nil, err
 	}
 
-	var namespace *models.Namespace
-	namespace, err = q.namespaces.GetByID(ctx, namespaceID)
+	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleMember)
 	if err != nil {
 		return nil, err
-	}
-
-	if ident.Sub.ID != namespace.OwnerID {
-		_, err = q.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	members, err = q.namespaces.ListMembers(ctx, namespaceID)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -28,14 +29,9 @@ func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
 		return fun.ErrBadRequest("cannot publish non draft event")
 	}
 
-	if event.OwnerID != ident.Sub.ID {
-		member, err := c.events.GetMember(ctx, event.ID, ident.Sub.ID)
-		if err != nil {
-			return err
-		}
-		if member.Role != models.EventMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	if err != nil {
+		return err
 	}
 
 	return c.events.Publish(ctx, eventID)

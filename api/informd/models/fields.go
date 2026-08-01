@@ -63,6 +63,7 @@ type Field struct {
 	UpdatedAt    time.Time        `json:"updated_at"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewField(
 	stepID uuid.UUID,
 	key, title string,
@@ -84,7 +85,11 @@ func NewField(
 		DefaultValue: defaultValue,
 		Config:       config,
 	}
-	return f, validate.Struct(f)
+	err := validate.Struct(f)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 type FieldSelectConfig struct {
@@ -94,6 +99,7 @@ type FieldSelectConfig struct {
 	Options   json.RawMessage `json:"options"    validate:"required"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewFieldSelectConfig(
 	fieldID uuid.UUID,
 	behaviour SelectBehaviour,
@@ -106,7 +112,11 @@ func NewFieldSelectConfig(
 		ValueType: valueType,
 		Options:   options,
 	}
-	return c, validate.Struct(c)
+	err := validate.Struct(c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // CreateFieldRequest is the HTTP request body for creating a field.
@@ -181,6 +191,7 @@ type CreateStepFieldInput struct {
 }
 
 type CreateNamespacedStepFieldInput struct {
+	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 	NamespaceID  uuid.UUID
 	FormID       uuid.UUID
 	StepID       uuid.UUID
@@ -262,6 +273,7 @@ type UpdateStepFieldInput struct {
 }
 
 type UpdateNamespacedStepFieldInput struct {
+	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 	NamespaceID  uuid.UUID
 	FormID       uuid.UUID
 	StepID       uuid.UUID

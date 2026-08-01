@@ -4,6 +4,7 @@ import (
 	"context"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -11,16 +12,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (s *Commands) ArchiveForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.ArchiveForm")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	namespace, err := s.namespaces.GetByID(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -34,17 +31,9 @@ func (s *Commands) ArchiveForm(ctx context.Context, namespaceID, formID uuid.UUI
 		return nil, fun.ErrBadRequest("cannot archive a form not on closed")
 	}
 
-	if ident.Sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return nil, err
-		}
-		if err != nil {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.NamespaceMemberRoleAdmin {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
+	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
+	if err != nil {
+		return nil, err
 	}
 
 	return s.forms.Close(ctx, form.ID)

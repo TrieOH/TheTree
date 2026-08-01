@@ -6,11 +6,11 @@ import (
 	"lib/telemetry"
 	idx "sdk/identityx"
 
+	"Informd/internal/authz"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
 )
 
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
 func (s *Command) CreateNamespaced(ctx context.Context, payload models.CreateNamespacedStepFieldInput) (*models.Field, error) {
 	ctx, span := telemetry.StartSpan(ctx, "FieldService.CreateNamespaced")
 	defer span.End()
@@ -20,23 +20,9 @@ func (s *Command) CreateNamespaced(ctx context.Context, payload models.CreateNam
 		return nil, err
 	}
 
-	namespaceMember, err := s.namespaces.GetMember(ctx, ident.Sub.ID, payload.NamespaceID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	err = authz.Service.CheckForm(ctx, ident.Sub.ID, payload.FormID, models.FormMemberRoleAdmin)
+	if err != nil {
 		return nil, err
-	}
-	if fun.Is(err, fun.CodeNotFound) {
-		if namespaceMember.Role == models.NamespaceMemberRoleViewer {
-			member, err := s.forms.GetMember(ctx, ident.Sub.ID, payload.FormID)
-			if err != nil && !fun.Is(err, fun.CodeNotFound) {
-				return nil, err
-			}
-			if err != nil {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-			if member.Role == models.FormMemberRoleViewer {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-		}
 	}
 
 	field, err := models.NewField(

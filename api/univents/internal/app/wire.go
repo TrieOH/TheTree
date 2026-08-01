@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"univents/internal/authz"
 	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
@@ -93,7 +94,7 @@ func (app *Univents) initRepos() repos {
 	q := sqlc.New(app.db)
 	programsRepo := programs.NewRepos(q)
 	sigRepo := signatures.NewRepos(q)
-	return repos{
+	r := repos{
 		events:            events.NewRepos(q),
 		editions:          editions.NewRepos(q),
 		ticketTypes:       ticket_types.NewRepos(q),
@@ -104,6 +105,8 @@ func (app *Univents) initRepos() repos {
 		signatureRequests: sigRepo,
 		certs:             certifications.NewRepos(q),
 	}
+	authz.Service = authz.New(r.events)
+	return r
 }
 
 func (app *Univents) initQueries(r repos) queries {
