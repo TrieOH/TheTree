@@ -48,13 +48,18 @@ type OrganizationMember struct {
 	JoinedAt       time.Time        `json:"joined_at"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewOrganization(ownerID uuid.UUID, name, slug string) (*Organization, error) {
 	f := &Organization{
 		OwnerID: ownerID,
 		Name:    name,
 		Slug:    slug,
 	}
-	return f, validate.Struct(f)
+	err := validate.Struct(f)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 type CreateOrganizationRequest struct {

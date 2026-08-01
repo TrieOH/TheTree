@@ -14,6 +14,7 @@ type Namespace struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// TODO: kill this constructor — build the struct directly and validate at use sites.
 func NewNamespace(ownerID uuid.UUID, name string) (*Namespace, error) {
 	p := &Namespace{
 		OwnerID: ownerID,
