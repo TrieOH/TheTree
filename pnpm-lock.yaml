@@ -168,9 +168,6 @@ importers:
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.27(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0))
-      '@trieoh/api-client':
-        specifier: workspace:*
-        version: link:../../lib/ts/api-client
       '@trieoh/front-core':
         specifier: workspace:*
         version: link:../../lib/ts/front-core
@@ -292,6 +289,9 @@ importers:
       '@tanstack/react-start':
         specifier: 'catalog:'
         version: 1.168.27(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0))
+      '@trieoh/api-client':
+        specifier: workspace:*
+        version: link:../../lib/ts/api-client
       '@trieoh/envoy-fetch-ts':
         specifier: 'catalog:'
         version: 0.1.5
