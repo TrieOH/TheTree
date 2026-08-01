@@ -1,6 +1,4 @@
-import {
-  createTanStackIdentityXAuthProviderAdapter,
-} from "@trieoh/front-core/auth/tanstack/client";
+import { createTanStackIdentityXAuthProviderAdapter } from "@trieoh/front-core/auth/tanstack/client";
 import {
   loginServerFn,
   logoutServerFn,

@@ -35,7 +35,9 @@ export function AccountSessionContent() {
           </div>
           <div>
             <p className="font-medium m-0!">Sua conta</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Perfil autenticado</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Perfil autenticado
+            </p>
           </div>
           <CheckCircle2 className="ml-auto size-5 text-emerald-500" />
         </div>

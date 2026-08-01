@@ -20,20 +20,28 @@ export const loginServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ email: z.email(), password: z.string().min(1) }))
   .handler(({ data }) => bff.login(data.email, data.password));
 
-export const logoutServerFn = createServerFn({ method: "POST" })
-  .handler(() => bff.logout());
+export const logoutServerFn = createServerFn({ method: "POST" }).handler(() =>
+  bff.logout(),
+);
 
-export const refreshServerFn = createServerFn({ method: "POST" })
-  .handler(() => bff.refresh());
+export const refreshServerFn = createServerFn({ method: "POST" }).handler(() =>
+  bff.refresh(),
+);
 
-export const restoreSessionServerFn = createServerFn({ method: "GET" })
-  .handler(() => bff.restore());
+export const restoreSessionServerFn = createServerFn({ method: "GET" }).handler(
+  () => bff.restore(),
+);
 
 export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
-  .validator(z.object({
-    path: z.string().startsWith("/").refine((path) => !path.startsWith("//")),
-    method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
-    body: z.json().optional(),
-    headers: z.record(z.string(), z.string()).optional(),
-  }))
+  .validator(
+    z.object({
+      path: z
+        .string()
+        .startsWith("/")
+        .refine((path) => !path.startsWith("//")),
+      method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+      body: z.json().optional(),
+      headers: z.record(z.string(), z.string()).optional(),
+    }),
+  )
   .handler(({ data }) => bff.request(data));

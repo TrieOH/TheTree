@@ -10,13 +10,13 @@ import {
 } from "@/features/signatures/api";
 import type { SignatureRequestI } from "@/features/signatures/model";
 import { SignatureCanvas } from "@/features/signatures/ui/SignatureCanvas";
+import { SignatureRequestConfirmation } from "@/features/signatures/ui/SignatureRequestConfirmation";
+import { SignatureRequestStatus } from "@/features/signatures/ui/SignatureRequestStatus";
 import { uploadFile } from "@/features/storage/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Checkbox } from "@/shared/ui/shadcn/checkbox";
 import { Input } from "@/shared/ui/shadcn/input";
-import { SignatureRequestConfirmation } from "@/features/signatures/ui/SignatureRequestConfirmation";
-import { SignatureRequestStatus } from "@/features/signatures/ui/SignatureRequestStatus";
 
 export const Route = createFileRoute("/signature-requests/fulfill")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -214,10 +214,10 @@ function SignatureForm({
 
   const expiresLabel = request.expires_at
     ? new Date(request.expires_at).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
     : null;
 
   const onDropFile = (event: React.DragEvent<HTMLLabelElement>) => {

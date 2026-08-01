@@ -26,7 +26,7 @@ export function LogoutCard() {
         <div className="space-y-1">
           <p className="text-sm font-medium leading-none">Encerrar sessão</p>
           <p className="text-sm text-muted-foreground">
-            Ao sair, todas as suas sessões ativas serão encerradas.
+            Ao sair, a sessão ativa será encerrada.
           </p>
         </div>
         <Button

@@ -3,12 +3,11 @@ import { createTanStackServerProxyFetchers } from "@trieoh/front-core/auth/tanst
 import { env } from "@/env";
 import { authenticatedProxyServerFn } from "@/integrations/auth/server-functions";
 
-const { publicFetcher, publicQueryFetcher } =
-  createAppFetchers({
-    apiURL: env.VITE_API_URL,
-    authAPIURL: env.VITE_AUTH_API_URL,
-    timeout: 10_000,
-  });
+const { publicFetcher, publicQueryFetcher } = createAppFetchers({
+  apiURL: env.VITE_API_URL,
+  authAPIURL: env.VITE_AUTH_API_URL,
+  timeout: 10_000,
+});
 
 const { authFetcher, authQueryFetcher } = createTanStackServerProxyFetchers(
   authenticatedProxyServerFn,

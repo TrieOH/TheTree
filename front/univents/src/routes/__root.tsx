@@ -17,9 +17,9 @@ import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
 import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
+import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
-import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import { Provider as TanStackQueryProvider } from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
 
