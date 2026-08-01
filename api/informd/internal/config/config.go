@@ -37,6 +37,7 @@ type Config struct {
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
+	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 
 	// Profiling
 	ProfilePort string `env:"PROFILE_PORT"`

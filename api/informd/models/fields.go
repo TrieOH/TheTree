@@ -121,58 +121,11 @@ func NewFieldSelectConfig(
 
 // CreateFieldRequest is the HTTP request body for creating a field.
 // SelectConfig is only required when Type is "select".
-type CreateFieldRequest struct {
-	Key          string                          `json:"key"                     validate:"required"`
-	Title        string                          `json:"title"                   validate:"required"`
-	Description  *string                         `json:"description"`
-	PositionHint int                             `json:"position_hint"           validate:"required,gte=1"`
-	Required     bool                            `json:"required"`
-	Type         FieldType                       `json:"type"                    validate:"required"`
-	Placeholder  *json.RawMessage                `json:"placeholder,omitempty"`
-	DefaultValue *json.RawMessage                `json:"default_value,omitempty"`
-	Config       *json.RawMessage                `json:"config,omitempty"`
-	SelectConfig *CreateFieldSelectConfigRequest `json:"select_config,omitempty"`
-}
 
-type CreateFieldSelectConfigRequest struct {
+type CreateFieldSelectConfigInput struct {
 	Behaviour SelectBehaviour `json:"behaviour"  validate:"required"`
 	ValueType SelectValueType `json:"value_type" validate:"required"`
 	Options   json.RawMessage `json:"options"    validate:"required"`
-}
-
-func (r CreateFieldRequest) ToStepInput(formID, stepID uuid.UUID) CreateStepFieldInput {
-	return CreateStepFieldInput{
-		FormID:       formID,
-		StepID:       stepID,
-		Key:          r.Key,
-		Title:        r.Title,
-		Description:  r.Description,
-		PositionHint: r.PositionHint,
-		Required:     r.Required,
-		Type:         r.Type,
-		Placeholder:  r.Placeholder,
-		DefaultValue: r.DefaultValue,
-		Config:       r.Config,
-		SelectConfig: r.SelectConfig,
-	}
-}
-
-func (r CreateFieldRequest) ToNamespacedStepInput(namespaceID, formID, stepID uuid.UUID) CreateNamespacedStepFieldInput {
-	return CreateNamespacedStepFieldInput{
-		NamespaceID:  namespaceID,
-		FormID:       formID,
-		StepID:       stepID,
-		Key:          r.Key,
-		Title:        r.Title,
-		Description:  r.Description,
-		PositionHint: r.PositionHint,
-		Required:     r.Required,
-		Type:         r.Type,
-		Placeholder:  r.Placeholder,
-		DefaultValue: r.DefaultValue,
-		Config:       r.Config,
-		SelectConfig: r.SelectConfig,
-	}
 }
 
 type CreateStepFieldInput struct {
@@ -187,7 +140,7 @@ type CreateStepFieldInput struct {
 	Placeholder  *json.RawMessage
 	DefaultValue *json.RawMessage
 	Config       *json.RawMessage
-	SelectConfig *CreateFieldSelectConfigRequest
+	SelectConfig *CreateFieldSelectConfigInput
 }
 
 type CreateNamespacedStepFieldInput struct {
@@ -204,57 +157,7 @@ type CreateNamespacedStepFieldInput struct {
 	Placeholder  *json.RawMessage
 	DefaultValue *json.RawMessage
 	Config       *json.RawMessage
-	SelectConfig *CreateFieldSelectConfigRequest
-}
-
-type UpdateFieldRequest struct {
-	ID           uuid.UUID                       `json:"id"                      validate:"required"`
-	Key          string                          `json:"key"                     validate:"required"`
-	Title        string                          `json:"title"                   validate:"required"`
-	Description  *string                         `json:"description"`
-	PositionHint int                             `json:"position_hint"           validate:"required,gte=1"`
-	Required     bool                            `json:"required"`
-	Type         FieldType                       `json:"type"                    validate:"required"`
-	Placeholder  *json.RawMessage                `json:"placeholder,omitempty"`
-	DefaultValue *json.RawMessage                `json:"default_value,omitempty"`
-	Config       *json.RawMessage                `json:"config,omitempty"`
-	SelectConfig *CreateFieldSelectConfigRequest `json:"select_config,omitempty"`
-}
-
-func (r UpdateFieldRequest) ToStepInput(stepID uuid.UUID) UpdateStepFieldInput {
-	return UpdateStepFieldInput{
-		StepID:       stepID,
-		ID:           r.ID,
-		Key:          r.Key,
-		Title:        r.Title,
-		Description:  r.Description,
-		PositionHint: r.PositionHint,
-		Required:     r.Required,
-		Type:         r.Type,
-		Placeholder:  r.Placeholder,
-		DefaultValue: r.DefaultValue,
-		Config:       r.Config,
-		SelectConfig: r.SelectConfig,
-	}
-}
-
-func (r UpdateFieldRequest) ToNamespacedStepInput(namespaceID, formID, stepID uuid.UUID) UpdateNamespacedStepFieldInput {
-	return UpdateNamespacedStepFieldInput{
-		NamespaceID:  namespaceID,
-		FormID:       formID,
-		StepID:       stepID,
-		ID:           r.ID,
-		Key:          r.Key,
-		Title:        r.Title,
-		Description:  r.Description,
-		PositionHint: r.PositionHint,
-		Required:     r.Required,
-		Type:         r.Type,
-		Placeholder:  r.Placeholder,
-		DefaultValue: r.DefaultValue,
-		Config:       r.Config,
-		SelectConfig: r.SelectConfig,
-	}
+	SelectConfig *CreateFieldSelectConfigInput
 }
 
 type UpdateStepFieldInput struct {
@@ -269,7 +172,7 @@ type UpdateStepFieldInput struct {
 	Placeholder  *json.RawMessage
 	DefaultValue *json.RawMessage
 	Config       *json.RawMessage
-	SelectConfig *CreateFieldSelectConfigRequest
+	SelectConfig *CreateFieldSelectConfigInput
 }
 
 type UpdateNamespacedStepFieldInput struct {
@@ -287,7 +190,7 @@ type UpdateNamespacedStepFieldInput struct {
 	Placeholder  *json.RawMessage
 	DefaultValue *json.RawMessage
 	Config       *json.RawMessage
-	SelectConfig *CreateFieldSelectConfigRequest
+	SelectConfig *CreateFieldSelectConfigInput
 }
 
 func UpdateStepFieldInputToField(i UpdateStepFieldInput) Field {

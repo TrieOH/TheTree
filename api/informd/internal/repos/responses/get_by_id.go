@@ -1,0 +1,21 @@
+package responses
+
+import (
+	"context"
+
+	"Informd/models"
+	"lib/database"
+	"lib/telemetry"
+
+	"github.com/google/uuid"
+)
+
+func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Response, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ResponseRepo.GetByID")
+	defer span.End()
+	row, err := database.Queries(ctx, repo.q).GetResponseByID(ctx, id)
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapResponse(row)), nil
+}

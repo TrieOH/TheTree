@@ -59,6 +59,26 @@ generate +SERVICES="identityx informd payssage univents":
     for svc in {{SERVICES}}; do
       (cd api/$svc && tygo generate)
     done
+    just generate-oapi {{SERVICES}}
+
+# Regenerate OpenAPI handler bindings (internal/openapi) from each api-spec.yml.
+# Uses a pinned oapi-codegen version via `go run` — the Docker build images get
+# the binary from the go-tools image instead (see api/<svc>/Dockerfile).
+# Generated bindings import github.com/oapi-codegen/runtime, which is not kept
+# in go.mod (the code is not committed, so `go mod tidy` drops it) — pinned
+# here and in the Dockerfiles at generation time.
+oapi-codegen-version := "v2.8.0"
+oapi-runtime-version := "v1.6.0"
+generate-oapi +SERVICES="identityx informd payssage univents":
+    #!/usr/bin/env bash
+    for svc in {{SERVICES}}; do
+      (cd api/$svc && \
+        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
+          --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
+        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
+          --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
+        go get github.com/oapi-codegen/runtime@{{oapi-runtime-version}})
+    done
 
 lint +NAME="":
     #!/usr/bin/env bash

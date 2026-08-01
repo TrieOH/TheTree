@@ -80,7 +80,9 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
   logout: async (options?: { forceLogout?: boolean }) => {
     const url = `/auth/logout${env.PROJECT_ID ? `?project_id=${env.PROJECT_ID}` : ""}`;
-    const res = await apiInstance.post<void>(url);
+    const res = await apiInstance.post<void>(url, undefined, {
+      headers: { "Refresh-Token": getStoredRefreshToken() ?? "" },
+    });
     if (res.success || options?.forceLogout) clearAuthTokens();
     return res;
   },

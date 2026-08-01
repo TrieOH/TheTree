@@ -1,33 +1,66 @@
 package app
 
 import (
-	actorsHandlers "IdentityX/internal/features/actors/handlers"
-	apiKeysHandlers "IdentityX/internal/features/api_keys/handlers"
-	authnHandlers "IdentityX/internal/features/authn/handlers"
-	capabilitiesHandlers "IdentityX/internal/features/capabilities/handlers"
-	orgsHandlers "IdentityX/internal/features/organizations/handlers"
-	profileSchemasHandlers "IdentityX/internal/features/profile_schemas/handlers"
-	profilesHandlers "IdentityX/internal/features/profiles/handlers"
-	projectsHandlers "IdentityX/internal/features/projects/handlers"
+	"errors"
 	"net/http"
 
+	spec "IdentityX"
+	"IdentityX/internal/handlers"
+	"IdentityX/internal/openapi"
+	"lib/errx"
 	"lib/httpserver"
 
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) http.Handler {
+func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server) http.Handler {
+	chains, err := resolveAuthChains(middlewares)
+	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
-		AppName: app.cfg.AppName,
+		AppName:            app.cfg.AppName,
+		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
+		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
-			actorsHandlers.RegisterRoutes(r, handlers.Actors, middlewares.anyAuth, middlewares.clientOnly)
-			apiKeysHandlers.RegisterRoutes(r, handlers.APIKeys, middlewares.anyAuth, middlewares.clientOnly)
-			authnHandlers.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
-			orgsHandlers.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
-			projectsHandlers.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
-			capabilitiesHandlers.RegisterRoutes(r, handlers.Capabilities, middlewares.jwtAuth, middlewares.anyAuth, middlewares.clientOnly)
-			profilesHandlers.RegisterRoutes(r, handlers.Profiles, middlewares.jwtAuth, middlewares.clientOnly)
-			profileSchemasHandlers.RegisterRoutes(r, handlers.ProfileSchemas, middlewares.jwtAuth, middlewares.clientOnly)
+			mountStrict(r, h, chains)
+		},
+	})
+}
+
+// mountStrict registers the generated strict handler on r with the
+// validation + auth middleware stack and the fun-envelope error handlers.
+func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.Handler) http.Handler) {
+	strict := openapi.NewStrictHandlerWithOptions(h,
+		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(chains)},
+		openapi.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+				// body decode failures — known client error
+				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				// *fun.AppError carries its status (code -> HTTP);
+				// anything unknown resolves to 500.
+				fun.Error(err).SendWithCtx(r.Context(), w)
+			},
+		})
+	openapi.HandlerWithOptions(strict, openapi.ChiServerOptions{
+		BaseRouter: r,
+		// param binding failures from the generated wrapper
+		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+			var required *openapi.RequiredParamError
+			var invalid *openapi.InvalidParamFormatError
+			var requiredHeader *openapi.RequiredHeaderError
+			switch {
+			case errors.As(err, &required):
+				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: required.ParamName, Message: "parameter is required"}).Validation()).Send(w)
+			case errors.As(err, &invalid):
+				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: invalid.ParamName, Message: "invalid format"}).Validation()).Send(w)
+			case errors.As(err, &requiredHeader):
+				fun.Error(fun.Err("invalid request header").WithFields(&fun.FieldError{Field: requiredHeader.ParamName, Message: "header is required"}).Validation()).Send(w)
+			default:
+				fun.InternalServerError("internal error").Send(w)
+			}
 		},
 	})
 }

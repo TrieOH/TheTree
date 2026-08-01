@@ -55,25 +55,6 @@ type ProviderCredentialData struct {
 	PublicKey      string `json:"public_key,omitempty"`
 }
 
-type ConnectRequest struct {
-	Flow                OAuthFlow  `json:"flow"                  validate:"required"`
-	ProviderRedirectURL string     `json:"provider_redirect_url" validate:"required,url"`
-	FinalRedirectURL    string     `json:"final_redirect_url"    validate:"required,url"`
-	WalletID            *uuid.UUID `json:"wallet_id"`
-	OrganizationID      *uuid.UUID `json:"organization_id"`
-}
-
-func (r *ConnectRequest) ToInput(p string) ConnectInput {
-	return ConnectInput{
-		Provider:            p,
-		Flow:                r.Flow,
-		ProviderRedirectURL: r.ProviderRedirectURL,
-		FinalRedirectURL:    r.FinalRedirectURL,
-		WalletID:            r.WalletID,
-		OrganizationID:      r.OrganizationID,
-	}
-}
-
 type ConnectInput struct {
 	Provider            string
 	Flow                OAuthFlow
@@ -81,19 +62,6 @@ type ConnectInput struct {
 	FinalRedirectURL    string
 	WalletID            *uuid.UUID
 	OrganizationID      *uuid.UUID
-}
-
-type RevokeRequest struct {
-	Flow OAuthFlow `json:"flow" validate:"required"`
-	ID   uuid.UUID `json:"id"   validate:"required"`
-}
-
-func (r RevokeRequest) ToInput(p string) RevokeInput {
-	return RevokeInput{
-		Flow:     r.Flow,
-		ID:       r.ID,
-		Provider: p,
-	}
 }
 
 type RevokeInput struct {

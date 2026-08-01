@@ -1,0 +1,2768 @@
+openapi: 3.1.0
+
+info:
+  title: Informd API
+  summary: Multi-tenant forms service for TrieOH
+  description: |
+    Informd is TrieOH's forms service: namespaces (tenant grouping),
+    forms, steps (sections), fields (question definitions), and
+    responses (submissions).
+
+    ## Authentication
+
+    | Scheme | Header | Notes |
+    |---|---|---|
+    | Bearer JWT | `Authorization: Bearer <token>` | IdentityX access token. |
+    | API key | `X-API-KEY: <key>` | IdentityX API key. |
+
+    `anyAuth` endpoints accept either. Namespace routes (`/namespaces...`)
+    require a JWT (`jwt` only). The following routes are public:
+    `GET /forms/{form_id}/asnwerable` (public answer view — note the
+    original spelling, part of the interface) and
+    `POST /forms/{form_id}/responses` (public submission).
+
+    ## Response envelope
+
+    Every JSON response is the `fun.Response` envelope:
+
+    ```json
+    {
+      "code": 200,
+      "message": "",
+      "data": { "...": "operation payload" },
+      "error": null,
+      "pagination": null,
+      "timestamp": "2026-01-01T12:00:00Z",
+      "module": "Informd"
+    }
+    ```
+
+    - Success: `data` carries the payload. Errors: `error` carries an
+      `AppError` — `{ "code", "message", "fields", "meta" }`.
+    - `pagination` is reserved for paged list endpoints (currently
+      unused by Informd routes).
+
+    ## Error codes → HTTP status
+
+    The `error.code` sentinel maps to the HTTP status:
+
+    | code | status |
+    |---|---|
+    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
+    | `UNAUTHORIZED` | 401 |
+    | `PAYMENT_REQUIRED` | 402 |
+    | `FORBIDDEN` | 403 |
+    | `NOT_FOUND` | 404 |
+    | `METHOD_NOT_ALLOWED` | 405 |
+    | `CONFLICT` | 409 |
+    | `UNPROCESSABLE_ENTITY` | 422 |
+    | `TOO_MANY_REQUESTS` | 429 |
+    | `INTERNAL_ERROR` | 500 |
+    | `NOT_IMPLEMENTED` | 501 |
+    | `BAD_GATEWAY` | 502 |
+    | `SERVICE_UNAVAILABLE` | 503 |
+
+    ## Form model
+
+    A form has steps, each step has fields, each field may have a select
+    configuration (when `type` is `select`). The `full` view
+    (`GET /forms/{form_id}/full`) returns the form with steps, fields,
+    and their answers; the `asnwerable` view returns the same shape
+    without answers, for respondents.
+
+    ### Duplicated namespaced routes
+
+    Several form/step/field operations exist twice: anchored on the form
+    (`/forms/{form_id}/...`) and on the namespace
+    (`/namespaces/{namespace_id}/forms/{form_id}/...`). Both are live
+    routes; the namespaced variants are scheduled for removal (the form
+    already anchors via its namespace). Keep using the `/forms/...`
+    variants in new code.
+
+    ## Rate limits
+
+    The harness applies a fixed rate limit of 400 requests/second with a
+    burst of 20, keyed by client IP. Exceeded requests receive
+    `429 TOO_MANY_REQUESTS`.
+  version: 0.1.0
+  contact:
+    name: TrieOH
+    url: https://trieoh.com/support
+    email: contact@trieoh.com
+  license:
+    name: TSAL
+    url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/informd/LICENSE
+
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+
+servers:
+  - url: https://api.informd.com.br
+    description: Production
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: system
+    description: Reserved for system level operations such as /health
+
+  - name: namespaces
+    description: Tenant grouping for forms and membership
+
+  - name: forms
+    description: Form lifecycle, members, and public views
+
+  - name: steps
+    description: Form sections
+
+  - name: fields
+    description: Question definitions, including select configurations
+
+  - name: responses
+    description: Public form submissions
+
+externalDocs:
+  description: Full TrieOH documentation
+  url: https://docs.trieoh.com
+
+security:
+  - bearerAuth: []
+
+paths:
+  /docs/openapi.yml:
+    get:
+      tags: [system]
+      operationId: getOpenAPISpec
+      summary: Get the OpenAPI specification
+      description: |
+        Returns this service's OpenAPI 3.1 specification in YAML — the
+        same content as api/<svc>/api-spec.yml, embedded and served by
+        the harness. Docs tooling fetches this URL to render the API
+        reference. Public.
+      security: []
+      responses:
+        '200':
+          description: The OpenAPI 3.1 document
+          content:
+            application/yaml:
+              schema:
+                type: string
+                description: The OpenAPI 3.1 document in YAML.
+
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      summary: Health check
+      description: Harness-owned liveness probe. Public.
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: "ok"
+                  service:
+                    type: string
+                    const: "Informd"
+
+  /namespaces:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaces
+      summary: List your namespaces
+      description: |
+        Lists the namespaces the authenticated actor is a member of.
+        Requires a JWT.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Namespaces the actor belongs to
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Namespace'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [namespaces]
+      operationId: createNamespace
+      summary: Create a namespace
+      description: |
+        Creates a namespace owned by the authenticated actor. The
+        creator becomes the namespace owner.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNamespaceRequest'
+            example:
+              name: My Workspace
+      responses:
+        '201':
+          description: Namespace created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Namespace'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/members:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaceMembers
+      summary: List namespace members
+      description: |
+        Lists the members of a namespace. The actor must be a member of
+        the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      responses:
+        '200':
+          description: Namespace members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/NamespaceMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [namespaces]
+      operationId: addNamespaceMember
+      summary: Add a namespace member
+      description: |
+        Adds an actor (by user ID) to the namespace with the given role.
+        The actor must be an admin or owner of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNamespaceMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              role: member
+      responses:
+        '201':
+          description: Member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [namespaces]
+      operationId: removeNamespaceMember
+      summary: Remove a namespace member
+      description: |
+        Removes an actor (by user ID) from the namespace. The actor must
+        be an admin or owner of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveNamespaceMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaceForms
+      summary: List a namespace's forms
+      description: |
+        Lists the forms in the namespace (excluding archived). The actor
+        must be a member of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      responses:
+        '200':
+          description: Namespace forms
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [namespaces]
+      operationId: createNamespaceForm
+      summary: Create a form in a namespace
+      description: |
+        Creates a draft form inside the namespace. The actor must be an
+        admin or owner of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFormRequest'
+            example:
+              title: Registration Form
+      responses:
+        '201':
+          description: Form created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/archived:
+    get:
+      tags: [namespaces]
+      operationId: listNamespaceArchivedForms
+      summary: List a namespace's archived forms
+      description: |
+        Lists the archived forms in the namespace. The actor must be a
+        member of the namespace.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+      responses:
+        '200':
+          description: Archived namespace forms
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms:
+    get:
+      tags: [forms]
+      operationId: listMyForms
+      summary: List your forms
+      description: |
+        Lists the forms the authenticated actor owns (excluding
+        archived). Accepts JWT or API key.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Forms owned by the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [forms]
+      operationId: createForm
+      summary: Create a form
+      description: |
+        Creates a draft form owned by the authenticated actor. New forms
+        are standalone (no namespace) until moved into one.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFormRequest'
+            example:
+              title: Registration Form
+      responses:
+        '201':
+          description: Form created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/archived:
+    get:
+      tags: [forms]
+      operationId: listMyArchivedForms
+      summary: List your archived forms
+      description: |
+        Lists the archived forms owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Archived forms owned by the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/asnwerable:
+    get:
+      tags: [forms]
+      operationId: getAnswerableForm
+      summary: Get the answerable view of a form
+      description: |
+        Returns the form with its steps and fields (no answers) for
+        respondents to fill out. Public — this is the view embedded in
+        the public submission flow. NOTE: the path keeps the original
+        spelling `asnwerable`, which is part of the interface.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Answerable form view
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FormAnswerable'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/full:
+    get:
+      tags: [forms]
+      operationId: getFullForm
+      summary: Get the full form with answers
+      description: |
+        Returns the form with its steps, fields, and all submitted
+        answers — the editing/analytics view. The actor must be a member
+        of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Full form view
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FullForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/members:
+    get:
+      tags: [forms]
+      operationId: listFormMembers
+      summary: List form members
+      description: |
+        Lists the members of a form. The actor must be a member of the
+        form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FormMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [forms]
+      operationId: addFormMember
+      summary: Add a form member
+      description: |
+        Adds an actor (by user ID) to the form with the given role. The
+        actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFormMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              role: admin
+      responses:
+        '201':
+          description: Member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [forms]
+      operationId: removeFormMember
+      summary: Remove a form member
+      description: |
+        Removes an actor (by user ID) from the form. The actor must be
+        an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveFormMemberRequest'
+            example:
+              user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/open:
+    post:
+      tags: [forms]
+      operationId: openForm
+      summary: Open a form
+      description: |
+        Moves a draft form to `open`, allowing public submissions. The
+        actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form opened
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/close:
+    post:
+      tags: [forms]
+      operationId: closeForm
+      summary: Close a form
+      description: |
+        Moves an open form to `closed`, stopping submissions. The actor
+        must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form closed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/archive:
+    post:
+      tags: [forms]
+      operationId: archiveForm
+      summary: Archive a form
+      description: |
+        Archives a closed form, moving it out of active listings. The
+        actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form archived
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/redraft:
+    post:
+      tags: [forms]
+      operationId: redraftForm
+      summary: Redraft a form
+      description: |
+        Moves an archived (or closed) form back to `draft` for editing.
+        The actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form redrafted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/responses/count:
+    get:
+      tags: [forms]
+      operationId: getFormResponseCount
+      summary: Count a form's responses
+      description: |
+        Returns the number of responses submitted to the form. The actor
+        must be a member of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Response count
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [count]
+                        properties:
+                          count:
+                            type: integer
+                            description: Number of responses.
+              example:
+                code: 200
+                message: ""
+                data:
+                  count: 42
+                timestamp: '2026-01-01T12:00:00Z'
+                module: Informd
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/steps:
+    get:
+      tags: [steps]
+      operationId: listSteps
+      summary: List a form's steps
+      description: |
+        Lists the steps (sections) of a form in positional order. The
+        actor must be a member of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form steps
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Step'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [steps]
+      operationId: createStep
+      summary: Create a step
+      description: |
+        Adds a step (section) to the form. The actor must be an admin or
+        owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStepRequest'
+            example:
+              title: Personal Info
+              description: Tell us about yourself.
+              position_hint: 1
+      responses:
+        '201':
+          description: Step created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Step'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [steps]
+      operationId: bulkEditSteps
+      summary: Bulk-edit a form's steps
+      description: |
+        Replaces the full step list of the form in one call — each entry
+        carries its `id` (existing steps are updated) plus title,
+        description, and position hint. The actor must be an admin or
+        owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateStepRequest'
+            example:
+              - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                title: Personal Info
+                description: Tell us about yourself.
+                position_hint: 1
+              - id: 3fa85f64-5717-4562-b3fc-2c963f66afa7
+                title: Preferences
+                description: Tell us what you like.
+                position_hint: 2
+      responses:
+        '200':
+          description: Steps updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/steps/{step_id}/fields:
+    get:
+      tags: [fields]
+      operationId: listFields
+      summary: List a step's fields
+      description: |
+        Lists the fields (questions) of a step in positional order. The
+        actor must be a member of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      responses:
+        '200':
+          description: Step fields
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Field'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [fields]
+      operationId: createField
+      summary: Create a field
+      description: |
+        Adds a field (question) to a step. When `type` is `select`,
+        `select_config` is required. The actor must be an admin or owner
+        of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFieldRequest'
+            example:
+              key: full_name
+              title: Full name
+              description: As on your ID.
+              position_hint: 1
+              required: true
+              type: string
+      responses:
+        '201':
+          description: Field created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Field'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [fields]
+      operationId: bulkEditFields
+      summary: Bulk-edit a step's fields
+      description: |
+        Replaces the full field list of a step in one call — each entry
+        carries its `id` (existing fields are updated) plus all field
+        attributes. The actor must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateFieldRequest'
+      responses:
+        '200':
+          description: Fields updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/steps/{step_id}/fields/{field_id}/select:
+    get:
+      tags: [fields]
+      operationId: getSelectConfig
+      summary: Get a field's select configuration
+      description: |
+        Fetches the select configuration (behaviour, value type,
+        options) of a `select` field. The actor must be a member of the
+        form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      responses:
+        '200':
+          description: Select configuration
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FieldSelectConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [fields]
+      operationId: editSelectConfig
+      summary: Edit a field's select configuration
+      description: |
+        Updates the select configuration of a `select` field. The actor
+        must be an admin or owner of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSelectConfigRequest'
+            example:
+              behaviour: dropdown-radio
+              value_type: string
+              options:
+                - label: Option A
+                  value: a
+                - label: Option B
+                  value: b
+      responses:
+        '200':
+          description: Select configuration updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FieldSelectConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/steps/{step_id}/fields/{field_id}:
+    delete:
+      tags: [fields]
+      operationId: deleteField
+      summary: Delete a field
+      description: |
+        Deletes a field from a step. The actor must be an admin or owner
+        of the form.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      responses:
+        '200':
+          description: Field deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /forms/{form_id}/responses:
+    post:
+      tags: [responses]
+      operationId: submitResponse
+      summary: Submit a response
+      description: |
+        Submits a response to an open form: an optional email plus one
+        answer per field (field answers upsert per response). Public —
+        this is the submission endpoint embedded in the public form
+        flow. Responders are identified by email when provided.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+            example:
+              email: respondent@example.com
+              answers:
+                - field_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  answer:
+                    value: Jane Doe
+      responses:
+        '201':
+          description: Response submitted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ── Namespaced duplicated routes (scheduled for removal; kept for parity) ──
+
+  /namespaces/{namespace_id}/forms/{form_id}/full:
+    get:
+      tags: [forms]
+      operationId: getFullFormNamespaced
+      summary: Get the full form with answers (namespaced)
+      description: |
+        Namespaced duplicate of `GET /forms/{form_id}/full` — the form's
+        namespace is anchored via the form itself. Scheduled for removal;
+        prefer the `/forms/...` variant.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Full form view
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FullForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/members:
+    get:
+      tags: [forms]
+      operationId: listFormMembersNamespaced
+      summary: List form members (namespaced)
+      description: Namespaced duplicate of `GET /forms/{form_id}/members`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FormMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [forms]
+      operationId: addFormMemberNamespaced
+      summary: Add a form member (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/members`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFormMemberRequest'
+      responses:
+        '201':
+          description: Member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [forms]
+      operationId: removeFormMemberNamespaced
+      summary: Remove a form member (namespaced)
+      description: Namespaced duplicate of `DELETE /forms/{form_id}/members`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveFormMemberRequest'
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/open:
+    post:
+      tags: [forms]
+      operationId: openFormNamespaced
+      summary: Open a form (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/open`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form opened
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/close:
+    post:
+      tags: [forms]
+      operationId: closeFormNamespaced
+      summary: Close a form (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/close`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form closed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/archive:
+    post:
+      tags: [forms]
+      operationId: archiveFormNamespaced
+      summary: Archive a form (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/archive`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form archived
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/redraft:
+    post:
+      tags: [forms]
+      operationId: redraftFormNamespaced
+      summary: Redraft a form (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/redraft`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form redrafted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/responses/count:
+    get:
+      tags: [forms]
+      operationId: getFormResponseCountNamespaced
+      summary: Count a form's responses (namespaced)
+      description: Namespaced duplicate of `GET /forms/{form_id}/responses/count`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Response count
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [count]
+                        properties:
+                          count:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/steps:
+    get:
+      tags: [steps]
+      operationId: listStepsNamespaced
+      summary: List a form's steps (namespaced)
+      description: Namespaced duplicate of `GET /forms/{form_id}/steps`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      responses:
+        '200':
+          description: Form steps
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Step'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [steps]
+      operationId: createStepNamespaced
+      summary: Create a step (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/steps`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStepRequest'
+      responses:
+        '201':
+          description: Step created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Step'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [steps]
+      operationId: bulkEditStepsNamespaced
+      summary: Bulk-edit a form's steps (namespaced)
+      description: Namespaced duplicate of `PUT /forms/{form_id}/steps`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateStepRequest'
+      responses:
+        '200':
+          description: Steps updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields:
+    get:
+      tags: [fields]
+      operationId: listFieldsNamespaced
+      summary: List a step's fields (namespaced)
+      description: Namespaced duplicate of `GET /forms/{form_id}/steps/{step_id}/fields`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      responses:
+        '200':
+          description: Step fields
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Field'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [fields]
+      operationId: createFieldNamespaced
+      summary: Create a field (namespaced)
+      description: Namespaced duplicate of `POST /forms/{form_id}/steps/{step_id}/fields`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFieldRequest'
+      responses:
+        '201':
+          description: Field created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Field'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [fields]
+      operationId: bulkEditFieldsNamespaced
+      summary: Bulk-edit a step's fields (namespaced)
+      description: Namespaced duplicate of `PUT /forms/{form_id}/steps/{step_id}/fields`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateFieldRequest'
+      responses:
+        '200':
+          description: Fields updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}/select:
+    get:
+      tags: [fields]
+      operationId: getSelectConfigNamespaced
+      summary: Get a field's select configuration (namespaced)
+      description: Namespaced duplicate of `GET /forms/{form_id}/steps/{step_id}/fields/{field_id}/select`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      responses:
+        '200':
+          description: Select configuration
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FieldSelectConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [fields]
+      operationId: editSelectConfigNamespaced
+      summary: Edit a field's select configuration (namespaced)
+      description: Namespaced duplicate of `PUT /forms/{form_id}/steps/{step_id}/fields/{field_id}/select`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditSelectConfigRequest'
+      responses:
+        '200':
+          description: Select configuration updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FieldSelectConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /namespaces/{namespace_id}/forms/{form_id}/steps/{step_id}/fields/{field_id}:
+    delete:
+      tags: [fields]
+      operationId: deleteFieldNamespaced
+      summary: Delete a field (namespaced)
+      description: Namespaced duplicate of `DELETE /forms/{form_id}/steps/{step_id}/fields/{field_id}`. Scheduled for removal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NamespaceID'
+        - $ref: '#/components/parameters/FormID'
+        - $ref: '#/components/parameters/StepID'
+        - $ref: '#/components/parameters/FieldID'
+      responses:
+        '200':
+          description: Field deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT issued by IdentityX, signed with Ed25519
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+      description: Static IdentityX API key
+
+  parameters:
+    NamespaceID:
+      name: namespace_id
+      in: path
+      required: true
+      description: Namespace ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    FormID:
+      name: form_id
+      in: path
+      required: true
+      description: Form ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    StepID:
+      name: step_id
+      in: path
+      required: true
+      description: Step ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    FieldID:
+      name: field_id
+      in: path
+      required: true
+      description: Field ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+  responses:
+    BadRequest:
+      description: Invalid request payload or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Insufficient permissions for the requested operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: The request conflicts with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      x-go-type: uuid.UUID
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    NullableUUID:
+      type: [ string, "null" ]
+      format: uuid
+      x-go-type: '*uuid.UUID'
+      x-go-type-skip-optional-pointer: true
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    Response:
+      type: object
+      description: |
+        The `fun.Response` envelope wrapping every JSON payload. On
+        success `data` carries the operation payload; on failure `error`
+        carries the AppError.
+      required: [code, message, timestamp, module]
+      properties:
+        code:
+          type: integer
+          description: HTTP status code, duplicated for convenience.
+        message:
+          type: string
+          description: Informational message; often empty on success.
+        data:
+          type: object
+          description: The operation payload. Shape is documented per operation.
+        error:
+          allOf:
+            - $ref: '#/components/schemas/Error'
+          description: Present (non-null) only on failure.
+        pagination:
+          allOf:
+            - $ref: '#/components/schemas/PaginationMeta'
+          description: Present only on paged list endpoints.
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          description: Service that produced the response.
+
+    Error:
+      type: object
+      title: AppError
+      description: The `fun.AppError` object carried in the envelope's `error` field.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - PAYMENT_REQUIRED
+            - FORBIDDEN
+            - NOT_FOUND
+            - METHOD_NOT_ALLOWED
+            - CONFLICT
+            - UNPROCESSABLE_ENTITY
+            - TOO_MANY_REQUESTS
+            - INTERNAL_ERROR
+            - NOT_IMPLEMENTED
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+        message:
+          type: string
+        fields:
+          type: array
+          description: Per-field validation errors (validation failures only).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        meta:
+          type: object
+          description: Arbitrary key/value context.
+          additionalProperties: true
+        debug:
+          type: object
+          description: Development-only diagnostics; stripped outside development environments.
+          properties:
+            raw_error:
+              type: string
+            stack_trace:
+              type: string
+
+    ErrorResponse:
+      type: object
+      description: The envelope as sent on failure.
+      required: [code, message, error, timestamp, module]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        error:
+          $ref: '#/components/schemas/Error'
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          description: Service that produced the response.
+
+    PaginationMeta:
+      type: object
+      description: Pagination metadata for paged list endpoints (currently unused by Informd routes).
+      required: [page, limit, total, has_next, has_prev]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+        next_page:
+          type: integer
+        prev_page:
+          type: integer
+
+    Namespace:
+      x-go-type: models.Namespace
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A tenant grouping for forms. Mirrors `models.Namespace`.
+      required: [id, owner_id, name, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateNamespaceRequest:
+      type: object
+      description: Request body for namespace creation. Mirrors `models.CreateNamespaceRequest`.
+      required: [name]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    NamespaceMemberRole:
+      x-go-type: models.NamespaceMemberRole
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [member, admin, owner]
+
+    NamespaceMember:
+      x-go-type: models.NamespaceMember
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: Membership of a user in a namespace. Mirrors `models.NamespaceMember`.
+      required: [user_id, namespace_id, role, added_at, added_by]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        namespace_id:
+          $ref: '#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/NamespaceMemberRole'
+        added_at:
+          type: string
+          format: date-time
+        added_by:
+          $ref: '#/components/schemas/UUID'
+
+    AddNamespaceMemberRequest:
+      type: object
+      description: Request body for adding a namespace member. Mirrors `models.AddNamespaceMemberRequest`.
+      required: [user_id, role]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/NamespaceMemberRole'
+
+    RemoveNamespaceMemberRequest:
+      type: object
+      description: Request body for removing a namespace member. Mirrors `models.RemoveNamespaceMemberRequest`.
+      required: [user_id]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+
+    FormStatus:
+      x-go-type: models.FormStatus
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [draft, open, closed, archived]
+
+    Form:
+      x-go-type: models.Form
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A form. Mirrors `models.Form`.
+      required: [id, owner_id, created_by, title, status, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        namespace_id:
+          $ref: '#/components/schemas/NullableUUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/FormStatus'
+        opened_at:
+          type: [ string, "null" ]
+          format: date-time
+        closed_at:
+          type: [ string, "null" ]
+          format: date-time
+        archived_at:
+          type: [ string, "null" ]
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateFormRequest:
+      type: object
+      description: Request body for form creation. Mirrors `models.CreateFormRequest`.
+      required: [title]
+      properties:
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    FormMemberRole:
+      x-go-type: models.FormMemberRole
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [member, admin, owner]
+
+    FormMember:
+      x-go-type: models.FormMember
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: Membership of a user in a form. Mirrors `models.FormMember`.
+      required: [user_id, form_id, role, added_at, added_by]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        form_id:
+          $ref: '#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/FormMemberRole'
+        added_at:
+          type: string
+          format: date-time
+        added_by:
+          $ref: '#/components/schemas/UUID'
+
+    AddFormMemberRequest:
+      type: object
+      description: Request body for adding a form member. Mirrors `models.AddFormMemberRequest`.
+      required: [user_id, role]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/FormMemberRole'
+
+    RemoveFormMemberRequest:
+      type: object
+      description: Request body for removing a form member. Mirrors `models.RemoveFormMemberRequest`.
+      required: [user_id]
+      properties:
+        user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+
+    Step:
+      x-go-type: models.Step
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A section of a form. Mirrors `models.Step`.
+      required: [id, form_id, title, position_hint]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        form_id:
+          $ref: '#/components/schemas/UUID'
+        title:
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          type: integer
+          minimum: 1
+          description: Ordering hint (1-based).
+
+    CreateStepRequest:
+      type: object
+      description: Request body for step creation. Mirrors `models.CreateStepRequest`.
+      required: [title, position_hint]
+      properties:
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+
+    UpdateStepRequest:
+      type: object
+      description: Entry for bulk step editing. Mirrors `models.UpdateStepRequest`.
+      required: [id, title, position_hint]
+      properties:
+        id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+
+    FieldType:
+      x-go-type: models.FieldType
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [string, email, int, float, bool, date, time, datetime, select, file, phone, url]
+
+    Field:
+      x-go-type: models.Field
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A question definition. Mirrors `models.Field`.
+      required: [id, step_id, key, title, position_hint, required, type, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        step_id:
+          $ref: '#/components/schemas/UUID'
+        key:
+          type: string
+          description: Stable identifier for the field within the form.
+        title:
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          type: integer
+          minimum: 1
+        required:
+          type: boolean
+        type:
+          $ref: '#/components/schemas/FieldType'
+        placeholder:
+          type: [ object, "null" ]
+          description: Placeholder value, when the field type supports it.
+        default_value:
+          type: [ object, "null" ]
+        config:
+          type: [ object, "null" ]
+          description: Type-specific configuration.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SelectBehaviour:
+      x-go-type: models.SelectBehaviour
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [checkbox, radio, dropdown-checkbox, dropdown-radio]
+
+    SelectValueType:
+      x-go-type: models.SelectValueType
+      x-go-type-import:
+        path: Informd/models
+      type: string
+      enum: [string, email, int, float, date, time, datetime, phone, url]
+
+    FieldSelectConfig:
+      x-go-type: models.FieldSelectConfig
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: Select configuration for a `select` field. Mirrors `models.FieldSelectConfig`.
+      required: [field_id, behaviour, value_type, options]
+      properties:
+        field_id:
+          $ref: '#/components/schemas/UUID'
+        behaviour:
+          $ref: '#/components/schemas/SelectBehaviour'
+        value_type:
+          $ref: '#/components/schemas/SelectValueType'
+        options:
+          type: array
+          description: |
+            The selectable options. Opaque per the API contract (the Go
+            model stores them as JSON); conventionally objects with
+            `label` and `value`, where `value` is a string or number
+            matching `value_type`.
+          items:
+            type: object
+            additionalProperties: true
+
+    CreateFieldRequest:
+      type: object
+      description: Request body for field creation. Mirrors `models.CreateFieldRequest`.
+      required: [key, title, position_hint, required, type]
+      properties:
+        key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+        required:
+          type: boolean
+        type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/FieldType'
+        placeholder:
+          type: [ object, "null" ]
+        default_value:
+          type: [ object, "null" ]
+        config:
+          type: [ object, "null" ]
+        select_config:
+          allOf:
+            - $ref: '#/components/schemas/CreateFieldSelectConfigRequest'
+          description: Required when `type` is `select`.
+
+    CreateFieldSelectConfigRequest:
+      type: object
+      description: Select configuration to attach to a new field. Mirrors `models.CreateFieldSelectConfigRequest`.
+      required: [behaviour, value_type, options]
+      properties:
+        behaviour:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/SelectBehaviour'
+        value_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/SelectValueType'
+        options:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: array
+          description: |
+            The selectable options. Opaque per the API contract (the Go
+            model stores them as JSON); conventionally objects with
+            `label` and `value`, where `value` is a string or number
+            matching `value_type`.
+          items:
+            type: object
+            additionalProperties: true
+
+    EditSelectConfigRequest:
+      type: object
+      description: Request body for editing a select configuration (same shape as `CreateFieldSelectConfigRequest`).
+      required: [behaviour, value_type, options]
+      properties:
+        behaviour:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/SelectBehaviour'
+        value_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/SelectValueType'
+        options:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: array
+          description: |
+            The selectable options. Opaque per the API contract (the Go
+            model stores them as JSON); conventionally objects with
+            `label` and `value`, where `value` is a string or number
+            matching `value_type`.
+          items:
+            type: object
+            additionalProperties: true
+
+    UpdateFieldRequest:
+      type: object
+      description: Entry for bulk field editing. Mirrors `models.UpdateFieldRequest`.
+      required: [id, key, title, position_hint, required, type]
+      properties:
+        id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        description:
+          type: [ string, "null" ]
+        position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          minimum: 1
+        required:
+          type: boolean
+        type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/FieldType'
+        placeholder:
+          type: [ object, "null" ]
+        default_value:
+          type: [ object, "null" ]
+        config:
+          type: [ object, "null" ]
+        select_config:
+          allOf:
+            - $ref: '#/components/schemas/CreateFieldSelectConfigRequest'
+
+    FullForm:
+      x-go-type: models.FullForm
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A form with its full structure (steps, fields, answers). Mirrors `models.FullForm`.
+      required: [form, steps]
+      properties:
+        form:
+          $ref: '#/components/schemas/Form'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullStep'
+
+    FullStep:
+      x-go-type: models.FullStep
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A step with its fields and answers. Mirrors `models.FullStep`.
+      required: [step, fields]
+      properties:
+        step:
+          $ref: '#/components/schemas/Step'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullField'
+
+    FullField:
+      x-go-type: models.FullField
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A field with its answers. Mirrors `models.FullField`.
+      required: [field, answers]
+      properties:
+        field:
+          $ref: '#/components/schemas/Field'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullAnswer'
+
+    FullAnswer:
+      x-go-type: models.FullAnswer
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: An answer with the responder's email. Mirrors `models.FullAnswer`.
+      required: [answer, responder]
+      properties:
+        answer:
+          $ref: '#/components/schemas/Answer'
+        responder:
+          type: string
+          description: Responder email.
+
+    FormAnswerable:
+      x-go-type: models.FormAnswerable
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A form with its steps and fields (no answers) — the public answer view. Mirrors `models.FormAnswerable`.
+      required: [form, steps]
+      properties:
+        form:
+          $ref: '#/components/schemas/Form'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepAnswerable'
+
+    StepAnswerable:
+      x-go-type: models.StepAnswerable
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A step with its fields, without answers. Mirrors `models.StepAnswerable`.
+      required: [step, fields]
+      properties:
+        step:
+          $ref: '#/components/schemas/Step'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldAnswerable'
+
+    FieldAnswerable:
+      x-go-type: models.FieldAnswerable
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: A field with its select configuration, without answers. Mirrors `models.FieldAnswerable`.
+      required: [field]
+      properties:
+        field:
+          $ref: '#/components/schemas/Field'
+        field_select_config:
+          allOf:
+            - $ref: '#/components/schemas/FieldSelectConfig'
+          description: Present when the field is a `select` field.
+
+    Answer:
+      x-go-type: models.Answer
+      x-go-type-import:
+        path: Informd/models
+      type: object
+      description: One answer to a field within a response. Mirrors `models.Answer`.
+      required: [id, response_id, answered_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        response_id:
+          $ref: '#/components/schemas/UUID'
+        field_id:
+          $ref: '#/components/schemas/NullableUUID'
+        answer:
+          type: [ object, "null" ]
+          description: The answer value; shape depends on the field type.
+        answered_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    SubmitRequest:
+      type: object
+      description: Request body for response submission. Mirrors `models.SubmitRequest`.
+      properties:
+        email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+          description: Responder email, used to identify/merge responses.
+        answers:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmitAnswer'
+
+    SubmitAnswer:
+      type: object
+      description: One field answer in a submission. Mirrors `models.SubmitAnswer`.
+      required: [field_id, answer]
+      properties:
+        field_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        answer:
+          type: [ object, "null" ]
+          description: The answer value; shape depends on the field type.

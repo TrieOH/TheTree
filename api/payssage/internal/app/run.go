@@ -7,7 +7,7 @@ import (
 	libriver "lib/river"
 	"lib/telemetry"
 	"log/slog"
-	webhooksjobs "payssage/internal/features/webhooks/jobs"
+	webhooksjobs "payssage/internal/services/webhooks/jobs"
 	"payssage/internal/sqlc"
 
 	"github.com/jackc/pgx/v5"
@@ -28,7 +28,7 @@ func (app *Payssage) run() {
 
 	riverClient := libriver.NewClient(app.db, libriver.NewWorkers(
 		libriver.Register[webhooksjobs.DeliverWebhookArgs](webhooksjobs.NewDeliverWebhookWorker(
-			repos.deliveries, repos.events, repos.endpoints, app.httpClient,
+			repos.WebhookDeliveries, repos.WebhookEvents, repos.WebhookEndpoints, app.httpClient,
 		)),
 	), nil, nil)
 	err := riverClient.Start(ctx)
@@ -56,7 +56,7 @@ func (app *Payssage) run() {
 	middlewares := app.initMiddlewares()
 	handlers := app.initHandlers(ops)
 
-	mux := app.CreateRouter(handlers, middlewares, riverUIHandler)
+	mux := app.CreateRouter(middlewares, handlers, riverUIHandler)
 	httpserver.Start(mux, httpserver.Config{
 		AppName:     app.cfg.AppName,
 		Port:        app.cfg.Port,

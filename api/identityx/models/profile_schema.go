@@ -19,18 +19,6 @@ type ProjectProfileSchema struct {
 }
 
 // UpsertProfileSchemaRequest is the HTTP request body for setting a profile schema.
-type UpsertProfileSchemaRequest struct {
-	Schema json.RawMessage `json:"schema"`
-	Active bool            `json:"active"`
-}
-
-func (r UpsertProfileSchemaRequest) ToInput(projectID *uuid.UUID) UpsertProfileSchemaInput {
-	return UpsertProfileSchemaInput{
-		ProjectID: projectID,
-		Schema:    r.Schema,
-		Active:    r.Active,
-	}
-}
 
 type UpsertProfileSchemaInput struct {
 	ProjectID *uuid.UUID
@@ -39,16 +27,6 @@ type UpsertProfileSchemaInput struct {
 }
 
 // UpsertProfileRequest is the HTTP request body for upserting an actor's profile.
-type UpsertProfileRequest struct {
-	Profile json.RawMessage `json:"profile"`
-}
-
-func (r UpsertProfileRequest) ToInput(actorID uuid.UUID) UpsertProfileInput {
-	return UpsertProfileInput{
-		ActorID: actorID,
-		Profile: r.Profile,
-	}
-}
 
 type UpsertProfileInput struct {
 	ActorID uuid.UUID

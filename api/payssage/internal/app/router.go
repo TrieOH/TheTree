@@ -1,43 +1,69 @@
 package app
 
 import (
+	"errors"
 	"net/http"
-	collectorsHandlers "payssage/internal/features/collectors/handlers"
-	intentsHandlers "payssage/internal/features/intents/handlers"
-	oauthHandlers "payssage/internal/features/oauth/handlers"
-	orgsHandlers "payssage/internal/features/orgs/handlers"
-	sellersHandlers "payssage/internal/features/sellers/handlers"
-	walletsHandlers "payssage/internal/features/wallets/handlers"
-	webhookDeliveriesHandlers "payssage/internal/features/webhook_deliveries/handlers"
-	webhookEndpointsHandlers "payssage/internal/features/webhook_endpoints/handlers"
-	webhookEventsHandlers "payssage/internal/features/webhook_events/handlers"
-	webhooksHandlers "payssage/internal/features/webhooks/handlers"
 
+	"lib/errx"
 	"lib/httpserver"
+	spec "payssage"
+	"payssage/internal/handlers"
+	"payssage/internal/handlers/webhooks"
+	"payssage/internal/openapi"
 
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 	"riverqueue.com/riverui"
 )
 
-func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares, riverUIHandler *riverui.Handler) http.Handler {
+func (app *Payssage) CreateRouter(middlewares middlewares, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
+	chains, err := resolveAuthChains(middlewares)
+	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
-		AppName: app.cfg.AppName,
+		AppName:            app.cfg.AppName,
+		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
+		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
-			orgsHandlers.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
-			walletsHandlers.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
-			collectorsHandlers.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
-			sellersHandlers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
-			intentsHandlers.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
-			oauthHandlers.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
-			webhooksHandlers.RegisterRoutes(r, handlers.webhooks)
-			webhookEndpointsHandlers.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
-			webhookEventsHandlers.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
-			webhookDeliveriesHandlers.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
+			mountStrict(r, h, chains)
 
 			r.Group(func(r chi.Router) {
 				r.Use(basicAuth)
 				r.Mount("/riverui", riverUIHandler)
 			})
+		},
+	})
+}
+
+// mountStrict registers the generated strict handler on r with the
+// validation + auth middleware stack and the fun-envelope error handlers.
+// The raw-request capture middleware runs first so the provider webhook
+// receive can verify signatures against the exact body bytes.
+func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.Handler) http.Handler) {
+	strict := openapi.NewStrictHandlerWithOptions(h,
+		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(chains)},
+		openapi.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				fun.Error(err).SendWithCtx(r.Context(), w)
+			},
+		})
+	openapi.HandlerWithOptions(strict, openapi.ChiServerOptions{
+		BaseRouter:  r,
+		Middlewares: []openapi.MiddlewareFunc{webhooks.RawRequestMiddleware},
+		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+			var required *openapi.RequiredParamError
+			var invalid *openapi.InvalidParamFormatError
+			switch {
+			case errors.As(err, &required):
+				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: required.ParamName, Message: "parameter is required"}).Validation()).Send(w)
+			case errors.As(err, &invalid):
+				fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: invalid.ParamName, Message: "invalid format"}).Validation()).Send(w)
+			default:
+				fun.InternalServerError("internal error").Send(w)
+			}
 		},
 	})
 }

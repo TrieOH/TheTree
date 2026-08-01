@@ -1,0 +1,2292 @@
+openapi: 3.1.0
+
+info:
+  title: Payssage API
+  summary: Payments and webhooks service for TrieOH
+  description: |
+    Payssage is TrieOH's payments service: wallet and seller management,
+    payment intents (checkout), payment-provider OAuth connections
+    (MercadoPago), and the webhook pipeline that fans provider events out
+    to tenant webhook endpoints.
+
+    ## Authentication
+
+    All endpoints except `POST /webhooks/{provider}` (provider calls it)
+    and `GET /providers/{provider}/callback` (browser redirect target)
+    require a bearer JWT issued by IdentityX:
+
+    | Scheme | Header |
+    |---|---|
+    | Bearer JWT | `Authorization: Bearer <token>` |
+
+    ## Response envelope
+
+    Every JSON response is the `fun.Response` envelope:
+
+    ```json
+    {
+      "code": 200,
+      "message": "",
+      "data": { "...": "operation payload" },
+      "error": null,
+      "pagination": null,
+      "timestamp": "2026-01-01T12:00:00Z",
+      "module": "Payssage"
+    }
+    ```
+
+    - Success: `data` carries the payload. Errors: `error` carries an
+      `AppError` — `{ "code", "message", "fields", "meta" }`.
+    - `pagination` is reserved for paged list endpoints (currently
+      unused by Payssage routes).
+
+    ## Error codes → HTTP status
+
+    The `error.code` sentinel maps to the HTTP status:
+
+    | code | status |
+    |---|---|
+    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
+    | `UNAUTHORIZED` | 401 |
+    | `PAYMENT_REQUIRED` | 402 |
+    | `FORBIDDEN` | 403 |
+    | `NOT_FOUND` | 404 |
+    | `METHOD_NOT_ALLOWED` | 405 |
+    | `CONFLICT` | 409 |
+    | `UNPROCESSABLE_ENTITY` | 422 |
+    | `TOO_MANY_REQUESTS` | 429 |
+    | `INTERNAL_ERROR` | 500 |
+    | `NOT_IMPLEMENTED` | 501 |
+    | `BAD_GATEWAY` | 502 |
+    | `SERVICE_UNAVAILABLE` | 503 |
+
+    ## Amounts
+
+    All monetary amounts are `amount_cents` / `price_cents` — integer
+    cents (`int64`), never floats.
+
+    ## Webhooks for tenants
+
+    When a provider event arrives at `POST /webhooks/{provider}`, Payssage
+    records a webhook event and dispatches one delivery per webhook
+    endpoint registered on the event's wallet. Each delivery POSTs to the
+    endpoint URL:
+
+    | Header | Value |
+    |---|---|
+    | `Content-Type` | `application/json` |
+    | `X-Payssage-Signature` | `hex( HMAC-SHA256( payload, endpoint.secret ) )` |
+    | `X-Payssage-Event-Type` | Normalized event type (e.g. `payment.succeeded`) |
+
+    The body is the raw provider event payload. Verify the signature
+    before trusting the payload. Deliveries are retried up to **5
+    attempts** (any 2xx counts as success; request failures and non-2xx
+    count as failed attempts), after which the delivery is marked
+    `failed`.
+
+    ## Rate limits
+
+    The harness applies a fixed rate limit of 400 requests/second with a
+    burst of 20, keyed by client IP. Exceeded requests receive
+    `429 TOO_MANY_REQUESTS`.
+  version: 0.1.0
+  contact:
+    name: TrieOH
+    url: https://trieoh.com/support
+    email: contact@trieoh.com
+  license:
+    name: TSAL
+    url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/payssage/LICENSE
+
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+
+servers:
+  - url: https://api.payssage.com.br
+    description: Production
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: system
+    description: Reserved for system level operations such as /health
+
+  - name: orgs
+    description: Organization lifecycle and membership
+
+  - name: wallets
+    description: Payment wallets — fee configuration, sandbox state, collector binding
+
+  - name: collectors
+    description: Payment-provider accounts that receive funds
+
+  - name: sellers
+    description: Payment-provider accounts that split transactions
+
+  - name: intents
+    description: Payment intents — checkout, cancellation, and status tracking
+
+  - name: oauth
+    description: Payment-provider OAuth connections (MercadoPago connect)
+
+  - name: webhooks
+    description: Provider webhook ingestion, endpoint/event/delivery management
+
+  - name: testmode
+    description: Test-mode operations (sandbox helpers)
+
+externalDocs:
+  description: Full TrieOH documentation
+  url: https://docs.trieoh.com
+
+security:
+  - bearerAuth: []
+
+paths:
+  /docs/openapi.yml:
+    get:
+      tags: [system]
+      operationId: getOpenAPISpec
+      summary: Get the OpenAPI specification
+      description: |
+        Returns this service's OpenAPI 3.1 specification in YAML — the
+        same content as api/<svc>/api-spec.yml, embedded and served by
+        the harness. Docs tooling fetches this URL to render the API
+        reference. Public.
+      security: []
+      responses:
+        '200':
+          description: The OpenAPI 3.1 document
+          content:
+            application/yaml:
+              schema:
+                type: string
+                description: The OpenAPI 3.1 document in YAML.
+
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      summary: Health check
+      description: Harness-owned liveness probe. Public.
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: "ok"
+                  service:
+                    type: string
+                    const: "Payssage"
+
+  /organizations:
+    get:
+      tags: [orgs]
+      operationId: listOrganizations
+      summary: List your organizations
+      description: |
+        Lists the organizations the authenticated actor belongs to.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Organizations the actor belongs to
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [orgs]
+      operationId: createOrganization
+      summary: Create an organization
+      description: |
+        Creates an organization owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+            example:
+              name: TrieOH Labs
+              slug: trieoh-labs
+      responses:
+        '201':
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organization_id}/members:
+    get:
+      tags: [orgs]
+      operationId: listOrganizationMembers
+      summary: List organization members
+      description: |
+        Lists the members of an organization. The actor must be a member
+        of the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      responses:
+        '200':
+          description: Organization members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OrganizationMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [orgs]
+      operationId: addOrganizationMember
+      summary: Add an organization member
+      description: |
+        Adds an existing actor (by email) to the organization with the
+        given role. The actor must be an admin or owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: member
+      responses:
+        '201':
+          description: Member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [orgs]
+      operationId: removeOrganizationMember
+      summary: Remove an organization member
+      description: |
+        Removes an actor (by email) from the organization. The actor must
+        be an admin or owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organization_id}/member/{member_id}:
+    get:
+      tags: [orgs]
+      operationId: getOrganizationMemberByID
+      summary: Get an organization member by ID
+      description: |
+        Fetches a single organization member row by member ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - name: member_id
+          in: path
+          required: true
+          description: Member (actor) ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested organization member row
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OrganizationMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organization_id}/member/{member_email}:by_email:
+    get:
+      tags: [orgs]
+      operationId: getOrganizationMemberByEmail
+      summary: Get an organization member by email
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        organization member by email address.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - name: member_email
+          in: path
+          required: true
+          description: Email address of the member to fetch.
+          schema:
+            x-go-type: string
+            type: string
+            format: email
+      responses:
+        '200':
+          description: The requested organization member row
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OrganizationMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets:
+    get:
+      tags: [wallets]
+      operationId: listWallets
+      summary: List your wallets
+      description: |
+        Lists the wallets owned by the authenticated actor. NOTE: this
+        endpoint currently returns 201 (a known quirk of the current
+        implementation) — documented as-is.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Wallets owned by the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [wallets]
+      operationId: createWallet
+      summary: Create a wallet
+      description: |
+        Creates a wallet owned by the authenticated actor, optionally
+        scoped to an organization. Wallets are the ownership unit for
+        webhook endpoints, sellers, and payment intents.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWalletRequest'
+            example:
+              name: Main Wallet
+              organization_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '201':
+          description: Wallet created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Wallet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}:
+    get:
+      tags: [wallets]
+      operationId: getWallet
+      summary: Get a wallet by ID
+      description: |
+        Fetches a single wallet. NOTE: this endpoint currently returns
+        201 (a known quirk of the current implementation) — documented
+        as-is.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      responses:
+        '201':
+          description: The requested wallet
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}/fee:
+    patch:
+      tags: [wallets]
+      operationId: setWalletFee
+      summary: Set a wallet's fee
+      description: |
+        Sets the wallet's marketplace fee in basis points (bps; 100 bps =
+        1%). The authenticated actor must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetFeeBPSRequest'
+            example:
+              fee_bps: 100
+      responses:
+        '200':
+          description: Fee updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}/sandbox:
+    patch:
+      tags: [wallets]
+      operationId: setWalletSandbox
+      summary: Set a wallet's sandbox state
+      description: |
+        Toggles the wallet's sandbox mode. Sandbox wallets only accept
+        sandbox intents. The authenticated actor must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetSandboxRequest'
+            example:
+              sandbox: true
+      responses:
+        '200':
+          description: Sandbox state updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}/collector:
+    post:
+      tags: [wallets]
+      operationId: bindCollector
+      summary: Bind a collector to a wallet
+      description: |
+        Binds the wallet's payment collector (the provider account that
+        receives funds) after an OAuth connect. The actor must own the
+        wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindCollectorRequest'
+            example:
+              collector_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '204':
+          description: Collector bound
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [wallets]
+      operationId: unbindCollector
+      summary: Unbind a collector from a wallet
+      description: |
+        Unbinds the wallet's payment collector. The actor must own the
+        wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      responses:
+        '204':
+          description: Collector unbound
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organization_id}/wallets:
+    get:
+      tags: [wallets]
+      operationId: listOrganizationWallets
+      summary: List organization wallets
+      description: |
+        Lists the wallets scoped to an organization. The actor must
+        belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      responses:
+        '201':
+          description: Organization wallets
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /collectors:
+    get:
+      tags: [collectors]
+      operationId: listCollectors
+      summary: List your collectors
+      description: |
+        Lists the collectors (provider accounts that receive funds)
+        owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Collectors owned by the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Collector'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /collectors/{collector_id}:
+    get:
+      tags: [collectors]
+      operationId: getCollector
+      summary: Get a collector by ID
+      description: |
+        Fetches a single collector owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collector_id
+          in: path
+          required: true
+          description: Collector ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested collector
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Collector'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organization_id}/collectors:
+    get:
+      tags: [collectors]
+      operationId: listOrganizationCollectors
+      summary: List organization collectors
+      description: |
+        Lists the collectors scoped to an organization. The actor must
+        belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      responses:
+        '200':
+          description: Organization collectors
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Collector'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}/sellers:
+    get:
+      tags: [sellers]
+      operationId: listWalletSellers
+      summary: List a wallet's sellers
+      description: |
+        Lists the sellers (provider accounts that split transactions)
+        bound to the wallet. The actor must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      responses:
+        '200':
+          description: Wallet sellers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Seller'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /intents:
+    get:
+      tags: [intents]
+      operationId: listIntentsByProfile
+      summary: List your payment intents
+      description: |
+        Lists the payment intents created by the authenticated actor.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Intents created by the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Intent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /intents/{intent_id}:
+    get:
+      tags: [intents]
+      operationId: getIntent
+      summary: Get a payment intent
+      description: |
+        Fetches a single payment intent (checkout attempt) by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      responses:
+        '200':
+          description: The requested intent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Intent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /intents/{intent_id}/cancel:
+    post:
+      tags: [intents]
+      operationId: cancelIntent
+      summary: Cancel a payment intent
+      description: |
+        Cancels a pending payment intent and returns its updated state.
+        Only intents still `pending` (or otherwise cancellable) can be
+        cancelled.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      responses:
+        '200':
+          description: Intent cancelled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Intent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}/intents:
+    get:
+      tags: [intents]
+      operationId: listWalletIntents
+      summary: List a wallet's payment intents
+      description: |
+        Lists the payment intents raised against the wallet. The actor
+        must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      responses:
+        '200':
+          description: Wallet intents
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Intent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [intents]
+      operationId: checkout
+      summary: Create a payment intent (checkout)
+      description: |
+        Starts a checkout: creates a payment intent against the wallet
+        for the given seller, currency, and amount. The provider handles
+        the payment out-of-band and reports the result via webhook. The
+        actor must own the wallet. See the `Intent` schema for the
+        provider-specific checkout data carried in
+        `checkout_provider_data`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIntentRequest'
+            example:
+              seller_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              currency: BRL
+              amount_cents: 10000
+              checkout_provider_data:
+                payer:
+                  email: buyer@example.com
+                  first_name: Jane
+                  last_name: Doe
+              metadata:
+                order_id: "1234"
+      responses:
+        '201':
+          description: Intent created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Intent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /organizations/{organization_id}/intents:
+    get:
+      tags: [intents]
+      operationId: listOrganizationIntents
+      summary: List organization payment intents
+      description: |
+        Lists the payment intents raised against wallets scoped to the
+        organization. The actor must belong to the organization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      responses:
+        '200':
+          description: Organization intents
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Intent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /testmode/intents/create:
+    post:
+      tags: [testmode, intents]
+      operationId: hardCreateIntent
+      summary: Create an intent directly (test mode)
+      description: |
+        Test-mode helper: hard-creates an intent with full control over
+        its status, provider, and provider data — no payment provider is
+        contacted. Use to simulate provider outcomes (e.g. seed a
+        `succeeded` intent so downstream systems observe the webhook
+        flow). Must be a wallet owner.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HardCreateIntentRequest'
+            example:
+              wallet_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              seller_id: 3fa85f64-5717-4562-b3fc-2c963f66afa7
+              amount_cents: 5000
+              currency: BRL
+              sandbox: true
+              provider: mercado_pago
+              status: succeeded
+              provider_data: {}
+      responses:
+        '201':
+          description: Intent created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Intent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /providers/{provider}/connect:
+    post:
+      tags: [oauth]
+      operationId: connectProvider
+      summary: Start a payment-provider OAuth connection
+      description: |
+        Starts an OAuth connection to the given payment provider
+        (`mercado_pago`). Callers must pass the flow (`collector` or
+        `seller`), the provider redirect URL, and the final redirect URL
+        (where the user lands after the provider's consent screen). The
+        response carries the URL to send the user to. The provider
+        redirects back to `/providers/{provider}/callback` afterwards.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectRequest'
+            example:
+              flow: collector
+              provider_redirect_url: https://api.payssage.com.br/providers/mercado_pago/callback
+              final_redirect_url: https://app.trieoh.com/settings/payments
+              wallet_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Redirect URL for the provider consent screen
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+                        format: uri
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /providers/{provider}/callback:
+    get:
+      tags: [oauth]
+      operationId: providerCallback
+      summary: Payment-provider OAuth callback
+      description: |
+        Browser redirect target: the provider lands here after the user
+        authorizes. Payssage exchanges the code, stores the provider
+        credential, and redirects the browser to the `final_redirect_url`
+        captured at connect time. Public — the provider's OAuth flow
+        cannot send an Authorization header.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+        - name: code
+          in: query
+          required: true
+          description: Authorization code issued by the provider.
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: CSRF state issued at connect time.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: |
+            The final redirect URL the browser should be sent to after
+            the OAuth flow completes (returned as the envelope `data`
+            string — the browser client performs the redirect).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+                        format: uri
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /providers/{provider}/revoke:
+    post:
+      tags: [oauth]
+      operationId: revokeProvider
+      summary: Revoke a payment-provider connection
+      description: |
+        Revokes a connected provider credential (collector or seller).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            example:
+              flow: collector
+              id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '204':
+          description: Connection revoked
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhooks/{provider}:
+    post:
+      tags: [webhooks]
+      operationId: receiveWebhook
+      summary: Receive a provider webhook
+      description: |
+        Ingestion endpoint called by the payment provider (e.g.
+        MercadoPago) when a payment event occurs. Payssage verifies the
+        provider signature, normalizes the event, stores it, and
+        dispatches deliveries to every webhook endpoint on the event's
+        wallet. Returns 200 even for expected-and-ignored cases
+        (unknown event types, duplicate deliveries) so the provider does
+        not retry; bad signatures return an error. Public — providers
+        cannot send an Authorization header.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+      requestBody:
+        required: true
+        description: Raw provider event payload.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Webhook acknowledged (processed or expected-ignored)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /wallets/{wallet_id}/webhooks/endpoints:
+    get:
+      tags: [webhooks]
+      operationId: listWebhookEndpoints
+      summary: List a wallet's webhook endpoints
+      description: |
+        Lists the webhook endpoints registered on the wallet. The actor
+        must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      responses:
+        '200':
+          description: Wallet webhook endpoints
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WebhookEndpoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [webhooks]
+      operationId: createWebhookEndpoint
+      summary: Create a webhook endpoint
+      description: |
+        Registers a tenant webhook endpoint on the wallet. Payssage will
+        POST provider events to `url` (see the top-level "Webhooks for
+        tenants" section for the delivery envelope and signature
+        headers). The returned `secret` is used to verify the
+        `X-Payssage-Signature` header on each delivery. The actor must
+        own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookEndpointRequest'
+            example:
+              name: Payment events
+              url: https://app.example.com/webhooks/payments
+      responses:
+        '201':
+          description: Webhook endpoint created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WebhookEndpoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhooks/endpoints/{endpoint_id}:
+    get:
+      tags: [webhooks]
+      operationId: getWebhookEndpoint
+      summary: Get a webhook endpoint
+      description: |
+        Fetches a single webhook endpoint by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EndpointID'
+      responses:
+        '200':
+          description: The requested endpoint
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WebhookEndpoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [webhooks]
+      operationId: deleteWebhookEndpoint
+      summary: Delete a webhook endpoint
+      description: |
+        Deletes a webhook endpoint and stops future deliveries to it.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EndpointID'
+      responses:
+        '204':
+          description: Endpoint deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallets/{wallet_id}/webhooks/events:
+    get:
+      tags: [webhooks]
+      operationId: listWebhookEvents
+      summary: List a wallet's webhook events
+      description: |
+        Lists the provider webhook events recorded against the wallet.
+        The actor must own the wallet.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WalletID'
+      responses:
+        '200':
+          description: Wallet webhook events
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WebhookEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhooks/events/{event_id}:
+    get:
+      tags: [webhooks]
+      operationId: getWebhookEvent
+      summary: Get a webhook event
+      description: |
+        Fetches a single webhook event (normalized provider event) by ID.
+        `payload` is the raw provider payload as received.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          description: Webhook event ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested event
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WebhookEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhooks/endpoints/{endpoint_id}/deliveries:
+    get:
+      tags: [webhooks]
+      operationId: listWebhookDeliveries
+      summary: List an endpoint's deliveries
+      description: |
+        Lists the delivery attempts made to a webhook endpoint. Each
+        delivery tracks retries: up to 5 attempts before it is marked
+        `failed`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EndpointID'
+      responses:
+        '200':
+          description: Endpoint deliveries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WebhookDelivery'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhooks/deliveries/{delivery_id}:
+    get:
+      tags: [webhooks]
+      operationId: getWebhookDelivery
+      summary: Get a webhook delivery
+      description: |
+        Fetches a single delivery attempt, including its current status,
+        attempt count, and the last response received from the endpoint.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: delivery_id
+          in: path
+          required: true
+          description: Webhook delivery ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested delivery
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WebhookDelivery'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT issued by IdentityX, signed with Ed25519
+
+  parameters:
+    OrganizationID:
+      name: organization_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    WalletID:
+      name: wallet_id
+      in: path
+      required: true
+      description: Wallet ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    IntentID:
+      name: intent_id
+      in: path
+      required: true
+      description: Payment intent ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    EndpointID:
+      name: endpoint_id
+      in: path
+      required: true
+      description: Webhook endpoint ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    Provider:
+      name: provider
+      in: path
+      required: true
+      description: Payment provider slug (e.g. `mercado_pago`).
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request payload or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Insufficient permissions for the requested operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: The request conflicts with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      x-go-type: uuid.UUID
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    NullableUUID:
+      type: [ string, "null" ]
+      format: uuid
+      x-go-type: '*uuid.UUID'
+      x-go-type-skip-optional-pointer: true
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    Response:
+      type: object
+      description: |
+        The `fun.Response` envelope wrapping every JSON payload. On
+        success `data` carries the operation payload; on failure `error`
+        carries the AppError.
+      required: [code, message, timestamp, module]
+      properties:
+        code:
+          type: integer
+          description: HTTP status code, duplicated for convenience.
+        message:
+          type: string
+          description: Informational message; often empty on success.
+        data:
+          type: object
+          description: The operation payload. Shape is documented per operation.
+        error:
+          allOf:
+            - $ref: '#/components/schemas/Error'
+          description: Present (non-null) only on failure.
+        pagination:
+          allOf:
+            - $ref: '#/components/schemas/PaginationMeta'
+          description: Present only on paged list endpoints.
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          description: Service that produced the response.
+
+    Error:
+      type: object
+      title: AppError
+      description: The `fun.AppError` object carried in the envelope's `error` field.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - PAYMENT_REQUIRED
+            - FORBIDDEN
+            - NOT_FOUND
+            - METHOD_NOT_ALLOWED
+            - CONFLICT
+            - UNPROCESSABLE_ENTITY
+            - TOO_MANY_REQUESTS
+            - INTERNAL_ERROR
+            - NOT_IMPLEMENTED
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+        message:
+          type: string
+        fields:
+          type: array
+          description: Per-field validation errors (validation failures only).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        meta:
+          type: object
+          description: Arbitrary key/value context.
+          additionalProperties: true
+        debug:
+          type: object
+          description: Development-only diagnostics; stripped outside development environments.
+          properties:
+            raw_error:
+              type: string
+            stack_trace:
+              type: string
+
+    ErrorResponse:
+      type: object
+      description: The envelope as sent on failure.
+      required: [code, message, error, timestamp, module]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        error:
+          $ref: '#/components/schemas/Error'
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          description: Service that produced the response.
+
+    PaginationMeta:
+      type: object
+      description: Pagination metadata for paged list endpoints (currently unused by Payssage routes).
+      required: [page, limit, total, has_next, has_prev]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+        next_page:
+          type: integer
+        prev_page:
+          type: integer
+
+    Organization:
+      x-go-type: models.Organization
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A Payssage organization. Mirrors `models.Organization`.
+      required: [id, owner_id, name, slug, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        slug:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateOrganizationRequest:
+      type: object
+      description: Request body for organization creation. Mirrors `models.CreateOrganizationRequest`.
+      required: [name, slug]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    OrganizationRole:
+      x-go-type: models.OrganizationRole
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [member, admin, owner]
+
+    OrganizationMember:
+      x-go-type: models.OrganizationMember
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: Membership of an actor in an organization. Mirrors `models.OrganizationMember`.
+      required: [organization_id, member_id, role, joined_at]
+      properties:
+        organization_id:
+          $ref: '#/components/schemas/UUID'
+        member_id:
+          $ref: '#/components/schemas/UUID'
+          description: Actor ID of the member.
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+        joined_at:
+          type: string
+          format: date-time
+
+    AddOrganizationMemberRequest:
+      type: object
+      description: Request body for adding an organization member. Mirrors `models.AddOrganizationMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
+          $ref: '#/components/schemas/OrganizationRole'
+
+    RemoveOrganizationMemberRequest:
+      type: object
+      description: Request body for removing an organization member. Mirrors `models.RemoveOrganizationMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+
+    Wallet:
+      x-go-type: models.Wallet
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A Payssage wallet — ownership unit for intents, sellers, and webhooks. Mirrors `models.Wallet`.
+      required: [id, owner_id, name, sandbox, fee_bps, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+        name:
+          type: string
+        sandbox:
+          type: boolean
+          description: Whether the wallet operates in sandbox mode.
+        fee_bps:
+          type: integer
+          description: Marketplace fee in basis points (100 bps = 1%).
+        collector_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Bound collector, if any.
+        created_at:
+          type: string
+          format: date-time
+
+    CreateWalletRequest:
+      type: object
+      description: Request body for wallet creation. Mirrors `models.CreateWalletRequest`.
+      required: [name]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+
+    SetFeeBPSRequest:
+      type: object
+      description: Request body for setting a wallet fee. Mirrors `models.SetFeeBPSRequest`.
+      required: [fee_bps]
+      properties:
+        fee_bps:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          description: Fee in basis points (100 bps = 1%).
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+
+    BindCollectorRequest:
+      type: object
+      description: Request body for binding a collector to a wallet. Mirrors the handler's `bindCollectorRequest`.
+      required: [collector_id]
+      properties:
+        collector_id:
+          $ref: '#/components/schemas/UUID'
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+
+    SetSandboxRequest:
+      type: object
+      description: Request body for setting sandbox state. Mirrors `models.SetSandboxRequest`.
+      required: [sandbox]
+      properties:
+        sandbox:
+          type: boolean
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+
+    Collector:
+      x-go-type: models.Collector
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A provider account that receives funds. Mirrors `models.Collector`.
+      required: [id, owner_id, provider, provider_user_id, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+        provider:
+          type: string
+          description: Provider slug (e.g. `mercado_pago`).
+        provider_user_id:
+          type: string
+          description: User ID of the account at the provider.
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    Seller:
+      x-go-type: models.Seller
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: A provider account that splits transactions. Mirrors `models.Seller`.
+      required: [id, wallet_id, provider, provider_user_id, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        wallet_id:
+          $ref: '#/components/schemas/UUID'
+        provider:
+          type: string
+        provider_user_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    IntentStatus:
+      x-go-type: models.IntentStatus
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [pending, processing, succeeded, cancelled, rejected, failed, refunded]
+
+    IntentStatusDetail:
+      x-go-type: models.IntentStatusDetail
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum:
+        - insufficient_funds
+        - high_risk
+        - invalid_card
+        - card_disabled
+        - expired_card
+        - invalid_security_code
+        - pending_review
+        - other
+
+    Intent:
+      x-go-type: models.Intent
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        A payment attempt (checkout). `amount_cents` is the amount in
+        integer cents. `provider_data` carries provider-specific intent
+        data (e.g. MercadoPago order/transaction ids, PIX QR codes).
+        Mirrors `models.Intent`.
+      required: [id, wallet_id, seller_id, amount_cents, currency, sandbox, provider, status, provider_data, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        wallet_id:
+          $ref: '#/components/schemas/UUID'
+        seller_id:
+          $ref: '#/components/schemas/UUID'
+        collector_id:
+          $ref: '#/components/schemas/NullableUUID'
+        amount_cents:
+          type: integer
+          format: int64
+          description: Amount in integer cents.
+        currency:
+          type: string
+          description: ISO 4217 currency code (e.g. `BRL`).
+        sandbox:
+          type: boolean
+        provider:
+          type: string
+          description: Provider slug (e.g. `mercado_pago`).
+        status:
+          $ref: '#/components/schemas/IntentStatus'
+        status_detail:
+          allOf:
+            - $ref: '#/components/schemas/IntentStatusDetail'
+          description: Provider-reported failure/outcome detail, when present.
+        provider_data:
+          type: object
+          description: Provider-specific intent data (order/transaction ids, PIX QR codes, ...).
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          description: Caller-supplied metadata.
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateIntentRequest:
+      type: object
+      description: |
+        Request body for checkout. `checkout_provider_data` is
+        provider-specific and may carry payer info, installments, card
+        tokens, etc. Mirrors `models.CreateIntentRequest`.
+      required: [seller_id, currency, amount_cents]
+      properties:
+        seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        currency:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          description: ISO 4217 currency code (e.g. `BRL`).
+        amount_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          format: int64
+          description: Amount in integer cents.
+        checkout_provider_data:
+          type: object
+          description: Provider-specific checkout payload.
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+
+    HardCreateIntentRequest:
+      type: object
+      description: |
+        Request body for test-mode intent creation. Mirrors
+        `models.HardCreateIntentRequest`.
+      required: [wallet_id, seller_id, amount_cents, currency, provider, status]
+      properties:
+        wallet_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        collector_id:
+          $ref: '#/components/schemas/NullableUUID'
+        amount_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: integer
+          format: int64
+        currency:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        sandbox:
+          type: boolean
+        provider:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        status:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/IntentStatus'
+        provider_data:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+
+    OAuthFlow:
+      x-go-type: models.OAuthFlow
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [collector, seller]
+
+    ConnectRequest:
+      type: object
+      description: Request body for starting a provider OAuth connection. Mirrors `models.ConnectRequest`.
+      required: [flow, provider_redirect_url, final_redirect_url]
+      properties:
+        flow:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/OAuthFlow'
+        provider_redirect_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
+          type: string
+          format: uri
+          description: The Payssage callback URL the provider redirects to.
+        final_redirect_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
+          type: string
+          format: uri
+          description: Where the user lands after the OAuth flow completes.
+        wallet_id:
+          $ref: '#/components/schemas/NullableUUID'
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+
+    RevokeRequest:
+      type: object
+      description: Request body for revoking a provider connection. Mirrors `models.RevokeRequest`.
+      required: [flow, id]
+      properties:
+        flow:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/OAuthFlow'
+        id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+          description: Collector or seller ID to revoke.
+
+    WebhookEndpoint:
+      x-go-type: models.WebhookEndpoint
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        A tenant webhook endpoint. `secret` is the HMAC key used to sign
+        deliveries; verify the `X-Payssage-Signature` header with it.
+        Mirrors `models.WebhookEndpoint`.
+      required: [id, wallet_id, name, url, secret, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        wallet_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        secret:
+          type: string
+          description: HMAC-SHA256 signing key for delivery verification.
+        created_at:
+          type: string
+          format: date-time
+
+    CreateWebhookEndpointRequest:
+      type: object
+      description: Request body for webhook endpoint creation. Mirrors `models.CreateWebhookEndpointRequest`.
+      required: [name, url]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+        url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
+          type: string
+          format: uri
+
+    WebhookEvent:
+      x-go-type: models.WebhookEvent
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        A normalized provider webhook event. `event_type` is normalized
+        (e.g. `payment.succeeded`), `payload` is the raw provider payload
+        as received, and `external_id` is the provider's own event id
+        used for deduplication. Mirrors `models.WebhookEvent`.
+      required: [id, wallet_id, intent_id, provider, external_id, event_type, payload, received_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        wallet_id:
+          $ref: '#/components/schemas/UUID'
+        intent_id:
+          $ref: '#/components/schemas/UUID'
+        provider:
+          type: string
+        external_id:
+          type: string
+          description: Provider's own event/resource id.
+        event_type:
+          type: string
+          description: Normalized event type (e.g. `payment.succeeded`).
+        payload:
+          type: object
+          description: Raw provider event payload.
+          additionalProperties: true
+        received_at:
+          type: string
+          format: date-time
+
+    WebhookDeliveryStatus:
+      x-go-type: models.WebhookDeliveryStatus
+      x-go-type-import:
+        path: payssage/models
+      type: string
+      enum: [pending, delivered, failed]
+
+    WebhookDelivery:
+      x-go-type: models.WebhookDelivery
+      x-go-type-import:
+        path: payssage/models
+      type: object
+      description: |
+        One delivery attempt chain for a webhook event to an endpoint.
+        Retried up to 5 attempts; `attempts` counts them, `response_status`
+        / `response_body` record the last response received from the
+        endpoint. Mirrors `models.WebhookDelivery`.
+      required: [id, endpoint_id, event_id, status, attempts, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        endpoint_id:
+          $ref: '#/components/schemas/UUID'
+        event_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/WebhookDeliveryStatus'
+        attempts:
+          type: integer
+          description: Number of attempts made so far (max 5).
+        last_attempted_at:
+          type: [ string, "null" ]
+          format: date-time
+        response_status:
+          type: [ integer, "null" ]
+          description: HTTP status received from the endpoint on the last attempt.
+        response_body:
+          type: [ string, "null" ]
+          description: Response body received from the endpoint on the last attempt (truncated at 10 KB).
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time

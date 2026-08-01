@@ -10,6 +10,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// globalValidator is the shared instance used by Validate; registered once
+// at startup via SetupValidator (called by the harness).
+var globalValidator *validator.Validate
+
+func getValidator() *validator.Validate {
+	return globalValidator
+}
+
 func SetupValidator() *validator.Validate {
 	var v = validator.New()
 	err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
@@ -60,5 +68,6 @@ func SetupValidator() *validator.Validate {
 		return name
 	})
 
+	globalValidator = v
 	return v
 }
