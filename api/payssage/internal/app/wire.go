@@ -1,9 +1,6 @@
 package app
 
 import (
-	"lib/errx"
-	"lib/telemetry"
-	"lib/xslices"
 	"net/http"
 	"payssage/internal/authz"
 	"payssage/internal/features/collectors"
@@ -20,11 +17,8 @@ import (
 	providers2 "payssage/internal/providers"
 	"payssage/internal/sqlc"
 	"payssage/ports"
-	"strings"
 
-	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/jackc/pgx/v5"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/riverqueue/river"
 )
 
@@ -63,12 +57,9 @@ type commands struct {
 }
 
 type middlewares struct {
-	logger     func(http.Handler) http.Handler
-	cors       func(http.Handler) http.Handler
 	jwtAuth    func(http.Handler) http.Handler
 	apiKeyAuth func(http.Handler) http.Handler
 	anyAuth    func(http.Handler) http.Handler
-	metrics    func(http.Handler) http.Handler
 }
 
 type handlers struct {
@@ -148,17 +139,6 @@ func (app *Payssage) initMiddlewares() middlewares {
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	metricCollectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
-	if err != nil {
-		errx.Exit(err, "Failed to create collectors")
-	}
-	mw.metrics = mws.Metrics(metricCollectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
-	mw.cors = mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
-		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),
-		AllowCredentials: true,
-	})
 	return mw
 }
 

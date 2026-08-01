@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/httpserver"
 	libriver "lib/river"
 	"lib/telemetry"
 	"log/slog"
@@ -55,9 +56,10 @@ func (app *Payssage) run() {
 	middlewares := app.initMiddlewares()
 	handlers := app.initHandlers(commands, queries)
 
-	if app.cfg.ProfilePort != "" {
-		go servePprof(app.cfg.ProfilePort)
-	}
 	mux := app.CreateRouter(handlers, middlewares, riverUIHandler)
-	app.startServer(mux)
+	httpserver.Start(mux, httpserver.Config{
+		AppName:     app.cfg.AppName,
+		Port:        app.cfg.Port,
+		ProfilePort: app.cfg.ProfilePort,
+	})
 }

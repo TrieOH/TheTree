@@ -3,6 +3,7 @@ package app
 import (
 	"Informd/internal/sqlc"
 	"lib/database"
+	"lib/httpserver"
 )
 
 func (app *Informd) run() {
@@ -16,10 +17,10 @@ func (app *Informd) run() {
 	handlers := app.initHandlers(commands, queries)
 	middlewares := app.initMiddlewares()
 
-	if app.cfg.ProfilePort != "" {
-		go servePprof(app.cfg.ProfilePort)
-	}
-
 	mux := app.CreateRouter(handlers, middlewares)
-	app.startServer(mux)
+	httpserver.Start(mux, httpserver.Config{
+		AppName:     app.cfg.AppName,
+		Port:        app.cfg.Port,
+		ProfilePort: app.cfg.ProfilePort,
+	})
 }

@@ -3,6 +3,7 @@ package app
 import (
 	"IdentityX/internal/sqlc"
 	"lib/database"
+	"lib/httpserver"
 )
 
 func (app *IdentityX) run() {
@@ -16,10 +17,10 @@ func (app *IdentityX) run() {
 	handlers := app.initHandlers(queries, commands)
 	middlewares := app.initMiddlewares(repos)
 
-	if app.cfg.ProfilePort != "" {
-		go servePprof(app.cfg.ProfilePort)
-	}
-
 	mux := app.CreateRouter(middlewares, handlers)
-	app.startServer(mux)
+	httpserver.Start(mux, httpserver.Config{
+		AppName:     app.cfg.AppName,
+		Port:        app.cfg.Port,
+		ProfilePort: app.cfg.ProfilePort,
+	})
 }
