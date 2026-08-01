@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"lib/database"
+	"lib/httpserver"
 	"lib/telemetry"
 
 	idx "sdk/identityx"
@@ -26,7 +27,7 @@ func Start() {
 
 	app.cfg = config.LoadConfig()
 
-	SetupFUN()
+	httpserver.SetupFUN(app.cfg.AppName)
 
 	app.idxClient = SetupIdentityX(app.cfg)
 

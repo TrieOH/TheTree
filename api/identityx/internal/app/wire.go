@@ -15,14 +15,7 @@ import (
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/sqlc"
 	"IdentityX/ports"
-	"lib/errx"
-	"lib/telemetry"
-	"lib/xslices"
 	"net/http"
-	"strings"
-
-	mws "github.com/MintzyG/fun/middlewares"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // ── Wire types ────────────────────────────────────────────────────────────
@@ -63,14 +56,11 @@ type commands struct {
 }
 
 type middlewares struct {
-	logger            func(http.Handler) http.Handler
-	cors              func(http.Handler) http.Handler
 	jwtAuth           func(http.Handler) http.Handler
 	apiKeyAuth        func(http.Handler) http.Handler
 	anyAuth           func(http.Handler) http.Handler
 	clientOnly        func(http.Handler) http.Handler
 	projectClientOnly func(http.Handler) http.Handler
-	metrics           func(http.Handler) http.Handler
 }
 
 type handlers struct {
@@ -135,25 +125,6 @@ func (app *IdentityX) initMiddlewares(r *repos) middlewares {
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	mw.logger = mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
-	if err != nil {
-		errx.Exit(err, "Failed to create collectors")
-	}
-	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
-	mw.cors = mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
-		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),
-		AllowCredentials: true,
-	})
-	// mw.bodySize = mws.MaxBodySize(1 << 20)
-	// mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
-	// mw.realIP = mws.RealIP()
-	// mw.recover = mws.Recover(telemetry.Log())
-	// mw.timeout = mws.Timeout(60 * time.Second)
-	// mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
-	//	 KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	// })
 	mw.clientOnly = ClientOnly()
 	mw.projectClientOnly = ProjectClientOnly()
 	return mw

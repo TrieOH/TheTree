@@ -9,6 +9,7 @@ import (
 	"lib/database"
 	"lib/errx"
 	"lib/globals"
+	"lib/httpserver"
 	libriver "lib/river"
 	"lib/telemetry"
 	"time"
@@ -30,7 +31,7 @@ func Start() {
 	ctx := context.Background()
 	SetupConstraintMessages()
 	app.cfg = config.LoadConfig()
-	SetupFUN()
+	httpserver.SetupFUN(app.cfg.AppName)
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)

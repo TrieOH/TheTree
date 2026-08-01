@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/httpserver"
 	libriver "lib/river"
 	"lib/telemetry"
 	"payssage/internal/config"
@@ -29,7 +30,7 @@ func Start() {
 
 	app.cfg = config.LoadConfig()
 
-	SetupFUN()
+	httpserver.SetupFUN(app.cfg.AppName)
 
 	app.idxClient = SetupIdentityX(app.cfg)
 

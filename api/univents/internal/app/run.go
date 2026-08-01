@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/httpserver"
 	libriver "lib/river"
 )
 
@@ -21,7 +22,10 @@ func (app *Univents) run() {
 	riverClient, riverUIHandler := app.initRiver(ctx, repos)
 	defer libriver.LogStop(ctx, riverClient)
 
-	go servePprof(app.cfg.ProfilePort)
 	mux := app.CreateRouter(middlewares, handlers, riverUIHandler)
-	app.startServer(mux)
+	httpserver.Start(mux, httpserver.Config{
+		AppName:     app.cfg.AppName,
+		Port:        app.cfg.Port,
+		ProfilePort: app.cfg.ProfilePort,
+	})
 }
