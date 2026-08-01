@@ -89,12 +89,12 @@ function RouteComponent() {
                 "hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm",
               )}
             >
-              <div className="relative aspect-video overflow-hidden bg-muted">
+              <div className="relative aspect-video overflow-hidden bg-white">
                 <img
                   src={signature.image_url}
                   alt={signature.signatory_name}
                   className={cn(
-                    "h-full w-full object-contain bg-background transition-transform duration-700 ease-out",
+                    "h-full w-full object-contain bg-white transition-transform duration-700 ease-out",
                     "group-hover:scale-[1.03]",
                   )}
                   loading={index < 4 ? "eager" : "lazy"}

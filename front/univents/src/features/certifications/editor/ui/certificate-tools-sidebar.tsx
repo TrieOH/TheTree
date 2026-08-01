@@ -94,6 +94,11 @@ function CanvasDimensionInput({
 
 export function CertificateToolsSidebar() {
   const canvas = useCertificateEditorState((state) => state.canvas);
+  const name = useCertificateEditorState((state) => state.draft.name);
+  const kind = useCertificateEditorState((state) => state.draft.kind);
+  const description = useCertificateEditorState(
+    (state) => state.draft.description ?? "",
+  );
   const selectedCanvasPreset = CERTIFICATE_CANVAS_PRESETS.find(
     (preset) =>
       preset.size.width === canvas.width &&
@@ -103,10 +108,10 @@ export function CertificateToolsSidebar() {
     (state) => state.availableSignatures,
   );
   const backgroundUrl = useCertificateEditorState(
-    (state) => state.draft.url ?? state.draft.data.background,
+    (state) => state.draft.design_data.background,
   );
   const elements = useCertificateEditorState(
-    (state) => state.draft.data.elements,
+    (state) => state.draft.design_data.elements,
   );
   const selectedElementId = useCertificateEditorState(
     (state) => state.selectedElementId,
@@ -191,7 +196,53 @@ export function CertificateToolsSidebar() {
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r border-border bg-card p-4 text-card-foreground">
+    <aside className="flex w-64 shrink-0 flex-col gap-6 overflow-x-hidden overflow-y-auto border-r border-border bg-card p-4 text-card-foreground">
+      <section className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Informações
+        </h2>
+        <div className="space-y-1.5">
+          <span className="text-xs text-muted-foreground">Nome</span>
+          <Input
+            value={name}
+            maxLength={160}
+            onChange={(event) =>
+              certificateEditorActions.setName(event.target.value)
+            }
+            placeholder="Nome do certificado"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <span className="text-xs text-muted-foreground">Tipo</span>
+          <ToolbarCombobox
+            value={kind}
+            options={[
+              { value: "edition_attendance", label: "Presença na edição" },
+              { value: "program_attendance", label: "Presença na atividade" },
+            ]}
+            placeholder="Selecione o tipo"
+            searchPlaceholder="Buscar tipo..."
+            onChange={(value) =>
+              certificateEditorActions.setKind(
+                value as "edition_attendance" | "program_attendance",
+              )
+            }
+            className="w-full"
+            triggerClassName="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <span className="text-xs text-muted-foreground">Descrição</span>
+          <Input
+            value={description}
+            maxLength={500}
+            onChange={(event) =>
+              certificateEditorActions.setDescription(event.target.value)
+            }
+            placeholder="Opcional"
+          />
+        </div>
+      </section>
       <section className="space-y-2.5">
         <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Adicionar

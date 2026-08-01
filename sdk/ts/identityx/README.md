@@ -89,5 +89,49 @@ function Header() {
     </nav>
   );
 }
+```
+
+## Server-managed sessions
+
+The default provider stores tokens in browser storage for compatibility with
+client-only applications. Applications with a server runtime can replace the
+auth transport and keep tokens out of browser JavaScript:
+
+```tsx
+import {
+  AuthProvider,
+  type AuthProviderAdapter,
+} from "@trieoh/identityx-sdk-ts/react";
+import { createServerAuthService, restoreServerSession } from "./auth.server";
+
+const adapter: AuthProviderAdapter = {
+  restoreSession: restoreServerSession,
+  createAuth: ({ callbacks, setAuthenticated }) =>
+    createServerAuthService({ callbacks, setAuthenticated }),
+};
+
+export function App() {
+  return (
+    <AuthProvider adapter={adapter}>
+      <YourRoutes />
+    </AuthProvider>
+  );
+}
+```
+
+For TanStack Start, `restoreServerSession` and the methods returned by
+`createServerAuthService` can call server functions. Login and refresh should
+happen on the server, and their IdentityX token responses must not be returned
+to the browser. Prefer an opaque session cookie backed by server-side storage:
+
+- `HttpOnly`
+- `Secure` in production
+- `SameSite=Lax` (or stricter where possible)
+- `Path=/`
+
+State-changing server functions must also validate the request origin or use a
+CSRF token. The adapter's `setAuthenticated` callback updates the React auth
+state after server-side login/logout; `callbacks` preserves the standard
+`AuthProvider` lifecycle callbacks.
 
 ---

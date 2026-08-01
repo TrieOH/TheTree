@@ -1,32 +1,44 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+
 import {
   authFetcher,
   publicQueryFetcher,
   tanstackQueryFetcher,
 } from "@/shared/lib/api/fetch";
 import type {
+  CertificationEmissionErrorI,
   CertificationI,
-  CertificationTargetType,
   CertificationTemplateCreateI,
   CertificationTemplateI,
-  CertifyUserRequestI,
-  SetCertificationTemplateRequestI,
+  CertificationTemplateProgramI,
   VerifyCertificationResponseI,
 } from "../model";
 import { certificationKeys } from "./query-keys";
 
 export const createCertificationTemplateFn = createClientOnlyFn(
-  (
-    eventId: string,
-    editionId: string,
-    templateData: CertificationTemplateCreateI,
-  ) => {
+  async (editionId: string, templateData: CertificationTemplateCreateI) => {
     return authFetcher.post<CertificationTemplateI>(
-      `/events/${eventId}/editions/${editionId}/certification-templates`,
+      `/editions/${editionId}/certifications/templates`,
       templateData,
     );
   },
+);
+
+export const updateCertificationTemplateFn = createClientOnlyFn(
+  (templateId: string, data: CertificationTemplateCreateI) =>
+    authFetcher.put<CertificationTemplateI>(
+      `/certifications/templates/${templateId}`,
+      {
+        ...data,
+        design_data: data.design_data,
+      },
+    ),
+);
+
+export const deleteCertificationTemplateFn = createClientOnlyFn(
+  (templateId: string) =>
+    authFetcher.delete<null>(`/certifications/templates/${templateId}`),
 );
 
 export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
@@ -34,131 +46,114 @@ export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
 });
 
 export const getAllCertificationTemplatesFn = createClientOnlyFn(
-  async (eventId: string, editionId: string) => {
+  async (editionId: string) => {
     return tanstackQueryFetcher<CertificationTemplateI[]>(
-      `/events/${eventId}/editions/${editionId}/certification-templates`,
+      `/editions/${editionId}/certifications/templates`,
     );
   },
 );
 
-export const allCertificationTemplatesQueryOptions = (
-  eventId: string,
-  editionId: string,
-) => {
+export const allCertificationTemplatesQueryOptions = (editionId: string) => {
   return queryOptions({
-    queryKey: certificationKeys.templatesByEdition(eventId, editionId),
-    queryFn: () => getAllCertificationTemplatesFn(eventId, editionId),
+    queryKey: certificationKeys.templatesByEdition(editionId),
+    queryFn: () => getAllCertificationTemplatesFn(editionId),
   });
 };
 
 export const getCertificationTemplateFn = createClientOnlyFn(
-  (eventId: string, editionId: string, templateId: string) => {
+  async (templateId: string) => {
     return tanstackQueryFetcher<CertificationTemplateI>(
-      `/events/${eventId}/editions/${editionId}/certification-templates/${templateId}`,
+      `/certifications/templates/${templateId}`,
     );
   },
 );
 
-export const certificationTemplateQueryOptions = (
-  eventId: string,
-  editionId: string,
-  templateId: string,
-) => {
+export const certificationTemplateQueryOptions = (templateId: string) => {
   return queryOptions({
-    queryKey: certificationKeys.templateById(eventId, editionId, templateId),
-    queryFn: () => getCertificationTemplateFn(eventId, editionId, templateId),
+    queryKey: certificationKeys.templateById(templateId),
+    queryFn: () => getCertificationTemplateFn(templateId),
   });
 };
 
-export const setEditionCertificationTemplateFn = createClientOnlyFn(
-  (
-    eventId: string,
-    editionId: string,
-    data: SetCertificationTemplateRequestI,
-  ) => {
-    return authFetcher.patch<null>(
-      `/events/${eventId}/editions/${editionId}/certification-templates/set`,
-      data,
-    );
-  },
+export const getCertificationTemplateLinksFn = createClientOnlyFn(
+  (templateId: string) =>
+    tanstackQueryFetcher<CertificationTemplateProgramI[]>(
+      `/certifications/templates/${templateId}/links`,
+    ),
 );
 
-export const setActivityCertificationTemplateFn = createClientOnlyFn(
-  (
-    eventId: string,
-    editionId: string,
-    activityId: string,
-    data: SetCertificationTemplateRequestI,
-  ) => {
-    return authFetcher.patch<null>(
-      `/events/${eventId}/editions/${editionId}/activities/${activityId}/certification-templates/set`,
-      data,
-    );
-  },
+export const certificationTemplateLinksQueryOptions = (templateId: string) =>
+  queryOptions({
+    queryKey: [...certificationKeys.templates(), "links", templateId],
+    queryFn: () => getCertificationTemplateLinksFn(templateId),
+  });
+
+export const linkCertificationTemplateFn = createClientOnlyFn(
+  (templateId: string, programId: string) =>
+    authFetcher.post<null>(`/certifications/templates/${templateId}/link`, {
+      program_id: programId,
+    }),
 );
 
-export const certifyUserFn = createClientOnlyFn(
-  (
-    eventId: string,
-    editionId: string,
-    userId: string,
-    data: CertifyUserRequestI,
-  ) => {
-    return authFetcher.post<CertificationI>(
-      `/events/${eventId}/editions/${editionId}/users/${userId}/certifications`,
-      data,
-    );
-  },
+export const unlinkCertificationTemplateFn = createClientOnlyFn(
+  (templateId: string, programId: string) =>
+    authFetcher.delete<null>(`/certifications/templates/${templateId}/link`, {
+      program_id: programId,
+    }),
 );
 
-export const getCertificationFn = createClientOnlyFn(
-  (eventId: string, editionId: string, certId: string) => {
-    return tanstackQueryFetcher<CertificationI>(
-      `/events/${eventId}/editions/${editionId}/certifications/${certId}`,
-    );
-  },
-);
+export const getCertificationFn = createClientOnlyFn((certId: string) => {
+  return tanstackQueryFetcher<CertificationI>(`/certifications/${certId}`);
+});
 
-export const certificationQueryOptions = (
-  eventId: string,
-  editionId: string,
-  certId: string,
-) => {
+export const certificationQueryOptions = (certId: string) => {
   return queryOptions({
-    queryKey: certificationKeys.issuedById(eventId, editionId, certId),
-    queryFn: () => getCertificationFn(eventId, editionId, certId),
+    queryKey: certificationKeys.issuedById(certId),
+    queryFn: () => getCertificationFn(certId),
   });
 };
 
-export const getAllCertificationsByTargetFn = createClientOnlyFn(
-  async (targetType: CertificationTargetType, targetId: string) => {
-    return tanstackQueryFetcher<CertificationI[]>(
-      `/certifications?target_type=${targetType}&target_id=${targetId}`,
-    );
-  },
-);
+export const getAllCertificationsByUserFn = createClientOnlyFn(async () => {
+  return tanstackQueryFetcher<CertificationI[]>(`/certifications`);
+});
 
-export const certificationsByTargetQueryOptions = (
-  targetType: CertificationTargetType,
-  targetId: string,
-) => {
+export const certificationsByUserQueryOptions = () => {
   return queryOptions({
-    queryKey: certificationKeys.issuedByTarget(targetType, targetId),
-    queryFn: () => getAllCertificationsByTargetFn(targetType, targetId),
+    queryKey: certificationKeys.issuedByUser(),
+    queryFn: () => getAllCertificationsByUserFn(),
   });
 };
 
-export const getAllCertificationsByUserFn = createClientOnlyFn(
-  async (userId: string) => {
-    return tanstackQueryFetcher<CertificationI[]>(
-      `/users/${userId}/certifications`,
-    );
-  },
+export const getCertificationsByEditionFn = createClientOnlyFn(
+  (editionId: string) =>
+    tanstackQueryFetcher<CertificationI[]>(
+      `/editions/${editionId}/certifications`,
+    ),
 );
 
-export const certificationsByUserQueryOptions = (userId: string) => {
-  return queryOptions({
-    queryKey: certificationKeys.issuedByUser(userId),
-    queryFn: () => getAllCertificationsByUserFn(userId),
+export const invalidateCertificationFn = createClientOnlyFn(
+  ({ certificationId, reason }: { certificationId: string; reason?: string }) =>
+    authFetcher.post<null>(
+      `/certifications/${certificationId}/invalidate`,
+      reason ? { reason } : {},
+    ),
+);
+
+export const certificationsByEditionQueryOptions = (editionId: string) =>
+  queryOptions({
+    queryKey: certificationKeys.issuedByEdition(editionId),
+    queryFn: () => getCertificationsByEditionFn(editionId),
   });
-};
+
+export const getEmissionErrorsByEditionFn = createClientOnlyFn(
+  (editionId: string) =>
+    tanstackQueryFetcher<CertificationEmissionErrorI[]>(
+      `/editions/${editionId}/certifications/emission-errors`,
+    ),
+);
+
+export const emissionErrorsByEditionQueryOptions = (editionId: string) =>
+  queryOptions({
+    queryKey: certificationKeys.emissionErrorsByEdition(editionId),
+    queryFn: () => getEmissionErrorsByEditionFn(editionId),
+  });

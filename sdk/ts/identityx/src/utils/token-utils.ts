@@ -2,7 +2,12 @@ import { authStore } from "../store/auth-store";
 import { tokenStore } from "../store/token-store";
 import { logger } from "@trieoh/envoy-fetch-ts";
 import { browserStorage } from "./storage-adapter";
-import type { AuthTokenClaims, AuthTokens, TokenClaims } from "../types//token-types";
+import type {
+  AuthTokenClaims,
+  AuthTokens,
+  TokenClaims,
+  TokenSubject,
+} from "../types/token-types";
 
 
 // Stored only in memory
@@ -143,11 +148,11 @@ export function clearAuthTokens(): void {
   logger.log("Auth tokens and claims cleared");
 }
 
-export function getUserInfo() {
+export function getUserInfo(): TokenSubject | null {
   const claims = getTokenClaims();
   if (!claims) return null;
 
-  return claims.access_data.subject
+  return claims.access_data.subject;
 }
 
 export function decodeJwtExp(token: string): number | null {

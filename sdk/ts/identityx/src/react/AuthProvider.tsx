@@ -8,16 +8,20 @@ import {
   useSyncExternalStore
 } from "react";
 import { Api } from "../core/api";
-import { createAuthService, type AuthCallbacks } from "../core/services";
+import {
+  createAuthService,
+  type AuthCallbacks,
+  type AuthService,
+} from "../core/services";
 import { getTokenClaims, isRefreshSessionExpired } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
 import { logger, type DefaultFetchClientConfig } from "@trieoh/envoy-fetch-ts";
-import type { AuthTokenClaims } from "../types/token-types";
+import type { AuthTokenClaims, TokenSubject } from "../types/token-types";
 
 type AuthContextType = {
-  auth: ReturnType<typeof createAuthService>;
+  auth: AuthService;
   isAuthenticated: boolean;
   isInitializing: boolean;
   isProjectMode?: boolean;
@@ -25,21 +29,30 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({
-  children,
-  baseURL,
-  projectId,
-  isProjectMode = true,
-  fallback,
-  waitSession = true,
-  clientConfig,
-  onLogin,
-  onSetup,
-  onResetPassword,
-  onRegister,
-  onVerify,
-  onRefresh,
-}: {
+export interface AuthProviderAdapterContext {
+  callbacks: AuthCallbacks;
+  defaultAuth: AuthService;
+  getProfile(): TokenSubject | null;
+  setProfile(profile: TokenSubject | null): void;
+  setAuthenticated(isAuthenticated: boolean): void;
+}
+
+export interface RestoredAuthSession {
+  isAuthenticated: boolean;
+  profile: TokenSubject | null;
+}
+
+/**
+ * Replaces browser-side IdentityX calls with an application-owned transport.
+ * This is intended for BFF/server-function integrations where tokens remain in
+ * HttpOnly cookies or server-side session storage.
+ */
+export interface AuthProviderAdapter {
+  createAuth(context: AuthProviderAdapterContext): AuthService;
+  restoreSession(): Promise<boolean | RestoredAuthSession>;
+}
+
+export interface AuthProviderProps extends AuthCallbacks {
   children: React.ReactNode;
   baseURL?: string;
   projectId?: string;
@@ -50,8 +63,28 @@ export function AuthProvider({
   waitSession?: boolean;
   /** Extra config forwarded to the API client (e.g. timeout) */
   clientConfig?: Omit<DefaultFetchClientConfig, "adapter">;
-} & AuthCallbacks) {
+  /** Override auth calls and session restoration, typically with server functions. */
+  adapter?: AuthProviderAdapter;
+}
+
+export function AuthProvider({
+  children,
+  baseURL,
+  projectId,
+  isProjectMode = true,
+  fallback,
+  waitSession = true,
+  clientConfig,
+  adapter,
+  onLogin,
+  onSetup,
+  onResetPassword,
+  onRegister,
+  onVerify,
+  onRefresh,
+}: AuthProviderProps) {
   const isRestoring = useRef(false);
+  const profile = useRef<TokenSubject | null>(null);
 
   const { isAuthenticated, isInitializing } = useSyncExternalStore(
     authStore.subscribe,
@@ -81,16 +114,38 @@ export function AuthProvider({
     clientConfig,
   ), [baseURL, onTokenRefreshed, clientConfig]);
 
+  const setAuthenticated = useCallback((authenticated: boolean) => {
+    authStore.set({
+      isAuthenticated: authenticated,
+      isInitializing: false,
+    });
+  }, []);
+
+  const callbacks = useMemo<AuthCallbacks>(() => ({
+    onLogin,
+    onSetup,
+    onResetPassword,
+    onRegister,
+    onVerify,
+    onRefresh,
+  }), [onLogin, onSetup, onResetPassword, onRegister, onVerify, onRefresh]);
+
+  const defaultAuth = useMemo(
+    () => createAuthService(apiInstance, callbacks),
+    [apiInstance, callbacks],
+  );
+
   const auth = useMemo(
-    () => createAuthService(apiInstance, {
-      onLogin,
-      onSetup,
-      onResetPassword,
-      onRegister,
-      onVerify,
-      onRefresh,
-    }),
-    [apiInstance, onLogin, onSetup, onResetPassword, onRegister, onVerify, onRefresh],
+    () => adapter
+      ? adapter.createAuth({
+          callbacks,
+          defaultAuth,
+          getProfile: () => profile.current,
+          setProfile: (value) => { profile.current = value; },
+          setAuthenticated,
+        })
+      : defaultAuth,
+    [adapter, defaultAuth, callbacks, setAuthenticated],
   );
 
   useEffect(() => {
@@ -99,6 +154,22 @@ export function AuthProvider({
     const restoreSession = async () => {
       if (isRestoring.current) return;
       isRestoring.current = true;
+
+      if (adapter) {
+        try {
+          const restored = await adapter.restoreSession();
+          if (typeof restored === "boolean") {
+            setAuthenticated(restored);
+          } else {
+            profile.current = restored.profile;
+            setAuthenticated(restored.isAuthenticated);
+          }
+        } catch {
+          setAuthenticated(false);
+          logger.warn("Could not restore server-managed session.");
+        }
+        return;
+      }
 
       if (getTokenClaims()) {
         authStore.set({ isAuthenticated: true, isInitializing: false });
@@ -124,7 +195,7 @@ export function AuthProvider({
     };
 
     restoreSession();
-  }, [auth, isProjectMode]);
+  }, [adapter, apiInstance, isProjectMode, setAuthenticated]);
 
   const contextValue = useMemo(() => ({
     auth,

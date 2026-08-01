@@ -2,13 +2,16 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, FileX2, Hash, Loader2, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
-import { allPublicActivitiesQueryOptions } from "@/features/activities/api";
-import type { ActivityI } from "@/features/activities/model";
 import {
   certificationTemplateQueryOptions,
   verifyCertificationHashFn,
 } from "@/features/certifications/api";
 import { certificationKeys } from "@/features/certifications/api/query-keys";
+import { getCertificationTemplateOrDefault } from "@/features/certifications/default-template";
+import type {
+  CertificationI,
+  CertificationTemplateI,
+} from "@/features/certifications/model";
 import {
   CertificateTemplateStaticView,
   CertViewer,
@@ -16,6 +19,8 @@ import {
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
+import { programsQueryOptions } from "@/features/programs/api";
+import type { ProgramI } from "@/features/programs/model";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import {
   Card,
@@ -49,16 +54,12 @@ function getOrigin() {
 type VerifiedTemplateSectionProps = {
   hash: string;
   templateQuery: {
-    query: ReturnType<typeof certificationTemplateQueryOptions>;
+    query?: ReturnType<typeof certificationTemplateQueryOptions>;
     eventId: string;
     editionId: string;
   };
-  payload: {
-    target_type: "edition" | "activity";
-    target_id: string;
-    certified_at: string;
-  };
-  activityLookup: Map<string, ActivityI>;
+  payload: CertificationI;
+  activityLookup: Map<string, ProgramI>;
   editionLookup: Map<string, EditionI>;
 };
 
@@ -69,37 +70,43 @@ function VerifiedTemplateSection({
   activityLookup,
   editionLookup,
 }: VerifiedTemplateSectionProps) {
-  const { data: templateData } = useQuery(templateQuery.query);
+  const { data: linkedTemplate } = useQuery<CertificationTemplateI | null>({
+    queryKey: templateQuery.query?.queryKey ?? ["certifications", "default"],
+    queryFn: async (context): Promise<CertificationTemplateI | null> => {
+      const queryFn = templateQuery.query?.queryFn;
+      if (!queryFn) return null;
+      return (await queryFn(context as never)) as CertificationTemplateI;
+    },
+  });
+  const templateData = getCertificationTemplateOrDefault(linkedTemplate);
 
   const variables = useMemo(() => {
     const activity =
-      payload.target_type === "activity"
-        ? (activityLookup.get(payload.target_id) ?? null)
+      payload.program_id !== null
+        ? (activityLookup.get(payload.program_id) ?? null)
         : null;
     const editionId =
-      payload.target_type === "edition"
-        ? payload.target_id
+      payload.program_id === null
+        ? payload.edition_id
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
 
     return {
       activity_name:
-        payload.target_type === "edition"
+        payload.program_id === null
           ? (edition?.name ?? "")
-          : (activity?.title ?? edition?.name ?? ""),
-      certified_at: formatCertifiedAt(payload.certified_at),
+          : (activity?.name ?? edition?.name ?? ""),
+      certified_at: formatCertifiedAt(payload.issued_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
     };
   }, [activityLookup, editionLookup, hash, payload]);
 
-  if (!templateData) return null;
-
   return (
     <div className="mb-6 overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{templateData.title}</p>
+          <p className="truncate text-sm font-medium">{templateData.name}</p>
           <p className="text-xs text-muted-foreground">
             Certificado verificado
           </p>
@@ -128,8 +135,8 @@ function VerifyCertificationPage() {
     retry: false,
   });
 
-  const verified = data?.is_verified === true;
-  const payload = data ?? null;
+  const verified = data?.valid === true;
+  const payload = data?.cert ?? null;
 
   const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
   const editionQueries = useQueries({
@@ -151,43 +158,41 @@ function VerifyCertificationPage() {
 
   const activityQueries = useQueries({
     queries: [...editionLookup.values()].map((edition) => ({
-      ...allPublicActivitiesQueryOptions(edition.event_id, edition.id),
+      ...programsQueryOptions(edition.id),
       enabled: !!edition.event_id,
     })),
   });
 
   const activityLookup = useMemo(() => {
-    const activities = new Map<string, ActivityI>();
+    const programs = new Map<string, ProgramI>();
     activityQueries.forEach((query) => {
-      for (const activity of (query.data ?? []) as ActivityI[]) {
-        activities.set(activity.id, activity);
+      for (const activity of query.data ?? []) {
+        programs.set(activity.id, activity);
       }
     });
-    return activities;
+    return programs;
   }, [activityQueries]);
 
   const templateQuery = useMemo(() => {
     if (!payload) return null;
 
     const activity =
-      payload.target_type === "activity"
-        ? (activityLookup.get(payload.target_id) ?? null)
+      payload.program_id !== null
+        ? (activityLookup.get(payload.program_id) ?? null)
         : null;
     const editionId =
-      payload.target_type === "edition"
-        ? payload.target_id
+      payload.program_id === null
+        ? payload.edition_id
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
-    const templateId = activity?.certification_template_id ?? null;
+    const templateId = payload.template_id;
 
-    if (!templateId || !edition?.event_id || !edition?.id) return null;
+    if (!edition?.event_id || !edition?.id) return null;
 
     return {
-      query: certificationTemplateQueryOptions(
-        edition.event_id,
-        edition.id,
-        templateId,
-      ),
+      query: templateId
+        ? certificationTemplateQueryOptions(templateId)
+        : undefined,
       eventId: edition.event_id,
       editionId: edition.id,
     };
@@ -261,7 +266,7 @@ function VerifyCertificationPage() {
                       Tipo
                     </p>
                     <p className="mt-1 text-sm font-medium capitalize">
-                      {payload?.target_type}
+                      {payload?.program_id === null ? "edition" : "program"}
                     </p>
                   </div>
                 </div>
@@ -271,7 +276,7 @@ function VerifyCertificationPage() {
                     Target
                   </p>
                   <p className="mt-1 font-mono text-sm break-all">
-                    {payload?.target_id}
+                    {payload?.program_id ?? payload?.edition_id}
                   </p>
                 </div>
 
@@ -280,7 +285,7 @@ function VerifyCertificationPage() {
                 <div className="text-sm text-muted-foreground">
                   Emitido em{" "}
                   <span className="font-medium text-foreground">
-                    {payload ? formatCertifiedAt(payload.certified_at) : "-"}
+                    {payload ? formatCertifiedAt(payload.issued_at) : "-"}
                   </span>
                 </div>
               </>
@@ -298,17 +303,17 @@ function VerifyCertificationPage() {
               </div>
             )}
 
-            {payload?.target_type && (
+            {payload && (
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="gap-1.5">
                   <Hash className="size-3.5" />
-                  {payload.target_type}
+                  {payload.program_id === null ? "edition" : "program"}
                 </Badge>
                 <Badge
                   variant="secondary"
                   className="font-mono text-[10px] uppercase tracking-wider"
                 >
-                  {payload.is_verified ? "verified" : "unverified"}
+                  {data?.valid ? "verified" : "unverified"}
                 </Badge>
               </div>
             )}

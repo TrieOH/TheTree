@@ -13,9 +13,11 @@ import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { ThemeProvider } from "next-themes";
 import { env } from "@/env";
 import { UploadQueueProvider } from "@/features/upload-queue/ui/upload-queue-provider";
+import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
 import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
+import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { Provider as TanStackQueryProvider } from "../integrations/tanstack-query/root-provider";
@@ -75,6 +77,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <TanStackQueryProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <AuthProvider
+                adapter={identityXAuthAdapter}
                 baseURL={env.VITE_AUTH_API_URL}
                 fallback={
                   <div className="h-screen w-screen flex items-center justify-center">

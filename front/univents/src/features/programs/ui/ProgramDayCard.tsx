@@ -1,5 +1,6 @@
 import {
   Activity,
+  Award,
   Check,
   ChevronRight,
   LogIn,
@@ -46,6 +47,7 @@ interface ProgramDayCardProps {
   items: { program: ProgramI; occurrence: OccurrenceI }[];
   maxItems?: number;
   editionId?: string;
+  certificateProgramIds?: ReadonlySet<string>;
 }
 
 export function ProgramDayCard({
@@ -53,6 +55,7 @@ export function ProgramDayCard({
   items,
   maxItems = 3,
   editionId,
+  certificateProgramIds,
 }: ProgramDayCardProps) {
   const { addItem, items: cartItems } = useCart(editionId ?? "");
   const visible = items.slice(0, maxItems);
@@ -104,6 +107,12 @@ export function ProgramDayCard({
                 <h4 className="mt-1 text-[15px] font-bold text-card-foreground leading-snug">
                   {program.name}
                 </h4>
+                {certificateProgramIds?.has(program.id) ? (
+                  <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                    <Award className="size-3.5" />
+                    Certificado disponível
+                  </span>
+                ) : null}
 
                 {/* Description */}
                 {program.description && (

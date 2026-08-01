@@ -402,7 +402,7 @@ export function CertificatePropertiesPanel() {
     (state) => state.selectedElementId,
   );
   const elements = useCertificateEditorState(
-    (state) => state.draft.data.elements,
+    (state) => state.draft.design_data.elements,
   );
   const element =
     elements.find((item) => item.id === selectedElementId) ?? null;

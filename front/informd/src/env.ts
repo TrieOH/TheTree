@@ -4,6 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
+    AUTH_SESSION_PASSWORD: z.string().min(32),
     ADMIN_USER_ID: z.string().optional(),
   },
 
@@ -26,6 +27,7 @@ export const env = createEnv({
   runtimeEnv: {
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
+    AUTH_SESSION_PASSWORD: process.env.AUTH_SESSION_PASSWORD,
   },
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:");

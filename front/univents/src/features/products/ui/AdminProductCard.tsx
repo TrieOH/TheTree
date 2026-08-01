@@ -120,11 +120,11 @@ export function AdminProductCard({
       )}
       role="button"
       tabIndex={0}
-      onClick={() => handleAction("edit")}
+      onClick={() => handleAction("variants")}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          handleAction("edit");
+          handleAction("variants");
         }
       }}
     >

@@ -50,9 +50,10 @@ export interface CertificateEditorState {
 
 function createInitialDraft(): CertificationTemplateDraft {
   return {
-    title: "Certificado sem título",
-    url: null,
-    data: {
+    kind: "edition_attendance",
+    name: "Certificado sem título",
+    description: null,
+    design_data: {
       canvas: { ...DEFAULT_CERTIFICATE_CANVAS },
       background: null,
       elements: [createHashElement(DEFAULT_CERTIFICATE_CANVAS)],
@@ -84,7 +85,7 @@ function setElements(
     ...state,
     draft: {
       ...state.draft,
-      data: { ...state.draft.data, elements },
+      design_data: { ...state.draft.design_data, elements },
     },
   };
 }
@@ -115,15 +116,20 @@ function normalizeLoadedElement(
 
 export const certificateEditorActions = {
   loadDraft(draft: CertificationTemplateDraft): void {
-    const canvas = draft.data.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
+    const designData = draft.design_data ?? {
+      canvas: DEFAULT_CERTIFICATE_CANVAS,
+      background: null,
+      elements: [],
+    };
+    const canvas = designData.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
     updateState((state) => ({
       ...state,
       draft: {
         ...draft,
-        data: {
-          ...draft.data,
+        design_data: {
+          ...designData,
           canvas: { ...canvas },
-          elements: draft.data.elements.map(normalizeLoadedElement),
+          elements: (designData.elements ?? []).map(normalizeLoadedElement),
         },
       },
       canvas: { ...canvas },
@@ -138,10 +144,24 @@ export const certificateEditorActions = {
     certificateEditorStore.setState(() => createInitialState());
   },
 
-  setTitle(title: string): void {
+  setName(name: string): void {
     updateState((state) => ({
       ...state,
-      draft: { ...state.draft, title },
+      draft: { ...state.draft, name },
+    }));
+  },
+
+  setKind(kind: CertificationTemplateDraft["kind"]): void {
+    updateState((state) => ({
+      ...state,
+      draft: { ...state.draft, kind },
+    }));
+  },
+
+  setDescription(description: string): void {
+    updateState((state) => ({
+      ...state,
+      draft: { ...state.draft, description: description || null },
     }));
   },
 
@@ -150,8 +170,7 @@ export const certificateEditorActions = {
       ...state,
       draft: {
         ...state.draft,
-        url,
-        data: { ...state.draft.data, background: url },
+        design_data: { ...state.draft.design_data, background: url },
       },
     }));
   },
@@ -178,7 +197,7 @@ export const certificateEditorActions = {
       const scaleX = canvas.width / state.canvas.width;
       const scaleY = canvas.height / state.canvas.height;
       const fontScale = Math.sqrt(scaleX * scaleY);
-      const elements = state.draft.data.elements.map((element) => {
+      const elements = state.draft.design_data.elements.map((element) => {
         const scaled = {
           ...element,
           x: element.x * scaleX,
@@ -216,7 +235,10 @@ export const certificateEditorActions = {
             ...state,
             draft: {
               ...state.draft,
-              data: { ...state.draft.data, canvas: { ...canvas } },
+              design_data: {
+                ...state.draft.design_data,
+                canvas: { ...canvas },
+              },
             },
           },
           elements,
@@ -230,13 +252,13 @@ export const certificateEditorActions = {
     updateState((state) => {
       if (
         element.type === "hash" &&
-        state.draft.data.elements.some((item) => item.type === "hash")
+        state.draft.design_data.elements.some((item) => item.type === "hash")
       ) {
         return state;
       }
 
       return {
-        ...setElements(state, [...state.draft.data.elements, element]),
+        ...setElements(state, [...state.draft.design_data.elements, element]),
         selectedElementId: element.id,
       };
     });
@@ -251,7 +273,7 @@ export const certificateEditorActions = {
     updateState((state) =>
       setElements(
         state,
-        state.draft.data.elements.map((element) =>
+        state.draft.design_data.elements.map((element) =>
           element.id === id ? updater(element) : element,
         ),
       ),
@@ -271,7 +293,7 @@ export const certificateEditorActions = {
     const controller = certificateEditorStore.state.richTextController;
     if (controller?.elementId === id) controller.commit();
     updateState((state) => {
-      const target = state.draft.data.elements.find(
+      const target = state.draft.design_data.elements.find(
         (element) => element.id === id,
       );
       if (!target || target.type === "hash") return state;
@@ -279,7 +301,9 @@ export const certificateEditorActions = {
       return {
         ...setElements(
           state,
-          state.draft.data.elements.filter((element) => element.id !== id),
+          state.draft.design_data.elements.filter(
+            (element) => element.id !== id,
+          ),
         ),
         selectedElementId:
           state.selectedElementId === id ? null : state.selectedElementId,
@@ -333,7 +357,7 @@ export const certificateEditorActions = {
 
   moveElement(id: string, targetIndex: number): void {
     updateState((state) => {
-      const elements = [...state.draft.data.elements];
+      const elements = [...state.draft.design_data.elements];
       const currentIndex = elements.findIndex((element) => element.id === id);
       if (currentIndex < 0) return state;
 
@@ -348,7 +372,7 @@ export const certificateEditorActions = {
 
   bringForward(id: string): void {
     const state = certificateEditorStore.state;
-    const index = state.draft.data.elements.findIndex(
+    const index = state.draft.design_data.elements.findIndex(
       (element) => element.id === id,
     );
     this.moveElement(id, index + 1);
@@ -356,7 +380,7 @@ export const certificateEditorActions = {
 
   sendBackward(id: string): void {
     const state = certificateEditorStore.state;
-    const index = state.draft.data.elements.findIndex(
+    const index = state.draft.design_data.elements.findIndex(
       (element) => element.id === id,
     );
     this.moveElement(id, index - 1);
@@ -365,7 +389,7 @@ export const certificateEditorActions = {
   bringToFront(id: string): void {
     this.moveElement(
       id,
-      certificateEditorStore.state.draft.data.elements.length,
+      certificateEditorStore.state.draft.design_data.elements.length,
     );
   },
 

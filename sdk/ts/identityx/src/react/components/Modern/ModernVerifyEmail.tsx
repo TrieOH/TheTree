@@ -33,14 +33,6 @@ export function ModernVerifyEmail({
     setStatus("verifying");
 
     try {
-      const profile = auth.profile();
-      if (profile?.is_verified) {
-        setStatus("already_verified");
-        setMessage("Seu e-mail já está verificado.");
-        setIsLoading(false);
-        return;
-      }
-
       const res = await auth.verifyEmail(token);
 
       if (res.success) {

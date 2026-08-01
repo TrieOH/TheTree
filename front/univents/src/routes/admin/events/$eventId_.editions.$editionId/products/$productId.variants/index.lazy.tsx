@@ -11,6 +11,7 @@ import {
   useUpdateVariantMutation,
 } from "@/features/products/api/mutations";
 import type { VariantI } from "@/features/products/model";
+import { AdminVariantCard } from "@/features/products/ui/AdminVariantCard";
 import { ManageVariantModal } from "@/features/products/ui/ManageVariantModal";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
@@ -86,7 +87,8 @@ function RouteComponent() {
 
       <PaginatedContainer<VariantI>
         items={filteredVariants}
-        layout="list"
+        layout="grid"
+        minItemWidth="14rem"
         pageSize={10}
         gap="3"
         sort={sort}
@@ -129,51 +131,14 @@ function RouteComponent() {
           />
         }
         renderItems={(slice) =>
-          slice.map((variant) => (
-            <div
+          slice.map((variant, index) => (
+            <AdminVariantCard
               key={variant.id}
-              className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 transition-colors hover:bg-accent/5"
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-sm font-medium text-foreground">
-                  {variant.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Código: {variant.vendor_code}
-                  {variant.description && <span> — {variant.description}</span>}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-4 pl-4">
-                <div className="text-right text-sm">
-                  <p className="font-medium text-foreground">
-                    R$ {(variant.price / 100).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {variant.stock !== null
-                      ? `${variant.stock} em estoque`
-                      : "Ilimitado"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setModalState({ open: true, variant })}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeletingVariant(variant)}
-                  >
-                    Excluir
-                  </Button>
-                </div>
-              </div>
-            </div>
+              variant={variant}
+              index={index}
+              onEdit={() => setModalState({ open: true, variant })}
+              onDelete={() => setDeletingVariant(variant)}
+            />
           ))
         }
       />

@@ -11,6 +11,7 @@ import {
 import {
   useCreateEventMutation,
   useDiscontinueEventMutation,
+  usePatchEventMutation,
   usePublishEventMutation,
 } from "@/features/events/api/mutations";
 import type { EventI } from "@/features/events/model";
@@ -40,6 +41,7 @@ function RouteComponent() {
   const [discontinuingEvent, setDiscontinuingEvent] = useState<EventI | null>(
     null,
   );
+  const [editingEvent, setEditingEvent] = useState<EventI | null>(null);
 
   const { data: ownEvents = [] } = useQuery(allOwnEventsQueryOptions());
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
@@ -50,6 +52,7 @@ function RouteComponent() {
   const createMutation = useCreateEventMutation();
   const publishEventMutation = usePublishEventMutation();
   const discontinueEventMutation = useDiscontinueEventMutation();
+  const patchEventMutation = usePatchEventMutation();
 
   const filteredEvents = [...events]
     .filter((event) => {
@@ -157,16 +160,30 @@ function RouteComponent() {
               index={idx}
               onPublish={setPublishingEvent}
               onDiscontinue={setDiscontinuingEvent}
+              onEdit={setEditingEvent}
             />
           ))
         }
       />
 
       <ManageEventModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
+        key={editingEvent?.id ?? "create"}
+        open={modalOpen || !!editingEvent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setModalOpen(false);
+            setEditingEvent(null);
+          }
+        }}
+        event={editingEvent}
         onCreate={(values) =>
-          createMutation.mutateAsync(values).then(
+          (editingEvent
+            ? patchEventMutation.mutateAsync({
+                eventId: editingEvent.id,
+                data: values,
+              })
+            : createMutation.mutateAsync(values)
+          ).then(
             (res) => (res.success ? res.data : false),
             () => false,
           )

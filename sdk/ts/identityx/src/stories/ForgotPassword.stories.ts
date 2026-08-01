@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import ForgotPasswordWithProvider from './components/ForgotPasswordWithProvider';
 
 const meta = {
@@ -33,7 +33,7 @@ export const AuthMode: Story = {
 
 export const WithLogin: Story = {
   args: {
-    loginRedirect: () => {},
+    loginRedirect: () => { },
     isProjectMode: true,
   }
 };

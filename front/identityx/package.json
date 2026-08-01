@@ -22,7 +22,6 @@
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-router-ssr-query": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-models": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",

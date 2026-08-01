@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Search, Settings, SlidersHorizontal } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
@@ -15,6 +15,7 @@ import {
 import { CreateEventCard } from "@/features/events/ui/CreateEventCard";
 import { EventCard } from "@/features/events/ui/EventCard";
 import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
+import { readInplaceEditPreference } from "@/features/profile/lib/preferences";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import {
@@ -46,12 +47,27 @@ type FilterValue =
 
 function EventsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [inplaceEditEnabled, _setInplaceEditEnabled] = useState(true);
+  const [inplaceEditEnabled, setInplaceEditEnabled] = useState(false);
   const [filter, setFilter] = useState<FilterValue>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const createMutation = useCreateEventMutation();
   const publishMutation = usePublishEventMutation();
+
+  useEffect(() => {
+    const syncPreference = () => {
+      const enabled = readInplaceEditPreference();
+      setInplaceEditEnabled(enabled);
+      if (!enabled) setIsEditMode(false);
+    };
+    syncPreference();
+    window.addEventListener("univents:preferences-changed", syncPreference);
+    return () =>
+      window.removeEventListener(
+        "univents:preferences-changed",
+        syncPreference,
+      );
+  }, []);
 
   const { data: publicEvents = [] } = useQuery({
     ...allPublicEventsQueryOptions(),
@@ -133,7 +149,6 @@ function EventsPage() {
                 ({filteredEvents.length})
               </span>
             </h1>
-
             {/* Desktop */}
             <nav className="hidden sm:flex items-center bg-muted rounded-lg p-1 ml-auto">
               {visibleFilters.map((option) => (

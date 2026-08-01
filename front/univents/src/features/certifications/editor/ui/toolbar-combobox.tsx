@@ -73,7 +73,7 @@ export function ToolbarCombobox({
     <div
       ref={containerRef}
       className={cn(
-        "relative shrink-0 border border-border rounded-md",
+        "relative min-w-0 shrink-0 rounded-md border border-border",
         className,
       )}
     >
@@ -113,7 +113,7 @@ export function ToolbarCombobox({
       {open ? (
         <div
           className={cn(
-            "absolute top-full left-0 z-50 mt-1 w-64 max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
+            "absolute top-full left-0 z-50 mt-1 w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
             dropdownClassName,
           )}
         >

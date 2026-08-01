@@ -1,13 +1,5 @@
 import z from "zod";
 
-export const certificationTargetTypeSchema = z.enum(["edition", "activity"], {
-  error: "Tipo de target inválido",
-});
-
-export type CertificationTargetType = z.infer<
-  typeof certificationTargetTypeSchema
->;
-
 const hexColorSchema = z
   .string()
   .regex(/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, {
@@ -75,25 +67,29 @@ export type CertificationTemplateElement = z.infer<
   typeof certificationTemplateElementSchema
 >;
 
+export const certificationTemplateKindSchema = z.enum([
+  "edition_attendance",
+  "program_attendance",
+]);
+
+export const certificationTemplateDesignSchema = z.object({
+  canvas: z
+    .object({
+      width: z.number().min(320).max(6000),
+      height: z.number().min(320).max(6000),
+    })
+    .optional(),
+  background: z.string().nullable(),
+  elements: z.array(certificationTemplateElementSchema),
+});
+
 export const certificationTemplateCreateSchema = z.object({
-  title: z.string({ error: "Título é obrigatório" }).min(3, {
+  kind: certificationTemplateKindSchema,
+  name: z.string({ error: "Nome é obrigatório" }).min(3, {
     message: "O título deve ter pelo menos 3 caracteres",
   }),
-  url: z
-    .string()
-    .optional()
-    .nullable()
-    .transform((val) => (val === "" ? null : val)),
-  data: z.object({
-    canvas: z
-      .object({
-        width: z.number().min(320).max(6000),
-        height: z.number().min(320).max(6000),
-      })
-      .optional(),
-    background: z.string().nullable(),
-    elements: z.array(certificationTemplateElementSchema),
-  }),
+  description: z.string().nullable().optional(),
+  design_data: certificationTemplateDesignSchema,
 });
 
 export type CertificationTemplateCreateI = z.infer<
@@ -103,35 +99,48 @@ export type CertificationTemplateCreateI = z.infer<
 export interface CertificationTemplateI {
   id: string;
   edition_id: string;
-  title: string;
-  data: z.infer<typeof certificationTemplateCreateSchema.shape.data>;
-  url: string | null; // cert main background image url
+  kind: z.infer<typeof certificationTemplateKindSchema>;
+  name: string;
+  description: string | null;
+  design_data: z.infer<typeof certificationTemplateDesignSchema>;
+  created_at: string;
+}
+
+export interface CertificationTemplateProgramI {
+  id: string;
+  template_id: string;
+  program_id: string;
   created_at: string;
 }
 
 export interface CertificationI {
   id: string;
+  edition_id: string;
+  template_id: string | null;
+  registration_id: string;
   user_id: string;
-  target_id: string; // edition or activity id
-  target_type: CertificationTargetType;
-  certified_at: string;
-  hash: string;
+  program_id: string | null;
+  verification_hash: string;
+  valid: boolean;
+  invalid_reason: string | null;
+  email_sent: boolean;
+  issued_at: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CertificationEmissionErrorI {
+  id: string;
+  edition_id: string;
+  user_id: string;
+  template_id: string | null;
+  program_id: string | null;
+  error_message: string;
+  created_at: string;
 }
 
 export interface VerifyCertificationResponseI {
-  is_verified: boolean;
-  id: string;
-  user_id: string;
-  target_id: string;
-  target_type: CertificationTargetType;
-  certified_at: string;
-}
-
-export interface SetCertificationTemplateRequestI {
-  certification_template_id: string | null;
-}
-
-export interface CertifyUserRequestI {
-  target_id: string;
-  target_type: CertificationTargetType;
+  valid: boolean;
+  template_id: string | null;
+  cert: CertificationI | null;
 }

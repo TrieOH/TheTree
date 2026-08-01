@@ -14,6 +14,7 @@ import { Toaster } from "#/shared/ui/shadcn/sonner";
 import PostHogProvider from "../app/integrations/posthog/provider";
 import TanStackQueryDevtools from "../app/integrations/tanstack-query/devtools";
 import { Provider as TanStackQueryProvider } from "../app/integrations/tanstack-query/root-provider";
+import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -66,7 +67,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider baseURL={env.VITE_AUTH_API_URL}>
+            <AuthProvider adapter={identityXAuthAdapter} baseURL={env.VITE_AUTH_API_URL}>
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools
