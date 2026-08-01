@@ -2124,6 +2124,8 @@ components:
       required: [email, password]
       properties:
         email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email,min=3,max=254"
           x-go-type: string
           type: string
           format: email
@@ -2131,6 +2133,8 @@ components:
           minLength: 3
           maxLength: 254
         password:
+          x-oapi-codegen-extra-tags:
+            validate: "required,passwd,min=8,max=72"
           type: string
           minLength: 8
           maxLength: 72
@@ -2293,14 +2297,20 @@ components:
       required: [auth_method, type]
       properties:
         auth_method:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=password api_key"
           type: string
           enum: [password, api_key]
           x-go-type: models.AuthMethod
           x-go-type-import:
             path: IdentityX/models
         type:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=human service machine"
           $ref: '#/components/schemas/ActorType'
         email:
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,email"
           x-go-type: string
           type: [ string, "null" ]
           format: email
@@ -2412,9 +2422,13 @@ components:
       required: [name, slug]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
           type: string
           minLength: 3
         slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
 
@@ -2452,10 +2466,14 @@ components:
       required: [actor_email, role]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
           $ref: '#/components/schemas/OrganizationRole'
 
     RemoveOrganizationMemberRequest:
@@ -2464,6 +2482,8 @@ components:
       required: [actor_email]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
@@ -2513,12 +2533,18 @@ components:
       required: [name, brand_slug]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
           type: string
           minLength: 3
         domain:
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,url"
           type: [ string, "null" ]
           format: uri
         brand_slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
           description: Unique slug used in branding and URLs.
 
@@ -2528,12 +2554,18 @@ components:
       required: [name, brand_slug]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
           type: string
           minLength: 3
         domain:
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,url"
           type: [ string, "null" ]
           format: uri
         brand_slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
 
     ProjectRole:
@@ -2570,10 +2602,14 @@ components:
       required: [actor_email, role]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
           $ref: '#/components/schemas/ProjectRole'
 
     RemoveProjectMemberRequest:
@@ -2582,6 +2618,8 @@ components:
       required: [actor_email]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
@@ -2592,10 +2630,14 @@ components:
       required: [actor_email, role]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
           $ref: '#/components/schemas/ProjectRole'
 
     RemoveOrgProjectMemberRequest:
@@ -2604,6 +2646,8 @@ components:
       required: [actor_email]
       properties:
         actor_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
@@ -2638,9 +2682,13 @@ components:
       required: [resource, action]
       properties:
         resource:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
           type: string
           minLength: 3
         action:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=3"
           type: string
           minLength: 3
 
