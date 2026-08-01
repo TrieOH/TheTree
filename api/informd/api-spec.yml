@@ -2207,6 +2207,8 @@ components:
       required: [name]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
 
     NamespaceMemberRole:
@@ -2242,8 +2244,12 @@ components:
       required: [user_id, role]
       properties:
         user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
           $ref: '#/components/schemas/NamespaceMemberRole'
 
     RemoveNamespaceMemberRequest:
@@ -2252,6 +2258,8 @@ components:
       required: [user_id]
       properties:
         user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
 
     FormStatus:
@@ -2303,6 +2311,8 @@ components:
       required: [title]
       properties:
         title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
 
     FormMemberRole:
@@ -2338,8 +2348,12 @@ components:
       required: [user_id, role]
       properties:
         user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=member admin owner"
           $ref: '#/components/schemas/FormMemberRole'
 
     RemoveFormMemberRequest:
@@ -2348,6 +2362,8 @@ components:
       required: [user_id]
       properties:
         user_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
 
     Step:
@@ -2377,10 +2393,14 @@ components:
       required: [title, position_hint]
       properties:
         title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         description:
           type: [ string, "null" ]
         position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           minimum: 1
 
@@ -2390,12 +2410,18 @@ components:
       required: [id, title, position_hint]
       properties:
         id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         description:
           type: [ string, "null" ]
         position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           minimum: 1
 
@@ -2492,17 +2518,25 @@ components:
       required: [key, title, position_hint, required, type]
       properties:
         key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         description:
           type: [ string, "null" ]
         position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           minimum: 1
         required:
           type: boolean
         type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/FieldType'
         placeholder:
           type: [ object, "null" ]
@@ -2521,10 +2555,16 @@ components:
       required: [behaviour, value_type, options]
       properties:
         behaviour:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/SelectBehaviour'
         value_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/SelectValueType'
         options:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: array
           description: |
             The selectable options. Opaque per the API contract (the Go
@@ -2541,10 +2581,16 @@ components:
       required: [behaviour, value_type, options]
       properties:
         behaviour:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/SelectBehaviour'
         value_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/SelectValueType'
         options:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: array
           description: |
             The selectable options. Opaque per the API contract (the Go
@@ -2561,19 +2607,29 @@ components:
       required: [id, key, title, position_hint, required, type]
       properties:
         id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         title:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
         description:
           type: [ string, "null" ]
         position_hint:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           minimum: 1
         required:
           type: boolean
         type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/FieldType'
         placeholder:
           type: [ object, "null" ]
@@ -2723,6 +2779,8 @@ components:
           format: email
           description: Responder email, used to identify/merge responses.
         answers:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: array
           items:
             $ref: '#/components/schemas/SubmitAnswer'
@@ -2733,6 +2791,8 @@ components:
       required: [field_id, answer]
       properties:
         field_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
         answer:
           type: [ object, "null" ]

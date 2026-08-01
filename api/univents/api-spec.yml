@@ -516,8 +516,10 @@ paths:
       operationId: removeEventMember
       summary: Remove an event member
       description: |
-        Removes a member from the event. The authenticated actor must be
-        an owner or admin.
+        Removes a member from the event by email. The authenticated actor
+        must be an owner or admin. NOTE: the `user_id` path parameter is
+        part of the interface but the member to remove is identified by
+        the request body email.
       security:
         - bearerAuth: []
       parameters:
@@ -528,6 +530,20 @@ paths:
           description: User (actor) ID of the member to remove.
           schema:
             $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  x-go-type: string
+                  x-oapi-codegen-extra-tags:
+                    validate: "required,email"
       responses:
         '204':
           description: Member removed
@@ -1563,11 +1579,16 @@ paths:
             $ref: '#/components/schemas/UUID'
       responses:
         '200':
-          description: Program deleted
+          description: The deleted program
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Response'
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Program'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1780,11 +1801,16 @@ paths:
             $ref: '#/components/schemas/UUID'
       responses:
         '200':
-          description: Occurrence deleted
+          description: The deleted occurrence
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Response'
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramOccurrence'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2184,8 +2210,8 @@ paths:
       operationId: cancelSignatureRequest
       summary: Cancel a signature request
       description: |
-        Cancels a pending signature request. The actor must be an owner
-        or admin of the event.
+        Cancels a pending signature request, optionally with a reason.
+        The actor must be an owner or admin of the event.
       security:
         - bearerAuth: []
       parameters:
@@ -2195,13 +2221,19 @@ paths:
           description: Signature request ID.
           schema:
             $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: [ string, "null" ]
+                  description: Why the request was cancelled.
       responses:
-        '200':
+        '204':
           description: Signature request cancelled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3104,11 +3136,15 @@ components:
       required: [full_name, slug]
       properties:
         full_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         acronym:
           type: [ string, "null" ]
         slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
@@ -3124,11 +3160,15 @@ components:
       required: [full_name, slug]
       properties:
         full_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         acronym:
           type: [ string, "null" ]
         slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
@@ -3183,10 +3223,14 @@ components:
       required: [email, role]
       properties:
         email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
         role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=owner admin staff"
           $ref: '#/components/schemas/EventMemberRole'
 
     Edition:
@@ -3254,9 +3298,13 @@ components:
       required: [name, slug, starts_at, ends_at]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         starts_at:
@@ -3272,9 +3320,13 @@ components:
       required: [name, slug, starts_at, ends_at]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         tagline:
@@ -3347,14 +3399,20 @@ components:
       required: [name, access_level, price_cents]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
           type: [ string, "null" ]
         access_level:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           minimum: 0
         price_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
           minimum: 0
@@ -3368,14 +3426,20 @@ components:
       required: [name, access_level, price_cents]
       properties:
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
           type: [ string, "null" ]
         access_level:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           minimum: 0
         price_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
           minimum: 0
@@ -3461,19 +3525,27 @@ components:
         requires_registration:
           type: boolean
         vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 255
         variant_vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 255
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
           type: [ string, "null" ]
         price:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
           minimum: 0
@@ -3488,15 +3560,21 @@ components:
       required: [vendor_code, name, price]
       properties:
         vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 255
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
           type: [ string, "null" ]
         price:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
           minimum: 0
@@ -3510,6 +3588,8 @@ components:
       required: [vendor_code, requires_registration]
       properties:
         vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 255
@@ -3522,15 +3602,21 @@ components:
       required: [vendor_code, name, price]
       properties:
         vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 255
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
           type: [ string, "null" ]
         price:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: integer
           format: int64
           minimum: 0
@@ -3596,8 +3682,12 @@ components:
       required: [kind, name]
       properties:
         kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=activity checkpoint"
           $ref: '#/components/schemas/ProgramKind'
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
@@ -3617,8 +3707,12 @@ components:
       required: [kind, name]
       properties:
         kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=activity checkpoint"
           $ref: '#/components/schemas/ProgramKind'
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
         description:
@@ -3674,9 +3768,13 @@ components:
       required: [starts_at, ends_at]
       properties:
         starts_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
           format: date-time
         ends_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
           format: date-time
         max_capacity:
@@ -3689,9 +3787,13 @@ components:
       required: [starts_at, ends_at]
       properties:
         starts_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
           format: date-time
         ends_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
           format: date-time
         max_capacity:
@@ -3736,9 +3838,13 @@ components:
         ticket_type_id:
           $ref: '#/components/schemas/NullableUUID'
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=256"
           type: string
           maxLength: 256
         design_data:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: object
           additionalProperties: true
 
@@ -3785,6 +3891,8 @@ components:
       required: [signatory_name, image_url]
       properties:
         signatory_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 256
@@ -3797,6 +3905,8 @@ components:
         signatory_user_id:
           $ref: '#/components/schemas/NullableUUID'
         image_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
           type: string
           format: uri
 
@@ -3864,12 +3974,16 @@ components:
       required: [signatory_name, signatory_email]
       properties:
         signatory_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 256
         signatory_title:
           type: [ string, "null" ]
         signatory_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
           x-go-type: string
           type: string
           format: email
@@ -3926,8 +4040,12 @@ components:
       required: [kind, name]
       properties:
         kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=edition_attendance program_attendance"
           $ref: '#/components/schemas/CertificationTemplateKind'
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 256
@@ -3943,8 +4061,12 @@ components:
       required: [kind, name]
       properties:
         kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=edition_attendance program_attendance"
           $ref: '#/components/schemas/CertificationTemplateKind'
         name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
           type: string
           minLength: 2
           maxLength: 256
@@ -3978,6 +4100,8 @@ components:
       required: [program_id]
       properties:
         program_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           $ref: '#/components/schemas/UUID'
 
     Certification:
@@ -4051,6 +4175,8 @@ components:
       required: [reason]
       properties:
         reason:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
           type: string
 
     VerifyCertResponse:
