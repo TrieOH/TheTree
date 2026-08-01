@@ -33,7 +33,7 @@ func (h *Handlers) ReDraft(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.ReDraftForm(r.Context(), namespaceID, formID)
+	form, err := h.ops.ReDraftForm(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

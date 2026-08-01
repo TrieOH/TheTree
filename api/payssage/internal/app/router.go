@@ -2,16 +2,16 @@ package app
 
 import (
 	"net/http"
-	"payssage/internal/features/collectors"
-	"payssage/internal/features/intents"
-	"payssage/internal/features/oauth"
-	"payssage/internal/features/orgs"
-	"payssage/internal/features/sellers"
-	"payssage/internal/features/wallets"
-	"payssage/internal/features/webhook_deliveries"
-	"payssage/internal/features/webhook_endpoints"
-	"payssage/internal/features/webhook_events"
-	"payssage/internal/features/webhooks"
+	collectorsHandlers "payssage/internal/features/collectors/handlers"
+	intentsHandlers "payssage/internal/features/intents/handlers"
+	oauthHandlers "payssage/internal/features/oauth/handlers"
+	orgsHandlers "payssage/internal/features/orgs/handlers"
+	sellersHandlers "payssage/internal/features/sellers/handlers"
+	walletsHandlers "payssage/internal/features/wallets/handlers"
+	webhookDeliveriesHandlers "payssage/internal/features/webhook_deliveries/handlers"
+	webhookEndpointsHandlers "payssage/internal/features/webhook_endpoints/handlers"
+	webhookEventsHandlers "payssage/internal/features/webhook_events/handlers"
+	webhooksHandlers "payssage/internal/features/webhooks/handlers"
 
 	"lib/httpserver"
 
@@ -23,16 +23,16 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares, ri
 	return httpserver.NewRouter(httpserver.Config{
 		AppName: app.cfg.AppName,
 		Routes: func(r *chi.Mux) {
-			orgs.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
-			wallets.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
-			collectors.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
-			sellers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
-			intents.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
-			oauth.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
-			webhooks.RegisterRoutes(r, handlers.webhooks)
-			webhook_endpoints.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
-			webhook_events.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
-			webhook_deliveries.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
+			orgsHandlers.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
+			walletsHandlers.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
+			collectorsHandlers.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
+			sellersHandlers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
+			intentsHandlers.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
+			oauthHandlers.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
+			webhooksHandlers.RegisterRoutes(r, handlers.webhooks)
+			webhookEndpointsHandlers.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
+			webhookEventsHandlers.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
+			webhookDeliveriesHandlers.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
 
 			r.Group(func(r chi.Router) {
 				r.Use(basicAuth)

@@ -36,7 +36,7 @@ func (h *Handlers) ListNamespaced(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	fields, err := h.queries.ListNamespaced(r.Context(), formID, namespaceID, stepID)
+	fields, err := h.ops.ListNamespaced(r.Context(), formID, namespaceID, stepID)
 	if fun.Bail(w, err) {
 		return
 	}

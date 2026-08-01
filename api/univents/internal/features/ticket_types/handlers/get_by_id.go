@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	id, err := req.Path("ticket_type_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	ticketType, err := handler.queries.GetByID(r.Context(), id)
+	ticketType, err := h.ops.GetByID(r.Context(), id)
 	if fun.Bail(w, err) {
 		return
 	}

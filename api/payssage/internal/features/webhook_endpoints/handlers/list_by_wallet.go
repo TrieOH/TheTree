@@ -12,7 +12,7 @@ func (h *Handlers) ListByWallet(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	endpoints, err := h.queries.ListByWallet(r.Context(), walletID)
+	endpoints, err := h.ops.ListByWallet(r.Context(), walletID)
 	if fun.Bail(w, err) {
 		return
 	}

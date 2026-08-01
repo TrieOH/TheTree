@@ -37,7 +37,7 @@ func (h *Handlers) GetSelectConfigNamespaced(w http.ResponseWriter, r *http.Requ
 	if fun.Bail(w, err) {
 		return
 	}
-	config, err := h.queries.GetSelectConfigNamespaced(r.Context(), formID, namespaceID, fieldID)
+	config, err := h.ops.GetSelectConfigNamespaced(r.Context(), formID, namespaceID, fieldID)
 	if fun.Bail(w, err) {
 		return
 	}

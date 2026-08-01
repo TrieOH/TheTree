@@ -19,7 +19,7 @@ func (h *Handlers) HardCreate(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, fun.From(r), &payload) {
 		return
 	}
-	intent, err := h.commands.HardCreate(r.Context(), payload)
+	intent, err := h.ops.HardCreate(r.Context(), payload)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -34,7 +34,7 @@ func (h *Handlers) AddMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.AddMember(r.Context(), payload.ToInput(formID))
+	err = h.ops.AddMember(r.Context(), payload.ToInput(formID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -14,10 +14,10 @@ func (app *Univents) run() {
 	database.SetDefaultRunner(tx)
 
 	repos := app.initRepos()
-	queries := app.initQueries(repos)
-	commands := app.initCommands(repos)
+	ops := app.initOperations(repos)
+
 	middlewares := app.initMiddlewares()
-	handlers := app.initHandlers(queries, commands)
+	handlers := app.initHandlers(ops)
 
 	riverClient, riverUIHandler := app.initRiver(ctx, repos)
 	defer libriver.LogStop(ctx, riverClient)

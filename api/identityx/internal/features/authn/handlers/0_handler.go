@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"IdentityX/internal/features/authn/commands"
-	"IdentityX/internal/features/authn/queries"
+	"IdentityX/internal/features/authn"
 	"IdentityX/models"
 	"net/http"
 
@@ -11,17 +10,12 @@ import (
 )
 
 type Handlers struct {
-	commands *commands.Commands
-	queries  *queries.Queries
+	ops *authn.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-	queries *queries.Queries,
-) *Handlers {
+func NewHandlers(ops *authn.Operations) *Handlers {
 	return &Handlers{
-		commands: commands,
-		queries:  queries,
+		ops: ops,
 	}
 }
 

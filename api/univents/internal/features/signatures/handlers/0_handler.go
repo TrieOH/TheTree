@@ -2,25 +2,17 @@ package handlers
 
 import (
 	"net/http"
-	"univents/internal/features/signatures/commands"
-	"univents/internal/features/signatures/queries"
+	"univents/internal/features/signatures"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
-	queries  *queries.Queries
+	ops *signatures.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-	queries *queries.Queries,
-) *Handlers {
-	return &Handlers{
-		commands: commands,
-		queries:  queries,
-	}
+func NewHandlers(ops *signatures.Operations) *Handlers {
+	return &Handlers{ops: ops}
 }
 
 func RegisterRoutes(

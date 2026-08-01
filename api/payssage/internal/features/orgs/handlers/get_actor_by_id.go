@@ -29,7 +29,7 @@ func (h *Handlers) GetMemberByID(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.GetMemberByID(r.Context(), orgID, memberID)
+	members, err := h.ops.GetMemberByID(r.Context(), orgID, memberID)
 	if fun.Bail(w, err) {
 		return
 	}

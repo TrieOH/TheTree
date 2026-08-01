@@ -29,7 +29,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	namespace, err := h.commands.Create(r.Context(), payload.Name)
+	namespace, err := h.ops.Create(r.Context(), payload.Name)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -9,9 +9,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (handler *Handlers) VerifyCert(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) VerifyCert(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
-	cert, err := handler.queries.GetCertByHash(r.Context(), hash)
+	cert, err := h.ops.GetCertByHash(r.Context(), hash)
 	if fun.Bail(w, err) {
 		return
 	}

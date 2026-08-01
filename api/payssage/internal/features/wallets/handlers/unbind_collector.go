@@ -12,7 +12,7 @@ func (h *Handlers) UnbindCollector(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	if fun.Bail(w, h.commands.UnbindCollector(r.Context(), walletID)) {
+	if fun.Bail(w, h.ops.UnbindCollector(r.Context(), walletID)) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

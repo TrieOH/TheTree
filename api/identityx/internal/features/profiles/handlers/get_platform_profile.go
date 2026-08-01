@@ -17,7 +17,7 @@ func (h *Handlers) GetPlatformProfile(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	profile, err := h.queries.GetPlatformProfile(r.Context(), actorID)
+	profile, err := h.ops.GetPlatformProfile(r.Context(), actorID)
 	if fun.Bail(w, err) {
 		return
 	}

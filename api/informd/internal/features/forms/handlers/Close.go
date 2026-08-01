@@ -27,7 +27,7 @@ func (h *Handlers) Close(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.Close(r.Context(), formID)
+	form, err := h.ops.Close(r.Context(), formID)
 	if fun.Bail(w, err) {
 		return
 	}

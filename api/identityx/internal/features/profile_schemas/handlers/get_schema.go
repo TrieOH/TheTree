@@ -21,7 +21,7 @@ func (h *Handlers) GetSchema(w http.ResponseWriter, r *http.Request) {
 		projectID = &pid
 	}
 
-	schema, err := h.queries.GetSchema(r.Context(), projectID)
+	schema, err := h.ops.GetSchema(r.Context(), projectID)
 	if fun.Bail(w, err) {
 		return
 	}

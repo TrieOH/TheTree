@@ -33,7 +33,7 @@ func (h *Handlers) Archive(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	form, err := h.commands.ArchiveForm(r.Context(), namespaceID, formID)
+	form, err := h.ops.ArchiveForm(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

@@ -1,20 +1,18 @@
 package handlers
 
 import (
-	"Informd/internal/features/responses/commands"
+	"Informd/internal/features/responses"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
+	ops *responses.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-) *Handlers {
+func NewHandlers(ops *responses.Operations) *Handlers {
 	return &Handlers{
-		commands: commands,
+		ops: ops,
 	}
 }
 

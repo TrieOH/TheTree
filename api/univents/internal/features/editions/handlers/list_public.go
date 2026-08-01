@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) ListPublic(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) ListPublic(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	eventID, err := req.Path("event_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	editions, err := handler.queries.ListPublic(r.Context(), eventID)
+	editions, err := h.ops.ListPublic(r.Context(), eventID)
 	if fun.Bail(w, err) {
 		return
 	}

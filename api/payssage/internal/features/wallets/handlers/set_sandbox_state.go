@@ -31,7 +31,7 @@ func (h *Handlers) SetSandboxState(w http.ResponseWriter, r *http.Request) {
 	if fun.BailInto(w, fun.From(r), &payload) {
 		return
 	}
-	err = h.commands.SetSandbox(r.Context(), payload.ToInput(walletID))
+	err = h.ops.SetSandbox(r.Context(), payload.ToInput(walletID))
 	if fun.Bail(w, err) {
 		return
 	}

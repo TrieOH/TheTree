@@ -38,7 +38,7 @@ func (h *Handlers) RemoveFormMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.RemoveFormMember(r.Context(), payload.ToNamespaceInput(namespaceID, formID))
+	err = h.ops.RemoveFormMember(r.Context(), payload.ToNamespaceInput(namespaceID, formID))
 	if fun.Bail(w, err) {
 		return
 	}

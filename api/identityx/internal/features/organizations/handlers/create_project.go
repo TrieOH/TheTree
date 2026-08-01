@@ -23,7 +23,7 @@ func (h *Handlers) CreateProject(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	project, err := h.commands.CreateProject(r.Context(), payload.ToInput(orgID))
+	project, err := h.ops.CreateProject(r.Context(), payload.ToInput(orgID))
 	if fun.Bail(w, err) {
 		return
 	}

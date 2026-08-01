@@ -30,7 +30,7 @@ func (h *Handlers) Connect(w http.ResponseWriter, r *http.Request) {
 		fun.BadRequest("flow collector cannot have wallet id").Send(w)
 		return
 	}
-	redirectURL, err := h.commands.Connect(r.Context(), payload.ToInput(provider))
+	redirectURL, err := h.ops.Connect(r.Context(), payload.ToInput(provider))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -12,7 +12,7 @@ func (h *Handlers) Cancel(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	intent, err := h.commands.Cancel(r.Context(), intentID)
+	intent, err := h.ops.Cancel(r.Context(), intentID)
 	if fun.Bail(w, err) {
 		return
 	}

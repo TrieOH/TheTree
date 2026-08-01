@@ -12,7 +12,7 @@ func (h *Handlers) ListByEndpoint(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	deliveries, err := h.queries.ListByEndpoint(r.Context(), endpointID)
+	deliveries, err := h.ops.ListByEndpoint(r.Context(), endpointID)
 	if fun.Bail(w, err) {
 		return
 	}

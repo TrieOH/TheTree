@@ -37,7 +37,7 @@ func (h *Handlers) DeleteNamespacedField(w http.ResponseWriter, r *http.Request)
 	if fun.Bail(w, err) {
 		return
 	}
-	err = h.commands.DeleteNamespaced(r.Context(), namespaceID, formID, fieldID)
+	err = h.ops.DeleteNamespaced(r.Context(), namespaceID, formID, fieldID)
 	if fun.Bail(w, err) {
 		return
 	}

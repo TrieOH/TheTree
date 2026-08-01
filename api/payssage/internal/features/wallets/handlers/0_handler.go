@@ -2,26 +2,17 @@ package handlers
 
 import (
 	"net/http"
-
-	"payssage/internal/features/wallets/commands"
-	"payssage/internal/features/wallets/queries"
+	"payssage/internal/features/wallets"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
-	queries  *queries.Queries
+	ops *wallets.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-	queries *queries.Queries,
-) *Handlers {
-	return &Handlers{
-		commands: commands,
-		queries:  queries,
-	}
+func NewHandlers(ops *wallets.Operations) *Handlers {
+	return &Handlers{ops: ops}
 }
 
 func RegisterRoutes(

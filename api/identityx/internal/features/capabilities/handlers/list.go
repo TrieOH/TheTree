@@ -17,7 +17,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	capabilities, err := h.queries.List(r.Context(), projectID)
+	capabilities, err := h.ops.List(r.Context(), projectID)
 	if fun.Bail(w, err) {
 		return
 	}

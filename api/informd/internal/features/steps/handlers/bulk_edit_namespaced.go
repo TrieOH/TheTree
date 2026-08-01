@@ -42,7 +42,7 @@ func (h *Handlers) BulkEditNamespacedSteps(w http.ResponseWriter, r *http.Reques
 	inputs := xslices.MapSlice(payload, func(s models.UpdateStepRequest) models.UpdateNamespacedFormStepInput {
 		return s.ToNamespacedFormInput(namespaceID, formID)
 	})
-	err = h.commands.BulkEditNamespaced(r.Context(), formID, namespaceID, inputs)
+	err = h.ops.BulkEditNamespaced(r.Context(), formID, namespaceID, inputs)
 	if fun.Bail(w, err) {
 		return
 	}

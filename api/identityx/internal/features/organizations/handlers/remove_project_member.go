@@ -27,7 +27,7 @@ func (h *Handlers) RemoveProjectMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.RemoveProjectMember(r.Context(), payload.ToInput(orgID, projectID))
+	err = h.ops.RemoveProjectMember(r.Context(), payload.ToInput(orgID, projectID))
 	if fun.Bail(w, err) {
 		return
 	}

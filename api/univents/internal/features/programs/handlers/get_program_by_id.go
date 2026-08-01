@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) GetProgramByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetProgramByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	id, err := req.Path("program_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	program, err := handler.queries.GetProgramByID(r.Context(), id)
+	program, err := h.ops.GetProgramByID(r.Context(), id)
 	if fun.Bail(w, err) {
 		return
 	}

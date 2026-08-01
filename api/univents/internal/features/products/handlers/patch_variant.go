@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (handler *Handlers) PatchVariant(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) PatchVariant(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	variantID, err := req.Path("variant_id").UUID()
 	if fun.Bail(w, err) {
@@ -18,7 +18,7 @@ func (handler *Handlers) PatchVariant(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	variant, err := handler.commands.PatchVariant(r.Context(), payload.ToInput(variantID))
+	variant, err := h.ops.PatchVariant(r.Context(), payload.ToInput(variantID))
 	if fun.Bail(w, err) {
 		return
 	}

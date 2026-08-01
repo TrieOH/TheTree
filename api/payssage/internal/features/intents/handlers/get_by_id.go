@@ -12,7 +12,7 @@ func (h *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	intent, err := h.queries.GetByID(r.Context(), intentID)
+	intent, err := h.ops.GetByID(r.Context(), intentID)
 	if fun.Bail(w, err) {
 		return
 	}

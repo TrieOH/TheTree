@@ -22,7 +22,7 @@ func (h *Handlers) BindCollector(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	if fun.Bail(w, h.commands.BindCollector(r.Context(), walletID, payload.CollectorID)) {
+	if fun.Bail(w, h.ops.BindCollector(r.Context(), walletID, payload.CollectorID)) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

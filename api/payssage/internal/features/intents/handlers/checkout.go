@@ -18,7 +18,7 @@ func (h *Handlers) Checkout(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	intent, err := h.commands.Checkout(r.Context(), payload.ToInput(walletID))
+	intent, err := h.ops.Checkout(r.Context(), payload.ToInput(walletID))
 	if fun.Bail(w, err) {
 		return
 	}

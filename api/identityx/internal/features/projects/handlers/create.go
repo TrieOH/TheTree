@@ -18,7 +18,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, fun.From(r), &payload) {
 		return
 	}
-	org, err := h.commands.Create(r.Context(), payload.ToInput(nil))
+	org, err := h.ops.Create(r.Context(), payload.ToInput(nil))
 	if fun.Bail(w, err) {
 		return
 	}

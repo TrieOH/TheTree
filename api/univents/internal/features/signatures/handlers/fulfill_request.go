@@ -11,7 +11,7 @@ type fulfillRequestPayload struct {
 	ImageURL string `json:"image_url" validate:"required,url"`
 }
 
-func (handler *Handlers) FulfillRequest(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) FulfillRequest(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	token, err := req.Query("token").StringRequired()
 	if fun.Bail(w, err) {
@@ -21,7 +21,7 @@ func (handler *Handlers) FulfillRequest(w http.ResponseWriter, r *http.Request) 
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	signature, err := handler.commands.FulfillRequest(r.Context(), token, payload.ImageURL)
+	signature, err := h.ops.FulfillRequest(r.Context(), token, payload.ImageURL)
 	if fun.Bail(w, err) {
 		return
 	}

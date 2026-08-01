@@ -1,26 +1,19 @@
 package handlers
 
 import (
+	"Informd/internal/features/forms"
 	"net/http"
-
-	"Informd/internal/features/forms/commands"
-	"Informd/internal/features/forms/queries"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handlers struct {
-	commands *commands.Commands
-	queries  *queries.Queries
+	ops *forms.Operations
 }
 
-func NewHandlers(
-	commands *commands.Commands,
-	queries *queries.Queries,
-) *Handlers {
+func NewHandlers(ops *forms.Operations) *Handlers {
 	return &Handlers{
-		commands: commands,
-		queries:  queries,
+		ops: ops,
 	}
 }
 

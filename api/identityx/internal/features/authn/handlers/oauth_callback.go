@@ -19,7 +19,7 @@ func (h *Handlers) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		fun.BadRequest("missing code").Send(w)
 		return
 	}
-	tokens, err := h.commands.OAuthCallback(r.Context(), provider, code)
+	tokens, err := h.ops.OAuthCallback(r.Context(), provider, code)
 	if fun.Bail(w, err) {
 		return
 	}

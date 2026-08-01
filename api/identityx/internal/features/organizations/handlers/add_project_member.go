@@ -27,7 +27,7 @@ func (h *Handlers) AddProjectMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.AddProjectMember(r.Context(), payload.ToInput(orgID, projectID))
+	err = h.ops.AddProjectMember(r.Context(), payload.ToInput(orgID, projectID))
 	if fun.Bail(w, err) {
 		return
 	}

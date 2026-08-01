@@ -6,8 +6,8 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) ListJoined(w http.ResponseWriter, r *http.Request) {
-	events, err := handler.queries.ListJoined(r.Context())
+func (h *Handlers) ListJoined(w http.ResponseWriter, r *http.Request) {
+	events, err := h.ops.ListJoined(r.Context())
 	if fun.Bail(w, err) {
 		return
 	}

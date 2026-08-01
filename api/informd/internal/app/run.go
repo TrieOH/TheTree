@@ -12,9 +12,8 @@ func (app *Informd) run() {
 	database.SetDefaultRunner(tx)
 
 	repos := app.initRepos(q)
-	queries := app.initQueries(repos)
-	commands := app.initCommands(repos)
-	handlers := app.initHandlers(commands, queries)
+	ops := app.initOperations(repos)
+	handlers := app.initHandlers(ops)
 	middlewares := app.initMiddlewares()
 
 	mux := app.CreateRouter(handlers, middlewares)

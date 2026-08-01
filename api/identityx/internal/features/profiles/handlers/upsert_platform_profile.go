@@ -23,7 +23,7 @@ func (h *Handlers) UpsertPlatformProfile(w http.ResponseWriter, r *http.Request)
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	profile, err := h.commands.UpsertPlatformProfile(r.Context(), payload.ToInput(actorID))
+	profile, err := h.ops.UpsertPlatformProfile(r.Context(), payload.ToInput(actorID))
 	if fun.Bail(w, err) {
 		return
 	}

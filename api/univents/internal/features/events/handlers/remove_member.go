@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-func (handler *Handlers) RemoveMember(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	eventID, err := req.Path("event_id").UUID()
 	if fun.Bail(w, err) {
@@ -18,7 +18,7 @@ func (handler *Handlers) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = handler.commands.RemoveMember(r.Context(), eventID, payload)
+	err = h.ops.RemoveMember(r.Context(), eventID, payload)
 	if fun.Bail(w, err) {
 		return
 	}

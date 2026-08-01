@@ -30,7 +30,7 @@ func (h *Handlers) ListFormMembers(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.ListFormMembers(r.Context(), namespaceID, formID)
+	members, err := h.ops.ListFormMembers(r.Context(), namespaceID, formID)
 	if fun.Bail(w, err) {
 		return
 	}

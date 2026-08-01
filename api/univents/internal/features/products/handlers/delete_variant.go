@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) DeleteVariant(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) DeleteVariant(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	variantID, err := req.Path("variant_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	err = handler.commands.DeleteVariant(r.Context(), variantID)
+	err = h.ops.DeleteVariant(r.Context(), variantID)
 	if fun.Bail(w, err) {
 		return
 	}

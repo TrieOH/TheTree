@@ -6,13 +6,13 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (handler *Handlers) ListRequestsByEdition(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) ListRequestsByEdition(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	editionID, err := req.Path("edition_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	requests, err := handler.queries.ListRequestsByEdition(r.Context(), editionID)
+	requests, err := h.ops.ListRequestsByEdition(r.Context(), editionID)
 	if fun.Bail(w, err) {
 		return
 	}
