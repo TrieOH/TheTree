@@ -2,6 +2,8 @@ package app
 
 import (
 	"net/http"
+
+	spec "payssage"
 	collectorsHandlers "payssage/internal/features/collectors/handlers"
 	intentsHandlers "payssage/internal/features/intents/handlers"
 	oauthHandlers "payssage/internal/features/oauth/handlers"
@@ -21,23 +23,30 @@ import (
 
 func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares, riverUIHandler *riverui.Handler) http.Handler {
 	return httpserver.NewRouter(httpserver.Config{
-		AppName: app.cfg.AppName,
+		AppName:     app.cfg.AppName,
+		OpenAPISpec: spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
-			orgsHandlers.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
-			walletsHandlers.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
-			collectorsHandlers.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
-			sellersHandlers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
-			intentsHandlers.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
-			oauthHandlers.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
-			webhooksHandlers.RegisterRoutes(r, handlers.webhooks)
-			webhookEndpointsHandlers.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
-			webhookEventsHandlers.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
-			webhookDeliveriesHandlers.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
-
-			r.Group(func(r chi.Router) {
-				r.Use(basicAuth)
-				r.Mount("/riverui", riverUIHandler)
-			})
+			registerRoutes(r, middlewares, handlers, riverUIHandler)
 		},
+	})
+}
+
+// registerRoutes wires every feature's routes onto r. Kept package-level so
+// the router-parity test can walk the same registration the app serves.
+func registerRoutes(r *chi.Mux, middlewares middlewares, handlers handlers, riverUIHandler *riverui.Handler) {
+	orgsHandlers.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
+	walletsHandlers.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
+	collectorsHandlers.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
+	sellersHandlers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
+	intentsHandlers.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
+	oauthHandlers.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
+	webhooksHandlers.RegisterRoutes(r, handlers.webhooks)
+	webhookEndpointsHandlers.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
+	webhookEventsHandlers.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
+	webhookDeliveriesHandlers.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
+
+	r.Group(func(r chi.Router) {
+		r.Use(basicAuth)
+		r.Mount("/riverui", riverUIHandler)
 	})
 }

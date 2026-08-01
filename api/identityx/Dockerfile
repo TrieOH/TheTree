@@ -1,7 +1,8 @@
-FROM git.trieoh.com/trieoh/go-tools:2 AS tools
+FROM git.trieoh.com/trieoh/go-tools:3 AS tools
 FROM golang:1.26.4 AS builder
 WORKDIR /app
 COPY --from=tools /go/bin/sqlc /go/bin/sqlc
+COPY --from=tools /go/bin/oapi-codegen /go/bin/oapi-codegen
 # --- Dependency layer ---
 COPY go.work go.work.sum ./
 COPY .dagger/go.mod .dagger/go.sum ./.dagger/
@@ -21,7 +22,11 @@ COPY sdk/go/Payssage/ ./sdk/go/Payssage/
 COPY api/identityx/ ./api/identityx/
 WORKDIR /app/api/identityx
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
-    sqlc generate
+    sqlc generate && \
+    oapi-codegen --config oapi-codegen.yaml -generate types -o internal/handler/types.gen.go api-spec.yml && \
+    oapi-codegen --config oapi-codegen.yaml -generate chi-server -o internal/handler/server.gen.go api-spec.yml && \
+    # generated bindings import oapi-codegen/runtime; not committed, so go mod tidy would drop it -- pin it at build time
+    go get github.com/oapi-codegen/runtime@v1.6.0
 WORKDIR /app/api/identityx
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \

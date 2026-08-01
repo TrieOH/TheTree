@@ -11,7 +11,7 @@ import (
 
 func (h *Handlers) Setup(w http.ResponseWriter, r *http.Request) {
 	if globals.SetupComplete() {
-		fun.Forbidden("setup already complete").Send(w)
+		fun.Conflict("setup already complete").Send(w)
 		return
 	}
 	req := fun.From(r)

@@ -18,6 +18,10 @@ const (
 	sqlcVersion         = "1.31.1"
 	gotestsumVersion    = "1.13.0"
 	golangciLintVersion = "2.12.2"
+	// oapiCodegenVersion must stay in sync with the binary baked into the
+	// go-tools image (git.trieoh.com/trieoh/go-tools:3), which the service
+	// Dockerfiles copy for their builds.
+	oapiCodegenVersion = "2.8.0"
 )
 
 // baseGo returns a container with the full repo source mounted.
@@ -103,18 +107,52 @@ func (m *Thetree) sqlcGenerate(c *dagger.Container, service string) *dagger.Cont
 	})
 }
 
+// withOapiCodegen installs the oapi-codegen binary in the container.
+// Downloading here is fine (CI tooling); the production Dockerfiles copy
+// the binary from the go-tools image instead.
+func (m *Thetree) withOapiCodegen(c *dagger.Container) *dagger.Container {
+	return c.WithExec([]string{
+		"sh", "-c",
+		fmt.Sprintf(
+			"curl -sSL https://github.com/oapi-codegen/oapi-codegen/releases/download/v%s/oapi-codegen_%s_linux_amd64.tar.gz -o /tmp/oapi.tar.gz && "+
+				"tar -xzf /tmp/oapi.tar.gz -C /usr/local/bin oapi-codegen && chmod +x /usr/local/bin/oapi-codegen",
+			oapiCodegenVersion, oapiCodegenVersion,
+		),
+	})
+}
+
+// oapiGenerate regenerates the OpenAPI handler bindings (internal/handler)
+// from api-spec.yml for a service. Generated bindings import
+// github.com/oapi-codegen/runtime; since the code is not committed (and
+// `go mod tidy` would drop an unimported require), the dep is pinned here
+// at generation time only — go.mod in the repo stays clean.
+func (m *Thetree) oapiGenerate(c *dagger.Container, service string) *dagger.Container {
+	return c.WithExec([]string{
+		"sh", "-c",
+		fmt.Sprintf(
+			"cd api/%s && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate types -o internal/handler/types.gen.go api-spec.yml && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate chi-server -o internal/handler/server.gen.go api-spec.yml && "+
+				"go get github.com/oapi-codegen/runtime@v1.6.0",
+			service,
+		),
+	})
+}
+
 // Compile builds a single service.
 func (m *Thetree) Compile(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withSqlc(m.baseGoScoped(source, service))
+	c := m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service)))
 	c = m.sqlcGenerate(c, service)
+	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{"sh", "-c", fmt.Sprintf("cd api/%s && go build ./...", service)})
 	return c.Stdout(ctx)
 }
 
 // Lint runs golangci-lint for a single service.
 func (m *Thetree) Lint(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withGolangciLint(m.withSqlc(m.baseGoScoped(source, service)))
+	c := m.withGolangciLint(m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service))))
 	c = m.sqlcGenerate(c, service)
+	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{
 		"sh", "-c",
 		fmt.Sprintf("cd api/%s && golangci-lint run ./... --config=/workspace/.golangci.yml", service),
@@ -124,8 +162,9 @@ func (m *Thetree) Lint(ctx context.Context, source *dagger.Directory, service st
 
 // Test runs gotestsum for a single service.
 func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withGotestsum(m.withSqlc(m.baseGoScoped(source, service)))
+	c := m.withGotestsum(m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service))))
 	c = m.sqlcGenerate(c, service)
+	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{
 		"sh", "-c",
 		fmt.Sprintf("cd api/%s && gotestsum --format testdox --format-hide-empty-pkg ./...", service),
@@ -134,6 +173,8 @@ func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service st
 }
 
 // CI runs compile, lint, and test for the given services (comma-separated or "all").
+// Generated OpenAPI bindings (internal/handler) are not committed; every
+// build path regenerates them from api-spec.yml (see oapiGenerate).
 func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services string) (string, error) {
 	list := parseServices(services)
 	var out string

@@ -7,16 +7,78 @@ info:
     API responsible for authentication, authorization, cryptographic
     key management, and multi-tenancy across the TrieOH ecosystem.
 
-    Supports OAuth (Google/GitHub), Ed25519-based JWT issuance,
-    a JWKS endpoint, and multi-tenant project scoping.
-  termsOfService: https://identityx.com.br/terms
-  version: 0.21.1
+    Supports OAuth (Google/GitHub), Ed25519-based JWT issuance, a JWKS
+    endpoint, and multi-tenant project scoping.
 
+    ## Authentication
+
+    Every protected endpoint accepts either of:
+
+    | Scheme | Header | Notes |
+    |---|---|---|
+    | Bearer JWT | `Authorization: Bearer <token>` | Ed25519-signed access token issued by `/auth/login` (or OAuth). |
+    | API key | `X-API-KEY: <key>` | Static key created via `POST /projects/{project_id}/api_keys`; server-to-server access. |
+
+    Some route groups additionally require a *platform-level* actor
+    (`ClientOnly`) or a *project-scoped* actor (`ProjectClientOnly`);
+    that requirement is called out per operation, since both schemes can
+    satisfy the auth step itself.
+
+    ## Response envelope
+
+    Every JSON response (except `/.well-known/jwks.json`, which is a raw
+    JWKS document) is the `fun.Response` envelope:
+
+    ```json
+    {
+      "code": 200,
+      "message": "",
+      "data": { "...": "operation payload" },
+      "error": null,
+      "pagination": null,
+      "timestamp": "2026-01-01T12:00:00Z",
+      "module": "IdentityX"
+    }
+    ```
+
+    - Success: `data` carries the payload. `message` is informational and
+      often empty.
+    - Failure: `error` carries an `AppError` — `{ "code", "message",
+      "fields", "meta" }`. `data` is absent.
+    - `pagination` is reserved for paged list endpoints (currently unused
+      by IdentityX routes).
+
+    ## Error codes → HTTP status
+
+    The `error.code` sentinel maps to the HTTP status:
+
+    | code | status |
+    |---|---|
+    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
+    | `UNAUTHORIZED` | 401 |
+    | `PAYMENT_REQUIRED` | 402 |
+    | `FORBIDDEN` | 403 |
+    | `NOT_FOUND` | 404 |
+    | `METHOD_NOT_ALLOWED` | 405 |
+    | `CONFLICT` | 409 |
+    | `UNPROCESSABLE_ENTITY` | 422 |
+    | `TOO_MANY_REQUESTS` | 429 |
+    | `INTERNAL_ERROR` | 500 |
+    | `NOT_IMPLEMENTED` | 501 |
+    | `BAD_GATEWAY` | 502 |
+    | `SERVICE_UNAVAILABLE` | 503 |
+
+    ## Rate limits
+
+    The harness applies a fixed rate limit of 400 requests/second with a
+    burst of 20, keyed by client IP (`RemoteAddr`). Exceeded requests
+    receive `429 TOO_MANY_REQUESTS`.
+  termsOfService: https://identityx.com.br/terms
+  version: 0.22.0
   contact:
     name: TrieOH
     url: https://trieoh.com/support
     email: contact@trieoh.com
-
   license:
     name: TSAL
     url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/identityx/LICENSE
@@ -26,14 +88,8 @@ jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 servers:
   - url: https://api.identityx.com.br
     description: Production
-  #- url: https://staging-api.trieoh.com/identityx/v1
-  #  description: Staging
   - url: http://localhost:8080
     description: Local development
-    variables:
-      port:
-        default: "8080"
-        enum: ["8080"]
 
 tags:
   - name: system
@@ -67,17 +123,41 @@ externalDocs:
   description: Full TrieOH documentation
   url: https://docs.trieoh.com
 
-# either bearer token OR api key satisfies auth
+# Either bearer token OR api key satisfies auth where not overridden per
+# operation. Routes with `security: []` are public.
 security:
   - bearerAuth: []
   - apiKeyAuth: []
 
 paths:
+  /docs/openapi.yml:
+    get:
+      tags: [system]
+      operationId: getOpenAPISpec
+      summary: Get the OpenAPI specification
+      description: |
+        Returns this service's OpenAPI 3.1 specification in YAML — the
+        same content as api/<svc>/api-spec.yml, embedded and served by
+        the harness. Docs tooling fetches this URL to render the API
+        reference. Public.
+      security: []
+      responses:
+        '200':
+          description: The OpenAPI 3.1 document
+          content:
+            application/yaml:
+              schema:
+                type: string
+                description: The OpenAPI 3.1 document in YAML.
+
   /health:
     get:
       tags: [system]
       operationId: getHealth
       summary: Health check
+      description: |
+        Harness-owned liveness probe. Returns 200 with a fixed body when
+        the process is up. Not covered by rate limiting or auth.
       security: []
       responses:
         '200':
@@ -93,22 +173,38 @@ paths:
                   service:
                     type: string
                     const: "IdentityX"
+              example:
+                status: ok
+                service: IdentityX
+
   /auth/setup:
     get:
       tags: [authn]
       operationId: getSetup
-      summary: Check if idx is set up
+      summary: Check if IdentityX is set up
+      description: |
+        Returns 204 while setup is still pending (no first account yet)
+        and 409 once the system has been set up — used by installers to
+        decide whether to show the setup form. Public.
       security: []
       responses:
         '204':
-          description: system is set up
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+          description: Setup still pending — the setup form should be shown
+        '409':
+          description: Setup already complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags: [authn]
       operationId: postSetup
-      summary: sets up IDX
-      description: Creates the first account in the system as a super admin and enables authn
+      summary: Set up IdentityX
+      description: |
+        Creates the first account in the system as a super admin and
+        enables authn. Succeeds only once — subsequent calls return 409
+        ("setup already complete"). Returns the freshly issued token pair
+        (201).
       security: []
       requestBody:
         required: true
@@ -116,13 +212,25 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CredentialRequest'
+            example:
+              email: admin@trieoh.com
+              password: S3curePassw0rd!
       responses:
         '201':
-          $ref: '#/components/schemas/UserTokensResponse'
+          description: First account created; token pair issued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserTokensOutput'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -130,24 +238,27 @@ paths:
     post:
       tags: [authn]
       operationId: postRegister
-      summary: registers a user
-      description: registers the credential pair either as an IDX client or a client of a project that consumes IDX for authn
+      summary: Register a user
+      description: |
+        Registers the credential pair, either as an IdentityX client
+        (no `project_id`) or as a client of a project that consumes
+        IdentityX for authn (pass `project_id`). Returns 201 with an empty
+        body — the caller then logs in via `/auth/login`.
       security: []
       parameters:
-        - name: project_id
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UUID'
+        - $ref: '#/components/parameters/ProjectIDQuery'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CredentialRequest'
+            example:
+              email: user@example.com
+              password: S3curePassw0rd!
       responses:
         '201':
-          description: User registered successfully.
+          description: User registered successfully
         '400':
           $ref: '#/components/responses/BadRequest'
         '409':
@@ -161,24 +272,48 @@ paths:
     post:
       tags: [authn]
       operationId: postLogin
-      summary: logs in a user
-      description: logs in the specified credentials if they exist on the requested target
+      summary: Log in a user
+      description: |
+        Logs in the specified credentials if they exist on the requested
+        target (IdentityX itself, or the project identified by
+        `project_id`). Returns an access/refresh token pair. The access
+        token is an Ed25519-signed JWT; verify it against
+        `/.well-known/jwks.json`.
       security: []
       parameters:
-        - name: project_id
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UUID'
+        - $ref: '#/components/parameters/ProjectIDQuery'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CredentialRequest'
+            example:
+              email: user@example.com
+              password: S3curePassw0rd!
       responses:
         '200':
-          $ref: '#/components/schemas/UserTokensResponse'
+          description: Login succeeded; token pair issued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserTokensOutput'
+              example:
+                code: 200
+                message: ""
+                data:
+                  access_token: eyJhbGciOiJFZERTQSIsImtpZCI6Ii4uLiJ9...
+                  refresh_token: eyJhbGciOiJFZERTQSIsImtpZCI6Ii4uLiJ9...
+                  access_expires_at: '2026-01-01T13:00:00Z'
+                  refresh_expires_at: '2026-01-08T12:00:00Z'
+                  domain: example.com
+                timestamp: '2026-01-01T12:00:00Z'
+                module: IdentityX
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -192,13 +327,20 @@ paths:
     post:
       tags: [authn]
       operationId: postLogout
-      summary: logs out a user
-      description: logs out the passed in tokens, blacklisting them
+      summary: Log out a user
+      description: |
+        Logs out the current session, blacklisting the presented access
+        and refresh tokens. Requires a valid bearer token; the tokens to
+        blacklist are read from the request itself.
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: User logged out successfully
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -210,11 +352,24 @@ paths:
     post:
       tags: [authn]
       operationId: postRefresh
-      summary: refreshes a user session
+      summary: Refresh a user session
+      description: |
+        Exchanges a refresh token (sent as the bearer credential) for a
+        fresh access/refresh token pair. Use when the access token is
+        about to expire or has expired.
       security: []
       responses:
         '200':
-          $ref: '#/components/schemas/UserTokensResponse'
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserTokensOutput'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -223,26 +378,42 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
 
   /auth/{provider}/connect:
-    post:
-      tags: [ authn ]
-      operationId: postOAuthConnect
-      summary: start a social login
-      description: starts the social login process, returns the redirectURI
-      security: [ ]
+    get:
+      tags: [authn]
+      operationId: getOAuthConnect
+      summary: Start a social login
+      description: |
+        Starts the social login process for the given provider
+        (`google` or `github`) and returns the redirect URL the client
+        should send the user to. After the user authorizes, the provider
+        redirects back to `/auth/{provider}/callback?code=...`.
+      security: []
       parameters:
-        - name: project_id
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UUID'
+        - $ref: '#/components/parameters/ProjectIDQuery'
         - name: provider
           in: path
           required: true
+          description: Social identity provider
           schema:
             $ref: '#/components/schemas/SupportedOAuthProviders'
       responses:
         '200':
-          $ref: '#/components/schemas/OAuthConnectResponse'
+          description: Redirect URL for the provider consent screen
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [url]
+                        properties:
+                          url:
+                            type: string
+                            format: uri
+                            description: URL to redirect the user to.
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -252,25 +423,40 @@ paths:
 
   /auth/{provider}/callback:
     get:
-      tags: [ authn ]
+      tags: [authn]
       operationId: getOAuthCallback
-      summary: conclude a social login
-      description: receives the callback from the social login redirect and finishes user authentication
-      security: [ ]
+      summary: Conclude a social login
+      description: |
+        Receives the callback from the social login redirect, exchanges
+        the authorization `code` for tokens, and finishes user
+        authentication. Returns the token pair with 201 on first-time
+        OAuth logins (account created implicitly).
+      security: []
       parameters:
         - name: provider
           in: path
           required: true
+          description: Social identity provider
           schema:
             $ref: '#/components/schemas/SupportedOAuthProviders'
         - name: code
           in: query
           required: true
+          description: Authorization code issued by the provider.
           schema:
             type: string
       responses:
-        '200':
-          $ref: '#/components/schemas/UserTokensResponse'
+        '201':
+          description: Social login concluded; token pair issued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserTokensOutput'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -285,10 +471,26 @@ paths:
       tags: [authn]
       operationId: getIntrospect
       summary: Introspect the current identity
-      description: Returns the identity associated with the current access token.
+      description: |
+        Returns the identity resolved from the current credential — the
+        actor (subject) plus the credential type used (JWT token or API
+        key). API keys authenticate with their full raw key; the subject
+        carries the key's capability grants.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
       responses:
         '200':
-          $ref: '#/components/schemas/Identity'
+          description: Identity resolved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Identity'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -301,16 +503,1335 @@ paths:
       tags: [authn]
       operationId: getJWKS
       summary: Get a JWKS
-      description: Provides the JSON Web Key Set (JWKS) from the desired target for verifying JWTs issued by the authentication service.
+      description: |
+        Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by
+        the authentication service. Omit `project_id` for the platform
+        keyset, or pass a project id for that project's keyset. Response
+        is a raw JWKS document (RFC 7517), NOT the fun envelope, and is
+        cached for 2 hours by the server.
+      security: []
       parameters:
-        - name: project_id
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UUID'
+        - $ref: '#/components/parameters/ProjectIDQuery'
       responses:
         '200':
-          $ref: '#/components/schemas/Identity'
+          description: JWKS document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    description: Public keys used to verify tokens.
+                    items:
+                      type: object
+                      additionalProperties: true
+              example:
+                keys:
+                  - kty: OKP
+                    crv: Ed25519
+                    kid: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    x: 11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /organizations:
+    get:
+      tags: [organizations]
+      operationId: listOrganizations
+      summary: List your organizations
+      description: |
+        Lists the organizations the authenticated platform-level actor
+        belongs to. Requires a JWT or API key bound to a platform-level
+        (non-project-scoped) actor.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: Organizations the actor belongs to
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [organizations]
+      operationId: createOrganization
+      summary: Create an organization
+      description: |
+        Creates an organization owned by the authenticated platform-level
+        actor. The actor becomes the organization owner.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+            example:
+              name: TrieOH Labs
+              slug: trieoh-labs
+      responses:
+        '201':
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /organizations/{organization_id}/members:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationMembers
+      summary: List organization members
+      description: |
+        Lists the members of an organization. Requires a platform-level
+        actor that is a member of the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      responses:
+        '200':
+          description: Organization members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OrganizationMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [organizations]
+      operationId: addOrganizationMember
+      summary: Add an organization member
+      description: |
+        Adds an existing actor (by email) to the organization with the
+        given role. The authenticated actor must be an admin or owner of
+        the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: member
+      responses:
+        '201':
+          description: Member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      tags: [organizations]
+      operationId: removeOrganizationMember
+      summary: Remove an organization member
+      description: |
+        Removes an actor (by email) from the organization. The
+        authenticated actor must be an admin or owner of the
+        organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveOrganizationMemberRequest'
+            example:
+              actor_email: user@example.com
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /organizations/{organization_id}/projects:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationProjects
+      summary: List organization projects
+      description: |
+        Lists the projects scoped to an organization. Requires a
+        platform-level actor that is a member of the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      responses:
+        '200':
+          description: Organization projects
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [organizations]
+      operationId: createOrganizationProject
+      summary: Create an organization project
+      description: |
+        Creates a project inside an organization. Requires an
+        organization member with admin or owner role.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrgProjectRequest'
+            example:
+              name: Checkout Service
+              domain: https://checkout.trieoh.com
+              brand_slug: trieoh-checkout
+      responses:
+        '201':
+          description: Organization project created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /organizations/{org_id}/projects/{project_id}/actors:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationProjectActors
+      summary: List project actors
+      description: |
+        Lists the actors scoped to an organization-owned project. The
+        actor must belong to the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrgID'
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Project actors
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Actor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [organizations]
+      operationId: createOrganizationProjectActor
+      summary: Create a project actor
+      description: |
+        Creates an actor scoped to an organization-owned project. The
+        actor must belong to the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrgID'
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActorRequest'
+            example:
+              auth_method: password
+              type: human
+              email: user@example.com
+      responses:
+        '201':
+          description: Project actor created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Actor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /organizations/{organization_id}/projects/{project_id}/members:
+    get:
+      tags: [organizations]
+      operationId: listOrganizationProjectMembers
+      summary: List project members
+      description: |
+        Lists the members of an organization-owned project. The actor
+        must belong to the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Project members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProjectMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [organizations]
+      operationId: addOrganizationProjectMember
+      summary: Add a project member
+      description: |
+        Adds an existing actor (by email) to an organization-owned
+        project with the given role. The actor must be an admin or owner
+        of the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOrgProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: admin
+      responses:
+        '201':
+          description: Project member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      tags: [organizations]
+      operationId: removeOrganizationProjectMember
+      summary: Remove a project member
+      description: |
+        Removes an actor (by email) from an organization-owned project.
+        The actor must be an admin or owner of the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveOrgProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+      responses:
+        '200':
+          description: Project member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /organizations/{organization_id}/projects/{project_id}/actors/{actor_id}:
+    get:
+      tags: [organizations]
+      operationId: getOrganizationProjectActor
+      summary: Get a project actor by ID
+      description: |
+        Fetches a single actor scoped to an organization-owned project.
+        The actor must belong to the organization.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrganizationID'
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/ActorID'
+      responses:
+        '200':
+          description: The requested actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Actor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      summary: List your projects
+      description: |
+        Lists the projects the authenticated actor is a member of.
+        Platform-level actors see all projects they own or belong to.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: Projects the actor belongs to
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [projects]
+      operationId: createProject
+      summary: Create a project
+      description: |
+        Creates a project owned by the authenticated platform-level
+        actor. Use `/organizations/{organization_id}/projects` to create
+        an organization-scoped project instead.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+            example:
+              name: My Project
+              domain: https://my-project.example.com
+              brand_slug: my-project
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/members:
+    get:
+      tags: [projects]
+      operationId: listProjectMembers
+      summary: List project members
+      description: |
+        Lists the members of a project. The authenticated actor must be a
+        member of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Project members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProjectMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [projects]
+      operationId: addProjectMember
+      summary: Add a project member
+      description: |
+        Adds an existing actor (by email) to the project with the given
+        role. The authenticated actor must be an admin or owner of the
+        project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+              role: member
+      responses:
+        '201':
+          description: Project member added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      tags: [projects]
+      operationId: removeProjectMember
+      summary: Remove a project member
+      description: |
+        Removes an actor (by email) from the project. The authenticated
+        actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveProjectMemberRequest'
+            example:
+              actor_email: user@example.com
+      responses:
+        '200':
+          description: Project member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/actors:
+    get:
+      tags: [actors]
+      operationId: listActors
+      summary: List project actors
+      description: |
+        Lists the actors registered in the project. The authenticated
+        actor must be a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Project actors
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Actor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [actors]
+      operationId: createActor
+      summary: Create a project actor
+      description: |
+        Creates an actor in the project (used by services that provision
+        project identities — e.g. a workspace API key holder creating a
+        service actor). The authenticated actor must be a platform-level
+        client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActorRequest'
+            example:
+              auth_method: api_key
+              type: service
+              email: checkout@example.com
+      responses:
+        '201':
+          description: Actor created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Actor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/actors/{actor_id}:
+    get:
+      tags: [actors]
+      operationId: getActor
+      summary: Get a project actor by ID
+      description: |
+        Fetches a single actor from the project by ID. The authenticated
+        actor must be a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/ActorID'
+      responses:
+        '200':
+          description: The requested actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Actor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/actors/{actor_email}:by_email:
+    get:
+      tags: [actors]
+      operationId: getActorByEmail
+      summary: Get a project actor by email
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        actor from the project by email address. The authenticated actor
+        must be a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - name: actor_email
+          in: path
+          required: true
+          description: Email address of the actor to fetch.
+          schema:
+            x-go-type: string
+            type: string
+            format: email
+      responses:
+        '200':
+          description: The requested actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Actor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/api_keys:
+    post:
+      tags: [apikeys]
+      operationId: createAPIKey
+      summary: Create an API key
+      description: |
+        Creates an API key bound to a subject (actor) in the project,
+        optionally scoped to a set of capability IDs and an expiry. The
+        full raw key is returned exactly once in `data.raw_key` — store
+        it, it cannot be retrieved again. The authenticated actor must be
+        a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAPIKeyRequest'
+            example:
+              subject_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              capabilities:
+                - 3fa85f64-5717-4562-b3fc-2c963f66afa7
+              name: checkout-prod
+              env: production
+              expires_at: '2027-01-01T00:00:00Z'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CreateAPIKeyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/capabilities:
+    get:
+      tags: [capabilities]
+      operationId: listCapabilities
+      summary: List project capabilities
+      description: |
+        Lists the capability grants defined for the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Project capabilities
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Capability'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [capabilities]
+      operationId: createCapability
+      summary: Create a capability
+      description: |
+        Defines a new capability grant (`resource:action`) for the
+        project. The authenticated actor must be a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCapabilityRequest'
+            example:
+              resource: intents
+              action: checkout
+      responses:
+        '201':
+          description: Capability created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Capability'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /profile-schema:
+    get:
+      tags: [profile_schemas]
+      operationId: getPlatformProfileSchema
+      summary: Get the platform-wide profile schema
+      description: |
+        Fetches the platform-wide JSON Schema used to validate actor
+        profiles (applies to actors with no project). Requires a
+        platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: Platform profile schema
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectProfileSchema'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      tags: [profile_schemas]
+      operationId: upsertPlatformProfileSchema
+      summary: Upsert the platform-wide profile schema
+      description: |
+        Sets (or replaces) the platform-wide JSON Schema for actor
+        profiles. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileSchemaRequest'
+            example:
+              schema:
+                type: object
+                properties:
+                  full_name:
+                    type: string
+              active: true
+      responses:
+        '200':
+          description: Schema upserted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectProfileSchema'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/profile-schema:
+    get:
+      tags: [profile_schemas]
+      operationId: getProjectProfileSchema
+      summary: Get the project profile schema
+      description: |
+        Fetches the JSON Schema used to validate actor profiles within
+        the project. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Project profile schema
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectProfileSchema'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      tags: [profile_schemas]
+      operationId: upsertProjectProfileSchema
+      summary: Upsert the project profile schema
+      description: |
+        Sets (or replaces) the JSON Schema for actor profiles within the
+        project. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileSchemaRequest'
+      responses:
+        '200':
+          description: Schema upserted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectProfileSchema'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /actors/{actor_id}/profile:
+    get:
+      tags: [profiles]
+      operationId: getPlatformProfile
+      summary: Get a platform actor's profile
+      description: |
+        Fetches the platform-scoped profile (actor with no project) of
+        the given actor. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ActorID'
+      responses:
+        '200':
+          description: Actor profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ActorProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      tags: [profiles]
+      operationId: upsertPlatformProfile
+      summary: Upsert a platform actor's profile
+      description: |
+        Sets (or replaces) the platform-scoped profile of the given
+        actor, validating against the active platform profile schema.
+        Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ActorID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileRequest'
+            example:
+              profile:
+                full_name: Jane Doe
+      responses:
+        '200':
+          description: Profile upserted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ActorProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/actors/{actor_id}/profile:
+    get:
+      tags: [profiles]
+      operationId: getProjectProfile
+      summary: Get a project actor's profile
+      description: |
+        Fetches the project-scoped profile of the given actor within the
+        project. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/ActorID'
+      responses:
+        '200':
+          description: Actor profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ActorProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      tags: [profiles]
+      operationId: upsertProjectProfile
+      summary: Upsert a project actor's profile
+      description: |
+        Sets (or replaces) the project-scoped profile of the given actor
+        within the project, validating against the project's active
+        profile schema. Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/ActorID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertProfileRequest'
+      responses:
+        '200':
+          description: Profile upserted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ActorProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -329,204 +1850,94 @@ components:
       name: X-API-KEY
       description: Static API key for server-to-server / project-scoped access
 
+  parameters:
+    ProjectIDQuery:
+      name: project_id
+      in: query
+      required: false
+      description: Project to scope the operation to. Omit for IdentityX itself.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    ProjectID:
+      name: project_id
+      in: path
+      required: true
+      description: Project ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    OrganizationID:
+      name: organization_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    OrgID:
+      name: org_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    ActorID:
+      name: actor_id
+      in: path
+      required: true
+      description: Actor ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+
   responses:
     BadRequest:
-      description: Invalid request payload
+      description: Invalid request payload or parameters
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
     Unauthorized:
       description: Missing or invalid credentials
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
     Forbidden:
-      description: Insufficient Permissions
+      description: Insufficient permissions for the requested operation
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
     NotFound:
-      description: Resource not found
+      description: The requested resource does not exist
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
     Conflict:
-      description: Conflict
+      description: The request conflicts with the current state of the resource
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
     InternalServerError:
       description: Unexpected server error
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
     ServiceUnavailable:
-      description: Service temporarily unavailable
+      description: Service temporarily unavailable (e.g. IdentityX not set up yet)
       content:
-        application/problem+json:
+        application/json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
-    Identity:
-      type: object
-      description: Identity resolved from the current credential (session or API key).
-      required: [ sub, cred ]
-      properties:
-        sub:
-          $ref: '#/components/schemas/Subject'
-        cred:
-          $ref: '#/components/schemas/Credential'
-
-    Subject:
-      type: object
-      description: The actor this identity resolves to.
-      required: [ id, project_id, email, type, capabilities, metadata ]
-      properties:
-        id:
-          $ref: '#/components/schemas/UUID'
-          description: Unique identifier of the actor.
-        project_id:
-          $ref: '#/components/schemas/NullableUUID'
-          description: Project this actor is scoped to, if any.
-        email:
-          type: [ string, "null" ]
-          format: email
-          description: Actor's email address, if applicable for this actor type.
-        type:
-          $ref: '#/components/schemas/ActorType'
-        capabilities:
-          description: |
-            Opaque, actor-specific capability grants. Shape depends on
-            the capability schema in effect for this project.
-          type: object
-          additionalProperties: true
-        metadata:
-          type: [ object, "null" ]
-          description: Arbitrary actor metadata, opaque to the API contract.
-          additionalProperties: true
-
-    Credential:
-      type: object
-      description: The credential used to authenticate this request.
-      required: [ id, type ]
-      properties:
-        id:
-          $ref: '#/components/schemas/NullableUUID'
-          description: |
-            Identifier of the credential, present for stateful credentials
-            (e.g. API keys). Null for stateless credentials (e.g. JWTs).
-        type:
-          $ref: '#/components/schemas/CredentialType'
-
-    ActorType:
-      type: string
-      description: The kind of actor this identity represents.
-      enum: [ human, service, machine ]
-
-    CredentialType:
-      type: string
-      description: The mechanism used to authenticate this identity.
-      enum: [ token, api_key ]
-
-    Problem:
-      type: object
-      title: Problem Details
-      description: |
-        RFC 9457 Problem Details object, returned for every non-2xx response.
-        Delivered with content-type `application/problem+json`.
-      required: [type, title, status]
-      properties:
-        type:
-          type: string
-          format: uri
-          default: about:blank
-          description: |
-            A URI reference identifying the problem type. Dereferencing it
-            should yield human-readable documentation for that error type.
-            Defaults to "about:blank" when no specific type applies, in
-            which case `title` should be treated as the primary error signal.
-          examples:
-            - "https://api.trieoh.com/errors/validation"
-            - "https://api.trieoh.com/errors/not-found"
-            - "about:blank"
-
-        title:
-          type: string
-          description: |
-            A short, human-readable summary of the problem type. Should be
-            the same across occurrences of the same `type`, i.e. it
-            describes the class of error, not this specific instance.
-          examples:
-            - "Validation failed"
-            - "Unauthorized"
-            - "Resource not found"
-
-        status:
-          type: integer
-          format: int32
-          minimum: 100
-          maximum: 599
-          description: |
-            The HTTP status code for this occurrence of the problem, duplicated
-            here for convenience so consumers don't have to inspect the
-            transport layer to branch on it.
-          examples: [400, 401, 404, 500, 503]
-
-        detail:
-          type: string
-          description: |
-            A human-readable explanation specific to this occurrence of the
-            problem. Unlike `title`, this can vary between occurrences of
-            the same `type` and may include specific values, IDs, or context.
-          examples:
-            - "Field 'email' must be a valid email address"
-            - "Organization with id '3fa85f64' does not exist"
-
-        instance:
-          type: string
-          format: uri
-          description: |
-            A URI reference identifying this specific occurrence of the
-            problem. Typically the request path, optionally combined with
-            a request/trace ID for correlation with logs.
-          examples:
-            - "/organizations/3fa85f64"
-            - "/auth/introspect?requestId=9c7f9e5a"
-
-        errors:
-          type: array
-          description: |
-            Extension member (non-standard in RFC 9457) providing granular,
-            per-field validation errors. Only present for `400` responses
-            arising from request body or parameter validation failures.
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field:
-                type: string
-                description: |
-                  Name of the offending field, using dot notation for nested
-                  properties (e.g. "address.zipCode").
-                examples: ["email", "address.zipCode"]
-              message:
-                type: string
-                description: Human-readable explanation of why this field is invalid.
-                examples: ["invalid format", "must not be empty"]
-
     UUID:
       type: string
       format: uuid
@@ -541,8 +1952,150 @@ components:
       x-go-type-skip-optional-pointer: true
       x-go-type-import:
         path: github.com/google/uuid
-        
+
+    Response:
+      type: object
+      description: |
+        The `fun.Response` envelope wrapping every JSON payload (except
+        `/.well-known/jwks.json`). On success `error` is absent and `data`
+        carries the operation payload; on failure `data` is absent and
+        `error` carries the AppError. `pagination` is reserved for paged
+        list endpoints.
+      required: [code, message, timestamp, module]
+      properties:
+        code:
+          type: integer
+          description: HTTP status code, duplicated for convenience.
+          example: 200
+        message:
+          type: string
+          description: Informational message; often empty on success.
+        data:
+          type: object
+          description: The operation payload. Shape is documented per operation.
+        error:
+          allOf:
+            - $ref: '#/components/schemas/Error'
+          description: Present (non-null) only on failure.
+        pagination:
+          allOf:
+            - $ref: '#/components/schemas/PaginationMeta'
+          description: Present only on paged list endpoints.
+        timestamp:
+          type: string
+          format: date-time
+          description: Server time the response was produced.
+        module:
+          type: string
+          description: Service that produced the response.
+
+    Error:
+      type: object
+      title: AppError
+      description: |
+        The `fun.AppError` object carried in the envelope's `error` field
+        on failure. `code` is a machine-readable sentinel whose mapping to
+        the HTTP status is documented in the top-level description.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - PAYMENT_REQUIRED
+            - FORBIDDEN
+            - NOT_FOUND
+            - METHOD_NOT_ALLOWED
+            - CONFLICT
+            - UNPROCESSABLE_ENTITY
+            - TOO_MANY_REQUESTS
+            - INTERNAL_ERROR
+            - NOT_IMPLEMENTED
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+        message:
+          type: string
+          description: Human-readable explanation of the failure.
+        fields:
+          type: array
+          description: Per-field validation errors (validation failures only).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                description: Offending field name (dot notation for nested fields).
+              message:
+                type: string
+                description: Why the field is invalid.
+        meta:
+          type: object
+          description: Arbitrary key/value context (resource ids, request ids, ...).
+          additionalProperties: true
+        debug:
+          type: object
+          description: Development-only diagnostics; stripped outside development environments.
+          properties:
+            raw_error:
+              type: string
+            stack_trace:
+              type: string
+
+    ErrorResponse:
+      type: object
+      description: |
+        The envelope as sent on failure: `data` absent, `error` carrying
+        the AppError. Referenced by every error response in this spec.
+      required: [code, message, error, timestamp, module]
+      properties:
+        code:
+          type: integer
+          description: HTTP status code.
+        message:
+          type: string
+          description: Same message as `error.message`.
+        error:
+          $ref: '#/components/schemas/Error'
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          const: IdentityX
+
+    PaginationMeta:
+      type: object
+      description: |
+        Pagination metadata attached to paged list endpoints. Currently
+        unused by IdentityX routes; documented for forward compatibility.
+      required: [page, limit, total, has_next, has_prev]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+        next_page:
+          type: integer
+        prev_page:
+          type: integer
+
     SupportedOAuthProviders:
+      x-go-type: models.OAuthProvider
+      x-go-type-import:
+        path: IdentityX/models
       type: string
       enum: [ "google", "github" ]
 
@@ -551,30 +2104,35 @@ components:
       required: [email, password]
       properties:
         email:
+          x-go-type: string
           type: string
           format: email
           description: User's email address.
           minLength: 3
           maxLength: 254
-          x-oapi-codegen-extra-tags:
-            validate: "required,email"
         password:
           type: string
           minLength: 8
+          maxLength: 72
           description: User's password.
-          x-oapi-codegen-extra-tags:
-            validate: "required,passwd,min=8"
+      description: |
+        Request body for `/auth/setup`, `/auth/register`, and
+        `/auth/login`. Mirrors `models.IDXRegisterRequest` /
+        `models.IDXLoginRequest`.
 
-    UserTokensResponse:
+    UserTokensOutput:
+      x-go-type: models.UserTokensOutput
+      x-go-type-import:
+        path: IdentityX/models
       type: object
       required: [access_token, refresh_token, access_expires_at, refresh_expires_at, domain]
       properties:
         access_token:
           type: string
-          description: A JWT token containing the users access information
+          description: Ed25519-signed JWT carrying the actor identity.
         refresh_token:
           type: string
-          description: A JWT token for refreshing the user's session
+          description: JWT used to obtain a fresh token pair via /auth/refresh.
         access_expires_at:
           type: string
           format: date-time
@@ -583,12 +2141,558 @@ components:
           type: string
           format: date-time
           description: Expiration timestamp of the refresh token.
-
-    OAuthConnectResponse:
-      type: object
-      required: [url]
-      properties:
-        url:
+        domain:
           type: string
+          description: Cookie domain the frontend should bind tokens to.
+      description: Mirrors `models.UserTokensOutput`.
+
+    Identity:
+      x-go-type: models.Identity
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: |
+        Identity resolved from the current credential (session JWT or API
+        key), returned by `/auth/introspect`. Mirrors `models.Identity`.
+      required: [subject, cred]
+      properties:
+        subject:
+          $ref: '#/components/schemas/Subject'
+        cred:
+          $ref: '#/components/schemas/Credential'
+
+    Subject:
+      x-go-type: models.Subject
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: The actor this identity resolves to. Mirrors `models.Subject`.
+      required: [id, type, capabilities]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+          description: Unique identifier of the actor.
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Project this actor is scoped to, if any.
+        email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+          description: Actor's email address, if applicable for this actor type.
+        type:
+          $ref: '#/components/schemas/ActorType'
+        capabilities:
+          type: [ object, "null" ]
+          description: |
+            Actor's capability grants as a JSON array of `resource:action`
+            strings (JSON-encoded array carried in a JSON field). Shape is
+            opaque to the API contract.
+        metadata:
+          type: [ object, "null" ]
+          description: Arbitrary actor metadata, opaque to the API contract.
+          additionalProperties: true
+
+    Credential:
+      x-go-type: models.Credential
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: The credential used to authenticate this request. Mirrors `models.Credential`.
+      required: [type]
+      properties:
+        id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: |
+            Identifier of the credential, present for stateful credentials
+            (e.g. API keys). Null for stateless credentials (e.g. JWTs).
+        type:
+          $ref: '#/components/schemas/CredentialType'
+
+    ActorType:
+      x-go-type: models.ActorType
+      x-go-type-import:
+        path: IdentityX/models
+      type: string
+      description: The kind of actor this identity represents.
+      enum: [ human, service, machine ]
+
+    CredentialType:
+      x-go-type: models.CredentialType
+      x-go-type-import:
+        path: IdentityX/models
+      type: string
+      description: The mechanism used to authenticate this identity.
+      enum: [ token, api_key ]
+
+    Actor:
+      x-go-type: models.Actor
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A human, service, or machine identity. Mirrors `models.Actor`.
+      required: [id, auth_method, type, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Project this actor is scoped to, if any.
+        auth_method:
+          type: string
+          enum: [password, api_key, google_auth, github_auth]
+          description: How this actor authenticates.
+        verified_at:
+          type: [ string, "null" ]
+          format: date-time
+          description: When the actor's email was verified, if ever.
+        email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+          description: Actor's email address.
+        type:
+          $ref: '#/components/schemas/ActorType'
+        metadata:
+          type: [ object, "null" ]
+          description: Arbitrary actor metadata.
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateActorRequest:
+      type: object
+      description: Request body for actor creation. Mirrors `models.CreateActorRequest`.
+      required: [auth_method, type]
+      properties:
+        auth_method:
+          type: string
+          enum: [password, api_key]
+          x-go-type: models.AuthMethod
+          x-go-type-import:
+            path: IdentityX/models
+        type:
+          $ref: '#/components/schemas/ActorType'
+        email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+          description: Actor's email address.
+
+    ActorProfile:
+      x-go-type: models.ActorProfile
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: An actor's profile payload. Mirrors `models.ActorProfile`.
+      required: [actor_id, profile, updated_at]
+      properties:
+        actor_id:
+          $ref: '#/components/schemas/UUID'
+        profile:
+          type: object
+          description: The profile data, validated against the active profile schema.
+          additionalProperties: true
+        updated_at:
+          type: string
+          format: date-time
+
+    UpsertProfileRequest:
+      type: object
+      description: Request body for profile upserts. Mirrors `models.UpsertProfileRequest`.
+      required: [profile]
+      properties:
+        profile:
+          type: object
+          description: Profile data to store, validated against the active schema.
+          additionalProperties: true
+
+    ProjectProfileSchema:
+      x-go-type: models.ProjectProfileSchema
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A profile validation schema. Mirrors `models.ProjectProfileSchema`.
+      required: [schema, version, active, created_at, updated_at]
+      properties:
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Project the schema applies to; null = platform-wide default.
+        schema:
+          type: object
+          description: The JSON Schema (draft 2020-12) used to validate profiles.
+          additionalProperties: true
+        version:
+          type: integer
+          description: Monotonically increasing schema version.
+        active:
+          type: boolean
+          description: Whether this schema is the active one for its scope.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UpsertProfileSchemaRequest:
+      type: object
+      description: Request body for schema upserts. Mirrors `models.UpsertProfileSchemaRequest`.
+      required: [schema, active]
+      properties:
+        schema:
+          type: object
+          description: The JSON Schema to store.
+          additionalProperties: true
+        active:
+          type: boolean
+          description: Whether the schema should become active immediately.
+
+    Organization:
+      x-go-type: models.Organization
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A top-level tenant. Mirrors `models.Organization`.
+      required: [id, owner_id, name, slug, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+          description: Actor that owns the organization.
+        name:
+          type: string
+          minLength: 3
+        slug:
+          type: string
+          minLength: 2
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateOrganizationRequest:
+      type: object
+      description: Request body for organization creation. Mirrors `models.CreateOrganizationRequest`.
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+          minLength: 3
+        slug:
+          type: string
+          minLength: 2
+
+    OrganizationRole:
+      x-go-type: models.OrganizationRole
+      x-go-type-import:
+        path: IdentityX/models
+      type: string
+      enum: [member, admin, owner]
+
+    OrganizationMember:
+      x-go-type: models.OrganizationMember
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: Membership of an actor in an organization. Mirrors `models.OrganizationMember`.
+      required: [organization_id, actor_id, role, joined_at]
+      properties:
+        organization_id:
+          $ref: '#/components/schemas/UUID'
+        actor_id:
+          $ref: '#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+        metadata:
+          type: [ object, "null" ]
+          additionalProperties: true
+        joined_at:
+          type: string
+          format: date-time
+
+    AddOrganizationMemberRequest:
+      type: object
+      description: Request body for adding an organization member. Mirrors `models.AddOrganizationMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+
+    RemoveOrganizationMemberRequest:
+      type: object
+      description: Request body for removing an organization member. Mirrors `models.RemoveOrganizationMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-go-type: string
+          type: string
+          format: email
+
+    Project:
+      x-go-type: models.Project
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: An IdentityX workspace under an organization. Mirrors `models.Project`.
+      required: [id, owner_id, brand_slug, name, metadata, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        organization_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Organization this project belongs to, if any.
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        brand_slug:
+          type: string
+          minLength: 3
+          maxLength: 32
+        name:
+          type: string
+          minLength: 3
+        domain:
+          type: [ string, "null" ]
           format: uri
-          description: URL the client should redirect to in order to complete the OAuth flow.
+          description: Verified custom domain, if configured.
+        domain_verified_at:
+          type: [ string, "null" ]
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateProjectRequest:
+      type: object
+      description: Request body for project creation. Mirrors `models.CreateProjectRequest`.
+      required: [name, brand_slug]
+      properties:
+        name:
+          type: string
+          minLength: 3
+        domain:
+          type: [ string, "null" ]
+          format: uri
+        brand_slug:
+          type: string
+          description: Unique slug used in branding and URLs.
+
+    CreateOrgProjectRequest:
+      type: object
+      description: Request body for organization project creation. Mirrors `models.CreateOrgProjectRequest`.
+      required: [name, brand_slug]
+      properties:
+        name:
+          type: string
+          minLength: 3
+        domain:
+          type: [ string, "null" ]
+          format: uri
+        brand_slug:
+          type: string
+
+    ProjectRole:
+      x-go-type: models.ProjectRole
+      x-go-type-import:
+        path: IdentityX/models
+      type: string
+      enum: [member, admin, owner]
+
+    ProjectMember:
+      x-go-type: models.ProjectMember
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: Membership of an actor in a project. Mirrors `models.ProjectMember`.
+      required: [project_id, actor_id, role, metadata, joined_at]
+      properties:
+        project_id:
+          $ref: '#/components/schemas/UUID'
+        actor_id:
+          $ref: '#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/ProjectRole'
+        metadata:
+          type: object
+          additionalProperties: true
+        joined_at:
+          type: string
+          format: date-time
+
+    AddProjectMemberRequest:
+      type: object
+      description: Request body for adding a project member. Mirrors `models.AddProjectMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/ProjectRole'
+
+    RemoveProjectMemberRequest:
+      type: object
+      description: Request body for removing a project member. Mirrors `models.RemoveProjectMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-go-type: string
+          type: string
+          format: email
+
+    AddOrgProjectMemberRequest:
+      type: object
+      description: Request body for adding an org project member. Mirrors `models.AddOrgProjectMemberRequest`.
+      required: [actor_email, role]
+      properties:
+        actor_email:
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/ProjectRole'
+
+    RemoveOrgProjectMemberRequest:
+      type: object
+      description: Request body for removing an org project member. Mirrors `models.RemoveOrgProjectMemberRequest`.
+      required: [actor_email]
+      properties:
+        actor_email:
+          x-go-type: string
+          type: string
+          format: email
+
+    Capability:
+      x-go-type: models.Capability
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A permission grant (`resource:action`). Mirrors `models.Capability`.
+      required: [id, resource, action, created_by, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+        resource:
+          type: string
+          minLength: 3
+        action:
+          type: string
+          minLength: 3
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+
+    CreateCapabilityRequest:
+      type: object
+      description: Request body for capability creation. Mirrors `models.CreateCapabilityRequest`.
+      required: [resource, action]
+      properties:
+        resource:
+          type: string
+          minLength: 3
+        action:
+          type: string
+          minLength: 3
+
+    APIKey:
+      x-go-type: models.APIKey
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: A static API key record. Mirrors `models.APIKey`.
+      required: [id, subject_id, name, display_prefix, metadata, created_by, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        subject_id:
+          $ref: '#/components/schemas/UUID'
+          description: Actor the key is bound to.
+        name:
+          type: string
+        display_prefix:
+          type: string
+          description: Short prefix for identifying the key (e.g. `idx_abc123`).
+        metadata:
+          type: object
+          additionalProperties: true
+        expires_at:
+          type: [ string, "null" ]
+          format: date-time
+        revoked_at:
+          type: [ string, "null" ]
+          format: date-time
+        last_used_at:
+          type: [ string, "null" ]
+          format: date-time
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+
+    CreateAPIKeyRequest:
+      type: object
+      description: Request body for API key creation. Mirrors `models.CreateAPIKeyRequest`.
+      properties:
+        subject_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Actor the key is bound to. Defaults to the authenticated actor.
+        capabilities:
+          type: array
+          description: Capability IDs the key is restricted to.
+          items:
+            $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          description: Human-friendly key name.
+        env:
+          type: string
+          description: Environment tag (e.g. `production`, `sandbox`).
+        expires_at:
+          type: [ string, "null" ]
+          format: date-time
+          description: Optional expiry; null = does not expire.
+
+    CreateAPIKeyResponse:
+      x-go-type: models.CreateAPIKeyResponse
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      description: Result of API key creation. Mirrors `models.CreateAPIKeyResponse`.
+      required: [key, raw_key]
+      properties:
+        key:
+          $ref: '#/components/schemas/APIKey'
+        raw_key:
+          type: string
+          description: |
+            The full key, returned exactly once. Store it securely; it
+            cannot be retrieved again.
