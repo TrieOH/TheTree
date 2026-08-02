@@ -610,6 +610,9 @@ importers:
       '@trieoh/ui-base':
         specifier: workspace:*
         version: link:../../lib/ts/ui-base
+      '@trieoh/univents-api':
+        specifier: workspace:*
+        version: link:../../lib/ts/univents
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20

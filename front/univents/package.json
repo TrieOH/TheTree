@@ -39,6 +39,7 @@
     "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/identityx-access-sdk-ts": "catalog:",
     "@trieoh/ui-base": "workspace:*",
+    "@trieoh/univents-api": "workspace:*",
     "aws4fetch": "^1.0.20",
     "class-variance-authority": "catalog:",
     "date-fns": "^4.1.0",

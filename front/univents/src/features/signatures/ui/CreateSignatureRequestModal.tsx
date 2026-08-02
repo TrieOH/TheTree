@@ -41,15 +41,11 @@ export function CreateSignatureRequestModal({
     defaultValues: defaults,
     onSubmit: async (values) => {
       try {
-        const response = await createSignatureRequestFn(editionId, {
+        await createSignatureRequestFn(editionId, {
           ...values,
           signatory_title: values.signatory_title || undefined,
           signatory_user_id: values.signatory_user_id || undefined,
         });
-        if (!response.success) {
-          toast.error(response.message || "Não foi possível criar o convite");
-          return false;
-        }
         await onCreated();
         return true;
       } catch (error) {

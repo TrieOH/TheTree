@@ -1,6 +1,26 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, publicQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import {
+  createInitialProduct,
+  createProductVariant,
+  deleteProduct,
+  deleteProductVariant,
+  getProduct,
+  getProductByVendorCode,
+  getVariantByVendorCode,
+  listEditionProducts,
+  listProductVariants,
+  patchProduct,
+  patchProductVariant,
+} from "@trieoh/univents-api";
+import type {
+  CreateInitialProductRequest,
+  CreateProductVariantRequest,
+  PatchProductRequest,
+  PatchProductVariantRequest,
+} from "@trieoh/univents-api/schemas";
+// import { authFetcher } from "@/shared/lib/api/fetch";
 import type {
   CreateInitialProductOutputI,
   ProductI,
@@ -15,7 +35,9 @@ import { productKeys } from "./query-keys";
 /** GET /editions/{edition_id}/products */
 export const getProductsByEditionFn = createClientOnlyFn(
   async (editionId: string) => {
-    return publicQueryFetcher<ProductI[]>(`/editions/${editionId}/products`);
+    return listEditionProducts(editionId, { public: true }).then(
+      orvalData<ProductI[]>,
+    );
   },
 );
 
@@ -29,8 +51,8 @@ export const productsByEditionQueryOptions = (editionId: string) => {
 /** GET /editions/{edition_id}/products/{vendor_code}:by-code */
 export const getProductByVendorCodeFn = createClientOnlyFn(
   async (editionId: string, vendorCode: string) => {
-    return publicQueryFetcher<ProductI>(
-      `/editions/${editionId}/products/${vendorCode}:by-code`,
+    return getProductByVendorCode(editionId, vendorCode, { public: true }).then(
+      orvalData<ProductI>,
     );
   },
 );
@@ -48,7 +70,7 @@ export const productByVendorCodeQueryOptions = (
 /** GET /products/{product_id} */
 export const getProductByIdFn = createClientOnlyFn(
   async (productId: string) => {
-    return publicQueryFetcher<ProductI>(`/products/${productId}`);
+    return getProduct(productId, { public: true }).then(orvalData<ProductI>);
   },
 );
 
@@ -62,7 +84,9 @@ export const productByIdQueryOptions = (productId: string) => {
 /** GET /products/{product_id}/variants */
 export const getProductVariantsFn = createClientOnlyFn(
   async (productId: string) => {
-    return publicQueryFetcher<VariantI[]>(`/products/${productId}/variants`);
+    return listProductVariants(productId, { public: true }).then(
+      orvalData<VariantI[]>,
+    );
   },
 );
 
@@ -76,20 +100,25 @@ export const productVariantsQueryOptions = (productId: string) => {
 /** POST /editions/{edition_id}/products — Create product + first variant */
 export const createInitialProductFn = createClientOnlyFn(
   (data: CreateInitialProductOutputI, editionId: string) => {
-    return authFetcher.post<ProductI>(`/editions/${editionId}/products`, data);
+    return createInitialProduct(
+      editionId,
+      data as CreateInitialProductRequest,
+    ).then(orvalData<ProductI>);
   },
 );
 
 /** PATCH /products/{product_id} */
 export const patchProductFn = createClientOnlyFn(
   (productId: string, data: ProductPatchOutputI) => {
-    return authFetcher.patch<ProductI>(`/products/${productId}`, data);
+    return patchProduct(productId, data as PatchProductRequest).then(
+      orvalData<ProductI>,
+    );
   },
 );
 
 /** DELETE /products/{product_id} */
 export const deleteProductFn = createClientOnlyFn((productId: string) => {
-  return authFetcher.delete<null>(`/products/${productId}`);
+  return deleteProduct(productId).then(orvalData<null>);
 });
 
 // ──────────── Variants ────────────
@@ -97,8 +126,8 @@ export const deleteProductFn = createClientOnlyFn((productId: string) => {
 /** GET /editions/{edition_id}/variants/{vendor_code}:by-code */
 export const getVariantByVendorCodeFn = createClientOnlyFn(
   async (editionId: string, vendorCode: string) => {
-    return publicQueryFetcher<VariantI>(
-      `/editions/${editionId}/variants/${vendorCode}:by-code`,
+    return getVariantByVendorCode(editionId, vendorCode, { public: true }).then(
+      orvalData<VariantI>,
     );
   },
 );
@@ -116,24 +145,32 @@ export const variantByVendorCodeQueryOptions = (
 /** POST /products/{product_id}/variants */
 export const createVariantFn = createClientOnlyFn(
   (productId: string, data: VariantCreateOutputI) => {
-    return authFetcher.post<VariantI>(`/products/${productId}/variants`, data);
+    return createProductVariant(
+      productId,
+      data as CreateProductVariantRequest,
+    ).then(orvalData<VariantI>);
   },
 );
 
 /** PATCH /variants/{variant_id} */
 export const patchVariantFn = createClientOnlyFn(
   (variantId: string, data: VariantCreateOutputI) => {
-    return authFetcher.patch<VariantI>(`/variants/${variantId}`, data);
+    return patchProductVariant(
+      variantId,
+      data as PatchProductVariantRequest,
+    ).then(orvalData<VariantI>);
   },
 );
 
 /** DELETE /variants/{variant_id} */
 export const deleteVariantFn = createClientOnlyFn((variantId: string) => {
-  return authFetcher.delete<null>(`/variants/${variantId}`);
+  return deleteProductVariant(variantId).then(orvalData<null>);
 });
 
 // ──────────── WebSocket ────────────
 
 export const getWebsocketAuthToken = createClientOnlyFn(() => {
-  return authFetcher.get<{ token: string }>("/ws/token");
+  console.warn("Not Implemeted");
+  return { data: { token: "" }, success: false };
+  // return authFetcher.get<{ token: string }>("/ws/token");
 });

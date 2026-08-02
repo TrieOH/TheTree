@@ -22,8 +22,8 @@ function RevokeSignaturePage() {
     if (!token) return;
     let active = true;
     void revokeSignatureFn(token)
-      .then((response) => {
-        if (active) setState(response.success ? "success" : "error");
+      .then(() => {
+        if (active) setState("success");
       })
       .catch(() => {
         if (active) setState("error");

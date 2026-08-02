@@ -1,10 +1,10 @@
+import { orvalData } from "@trieoh/api-client";
+import { listDraftEditions, listPublicEditions } from "@trieoh/univents-api";
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
-  uploadAssociationErrorFromResponse,
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
-import { authQueryFetcher } from "@/shared/lib/api/fetch";
 import type { EditionApiI, EditionI } from "../model";
 import { patchEditionFn } from "./index";
 import { editionKeys } from "./query-keys";
@@ -22,8 +22,10 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
       status: 400,
     });
   const [publicEditions, draftEditions] = await Promise.all([
-    authQueryFetcher<EditionApiI[]>(`/events/${eventId}/editions`),
-    authQueryFetcher<EditionApiI[]>(`/events/${eventId}/editions/draft`),
+    listPublicEditions(eventId, { public: true }).then(
+      orvalData<EditionApiI[]>,
+    ),
+    listDraftEditions(eventId).then(orvalData<EditionApiI[]>),
   ]);
   const editions = [...publicEditions, ...draftEditions];
   const edition = editions.find((item) => item.id === task.owner.id) as
@@ -31,7 +33,7 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
     | undefined;
   if (!edition)
     throw new UploadAssociationError("Edição não encontrada.", { status: 404 });
-  const response = await patchEditionFn(edition.event_id, edition.id, {
+  const updated = await patchEditionFn(edition.event_id, edition.id, {
     name: edition.name,
     slug: edition.slug,
     starts_at: edition.starts_at,
@@ -45,19 +47,12 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
     logo_url: field === "logo_url" ? url : edition.logo_url,
     banner_url: field === "banner_url" ? url : edition.banner_url,
   });
-  if (!response.success)
-    throw uploadAssociationErrorFromResponse(
-      response,
-      "Não foi possível associar a imagem.",
-    );
   getContext().queryClient.setQueryData<EditionI[]>(
-    editionKeys.adminListByEvent(response.data.event_id),
-    (old = []) =>
-      old.map((item) => (item.id === response.data.id ? response.data : item)),
+    editionKeys.adminListByEvent(updated.event_id),
+    (old = []) => old.map((item) => (item.id === updated.id ? updated : item)),
   );
   getContext().queryClient.setQueryData<EditionI[]>(
-    editionKeys.publicListByEvent(response.data.event_id),
-    (old = []) =>
-      old.map((item) => (item.id === response.data.id ? response.data : item)),
+    editionKeys.publicListByEvent(updated.event_id),
+    (old = []) => old.map((item) => (item.id === updated.id ? updated : item)),
   );
 });

@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Headset, Mail, Phone } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Button } from "@/shared/ui/shadcn/button";
-import { Input } from "@/shared/ui/shadcn/input";
-import { Label } from "@/shared/ui/shadcn/label";
 import {
   Card,
   CardContent,
@@ -11,7 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/ui/shadcn/card";
-import { Headset, Mail, Phone } from "lucide-react";
+import { Input } from "@/shared/ui/shadcn/input";
+import { Label } from "@/shared/ui/shadcn/label";
 
 export const Route = createFileRoute("/contact")({
   component: ContactPage,
@@ -56,7 +56,8 @@ function ContactPage() {
               Contato
             </h1>
             <p className="mt-1.5 max-w-2xl text-sm md:text-base leading-relaxed text-muted-foreground">
-              Fale com nossa equipe para suporte, parcerias ou dúvidas sobre a plataforma.
+              Fale com nossa equipe para suporte, parcerias ou dúvidas sobre a
+              plataforma.
             </p>
           </motion.div>
         </div>
@@ -64,7 +65,6 @@ function ContactPage() {
 
       <section className="mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
         <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
-
           <motion.div
             initial={{ opacity: 0, x: -15 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -77,8 +77,10 @@ function ContactPage() {
                 Fale Conosco
               </h2>
               <p className="text-muted-foreground text-justify">
-                Tem alguma dúvida ou precisa de suporte? Preencha o formulário e nós entraremos em contato com você o mais rápido possível.
-                Nossa equipe de atendimento está pronta para te ajudar com qualquer situação.
+                Tem alguma dúvida ou precisa de suporte? Preencha o formulário e
+                nós entraremos em contato com você o mais rápido possível. Nossa
+                equipe de atendimento está pronta para te ajudar com qualquer
+                situação.
               </p>
             </div>
 
@@ -89,7 +91,9 @@ function ContactPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium leading-none">Email</p>
-                  <p className="text-sm text-muted-foreground mt-1">{SUPPORT_EMAIL}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {SUPPORT_EMAIL}
+                  </p>
                 </div>
               </div>
 
@@ -99,11 +103,11 @@ function ContactPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium leading-none">Telefone</p>
-                  <p className="text-sm text-muted-foreground mt-1">{SUPPORT_PHONE}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {SUPPORT_PHONE}
+                  </p>
                 </div>
               </div>
-
-
             </div>
           </motion.div>
 
@@ -146,7 +150,6 @@ function ContactPage() {
               </CardContent>
             </Card>
           </motion.div>
-
         </div>
       </section>
     </main>

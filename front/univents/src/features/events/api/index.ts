@@ -1,10 +1,16 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { orvalData } from "@trieoh/api-client";
 import {
-  authFetcher,
-  authQueryFetcher,
-  publicQueryFetcher,
-} from "@/shared/lib/api/fetch";
+  createEvent,
+  discontinueEvent,
+  getEventBySlug,
+  listJoinedEvents,
+  listOwnedEvents,
+  listPublicEvents,
+  patchEvent,
+  publishEvent,
+} from "@trieoh/univents-api";
 import type { EventCreateOutputI, EventI } from "../model";
 import { eventKeys } from "./query-keys";
 
@@ -15,13 +21,13 @@ import { eventKeys } from "./query-keys";
  */
 export const createEventFn = createClientOnlyFn(
   (eventData: EventCreateOutputI) => {
-    return authFetcher.post<EventI>("/events", eventData);
+    return createEvent(eventData).then(orvalData<EventI>);
   },
 );
 
 export const patchEventFn = createClientOnlyFn(
   (eventId: string, eventData: EventCreateOutputI) =>
-    authFetcher.patch<EventI>(`/events/${eventId}`, eventData),
+    patchEvent(eventId, eventData).then(orvalData<EventI>),
 );
 
 /**
@@ -30,11 +36,11 @@ export const patchEventFn = createClientOnlyFn(
  * @returns A promise that resolves to the API null response.
  */
 export const publishEventFn = createClientOnlyFn((eventId: string) => {
-  return authFetcher.post<null>(`/events/${eventId}/publish`);
+  return publishEvent(eventId).then(orvalData<null>);
 });
 
 export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
-  return authFetcher.post<null>(`/events/${eventId}/discontinue`);
+  return discontinueEvent(eventId).then(orvalData<null>);
 });
 
 /**
@@ -42,7 +48,7 @@ export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
  * @returns A promise that resolves to an array of Event objects.
  */
 const getPublicEventsFn = async () => {
-  return publicQueryFetcher<EventI[]>("/events");
+  return listPublicEvents({ public: true }).then(orvalData<EventI[]>);
 };
 
 /**
@@ -61,7 +67,7 @@ export const allPublicEventsQueryOptions = () => {
  * @returns A promise that resolves to an array of Event objects.
  */
 const getOwnEventsFn = createClientOnlyFn(async () => {
-  return authQueryFetcher<EventI[]>("/events/owned");
+  return listOwnedEvents().then(orvalData<EventI[]>);
 });
 
 /**
@@ -80,7 +86,7 @@ export const allOwnEventsQueryOptions = () => {
  * @returns A promise that resolves to an array of Event objects.
  */
 const getJoinedEventsFn = createClientOnlyFn(async () => {
-  return authQueryFetcher<EventI[]>("/events/joined");
+  return listJoinedEvents().then(orvalData<EventI[]>);
 });
 
 /**
@@ -100,9 +106,9 @@ export const allJoinedEventsQueryOptions = () => {
  * @returns A promise that resolves to an Event object.
  */
 const getPublicEventBySlugFn = async (slug: string) => {
-  return publicQueryFetcher<EventI | null>(`/events/${slug}:by-slug`).catch(
-    () => null,
-  );
+  return getEventBySlug(slug, { public: true })
+    .then(orvalData<EventI | null>)
+    .catch(() => null);
 };
 
 /**

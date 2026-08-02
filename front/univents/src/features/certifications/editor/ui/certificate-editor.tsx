@@ -74,8 +74,7 @@ export function CertificateEditor({
         eventId,
         editionId,
       );
-      const onSuccess = (response: { success: boolean }) => {
-        if (!response.success) return;
+      const onSuccess = () => {
         void navigate({
           to: "/admin/events/$eventId/editions/$editionId/certifications",
           params: { eventId, editionId },

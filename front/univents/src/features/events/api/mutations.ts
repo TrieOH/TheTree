@@ -10,10 +10,26 @@ import {
 } from "./index";
 import {
   addEventMemberFn,
-  type EventMemberI,
+  type EventMemberWithEmailI,
   removeEventMemberFn,
 } from "./members";
 import { eventKeys } from "./query-keys";
+
+function errorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object") {
+    const value = error as {
+      envelope?: { message?: string; error?: { message?: string } };
+      message?: string;
+    };
+    return (
+      value.envelope?.message ??
+      value.envelope?.error?.message ??
+      value.message ??
+      fallback
+    );
+  }
+  return fallback;
+}
 
 function upsertById(events: EventI[] | undefined, event: EventI) {
   const list = events ?? [];
@@ -93,15 +109,11 @@ export function useCreateEventMutation() {
   return useMutation({
     mutationFn: createEventFn,
     onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao criar evento");
-        return;
-      }
-
-      syncEventCaches(queryClient, res.data);
+      syncEventCaches(queryClient, res);
       toast.success("Evento criado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error: Error) =>
+      toast.error(error.message || "Erro ao criar evento"),
   });
 }
 
@@ -110,12 +122,7 @@ export function usePublishEventMutation() {
 
   return useMutation({
     mutationFn: (eventId: string) => publishEventFn(eventId),
-    onSuccess: (res, eventId) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao publicar evento");
-        return;
-      }
-
+    onSuccess: (_, eventId) => {
       syncEventStatusInCaches(
         queryClient,
         eventId,
@@ -124,7 +131,8 @@ export function usePublishEventMutation() {
       );
       toast.success("Evento publicado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error: Error) =>
+      toast.error(error.message || "Erro ao publicar evento"),
   });
 }
 
@@ -139,14 +147,11 @@ export function usePatchEventMutation() {
       data: Parameters<typeof patchEventFn>[1];
     }) => patchEventFn(eventId, data),
     onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao editar evento");
-        return;
-      }
-      syncEventCaches(queryClient, res.data);
+      syncEventCaches(queryClient, res);
       toast.success("Evento atualizado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error: Error) =>
+      toast.error(error.message || "Erro ao editar evento"),
   });
 }
 
@@ -155,12 +160,7 @@ export function useDiscontinueEventMutation() {
 
   return useMutation({
     mutationFn: (eventId: string) => discontinueEventFn(eventId),
-    onSuccess: (res, eventId) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao descontinuar evento");
-        return;
-      }
-
+    onSuccess: (_, eventId) => {
       syncEventStatusInCaches(
         queryClient,
         eventId,
@@ -169,7 +169,8 @@ export function useDiscontinueEventMutation() {
       );
       toast.success("Evento descontinuado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error: Error) =>
+      toast.error(error.message || "Erro ao descontinuar evento"),
   });
 }
 
@@ -179,21 +180,14 @@ export function useAddEventMemberMutation() {
   return useMutation({
     mutationFn: addEventMemberFn,
     onSuccess: (res, input) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao adicionar membro");
-        return;
-      }
-
-      queryClient.setQueryData<EventMemberI[]>(
+      queryClient.setQueryData<EventMemberWithEmailI[]>(
         eventKeys.members(input.eventId),
-        (old = []) => [
-          ...old.filter((member) => member.id !== res.data.id),
-          res.data,
-        ],
+        (old = []) => [...old.filter((member) => member.id !== res.id), res],
       );
       toast.success("Membro adicionado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(errorMessage(error, "Erro ao adicionar membro")),
   });
 }
 
@@ -202,18 +196,14 @@ export function useRemoveEventMemberMutation() {
 
   return useMutation({
     mutationFn: removeEventMemberFn,
-    onSuccess: (res, input) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao remover membro");
-        return;
-      }
-
-      queryClient.setQueryData<EventMemberI[]>(
+    onSuccess: (_, input) => {
+      queryClient.setQueryData<EventMemberWithEmailI[]>(
         eventKeys.members(input.eventId),
         (old = []) => old.filter((member) => member.user_id !== input.userId),
       );
       toast.success("Membro removido com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(errorMessage(error, "Erro ao remover membro")),
   });
 }

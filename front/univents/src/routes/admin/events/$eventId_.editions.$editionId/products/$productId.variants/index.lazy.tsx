@@ -156,18 +156,18 @@ function RouteComponent() {
           setModalState({ open: false, variant: undefined });
         }}
         onCreate={async (values) => {
-          const res = await createVariantMutation.mutateAsync({
+          const variant = await createVariantMutation.mutateAsync({
             productId,
             data: values,
           });
-          return res.success ? res.data : false;
+          return variant ? variant : false;
         }}
         onUpdate={async (variantId, values) => {
-          const res = await updateVariantMutation.mutateAsync({
+          const variant = await updateVariantMutation.mutateAsync({
             variantId,
             data: values,
           });
-          return res.success ? res.data : false;
+          return variant ? variant : false;
         }}
       />
 

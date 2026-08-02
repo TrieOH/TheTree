@@ -22,6 +22,7 @@ export type { ApiError }
 export {
   configureApiClient,
   createOrvalTransport,
+  customInstance,
   type ApiClientConfig,
   type ApiTransport,
 } from "./orval-mutator"
@@ -51,7 +52,7 @@ export interface AppFetchers {
 }
 
 /**
- * Create all three fetcher variants every app needs.
+ * Create all fetcher variants every app needs.
  */
 export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
   const {

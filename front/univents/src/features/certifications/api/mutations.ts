@@ -25,11 +25,7 @@ export function useCreateCertificationTemplateMutation() {
   return useMutation({
     mutationFn: ({ editionId, data }: CreateTemplateInput) =>
       createCertificationTemplateFn(editionId, data),
-    onSuccess: (response, variables) => {
-      if (!response.success) {
-        toast.error(response.message || "Não foi possível salvar o template");
-        return;
-      }
+    onSuccess: (_template, variables) => {
       void queryClient.invalidateQueries({
         queryKey: certificationKeys.templatesByEdition(variables.editionId),
       });
@@ -122,13 +118,11 @@ export function useInvalidateCertificationMutation() {
       certificationId: string;
       reason: string;
     }) => invalidateCertificationFn({ certificationId, reason }),
-    onSuccess: (res) => {
-      if (res.success) {
-        toast.success("Certificado invalidado");
-        void queryClient.invalidateQueries({
-          queryKey: certificationKeys.issued(),
-        });
-      } else toast.error(res.message);
+    onSuccess: () => {
+      toast.success("Certificado invalidado");
+      void queryClient.invalidateQueries({
+        queryKey: certificationKeys.issued(),
+      });
     },
     onError: () => toast.error("Não foi possível invalidar o certificado"),
   });
