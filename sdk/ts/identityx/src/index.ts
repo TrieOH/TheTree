@@ -14,3 +14,7 @@ export type {
   TokenClaims,
   TokenSubject,
 } from "./types/token-types";
+export type {
+  OAuthProviderDiscoveryItem,
+  ActorProfile
+} from "./types/auth-types";

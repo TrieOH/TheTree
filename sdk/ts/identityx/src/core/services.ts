@@ -1,10 +1,11 @@
-import { clearAuthTokens, getUserInfo, saveAuthSession } from "../utils/token-utils";
+import { clearAuthTokens, getStoredRefreshToken, getUserInfo, saveAuthSession } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
 import type { IntrospectResponse } from "../types/instropect-types";
 import { AuthTokens } from "../types/token-types";
 import type { OAuthProviderI } from "../types/common-types";
+import { ActorProfile, OAuthProviderDiscoveryItem, UpsertProfileRequest } from "../types/auth-types";
 
 export interface AuthCallbacks {
   onLogin?: (res: ApiResponse<AuthTokens>) => void;
@@ -143,15 +144,41 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     });
   },
 
+  getOAuthProviders: async (overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+
+    const query = projectId ? `?project_id=${projectId}` : "";
+    const url = `/auth/oauth-providers${query}`;
+
+    return apiInstance.get<OAuthProviderDiscoveryItem[]>(url, { requiresAuth: false });
+  },
+
+  getProjectProfile: async (actorId: string, overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+
+    const url = `/projects/${projectId}/actors/${actorId}/profile`;
+    return apiInstance.get<ActorProfile>(url);
+  },
+
+  upsertProjectProfile: async (
+    actorId: string,
+    data: UpsertProfileRequest,
+    overrideProjectId?: string
+  ) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+
+    const url = `/projects/${projectId}/actors/${actorId}/profile`;
+    return apiInstance.put<ActorProfile>(url, data);
+  },
+
   health: async () => {
     return apiInstance.get<{ service: string; status: string }>("/health", {
       requiresAuth: false,
     });
   },
-
-  authHealth: async () => {
-    return apiInstance.get<{ service: string; status: string; user_id: string }>("/protected/health");
-  }
 });
 
 export type AuthService = ReturnType<typeof createAuthService>;
