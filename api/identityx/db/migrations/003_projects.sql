@@ -97,7 +97,31 @@ CREATE TABLE project_oauth_providers (
 CREATE INDEX idx_project_oauth_providers_project_id
     ON project_oauth_providers (project_id);
 
+CREATE TABLE oauth_login_states (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+
+    state TEXT NOT NULL,
+    CONSTRAINT uniq_oauth_login_state UNIQUE (state),
+
+    provider TEXT NOT NULL,
+    CONSTRAINT chk_oauth_login_states_provider CHECK (
+        provider IN ('google', 'github')
+    ),
+
+    -- NULL = IdentityX itself (platform login, env credentials)
+    project_id UUID REFERENCES projects(id)
+        ON DELETE CASCADE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_oauth_login_states_expires_at
+    ON oauth_login_states (expires_at);
+
 -- +goose Down
+DROP INDEX IF EXISTS idx_oauth_login_states_expires_at;
+DROP TABLE IF EXISTS oauth_login_states;
 DROP INDEX IF EXISTS idx_project_oauth_providers_project_id;
 DROP TABLE IF EXISTS project_oauth_providers;
 DROP INDEX IF EXISTS idx_project_members_role;

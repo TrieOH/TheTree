@@ -64,8 +64,8 @@ github.com/ovechkin-dm/go-dyno v0.3.2 h1:jl0hE+o6M/egVVk1SljGw2GYkIEZFkzFWJ1nbqL
 github.com/ovechkin-dm/go-dyno v0.3.2/go.mod h1:CcJNuo7AbePMoRNpM3i1jC1Rp9kHEMyWozNdWzR+0ys=
 github.com/ovechkin-dm/mockio v1.0.2 h1:AR31nVoWhZeMDe9FnfFfayof/y9ed3HASIVhqVKyl8M=
 github.com/ovechkin-dm/mockio v1.0.2/go.mod h1:TAmLa+rztm8IKxrc44JPAviGEhRzNeIyF9oiFznMcCo=
-github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 h1:Dx7Ovyv/SFnMFw3fD4oEoeorXc6saIiQ23LrGLth0Gw=
-github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
+github.com/petermattis/goid v0.0.0-20260725062400-500c67a39b75 h1:VmZ6mKVkxavKEhEy4ZYyV7BwBYBFBP0TwIqmLk84fpU=
+github.com/petermattis/goid v0.0.0-20260725062400-500c67a39b75/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v1.23.2 h1:Je96obch5RDVy3FDMndoUsjAhG5Edi49h0RJWRi/o0o=
