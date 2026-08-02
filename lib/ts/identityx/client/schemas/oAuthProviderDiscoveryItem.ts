@@ -74,12 +74,9 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-import type { Uuid } from './uuid';
+import type { SupportedOAuthProviders } from './supportedOAuthProviders';
 
-export type PostLoginParams = {
-/**
- * Project to scope the operation to. Omit for IdentityX itself.
- */
-project_id?: ProjectIDQueryParameter;
-};
+export interface OAuthProviderDiscoveryItem {
+  /** A provider the scope currently accepts logins with. */
+  provider: SupportedOAuthProviders;
+}

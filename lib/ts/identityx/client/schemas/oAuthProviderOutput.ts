@@ -74,12 +74,20 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
+import type { SupportedOAuthProviders } from './supportedOAuthProviders';
 import type { Uuid } from './uuid';
 
-export type PostLoginParams = {
 /**
- * Project to scope the operation to. Omit for IdentityX itself.
+ * Mirrors `models.ProjectOAuthProviders` (secret excluded from the wire representation).
  */
-project_id?: ProjectIDQueryParameter;
-};
+export interface OAuthProviderOutput {
+  id: Uuid;
+  project_id: Uuid;
+  provider: SupportedOAuthProviders;
+  /** The provider-side client ID. The secret is never returned. */
+  client_id: string;
+  /** Whether new logins via this provider are accepted. */
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}

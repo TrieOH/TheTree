@@ -80,4 +80,10 @@ export type GetOAuthCallbackParams = {
  * Authorization code issued by the provider.
  */
 code: string;
+/**
+ * Opaque state token issued by `/auth/{provider}/connect`. Carries
+ * the login attempt (scope, provider) back from the provider and
+ * is consumed by this callback.
+ */
+state: string;
 };

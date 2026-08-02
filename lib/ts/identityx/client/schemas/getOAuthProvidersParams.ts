@@ -77,7 +77,7 @@
 import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
 import type { Uuid } from './uuid';
 
-export type PostLoginParams = {
+export type GetOAuthProvidersParams = {
 /**
  * Project to scope the operation to. Omit for IdentityX itself.
  */
