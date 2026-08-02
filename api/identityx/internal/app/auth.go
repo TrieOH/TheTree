@@ -55,9 +55,11 @@ func (app *IdentityX) SetupAuthMiddlewares(
 		}
 		// a token blacklisted at logout (or by refresh rotation) must not
 		// authenticate anymore
-		if _, err := blacklistRepo.GetByTargetAndType(ctx, claims.ID, models.BlacklistEntryTypeToken); err == nil {
+		_, err = blacklistRepo.GetByTargetAndType(ctx, claims.ID, models.BlacklistEntryTypeToken)
+		if err == nil {
 			return nil, fun.ErrUnauthorized("token has been revoked")
-		} else if !fun.Is(err, fun.CodeNotFound) {
+		}
+		if !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
 		return claims, nil

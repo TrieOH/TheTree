@@ -33,6 +33,10 @@ func SetupConstraintMessages() {
 		"chk_project_oauth_providers_provider": "OAuth provider must be one of: google, github",
 		"uniq_project_oauth_provider":          "this OAuth provider is already configured for this project",
 
+		// oauth_login_states
+		"chk_oauth_login_states_provider": "OAuth provider must be one of: google, github",
+		"uniq_oauth_login_state":          "duplicate OAuth login state",
+
 		// platform_roles
 		"chk_platform_roles_role": "platform role must be one of: super_admin, admin, support",
 
@@ -44,6 +48,8 @@ func SetupConstraintMessages() {
 
 		// profile schemas
 		"uniq_project_profile_schema_project_id": "a profile schema already exists for this project",
+		"uniq_profile_schema_version_per_scope":  "this profile schema version already exists for the scope",
+		"uniq_profile_schema_version_platform":   "a platform profile schema version already exists",
 
 		// crypto_keys
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",

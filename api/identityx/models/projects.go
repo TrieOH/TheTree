@@ -99,7 +99,7 @@ type ProjectOAuthProviders struct {
 	ProjectID             uuid.UUID     `json:"project_id"`
 	Provider              OAuthProvider `json:"provider"`
 	ClientID              string        `json:"client_id"`
-	EncryptedClientSecret string        `json:"encrypted_client_secret"`
+	EncryptedClientSecret string        `json:"-"`
 	Scopes                []string      `json:"scopes"`
 	Enabled               bool          `json:"enabled"`
 	CreatedAt             time.Time     `json:"created_at"`

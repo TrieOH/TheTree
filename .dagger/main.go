@@ -108,15 +108,16 @@ func (m *Thetree) sqlcGenerate(c *dagger.Container, service string) *dagger.Cont
 }
 
 // withOapiCodegen installs the oapi-codegen binary in the container.
-// Downloading here is fine (CI tooling); the production Dockerfiles copy
-// the binary from the go-tools image instead.
+// Installing from source (matching `just generate-oapi`'s `go run @v2.8.0`):
+// the oapi-codegen/oapi-codegen fork publishes no release binaries, so the
+// tarball download fails with a non-gzip 404 page. The production
+// Dockerfiles copy the binary from the go-tools image instead.
 func (m *Thetree) withOapiCodegen(c *dagger.Container) *dagger.Container {
 	return c.WithExec([]string{
 		"sh", "-c",
 		fmt.Sprintf(
-			"curl -sSL https://github.com/oapi-codegen/oapi-codegen/releases/download/v%s/oapi-codegen_%s_linux_amd64.tar.gz -o /tmp/oapi.tar.gz && "+
-				"tar -xzf /tmp/oapi.tar.gz -C /usr/local/bin oapi-codegen && chmod +x /usr/local/bin/oapi-codegen",
-			oapiCodegenVersion, oapiCodegenVersion,
+			"GOBIN=/usr/local/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v%s",
+			oapiCodegenVersion,
 		),
 	})
 }

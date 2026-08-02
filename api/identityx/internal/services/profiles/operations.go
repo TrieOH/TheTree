@@ -9,20 +9,20 @@ import (
 type Operations struct {
 	profiles ports.ProfileRepo
 	schemas  ports.ProfileSchemaRepo
-	projects ports.ProjectRepo
+	actors   ports.ActorRepo
 	authz    *authz.Service
 }
 
 func NewOperations(
 	profiles ports.ProfileRepo,
 	schemas ports.ProfileSchemaRepo,
-	projects ports.ProjectRepo,
+	actors ports.ActorRepo,
 	authz *authz.Service,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		profiles: profiles,
 		schemas:  schemas,
-		projects: projects,
+		actors:   actors,
 		authz:    authz,
 	})
 }

@@ -14,6 +14,7 @@ import (
 	"IdentityX/internal/handlers/api_keys"
 	"IdentityX/internal/handlers/authn"
 	"IdentityX/internal/handlers/capabilities"
+	"IdentityX/internal/handlers/oauth_providers"
 	"IdentityX/internal/handlers/organizations"
 	"IdentityX/internal/handlers/profile_schemas"
 	"IdentityX/internal/handlers/profiles"
@@ -29,6 +30,7 @@ type Server struct {
 	authn          *authn.Handlers
 	capabilities   *capabilities.Handlers
 	organizations  *organizations.Handlers
+	oauthProviders *oauth_providers.Handlers
 	profileSchemas *profile_schemas.Handlers
 	profiles       *profiles.Handlers
 	projects       *projects.Handlers
@@ -42,6 +44,7 @@ func NewServer(ops *services.Operations) *Server {
 		authn:          authn.New(ops.Authn),
 		capabilities:   capabilities.New(ops.Capabilities),
 		organizations:  organizations.New(ops.Organizations),
+		oauthProviders: oauth_providers.New(ops.OAuthProviders),
 		profileSchemas: profile_schemas.New(ops.ProfileSchemas),
 		profiles:       profiles.New(ops.Profiles),
 		projects:       projects.New(ops.Projects),
@@ -100,6 +103,34 @@ func (s *Server) GetOAuthConnect(ctx context.Context, req openapi.GetOAuthConnec
 
 func (s *Server) GetOAuthCallback(ctx context.Context, req openapi.GetOAuthCallbackRequestObject) (openapi.GetOAuthCallbackResponseObject, error) {
 	return s.authn.GetOAuthCallback(ctx, req)
+}
+
+func (s *Server) GetOAuthProviders(ctx context.Context, req openapi.GetOAuthProvidersRequestObject) (openapi.GetOAuthProvidersResponseObject, error) {
+	return s.oauthProviders.GetOAuthProviders(ctx, req)
+}
+
+func (s *Server) ListProjectOAuthProviders(ctx context.Context, req openapi.ListProjectOAuthProvidersRequestObject) (openapi.ListProjectOAuthProvidersResponseObject, error) {
+	return s.oauthProviders.ListProjectOAuthProviders(ctx, req)
+}
+
+func (s *Server) CreateProjectOAuthProvider(ctx context.Context, req openapi.CreateProjectOAuthProviderRequestObject) (openapi.CreateProjectOAuthProviderResponseObject, error) {
+	return s.oauthProviders.CreateProjectOAuthProvider(ctx, req)
+}
+
+func (s *Server) UpdateOAuthProvider(ctx context.Context, req openapi.UpdateOAuthProviderRequestObject) (openapi.UpdateOAuthProviderResponseObject, error) {
+	return s.oauthProviders.UpdateOAuthProvider(ctx, req)
+}
+
+func (s *Server) DeleteOAuthProvider(ctx context.Context, req openapi.DeleteOAuthProviderRequestObject) (openapi.DeleteOAuthProviderResponseObject, error) {
+	return s.oauthProviders.DeleteOAuthProvider(ctx, req)
+}
+
+func (s *Server) DisableOAuthProvider(ctx context.Context, req openapi.DisableOAuthProviderRequestObject) (openapi.DisableOAuthProviderResponseObject, error) {
+	return s.oauthProviders.DisableOAuthProvider(ctx, req)
+}
+
+func (s *Server) EnableOAuthProvider(ctx context.Context, req openapi.EnableOAuthProviderRequestObject) (openapi.EnableOAuthProviderResponseObject, error) {
+	return s.oauthProviders.EnableOAuthProvider(ctx, req)
 }
 
 func (s *Server) GetJWKS(ctx context.Context, req openapi.GetJWKSRequestObject) (openapi.GetJWKSResponseObject, error) {
@@ -176,6 +207,14 @@ func (s *Server) GetProjectProfile(ctx context.Context, req openapi.GetProjectPr
 
 func (s *Server) UpsertProjectProfile(ctx context.Context, req openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	return s.profiles.UpsertProjectProfile(ctx, req)
+}
+
+func (s *Server) ListOutdatedPlatformProfiles(ctx context.Context, req openapi.ListOutdatedPlatformProfilesRequestObject) (openapi.ListOutdatedPlatformProfilesResponseObject, error) {
+	return s.profiles.ListOutdatedPlatformProfiles(ctx, req)
+}
+
+func (s *Server) ListOutdatedProjectProfiles(ctx context.Context, req openapi.ListOutdatedProjectProfilesRequestObject) (openapi.ListOutdatedProjectProfilesResponseObject, error) {
+	return s.profiles.ListOutdatedProjectProfiles(ctx, req)
 }
 
 func (s *Server) GetPlatformProfileSchema(ctx context.Context, req openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {

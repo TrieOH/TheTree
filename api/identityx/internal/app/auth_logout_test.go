@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,6 +37,8 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		mock.Mock[ports.PlatformRolesRepo](),
 		cryptoKeys, bl,
 		mock.Mock[ports.ExternalIdentitiesRepo](),
+		mock.Mock[ports.ProjectOAuthProvidersRepo](),
+		mock.Mock[ports.OAuthLoginStatesRepo](),
 	)
 	server := handlers.NewServer(&services.Operations{Authn: ops})
 	jwtStub := func(next http.Handler) http.Handler {
@@ -68,7 +71,7 @@ func stubBlacklist() (ports.BlacklistRepo, matchers.ArgumentCaptor[models.Blackl
 }
 
 func doLogout(r http.Handler, accessToken, refreshToken string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/auth/logout", nil)
 	if accessToken != "" {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	}

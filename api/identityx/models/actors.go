@@ -38,10 +38,16 @@ type Actor struct {
 	DeletedAt    *time.Time       `json:"deleted_at"`
 }
 
+// ActorProfile is a single profile document per actor. SchemaVersion points
+// at the profile schema version the document was validated against;
+// Outdated flags documents that no longer validate against the active
+// schema and were not migrated (admin resolves them manually).
 type ActorProfile struct {
-	ActorID   uuid.UUID       `json:"actor_id"`
-	Profile   json.RawMessage `json:"profile"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ActorID       uuid.UUID       `json:"actor_id"`
+	Profile       json.RawMessage `json:"profile"`
+	SchemaVersion int             `json:"schema_version"`
+	Outdated      bool            `json:"outdated"`
+	UpdatedAt     time.Time       `json:"updated_at"`
 }
 
 type OAuthProvider string

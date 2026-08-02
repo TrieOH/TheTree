@@ -465,6 +465,15 @@ paths:
           description: Authorization code issued by the provider.
           schema:
             type: string
+        - name: state
+          in: query
+          required: true
+          description: |
+            Opaque state token issued by `/auth/{provider}/connect`. Carries
+            the login attempt (scope, provider) back from the provider and
+            is consumed by this callback.
+          schema:
+            type: string
       responses:
         '201':
           description: Social login concluded; token pair issued
@@ -481,6 +490,43 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/oauth-providers:
+    get:
+      tags: [authn]
+      operationId: getOAuthProviders
+      summary: Discover enabled social login providers
+      description: |
+        Public discovery of the OAuth providers a scope currently accepts
+        logins with. With `project_id`, returns the project's enabled
+        providers; without it, IdentityX's own platform providers
+        (env-configured). The frontend login modal renders one button per
+        returned provider.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIDQuery'
+      responses:
+        '200':
+          description: Enabled providers for the scope
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OAuthProviderDiscoveryItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1461,6 +1507,246 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /projects/{project_id}/oauth-providers:
+    get:
+      tags: [oauthproviders]
+      operationId: listProjectOAuthProviders
+      summary: List the project's OAuth providers
+      description: |
+        Lists the OAuth providers configured for the project, including
+        disabled ones and their status. The client secret is never
+        returned. Requires a project membership (member or above).
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Configured OAuth providers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OAuthProviderOutput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [oauthproviders]
+      operationId: createProjectOAuthProvider
+      summary: Configure an OAuth provider for the project
+      description: |
+        Stores the provider's credentials for the project. The client
+        secret is encrypted at rest and never returned. Requires a project
+        admin or owner. Enabling/disabling happens via
+        `/oauth-providers/{oauth_provider_id}/enable|disable`.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOAuthProviderRequest'
+            example:
+              provider: google
+              client_id: 1234567890-abc.apps.googleusercontent.com
+              client_secret: GOCSPX-example
+      responses:
+        '201':
+          description: Provider configured
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OAuthProviderOutput'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /oauth-providers/{oauth_provider_id}:
+    patch:
+      tags: [oauthproviders]
+      operationId: updateOAuthProvider
+      summary: Update an OAuth provider's credentials
+      description: |
+        Partially updates a project's OAuth provider configuration. A
+        field left out is kept as-is; the secret cannot be read back and is
+        only replaced when a new one is sent. Requires a project admin or
+        owner.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OAuthProviderID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOAuthProviderRequest'
+            example:
+              client_secret: GOCSPX-new-secret
+      responses:
+        '200':
+          description: Provider updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OAuthProviderOutput'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      tags: [oauthproviders]
+      operationId: deleteOAuthProvider
+      summary: Remove an OAuth provider from the project
+      description: |
+        Hard-deletes the project's OAuth provider configuration. Blocks
+        new logins via this provider; already-linked external identities
+        remain valid. Requires a project admin or owner.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OAuthProviderID'
+      responses:
+        '200':
+          description: Provider removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /oauth-providers/{oauth_provider_id}/disable:
+    post:
+      tags: [oauthproviders]
+      operationId: disableOAuthProvider
+      summary: Disable an OAuth provider
+      description: |
+        Blocks new logins via this provider for the project. Users who
+        already linked an external identity with it can still log in.
+        Requires a project admin or owner.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OAuthProviderID'
+      responses:
+        '200':
+          description: Provider disabled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OAuthProviderOutput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /oauth-providers/{oauth_provider_id}/enable:
+    post:
+      tags: [oauthproviders]
+      operationId: enableOAuthProvider
+      summary: Enable an OAuth provider
+      description: |
+        Re-enables an OAuth provider for the project, allowing new logins
+        again. Requires a project admin or owner.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OAuthProviderID'
+      responses:
+        '200':
+          description: Provider enabled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OAuthProviderOutput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
   /projects/{project_id}/capabilities:
     get:
       tags: [capabilities]
@@ -1840,6 +2126,81 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /profiles/outdated:
+    get:
+      tags: [profiles]
+      operationId: listOutdatedPlatformProfiles
+      summary: List outdated platform actor profiles
+      description: |
+        Lists platform-scoped actor profiles that failed to migrate to the
+        active platform schema version and are flagged as outdated. The
+        admin resolves them manually (edit via the profile upsert, or fix
+        the schema). Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: Outdated platform actor profiles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ActorProfile'
+                        x-go-type: '[]ActorProfile'
+                        x-go-type-skip-optional-pointer: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/profiles/outdated:
+    get:
+      tags: [profiles]
+      operationId: listOutdatedProjectProfiles
+      summary: List outdated project actor profiles
+      description: |
+        Lists the project's actor profiles that failed to migrate to the
+        active project schema version and are flagged as outdated. The
+        admin resolves them manually. Requires a project admin.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Outdated project actor profiles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ActorProfile'
+                        x-go-type: '[]ActorProfile'
+                        x-go-type-skip-optional-pointer: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1866,6 +2227,13 @@ components:
       in: path
       required: true
       description: Project ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    OAuthProviderID:
+      name: oauth_provider_id
+      in: path
+      required: true
+      description: OAuth provider configuration ID.
       schema:
         $ref: '#/components/schemas/UUID'
     OrganizationID:
@@ -2102,6 +2470,68 @@ components:
       type: string
       enum: [ "google", "github" ]
 
+    OAuthProviderDiscoveryItem:
+      type: object
+      required: [provider]
+      properties:
+        provider:
+          $ref: '#/components/schemas/SupportedOAuthProviders'
+          description: A provider the scope currently accepts logins with.
+
+    OAuthProviderOutput:
+      x-go-type: models.ProjectOAuthProviders
+      x-go-type-import:
+        path: IdentityX/models
+      type: object
+      required: [id, project_id, provider, client_id, enabled, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        project_id:
+          $ref: '#/components/schemas/UUID'
+        provider:
+          $ref: '#/components/schemas/SupportedOAuthProviders'
+        client_id:
+          type: string
+          description: The provider-side client ID. The secret is never returned.
+        enabled:
+          type: boolean
+          description: Whether new logins via this provider are accepted.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      description: Mirrors `models.ProjectOAuthProviders` (secret excluded from the wire representation).
+
+    CreateOAuthProviderRequest:
+      type: object
+      required: [provider, client_id, client_secret]
+      properties:
+        provider:
+          $ref: '#/components/schemas/SupportedOAuthProviders'
+        client_id:
+          type: string
+          minLength: 1
+          description: The provider-side client ID.
+        client_secret:
+          type: string
+          minLength: 1
+          description: The provider-side client secret. Encrypted at rest.
+
+    UpdateOAuthProviderRequest:
+      type: object
+      properties:
+        client_id:
+          type: string
+          minLength: 1
+          description: The provider-side client ID. Omitted keeps the stored value.
+        client_secret:
+          type: string
+          minLength: 1
+          description: The provider-side client secret. Omitted keeps the stored value.
+
     CredentialRequest:
       type: object
       required: [email, password]
@@ -2305,7 +2735,7 @@ components:
         path: IdentityX/models
       type: object
       description: An actor's profile payload. Mirrors `models.ActorProfile`.
-      required: [actor_id, profile, updated_at]
+      required: [actor_id, profile, schema_version, outdated, updated_at]
       properties:
         actor_id:
           $ref: '#/components/schemas/UUID'
@@ -2313,6 +2743,12 @@ components:
           type: object
           description: The profile data, validated against the active profile schema.
           additionalProperties: true
+        schema_version:
+          type: integer
+          description: Profile schema version the profile was validated against.
+        outdated:
+          type: boolean
+          description: Whether the profile failed to migrate to the active schema.
         updated_at:
           type: string
           format: date-time

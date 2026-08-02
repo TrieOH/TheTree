@@ -41,7 +41,7 @@ func stubCryptoKeys(pair *testPair) ports.CryptoKeysRepo {
 }
 
 func appendTargets(captor matchers.ArgumentCaptor[models.BlacklistEntry]) []string {
-	var targets []string
+	targets := make([]string, 0, len(captor.Values()))
 	for _, e := range captor.Values() {
 		targets = append(targets, e.Target)
 	}
@@ -120,6 +120,8 @@ func TestLogout(t *testing.T) {
 				mock.Mock[ports.PlatformRolesRepo](),
 				keys, bl,
 				mock.Mock[ports.ExternalIdentitiesRepo](),
+				mock.Mock[ports.ProjectOAuthProvidersRepo](),
+				mock.Mock[ports.OAuthLoginStatesRepo](),
 			)
 
 			err := ops.Logout(tt.ctx, models.LogoutInput{
@@ -154,6 +156,8 @@ func TestLogoutErrorIsUnauthorized(t *testing.T) {
 		mock.Mock[ports.PlatformRolesRepo](),
 		keys, bl,
 		mock.Mock[ports.ExternalIdentitiesRepo](),
+		mock.Mock[ports.ProjectOAuthProvidersRepo](),
+		mock.Mock[ports.OAuthLoginStatesRepo](),
 	)
 
 	err := ops.Logout(ctxWithIdentity(), models.LogoutInput{
@@ -214,6 +218,8 @@ func TestRefresh(t *testing.T) {
 				mock.Mock[ports.PlatformRolesRepo](),
 				keys, bl,
 				mock.Mock[ports.ExternalIdentitiesRepo](),
+				mock.Mock[ports.ProjectOAuthProvidersRepo](),
+				mock.Mock[ports.OAuthLoginStatesRepo](),
 			)
 
 			out, err := ops.Refresh(context.Background(), tt.refreshToken)

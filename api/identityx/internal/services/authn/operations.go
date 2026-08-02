@@ -12,6 +12,8 @@ type Operations struct {
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
 	externalIdentities ports.ExternalIdentitiesRepo
+	oauthProviders     ports.ProjectOAuthProvidersRepo
+	oauthLoginStates   ports.OAuthLoginStatesRepo
 }
 
 func NewOperations(
@@ -21,6 +23,8 @@ func NewOperations(
 	cryptoKeys ports.CryptoKeysRepo,
 	blacklist ports.BlacklistRepo,
 	externalIdentities ports.ExternalIdentitiesRepo,
+	oauthProviders ports.ProjectOAuthProvidersRepo,
+	oauthLoginStates ports.OAuthLoginStatesRepo,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		actors:             actors,
@@ -29,5 +33,7 @@ func NewOperations(
 		cryptoKeys:         cryptoKeys,
 		blacklist:          blacklist,
 		externalIdentities: externalIdentities,
+		oauthProviders:     oauthProviders,
+		oauthLoginStates:   oauthLoginStates,
 	})
 }

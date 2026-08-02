@@ -14,6 +14,7 @@ import (
 	"IdentityX/internal/repos/blacklist"
 	"IdentityX/internal/repos/capabilities"
 	"IdentityX/internal/repos/crypto_keys"
+	"IdentityX/internal/repos/oauth_providers"
 	"IdentityX/internal/repos/organizations"
 	"IdentityX/internal/repos/platform_roles"
 	"IdentityX/internal/repos/profile_schemas"
@@ -30,6 +31,7 @@ type (
 	Capabilities   = capabilities.Repo
 	CryptoKeys     = crypto_keys.Repo
 	Organizations  = organizations.Repo
+	OAuthProviders = oauth_providers.Repo
 	PlatformRoles  = platform_roles.Repo
 	ProfileSchemas = profile_schemas.Repo
 	Profiles       = profiles.Repo
@@ -44,6 +46,7 @@ var (
 	NewCapabilities   = capabilities.NewRepo
 	NewCryptoKeys     = crypto_keys.NewRepo
 	NewOrganizations  = organizations.NewRepo
+	NewOAuthProviders = oauth_providers.NewRepo
 	NewPlatformRoles  = platform_roles.NewRepo
 	NewProfileSchemas = profile_schemas.NewSchemaRepo
 	NewProfiles       = profiles.NewProfileRepo
@@ -59,6 +62,7 @@ type Repos struct {
 	Capabilities   *Capabilities
 	CryptoKeys     *CryptoKeys
 	Organizations  *Organizations
+	OAuthProviders *OAuthProviders
 	PlatformRoles  *PlatformRoles
 	ProfileSchemas *ProfileSchemas
 	Profiles       *Profiles
@@ -77,6 +81,7 @@ func New(q *sqlc.Queries) *Repos {
 		Capabilities:       NewCapabilities(q),
 		CryptoKeys:         NewCryptoKeys(q),
 		Organizations:      NewOrganizations(q),
+		OAuthProviders:     NewOAuthProviders(q),
 		PlatformRoles:      NewPlatformRoles(q),
 		ProfileSchemas:     NewProfileSchemas(q),
 		Profiles:           NewProfiles(q),
