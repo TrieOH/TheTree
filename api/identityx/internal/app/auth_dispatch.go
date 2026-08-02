@@ -45,6 +45,7 @@ var clientOnlyOps = []string{
 	"getProjectProfile", "upsertProjectProfile",
 	"getPlatformProfileSchema", "upsertPlatformProfileSchema",
 	"getProjectProfileSchema", "upsertProjectProfileSchema",
+	"listOutdatedPlatformProfiles",
 }
 
 // authResolver derives every operation's chain from the spec's security

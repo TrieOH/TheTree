@@ -66,7 +66,7 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, hmacSecret string) *
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),
-		Profiles:       NewProfiles(r.Profiles, r.ProfileSchemas, r.Projects, authzSvc),
+		Profiles:       NewProfiles(r.Profiles, r.ProfileSchemas, r.Actors, authzSvc),
 		Projects:       NewProjects(r.CryptoKeys, r.Projects, r.Actors, authzSvc),
 	}
 }

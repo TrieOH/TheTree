@@ -37,6 +37,11 @@ CREATE TABLE actor_profiles(
 
     profile JSONB NOT NULL DEFAULT '{}'::jsonb,
 
+    -- schema version the profile was validated against; outdated flags
+    -- documents that failed to migrate to the active schema
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    outdated BOOLEAN NOT NULL DEFAULT false,
+
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

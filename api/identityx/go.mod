@@ -4,7 +4,6 @@ go 1.26.4
 
 require (
 	github.com/MintzyG/fun v0.10.6
-	github.com/MintzyG/fun/bind v0.1.1
 	github.com/MintzyG/fun/middlewares v0.1.3
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/go-chi/chi/v5 v5.3.0
@@ -12,6 +11,8 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.2
+	github.com/oapi-codegen/runtime v1.6.0
+	github.com/ovechkin-dm/mockio v1.0.2
 	github.com/riverqueue/river v0.35.1
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/zap v1.28.0
@@ -33,8 +34,8 @@ require (
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/oapi-codegen/runtime v1.6.0 // indirect
-	github.com/ovechkin-dm/mockio v1.0.2 // indirect
+	github.com/ovechkin-dm/go-dyno v0.3.2 // indirect
+	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect

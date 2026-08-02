@@ -178,6 +178,14 @@ func (s *Server) UpsertProjectProfile(ctx context.Context, req openapi.UpsertPro
 	return s.profiles.UpsertProjectProfile(ctx, req)
 }
 
+func (s *Server) ListOutdatedPlatformProfiles(ctx context.Context, req openapi.ListOutdatedPlatformProfilesRequestObject) (openapi.ListOutdatedPlatformProfilesResponseObject, error) {
+	return s.profiles.ListOutdatedPlatformProfiles(ctx, req)
+}
+
+func (s *Server) ListOutdatedProjectProfiles(ctx context.Context, req openapi.ListOutdatedProjectProfilesRequestObject) (openapi.ListOutdatedProjectProfilesResponseObject, error) {
+	return s.profiles.ListOutdatedProjectProfiles(ctx, req)
+}
+
 func (s *Server) GetPlatformProfileSchema(ctx context.Context, req openapi.GetPlatformProfileSchemaRequestObject) (openapi.GetPlatformProfileSchemaResponseObject, error) {
 	return s.profileSchemas.GetPlatformProfileSchema(ctx, req)
 }

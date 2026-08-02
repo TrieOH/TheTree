@@ -153,6 +153,12 @@ func (stubStrict) GetProjectProfile(_ context.Context, _ openapi.GetProjectProfi
 func (stubStrict) UpsertProjectProfile(_ context.Context, _ openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) ListOutdatedPlatformProfiles(_ context.Context, _ openapi.ListOutdatedPlatformProfilesRequestObject) (openapi.ListOutdatedPlatformProfilesResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListOutdatedProjectProfiles(_ context.Context, _ openapi.ListOutdatedProjectProfilesRequestObject) (openapi.ListOutdatedProjectProfilesResponseObject, error) {
+	return nil, errStub
+}
 
 // labeled middleware stubs record their names when run.
 var parityInvocations []string

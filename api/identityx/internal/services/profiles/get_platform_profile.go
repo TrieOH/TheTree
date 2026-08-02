@@ -14,10 +14,10 @@ func (o *Operations) GetPlatformProfile(ctx context.Context, actorID uuid.UUID) 
 	ctx, span := telemetry.StartSpan(ctx, "GetPlatformProfile")
 	defer span.End()
 
-	_, err := models.RequireIdentity(ctx)
+	profile, err := o.profiles.Get(ctx, actorID)
 	if err != nil {
 		return nil, err
 	}
 
-	return o.profiles.Get(ctx, actorID)
+	return o.migrateOnDemand(ctx, profile, nil)
 }

@@ -1,14 +1,13 @@
 package profiles
 
 import (
+	"errors"
+
 	"IdentityX/models"
 	"context"
-	"errors"
-	"lib/jsonschema"
 
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -29,37 +28,28 @@ func (o *Operations) UpsertProfile(ctx context.Context, payload models.UpsertPro
 		}
 	}
 
-	// load project schema, fall back to platform schema
-	schema, err := o.loadActiveSchema(ctx, &projectID)
+	err = requireActorInProject(ctx, o.actors, payload.ActorID, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	if schema != nil {
-		err := jsonschema.Validate(schema, payload.Profile)
-		if err != nil {
-			return nil, fun.ErrValidation(err.Error())
+	schema, err := o.loadActiveSchema(ctx, &projectID)
+	if err != nil {
+		if !errors.Is(err, errNoActiveSchema) {
+			return nil, err
 		}
+		schema = nil // no active schema: store unvalidated
+	}
+
+	version, err := validateAndStamp(schema, payload.Profile)
+	if err != nil {
+		return nil, err
 	}
 
 	return o.profiles.Upsert(ctx, models.ActorProfile{
-		ActorID: payload.ActorID,
-		Profile: payload.Profile,
+		ActorID:       payload.ActorID,
+		Profile:       payload.Profile,
+		SchemaVersion: version,
+		Outdated:      false,
 	})
-}
-
-// loadActiveSchema returns the project's active schema, falling back to platform schema.
-// Returns nil (no schema) if neither exists or is inactive.
-func (o *Operations) loadActiveSchema(ctx context.Context, projectID *uuid.UUID) ([]byte, error) {
-	ctx, span := telemetry.StartSpan(ctx, "loadActiveSchema")
-	defer span.End()
-
-	s, err := o.schemas.Get(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	if s.Active {
-		return s.Schema, nil
-	}
-	return nil, errors.New("no active profile schema")
 }

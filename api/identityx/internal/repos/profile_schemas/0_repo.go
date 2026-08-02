@@ -31,3 +31,9 @@ func mapProfileSchema(src sqlc.ProjectProfileSchema) models.ProjectProfileSchema
 		UpdatedAt: src.UpdatedAt,
 	}
 }
+
+// mapUpsertedProfileSchema maps the versioned upsert's result row. The two
+// sqlc types share an identical shape, so a plain conversion suffices.
+func mapUpsertedProfileSchema(src sqlc.UpsertProfileSchemaRow) models.ProjectProfileSchema {
+	return mapProfileSchema(sqlc.ProjectProfileSchema(src))
+}
