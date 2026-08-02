@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -31,7 +30,7 @@ func (o *Operations) CloseForm(ctx context.Context, namespaceID, formID uuid.UUI
 		return nil, fun.ErrBadRequest("cannot close a form not on open")
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -31,7 +30,7 @@ func (o *Operations) OpenForm(ctx context.Context, namespaceID, formID uuid.UUID
 		return nil, fun.ErrBadRequest("cannot open a form not on draft")
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

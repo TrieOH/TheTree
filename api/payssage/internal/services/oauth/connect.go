@@ -3,7 +3,6 @@ package oauth
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -40,9 +39,9 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 			}
 		}
 		if org != nil {
-			err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 		} else {
-			err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleMember)
+			err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleMember)
 		}
 		if err != nil {
 			return "", err
@@ -56,7 +55,7 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 			if err != nil {
 				return "", err
 			}
-			err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return "", err
 			}

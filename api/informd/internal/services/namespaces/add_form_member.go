@@ -5,7 +5,6 @@ import (
 	idx "sdk/identityx"
 	"time"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -35,7 +34,7 @@ func (o *Operations) AddFormMember(ctx context.Context, payload models.AddNamesp
 		return fun.ErrBadRequest("owner of the namespace is already a member of the form")
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

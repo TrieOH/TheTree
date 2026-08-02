@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -21,7 +20,7 @@ func (o *Operations) GetFormResponseCount(ctx context.Context, _, formID uuid.UU
 		return 0, err
 	}
 
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
 	if err != nil {
 		return 0, err
 	}

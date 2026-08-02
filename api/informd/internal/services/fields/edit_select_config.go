@@ -5,7 +5,6 @@ import (
 	"lib/telemetry"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 
 	"github.com/google/uuid"
@@ -20,7 +19,7 @@ func (o *Operations) EditSelectConfig(ctx context.Context, formID uuid.UUID, pay
 		return nil, err
 	}
 
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

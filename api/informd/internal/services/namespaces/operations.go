@@ -1,6 +1,8 @@
 package namespaces
 
 import (
+	"Informd/internal/authz"
+
 	"Informd/ports"
 )
 
@@ -12,6 +14,7 @@ type Operations struct {
 	answers    ports.AnswerRepo
 	responses  ports.ResponseRepo
 	responders ports.ResponderRepo
+	authz      *authz.Service
 }
 
 func NewOperations(
@@ -22,6 +25,7 @@ func NewOperations(
 	answers ports.AnswerRepo,
 	responses ports.ResponseRepo,
 	responders ports.ResponderRepo,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		namespaces: namespaces,
@@ -31,5 +35,6 @@ func NewOperations(
 		answers:    answers,
 		responses:  responses,
 		responders: responders,
+		authz:      authz,
 	}
 }

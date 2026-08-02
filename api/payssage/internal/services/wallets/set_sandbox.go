@@ -3,7 +3,6 @@ package wallets
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 )
@@ -22,7 +21,7 @@ func (o *Operations) SetSandbox(ctx context.Context, payload models.SetSandboxIn
 		return err
 	}
 
-	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

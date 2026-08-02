@@ -3,7 +3,6 @@ package collectors
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -24,7 +23,7 @@ func (o *Operations) ListByOrg(ctx context.Context, orgID uuid.UUID) ([]models.C
 		return nil, err
 	}
 
-	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleMember)
+	err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

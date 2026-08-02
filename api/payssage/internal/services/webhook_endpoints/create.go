@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 )
@@ -19,7 +18,7 @@ func (o *Operations) Create(ctx context.Context, input models.CreateWebhookEndpo
 	if err != nil {
 		return nil, err
 	}
-	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, input.WalletID, models.OrganizationRoleMember)
+	err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, input.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

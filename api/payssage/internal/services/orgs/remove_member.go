@@ -3,7 +3,6 @@ package orgs
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -37,7 +36,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrga
 		return fun.ErrBadRequest("cannot remove the owner of the organization")
 	}
 
-	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

@@ -9,17 +9,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type service struct {
+type Service struct {
 	events ports.EventRepo
 }
 
-func New(events ports.EventRepo) *service {
-	return &service{events: events}
+func New(events ports.EventRepo) *Service {
+	return &Service{events: events}
 }
 
-var Service *service
-
-func (s *service) CheckEvent(ctx context.Context, actorID, eventID uuid.UUID, minRole libauthz.Role) error {
+func (s *Service) CheckEvent(ctx context.Context, actorID, eventID uuid.UUID, minRole libauthz.Role) error {
 	role, err := s.events.GetRole(ctx, actorID, eventID)
 	if err != nil {
 		return libauthz.ForbiddenIfNotFound(err)

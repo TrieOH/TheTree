@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -25,7 +24,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveName
 		return err
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

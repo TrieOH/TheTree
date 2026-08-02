@@ -5,6 +5,7 @@
 package services
 
 import (
+	"payssage/internal/authz"
 	"payssage/internal/repos"
 	"payssage/internal/services/collectors"
 	"payssage/internal/services/intents"
@@ -65,17 +66,20 @@ type Operations struct {
 }
 
 // NewOperations wires every feature's operations from the shared repos.
-func NewOperations(r *repos.Repos, riverClient *river.Client[pgx.Tx], idxClient *idx.Client) *Operations {
+// NewOperations wires every feature's operations from the shared repos.
+// Authorization arrives by injection through the same seam — no
+// service-locator globals.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, riverClient *river.Client[pgx.Tx], idxClient *idx.Client) *Operations {
 	return &Operations{
-		Organizations:     NewOrganizations(r.Organizations, idxClient),
-		Wallets:           NewWallets(r.Wallets, r.Organizations),
-		OAuth:             NewOAuth(r.Wallets, r.Organizations, r.OAuth, r.Collectors, r.Sellers),
-		Collectors:        NewCollectors(r.Collectors, r.Organizations),
-		Sellers:           NewSellers(r.Sellers, r.Wallets, r.Organizations),
-		Intents:           NewIntents(r.Intents, r.Wallets, r.Organizations, r.Collectors, r.Sellers),
-		Webhooks:          NewWebhooks(riverClient, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries),
-		WebhookEndpoints:  NewWebhookEndpoints(r.WebhookEndpoints, r.Wallets, r.Organizations),
-		WebhookEvents:     NewWebhookEvents(r.WebhookEvents, r.Wallets, r.Organizations),
-		WebhookDeliveries: NewWebhookDeliveries(r.WebhookDeliveries, r.WebhookEndpoints, r.Wallets, r.Organizations),
+		Organizations:     NewOrganizations(r.Organizations, idxClient, authzSvc),
+		Wallets:           NewWallets(r.Wallets, r.Organizations, authzSvc),
+		OAuth:             NewOAuth(r.Wallets, r.Organizations, r.OAuth, r.Collectors, r.Sellers, authzSvc),
+		Collectors:        NewCollectors(r.Collectors, r.Organizations, authzSvc),
+		Sellers:           NewSellers(r.Sellers, r.Wallets, r.Organizations, authzSvc),
+		Intents:           NewIntents(r.Intents, r.Wallets, r.Organizations, r.Collectors, r.Sellers, authzSvc),
+		Webhooks:          NewWebhooks(riverClient, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc),
+		WebhookEndpoints:  NewWebhookEndpoints(r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),
+		WebhookEvents:     NewWebhookEvents(r.WebhookEvents, r.Wallets, r.Organizations, authzSvc),
+		WebhookDeliveries: NewWebhookDeliveries(r.WebhookDeliveries, r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),
 	}
 }

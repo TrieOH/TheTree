@@ -34,18 +34,19 @@ func (app *Univents) CreateRouter(middlewares middlewares, h *handlers.Server, r
 	})
 }
 
-// mountStrict registers the generated strict handler on r with the
-// validation + auth middleware stack and the fun-envelope error handlers.
+// mountStrict registers the generated strict handler on r with the harness's
+// validation + auth middleware stack and fun-envelope error handlers. Only
+// the generated-type conversions and the param-binding error mapping stay
+// here; the rest lives in lib/httpserver.
 func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.Handler) http.Handler) {
 	strict := openapi.NewStrictHandlerWithOptions(h,
-		[]openapi.StrictMiddlewareFunc{handlers.ValidateMiddleware(), authDispatch(chains)},
+		[]openapi.StrictMiddlewareFunc{
+			adapt(httpserver.ValidateMiddleware()),
+			adapt(httpserver.AuthDispatch(chains)),
+		},
 		openapi.StrictHTTPServerOptions{
-			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
-				fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
-			},
-			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-				fun.Error(err).SendWithCtx(r.Context(), w)
-			},
+			RequestErrorHandlerFunc:  httpserver.StrictRequestErrorHandler(),
+			ResponseErrorHandlerFunc: httpserver.StrictResponseErrorHandler(),
 		})
 	openapi.HandlerWithOptions(strict, openapi.ChiServerOptions{
 		BaseRouter: r,

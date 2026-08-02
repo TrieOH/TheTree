@@ -1,6 +1,8 @@
 package oauth
 
 import (
+	"payssage/internal/authz"
+
 	"payssage/ports"
 )
 
@@ -10,6 +12,7 @@ type Operations struct {
 	oauth      ports.OAuthStateRepo
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
+	authz      *authz.Service
 }
 
 func NewOperations(
@@ -18,6 +21,7 @@ func NewOperations(
 	oauth ports.OAuthStateRepo,
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		wallets:    wallets,
@@ -25,5 +29,6 @@ func NewOperations(
 		oauth:      oauth,
 		collectors: collectors,
 		sellers:    sellers,
+		authz:      authz,
 	}
 }

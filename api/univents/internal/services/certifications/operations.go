@@ -2,6 +2,7 @@ package certifications
 
 import (
 	"lib/email"
+	"univents/internal/authz"
 	"univents/ports"
 )
 
@@ -11,6 +12,7 @@ type Operations struct {
 	certs    ports.CertificationRepo
 	programs ports.ProgramRepo
 	email    *email.Client
+	authz    *authz.Service
 }
 
 func NewOperations(
@@ -19,6 +21,7 @@ func NewOperations(
 	certs ports.CertificationRepo,
 	programs ports.ProgramRepo,
 	email *email.Client,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		events:   events,
@@ -26,5 +29,6 @@ func NewOperations(
 		certs:    certs,
 		programs: programs,
 		email:    email,
+		authz:    authz,
 	}
 }

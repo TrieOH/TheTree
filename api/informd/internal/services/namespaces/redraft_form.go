@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -40,7 +39,7 @@ func (o *Operations) ReDraftForm(ctx context.Context, namespaceID, formID uuid.U
 		return nil, fun.ErrBadRequest("cannot redraft a form with responses")
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

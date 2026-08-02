@@ -3,7 +3,6 @@ package wallets
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -23,7 +22,7 @@ func (o *Operations) ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models
 	if err != nil {
 		return nil, err
 	}
-	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleMember)
+	err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

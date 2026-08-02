@@ -20,13 +20,12 @@ type middlewares struct {
 // ── Init functions ────────────────────────────────────────────────────────
 
 func (app *Informd) initRepos(q *sqlc.Queries) *repos.Repos {
-	r := repos.New(q)
-	authz.Service = authz.New(r.Forms, r.Namespaces)
-	return r
+	return repos.New(q)
 }
 
 func (app *Informd) initOperations(r *repos.Repos) *services.Operations {
-	return services.NewOperations(r)
+	authzSvc := authz.New(r.Forms, r.Namespaces)
+	return services.NewOperations(r, authzSvc)
 }
 
 func (app *Informd) initMiddlewares() middlewares {

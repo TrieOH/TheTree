@@ -1,6 +1,7 @@
 package programs
 
 import (
+	"univents/internal/authz"
 	"univents/ports"
 )
 
@@ -9,6 +10,7 @@ type Operations struct {
 	editions    ports.EditionRepo
 	programs    ports.ProgramRepo
 	occurrences ports.ProgramOccurrenceRepo
+	authz       *authz.Service
 }
 
 func NewOperations(
@@ -16,11 +18,13 @@ func NewOperations(
 	editions ports.EditionRepo,
 	programs ports.ProgramRepo,
 	occurrences ports.ProgramOccurrenceRepo,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		events:      events,
 		editions:    editions,
 		programs:    programs,
 		occurrences: occurrences,
+		authz:       authz,
 	}
 }

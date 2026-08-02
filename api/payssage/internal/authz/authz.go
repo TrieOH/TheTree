@@ -10,18 +10,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type service struct {
+type Service struct {
 	orgs    ports.OrganizationRepo
 	wallets ports.WalletRepo
 }
 
-func New(orgs ports.OrganizationRepo, wallets ports.WalletRepo) *service {
-	return &service{orgs: orgs, wallets: wallets}
+func New(orgs ports.OrganizationRepo, wallets ports.WalletRepo) *Service {
+	return &Service{orgs: orgs, wallets: wallets}
 }
 
-var Service *service
-
-func (s *service) CheckOrg(ctx context.Context, actorID, orgID uuid.UUID, minRole libauthz.Role) error {
+func (s *Service) CheckOrg(ctx context.Context, actorID, orgID uuid.UUID, minRole libauthz.Role) error {
 	role, err := s.orgs.GetRole(ctx, actorID, orgID)
 	if err != nil {
 		return libauthz.ForbiddenIfNotFound(err)
@@ -29,7 +27,7 @@ func (s *service) CheckOrg(ctx context.Context, actorID, orgID uuid.UUID, minRol
 	return libauthz.Min(role, minRole)
 }
 
-func (s *service) CheckWalletAccess(ctx context.Context, actorID, walletID uuid.UUID, minRole libauthz.Role) error {
+func (s *Service) CheckWalletAccess(ctx context.Context, actorID, walletID uuid.UUID, minRole libauthz.Role) error {
 	wallet, err := s.wallets.GetByID(ctx, walletID)
 	if err != nil {
 		return err

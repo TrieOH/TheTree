@@ -69,3 +69,13 @@ func Bootstrap(ctx context.Context, cfg Config) (*Client, error) {
 	}
 	return client, nil
 }
+
+// MustBootstrap is Bootstrap that panics on failure — for boot-time callers
+// that treat an unreachable IdentityX as fatal.
+func MustBootstrap(ctx context.Context, cfg Config) *Client {
+	client, err := Bootstrap(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	return client
+}

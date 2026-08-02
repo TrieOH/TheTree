@@ -271,7 +271,7 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 				continue
 			}
 		}
-		if got := runChain(chains[op.OperationID]); !slices.Equal(got, want) {
+		if got := runChain(chains[authz.GeneratedOperationID(op.OperationID)]); !slices.Equal(got, want) {
 			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))
 		}
 	}

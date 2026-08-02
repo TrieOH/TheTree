@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -40,7 +39,7 @@ func (o *Operations) ReDraft(ctx context.Context, formID uuid.UUID) (*models.For
 		return nil, fun.ErrBadRequest("cannot redraft a form with responses")
 	}
 
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

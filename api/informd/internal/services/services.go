@@ -5,6 +5,7 @@
 package services
 
 import (
+	"Informd/internal/authz"
 	"Informd/internal/repos"
 	"Informd/internal/services/fields"
 	"Informd/internal/services/forms"
@@ -41,12 +42,14 @@ type Operations struct {
 }
 
 // NewOperations wires every feature's operations from the shared repos.
-func NewOperations(r *repos.Repos) *Operations {
+// Authorization arrives by injection through the same seam — no
+// service-locator globals.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service) *Operations {
 	return &Operations{
-		Namespaces: NewNamespaces(r.Namespaces, r.Forms, r.Steps, r.Fields, r.Answers, r.Responses, r.Responders),
-		Forms:      NewForms(r.Forms, r.Steps, r.Namespaces, r.Fields, r.Answers, r.Responses, r.Responders),
-		Steps:      NewSteps(r.Forms, r.Steps, r.Namespaces),
-		Fields:     NewFields(r.Forms, r.Steps, r.Fields, r.Namespaces),
+		Namespaces: NewNamespaces(r.Namespaces, r.Forms, r.Steps, r.Fields, r.Answers, r.Responses, r.Responders, authzSvc),
+		Forms:      NewForms(r.Forms, r.Steps, r.Namespaces, r.Fields, r.Answers, r.Responses, r.Responders, authzSvc),
+		Steps:      NewSteps(r.Forms, r.Steps, r.Namespaces, authzSvc),
+		Fields:     NewFields(r.Forms, r.Steps, r.Fields, r.Namespaces, authzSvc),
 		Responses:  NewResponses(r.Responders, r.Responses, r.Answers, r.Forms),
 	}
 }
