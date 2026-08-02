@@ -44,6 +44,8 @@ func SetupConstraintMessages() {
 
 		// profile schemas
 		"uniq_project_profile_schema_project_id": "a profile schema already exists for this project",
+		"uniq_profile_schema_version_per_scope":  "this profile schema version already exists for the scope",
+		"uniq_profile_schema_version_platform":   "a platform profile schema version already exists",
 
 		// crypto_keys
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",

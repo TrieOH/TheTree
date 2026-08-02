@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -51,7 +52,7 @@ func serveThroughJWT(t *testing.T, jwt func(http.Handler) http.Handler, token st
 		identityID = ident.Sub.ID.String()
 		w.WriteHeader(http.StatusOK)
 	}))
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}

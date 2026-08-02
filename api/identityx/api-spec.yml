@@ -1840,6 +1840,81 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /profiles/outdated:
+    get:
+      tags: [profiles]
+      operationId: listOutdatedPlatformProfiles
+      summary: List outdated platform actor profiles
+      description: |
+        Lists platform-scoped actor profiles that failed to migrate to the
+        active platform schema version and are flagged as outdated. The
+        admin resolves them manually (edit via the profile upsert, or fix
+        the schema). Requires a platform-level client.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: Outdated platform actor profiles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ActorProfile'
+                        x-go-type: '[]ActorProfile'
+                        x-go-type-skip-optional-pointer: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/profiles/outdated:
+    get:
+      tags: [profiles]
+      operationId: listOutdatedProjectProfiles
+      summary: List outdated project actor profiles
+      description: |
+        Lists the project's actor profiles that failed to migrate to the
+        active project schema version and are flagged as outdated. The
+        admin resolves them manually. Requires a project admin.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Outdated project actor profiles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ActorProfile'
+                        x-go-type: '[]ActorProfile'
+                        x-go-type-skip-optional-pointer: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2305,7 +2380,7 @@ components:
         path: IdentityX/models
       type: object
       description: An actor's profile payload. Mirrors `models.ActorProfile`.
-      required: [actor_id, profile, updated_at]
+      required: [actor_id, profile, schema_version, outdated, updated_at]
       properties:
         actor_id:
           $ref: '#/components/schemas/UUID'
@@ -2313,6 +2388,12 @@ components:
           type: object
           description: The profile data, validated against the active profile schema.
           additionalProperties: true
+        schema_version:
+          type: integer
+          description: Profile schema version the profile was validated against.
+        outdated:
+          type: boolean
+          description: Whether the profile failed to migrate to the active schema.
         updated_at:
           type: string
           format: date-time

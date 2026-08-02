@@ -23,8 +23,10 @@ func NewProfileRepo(q *sqlc.Queries) *Repo {
 
 func mapActorProfile(src sqlc.ActorProfile) models.ActorProfile {
 	return models.ActorProfile{
-		ActorID:   src.ActorID,
-		Profile:   src.Profile,
-		UpdatedAt: src.UpdatedAt,
+		ActorID:       src.ActorID,
+		Profile:       src.Profile,
+		SchemaVersion: src.SchemaVersion,
+		Outdated:      src.Outdated,
+		UpdatedAt:     src.UpdatedAt,
 	}
 }

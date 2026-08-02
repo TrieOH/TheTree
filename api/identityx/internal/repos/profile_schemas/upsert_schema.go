@@ -21,5 +21,5 @@ func (r *Repo) Upsert(ctx context.Context, schema models.ProjectProfileSchema) (
 	if err != nil {
 		return nil, r.dbe(err)
 	}
-	return new(mapProfileSchema(result)), nil
+	return new(mapUpsertedProfileSchema(result)), nil
 }

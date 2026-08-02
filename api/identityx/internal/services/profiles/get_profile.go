@@ -18,10 +18,24 @@ func (o *Operations) GetProfile(ctx context.Context, actorID, projectID uuid.UUI
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
+	// project users can read their own profile; any other read requires a
+	// project member (member role or above)
+	if ident.Sub.ID != actorID {
+		err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = requireActorInProject(ctx, o.actors, actorID, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	return o.profiles.Get(ctx, actorID)
+	profile, err := o.profiles.Get(ctx, actorID)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.migrateOnDemand(ctx, profile, &projectID)
 }

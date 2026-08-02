@@ -1,9 +1,10 @@
 package profiles
 
 import (
+	"errors"
+
 	"IdentityX/models"
 	"context"
-	"lib/jsonschema"
 
 	"lib/telemetry"
 
@@ -25,17 +26,23 @@ func (o *Operations) UpsertPlatformProfile(ctx context.Context, payload models.U
 		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
-	// only platform schema applies
-	s, err := o.schemas.Get(ctx, nil)
-	if err == nil && s.Active {
-		err := jsonschema.Validate(s.Schema, payload.Profile)
-		if err != nil {
-			return nil, fun.ErrValidation(err.Error())
+	schema, err := o.loadActiveSchema(ctx, nil)
+	if err != nil {
+		if !errors.Is(err, errNoActiveSchema) {
+			return nil, err
 		}
+		schema = nil // no active schema: store unvalidated
+	}
+
+	version, err := validateAndStamp(schema, payload.Profile)
+	if err != nil {
+		return nil, err
 	}
 
 	return o.profiles.Upsert(ctx, models.ActorProfile{
-		ActorID: payload.ActorID,
-		Profile: payload.Profile,
+		ActorID:       payload.ActorID,
+		Profile:       payload.Profile,
+		SchemaVersion: version,
+		Outdated:      false,
 	})
 }

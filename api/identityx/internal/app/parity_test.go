@@ -153,6 +153,12 @@ func (stubStrict) GetProjectProfile(_ context.Context, _ openapi.GetProjectProfi
 func (stubStrict) UpsertProjectProfile(_ context.Context, _ openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) ListOutdatedPlatformProfiles(_ context.Context, _ openapi.ListOutdatedPlatformProfilesRequestObject) (openapi.ListOutdatedPlatformProfilesResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListOutdatedProjectProfiles(_ context.Context, _ openapi.ListOutdatedProjectProfilesRequestObject) (openapi.ListOutdatedProjectProfilesResponseObject, error) {
+	return nil, errStub
+}
 
 // labeled middleware stubs record their names when run.
 var parityInvocations []string
@@ -169,11 +175,11 @@ func labelMW(name string) func(http.Handler) http.Handler {
 // runChain executes a chain and returns the middleware names that ran.
 func runChain(chain []func(http.Handler) http.Handler) []string {
 	parityInvocations = nil
-	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	for i := len(chain) - 1; i >= 0; i-- {
+	var next http.Handler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
+	for i := range slices.Backward(chain) {
 		next = chain[i](next)
 	}
-	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
 	return parityInvocations
 }
 

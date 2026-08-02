@@ -31,9 +31,11 @@ func (o *Operations) Refresh(ctx context.Context, refreshToken string) (*models.
 	}
 
 	// a refresh token blacklisted at logout must not issue a new pair
-	if _, err := o.blacklist.GetByTargetAndType(ctx, refreshClaims.ID, models.BlacklistEntryTypeToken); err == nil {
+	_, err = o.blacklist.GetByTargetAndType(ctx, refreshClaims.ID, models.BlacklistEntryTypeToken)
+	if err == nil {
 		return nil, fun.ErrUnauthorized("refresh token has been revoked")
-	} else if !fun.Is(err, fun.CodeNotFound) {
+	}
+	if !fun.Is(err, fun.CodeNotFound) {
 		return nil, err
 	}
 
