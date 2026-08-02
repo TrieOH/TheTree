@@ -1,6 +1,20 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import {
+  createProgram,
+  createProgramOccurrence,
+  deleteOccurrence,
+  deleteProgram,
+  listEditionOccurrences,
+  listEditionPrograms,
+  patchOccurrence,
+  patchProgram,
+} from "@trieoh/univents-api";
+import type {
+  CreateProgramRequest,
+  PatchProgramRequest,
+} from "@trieoh/univents-api/schemas";
 import type {
   OccurrenceCreateOutput,
   OccurrenceI,
@@ -9,39 +23,53 @@ import type {
   ProgramI,
 } from "../model";
 import { programKeys } from "./query-keys";
+
 export const listProgramsFn = createClientOnlyFn((editionId: string) =>
-  tanstackQueryFetcher<ProgramI[]>(`/editions/${editionId}/programs`),
+  listEditionPrograms(editionId, { public: true }).then(orvalData<ProgramI[]>),
 );
+
 export const listOccurrencesFn = createClientOnlyFn((editionId: string) =>
-  tanstackQueryFetcher<OccurrenceI[]>(`/editions/${editionId}/occurrences`),
+  listEditionOccurrences(editionId, { public: true }).then(
+    orvalData<OccurrenceI[]>,
+  ),
 );
+
 export const createProgramFn = createClientOnlyFn(
   (editionId: string, data: ProgramCreateInput | ProgramCreateOutput) =>
-    authFetcher.post<ProgramI>(`/editions/${editionId}/programs`, data),
+    createProgram(editionId, data as CreateProgramRequest).then(
+      orvalData<ProgramI>,
+    ),
 );
+
 export const patchProgramFn = createClientOnlyFn(
   (id: string, data: ProgramCreateInput | ProgramCreateOutput) =>
-    authFetcher.patch<ProgramI>(`/programs/${id}`, data),
+    patchProgram(id, data as PatchProgramRequest).then(orvalData<ProgramI>),
 );
+
 export const deleteProgramFn = createClientOnlyFn((id: string) =>
-  authFetcher.delete<ProgramI>(`/programs/${id}`),
+  deleteProgram(id).then(orvalData<ProgramI>),
 );
+
 export const createOccurrenceFn = createClientOnlyFn(
   (programId: string, data: OccurrenceCreateOutput) =>
-    authFetcher.post<OccurrenceI>(`/programs/${programId}/occurrences`, data),
+    createProgramOccurrence(programId, data).then(orvalData<OccurrenceI>),
 );
+
 export const patchOccurrenceFn = createClientOnlyFn(
   (id: string, data: OccurrenceCreateOutput) =>
-    authFetcher.patch<OccurrenceI>(`/occurrences/${id}`, data),
+    patchOccurrence(id, data).then(orvalData<OccurrenceI>),
 );
+
 export const deleteOccurrenceFn = createClientOnlyFn((id: string) =>
-  authFetcher.delete<OccurrenceI>(`/occurrences/${id}`),
+  deleteOccurrence(id).then(orvalData<OccurrenceI>),
 );
+
 export const programsQueryOptions = (editionId: string) =>
   queryOptions({
     queryKey: programKeys.byEdition(editionId),
     queryFn: () => listProgramsFn(editionId),
   });
+
 export const occurrencesQueryOptions = (editionId: string) =>
   queryOptions({
     queryKey: programKeys.occurrences(editionId),

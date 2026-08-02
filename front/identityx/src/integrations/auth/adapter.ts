@@ -1,6 +1,7 @@
 import { createTanStackIdentityXAuthProviderAdapter } from "@trieoh/front-core/auth/tanstack/client";
 import {
   completeProviderLoginServerFn,
+  introspectServerFn,
   isSetupDoneServerFn,
   loginServerFn,
   loginWithProviderServerFn,
@@ -21,4 +22,5 @@ export const identityXAuthAdapter = createTanStackIdentityXAuthProviderAdapter({
   logout: () => logoutServerFn(),
   refresh: () => refreshServerFn(),
   restore: () => restoreSessionServerFn(),
+  introspect: introspectServerFn,
 });

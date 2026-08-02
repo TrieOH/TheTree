@@ -7,7 +7,7 @@ import { useState } from "react";
 import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
 import {
   allEventMembersQueryOptions,
-  type EventMemberI,
+  type EventMemberWithEmailI,
 } from "@/features/events/api/members";
 import {
   useAddEventMemberMutation,
@@ -61,11 +61,10 @@ function EventMembersRoute() {
   const removeMutation = useRemoveEventMemberMutation();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [memberToRemove, setMemberToRemove] = useState<EventMemberI | null>(
-    null,
-  );
+  const [memberToRemove, setMemberToRemove] =
+    useState<EventMemberWithEmailI | null>(null);
   const [filter, setFilter] = useState("");
-  const [sort, setSort] = useState<SortState<EventMemberI>>({
+  const [sort, setSort] = useState<SortState<EventMemberWithEmailI>>({
     field: "created_at",
     direction: "desc",
   });
@@ -105,7 +104,7 @@ function EventMembersRoute() {
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
-      <PaginatedContainer<EventMemberI>
+      <PaginatedContainer<EventMemberWithEmailI>
         items={visibleMembers}
         layout="grid"
         minItemWidth="16rem"
@@ -179,7 +178,7 @@ function EventMembersRoute() {
               role: values.role,
             })
             .then(
-              (res) => res.success,
+              () => true,
               () => false,
             )
         }
@@ -193,7 +192,7 @@ function EventMembersRoute() {
         member={memberToRemove}
         onRemove={(userId, email) =>
           removeMutation.mutateAsync({ eventId, userId, email }).then(
-            (res) => res.success,
+            () => true,
             () => false,
           )
         }

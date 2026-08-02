@@ -139,11 +139,11 @@ function RouteComponent() {
         editionId={editionId}
         onOpenChange={setModalOpen}
         onCreate={async (values) => {
-          const res = await createProductMutation.mutateAsync({
+          const product = await createProductMutation.mutateAsync({
             editionId,
             data: values,
           });
-          return res.success ? res.data : false;
+          return product ? product : false;
         }}
       />
 
@@ -156,11 +156,11 @@ function RouteComponent() {
             if (!open) setProductToEdit(null);
           }}
           onUpdate={async (values) => {
-            const res = await updateProductMutation.mutateAsync({
+            const product = await updateProductMutation.mutateAsync({
               productId: productToEdit.id,
               data: values,
             });
-            return res.success ? res.data : false;
+            return product ? product : false;
           }}
         />
       ) : null}

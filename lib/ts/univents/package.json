@@ -1,12 +1,13 @@
 {
-  "name": "@trieoh/univents-models",
+  "name": "@trieoh/univents-api",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./client": "./client/endpoints.ts"
+    "./client": "./client/endpoints.ts",
+    "./schemas": "./client/schemas/index.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "catalog:"

@@ -1,6 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import {
+  addOrganizationMember,
+  createOrganization,
+  listOrganizationMembers,
+  listOrganizations,
+  removeOrganizationMember,
+} from "@trieoh/identityx-api";
 import type {
   MemberAddToOrganizationI,
   OrganizationCreateI,
@@ -15,7 +22,7 @@ import type {
  */
 export const createOrganizationFn = createClientOnlyFn(
   (orgData: OrganizationCreateI) => {
-    return authFetcher.post<OrganizationI>("/organizations", orgData);
+    return createOrganization(orgData).then(orvalData<OrganizationI>);
   },
 );
 
@@ -24,7 +31,7 @@ export const createOrganizationFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of organizations objects.
  */
 export const getAllOrganizationsFn = createClientOnlyFn(() => {
-  return tanstackQueryFetcher<OrganizationI[]>("/organizations");
+  return listOrganizations().then(orvalData<OrganizationI[]>);
 });
 
 /**
@@ -48,9 +55,8 @@ export const allOrganizationsQueryOptions = () => {
  */
 export const addMemberToOrganizationFn = createClientOnlyFn(
   (organization_id: string, memberData: MemberAddToOrganizationI) => {
-    return authFetcher.post(
-      `/organizations/${organization_id}/members`,
-      memberData,
+    return addOrganizationMember(organization_id, memberData).then(
+      orvalData<void>,
     );
   },
 );
@@ -63,9 +69,9 @@ export const addMemberToOrganizationFn = createClientOnlyFn(
  */
 export const removeMemberFromOrganizationFn = createClientOnlyFn(
   (organization_id: string, actor_email: string) => {
-    return authFetcher.delete(`/organizations/${organization_id}/members`, {
-      actor_email,
-    });
+    return removeOrganizationMember(organization_id, { actor_email }).then(
+      orvalData<void>,
+    );
   },
 );
 
@@ -76,8 +82,8 @@ export const removeMemberFromOrganizationFn = createClientOnlyFn(
  */
 export const getAllOrganizationsMemberFn = createClientOnlyFn(
   (organization_id: string) => {
-    return tanstackQueryFetcher<OrganizationMemberI[]>(
-      `/organizations/${organization_id}/members`,
+    return listOrganizationMembers(organization_id).then(
+      orvalData<OrganizationMemberI[]>,
     );
   },
 );

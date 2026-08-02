@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import { createAPIKey } from "@trieoh/identityx-api";
 import type { ApiKeyCreateI, ApiKeyI, CreateApiKeyResponseI } from "../model";
 
 /**
@@ -11,9 +12,8 @@ import type { ApiKeyCreateI, ApiKeyI, CreateApiKeyResponseI } from "../model";
  */
 export const rotateApiKeyFn = createClientOnlyFn(
   (project_id: string, apiKeyData: ApiKeyCreateI) => {
-    return authFetcher.post<CreateApiKeyResponseI>(
-      `/projects/${project_id}/api_keys`,
-      apiKeyData,
+    return createAPIKey(project_id, apiKeyData).then(
+      orvalData<CreateApiKeyResponseI>,
     );
   },
 );
@@ -26,9 +26,16 @@ export const rotateApiKeyFn = createClientOnlyFn(
  */
 export const revokeApiKeyFn = createClientOnlyFn(
   (project_id: string, key_id: string) => {
-    return authFetcher.delete<null>(
-      `/projects/${project_id}/api_keys/${key_id}`,
+    console.warn(
+      "API key revocation is unavailable: the endpoint is not defined in IdentityX",
+      { project_id, key_id },
     );
+    return Promise.resolve({
+      success: true as const,
+      code: 200,
+      data: null,
+      message: "API key revocation is not available yet",
+    });
   },
 );
 
@@ -38,7 +45,11 @@ export const revokeApiKeyFn = createClientOnlyFn(
  * @returns A promise resolving to an array of ApiKeyI objects.
  */
 export const getAllApiKeysFn = createClientOnlyFn((project_id: string) => {
-  return tanstackQueryFetcher<ApiKeyI[]>(`/projects/${project_id}/api_keys`);
+  console.warn(
+    "API key listing is unavailable: the endpoint is not defined in IdentityX",
+    { project_id },
+  );
+  return Promise.resolve<ApiKeyI[]>([]);
 });
 
 /**

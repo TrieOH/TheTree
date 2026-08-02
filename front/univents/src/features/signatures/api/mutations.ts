@@ -71,17 +71,12 @@ export function useCreateSignatureMutation() {
   return useMutation({
     mutationFn: ({ editionId, data }: CreateSignatureInput) =>
       createSignatureFn(editionId, data),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao criar assinatura");
-        return;
-      }
-
+    onSuccess: (signature, variables) => {
       syncSignatureCaches(
         queryClient,
         variables.eventId,
         variables.editionId,
-        res.data,
+        signature,
       );
       toast.success("Assinatura criada com sucesso");
     },
@@ -95,12 +90,7 @@ export function useRemoveSignatureMutation() {
   return useMutation({
     mutationFn: ({ signatureId }: RemoveSignatureInput) =>
       removeSignatureFn(signatureId),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao remover assinatura");
-        return;
-      }
-
+    onSuccess: (_res, variables) => {
       syncSignatureRemoval(
         queryClient,
         variables.eventId,

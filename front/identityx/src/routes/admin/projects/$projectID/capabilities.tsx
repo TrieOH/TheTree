@@ -73,14 +73,12 @@ function RouteComponent() {
   const { mutate: createCapability, isPending: isCreating } = useMutation({
     mutationFn: (data: CapabilityCreateI) =>
       createCapabilityFn(projectID, data),
-    onSuccess: (response) => {
-      if (response.success) {
-        queryClient.invalidateQueries({
-          queryKey: allCapabilitiesQueryOptions(projectID).queryKey,
-        });
-        setIsCreateOpen(false);
-        toast.success(response.message || "Capability created successfully");
-      } else toast.error(response.message || "Failed to create capability");
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: allCapabilitiesQueryOptions(projectID).queryKey,
+      });
+      setIsCreateOpen(false);
+      toast.success("Capability created successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });

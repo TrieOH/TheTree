@@ -1,10 +1,10 @@
+import { orvalData } from "@trieoh/api-client";
+import { listJoinedEvents, listOwnedEvents } from "@trieoh/univents-api";
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
-  uploadAssociationErrorFromResponse,
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
-import { authQueryFetcher } from "@/shared/lib/api/fetch";
 import type { EventI } from "../model";
 import { patchEventFn } from "./index";
 import { syncEventCaches } from "./mutations";
@@ -38,25 +38,38 @@ async function associateEventImage(
   }
 
   const [owned, joined] = await Promise.all([
-    authQueryFetcher<EventI[]>("/events/owned"),
-    authQueryFetcher<EventI[]>("/events/joined"),
+    listOwnedEvents().then(orvalData<EventI[]>),
+    listJoinedEvents().then(orvalData<EventI[]>),
   ]);
   const event = [...owned, ...joined].find((item) => item.id === task.owner.id);
   if (!event) {
     throw new UploadAssociationError("Evento não encontrado.", { status: 404 });
   }
 
-  const response = await patchEventFn(
-    event.id,
-    patchData(event, field, uploadedUrl),
-  );
-  if (!response.success) {
-    throw uploadAssociationErrorFromResponse(
-      response,
-      "Não foi possível associar a imagem.",
+  try {
+    const response = await patchEventFn(
+      event.id,
+      patchData(event, field, uploadedUrl),
+    );
+    if (!response) {
+      throw new UploadAssociationError("Não foi possível associar a imagem.", {
+        status: 500,
+      });
+    }
+    syncEventCaches(getContext().queryClient, response);
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : undefined;
+    const details =
+      err && typeof err === "object"
+        ? (err as { status?: number; message?: string })
+        : undefined;
+    throw new UploadAssociationError(
+      error?.message ||
+        details?.message ||
+        "Não foi possível associar a imagem.",
+      { status: details?.status || 500 },
     );
   }
-  syncEventCaches(getContext().queryClient, response.data);
 }
 
 registerUploadAssociationHandler("event-image", associateEventImage);

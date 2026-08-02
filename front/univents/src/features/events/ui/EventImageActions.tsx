@@ -48,7 +48,7 @@ export function EventImageActions({
   }, [activeTask, event.id, field, label]);
 
   const patchImage = async (url: string | null) => {
-    const response = await patchMutation.mutateAsync({
+    await patchMutation.mutateAsync({
       eventId: event.id,
       data: {
         full_name: event.full_name,
@@ -60,7 +60,6 @@ export function EventImageActions({
         banner_url: field === "banner_url" ? url : event.banner_url,
       },
     });
-    if (!response.success) throw new Error(response.message);
   };
 
   const handleFile = async (file?: File) => {

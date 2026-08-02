@@ -3,12 +3,8 @@ import type {
   CreateProjectRequest,
   Project,
   ProjectMember,
-} from "@trieoh/identityx-models";
-import {
-  ProjectRoleAdmin,
-  ProjectRoleMember,
-  ProjectRoleOwner,
-} from "@trieoh/identityx-models";
+} from "@trieoh/identityx-api/schemas";
+import { ProjectRole } from "@trieoh/identityx-api/schemas";
 import { z } from "zod";
 
 export const projectCreateSchema = z.object({
@@ -29,7 +25,7 @@ export type ProjectMemberRoleI = "member" | "admin" | "owner";
 
 export const memberAddToProjectSchema = z.object({
   actor_email: z.email({ error: "Must be a valid email address" }),
-  role: z.enum([ProjectRoleMember, ProjectRoleAdmin, ProjectRoleOwner], {
+  role: z.enum([ProjectRole.member, ProjectRole.admin, ProjectRole.owner], {
     error: "Invalid role",
   }),
 }) satisfies z.ZodType<AddProjectMemberRequest>;

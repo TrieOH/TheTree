@@ -1,6 +1,7 @@
 import { useSession, getRequest } from "@tanstack/react-start/server";
 import type { AuthTokens, TokenClaims, TokenSubject } from "@trieoh/identityx-sdk-ts";
 import type {
+  BffIntrospectResponse,
   ServerAuthResult,
   ServerOperationResult,
   ServerProxyRequest,
@@ -184,11 +185,11 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         sessionInvalid,
         error: response.ok
           ? {
-              success: false,
-              code: 502,
-              error_id: "INVALID_REFRESH_RESPONSE",
-              message: "Authentication service returned invalid tokens",
-            }
+            success: false,
+            code: 502,
+            error_id: "INVALID_REFRESH_RESPONSE",
+            message: "Authentication service returned invalid tokens",
+          }
           : normalized,
       };
     }
@@ -224,6 +225,37 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     async isSetupDone(): Promise<ServerAuthResult> {
       const response = await fetch(joinURL(config.identityX.baseURL, "/auth/setup"));
       return normalize(response, await readEnvelope(response));
+    },
+
+    async introspect(
+      apiKey?: string,
+    ): Promise<ServerProxyResult<BffIntrospectResponse>> {
+      if (apiKey) {
+        const response = await fetch(
+          joinURL(config.identityX.baseURL, "/auth/introspect"),
+          { headers: { "X-API-KEY": apiKey } },
+        );
+        return normalize(
+          response,
+          await readEnvelope<BffIntrospectResponse>(response),
+        );
+      }
+
+      const resolution = await validTokens();
+      if (!resolution.success) return resolution.error;
+
+      const response = await fetch(
+        joinURL(config.identityX.baseURL, "/auth/introspect"),
+        {
+          headers: {
+            Authorization: `Bearer ${resolution.tokens.access_token}`,
+          },
+        },
+      );
+      return normalize(
+        response,
+        await readEnvelope<BffIntrospectResponse>(response),
+      );
     },
 
     async setup(email: string, password: string): Promise<ServerAuthResult> {
@@ -298,10 +330,10 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
       const resolution = await refreshTokens();
       return resolution.success
         ? {
-            success: true,
-            code: 200,
-            profile: getProfile(resolution.tokens),
-          }
+          success: true,
+          code: 200,
+          profile: getProfile(resolution.tokens),
+        }
         : resolution.error;
     },
 

@@ -105,13 +105,8 @@ export function useCreateInitialProductMutation() {
   return useMutation({
     mutationFn: ({ editionId, data }: CreateInitialProductInput) =>
       createInitialProductFn(data, editionId),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao criar produto");
-        return;
-      }
-
-      syncProductCaches(queryClient, variables.editionId, res.data);
+    onSuccess: (product, variables) => {
+      syncProductCaches(queryClient, variables.editionId, product);
       toast.success("Produto criado com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
@@ -124,14 +119,8 @@ export function useUpdateProductMutation() {
   return useMutation({
     mutationFn: ({ productId, data }: UpdateProductInput) =>
       patchProductFn(productId, data),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao atualizar produto");
-        return;
-      }
-
-      const editionId = res.data.edition_id;
-      syncProductCaches(queryClient, editionId, res.data);
+    onSuccess: (product) => {
+      syncProductCaches(queryClient, product.edition_id, product);
       toast.success("Produto atualizado com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
@@ -144,12 +133,7 @@ export function useDeleteProductMutation() {
   return useMutation({
     mutationFn: ({ productId }: DeleteProductInput) =>
       deleteProductFn(productId),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao excluir produto");
-        return;
-      }
-
+    onSuccess: (_res, variables) => {
       removeProductFromCache(
         queryClient,
         variables.editionId,
@@ -182,13 +166,8 @@ export function useCreateVariantMutation() {
   return useMutation({
     mutationFn: ({ productId, data }: CreateVariantInput) =>
       createVariantFn(productId, data),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao criar variação");
-        return;
-      }
-
-      syncVariantCaches(queryClient, variables.productId, res.data);
+    onSuccess: (variant, variables) => {
+      syncVariantCaches(queryClient, variables.productId, variant);
       toast.success("Variação criada com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
@@ -201,14 +180,8 @@ export function useUpdateVariantMutation() {
   return useMutation({
     mutationFn: ({ variantId, data }: UpdateVariantInput) =>
       patchVariantFn(variantId, data),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao atualizar variação");
-        return;
-      }
-
-      const productId = res.data.product_id;
-      syncVariantCaches(queryClient, productId, res.data);
+    onSuccess: (variant) => {
+      syncVariantCaches(queryClient, variant.product_id, variant);
       toast.success("Variação atualizada com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
@@ -221,12 +194,7 @@ export function useDeleteVariantMutation() {
   return useMutation({
     mutationFn: ({ variantId }: DeleteVariantInput) =>
       deleteVariantFn(variantId),
-    onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao excluir variação");
-        return;
-      }
-
+    onSuccess: (_res, variables) => {
       removeVariantFromCache(
         queryClient,
         variables.productId,

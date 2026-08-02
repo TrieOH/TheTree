@@ -1,4 +1,5 @@
 import { createRouter } from "@tanstack/react-router";
+import "@/shared/lib/api/fetch";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { getContext } from "./app/providers/tanstack-query/RootProvider";
 

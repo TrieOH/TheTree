@@ -3,12 +3,8 @@ import type {
   CreateOrganizationRequest,
   Organization,
   OrganizationMember,
-} from "@trieoh/identityx-models";
-import {
-  OrganizationRoleAdmin,
-  OrganizationRoleMember,
-  OrganizationRoleOwner,
-} from "@trieoh/identityx-models";
+} from "@trieoh/identityx-api/schemas";
+import { OrganizationRole } from "@trieoh/identityx-api/schemas";
 import z from "zod";
 
 export const organizationCreateSchema = z.object({
@@ -31,7 +27,7 @@ export type OrganizationMemberRoleI = "member" | "admin" | "owner";
 export const memberAddToOrganizationSchema = z.object({
   actor_email: z.email({ error: "Must be a valid email address" }),
   role: z.enum(
-    [OrganizationRoleMember, OrganizationRoleAdmin, OrganizationRoleOwner],
+    [OrganizationRole.member, OrganizationRole.admin, OrganizationRole.owner],
     { error: "Invalid role" },
   ),
 }) satisfies z.ZodType<AddOrganizationMemberRequest>;

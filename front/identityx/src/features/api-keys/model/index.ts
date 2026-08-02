@@ -1,8 +1,8 @@
 import type {
-  ApiKey,
-  CreateApiKeyRequest,
-  CreateApiKeyResponse,
-} from "@trieoh/identityx-models";
+  APIKey,
+  CreateAPIKeyRequest,
+  CreateAPIKeyResponse,
+} from "@trieoh/identityx-api/schemas";
 import z from "zod";
 
 export const apiKeyCreateSchema = z.object({
@@ -14,10 +14,10 @@ export const apiKeyCreateSchema = z.object({
     .optional(),
   env: z.string().min(3, "Environment must be at least 3 characters long"),
   expires_at: z.string().optional(),
-}) satisfies z.ZodType<CreateApiKeyRequest>;
+}) satisfies z.ZodType<CreateAPIKeyRequest>;
 
 export type ApiKeyCreateI = z.infer<typeof apiKeyCreateSchema>;
 
-export type ApiKeyI = ApiKey;
+export type ApiKeyI = APIKey;
 
-export type CreateApiKeyResponseI = CreateApiKeyResponse;
+export type CreateApiKeyResponseI = CreateAPIKeyResponse;

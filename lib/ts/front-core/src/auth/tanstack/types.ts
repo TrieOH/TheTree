@@ -1,5 +1,17 @@
 import type { TokenSubject } from "@trieoh/identityx-sdk-ts";
 
+export interface BffIntrospectResponse {
+  cred: { id?: string; type: "token" | "api_key" };
+  subject: {
+    id: string;
+    project_id?: string;
+    email?: string;
+    type: "human" | "service" | "machine";
+    capabilities: Record<string, SerializableValue>;
+    metadata: Record<string, SerializableValue>;
+  };
+}
+
 export type SerializableValue =
   | string
   | number

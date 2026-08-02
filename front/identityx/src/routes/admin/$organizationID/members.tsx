@@ -72,15 +72,13 @@ function RouteComponent() {
     useMutation({
       mutationFn: (data: MemberAddToOrganizationI) =>
         addMemberToOrganizationFn(organizationID, data),
-      onSuccess: (response) => {
-        if (response.success) {
-          queryClient.invalidateQueries({
-            queryKey:
-              allOrganizationsMembersQueryOptions(organizationID).queryKey,
-          });
-          setIsCreateOpen(false);
-          toast.success(response.message || "Member added successfully");
-        } else toast.error(response.message || "Failed to add member");
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey:
+            allOrganizationsMembersQueryOptions(organizationID).queryKey,
+        });
+        setIsCreateOpen(false);
+        toast.success("Member added successfully");
       },
       onError: (error: Error) => toast.error(error.message),
     });
@@ -89,18 +87,14 @@ function RouteComponent() {
     useMutation({
       mutationFn: (email: string) =>
         removeMemberFromOrganizationFn(organizationID, email),
-      onSuccess: (response) => {
-        if (response.success) {
-          queryClient.invalidateQueries({
-            queryKey:
-              allOrganizationsMembersQueryOptions(organizationID).queryKey,
-          });
-          setMemberToRemove(null);
-          setConfirmEmail("");
-          toast.success("Member removed successfully");
-        } else {
-          toast.error(response.message || "Failed to remove member");
-        }
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey:
+            allOrganizationsMembersQueryOptions(organizationID).queryKey,
+        });
+        setMemberToRemove(null);
+        setConfirmEmail("");
+        toast.success("Member removed successfully");
       },
       onError: (error: Error) => toast.error(error.message),
     });

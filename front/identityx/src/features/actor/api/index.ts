@@ -1,6 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import {
+  createActor,
+  createOrganizationProjectActor,
+  listActors,
+  listOrganizationProjectActors,
+} from "@trieoh/identityx-api";
 import type { ActorCreateI, ActorI } from "../model";
 
 /**
@@ -13,11 +19,12 @@ import type { ActorCreateI, ActorI } from "../model";
 export const createActorFn = createClientOnlyFn(
   async (project_id: string, actor: ActorCreateI, organization_id?: string) => {
     if (organization_id)
-      return authFetcher.post<ActorI>(
-        `/organizations/${organization_id}/projects/${project_id}/actors`,
+      return createOrganizationProjectActor(
+        organization_id,
+        project_id,
         actor,
-      );
-    return authFetcher.post<ActorI>(`/projects/${project_id}/actors`, actor);
+      ).then(orvalData<ActorI>);
+    return createActor(project_id, actor).then(orvalData<ActorI>);
   },
 );
 
@@ -30,12 +37,10 @@ export const createActorFn = createClientOnlyFn(
 export const getActorsFn = createClientOnlyFn(
   async (project_id: string, organization_id?: string) => {
     if (organization_id)
-      return await tanstackQueryFetcher<ActorI[]>(
-        `/organizations/${organization_id}/projects/${project_id}/actors`,
+      return listOrganizationProjectActors(organization_id, project_id).then(
+        orvalData<ActorI[]>,
       );
-    return await tanstackQueryFetcher<ActorI[]>(
-      `/projects/${project_id}/actors`,
-    );
+    return listActors(project_id).then(orvalData<ActorI[]>);
   },
 );
 

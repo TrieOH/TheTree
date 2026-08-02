@@ -1,3 +1,4 @@
+import type { TicketType } from "@trieoh/univents-api/schemas";
 import z from "zod";
 
 export const ticketCreateSchema = z.object({
@@ -40,16 +41,4 @@ export const ticketCreateSchema = z.object({
 export type TicketCreateInputI = z.input<typeof ticketCreateSchema>;
 export type TicketCreateOutputI = z.output<typeof ticketCreateSchema>;
 
-export interface TicketI {
-  id: string;
-  edition_id: string;
-  name: string;
-  description: string | null;
-  access_level: number;
-  price_cents: number;
-  max_quantity: number | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string | null;
-  deleted_at: string | null;
-}
+export type TicketI = TicketType;
