@@ -2,6 +2,7 @@ package signatures
 
 import (
 	"lib/email"
+	"univents/internal/authz"
 	"univents/ports"
 )
 
@@ -12,6 +13,7 @@ type Operations struct {
 	requests   ports.SignatureRequestRepo
 	email      *email.Client
 	hmacSecret string
+	authz      *authz.Service
 }
 
 func NewOperations(
@@ -21,6 +23,7 @@ func NewOperations(
 	requests ports.SignatureRequestRepo,
 	email *email.Client,
 	hmacSecret string,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		events:     events,
@@ -29,5 +32,6 @@ func NewOperations(
 		requests:   requests,
 		email:      email,
 		hmacSecret: hmacSecret,
+		authz:      authz,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -20,7 +19,7 @@ func (o *Operations) ListForms(ctx context.Context, namespaceID uuid.UUID) (form
 		return nil, err
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleMember)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleMember)
 	if err != nil {
 		return nil, err
 	}

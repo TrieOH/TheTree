@@ -4,6 +4,8 @@ import (
 	"lib/database"
 	"lib/errx"
 
+	idx "sdk/identityx"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
 )
@@ -44,6 +46,15 @@ type Config struct {
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
+}
+
+func (cfg Config) ToIdentityXConfig() idx.Config {
+	return idx.Config{
+		BaseURL:   cfg.IdxURL,
+		APIKey:    cfg.IdxAPIKey,
+		ProjectID: cfg.IdxProjectID,
+		Debug:     true,
+	}
 }
 
 func (cfg Config) ToDBConfig() database.Config {

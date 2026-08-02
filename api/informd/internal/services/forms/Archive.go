@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -31,7 +30,7 @@ func (o *Operations) Archive(ctx context.Context, formID uuid.UUID) (*models.For
 		return nil, fun.ErrBadRequest("cannot archive a form not on closed")
 	}
 
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

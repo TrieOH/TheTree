@@ -3,7 +3,6 @@ package webhook_endpoints
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -23,7 +22,7 @@ func (o *Operations) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, endpoint.WalletID, models.OrganizationRoleMember)
+	err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, endpoint.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return err
 	}

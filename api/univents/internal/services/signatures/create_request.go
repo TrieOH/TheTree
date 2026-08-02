@@ -10,7 +10,6 @@ import (
 	idx "sdk/identityx"
 	"time"
 	"univents/assets"
-	"univents/internal/authz"
 	"univents/models"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -32,7 +31,7 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 		return nil, err
 	}
 
-	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	err = o.authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

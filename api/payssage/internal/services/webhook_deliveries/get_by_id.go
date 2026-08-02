@@ -3,7 +3,6 @@ package webhook_deliveries
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -28,7 +27,7 @@ func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.Webhook
 	if err != nil {
 		return nil, err
 	}
-	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, endpoint.WalletID, models.OrganizationRoleMember)
+	err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, endpoint.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

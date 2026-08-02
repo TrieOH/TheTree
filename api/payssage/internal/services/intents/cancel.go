@@ -3,7 +3,6 @@ package intents
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -34,7 +33,7 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 	if err != nil {
 		return nil, err
 	}
-	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, intent.WalletID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, intent.WalletID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

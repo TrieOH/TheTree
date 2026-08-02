@@ -18,13 +18,13 @@ func TestAddMember_StaffForbidden(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
-	authz.Service = authz.New(repo)
+	authzSvc := authz.New(repo)
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
 	staffID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: staffID},
@@ -52,12 +52,12 @@ func TestAddMember_OwnerGetsPastAuth(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
-	authz.Service = authz.New(repo)
+	authzSvc := authz.New(repo)
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -91,8 +91,9 @@ func TestAddMember_NoIdentity(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authzSvc := authz.New(repo)
 
-	cmd := events.NewOperations(repo, nil, nil)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc)
 
 	_, err := cmd.AddMember(context.Background(), uuid.New(), models.AddEventMemberInput{
 		Email: "someone@example.com",

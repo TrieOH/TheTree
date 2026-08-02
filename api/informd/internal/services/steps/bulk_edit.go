@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 	"lib/xslices"
@@ -22,7 +21,7 @@ func (o *Operations) BulkEdit(ctx context.Context, formID uuid.UUID, payload []m
 		return err
 	}
 
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

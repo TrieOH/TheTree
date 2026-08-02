@@ -3,7 +3,6 @@ package certifications
 import (
 	"context"
 	"lib/telemetry"
-	"univents/internal/authz"
 	"univents/models"
 
 	idx "sdk/identityx"
@@ -28,7 +27,7 @@ func (o *Operations) UpdateTemplate(ctx context.Context, input models.UpdateCert
 		return nil, err
 	}
 
-	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	err = o.authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

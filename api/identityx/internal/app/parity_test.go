@@ -229,7 +229,9 @@ func TestRouterRoutesMatchSpec(t *testing.T) {
 // the spec's security blocks, runs the middlewares the spec declares: the
 // setup guard (except the two setup routes), the scheme combination's
 // middleware, and the platform-client scope guard for client-only
-// operations.
+// operations. Chains are keyed by generated-form operationID; the
+// client-only list is validated against the spec inside the resolver, so
+// this test no longer re-derives expectations from the same list it feeds.
 func TestAuthMatrixMatchesSpec(t *testing.T) {
 	mw := middlewares{
 		jwtAuth:    labelMW("JWT"),
@@ -242,9 +244,6 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 		t.Fatalf("authResolver: %v", err)
 	}
 	chains := resolver.Chains()
-	for _, op := range clientOnlyOps {
-		chains[op] = append(chains[op], mw.clientOnly)
-	}
 
 	ops, err := authz.SpecOperations(spec.OpenAPISpec)
 	if err != nil {
@@ -275,7 +274,7 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 		if clientOnly[op.OperationID] {
 			want = append(want, "ClientOnly")
 		}
-		if got := runChain(chains[op.OperationID]); !slices.Equal(got, want) {
+		if got := runChain(chains[authz.GeneratedOperationID(op.OperationID)]); !slices.Equal(got, want) {
 			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))
 		}
 	}

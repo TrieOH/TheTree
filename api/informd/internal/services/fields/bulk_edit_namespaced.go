@@ -5,7 +5,6 @@ import (
 	"lib/telemetry"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/xslices"
 
@@ -23,7 +22,7 @@ func (o *Operations) BulkEditNamespaced(ctx context.Context, formID, _ uuid.UUID
 		return err
 	}
 
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

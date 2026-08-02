@@ -3,7 +3,6 @@ package certifications
 import (
 	"context"
 	"lib/telemetry"
-	"univents/internal/authz"
 	"univents/models"
 
 	idx "sdk/identityx"
@@ -30,7 +29,7 @@ func (o *Operations) InvalidateCert(ctx context.Context, id uuid.UUID, reason *s
 		return err
 	}
 
-	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	err = o.authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

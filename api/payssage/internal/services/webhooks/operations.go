@@ -1,6 +1,8 @@
 package webhooks
 
 import (
+	"payssage/internal/authz"
+
 	"payssage/ports"
 
 	"github.com/jackc/pgx/v5"
@@ -12,6 +14,7 @@ type Operations struct {
 	events     ports.WebhookEventRepo
 	endpoints  ports.WebhookEndpointRepo
 	deliveries ports.WebhookDeliveryRepo
+	authz      *authz.Service
 }
 
 func NewOperations(
@@ -19,11 +22,13 @@ func NewOperations(
 	events ports.WebhookEventRepo,
 	endpoints ports.WebhookEndpointRepo,
 	deliveries ports.WebhookDeliveryRepo,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		river:      river,
 		events:     events,
 		endpoints:  endpoints,
 		deliveries: deliveries,
+		authz:      authz,
 	}
 }

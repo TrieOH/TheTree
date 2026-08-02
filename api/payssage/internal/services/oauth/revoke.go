@@ -3,7 +3,6 @@ package oauth
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -35,7 +34,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 			if err != nil {
 				return err
 			}
-			err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return err
 			}
@@ -64,7 +63,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 			if err != nil {
 				return err
 			}
-			err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return err
 			}

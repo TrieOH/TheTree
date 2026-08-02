@@ -11,16 +11,7 @@ import (
 )
 
 func SetupIdentityX(cfg config.Config) *idx.Client {
-	client, err := idx.Bootstrap(context.Background(), idx.Config{
-		BaseURL:   cfg.IdxURL,
-		APIKey:    cfg.IdxAPIKey,
-		ProjectID: cfg.IdxProjectID,
-		Debug:     cfg.DebugMode,
-	})
-	if err != nil {
-		errx.Exit(err, "error creating identityx client")
-	}
-	return client
+	return idx.MustBootstrap(context.Background(), cfg.ToIdentityXConfig())
 }
 
 func SetupObjectStorage(cfg config.Config) *objectstorage.Client {

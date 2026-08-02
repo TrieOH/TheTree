@@ -3,7 +3,6 @@ package orgs
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -37,7 +36,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizati
 		return fun.ErrBadRequest("owners can't be added to organizations they own")
 	}
 
-	err = authz.Service.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

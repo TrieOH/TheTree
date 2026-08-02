@@ -9,6 +9,7 @@ import (
 
 	"lib/database"
 	idx "sdk/identityx"
+	"univents/internal/authz"
 	"univents/internal/services/events"
 	"univents/models"
 	"univents/ports"
@@ -18,6 +19,7 @@ func TestCreate_Success(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authzSvc := authz.New(repo)
 	var txr = mock.Mock[database.TxRunner]()
 
 	database.SetDefaultRunner(txr)
@@ -25,7 +27,7 @@ func TestCreate_Success(t *testing.T) {
 	ownerID := uuid.New()
 	eventID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -71,8 +73,9 @@ func TestCreate_NoIdentity(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authzSvc := authz.New(repo)
 
-	cmd := events.NewOperations(repo, nil, nil)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc)
 
 	_, err := cmd.Create(context.Background(), models.CreateEventInput{
 		FullName: "Test Event",
@@ -87,13 +90,14 @@ func TestCreate_RepoCreateFails(t *testing.T) {
 	mock.SetUp(t)
 
 	var repo = mock.Mock[ports.EventRepo]()
+	authzSvc := authz.New(repo)
 	var txr = mock.Mock[database.TxRunner]()
 
 	database.SetDefaultRunner(txr)
 
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},

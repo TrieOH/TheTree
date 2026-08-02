@@ -26,9 +26,7 @@ type middlewares struct {
 // ── Init functions ────────────────────────────────────────────────────────
 
 func (app *Payssage) initRepos(q *sqlc.Queries) *repos.Repos {
-	r := repos.New(q)
-	authz.Service = authz.New(r.Organizations, r.Wallets)
-	return r
+	return repos.New(q)
 }
 
 func (app *Payssage) initProviders(r *repos.Repos) {
@@ -48,7 +46,8 @@ func (app *Payssage) initProviders(r *repos.Repos) {
 }
 
 func (app *Payssage) initOperations(riverClient *river.Client[pgx.Tx], r *repos.Repos) *services.Operations {
-	return services.NewOperations(r, riverClient, app.idxClient)
+	authzSvc := authz.New(r.Organizations, r.Wallets)
+	return services.NewOperations(r, authzSvc, riverClient, app.idxClient)
 }
 
 func (app *Payssage) initMiddlewares() middlewares {

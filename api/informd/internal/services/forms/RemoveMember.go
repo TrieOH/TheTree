@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -33,7 +32,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveForm
 	if payload.UserID == form.OwnerID {
 		return fun.ErrBadRequest("cannot remove owner of the form")
 	}
-	err = authz.Service.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

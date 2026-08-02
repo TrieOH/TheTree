@@ -4,7 +4,6 @@ import (
 	"context"
 	idx "sdk/identityx"
 
-	"Informd/internal/authz"
 	"Informd/models"
 	"lib/telemetry"
 
@@ -34,7 +33,7 @@ func (o *Operations) RemoveFormMember(ctx context.Context, payload models.Remove
 		return fun.ErrBadRequest("cannot remove owner of the namespace from form")
 	}
 
-	err = authz.Service.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
+	err = o.authz.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

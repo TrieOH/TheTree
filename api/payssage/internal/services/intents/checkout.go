@@ -3,7 +3,6 @@ package intents
 import (
 	"context"
 	"lib/telemetry"
-	"payssage/internal/authz"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -30,7 +29,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 	if err != nil {
 		return nil, err
 	}
-	err = authz.Service.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

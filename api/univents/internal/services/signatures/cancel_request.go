@@ -4,7 +4,6 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
-	"univents/internal/authz"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -30,7 +29,7 @@ func (o *Operations) CancelRequest(ctx context.Context, requestID uuid.UUID, rea
 		return err
 	}
 
-	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	err = o.authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

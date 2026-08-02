@@ -29,13 +29,12 @@ type middlewares struct {
 // ── Init methods ──────────────────────────────────────────────────────────
 
 func (app *Univents) initRepos() *repos.Repos {
-	r := repos.New(sqlc.New(app.db))
-	authz.Service = authz.New(r.Events)
-	return r
+	return repos.New(sqlc.New(app.db))
 }
 
 func (app *Univents) initOperations(r *repos.Repos) *services.Operations {
-	return services.NewOperations(r, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret)
+	authzSvc := authz.New(r.Events)
+	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret)
 }
 
 func (app *Univents) initHandlers(ops *services.Operations) *handlers.Server {

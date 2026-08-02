@@ -4,7 +4,6 @@ import (
 	"context"
 	"lib/telemetry"
 	idx "sdk/identityx"
-	"univents/internal/authz"
 	"univents/models"
 )
 
@@ -22,7 +21,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateEditionInp
 		return nil, err
 	}
 
-	err = authz.Service.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	err = o.authz.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}
