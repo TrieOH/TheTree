@@ -19,6 +19,7 @@ import {
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts"
 
 export type { ApiError }
+export { configureApiClient } from "./orval-mutator"
 
 export interface AppFetcherConfig {
   /** Base URL for the main API. */

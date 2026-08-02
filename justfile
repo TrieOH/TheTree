@@ -60,6 +60,13 @@ generate +SERVICES="identityx informd payssage univents":
       (cd api/$svc && tygo generate)
     done
     just generate-oapi {{SERVICES}}
+    just generate-orval
+
+# Generate TypeScript API clients + TanStack Query hooks into
+# lib/ts/<svc>/client via orval (one entry per backend in orval.config.ts).
+# Runs for all four services regardless of {{SERVICES}}.
+generate-orval:
+    pnpm orval
 
 # Regenerate OpenAPI handler bindings (internal/openapi) from each api-spec.yml.
 # Uses a pinned oapi-codegen version via `go run` — the Docker build images get

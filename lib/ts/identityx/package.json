@@ -5,6 +5,10 @@
   "type": "module",
   "main": "./index.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./client": "./client/endpoints.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:"
   }
 }
