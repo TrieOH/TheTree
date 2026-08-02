@@ -1,0 +1,14 @@
+{
+  "name": "@trieoh/univents-models",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./client": "./client/endpoints.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:"
+  }
+}

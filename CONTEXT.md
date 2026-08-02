@@ -24,5 +24,6 @@ or sharpened.
 
 - **Backend** — one of the four Go services (IdentityX, Payssage, Informd, Univents); a process, not a module.
 - **Feature** — a slice of a Backend with its own models and routes (e.g. the `intents` feature).
+- **TS API client** — the orval-generated TypeScript client per backend (functions + TanStack Query hooks + spec types) in `lib/ts/<svc>/client/`, produced by `just generate-orval` from each `api-spec.yml`; requests go through the shared fetcher stack via the `orval-mutator` (`@trieoh/api-client`), which unwraps the `fun.Response` envelope and rejects with `ApiError`.
 - **Harness** — `lib/httpserver`: the shared HTTP-serving module every Backend boots through (server lifecycle, pprof, fun config, standard middleware stack, router skeleton, `/health`, `/metrics`, OpenTelemetry wrapping). One interface, four call sites. See ADR-0001.
 - **Adapter** — a concrete thing that satisfies an interface at a seam (e.g. the MercadoPago provider module, the SQL repo modules, the email client).
