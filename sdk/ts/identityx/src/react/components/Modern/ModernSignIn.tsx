@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,6 +37,29 @@ export function ModernSignIn({
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<OAuthProviderI | null>(null);
   const { auth } = useAuth();
+  const [discoveredProviders, setDiscoveredProviders] = useState<OAuthProviderI[]>(providers ?? []);
+
+  useEffect(() => {
+    if (providers) {
+      setDiscoveredProviders(providers);
+      return;
+    }
+
+    let cancelled = false;
+    auth.getOAuthProviders().then((res) => {
+      if (!cancelled && res.success) {
+        setDiscoveredProviders(
+          res.data
+            .map(({ provider }) => provider)
+            .filter((provider): provider is OAuthProviderI => provider === "google" || provider === "github"),
+        );
+      }
+    }).catch(() => {
+      // Provider discovery is optional; the credentials form remains usable.
+    });
+
+    return () => { cancelled = true; };
+  }, [auth, providers]);
 
   const handleOAuthLogin = async (provider: OAuthProviderI) => {
     setOauthLoading(provider);
@@ -134,11 +157,11 @@ export function ModernSignIn({
         )}
       </Button>
 
-      {providers && providers.length > 0 && (
+      {discoveredProviders.length > 0 && (
         <>
           <OAuthDivider />
           <div className="flex flex-col gap-2">
-            {providers.map((provider) => (
+            {discoveredProviders.map((provider) => (
               <OAuthProviderButton
                 key={provider}
                 provider={provider}

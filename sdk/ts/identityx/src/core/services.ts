@@ -54,13 +54,18 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
   },
 
   loginWithProvider: async (provider: OAuthProviderI) => {
-    const url = `/auth/${provider}/connect`;
+    if (env.PROJECT_ID) validateProjectKey();
+    const query = env.PROJECT_ID
+      ? `?${new URLSearchParams({ project_id: env.PROJECT_ID })}`
+      : "";
+    const url = `/auth/${provider}/connect${query}`;
     const res = await apiInstance.get<{ url: string }>(url, { requiresAuth: false });
     return res;
   },
 
-  completeProviderLogin: async (provider: OAuthProviderI, code: string) => {
-    const url = `/auth/${provider}/callback?code=${code}`;
+  completeProviderLogin: async (provider: OAuthProviderI, code: string, state: string) => {
+    const query = new URLSearchParams({ code, state });
+    const url = `/auth/${provider}/callback?${query}`;
     const res = await apiInstance.get<AuthTokens>(url, { requiresAuth: false });
     if (res.success) {
       saveAuthSession(res.data);

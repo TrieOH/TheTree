@@ -34,7 +34,7 @@ export interface IdentityXServerFunctions {
     ServerOperationResult<{ url: string }>
   >;
   completeProviderLogin?: ServerFunction<
-    { provider: IdentityXOAuthProvider; code: string },
+    { provider: IdentityXOAuthProvider; code: string; state: string },
     ServerAuthResult
   >;
   logout: ServerFunction<void, ServerAuthResult>;
@@ -83,15 +83,15 @@ export function createTanStackIdentityXAuthProviderAdapter(
           : defaultAuth.isSetupDone,
         setup: functions.setup
           ? async (email, password) => {
-              const result = await functions.setup!({ data: { email, password } });
-              const response = authResponse<AuthTokens>(result);
-              if (result.success) {
-                setProfile(result.profile ?? null);
-                setAuthenticated(true);
-                callbacks.onSetup?.(response);
-              }
-              return response;
+            const result = await functions.setup!({ data: { email, password } });
+            const response = authResponse<AuthTokens>(result);
+            if (result.success) {
+              setProfile(result.profile ?? null);
+              setAuthenticated(true);
+              callbacks.onSetup?.(response);
             }
+            return response;
+          }
           : defaultAuth.setup,
         profile: getProfile,
         login: async (email, password) => {
@@ -106,32 +106,32 @@ export function createTanStackIdentityXAuthProviderAdapter(
         },
         register: functions.register
           ? async (email, password) => {
-              const result = await functions.register!({ data: { email, password } });
-              const response = authResponse<void>(result);
-              if (result.success) callbacks.onRegister?.(response);
-              return response;
-            }
+            const result = await functions.register!({ data: { email, password } });
+            const response = authResponse<void>(result);
+            if (result.success) callbacks.onRegister?.(response);
+            return response;
+          }
           : defaultAuth.register,
         loginWithProvider: functions.loginWithProvider
           ? async (provider) => {
-              const result = await functions.loginWithProvider!({ data: { provider } });
-              const base = authResponse<{ url: string }>(result);
-              return result.success
-                ? { ...base, success: true, data: result.data! }
-                : base;
-            }
+            const result = await functions.loginWithProvider!({ data: { provider } });
+            const base = authResponse<{ url: string }>(result);
+            return result.success
+              ? { ...base, success: true, data: result.data! }
+              : base;
+          }
           : defaultAuth.loginWithProvider,
         completeProviderLogin: functions.completeProviderLogin
-          ? async (provider, code) => {
-              const result = await functions.completeProviderLogin!({ data: { provider, code } });
-              const response = authResponse<AuthTokens>(result);
-              if (result.success) {
-                setProfile(result.profile ?? null);
-                setAuthenticated(true);
-                callbacks.onLogin?.(response);
-              }
-              return response;
+          ? async (provider, code, state) => {
+            const result = await functions.completeProviderLogin!({ data: { provider, code, state } });
+            const response = authResponse<AuthTokens>(result);
+            if (result.success) {
+              setProfile(result.profile ?? null);
+              setAuthenticated(true);
+              callbacks.onLogin?.(response);
             }
+            return response;
+          }
           : defaultAuth.completeProviderLogin,
         logout: async () => {
           const result = await functions.logout({ data: undefined });
@@ -155,23 +155,25 @@ export function createTanStackIdentityXAuthProviderAdapter(
         },
         introspect: functions.introspect
           ? async (apiKey?: string) => {
-              const result = await functions.introspect!({ data: apiKey ? { apiKey } : undefined });
-              const base = {
-                module: "identityx-bff",
-                message: result.message ?? (result.success ? "OK" : "Introspect failed"),
-                timestamp: new Date().toISOString(),
-                code: result.code,
-              };
-              if (result.success) {
-                return { ...base, success: true, data: result.data! };
-              }
-              return {
-                ...base,
-                success: false,
-                error_id: result.error_id ?? "INTROSPECT_ERROR",
-                ...(result.trace ? { trace: result.trace } : {}),
-              };
+            if (apiKey) return defaultAuth.introspect(apiKey);
+
+            const result = await functions.introspect!({ data: apiKey ? { apiKey } : undefined });
+            const base = {
+              module: "identityx-bff",
+              message: result.message ?? (result.success ? "OK" : "Introspect failed"),
+              timestamp: new Date().toISOString(),
+              code: result.code,
+            };
+            if (result.success) {
+              return { ...base, success: true, data: result.data! };
             }
+            return {
+              ...base,
+              success: false,
+              error_id: result.error_id ?? "INTROSPECT_ERROR",
+              ...(result.trace ? { trace: result.trace } : {}),
+            };
+          }
           : defaultAuth.introspect,
       };
     },

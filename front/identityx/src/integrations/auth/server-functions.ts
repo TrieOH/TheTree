@@ -41,8 +41,8 @@ export const loginWithProviderServerFn = createServerFn({ method: "POST" })
   .handler(({ data }) => bff.loginWithProvider(data.provider));
 
 export const completeProviderLoginServerFn = createServerFn({ method: "POST" })
-  .validator(z.object({ provider: providerSchema, code: z.string().min(1) }))
-  .handler(({ data }) => bff.completeProviderLogin(data.provider, data.code));
+  .validator(z.object({ provider: providerSchema, code: z.string().min(1), state: z.string().min(1) }))
+  .handler(({ data }) => bff.completeProviderLogin(data.provider, data.code, data.state));
 
 export const logoutServerFn = createServerFn({ method: "POST" }).handler(() =>
   bff.logout(),

@@ -48,7 +48,6 @@ function AuthPage() {
         onLoginSuccess={handleLoginSuccess}
         onSignUpSuccess={handleSignUpSuccess}
         onFailed={handleFailure}
-        providers={["google", "github"]}
       />
     </div>
   );

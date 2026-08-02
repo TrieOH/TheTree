@@ -299,9 +299,11 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     async completeProviderLogin(
       provider: "github" | "google",
       code: string,
+      state: string,
     ): Promise<ServerAuthResult> {
+      const query = new URLSearchParams({ code, state });
       return authenticate(
-        `/auth/${provider}/callback?code=${encodeURIComponent(code)}`,
+        `/auth/${provider}/callback?${query}`,
         { method: "GET" },
       );
     },
