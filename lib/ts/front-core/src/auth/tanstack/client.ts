@@ -3,6 +3,7 @@ import type { AuthProviderAdapter, AuthService } from "@trieoh/identityx-sdk-ts/
 import type { ApiResponse } from "@trieoh/identityx-sdk-ts";
 import type { AuthTokens } from "@trieoh/identityx-sdk-ts";
 import type {
+  BffIntrospectResponse,
   SerializableValue,
   IdentityXOAuthProvider,
   ProxyHttpMethod,
@@ -39,6 +40,10 @@ export interface IdentityXServerFunctions {
   logout: ServerFunction<void, ServerAuthResult>;
   refresh: ServerFunction<void, ServerAuthResult>;
   restore: ServerFunction<void, ServerSessionSnapshot>;
+  introspect?: ServerFunction<
+    { apiKey?: string } | undefined,
+    ServerProxyResult<BffIntrospectResponse>
+  >;
 }
 
 function authResponse<T>(result: ServerAuthResult): ApiResponse<T> {
@@ -148,6 +153,26 @@ export function createTanStackIdentityXAuthProviderAdapter(
           }
           return response;
         },
+        introspect: functions.introspect
+          ? async (apiKey?: string) => {
+              const result = await functions.introspect!({ data: apiKey ? { apiKey } : undefined });
+              const base = {
+                module: "identityx-bff",
+                message: result.message ?? (result.success ? "OK" : "Introspect failed"),
+                timestamp: new Date().toISOString(),
+                code: result.code,
+              };
+              if (result.success) {
+                return { ...base, success: true, data: result.data! };
+              }
+              return {
+                ...base,
+                success: false,
+                error_id: result.error_id ?? "INTROSPECT_ERROR",
+                ...(result.trace ? { trace: result.trace } : {}),
+              };
+            }
+          : defaultAuth.introspect,
       };
     },
   };

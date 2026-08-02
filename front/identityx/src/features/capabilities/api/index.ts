@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import { createCapability, listCapabilities } from "@trieoh/identityx-api";
 import type { CapabilityCreateI, CapabilityI } from "../model";
 
 /**
@@ -11,9 +12,8 @@ import type { CapabilityCreateI, CapabilityI } from "../model";
  */
 export const createCapabilityFn = createClientOnlyFn(
   (project_id: string, capabilityData: CapabilityCreateI) => {
-    return authFetcher.post<CapabilityI>(
-      `projects/${project_id}/capabilities`,
-      capabilityData,
+    return createCapability(project_id, capabilityData).then(
+      orvalData<CapabilityI>,
     );
   },
 );
@@ -25,9 +25,7 @@ export const createCapabilityFn = createClientOnlyFn(
  */
 export const getCapabilitiesFn = createClientOnlyFn(
   async (project_id: string) => {
-    return await tanstackQueryFetcher<CapabilityI[]>(
-      `projects/${project_id}/capabilities`,
-    );
+    return listCapabilities(project_id).then(orvalData<CapabilityI[]>);
   },
 );
 

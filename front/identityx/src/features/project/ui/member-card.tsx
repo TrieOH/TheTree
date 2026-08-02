@@ -1,8 +1,4 @@
-import {
-  OrganizationRoleAdmin,
-  OrganizationRoleMember,
-  OrganizationRoleOwner,
-} from "@trieoh/identityx-models";
+import { ProjectRole } from "@trieoh/identityx-api/schemas";
 import { timeAgo } from "@trieoh/shared-utils";
 import { Crown, Shield, User2, UserMinus } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
@@ -14,17 +10,17 @@ interface PropsI {
 }
 
 const roleConfig = {
-  [OrganizationRoleOwner]: {
+  [ProjectRole.owner]: {
     label: "Owner",
     icon: Crown,
     className: "text-amber-500 bg-amber-500/10",
   },
-  [OrganizationRoleAdmin]: {
+  [ProjectRole.admin]: {
     label: "Admin",
     icon: Shield,
     className: "text-blue-500 bg-blue-500/10",
   },
-  [OrganizationRoleMember]: {
+  [ProjectRole.member]: {
     label: "Member",
     icon: User2,
     className: "text-muted-foreground bg-muted",
@@ -32,9 +28,9 @@ const roleConfig = {
 } as const;
 
 export function MemberCard({ data, onRemove }: PropsI) {
-  const role = roleConfig[data.role] ?? roleConfig[OrganizationRoleMember];
+  const role = roleConfig[data.role] ?? roleConfig[ProjectRole.member];
   const RoleIcon = role.icon;
-  const isOwner = data.role === OrganizationRoleOwner;
+  const isOwner = data.role === ProjectRole.owner;
 
   return (
     <div
