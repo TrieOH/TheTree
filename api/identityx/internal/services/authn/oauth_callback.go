@@ -3,24 +3,44 @@ package authn
 import (
 	"IdentityX/models"
 	"context"
-	"encoding/json"
-	"io"
 	"lib/crypto"
-	"lib/oauth"
 	"lib/telemetry"
-	"net/http"
 	"time"
 
 	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 )
 
-func (o *Operations) OAuthCallback(ctx context.Context, provider, code string) (*models.UserTokensOutput, error) {
+func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state string) (*models.UserTokensOutput, error) {
 	ctx, span := telemetry.StartSpan(ctx, "OAuthCallback")
 	defer span.End()
 
-	info, providerToken, err := o.fetchUserInfo(ctx, provider, code)
+	loginState, err := o.oauthLoginStates.GetByState(ctx, state)
+	if err != nil {
+		if fun.Is(err, fun.CodeNotFound) {
+			return nil, fun.ErrBadRequest("invalid or expired OAuth state; start a new login")
+		}
+		return nil, err
+	}
+	// The state is one-time-use: consume it regardless of the outcome so it
+	// can never be replayed.
+	err = o.oauthLoginStates.DeleteState(ctx, loginState.ID)
+	if err != nil {
+		telemetry.Log().Warn("failed to delete oauth login state", zap.String("state_id", loginState.ID.String()))
+	}
+	if string(loginState.Provider) != provider {
+		return nil, fun.ErrBadRequest("invalid OAuth state")
+	}
+	if time.Now().After(loginState.ExpiresAt) {
+		return nil, fun.ErrBadRequest("OAuth state expired; start a new login")
+	}
+
+	creds, err := o.resolveCallbackCredentials(ctx, *loginState)
+	if err != nil {
+		return nil, err
+	}
+
+	info, providerToken, err := o.fetchUserInfo(ctx, provider, creds.creds, code)
 	if err != nil {
 		return nil, err
 	}
@@ -49,104 +69,20 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code string) (
 
 	var actor *models.Actor
 	if identity != nil {
-		_, err = o.externalIdentities.UpdateTokens(ctx, models.ActorExternalIdentities{
-			Provider:              models.OAuthProvider(provider),
-			Subject:               info.SubString(),
-			EncryptedAccessToken:  &encryptedAccess,
-			EncryptedRefreshToken: encryptedRefresh,
-			TokenExpiresAt:        tokenExpiresAt,
-		})
-		if err != nil {
-			return nil, err
-		}
-		actor, err = o.actors.GetByID(ctx, identity.ActorID)
-		if err != nil {
-			return nil, err
-		}
+		actor, err = o.updateExistingIdentity(ctx, provider, info, identity, encryptedAccess, encryptedRefresh, tokenExpiresAt)
 	} else {
-		actor, err = o.actors.Register(ctx, models.Actor{
-			AuthMethod: models.AuthMethod(provider),
-			Email:      &info.Email,
-			Type:       models.HumanActorType,
-		})
-		if err != nil {
-			return nil, err
+		// A disabled provider allows existing identities to log back in,
+		// but never new sign-ups.
+		if creds.disabled {
+			return nil, fun.ErrForbidden(
+				"this project has disabled " + provider + " login; contact the project to enable it",
+			)
 		}
-		_, err = o.externalIdentities.Create(ctx, models.ActorExternalIdentities{
-			ActorID:               actor.ID,
-			Provider:              models.OAuthProvider(provider),
-			Subject:               info.SubString(),
-			Email:                 &info.Email,
-			EncryptedAccessToken:  &encryptedAccess,
-			EncryptedRefreshToken: encryptedRefresh,
-			TokenExpiresAt:        tokenExpiresAt,
-		})
-		if err != nil {
-			return nil, err
-		}
+		actor, err = o.registerNewIdentity(ctx, provider, info, encryptedAccess, encryptedRefresh, tokenExpiresAt)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return o.issueTokens(ctx, actor)
-}
-
-func (o *Operations) fetchUserInfo(ctx context.Context, provider, code string) (*oauth.UserInfo, *oauth2.Token, error) {
-	p, ok := oauth.Registry[provider]
-	if !ok {
-		return nil, nil, fun.ErrBadRequest("unsupported provider: " + provider)
-	}
-
-	providerToken, err := p.Config.Exchange(ctx, code)
-	if err != nil {
-		telemetry.Log().Error("oauth code exchange failed", zap.Error(err))
-		return nil, nil, fun.ErrUnauthorized("failed to exchange code")
-	}
-	if providerToken == nil {
-		return nil, nil, fun.ErrUnauthorized("empty token from provider")
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.Userinfo, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+providerToken.AccessToken)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer func() {
-		err = resp.Body.Close()
-		if err != nil {
-			telemetry.Log().Warn("failed to close response body", zap.Error(err))
-		}
-	}()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-	telemetry.Log().Info("userinfo response", zap.String("provider", provider), zap.String("body", string(body)))
-
-	var info oauth.UserInfo
-	err = json.Unmarshal(body, &info)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if info.SubString() == "" {
-		return nil, nil, fun.ErrUnauthorized("incomplete userinfo from provider")
-	}
-
-	if info.Email == "" && provider == "github" {
-		info.Email, err = oauth.FetchGitHubEmail(ctx, providerToken.AccessToken)
-		if err != nil {
-			return nil, nil, fun.ErrUnauthorized("could not fetch github email")
-		}
-	}
-
-	if info.Email == "" {
-		return nil, nil, fun.ErrUnauthorized("incomplete userinfo from provider")
-	}
-
-	return &info, providerToken, nil
 }

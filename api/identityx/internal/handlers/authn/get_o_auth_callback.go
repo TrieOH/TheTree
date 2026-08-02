@@ -13,7 +13,10 @@ func (h *Handlers) GetOAuthCallback(ctx context.Context, req openapi.GetOAuthCal
 	if req.Params.Code == "" {
 		return nil, fun.ErrBadRequest("missing code")
 	}
-	tokens, err := h.ops.OAuthCallback(ctx, string(req.Provider), req.Params.Code)
+	if req.Params.State == "" {
+		return nil, fun.ErrBadRequest("missing state")
+	}
+	tokens, err := h.ops.OAuthCallback(ctx, string(req.Provider), req.Params.Code, req.Params.State)
 	if err != nil {
 		return nil, err
 	}

@@ -13,9 +13,56 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// Credentials are the per-deployment client credentials for a provider.
+// For IdentityX these come from a project's configured provider row or,
+// for platform-level logins, from the environment.
+type Credentials struct {
+	ClientID     string
+	ClientSecret string
+}
+
+// Provider is a factory for oauth2.Config values. It holds the static
+// provider metadata (endpoints, scopes, userinfo URL, redirect URL) and
+// mounts a config from the credentials of the caller's scope — never from
+// package-level state.
 type Provider struct {
-	Config   *oauth2.Config
-	Userinfo string
+	Endpoint    oauth2.Endpoint
+	Scopes      []string
+	Userinfo    string
+	RedirectURL string
+}
+
+func (p Provider) Config(creds Credentials) *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     creds.ClientID,
+		ClientSecret: creds.ClientSecret,
+		RedirectURL:  p.RedirectURL,
+		Scopes:       p.Scopes,
+		Endpoint:     p.Endpoint,
+	}
+}
+
+// redirectFromEnv resolves a provider's redirect URI from the environment.
+// The redirect URI is registered in the provider console as an exact URL and
+// is the same for every scope (the callback path never carries the project).
+func redirectFromEnv(key string) string {
+	return os.Getenv(key)
+}
+
+// EnvCredentials returns the platform-level credentials for a provider,
+// ok=false when they are not configured in the environment. Used for
+// IdentityX itself (no project scope).
+func EnvCredentials(provider string) (Credentials, bool) {
+	switch provider {
+	case "google":
+		creds := Credentials{ClientID: os.Getenv("GOOGLE_CLIENT_ID"), ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET")}
+		return creds, creds.ClientID != "" && creds.ClientSecret != ""
+	case "github":
+		creds := Credentials{ClientID: os.Getenv("GITHUB_CLIENT_ID"), ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET")}
+		return creds, creds.ClientID != "" && creds.ClientSecret != ""
+	default:
+		return Credentials{}, false
+	}
 }
 
 type UserInfo struct {
@@ -28,26 +75,21 @@ func (u UserInfo) SubString() string {
 	return s
 }
 
+// Registry holds the supported providers. Credentials are deliberately not
+// here: callers resolve them per scope (project row or env) and build the
+// config via Provider.Config.
 var Registry = map[string]Provider{
 	"google": {
-		Config: &oauth2.Config{
-			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URI"),
-			Scopes:       []string{"email", "profile"},
-			Endpoint:     google.Endpoint,
-		},
-		Userinfo: "https://www.googleapis.com/oauth2/v2/userinfo",
+		Endpoint:    google.Endpoint,
+		Scopes:      []string{"email", "profile"},
+		Userinfo:    "https://www.googleapis.com/oauth2/v2/userinfo",
+		RedirectURL: redirectFromEnv("GOOGLE_REDIRECT_URI"),
 	},
 	"github": {
-		Config: &oauth2.Config{
-			ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-			ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv("GITHUB_REDIRECT_URI"),
-			Scopes:       []string{"user:email"},
-			Endpoint:     github.Endpoint,
-		},
-		Userinfo: "https://api.github.com/user",
+		Endpoint:    github.Endpoint,
+		Scopes:      []string{"user:email"},
+		Userinfo:    "https://api.github.com/user",
+		RedirectURL: redirectFromEnv("GITHUB_REDIRECT_URI"),
 	},
 }
 

@@ -60,6 +60,27 @@ func (stubStrict) GetOAuthCallback(_ context.Context, _ openapi.GetOAuthCallback
 func (stubStrict) GetOAuthConnect(_ context.Context, _ openapi.GetOAuthConnectRequestObject) (openapi.GetOAuthConnectResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) GetOAuthProviders(_ context.Context, _ openapi.GetOAuthProvidersRequestObject) (openapi.GetOAuthProvidersResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListProjectOAuthProviders(_ context.Context, _ openapi.ListProjectOAuthProvidersRequestObject) (openapi.ListProjectOAuthProvidersResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) CreateProjectOAuthProvider(_ context.Context, _ openapi.CreateProjectOAuthProviderRequestObject) (openapi.CreateProjectOAuthProviderResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) UpdateOAuthProvider(_ context.Context, _ openapi.UpdateOAuthProviderRequestObject) (openapi.UpdateOAuthProviderResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) DeleteOAuthProvider(_ context.Context, _ openapi.DeleteOAuthProviderRequestObject) (openapi.DeleteOAuthProviderResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) DisableOAuthProvider(_ context.Context, _ openapi.DisableOAuthProviderRequestObject) (openapi.DisableOAuthProviderResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) EnableOAuthProvider(_ context.Context, _ openapi.EnableOAuthProviderRequestObject) (openapi.EnableOAuthProviderResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListOrganizations(_ context.Context, _ openapi.ListOrganizationsRequestObject) (openapi.ListOrganizationsResponseObject, error) {
 	return nil, errStub
 }

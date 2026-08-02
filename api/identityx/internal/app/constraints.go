@@ -33,6 +33,10 @@ func SetupConstraintMessages() {
 		"chk_project_oauth_providers_provider": "OAuth provider must be one of: google, github",
 		"uniq_project_oauth_provider":          "this OAuth provider is already configured for this project",
 
+		// oauth_login_states
+		"chk_oauth_login_states_provider": "OAuth provider must be one of: google, github",
+		"uniq_oauth_login_state":          "duplicate OAuth login state",
+
 		// platform_roles
 		"chk_platform_roles_role": "platform role must be one of: super_admin, admin, support",
 

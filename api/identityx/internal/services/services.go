@@ -11,6 +11,7 @@ import (
 	"IdentityX/internal/services/api_keys"
 	"IdentityX/internal/services/authn"
 	"IdentityX/internal/services/capabilities"
+	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/internal/services/organizations"
 	"IdentityX/internal/services/profile_schemas"
 	"IdentityX/internal/services/profiles"
@@ -26,6 +27,7 @@ type (
 	Authn          = authn.Operations
 	Capabilities   = capabilities.Operations
 	Organizations  = organizations.Operations
+	OAuthProviders = oauth_providers.Operations
 	ProfileSchemas = profile_schemas.Operations
 	Profiles       = profiles.Operations
 	Projects       = projects.Operations
@@ -37,6 +39,7 @@ var (
 	NewAuthn          = authn.NewOperations
 	NewCapabilities   = capabilities.NewOperations
 	NewOrganizations  = organizations.NewOperations
+	NewOAuthProviders = oauth_providers.NewOperations
 	NewProfileSchemas = profile_schemas.NewOperations
 	NewProfiles       = profiles.NewOperations
 	NewProjects       = projects.NewOperations
@@ -50,6 +53,7 @@ type Operations struct {
 	Authn          *Authn
 	Capabilities   *Capabilities
 	Organizations  *Organizations
+	OAuthProviders *OAuthProviders
 	ProfileSchemas *ProfileSchemas
 	Profiles       *Profiles
 	Projects       *Projects
@@ -62,9 +66,10 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, hmacSecret string) *
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, r.ExternalIdentities),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, r.ExternalIdentities, r.OAuthProviders, r.OAuthProviders),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),
+		OAuthProviders: NewOAuthProviders(r.OAuthProviders, r.Projects, authzSvc),
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),
 		Profiles:       NewProfiles(r.Profiles, r.ProfileSchemas, r.Actors, authzSvc),
 		Projects:       NewProjects(r.CryptoKeys, r.Projects, r.Actors, authzSvc),
