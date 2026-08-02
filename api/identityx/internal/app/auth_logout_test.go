@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,7 +69,7 @@ func stubBlacklist() (ports.BlacklistRepo, matchers.ArgumentCaptor[models.Blackl
 }
 
 func doLogout(r http.Handler, accessToken, refreshToken string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/auth/logout", nil)
 	if accessToken != "" {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	}

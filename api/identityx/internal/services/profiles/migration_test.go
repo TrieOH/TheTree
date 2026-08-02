@@ -87,7 +87,7 @@ func TestGetProfileMigratesWhenNewerSchemaValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile: %v", err)
 	}
-	mock.Verify(profiles, mock.Once()).SetMigrationState(mock.AnyContext(), mock.Equal(actorID), mock.Equal(2), mock.Equal(false))
+	_, _ = mock.Verify(profiles, mock.Once()).SetMigrationState(mock.AnyContext(), mock.Equal(actorID), mock.Equal(2), mock.Equal(false))
 	if got.SchemaVersion != 2 || got.Outdated {
 		t.Fatalf("want migrated profile v2, got %+v", got)
 	}
@@ -127,7 +127,7 @@ func TestGetProfileFlagsWhenNewerSchemaInvalid(t *testing.T) {
 		t.Fatalf("GetProfile: %v", err)
 	}
 	// keep the current version, flag as outdated
-	mock.Verify(profiles, mock.Once()).SetMigrationState(mock.AnyContext(), mock.Equal(actorID), mock.Equal(1), mock.Equal(true))
+	_, _ = mock.Verify(profiles, mock.Once()).SetMigrationState(mock.AnyContext(), mock.Equal(actorID), mock.Equal(1), mock.Equal(true))
 	if !got.Outdated {
 		t.Fatalf("want flagged profile, got %+v", got)
 	}
@@ -159,7 +159,7 @@ func TestGetProfileSkipsMigrationWhenVersionsMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile: %v", err)
 	}
-	mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
+	_, _ = mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
 	if got.SchemaVersion != 2 {
 		t.Fatalf("want unchanged profile, got %+v", got)
 	}
@@ -191,7 +191,7 @@ func TestGetProfileSkipsMigrationWithoutSchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile: %v", err)
 	}
-	mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
+	_, _ = mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
 	if got.SchemaVersion != 1 {
 		t.Fatalf("want unchanged profile, got %+v", got)
 	}
@@ -225,7 +225,7 @@ func TestGetProfileSkipsMigrationWhenSchemaInactive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile: %v", err)
 	}
-	mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
+	_, _ = mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
 	if got.SchemaVersion != 1 {
 		t.Fatalf("want unchanged profile, got %+v", got)
 	}
@@ -259,7 +259,7 @@ func TestGetProfileSkipsWriteWhenAlreadyFlagged(t *testing.T) {
 		t.Fatalf("GetProfile: %v", err)
 	}
 	// state (version 1, outdated) is already persisted: a read must not churn writes
-	mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
+	_, _ = mock.Verify(profiles, mock.Never()).SetMigrationState(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[int](), mock.Any[bool]())
 	if !got.Outdated {
 		t.Fatalf("want flagged profile, got %+v", got)
 	}
@@ -291,11 +291,11 @@ func TestGetPlatformProfileMigratesWithPlatformSchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetPlatformProfile: %v", err)
 	}
-	mock.Verify(schemas, mock.Once()).Get(mock.AnyContext(), mock.Any[*uuid.UUID]())
+	_, _ = mock.Verify(schemas, mock.Once()).Get(mock.AnyContext(), mock.Any[*uuid.UUID]())
 	if captor.Values()[0] != nil {
 		t.Fatalf("platform scope must query schema with nil project_id, got %v", captor.Values()[0])
 	}
-	mock.Verify(profiles, mock.Once()).SetMigrationState(mock.AnyContext(), mock.Equal(actorID), mock.Equal(2), mock.Equal(false))
+	_, _ = mock.Verify(profiles, mock.Once()).SetMigrationState(mock.AnyContext(), mock.Equal(actorID), mock.Equal(2), mock.Equal(false))
 	if got.SchemaVersion != 2 {
 		t.Fatalf("want migrated profile v2, got %+v", got)
 	}
@@ -333,7 +333,7 @@ func TestGetProfileAllowsSelfReadWithoutMembership(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile: %v", err)
 	}
-	mock.Verify(projects, mock.Never()).GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())
+	_, _ = mock.Verify(projects, mock.Never()).GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())
 	if got.ActorID != actorID {
 		t.Fatalf("want own profile, got %+v", got)
 	}
@@ -472,7 +472,7 @@ func TestUpsertProfileAllowsAdminUpdatingOthers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpsertProfile: %v", err)
 	}
-	mock.Verify(profiles, mock.Once()).Upsert(mock.AnyContext(), mock.Any[models.ActorProfile]())
+	_, _ = mock.Verify(profiles, mock.Once()).Upsert(mock.AnyContext(), mock.Any[models.ActorProfile]())
 }
 
 // ── upsert stamps the active schema version ──────────────────────────────
@@ -502,7 +502,7 @@ func TestUpsertProfileStampsSchemaVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpsertProfile: %v", err)
 	}
-	mock.Verify(profiles, mock.Once()).Upsert(mock.AnyContext(), mock.Any[models.ActorProfile]())
+	_, _ = mock.Verify(profiles, mock.Once()).Upsert(mock.AnyContext(), mock.Any[models.ActorProfile]())
 	upserted := captor.Values()[0]
 	if upserted.SchemaVersion != 3 || upserted.Outdated {
 		t.Fatalf("want profile stamped v3, not outdated, got %+v", upserted)

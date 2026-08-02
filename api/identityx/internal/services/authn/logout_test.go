@@ -41,7 +41,7 @@ func stubCryptoKeys(pair *testPair) ports.CryptoKeysRepo {
 }
 
 func appendTargets(captor matchers.ArgumentCaptor[models.BlacklistEntry]) []string {
-	var targets []string
+	targets := make([]string, 0, len(captor.Values()))
 	for _, e := range captor.Values() {
 		targets = append(targets, e.Target)
 	}
