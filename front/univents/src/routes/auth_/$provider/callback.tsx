@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -10,7 +10,7 @@ const callbackSearchSchema = z.object({
   state: z.string().optional(),
 });
 
-export const Route = createFileRoute("/auth/$provider/callback")({
+export const Route = createFileRoute("/auth_/$provider/callback")({
   component: OAuthCallbackPage,
   validateSearch: callbackSearchSchema,
   params: {
@@ -27,6 +27,7 @@ function OAuthCallbackPage() {
   const { code, state } = Route.useSearch();
   const { auth } = useAuth();
   const called = useRef(false);
+  const [result, setResult] = useState<string>();
 
   useEffect(() => {
     if (called.current) return;
@@ -34,8 +35,7 @@ function OAuthCallbackPage() {
 
     const completeLogin = async () => {
       if (!code || !state) {
-        toast.error("Callback OAuth inválido");
-        await navigate({ to: "/auth", replace: true });
+        setResult("Callback OAuth inválido: code ou state ausente.");
         return;
       }
 
@@ -45,23 +45,14 @@ function OAuthCallbackPage() {
           throw new Error(response.message || "Não foi possível concluir o login");
         }
 
-        const currentAuth = router.options.context.auth;
-        if (currentAuth) {
-          router.update({
-            context: {
-              ...router.options.context,
-              auth: { ...currentAuth, isAuthenticated: true },
-            },
-          });
-        }
         router.options.context.queryClient.invalidateQueries();
         toast.success("Login realizado com sucesso");
         await navigate({ to: "/profile", replace: true });
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Falha na autenticação OAuth",
-        );
-        await navigate({ to: "/auth", replace: true });
+        const message =
+          error instanceof Error ? error.message : "Falha na autenticação OAuth";
+        setResult(message);
+        toast.error(message);
       }
     };
 
@@ -70,12 +61,25 @@ function OAuthCallbackPage() {
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-4 border-secondary border-t-primary" />
-        <h1 className="text-lg font-semibold">Entrando…</h1>
+      <div className="max-w-md space-y-4 text-center">
+        {!result && (
+          <div className="mx-auto size-12 animate-spin rounded-full border-4 border-secondary border-t-primary" />
+        )}
+        <h1 className="text-lg font-semibold">
+          {result ? "Resultado da autenticação" : "Entrando…"}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Aguarde enquanto concluímos sua autenticação.
+          {result ?? "Aguarde enquanto concluímos sua autenticação."}
         </p>
+        {result && (
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/profile", replace: true })}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Continuar
+          </button>
+        )}
       </div>
     </main>
   );

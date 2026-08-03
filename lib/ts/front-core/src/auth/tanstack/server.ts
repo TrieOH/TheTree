@@ -311,15 +311,15 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     async logout(): Promise<ServerAuthResult> {
       const current = await session();
       const resolution = await validTokens();
-      const accessToken = resolution.success
-        ? resolution.tokens.access_token
-        : undefined;
       let result: ServerAuthResult = { success: true, code: 204 };
 
-      if (accessToken) {
+      if (resolution.success) {
         const response = await fetch(joinURL(config.identityX.baseURL, "/auth/logout"), {
           method: "POST",
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: {
+            Authorization: `Bearer ${resolution.tokens.access_token}`,
+            "Refresh-Token": resolution.tokens.refresh_token,
+          },
         });
         result = normalize(response, await readEnvelope(response));
       }

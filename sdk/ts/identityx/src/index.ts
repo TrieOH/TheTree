@@ -16,5 +16,10 @@ export type {
 } from "./types/token-types";
 export type {
   OAuthProviderDiscoveryItem,
-  ActorProfile
+  ActorProfile,
+  JsonSchemaProperty,
+  ProfileData,
+  ProfileSchema,
+  UpsertProfileRequest,
+  UpsertProfileSchemaRequest,
 } from "./types/auth-types";

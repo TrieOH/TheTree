@@ -86,6 +86,8 @@ export interface OAuthProviderOutput {
   provider: SupportedOAuthProviders;
   /** The provider-side client ID. The secret is never returned. */
   client_id: string;
+  /** The provider redirect URI this project registered, called back after consent. */
+  callback_url?: string;
   /** Whether new logins via this provider are accepted. */
   enabled: boolean;
   created_at: string;

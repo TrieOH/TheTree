@@ -88,4 +88,10 @@ export interface CreateOAuthProviderRequest {
      * @minLength 1
      */
   client_secret: string;
+  /**
+     * The provider redirect URI this project registered in the
+     * provider console. Called back after consent.
+     * @minLength 1
+     */
+  callback_url: string;
 }

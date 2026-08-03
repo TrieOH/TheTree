@@ -5,7 +5,7 @@ import { env } from "./env";
 import type { IntrospectResponse } from "../types/instropect-types";
 import { AuthTokens } from "../types/token-types";
 import type { OAuthProviderI } from "../types/common-types";
-import { ActorProfile, OAuthProviderDiscoveryItem, UpsertProfileRequest } from "../types/auth-types";
+import { ActorProfile, OAuthProviderDiscoveryItem, ProfileSchema, UpsertProfileRequest, UpsertProfileSchemaRequest } from "../types/auth-types";
 
 export interface AuthCallbacks {
   onLogin?: (res: ApiResponse<AuthTokens>) => void;
@@ -165,6 +165,51 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
     const url = `/projects/${projectId}/actors/${actorId}/profile`;
     return apiInstance.get<ActorProfile>(url);
+  },
+
+  getPlatformProfile: async (actorId: string) =>
+    apiInstance.get<ActorProfile>(`/actors/${actorId}/profile`),
+
+  upsertPlatformProfile: async (actorId: string, data: UpsertProfileRequest) =>
+    apiInstance.put<ActorProfile>(`/actors/${actorId}/profile`, data),
+
+  getProfileSchema: async (overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+    const url = projectId
+      ? `/projects/${projectId}/profile-schema`
+      : "/profile-schema";
+    return apiInstance.get<ProfileSchema>(url);
+  },
+
+  upsertProfileSchema: async (
+    data: UpsertProfileSchemaRequest,
+    overrideProjectId?: string,
+  ) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+    const url = projectId
+      ? `/projects/${projectId}/profile-schema`
+      : "/profile-schema";
+    return apiInstance.put<ProfileSchema>(url, data);
+  },
+
+  getActorProfile: async (actorId: string, overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    return projectId
+      ? apiInstance.get<ActorProfile>(`/projects/${projectId}/actors/${actorId}/profile`)
+      : apiInstance.get<ActorProfile>(`/actors/${actorId}/profile`);
+  },
+
+  upsertActorProfile: async (
+    actorId: string,
+    data: UpsertProfileRequest,
+    overrideProjectId?: string,
+  ) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    return projectId
+      ? apiInstance.put<ActorProfile>(`/projects/${projectId}/actors/${actorId}/profile`, data)
+      : apiInstance.put<ActorProfile>(`/actors/${actorId}/profile`, data);
   },
 
   upsertProjectProfile: async (

@@ -177,11 +177,18 @@ function RouteComponent() {
           },
           { name: "client_id", label: "Client ID", required: true },
           { name: "client_secret", label: "Client secret", required: true },
+          {
+            name: "callback_url",
+            label: "Callback URL",
+            placeholder: "http://localhost:3002/auth/google/callback",
+            required: true,
+          },
         ]}
         defaultValues={{
           provider: defaultProvider,
           client_id: "",
           client_secret: "",
+          callback_url: "",
         }}
         formId={`create-oauth-provider-${availableProviders.join("-")}`}
         submitLabel="Save provider"
@@ -212,10 +219,16 @@ function RouteComponent() {
         fields={[
           { name: "client_id", label: "Client ID", required: true },
           { name: "client_secret", label: "New client secret" },
+          {
+            name: "callback_url",
+            label: "Callback URL",
+            required: true,
+          },
         ]}
         defaultValues={{
           client_id: editing?.client_id ?? "",
           client_secret: "",
+          callback_url: editing?.callback_url ?? "",
         }}
         formId="edit-oauth-provider"
         submitLabel="Save changes"

@@ -29,7 +29,7 @@ import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/inde
 import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
 import { Route as EventsSlugProfileRouteImport } from './routes/events/$slug/profile'
-import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provider/callback'
+import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
@@ -156,9 +156,9 @@ const EventsSlugProfileRoute = EventsSlugProfileRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
-  id: '/$provider/callback',
-  path: '/$provider/callback',
-  getParentRoute: () => AuthRoute,
+  id: '/auth_/$provider/callback',
+  path: '/auth/$provider/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsEventIdIndexLazyRoute =
   AdminEventsEventIdIndexLazyRouteImport.update({
@@ -319,7 +319,7 @@ const AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
@@ -359,7 +359,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
@@ -399,7 +399,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
@@ -410,7 +410,7 @@ export interface FileRoutesById {
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
-  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
+  '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/profile': typeof EventsSlugProfileRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
@@ -531,7 +531,7 @@ export interface FileRouteTypes {
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
-    | '/auth/$provider/callback'
+    | '/auth_/$provider/callback'
     | '/events/$slug/profile'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
@@ -561,7 +561,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  AuthRoute: typeof AuthRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ComparativeRoute: typeof ComparativeRoute
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -571,6 +571,7 @@ export interface RootRouteChildren {
   SignaturesRevokeRoute: typeof SignaturesRevokeRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
+  AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
   EventsSlugProfileRoute: typeof EventsSlugProfileRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
@@ -707,12 +708,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/$provider/callback': {
-      id: '/auth/$provider/callback'
-      path: '/$provider/callback'
+    '/auth_/$provider/callback': {
+      id: '/auth_/$provider/callback'
+      path: '/auth/$provider/callback'
       fullPath: '/auth/$provider/callback'
       preLoaderRoute: typeof AuthProviderCallbackRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/events/$eventId/': {
       id: '/admin/events/$eventId/'
@@ -922,20 +923,10 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface AuthRouteChildren {
-  AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthProviderCallbackRoute: AuthProviderCallbackRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  AuthRoute: AuthRouteWithChildren,
+  AuthRoute: AuthRoute,
   ComparativeRoute: ComparativeRoute,
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
@@ -945,6 +936,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignaturesRevokeRoute: SignaturesRevokeRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
+  AuthProviderCallbackRoute: AuthProviderCallbackRoute,
   EventsSlugProfileRoute: EventsSlugProfileRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugTicketsRoute: EventsSlugTicketsRoute,

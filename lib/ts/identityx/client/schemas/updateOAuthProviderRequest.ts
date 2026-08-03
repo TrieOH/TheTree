@@ -86,4 +86,9 @@ export interface UpdateOAuthProviderRequest {
      * @minLength 1
      */
   client_secret?: string;
+  /**
+     * The provider redirect URI. Omitted keeps the stored value.
+     * @minLength 1
+     */
+  callback_url?: string;
 }

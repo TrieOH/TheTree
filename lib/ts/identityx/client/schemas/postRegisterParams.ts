@@ -75,8 +75,6 @@
  * OpenAPI spec version: 0.22.0
  */
 import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-import type { Uuid } from './uuid';
-
 export type PostRegisterParams = {
 /**
  * Project to scope the operation to. Omit for IdentityX itself.
