@@ -39,6 +39,12 @@ func (o *Operations) Update(ctx context.Context, payload models.UpdateOAuthProvi
 			return nil, err
 		}
 	}
+	if payload.CallbackURL != nil {
+		row, err = o.providers.UpdateCallbackURL(ctx, payload.ID, *payload.CallbackURL)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return row, nil
 }

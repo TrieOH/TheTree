@@ -29,6 +29,7 @@ func mapProjectOAuthProvider(src sqlc.ProjectOauthProvider) models.ProjectOAuthP
 		Provider:              models.OAuthProvider(src.Provider),
 		ClientID:              src.ClientID,
 		EncryptedClientSecret: src.EncryptedClientSecret,
+		CallbackURL:           src.CallbackUrl,
 		Scopes:                src.Scopes,
 		Enabled:               src.Enabled,
 		CreatedAt:             src.CreatedAt,

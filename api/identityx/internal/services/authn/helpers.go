@@ -177,7 +177,11 @@ func (o *Operations) projectCredentials(ctx context.Context, provider string, pr
 		return resolvedCredentials{}, err
 	}
 	return resolvedCredentials{
-		creds:    oauth.Credentials{ClientID: row.ClientID, ClientSecret: string(secret)},
+		creds: oauth.Credentials{
+			ClientID:     row.ClientID,
+			ClientSecret: string(secret),
+			RedirectURL:  row.CallbackURL,
+		},
 		disabled: !row.Enabled,
 	}, nil
 }

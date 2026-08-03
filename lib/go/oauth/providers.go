@@ -19,6 +19,10 @@ import (
 type Credentials struct {
 	ClientID     string
 	ClientSecret string
+	// RedirectURL overrides the provider's static redirect URI when the
+	// scope registers its own (e.g. a project's callback_url). Empty means
+	// the provider-level value is used.
+	RedirectURL string
 }
 
 // Provider is a factory for oauth2.Config values. It holds the static
@@ -33,10 +37,14 @@ type Provider struct {
 }
 
 func (p Provider) Config(creds Credentials) *oauth2.Config {
+	redirectURL := p.RedirectURL
+	if creds.RedirectURL != "" {
+		redirectURL = creds.RedirectURL
+	}
 	return &oauth2.Config{
 		ClientID:     creds.ClientID,
 		ClientSecret: creds.ClientSecret,
-		RedirectURL:  p.RedirectURL,
+		RedirectURL:  redirectURL,
 		Scopes:       p.Scopes,
 		Endpoint:     p.Endpoint,
 	}

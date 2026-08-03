@@ -1569,6 +1569,7 @@ paths:
               provider: google
               client_id: 1234567890-abc.apps.googleusercontent.com
               client_secret: GOCSPX-example
+              callback_url: https://myapp.example.com/auth/callback
       responses:
         '201':
           description: Provider configured
@@ -2494,6 +2495,10 @@ components:
         client_id:
           type: string
           description: The provider-side client ID. The secret is never returned.
+        callback_url:
+          type: string
+          format: uri
+          description: The provider redirect URI this project registered, called back after consent.
         enabled:
           type: boolean
           description: Whether new logins via this provider are accepted.
@@ -2507,7 +2512,7 @@ components:
 
     CreateOAuthProviderRequest:
       type: object
-      required: [provider, client_id, client_secret]
+      required: [provider, client_id, client_secret, callback_url]
       properties:
         provider:
           $ref: '#/components/schemas/SupportedOAuthProviders'
@@ -2519,6 +2524,13 @@ components:
           type: string
           minLength: 1
           description: The provider-side client secret. Encrypted at rest.
+        callback_url:
+          type: string
+          format: uri
+          minLength: 1
+          description: |
+            The provider redirect URI this project registered in the
+            provider console. Called back after consent.
 
     UpdateOAuthProviderRequest:
       type: object
@@ -2531,6 +2543,11 @@ components:
           type: string
           minLength: 1
           description: The provider-side client secret. Omitted keeps the stored value.
+        callback_url:
+          type: string
+          format: uri
+          minLength: 1
+          description: The provider redirect URI. Omitted keeps the stored value.
 
     CredentialRequest:
       type: object

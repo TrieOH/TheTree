@@ -14,6 +14,7 @@ type ProjectOAuthProvidersRepo interface {
 	GetByProjectAndProvider(ctx context.Context, projectID uuid.UUID, provider models.OAuthProvider) (*models.ProjectOAuthProviders, error)
 	UpdateClientID(ctx context.Context, id uuid.UUID, clientID string) (*models.ProjectOAuthProviders, error)
 	UpdateClientSecret(ctx context.Context, id uuid.UUID, encryptedSecret string) (*models.ProjectOAuthProviders, error)
+	UpdateCallbackURL(ctx context.Context, id uuid.UUID, callbackURL string) (*models.ProjectOAuthProviders, error)
 	SetEnabled(ctx context.Context, id uuid.UUID, enabled bool) (*models.ProjectOAuthProviders, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }

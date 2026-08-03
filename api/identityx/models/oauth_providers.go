@@ -13,14 +13,17 @@ type CreateOAuthProviderInput struct {
 	Provider     OAuthProvider `json:"provider"      validate:"required,oneof=google github"`
 	ClientID     string        `json:"client_id"     validate:"required,min=1"`
 	ClientSecret string        `json:"client_secret" validate:"required,min=1"`
+	CallbackURL  string        `json:"callback_url"  validate:"required,url"`
 }
 
 // UpdateOAuthProviderInput is the partial payload for editing a provider.
-// A nil ClientID / ClientSecret leaves the stored value untouched.
+// A nil ClientID / ClientSecret / CallbackURL leaves the stored value
+// untouched.
 type UpdateOAuthProviderInput struct {
 	ID           uuid.UUID `json:"-"`
 	ClientID     *string   `json:"client_id"     validate:"omitempty,min=1"`
 	ClientSecret *string   `json:"client_secret" validate:"omitempty,min=1"`
+	CallbackURL  *string   `json:"callback_url"  validate:"omitempty,url"`
 }
 
 // OAuthLoginState is one connect attempt: the opaque state token handed to

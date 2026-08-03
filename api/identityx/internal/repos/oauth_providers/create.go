@@ -17,6 +17,7 @@ func (repo *Repo) Create(ctx context.Context, toCreate models.ProjectOAuthProvid
 		Provider:              string(toCreate.Provider),
 		ClientID:              toCreate.ClientID,
 		EncryptedClientSecret: toCreate.EncryptedClientSecret,
+		CallbackUrl:           toCreate.CallbackURL,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)

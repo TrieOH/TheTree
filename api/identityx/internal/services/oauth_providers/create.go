@@ -33,6 +33,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateOAuthProvi
 		Provider:              payload.Provider,
 		ClientID:              payload.ClientID,
 		EncryptedClientSecret: encryptedSecret,
+		CallbackURL:           payload.CallbackURL,
 		Enabled:               true,
 	})
 	if err != nil {

@@ -100,6 +100,7 @@ type ProjectOAuthProviders struct {
 	Provider              OAuthProvider `json:"provider"`
 	ClientID              string        `json:"client_id"`
 	EncryptedClientSecret string        `json:"-"`
+	CallbackURL           string        `json:"callback_url"`
 	Scopes                []string      `json:"scopes"`
 	Enabled               bool          `json:"enabled"`
 	CreatedAt             time.Time     `json:"created_at"`
