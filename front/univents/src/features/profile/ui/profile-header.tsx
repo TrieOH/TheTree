@@ -98,7 +98,7 @@ export function ProfileHeader({
             />
           </div>
           {ownProfile && <DesktopActions />}
-          <div className="pt-[72px]">
+          <div className="pt-18">
             <h1 className="text-3xl font-semibold tracking-tight text-card-foreground">
               {name}
             </h1>

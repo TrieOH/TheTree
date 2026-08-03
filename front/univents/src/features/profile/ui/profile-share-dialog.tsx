@@ -25,7 +25,7 @@ export function ProfileShareDialog({
       <DialogTrigger
         className={cn(
           "inline-flex size-11 items-center justify-center rounded-full",
-          "border border-white/40 bg-background/90 text-foreground shadow-lg",
+          "border border-border/40 bg-background/90 text-foreground shadow-lg",
           "backdrop-blur-sm transition-transform active:scale-95",
           className,
         )}
@@ -34,13 +34,13 @@ export function ProfileShareDialog({
         <QrCode className="size-5" />
       </DialogTrigger>
       <DialogContent className="max-w-[calc(100%-2rem)] shadow-2xl sm:max-w-sm">
-        <DialogHeader className="pr-8 text-center">
+        <DialogHeader className="text-center">
           <DialogTitle>Compartilhar perfil</DialogTitle>
           <DialogDescription>
             Escaneie o QR Code para abrir este perfil.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex justify-center rounded-xl bg-white p-4 shadow-inner">
+        <div className="flex justify-center rounded-xl bg-background p-4 shadow-inner">
           <ProfileQrCode value={profileUrl} size={220} />
         </div>
         <button
