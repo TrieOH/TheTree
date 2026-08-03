@@ -207,6 +207,7 @@ export function ProfileEditor({
             <Button
               type="button"
               variant="ghost"
+              className="h-8 rounded-sm"
               disabled={saving}
               onClick={onCancel}
             >
@@ -216,7 +217,7 @@ export function ProfileEditor({
             <p className="hidden text-sm text-muted-foreground sm:block">
               Revise a prévia antes de salvar.
             </p>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="h-8 rounded-sm">
               <Save className="size-4" />
               {saving ? "Salvando…" : "Salvar alterações"}
             </Button>

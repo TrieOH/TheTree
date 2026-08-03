@@ -6,7 +6,6 @@ import {
   LogOut,
   Palette,
   Pencil,
-  Settings2,
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
@@ -35,10 +34,9 @@ export function ProfileConfigPage() {
   useEffect(() => setInplaceEditEnabled(readInplaceEditPreference()), []);
 
   return (
-    <main className="min-h-dvh bg-background pb-28 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden lg:pb-0">
-      <header className="relative shrink-0 overflow-hidden border-b border-border bg-card shadow-sm">
-        <div className="absolute inset-0 bg-linear-to-r from-primary/10 via-transparent to-primary/5" />
-        <div className="relative mx-auto flex max-w-7xl items-center gap-4 px-4 py-5 md:px-6">
+    <main className="min-h-dvh min-w-0 overflow-x-clip bg-background pb-28 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden lg:pb-0">
+      <header className="sticky top-0 z-40 shrink-0 overflow-hidden border-b border-border bg-card/95 shadow-sm backdrop-blur">
+        <div className="relative mx-auto flex min-w-0 max-w-7xl items-center gap-3 px-3 py-4 sm:gap-4 sm:px-4 md:px-6 md:py-5">
           <Link
             to="/profile"
             className={buttonVariants({
@@ -50,27 +48,24 @@ export function ProfileConfigPage() {
           >
             <ArrowLeft className="size-4" />
           </Link>
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
-            <Settings2 className="size-5" />
-          </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold sm:text-2xl">
+            <h1 className="truncate text-lg font-bold sm:text-xl">
               Configurações do perfil
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground sm:text-sm">
               Personalize sua conta, aparência e preferências.
             </p>
           </div>
         </div>
       </header>
-      <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-5 md:px-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="rounded-xl border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:min-h-0 lg:overflow-y-auto">
+      <div className="mx-auto grid w-full min-w-0 max-w-7xl gap-4 px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:py-4">
+        <aside className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:self-start">
           <SectionHeading
             icon={UserRound}
             title="Conta"
             description="Sessão, dados pessoais e acesso."
           />
-          <Accordion multiple defaultValue={LEFT_PROFILE_OPTIONS}>
+          <Accordion defaultValue={LEFT_PROFILE_OPTIONS}>
             <ProfileOption
               value="account"
               icon={UserRound}
@@ -83,7 +78,7 @@ export function ProfileConfigPage() {
             </ProfileOption>
           </Accordion>
         </aside>
-        <section className="rounded-xl border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:min-h-0 lg:overflow-y-auto">
+        <section className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:h-full lg:overflow-y-auto">
           <SectionHeading
             icon={SlidersHorizontal}
             title="Preferências"
@@ -105,8 +100,8 @@ export function ProfileConfigPage() {
               <AppearancePreferencesContent />
             </ProfileOption>
             <ProfileOption value="editing" icon={Pencil} title="Modo de edição">
-              <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-background p-3">
-                <div>
+              <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0">
                   <p className="text-sm font-medium">Edição rápida</p>
                   <p className="text-xs text-muted-foreground">
                     Ativa os atalhos de edição disponíveis nas áreas do sistema.
@@ -116,6 +111,7 @@ export function ProfileConfigPage() {
                   type="button"
                   variant={inplaceEditEnabled ? "default" : "outline"}
                   size="sm"
+                  className="w-full shrink-0 sm:w-auto"
                   onClick={() =>
                     setInplaceEditEnabled((enabled) => {
                       const next = !enabled;
@@ -149,15 +145,17 @@ function ProfileOption({
   return (
     <AccordionItem
       value={value}
-      className="mb-2 rounded-lg border border-border bg-background px-3 last:mb-0"
+      className="mb-2 min-w-0 rounded-lg border border-border bg-background px-3 last:mb-0"
     >
       <AccordionTrigger className="py-3 hover:no-underline">
-        <span className="flex items-center gap-2">
+        <span className="flex min-w-0 items-center gap-2 text-left">
           <Icon className="size-4 text-muted-foreground" />
           {title}
         </span>
       </AccordionTrigger>
-      <AccordionContent className="pb-3">{children}</AccordionContent>
+      <AccordionContent className="min-w-0 max-w-full overflow-x-auto pb-3">
+        {children}
+      </AccordionContent>
     </AccordionItem>
   );
 }
@@ -172,13 +170,13 @@ function SectionHeading({
   description: string;
 }) {
   return (
-    <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
+    <div className="mb-4 flex min-w-0 items-center gap-3 border-b border-border pb-4">
       <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon className="size-4" />
       </div>
-      <div>
-        <h2 className="font-semibold">{title}</h2>
-        <p className="text-xs text-muted-foreground">{description}</p>
+      <div className="min-w-0">
+        <h2 className="truncate font-semibold">{title}</h2>
+        <p className="truncate text-xs text-muted-foreground">{description}</p>
       </div>
     </div>
   );

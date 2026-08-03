@@ -75,15 +75,28 @@ export function ProfileHeader({
             )}
           </div>
           {ownProfile && (
-            <Link
-              to="/profile/edit"
-              className={buttonVariants({
-                className: "mb-4 h-11 w-full rounded-lg shadow-sm",
-              })}
-            >
-              <Pencil className="mr-2 size-4" />
-              Editar perfil
-            </Link>
+            <div className="mb-4 flex gap-2">
+              <Link
+                to="/profile/edit"
+                className={buttonVariants({
+                  className: "h-11 flex-1 rounded-lg shadow-sm",
+                })}
+              >
+                <Pencil className="mr-2 size-4" />
+                Editar perfil
+              </Link>
+              <Link
+                to="/profile/config"
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "icon",
+                  className: "size-11 shrink-0 rounded-lg shadow-sm",
+                })}
+                aria-label="Configurações do perfil"
+              >
+                <Settings className="size-4" />
+              </Link>
+            </div>
           )}
         </div>
       </div>
