@@ -3,6 +3,8 @@ import { createTanStackIdentityXBff } from "@trieoh/front-core/auth/tanstack/ser
 import { z } from "zod";
 import { env } from "@/env";
 
+const providerSchema = z.enum(["github", "google"]);
+
 const bff = createTanStackIdentityXBff({
   identityX: {
     baseURL: env.VITE_AUTH_API_URL,
@@ -19,6 +21,22 @@ const bff = createTanStackIdentityXBff({
 export const loginServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ email: z.email(), password: z.string().min(1) }))
   .handler(({ data }) => bff.login(data.email, data.password));
+
+export const loginWithProviderServerFn = createServerFn({ method: "POST" })
+  .validator(z.object({ provider: providerSchema }))
+  .handler(({ data }) => bff.loginWithProvider(data.provider));
+
+export const completeProviderLoginServerFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      provider: providerSchema,
+      code: z.string().min(1),
+      state: z.string().min(1),
+    }),
+  )
+  .handler(({ data }) =>
+    bff.completeProviderLogin(data.provider, data.code, data.state),
+  );
 
 export const logoutServerFn = createServerFn({ method: "POST" }).handler(() =>
   bff.logout(),
