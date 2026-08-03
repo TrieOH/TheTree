@@ -6,6 +6,7 @@ import (
 
 	"lib/telemetry"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -27,9 +28,9 @@ func (o *Operations) GetSchema(ctx context.Context, projectID *uuid.UUID) (*mode
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, *projectID, nil, models.ProjectRoleMember)
-	if err != nil {
-		return nil, err
+	// any actor scoped to the project can read its schema
+	if ident.Sub.ProjectID == nil || *ident.Sub.ProjectID != *projectID {
+		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return o.schemas.Get(ctx, projectID)
