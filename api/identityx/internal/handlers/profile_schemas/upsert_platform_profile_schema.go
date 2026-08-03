@@ -1,8 +1,6 @@
 package profile_schemas
 
 import (
-	"encoding/json"
-
 	"context"
 	"time"
 
@@ -12,7 +10,7 @@ import (
 
 func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
 	schema, err := h.ops.UpsertSchema(ctx, models.UpsertProfileSchemaInput{
-		Schema: json.RawMessage(req.Body.Schema),
+		Schema: req.Body.Schema,
 		Active: req.Body.Active,
 	})
 	if err != nil {

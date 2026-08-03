@@ -2779,7 +2779,7 @@ components:
           type: object
           description: Profile data to store, validated against the active schema.
           additionalProperties: true
-          x-go-type: '[]byte'
+          x-go-type: 'json.RawMessage'
 
     ProjectProfileSchema:
       x-go-type: models.ProjectProfileSchema
@@ -2818,7 +2818,7 @@ components:
           type: object
           description: The JSON Schema to store.
           additionalProperties: true
-          x-go-type: '[]byte'
+          x-go-type: 'json.RawMessage'
         active:
           type: boolean
           description: Whether the schema should become active immediately.

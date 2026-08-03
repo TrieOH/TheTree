@@ -1,8 +1,6 @@
 package profile_schemas
 
 import (
-	"encoding/json"
-
 	"context"
 	"time"
 
@@ -13,7 +11,7 @@ import (
 func (h *Handlers) UpsertProjectProfileSchema(ctx context.Context, req openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
 	schema, err := h.ops.UpsertSchema(ctx, models.UpsertProfileSchemaInput{
 		ProjectID: &req.ProjectId,
-		Schema:    json.RawMessage(req.Body.Schema),
+		Schema:    req.Body.Schema,
 		Active:    req.Body.Active,
 	})
 	if err != nil {
