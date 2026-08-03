@@ -1907,7 +1907,7 @@ paths:
       summary: Get the project profile schema
       description: |
         Fetches the JSON Schema used to validate actor profiles within
-        the project. Requires a platform-level client.
+        the project. Any actor scoped to the project can read it.
       security:
         - bearerAuth: []
       parameters:
