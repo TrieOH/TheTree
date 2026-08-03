@@ -1,6 +1,13 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { LayoutContext } from "@trieoh/ui-base";
-import { Component, Fingerprint, IdCard, KeySquare, Link2, User2 } from "lucide-react";
+import {
+  Component,
+  Fingerprint,
+  IdCard,
+  KeySquare,
+  Link2,
+  User2,
+} from "lucide-react";
 import { useState } from "react";
 import z from "zod";
 import { cn } from "@/shared/lib/utils";

@@ -40,9 +40,15 @@ function OAuthCallbackPage() {
       }
 
       try {
-        const response = await auth.completeProviderLogin(provider, code, state);
+        const response = await auth.completeProviderLogin(
+          provider,
+          code,
+          state,
+        );
         if (!response.success) {
-          throw new Error(response.message || "Não foi possível concluir o login");
+          throw new Error(
+            response.message || "Não foi possível concluir o login",
+          );
         }
 
         router.options.context.queryClient.invalidateQueries();
@@ -50,7 +56,9 @@ function OAuthCallbackPage() {
         await navigate({ to: "/profile", replace: true });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Falha na autenticação OAuth";
+          error instanceof Error
+            ? error.message
+            : "Falha na autenticação OAuth";
         setResult(message);
         toast.error(message);
       }

@@ -16,6 +16,7 @@ export const env = createEnv({
   client: {
     VITE_APP_TITLE: z.string().min(1).optional(),
     VITE_API_URL: z.url(),
+    VITE_AUTH_TRANSPORT: z.enum(["bff", "direct"]).default("bff"),
     VITE_PUBLIC_POSTHOG_HOST: z.url(),
     VITE_PUBLIC_POSTHOG_KEY: z.string(),
   },

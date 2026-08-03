@@ -67,7 +67,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider adapter={identityXAuthAdapter} baseURL={env.VITE_AUTH_API_URL}>
+            <AuthProvider
+              adapter={identityXAuthAdapter}
+              baseURL={env.VITE_AUTH_API_URL}
+            >
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools

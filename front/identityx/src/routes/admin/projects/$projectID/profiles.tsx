@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useLayoutHeader } from "@trieoh/ui-base";
 import { Braces, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +10,6 @@ import {
 } from "@/features/profiles/api";
 import { DEFAULT_PROFILE_SCHEMA } from "@/features/profiles/model";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
-import { useLayoutHeader } from "@trieoh/ui-base";
 
 export const Route = createFileRoute("/admin/projects/$projectID/profiles")({
   component: RouteComponent,
@@ -47,7 +47,9 @@ function RouteComponent() {
       toast.success("Profile schema saved");
     },
     onError: (error: Error) =>
-      toast.error(error instanceof SyntaxError ? "Invalid JSON schema" : error.message),
+      toast.error(
+        error instanceof SyntaxError ? "Invalid JSON schema" : error.message,
+      ),
   });
 
   const header = useMemo(

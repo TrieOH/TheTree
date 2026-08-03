@@ -58,6 +58,7 @@ export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
         .startsWith("/")
         .refine((path) => !path.startsWith("//")),
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+      target: z.enum(["api", "identityx"]).optional(),
       body: z.json().optional(),
       headers: z.record(z.string(), z.string()).optional(),
     }),
