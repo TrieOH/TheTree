@@ -29,7 +29,7 @@ func (o *Operations) GetSchema(ctx context.Context, projectID *uuid.UUID) (*mode
 	}
 
 	// any actor scoped to the project can read its schema
-	if ident.Sub.ProjectID == nil || *ident.Sub.ProjectID != *projectID {
+	if ident.Sub.ProjectID != nil && *ident.Sub.ProjectID != *projectID {
 		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
