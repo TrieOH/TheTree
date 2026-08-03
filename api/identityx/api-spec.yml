@@ -2057,7 +2057,8 @@ paths:
       summary: Get a project actor's profile
       description: |
         Fetches the project-scoped profile of the given actor within the
-        project. Requires a platform-level client.
+        project. Project users may read their own profile; project members
+        may read any profile in the project.
       security:
         - bearerAuth: []
         - apiKeyAuth: []
@@ -2091,7 +2092,8 @@ paths:
       description: |
         Sets (or replaces) the project-scoped profile of the given actor
         within the project, validating against the project's active
-        profile schema. Requires a platform-level client.
+        profile schema. Project users may update their own profile;
+        project admins/owners may update any profile in the project.
       security:
         - bearerAuth: []
         - apiKeyAuth: []
