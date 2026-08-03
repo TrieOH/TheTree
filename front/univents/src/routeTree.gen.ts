@@ -23,12 +23,14 @@ import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as ProfileConfigRouteImport } from './routes/profile/config'
+import { Route as ProfileActorIdRouteImport } from './routes/profile/$actorId'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
-import { Route as EventsSlugProfileRouteImport } from './routes/events/$slug/profile'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
@@ -121,6 +123,21 @@ const SignatureRequestsFulfillRoute =
     path: '/signature-requests/fulfill',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileConfigRoute = ProfileConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileActorIdRoute = ProfileActorIdRouteImport.update({
+  id: '/$actorId',
+  path: '/$actorId',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const AdminUploadsRoute = AdminUploadsRouteImport.update({
   id: '/uploads',
   path: '/uploads',
@@ -148,11 +165,6 @@ const EventsSlugTicketsRoute = EventsSlugTicketsRouteImport.update({
 const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
   id: '/events/$slug/programs',
   path: '/events/$slug/programs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsSlugProfileRoute = EventsSlugProfileRouteImport.update({
-  id: '/events/$slug/profile',
-  path: '/events/$slug/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
@@ -323,15 +335,17 @@ export interface FileRoutesByFullPath {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
-  '/events/$slug/profile': typeof EventsSlugProfileRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -363,15 +377,17 @@ export interface FileRoutesByTo {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
-  '/events/$slug/profile': typeof EventsSlugProfileRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
@@ -403,15 +419,17 @@ export interface FileRoutesById {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
-  '/events/$slug/profile': typeof EventsSlugProfileRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -448,12 +466,14 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/profile/$actorId'
+    | '/profile/config'
+    | '/profile/edit'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
     | '/auth/$provider/callback'
-    | '/events/$slug/profile'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -488,12 +508,14 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/profile/$actorId'
+    | '/profile/config'
+    | '/profile/edit'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events'
     | '/auth/$provider/callback'
-    | '/events/$slug/profile'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events'
@@ -527,12 +549,14 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/profile/$actorId'
+    | '/profile/config'
+    | '/profile/edit'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
     | '/auth_/$provider/callback'
-    | '/events/$slug/profile'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -565,14 +589,13 @@ export interface RootRouteChildren {
   ComparativeRoute: typeof ComparativeRoute
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
-  ProfileRoute: typeof ProfileRoute
+  ProfileRoute: typeof ProfileRouteWithChildren
   TermsRoute: typeof TermsRoute
   SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
   SignaturesRevokeRoute: typeof SignaturesRevokeRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
-  EventsSlugProfileRoute: typeof EventsSlugProfileRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
@@ -666,6 +689,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/config': {
+      id: '/profile/config'
+      path: '/config'
+      fullPath: '/profile/config'
+      preLoaderRoute: typeof ProfileConfigRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/$actorId': {
+      id: '/profile/$actorId'
+      path: '/$actorId'
+      fullPath: '/profile/$actorId'
+      preLoaderRoute: typeof ProfileActorIdRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/admin/uploads': {
       id: '/admin/uploads'
       path: '/uploads'
@@ -699,13 +743,6 @@ declare module '@tanstack/react-router' {
       path: '/events/$slug/programs'
       fullPath: '/events/$slug/programs'
       preLoaderRoute: typeof EventsSlugProgramsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$slug/profile': {
-      id: '/events/$slug/profile'
-      path: '/events/$slug/profile'
-      fullPath: '/events/$slug/profile'
-      preLoaderRoute: typeof EventsSlugProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth_/$provider/callback': {
@@ -923,6 +960,21 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ProfileRouteChildren {
+  ProfileActorIdRoute: typeof ProfileActorIdRoute
+  ProfileConfigRoute: typeof ProfileConfigRoute
+  ProfileEditRoute: typeof ProfileEditRoute
+}
+
+const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileActorIdRoute: ProfileActorIdRoute,
+  ProfileConfigRoute: ProfileConfigRoute,
+  ProfileEditRoute: ProfileEditRoute,
+}
+
+const ProfileRouteWithChildren =
+  ProfileRoute._addFileChildren(ProfileRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -930,14 +982,13 @@ const rootRouteChildren: RootRouteChildren = {
   ComparativeRoute: ComparativeRoute,
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
-  ProfileRoute: ProfileRoute,
+  ProfileRoute: ProfileRouteWithChildren,
   TermsRoute: TermsRoute,
   SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
   SignaturesRevokeRoute: SignaturesRevokeRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   AuthProviderCallbackRoute: AuthProviderCallbackRoute,
-  EventsSlugProfileRoute: EventsSlugProfileRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugTicketsRoute: EventsSlugTicketsRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,

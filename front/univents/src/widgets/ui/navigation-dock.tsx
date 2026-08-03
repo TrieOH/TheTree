@@ -26,26 +26,9 @@ interface NavigationDockProps {
   className?: string;
 }
 
-const getProfileHref = (pathname: string) => {
-  const editionMatch = pathname.match(/^\/events\/([^/]+)\/editions\/([^/]+)/);
-  if (editionMatch) {
-    const [, eventId, editionId] = editionMatch;
-    return `/events/${eventId}/editions/${editionId}/profile`;
-  }
-
-  const eventMatch = pathname.match(/^\/events\/([^/]+)/);
-  if (eventMatch) {
-    const [, eventId] = eventMatch;
-    return `/events/${eventId}/profile`;
-  }
-
-  return "/profile";
-};
-
 const getNavItems = (
   actions: { logout: () => Promise<void> },
   isAuthenticated: boolean,
-  pathname: string,
 ): NavItemType[] =>
   [
     { id: "home", label: "Home", icon: Home, href: "/" },
@@ -61,7 +44,7 @@ const getNavItems = (
       id: "profile",
       label: "Perfil",
       icon: User,
-      href: getProfileHref(pathname),
+      href: "/profile",
       authRequired: true,
     },
     {
@@ -243,9 +226,8 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
     [location.pathname],
   );
   const navItems = useMemo(
-    () =>
-      getNavItems({ logout: handleLogout }, isAuthenticated, location.pathname),
-    [handleLogout, isAuthenticated, location.pathname],
+    () => getNavItems({ logout: handleLogout }, isAuthenticated),
+    [handleLogout, isAuthenticated],
   );
 
   const activeId = useMemo(() => {
@@ -276,6 +258,7 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
   const mouseX = useMotionValue(0);
 
   if (location.pathname.endsWith("/certifications/editor")) return null;
+  if (location.pathname === "/profile/edit") return null;
   if (navItems.length === 0) return null;
 
   return (
