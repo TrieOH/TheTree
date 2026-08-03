@@ -29,11 +29,30 @@ func Validate(v any) error {
 	if err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			return fun.Err("invalid request body").WithFields(validationErrsToFields(ve)...).Validation()
+			fields := validationErrsToFields(ve)
+			return fun.Err(validationMessage(fields)).WithFields(fields...).Validation()
 		}
 		return fun.Err("invalid request body: " + err.Error()).Validation()
 	}
 	return nil
+}
+
+// validationMessage builds the top-level envelope message from the
+// per-field errors, so clients that only surface `message` still learn
+// which field failed and why.
+func validationMessage(fields []any) string {
+	var parts []string
+	for _, f := range fields {
+		fe, ok := f.(*fun.FieldError)
+		if !ok || fe == nil {
+			continue
+		}
+		parts = append(parts, fe.Field+": "+fe.Message)
+	}
+	if len(parts) == 0 {
+		return "invalid request body"
+	}
+	return "invalid request body: " + strings.Join(parts, "; ")
 }
 
 // validationErrsToFields converts validator.ValidationErrors into
