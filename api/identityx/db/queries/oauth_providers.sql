@@ -1,6 +1,6 @@
 -- name: CreateProjectOAuthProvider :one
-INSERT INTO project_oauth_providers (project_id, provider, client_id, encrypted_client_secret)
-VALUES (@project_id, @provider, @client_id, @encrypted_client_secret)
+INSERT INTO project_oauth_providers (project_id, provider, client_id, encrypted_client_secret, callback_url)
+VALUES (@project_id, @provider, @client_id, @encrypted_client_secret, @callback_url)
 RETURNING *;
 
 -- name: ListProjectOAuthProviders :many
@@ -37,6 +37,13 @@ RETURNING *;
 -- name: SetProjectOAuthProviderEnabled :one
 UPDATE project_oauth_providers
 SET enabled = @enabled,
+    updated_at = NOW()
+WHERE id = @id
+RETURNING *;
+
+-- name: UpdateProjectOAuthProviderCallbackURL :one
+UPDATE project_oauth_providers
+SET callback_url = @callback_url,
     updated_at = NOW()
 WHERE id = @id
 RETURNING *;

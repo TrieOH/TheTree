@@ -12,6 +12,7 @@ func (h *Handlers) UpdateOAuthProvider(ctx context.Context, req openapi.UpdateOA
 		ID:           req.OauthProviderId,
 		ClientID:     req.Body.ClientId,
 		ClientSecret: req.Body.ClientSecret,
+		CallbackURL:  req.Body.CallbackUrl,
 	})
 	if err != nil {
 		return nil, err

@@ -13,6 +13,7 @@ func (h *Handlers) CreateProjectOAuthProvider(ctx context.Context, req openapi.C
 		Provider:     req.Body.Provider,
 		ClientID:     req.Body.ClientId,
 		ClientSecret: req.Body.ClientSecret,
+		CallbackURL:  req.Body.CallbackUrl,
 	})
 	if err != nil {
 		return nil, err

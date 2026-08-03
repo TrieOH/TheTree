@@ -86,6 +86,11 @@ CREATE TABLE project_oauth_providers (
     client_id TEXT NOT NULL,
     encrypted_client_secret TEXT NOT NULL,
 
+    -- The redirect URI the provider will call back to after consent. Per
+    -- project: each project registers its own exact URL in the provider
+    -- console, so it cannot come from the shared environment.
+    callback_url TEXT NOT NULL,
+
     scopes TEXT[] NOT NULL DEFAULT '{}',
 
     enabled BOOLEAN NOT NULL DEFAULT TRUE,

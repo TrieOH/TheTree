@@ -175,6 +175,7 @@ func TestOAuthConnectProjectUsesProjectCredentials(t *testing.T) {
 	row := models.ProjectOAuthProviders{
 		ID: uuid.New(), ProjectID: projectID, Provider: models.GoogleIdentityProvider,
 		ClientID: "proj-client-id", EncryptedClientSecret: encryptedProjectSecret(t), Enabled: true,
+		CallbackURL: "https://myapp.example.com/auth/callback",
 	}
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(&row, nil)
@@ -196,6 +197,9 @@ func TestOAuthConnectProjectUsesProjectCredentials(t *testing.T) {
 	}
 	if got := parsed.Query().Get("client_id"); got != "proj-client-id" {
 		t.Fatalf("client_id = %q, want %q", got, "proj-client-id")
+	}
+	if got := parsed.Query().Get("redirect_uri"); got != row.CallbackURL {
+		t.Fatalf("redirect_uri = %q, want the project callback_url %q", got, row.CallbackURL)
 	}
 	if len(created) != 1 || created[0].ProjectID == nil || *created[0].ProjectID != projectID {
 		t.Fatalf("state must carry the project, got %+v", created)
