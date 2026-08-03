@@ -31,7 +31,7 @@ func Validate(v any) error {
 		if errors.As(err, &ve) {
 			return fun.Err("invalid request body").WithFields(validationErrsToFields(ve)...).Validation()
 		}
-		return fun.Err("invalid request body").Validation()
+		return fun.Err("invalid request body: " + err.Error()).Validation()
 	}
 	return nil
 }

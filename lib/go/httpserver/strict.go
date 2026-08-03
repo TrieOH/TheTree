@@ -99,9 +99,11 @@ func bodyOf(request any) any {
 
 // StrictRequestErrorHandler returns the fun-envelope handler for request
 // binding failures, for StrictHTTPServerOptions.RequestErrorHandlerFunc.
+// The underlying decode error is surfaced both in the message (so clients
+// that only read the top-level message see why) and in the body field.
 func StrictRequestErrorHandler() func(w http.ResponseWriter, _ *http.Request, err error) {
 	return func(w http.ResponseWriter, _ *http.Request, err error) {
-		fun.Error(fun.Err("invalid request body").WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
+		fun.Error(fun.Err("invalid request body: " + err.Error()).WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
 	}
 }
 

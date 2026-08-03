@@ -1,8 +1,6 @@
 package profiles
 
 import (
-	"encoding/json"
-
 	"context"
 	"time"
 
@@ -13,7 +11,7 @@ import (
 func (h *Handlers) UpsertProjectProfile(ctx context.Context, req openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	profile, err := h.ops.UpsertProfile(ctx, models.UpsertProfileInput{
 		ActorID: req.ActorId,
-		Profile: json.RawMessage(req.Body.Profile),
+		Profile: req.Body.Profile,
 	}, req.ProjectId)
 	if err != nil {
 		return nil, err
