@@ -431,10 +431,14 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
       }
 
       const resolution = await validTokens();
-      if (!resolution.success) return resolution.error;
+      if (!resolution.success && (method !== "GET" || !resolution.sessionInvalid)) {
+        return resolution.error;
+      }
 
       const headers = new Headers(input.headers);
-      headers.set("Authorization", `Bearer ${resolution.tokens.access_token}`);
+      if (resolution.success) {
+        headers.set("Authorization", `Bearer ${resolution.tokens.access_token}`);
+      }
       if (input.body !== undefined && !headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }

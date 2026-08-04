@@ -13,23 +13,8 @@ func (o *Operations) GetProfile(ctx context.Context, actorID, projectID uuid.UUI
 	ctx, span := telemetry.StartSpan(ctx, "GetProfile")
 	defer span.End()
 
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// anyone scoped to the project may read any profile in it; platform
-	// actors need a project member role (member or above)
-	if ident.Sub.ID != actorID {
-		if ident.Sub.ProjectID == nil || *ident.Sub.ProjectID != projectID {
-			err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	err = requireActorInProject(ctx, o.actors, actorID, projectID)
+	// public read: the project route serves project-scoped actors only
+	err := requireActorInProject(ctx, o.actors, actorID, projectID)
 	if err != nil {
 		return nil, err
 	}
