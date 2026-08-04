@@ -101,6 +101,7 @@ import type {
   CreateAPIKeyResponse,
   CreateActorRequest,
   CreateCapabilityRequest,
+  CreateOAuthProviderRequest,
   CreateOrgProjectRequest,
   CreateOrganizationRequest,
   CreateProjectRequest,
@@ -113,9 +114,12 @@ import type {
   GetOAuthCallbackParams,
   GetOAuthConnect200,
   GetOAuthConnectParams,
+  GetOAuthProvidersParams,
   Identity,
   InternalServerErrorResponse,
   NotFoundResponse,
+  OAuthProviderDiscoveryItem,
+  OAuthProviderOutput,
   Organization,
   OrganizationMember,
   PostLoginParams,
@@ -129,6 +133,7 @@ import type {
   ServiceUnavailableResponse,
   SupportedOAuthProviders,
   UnauthorizedResponse,
+  UpdateOAuthProviderRequest,
   UpsertProfileRequest,
   UpsertProfileSchemaRequest,
   UserTokensOutput
@@ -1225,6 +1230,129 @@ export function useGetOAuthCallback<TData = Awaited<ReturnType<typeof getOAuthCa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetOAuthCallbackQueryOptions(provider,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getOAuthProvidersResponse200 = {
+  data: OAuthProviderDiscoveryItem[]
+  status: 200
+}
+
+export type getOAuthProvidersResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type getOAuthProvidersResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getOAuthProvidersResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getOAuthProvidersResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type getOAuthProvidersResponseSuccess = (getOAuthProvidersResponse200) & {
+  headers: Headers;
+};
+export type getOAuthProvidersResponseError = (getOAuthProvidersResponse400 | getOAuthProvidersResponse404 | getOAuthProvidersResponse500 | getOAuthProvidersResponse503) & {
+  headers: Headers;
+};
+
+export type getOAuthProvidersResponse = (getOAuthProvidersResponseSuccess | getOAuthProvidersResponseError)
+
+export const getGetOAuthProvidersUrl = (params?: GetOAuthProvidersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/auth/oauth-providers?${stringifiedParams}` : `/auth/oauth-providers`
+}
+
+/**
+ * Public discovery of the OAuth providers a scope currently accepts
+ * logins with. With `project_id`, returns the project's enabled
+ * providers; without it, IdentityX's own platform providers
+ * (env-configured). The frontend login modal renders one button per
+ * returned provider.
+ * @summary Discover enabled social login providers
+ */
+export const getOAuthProviders = async (params?: GetOAuthProvidersParams, options?: Parameters<typeof customInstance>[1]): Promise<getOAuthProvidersResponse> => {
+
+  return customInstance<getOAuthProvidersResponse>(getGetOAuthProvidersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOAuthProvidersQueryKey = (params?: GetOAuthProvidersParams,) => {
+    return [
+    `/auth/oauth-providers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetOAuthProvidersQueryOptions = <TData = Awaited<ReturnType<typeof getOAuthProviders>>, TError = ErrorType<BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(params?: GetOAuthProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOAuthProvidersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOAuthProviders>>> = ({ signal }) => getOAuthProviders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOAuthProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOAuthProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof getOAuthProviders>>>
+export type GetOAuthProvidersQueryError = ErrorType<BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Discover enabled social login providers
+ */
+
+export function useGetOAuthProviders<TData = Awaited<ReturnType<typeof getOAuthProviders>>, TError = ErrorType<BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ params?: GetOAuthProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOAuthProvidersQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -4170,6 +4298,708 @@ export const useCreateAPIKey = <TError = ErrorType<BadRequestResponse | Unauthor
       return useMutation(getCreateAPIKeyMutationOptions(options));
     }
 
+export type listProjectOAuthProvidersResponse200 = {
+  data: OAuthProviderOutput[]
+  status: 200
+}
+
+export type listProjectOAuthProvidersResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listProjectOAuthProvidersResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listProjectOAuthProvidersResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listProjectOAuthProvidersResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listProjectOAuthProvidersResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type listProjectOAuthProvidersResponseSuccess = (listProjectOAuthProvidersResponse200) & {
+  headers: Headers;
+};
+export type listProjectOAuthProvidersResponseError = (listProjectOAuthProvidersResponse401 | listProjectOAuthProvidersResponse403 | listProjectOAuthProvidersResponse404 | listProjectOAuthProvidersResponse500 | listProjectOAuthProvidersResponse503) & {
+  headers: Headers;
+};
+
+export type listProjectOAuthProvidersResponse = (listProjectOAuthProvidersResponseSuccess | listProjectOAuthProvidersResponseError)
+
+export const getListProjectOAuthProvidersUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/oauth-providers`
+}
+
+/**
+ * Lists the OAuth providers configured for the project, including
+ * disabled ones and their status. The client secret is never
+ * returned. Requires a project membership (member or above).
+ * @summary List the project's OAuth providers
+ */
+export const listProjectOAuthProviders = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<listProjectOAuthProvidersResponse> => {
+
+  return customInstance<listProjectOAuthProvidersResponse>(getListProjectOAuthProvidersUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectOAuthProvidersQueryKey = (projectId: string,) => {
+    return [
+    `/projects/${projectId}/oauth-providers`
+    ] as const;
+    }
+
+
+export const getListProjectOAuthProvidersQueryOptions = <TData = Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectOAuthProvidersQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectOAuthProviders>>> = ({ signal }) => listProjectOAuthProviders(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectOAuthProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectOAuthProviders>>>
+export type ListProjectOAuthProvidersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List the project's OAuth providers
+ */
+
+export function useListProjectOAuthProviders<TData = Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectOAuthProvidersQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createProjectOAuthProviderResponse201 = {
+  data: OAuthProviderOutput
+  status: 201
+}
+
+export type createProjectOAuthProviderResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type createProjectOAuthProviderResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createProjectOAuthProviderResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createProjectOAuthProviderResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type createProjectOAuthProviderResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createProjectOAuthProviderResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type createProjectOAuthProviderResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type createProjectOAuthProviderResponseSuccess = (createProjectOAuthProviderResponse201) & {
+  headers: Headers;
+};
+export type createProjectOAuthProviderResponseError = (createProjectOAuthProviderResponse400 | createProjectOAuthProviderResponse401 | createProjectOAuthProviderResponse403 | createProjectOAuthProviderResponse404 | createProjectOAuthProviderResponse409 | createProjectOAuthProviderResponse500 | createProjectOAuthProviderResponse503) & {
+  headers: Headers;
+};
+
+export type createProjectOAuthProviderResponse = (createProjectOAuthProviderResponseSuccess | createProjectOAuthProviderResponseError)
+
+export const getCreateProjectOAuthProviderUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/oauth-providers`
+}
+
+/**
+ * Stores the provider's credentials for the project. The client
+ * secret is encrypted at rest and never returned. Requires a project
+ * admin or owner. Enabling/disabling happens via
+ * `/oauth-providers/{oauth_provider_id}/enable|disable`.
+ * @summary Configure an OAuth provider for the project
+ */
+export const createProjectOAuthProvider = async (projectId: string,
+    createOAuthProviderRequest: CreateOAuthProviderRequest, options?: Parameters<typeof customInstance>[1]): Promise<createProjectOAuthProviderResponse> => {
+
+  return customInstance<createProjectOAuthProviderResponse>(getCreateProjectOAuthProviderUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createOAuthProviderRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateProjectOAuthProviderMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProjectOAuthProvider>>, TError,{projectId: string;data: BodyType<CreateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProjectOAuthProvider>>, TError,{projectId: string;data: BodyType<CreateOAuthProviderRequest>}, TContext> => {
+
+const mutationKey = ['createProjectOAuthProvider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProjectOAuthProvider>>, {projectId: string;data: BodyType<CreateOAuthProviderRequest>}> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  createProjectOAuthProvider(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProjectOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof createProjectOAuthProvider>>>
+    export type CreateProjectOAuthProviderMutationBody = BodyType<CreateOAuthProviderRequest>
+    export type CreateProjectOAuthProviderMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Configure an OAuth provider for the project
+ */
+export const useCreateProjectOAuthProvider = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProjectOAuthProvider>>, TError,{projectId: string;data: BodyType<CreateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProjectOAuthProvider>>,
+        TError,
+        {projectId: string;data: BodyType<CreateOAuthProviderRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateProjectOAuthProviderMutationOptions(options));
+    }
+
+export type updateOAuthProviderResponse200 = {
+  data: OAuthProviderOutput
+  status: 200
+}
+
+export type updateOAuthProviderResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type updateOAuthProviderResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateOAuthProviderResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateOAuthProviderResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateOAuthProviderResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type updateOAuthProviderResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type updateOAuthProviderResponseSuccess = (updateOAuthProviderResponse200) & {
+  headers: Headers;
+};
+export type updateOAuthProviderResponseError = (updateOAuthProviderResponse400 | updateOAuthProviderResponse401 | updateOAuthProviderResponse403 | updateOAuthProviderResponse404 | updateOAuthProviderResponse500 | updateOAuthProviderResponse503) & {
+  headers: Headers;
+};
+
+export type updateOAuthProviderResponse = (updateOAuthProviderResponseSuccess | updateOAuthProviderResponseError)
+
+export const getUpdateOAuthProviderUrl = (oauthProviderId: string,) => {
+
+
+
+
+  return `/oauth-providers/${oauthProviderId}`
+}
+
+/**
+ * Partially updates a project's OAuth provider configuration. A
+ * field left out is kept as-is; the secret cannot be read back and is
+ * only replaced when a new one is sent. Requires a project admin or
+ * owner.
+ * @summary Update an OAuth provider's credentials
+ */
+export const updateOAuthProvider = async (oauthProviderId: string,
+    updateOAuthProviderRequest: UpdateOAuthProviderRequest, options?: Parameters<typeof customInstance>[1]): Promise<updateOAuthProviderResponse> => {
+
+  return customInstance<updateOAuthProviderResponse>(getUpdateOAuthProviderUrl(oauthProviderId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateOAuthProviderRequest)
+  }
+);}
+
+
+
+
+
+export const getUpdateOAuthProviderMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOAuthProvider>>, TError,{oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOAuthProvider>>, TError,{oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}, TContext> => {
+
+const mutationKey = ['updateOAuthProvider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOAuthProvider>>, {oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}> = (props) => {
+          const {oauthProviderId,data} = props ?? {};
+
+          return  updateOAuthProvider(oauthProviderId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof updateOAuthProvider>>>
+    export type UpdateOAuthProviderMutationBody = BodyType<UpdateOAuthProviderRequest>
+    export type UpdateOAuthProviderMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Update an OAuth provider's credentials
+ */
+export const useUpdateOAuthProvider = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOAuthProvider>>, TError,{oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateOAuthProvider>>,
+        TError,
+        {oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateOAuthProviderMutationOptions(options));
+    }
+
+export type deleteOAuthProviderResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type deleteOAuthProviderResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteOAuthProviderResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deleteOAuthProviderResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type deleteOAuthProviderResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type deleteOAuthProviderResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type deleteOAuthProviderResponseSuccess = (deleteOAuthProviderResponse200) & {
+  headers: Headers;
+};
+export type deleteOAuthProviderResponseError = (deleteOAuthProviderResponse401 | deleteOAuthProviderResponse403 | deleteOAuthProviderResponse404 | deleteOAuthProviderResponse500 | deleteOAuthProviderResponse503) & {
+  headers: Headers;
+};
+
+export type deleteOAuthProviderResponse = (deleteOAuthProviderResponseSuccess | deleteOAuthProviderResponseError)
+
+export const getDeleteOAuthProviderUrl = (oauthProviderId: string,) => {
+
+
+
+
+  return `/oauth-providers/${oauthProviderId}`
+}
+
+/**
+ * Hard-deletes the project's OAuth provider configuration. Blocks
+ * new logins via this provider; already-linked external identities
+ * remain valid. Requires a project admin or owner.
+ * @summary Remove an OAuth provider from the project
+ */
+export const deleteOAuthProvider = async (oauthProviderId: string, options?: Parameters<typeof customInstance>[1]): Promise<deleteOAuthProviderResponse> => {
+
+  return customInstance<deleteOAuthProviderResponse>(getDeleteOAuthProviderUrl(oauthProviderId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteOAuthProviderMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteOAuthProvider>>, TError,{oauthProviderId: string}, TContext> => {
+
+const mutationKey = ['deleteOAuthProvider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteOAuthProvider>>, {oauthProviderId: string}> = (props) => {
+          const {oauthProviderId} = props ?? {};
+
+          return  deleteOAuthProvider(oauthProviderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOAuthProvider>>>
+
+    export type DeleteOAuthProviderMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Remove an OAuth provider from the project
+ */
+export const useDeleteOAuthProvider = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteOAuthProvider>>,
+        TError,
+        {oauthProviderId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteOAuthProviderMutationOptions(options));
+    }
+
+export type disableOAuthProviderResponse200 = {
+  data: OAuthProviderOutput
+  status: 200
+}
+
+export type disableOAuthProviderResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type disableOAuthProviderResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type disableOAuthProviderResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type disableOAuthProviderResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type disableOAuthProviderResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type disableOAuthProviderResponseSuccess = (disableOAuthProviderResponse200) & {
+  headers: Headers;
+};
+export type disableOAuthProviderResponseError = (disableOAuthProviderResponse401 | disableOAuthProviderResponse403 | disableOAuthProviderResponse404 | disableOAuthProviderResponse500 | disableOAuthProviderResponse503) & {
+  headers: Headers;
+};
+
+export type disableOAuthProviderResponse = (disableOAuthProviderResponseSuccess | disableOAuthProviderResponseError)
+
+export const getDisableOAuthProviderUrl = (oauthProviderId: string,) => {
+
+
+
+
+  return `/oauth-providers/${oauthProviderId}/disable`
+}
+
+/**
+ * Blocks new logins via this provider for the project. Users who
+ * already linked an external identity with it can still log in.
+ * Requires a project admin or owner.
+ * @summary Disable an OAuth provider
+ */
+export const disableOAuthProvider = async (oauthProviderId: string, options?: Parameters<typeof customInstance>[1]): Promise<disableOAuthProviderResponse> => {
+
+  return customInstance<disableOAuthProviderResponse>(getDisableOAuthProviderUrl(oauthProviderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisableOAuthProviderMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof disableOAuthProvider>>, TError,{oauthProviderId: string}, TContext> => {
+
+const mutationKey = ['disableOAuthProvider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableOAuthProvider>>, {oauthProviderId: string}> = (props) => {
+          const {oauthProviderId} = props ?? {};
+
+          return  disableOAuthProvider(oauthProviderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisableOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof disableOAuthProvider>>>
+
+    export type DisableOAuthProviderMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Disable an OAuth provider
+ */
+export const useDisableOAuthProvider = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disableOAuthProvider>>,
+        TError,
+        {oauthProviderId: string},
+        TContext
+      > => {
+      return useMutation(getDisableOAuthProviderMutationOptions(options));
+    }
+
+export type enableOAuthProviderResponse200 = {
+  data: OAuthProviderOutput
+  status: 200
+}
+
+export type enableOAuthProviderResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type enableOAuthProviderResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type enableOAuthProviderResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type enableOAuthProviderResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type enableOAuthProviderResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type enableOAuthProviderResponseSuccess = (enableOAuthProviderResponse200) & {
+  headers: Headers;
+};
+export type enableOAuthProviderResponseError = (enableOAuthProviderResponse401 | enableOAuthProviderResponse403 | enableOAuthProviderResponse404 | enableOAuthProviderResponse500 | enableOAuthProviderResponse503) & {
+  headers: Headers;
+};
+
+export type enableOAuthProviderResponse = (enableOAuthProviderResponseSuccess | enableOAuthProviderResponseError)
+
+export const getEnableOAuthProviderUrl = (oauthProviderId: string,) => {
+
+
+
+
+  return `/oauth-providers/${oauthProviderId}/enable`
+}
+
+/**
+ * Re-enables an OAuth provider for the project, allowing new logins
+ * again. Requires a project admin or owner.
+ * @summary Enable an OAuth provider
+ */
+export const enableOAuthProvider = async (oauthProviderId: string, options?: Parameters<typeof customInstance>[1]): Promise<enableOAuthProviderResponse> => {
+
+  return customInstance<enableOAuthProviderResponse>(getEnableOAuthProviderUrl(oauthProviderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getEnableOAuthProviderMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof enableOAuthProvider>>, TError,{oauthProviderId: string}, TContext> => {
+
+const mutationKey = ['enableOAuthProvider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enableOAuthProvider>>, {oauthProviderId: string}> = (props) => {
+          const {oauthProviderId} = props ?? {};
+
+          return  enableOAuthProvider(oauthProviderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnableOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof enableOAuthProvider>>>
+
+    export type EnableOAuthProviderMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Enable an OAuth provider
+ */
+export const useEnableOAuthProvider = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enableOAuthProvider>>,
+        TError,
+        {oauthProviderId: string},
+        TContext
+      > => {
+      return useMutation(getEnableOAuthProviderMutationOptions(options));
+    }
+
 export type listCapabilitiesResponse200 = {
   data: Capability[]
   status: 200
@@ -5302,3 +6132,221 @@ export const useUpsertProjectProfile = <TError = ErrorType<BadRequestResponse | 
       > => {
       return useMutation(getUpsertProjectProfileMutationOptions(options));
     }
+
+export type listOutdatedPlatformProfilesResponse200 = {
+  data: ActorProfile[]
+  status: 200
+}
+
+export type listOutdatedPlatformProfilesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listOutdatedPlatformProfilesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listOutdatedPlatformProfilesResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type listOutdatedPlatformProfilesResponseSuccess = (listOutdatedPlatformProfilesResponse200) & {
+  headers: Headers;
+};
+export type listOutdatedPlatformProfilesResponseError = (listOutdatedPlatformProfilesResponse401 | listOutdatedPlatformProfilesResponse500 | listOutdatedPlatformProfilesResponse503) & {
+  headers: Headers;
+};
+
+export type listOutdatedPlatformProfilesResponse = (listOutdatedPlatformProfilesResponseSuccess | listOutdatedPlatformProfilesResponseError)
+
+export const getListOutdatedPlatformProfilesUrl = () => {
+
+
+
+
+  return `/profiles/outdated`
+}
+
+/**
+ * Lists platform-scoped actor profiles that failed to migrate to the
+ * active platform schema version and are flagged as outdated. The
+ * admin resolves them manually (edit via the profile upsert, or fix
+ * the schema). Requires a platform-level client.
+ * @summary List outdated platform actor profiles
+ */
+export const listOutdatedPlatformProfiles = async ( options?: Parameters<typeof customInstance>[1]): Promise<listOutdatedPlatformProfilesResponse> => {
+
+  return customInstance<listOutdatedPlatformProfilesResponse>(getListOutdatedPlatformProfilesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOutdatedPlatformProfilesQueryKey = () => {
+    return [
+    `/profiles/outdated`
+    ] as const;
+    }
+
+
+export const getListOutdatedPlatformProfilesQueryOptions = <TData = Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOutdatedPlatformProfilesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>> = ({ signal }) => listOutdatedPlatformProfiles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOutdatedPlatformProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>>
+export type ListOutdatedPlatformProfilesQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List outdated platform actor profiles
+ */
+
+export function useListOutdatedPlatformProfiles<TData = Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOutdatedPlatformProfilesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listOutdatedProjectProfilesResponse200 = {
+  data: ActorProfile[]
+  status: 200
+}
+
+export type listOutdatedProjectProfilesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listOutdatedProjectProfilesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listOutdatedProjectProfilesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listOutdatedProjectProfilesResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type listOutdatedProjectProfilesResponseSuccess = (listOutdatedProjectProfilesResponse200) & {
+  headers: Headers;
+};
+export type listOutdatedProjectProfilesResponseError = (listOutdatedProjectProfilesResponse401 | listOutdatedProjectProfilesResponse403 | listOutdatedProjectProfilesResponse500 | listOutdatedProjectProfilesResponse503) & {
+  headers: Headers;
+};
+
+export type listOutdatedProjectProfilesResponse = (listOutdatedProjectProfilesResponseSuccess | listOutdatedProjectProfilesResponseError)
+
+export const getListOutdatedProjectProfilesUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/profiles/outdated`
+}
+
+/**
+ * Lists the project's actor profiles that failed to migrate to the
+ * active project schema version and are flagged as outdated. The
+ * admin resolves them manually. Requires a project admin.
+ * @summary List outdated project actor profiles
+ */
+export const listOutdatedProjectProfiles = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<listOutdatedProjectProfilesResponse> => {
+
+  return customInstance<listOutdatedProjectProfilesResponse>(getListOutdatedProjectProfilesUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOutdatedProjectProfilesQueryKey = (projectId: string,) => {
+    return [
+    `/projects/${projectId}/profiles/outdated`
+    ] as const;
+    }
+
+
+export const getListOutdatedProjectProfilesQueryOptions = <TData = Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOutdatedProjectProfilesQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>> = ({ signal }) => listOutdatedProjectProfiles(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOutdatedProjectProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>>
+export type ListOutdatedProjectProfilesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List outdated project actor profiles
+ */
+
+export function useListOutdatedProjectProfiles<TData = Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOutdatedProjectProfilesQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}

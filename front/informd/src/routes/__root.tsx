@@ -11,10 +11,10 @@ import { AuthProvider } from "@trieoh/identityx-sdk-ts/react";
 import { env } from "#/env";
 import { AuthContextUpdater } from "#/integrations/auth/auth-context-updater";
 import { Toaster } from "#/shared/ui/shadcn/sonner";
+import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
-import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -64,7 +64,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-body antialiased wrap-anywhere">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider adapter={identityXAuthAdapter} baseURL={env.VITE_AUTH_API_URL}>
+            <AuthProvider
+              adapter={identityXAuthAdapter}
+              baseURL={env.VITE_AUTH_API_URL}
+            >
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools

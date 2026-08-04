@@ -14,7 +14,7 @@ export interface ModernAuthProps {
   onSignUpSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
   backLink?: React.ReactNode;
-  /** OAuth providers to show as login buttons (e.g. ["google", "github"]) */
+  /** Overrides provider discovery. By default, enabled providers are loaded from IdentityX. */
   providers?: OAuthProviderI[];
 }
 
@@ -88,7 +88,7 @@ export function ModernAuth({
         </div>
 
         {/* Animated form area with fixed min-height to prevent layout shift */}
-        <div className={`relative ${providers && providers.length > 0 ? "min-h-112" : "min-h-80"}`}>
+        <div className="relative min-h-112">
           <AnimatePresence mode="wait">
             {view === "signin" && (
               <motion.div

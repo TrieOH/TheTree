@@ -35,7 +35,10 @@ export const restoreSessionServerFn = createServerFn({ method: "GET" }).handler(
 export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
-      path: z.string().startsWith("/").refine((path) => !path.startsWith("//")),
+      path: z
+        .string()
+        .startsWith("/")
+        .refine((path) => !path.startsWith("//")),
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
       body: z.json().optional(),
       headers: z.record(z.string(), z.string()).optional(),

@@ -75,7 +75,6 @@
  * OpenAPI spec version: 0.22.0
  */
 import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-
 export type PostRegisterParams = {
 /**
  * Project to scope the operation to. Omit for IdentityX itself.

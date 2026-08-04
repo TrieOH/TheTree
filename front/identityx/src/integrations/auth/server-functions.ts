@@ -41,8 +41,16 @@ export const loginWithProviderServerFn = createServerFn({ method: "POST" })
   .handler(({ data }) => bff.loginWithProvider(data.provider));
 
 export const completeProviderLoginServerFn = createServerFn({ method: "POST" })
-  .validator(z.object({ provider: providerSchema, code: z.string().min(1) }))
-  .handler(({ data }) => bff.completeProviderLogin(data.provider, data.code));
+  .validator(
+    z.object({
+      provider: providerSchema,
+      code: z.string().min(1),
+      state: z.string().min(1),
+    }),
+  )
+  .handler(({ data }) =>
+    bff.completeProviderLogin(data.provider, data.code, data.state),
+  );
 
 export const logoutServerFn = createServerFn({ method: "POST" }).handler(() =>
   bff.logout(),
@@ -68,6 +76,7 @@ export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
         .startsWith("/")
         .refine((path) => !path.startsWith("//")),
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+      target: z.enum(["api", "identityx"]).optional(),
       body: z.json().optional(),
       headers: z.record(z.string(), z.string()).optional(),
     }),
