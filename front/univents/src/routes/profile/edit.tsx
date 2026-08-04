@@ -33,9 +33,9 @@ function EditProfilePage() {
     };
   }, [actorId, auth]);
   const save = useCallback(
-    (profile: ProfileData) =>
+    (profile: ProfileData, handle?: string) =>
       actorId
-        ? auth.upsertActorProfile(actorId, { profile })
+        ? auth.upsertActorProfile(actorId, { handle, profile })
         : Promise.resolve({
             success: false as const,
             message: "Usuário não autenticado",

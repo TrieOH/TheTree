@@ -201,6 +201,12 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
       : apiInstance.get<ActorProfile>(`/actors/${actorId}/profile`);
   },
 
+  getProfileByHandle: async (handle: string) =>
+    apiInstance.get<ActorProfile>(
+      `/profiles/by-handle/${encodeURIComponent(handle)}`,
+      { requiresAuth: false },
+    ),
+
   upsertActorProfile: async (
     actorId: string,
     data: UpsertProfileRequest,

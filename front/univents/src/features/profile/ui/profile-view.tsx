@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import {
   Building2,
@@ -23,9 +24,11 @@ import { ProfileQrCode } from "./profile-qr-code";
 
 export interface ProfileViewProps {
   actorId?: string;
-  loadProfile: (
-    actorId: string,
-  ) => Promise<{ success: boolean; data?: ActorProfile; message?: string }>;
+  loadProfile: (actorId: string) => Promise<{
+    success: boolean;
+    data?: ActorProfile;
+    message?: string;
+  }>;
   ownProfile?: boolean;
 }
 
@@ -42,13 +45,14 @@ export function ProfileView({
   );
 
   useEffect(() => {
+    const publicIdentifier = result?.handle || actorId;
     setProfileUrl(
       new URL(
-        actorId ? `/profile/${actorId}` : "/profile",
+        publicIdentifier ? `/profile/${publicIdentifier}` : "/profile",
         window.location.origin,
       ).toString(),
     );
-  }, [actorId]);
+  }, [actorId, result?.handle]);
 
   useEffect(() => {
     let active = true;
@@ -98,6 +102,7 @@ export function ProfileView({
   }, []);
 
   if (loading) return <ProfileSkeleton />;
+  if (error && !ownProfile) return <MissingPublicProfile />;
 
   const profile = asUniventsProfile(result?.profile ?? {});
   const name = profileDisplayName(profile);
@@ -160,7 +165,11 @@ export function ProfileView({
             </ProfileCard>
           )}
 
-          {error && <ProfileWarning message={error} />}
+          {error && ownProfile && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Seu perfil ainda não foi criado. Use “Editar perfil” para começar.
+            </p>
+          )}
 
           <ProfileCard title="Sobre mim">
             {profile.aboutMe ? (
@@ -470,18 +479,34 @@ function ProfileSkeleton() {
   );
 }
 
-function ProfileWarning({ message }: { message: string }) {
+function MissingPublicProfile() {
   return (
-    <div
-      role="alert"
-      className="flex gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-5 text-amber-950 dark:text-amber-100"
-    >
-      <CircleAlert className="mt-0.5 size-5 shrink-0" />
-      <div>
-        <p className="font-medium">Dados do perfil indisponíveis</p>
-        <p className="mt-1 text-sm opacity-80">{message}</p>
+    <main className="relative min-h-dvh overflow-hidden bg-background">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none blur-md opacity-50"
+      >
+        <ProfileSkeleton />
       </div>
-    </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/35 px-4 backdrop-blur-sm">
+        <div
+          role="alert"
+          className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-center shadow-xl"
+        >
+          <CircleAlert className="mx-auto size-8 text-muted-foreground" />
+          <h1 className="mt-4 text-xl font-semibold">Perfil não encontrado</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Este perfil não existe ou não está mais disponível.
+          </p>
+          <Link
+            to="/profile"
+            className={buttonVariants({ className: "mt-5 w-full" })}
+          >
+            Ir para o meu perfil
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }
 

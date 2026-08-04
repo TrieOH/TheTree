@@ -31,11 +31,14 @@ export interface ProfileEditorProps {
     };
     profile: {
       success: boolean;
-      data?: { profile: ProfileData };
+      data?: { handle?: string | null; profile: ProfileData };
       message?: string;
     };
   }>;
-  save: (profile: ProfileData) => Promise<{
+  save: (
+    profile: ProfileData,
+    handle?: string,
+  ) => Promise<{
     success: boolean;
     data?: { profile: ProfileData };
     message?: string;
@@ -53,6 +56,7 @@ export function ProfileEditor({
   const [schema, setSchema] = useState<ProfileSchemaNode>();
   const [original, setOriginal] = useState<ProfileData>({});
   const [values, setValues] = useState<ProfileData>({});
+  const [handle, setHandle] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
@@ -73,6 +77,7 @@ export function ProfileEditor({
           setSchema(schemaResult.data.schema);
         }
         if (profile.success && profile.data) {
+          setHandle(profile.data.handle ?? "");
           setOriginal(profile.data.profile);
           setValues(
             schemaResult.data
@@ -169,6 +174,7 @@ export function ProfileEditor({
             });
             const response = await save(
               withProfileTimestamps(original, nextValues),
+              handle.trim() || undefined,
             );
             if (!response.success)
               throw new Error(
@@ -195,6 +201,8 @@ export function ProfileEditor({
         <InlineProfileEditor
           schema={schema}
           values={values}
+          handle={handle}
+          onHandleChange={setHandle}
           onChange={setValues}
           onCancel={onCancel}
           pendingImages={pendingImages}
@@ -231,6 +239,8 @@ export function ProfileEditor({
 function InlineProfileEditor({
   schema,
   values,
+  handle,
+  onHandleChange,
   onChange,
   onCancel,
   pendingImages,
@@ -238,6 +248,8 @@ function InlineProfileEditor({
 }: {
   schema: ProfileSchemaNode;
   values: ProfileData;
+  handle: string;
+  onHandleChange: (handle: string) => void;
   onChange: (values: ProfileData) => void;
   onCancel: () => void;
   pendingImages: PendingImages;
@@ -284,6 +296,21 @@ function InlineProfileEditor({
             />
             <div className="mt-3">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="min-w-0 space-y-1.5">
+                  <Label htmlFor="profile-handle">Handle</Label>
+                  <Input
+                    id="profile-handle"
+                    value={handle}
+                    placeholder="seu-handle"
+                    pattern={"[^\\s/]+"}
+                    title="Use um handle sem espaços ou barras"
+                    autoCapitalize="none"
+                    autoComplete="username"
+                    spellCheck={false}
+                    className="h-10 bg-background"
+                    onChange={(event) => onHandleChange(event.target.value)}
+                  />
+                </div>
                 <EditorField
                   schema={schema}
                   values={values}
