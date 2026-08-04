@@ -80,6 +80,8 @@ import type { UpsertProfileRequestProfile } from './upsertProfileRequestProfile'
  * Request body for profile upserts. Mirrors `models.UpsertProfileRequest`.
  */
 export interface UpsertProfileRequest {
+  /** Optional unique handle for the profile. Setting a handle that is already in use fails; sending null or omitting the field leaves the handle unchanged. */
+  handle?: string | null;
   /** Profile data to store, validated against the active schema. */
   profile: UpsertProfileRequestProfile;
 }

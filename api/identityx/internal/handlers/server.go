@@ -209,6 +209,10 @@ func (s *Server) UpsertProjectProfile(ctx context.Context, req openapi.UpsertPro
 	return s.profiles.UpsertProjectProfile(ctx, req)
 }
 
+func (s *Server) GetProfileByHandle(ctx context.Context, req openapi.GetProfileByHandleRequestObject) (openapi.GetProfileByHandleResponseObject, error) {
+	return s.profiles.GetProfileByHandle(ctx, req)
+}
+
 func (s *Server) ListOutdatedPlatformProfiles(ctx context.Context, req openapi.ListOutdatedPlatformProfilesRequestObject) (openapi.ListOutdatedPlatformProfilesResponseObject, error) {
 	return s.profiles.ListOutdatedPlatformProfiles(ctx, req)
 }

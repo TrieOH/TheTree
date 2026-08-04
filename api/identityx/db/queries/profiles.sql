@@ -3,13 +3,19 @@ SELECT *
 FROM actor_profiles
 WHERE actor_id = @actor_id;
 
+-- name: GetActorProfileByHandle :one
+SELECT *
+FROM actor_profiles
+WHERE handle = @handle;
+
 -- name: UpsertActorProfile :one
-INSERT INTO actor_profiles (actor_id, profile, schema_version, outdated, updated_at)
-VALUES (@actor_id, @profile, @schema_version, @outdated, NOW())
+INSERT INTO actor_profiles (actor_id, profile, schema_version, outdated, handle, updated_at)
+VALUES (@actor_id, @profile, @schema_version, @outdated, @handle, NOW())
 ON CONFLICT (actor_id) DO UPDATE SET
     profile        = EXCLUDED.profile,
     schema_version = EXCLUDED.schema_version,
     outdated       = EXCLUDED.outdated,
+    handle         = EXCLUDED.handle,
     updated_at     = NOW()
 RETURNING *;
 

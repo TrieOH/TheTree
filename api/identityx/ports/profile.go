@@ -12,6 +12,9 @@ import (
 // carries the schema version it was validated against plus an outdated flag.
 type ProfileRepo interface {
 	Get(ctx context.Context, actorID uuid.UUID) (*models.ActorProfile, error)
+	// GetByHandle returns the profile whose handle matches, or an error when
+	// no profile has that handle. Handles are unique when present.
+	GetByHandle(ctx context.Context, handle string) (*models.ActorProfile, error)
 	Upsert(ctx context.Context, profile models.ActorProfile) (*models.ActorProfile, error)
 	// SetMigrationState bumps the schema version pointer or toggles the
 	// outdated flag without touching the profile document itself.

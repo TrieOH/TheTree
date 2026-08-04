@@ -11,6 +11,7 @@ import (
 func (h *Handlers) UpsertPlatformProfile(ctx context.Context, req openapi.UpsertPlatformProfileRequestObject) (openapi.UpsertPlatformProfileResponseObject, error) {
 	profile, err := h.ops.UpsertPlatformProfile(ctx, models.UpsertProfileInput{
 		ActorID: req.ActorId,
+		Handle:  req.Body.Handle,
 		Profile: req.Body.Profile,
 	})
 	if err != nil {

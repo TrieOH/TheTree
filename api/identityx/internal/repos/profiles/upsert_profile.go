@@ -15,6 +15,7 @@ func (r *Repo) Upsert(ctx context.Context, profile models.ActorProfile) (*models
 
 	result, err := database.Queries(ctx, r.q).UpsertActorProfile(ctx, sqlc.UpsertActorProfileParams{
 		ActorID:       profile.ActorID,
+		Handle:        profile.Handle,
 		Profile:       profile.Profile,
 		SchemaVersion: profile.SchemaVersion,
 		Outdated:      profile.Outdated,

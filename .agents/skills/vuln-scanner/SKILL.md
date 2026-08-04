@@ -1,6 +1,6 @@
 ---
 name: vuln-scanner
-description: Security vulnerability scanner for Go/TS/Python monorepos. Use this skill whenever the user asks to: scan for vulnerabilities, audit security, find security issues, check for security bugs, review code for vulns, find CVEs, check for injection flaws, audit authentication/authorization code, or anything involving "security scan", "vuln scan", "audit my code". Also trigger when the user says things like "is my code secure?", "check for XSS/SQLi/SSRF/auth issues", or "review my codebase for problems". Each finding is written as a structured .md file under vulns/ at the monorepo root. Always use this skill before attempting a manual security review.
+description: "Security vulnerability scanner for Go/TS/Python monorepos. Use this skill whenever the user asks to: scan for vulnerabilities, audit security, find security issues, check for security bugs, review code for vulns, find CVEs, check for injection flaws, audit authentication/authorization code, or anything involving \"security scan\", \"vuln scan\", \"audit my code\". Also trigger when the user says things like \"is my code secure?\", \"check for XSS/SQLi/SSRF/auth issues\", or \"review my codebase for problems\". Each finding is written as a structured .md file under vulns/ at the monorepo root. Always use this skill before attempting a manual security review."
 ---
 
 # Vulnerability Scanner

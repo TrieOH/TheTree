@@ -2121,6 +2121,38 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /profiles/by-handle/{handle}:
+    get:
+      tags: [profiles]
+      operationId: getProfileByHandle
+      summary: Get a profile by handle
+      description: |
+        Fetches the profile with the given handle. Handles are unique when
+        present, so at most one profile matches. Public read.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProfileHandle'
+      responses:
+        '200':
+          description: Actor profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ActorProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
   /profiles/outdated:
     get:
       tags: [profiles]
@@ -2252,6 +2284,13 @@ components:
       description: Actor ID.
       schema:
         $ref: '#/components/schemas/UUID'
+    ProfileHandle:
+      name: handle
+      in: path
+      required: true
+      description: Unique profile handle.
+      schema:
+        type: string
 
   responses:
     BadRequest:
@@ -2750,6 +2789,10 @@ components:
       properties:
         actor_id:
           $ref: '#/components/schemas/UUID'
+        handle:
+          type: string
+          nullable: true
+          description: Unique handle for the profile. Null when not set.
         profile:
           type: object
           description: The profile data, validated against the active profile schema.
@@ -2769,6 +2812,13 @@ components:
       description: Request body for profile upserts. Mirrors `models.UpsertProfileRequest`.
       required: [profile]
       properties:
+        handle:
+          type: string
+          nullable: true
+          description: >
+            Optional unique handle for the profile. Setting a handle that is
+            already in use fails; sending null or omitting the field leaves
+            the handle unchanged.
         profile:
           type: object
           description: Profile data to store, validated against the active schema.

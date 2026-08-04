@@ -27,8 +27,10 @@ type UpsertProfileSchemaInput struct {
 }
 
 // UpsertProfileRequest is the HTTP request body for upserting an actor's profile.
+// Handle is optional; when set it must be unique among profiles.
 
 type UpsertProfileInput struct {
 	ActorID uuid.UUID
+	Handle  *string
 	Profile json.RawMessage
 }

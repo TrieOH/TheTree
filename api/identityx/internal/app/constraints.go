@@ -51,6 +51,9 @@ func SetupConstraintMessages() {
 		"uniq_profile_schema_version_per_scope":  "this profile schema version already exists for the scope",
 		"uniq_profile_schema_version_platform":   "a platform profile schema version already exists",
 
+		// actor profiles
+		"uniq_actor_profiles_handle": "this handle is already in use by another profile",
+
 		// crypto_keys
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",
 		"chk_crypto_keys_status": "crypto key status must be one of: active, retiring, retired, revoked",

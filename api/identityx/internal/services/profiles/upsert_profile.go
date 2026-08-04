@@ -48,6 +48,7 @@ func (o *Operations) UpsertProfile(ctx context.Context, payload models.UpsertPro
 
 	return o.profiles.Upsert(ctx, models.ActorProfile{
 		ActorID:       payload.ActorID,
+		Handle:        payload.Handle,
 		Profile:       payload.Profile,
 		SchemaVersion: version,
 		Outdated:      false,

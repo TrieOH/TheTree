@@ -5269,8 +5269,7 @@ export const getGetPlatformProfileSchemaUrl = () => {
 
 /**
  * Fetches the platform-wide JSON Schema used to validate actor
- * profiles (applies to actors with no project). Requires a
- * platform-level client.
+ * profiles (applies to actors with no project). Public read.
  * @summary Get the platform-wide profile schema
  */
 export const getPlatformProfileSchema = async ( options?: Parameters<typeof customInstance>[1]): Promise<getPlatformProfileSchemaResponse> => {
@@ -5490,7 +5489,7 @@ export const getGetProjectProfileSchemaUrl = (projectId: string,) => {
 
 /**
  * Fetches the JSON Schema used to validate actor profiles within
- * the project. Requires a platform-level client.
+ * the project. Public read.
  * @summary Get the project profile schema
  */
 export const getProjectProfileSchema = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<getProjectProfileSchemaResponse> => {
@@ -5716,7 +5715,7 @@ export const getGetPlatformProfileUrl = (actorId: string,) => {
 
 /**
  * Fetches the platform-scoped profile (actor with no project) of
- * the given actor. Requires a platform-level client.
+ * the given actor. Public read.
  * @summary Get a platform actor's profile
  */
 export const getPlatformProfile = async (actorId: string, options?: Parameters<typeof customInstance>[1]): Promise<getPlatformProfileResponse> => {
@@ -5944,7 +5943,7 @@ export const getGetProjectProfileUrl = (projectId: string,
 
 /**
  * Fetches the project-scoped profile of the given actor within the
- * project. Requires a platform-level client.
+ * project. Public read.
  * @summary Get a project actor's profile
  */
 export const getProjectProfile = async (projectId: string,
@@ -6068,7 +6067,8 @@ export const getUpsertProjectProfileUrl = (projectId: string,
 /**
  * Sets (or replaces) the project-scoped profile of the given actor
  * within the project, validating against the project's active
- * profile schema. Requires a platform-level client.
+ * profile schema. Project users may update their own profile;
+ * project admins/owners may update any profile in the project.
  * @summary Upsert a project actor's profile
  */
 export const upsertProjectProfile = async (projectId: string,
@@ -6132,6 +6132,119 @@ export const useUpsertProjectProfile = <TError = ErrorType<BadRequestResponse | 
       > => {
       return useMutation(getUpsertProjectProfileMutationOptions(options));
     }
+
+export type getProfileByHandleResponse200 = {
+  data: ActorProfile
+  status: 200
+}
+
+export type getProfileByHandleResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getProfileByHandleResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getProfileByHandleResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getProfileByHandleResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type getProfileByHandleResponseSuccess = (getProfileByHandleResponse200) & {
+  headers: Headers;
+};
+export type getProfileByHandleResponseError = (getProfileByHandleResponse401 | getProfileByHandleResponse404 | getProfileByHandleResponse500 | getProfileByHandleResponse503) & {
+  headers: Headers;
+};
+
+export type getProfileByHandleResponse = (getProfileByHandleResponseSuccess | getProfileByHandleResponseError)
+
+export const getGetProfileByHandleUrl = (handle: string,) => {
+
+
+
+
+  return `/profiles/by-handle/${handle}`
+}
+
+/**
+ * Fetches the profile with the given handle. Handles are unique when
+ * present, so at most one profile matches. Public read.
+ * @summary Get a profile by handle
+ */
+export const getProfileByHandle = async (handle: string, options?: Parameters<typeof customInstance>[1]): Promise<getProfileByHandleResponse> => {
+
+  return customInstance<getProfileByHandleResponse>(getGetProfileByHandleUrl(handle),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProfileByHandleQueryKey = (handle: string,) => {
+    return [
+    `/profiles/by-handle/${handle}`
+    ] as const;
+    }
+
+
+export const getGetProfileByHandleQueryOptions = <TData = Awaited<ReturnType<typeof getProfileByHandle>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfileByHandle>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProfileByHandleQueryKey(handle);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileByHandle>>> = ({ signal }) => getProfileByHandle(handle, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: handle !== null && handle !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfileByHandle>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProfileByHandleQueryResult = NonNullable<Awaited<ReturnType<typeof getProfileByHandle>>>
+export type GetProfileByHandleQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Get a profile by handle
+ */
+
+export function useGetProfileByHandle<TData = Awaited<ReturnType<typeof getProfileByHandle>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfileByHandle>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProfileByHandleQueryOptions(handle,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type listOutdatedPlatformProfilesResponse200 = {
   data: ActorProfile[]

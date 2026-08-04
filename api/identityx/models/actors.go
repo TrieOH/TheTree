@@ -44,6 +44,7 @@ type Actor struct {
 // schema and were not migrated (admin resolves them manually).
 type ActorProfile struct {
 	ActorID       uuid.UUID       `json:"actor_id"`
+	Handle        *string         `json:"handle"`
 	Profile       json.RawMessage `json:"profile"`
 	SchemaVersion int             `json:"schema_version"`
 	Outdated      bool            `json:"outdated"`

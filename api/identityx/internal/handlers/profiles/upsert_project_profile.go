@@ -11,6 +11,7 @@ import (
 func (h *Handlers) UpsertProjectProfile(ctx context.Context, req openapi.UpsertProjectProfileRequestObject) (openapi.UpsertProjectProfileResponseObject, error) {
 	profile, err := h.ops.UpsertProfile(ctx, models.UpsertProfileInput{
 		ActorID: req.ActorId,
+		Handle:  req.Body.Handle,
 		Profile: req.Body.Profile,
 	}, req.ProjectId)
 	if err != nil {
