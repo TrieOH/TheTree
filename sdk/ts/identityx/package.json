@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/identityx-sdk-ts",
-  "version": "0.14.0",
+  "version": "0.14.2",
   "type": "module",
   "description": "SDK to consume IdentityX",
   "exports": {
