@@ -163,6 +163,7 @@ async function putFileToStorage(
 async function readImageFormData(request: Request) {
   const formData = await request.formData();
   const file = formData.get("file");
+  const moderationFile = formData.get("moderationFile");
   const path = formData.get("path");
   const idempotencyKey = formData.get("idempotencyKey");
 
@@ -170,6 +171,7 @@ async function readImageFormData(request: Request) {
 
   return {
     file,
+    moderationFile: moderationFile instanceof File ? moderationFile : file,
     path: typeof path === "string" ? path : "",
     idempotencyKey: typeof idempotencyKey === "string" ? idempotencyKey : "",
   };
@@ -236,7 +238,8 @@ export async function handleStorageImagePreprocess(
 ): Promise<Response> {
   try {
     validateEnv(env);
-    const { file, path, idempotencyKey } = await readImageFormData(request);
+    const { file, moderationFile, path, idempotencyKey } =
+      await readImageFormData(request);
     const allowedTypes = getAllowedTypes(env);
     const maxSize = getMaxSize(env);
 
@@ -254,7 +257,21 @@ export async function handleStorageImagePreprocess(
       );
     }
 
-    const approved = await moderateFileBytes(file, env);
+    if (!allowedTypes.includes(moderationFile.type)) {
+      return Response.json(
+        { error: buildAllowedTypesErrorMessage(allowedTypes) },
+        { status: 400 },
+      );
+    }
+
+    if (moderationFile.size > maxSize) {
+      return Response.json(
+        { error: "File exceeds 10MB limit" },
+        { status: 400 },
+      );
+    }
+
+    const approved = await moderateFileBytes(moderationFile, env);
     if (!approved) return Response.json({ approved: false });
 
     const key = buildStorageKey(file.name, path, idempotencyKey);

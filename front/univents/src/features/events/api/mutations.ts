@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type { EventI } from "../model";
 import {
   createEventFn,
@@ -14,22 +15,6 @@ import {
   removeEventMemberFn,
 } from "./members";
 import { eventKeys } from "./query-keys";
-
-function errorMessage(error: unknown, fallback: string) {
-  if (error && typeof error === "object") {
-    const value = error as {
-      envelope?: { message?: string; error?: { message?: string } };
-      message?: string;
-    };
-    return (
-      value.envelope?.message ??
-      value.envelope?.error?.message ??
-      value.message ??
-      fallback
-    );
-  }
-  return fallback;
-}
 
 function upsertById(events: EventI[] | undefined, event: EventI) {
   const list = events ?? [];
@@ -112,8 +97,8 @@ export function useCreateEventMutation() {
       syncEventCaches(queryClient, res);
       toast.success("Evento criado com sucesso!");
     },
-    onError: (error: Error) =>
-      toast.error(error.message || "Erro ao criar evento"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Erro ao criar evento")),
   });
 }
 
@@ -131,8 +116,8 @@ export function usePublishEventMutation() {
       );
       toast.success("Evento publicado com sucesso!");
     },
-    onError: (error: Error) =>
-      toast.error(error.message || "Erro ao publicar evento"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Erro ao publicar evento")),
   });
 }
 
@@ -150,8 +135,8 @@ export function usePatchEventMutation() {
       syncEventCaches(queryClient, res);
       toast.success("Evento atualizado com sucesso!");
     },
-    onError: (error: Error) =>
-      toast.error(error.message || "Erro ao editar evento"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Erro ao editar evento")),
   });
 }
 
@@ -169,8 +154,8 @@ export function useDiscontinueEventMutation() {
       );
       toast.success("Evento descontinuado com sucesso!");
     },
-    onError: (error: Error) =>
-      toast.error(error.message || "Erro ao descontinuar evento"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Erro ao descontinuar evento")),
   });
 }
 
@@ -187,7 +172,7 @@ export function useAddEventMemberMutation() {
       toast.success("Membro adicionado com sucesso!");
     },
     onError: (error) =>
-      toast.error(errorMessage(error, "Erro ao adicionar membro")),
+      toast.error(getErrorMessage(error, "Erro ao adicionar membro")),
   });
 }
 
@@ -204,6 +189,6 @@ export function useRemoveEventMemberMutation() {
       toast.success("Membro removido com sucesso!");
     },
     onError: (error) =>
-      toast.error(errorMessage(error, "Erro ao remover membro")),
+      toast.error(getErrorMessage(error, "Erro ao remover membro")),
   });
 }

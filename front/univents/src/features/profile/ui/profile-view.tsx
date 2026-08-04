@@ -134,7 +134,7 @@ export function ProfileView({
       <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
         {/* ---- Main Column ---- */}
         <div className="space-y-5">
-          {ownProfile && (
+          {ownProfile && completeness < 100 && (
             <ProfileCard title="Integridade do Perfil">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">

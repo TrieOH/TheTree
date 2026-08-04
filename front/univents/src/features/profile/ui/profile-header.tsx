@@ -31,7 +31,7 @@ export function ProfileHeader({
     <section className="relative w-full border-b border-border bg-card shadow-md">
       <div
         className={cn(
-          "h-40 w-full bg-linear-to-br",
+          "h-40 w-full bg-background bg-linear-to-br",
           "from-primary/40 via-primary/15 to-muted sm:h-48 md:h-56",
         )}
         style={bannerStyle}
@@ -151,7 +151,7 @@ function ProfileAvatar({
   return (
     <Avatar
       className={cn(
-        "border-4 border-background shadow-xl",
+        "border-4 border-background bg-background shadow-xl",
         size === "mobile" ? "size-24" : "size-32",
       )}
     >

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type { CertificationTemplateCreateI } from "../model";
 import {
   createCertificationTemplateFn,
@@ -31,7 +32,8 @@ export function useCreateCertificationTemplateMutation() {
       });
       toast.success("Template de certificado criado");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar o template")),
   });
 }
 
@@ -55,7 +57,10 @@ export function useLinkCertificationTemplateMutation() {
       });
       toast.success("Template vinculado à atividade");
     },
-    onError: () => toast.error("Não foi possível vincular o template"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível vincular o template"),
+      ),
   });
 }
 
@@ -82,7 +87,10 @@ export function useUpdateCertificationTemplateMutation() {
       });
       toast.success("Template atualizado");
     },
-    onError: () => toast.error("Não foi possível atualizar o template"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar o template"),
+      ),
   });
 }
 
@@ -104,7 +112,10 @@ export function useDeleteCertificationTemplateMutation() {
       });
       toast.success("Template excluído");
     },
-    onError: () => toast.error("Não foi possível excluir o template"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir o template"),
+      ),
   });
 }
 
@@ -124,7 +135,10 @@ export function useInvalidateCertificationMutation() {
         queryKey: certificationKeys.issued(),
       });
     },
-    onError: () => toast.error("Não foi possível invalidar o certificado"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível invalidar o certificado"),
+      ),
   });
 }
 
@@ -148,6 +162,9 @@ export function useUnlinkCertificationTemplateMutation() {
       });
       toast.success("Vínculos removidos");
     },
-    onError: () => toast.error("Não foi possível remover os vínculos"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível remover os vínculos"),
+      ),
   });
 }

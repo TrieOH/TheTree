@@ -254,7 +254,7 @@ function InlineProfileEditor({
           onSelect={(file) => onImageSelect("bannerUrl", file)}
           variant="banner"
           className={cn(
-            "relative h-40 bg-linear-to-br sm:h-48 md:h-56",
+            "relative h-40 bg-background bg-linear-to-br sm:h-48 md:h-56",
             "from-primary/40 via-primary/15 to-muted",
           )}
         />

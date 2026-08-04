@@ -8,6 +8,7 @@ import type {
   SignatureCreateOutputI,
   SignatureI,
 } from "@/features/signatures/model";
+import { getErrorMessage } from "@/shared/lib/errors";
 import { createSignatureFn, removeSignatureFn } from "./index";
 import { signatureKeys } from "./query-keys";
 
@@ -80,7 +81,10 @@ export function useCreateSignatureMutation() {
       );
       toast.success("Assinatura criada com sucesso");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível criar a assinatura"),
+      ),
   });
 }
 
@@ -99,6 +103,9 @@ export function useRemoveSignatureMutation() {
       );
       toast.success("Assinatura removida");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível remover a assinatura"),
+      ),
   });
 }

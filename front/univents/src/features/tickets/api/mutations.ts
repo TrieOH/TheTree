@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type { TicketCreateOutputI, TicketI } from "../model";
 import { createTicketFn, patchTicketFn } from "./index";
 import { ticketKeys } from "./query-keys";
@@ -50,7 +51,8 @@ export function useCreateTicketMutation() {
       syncTicketCaches(queryClient, variables.editionId, res);
       toast.success("Ticket criado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar o ticket")),
   });
 }
 
@@ -65,6 +67,9 @@ export function useUpdateTicketMutation() {
       syncTicketCaches(queryClient, editionId, ticket);
       toast.success("Ticket atualizado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar o ticket"),
+      ),
   });
 }
