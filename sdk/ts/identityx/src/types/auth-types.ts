@@ -13,6 +13,7 @@ export type ProfileData = Record<string, JsonValue>;
 
 export interface ActorProfile {
   actor_id: string;
+  handle?: string | null;
   profile: ProfileData;
   schema_version: number;
   outdated: boolean;
@@ -20,6 +21,7 @@ export interface ActorProfile {
 }
 
 export interface UpsertProfileRequest {
+  handle?: string | null;
   profile: ProfileData;
 }
 

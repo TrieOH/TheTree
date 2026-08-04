@@ -63,9 +63,6 @@ catalogs:
     '@trieoh/identityx-access-sdk-ts':
       specifier: ^0.1.6
       version: 0.1.6
-    '@trieoh/identityx-sdk-ts':
-      specifier: ^0.14.0
-      version: 0.14.0
     '@types/node':
       specifier: ^24.10.1
       version: 24.13.2
@@ -137,6 +134,7 @@ overrides:
   '@tanstack/query-core': 5.101.4
   '@tanstack/router-core': 1.171.15
   postcss: '>=8.5.18'
+  '@trieoh/identityx-sdk-ts': workspace:*
 
 importers:
 
@@ -182,8 +180,8 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ts/identityx
       '@trieoh/identityx-sdk-ts':
-        specifier: 'catalog:'
-        version: 0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: workspace:*
+        version: link:../../sdk/ts/identityx
       '@trieoh/shared-utils':
         specifier: workspace:*
         version: link:../../lib/ts/shared-utils
@@ -306,8 +304,8 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ts/front-core
       '@trieoh/identityx-sdk-ts':
-        specifier: 'catalog:'
-        version: 0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: workspace:*
+        version: link:../../sdk/ts/identityx
       '@trieoh/informd-models':
         specifier: workspace:*
         version: link:../../lib/ts/informd
@@ -433,8 +431,8 @@ importers:
         specifier: 'catalog:'
         version: 0.1.6
       '@trieoh/identityx-sdk-ts':
-        specifier: 'catalog:'
-        version: 0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: workspace:*
+        version: link:../../sdk/ts/identityx
       '@trieoh/payssage-models':
         specifier: workspace:*
         version: link:../../lib/ts/payssage
@@ -605,8 +603,8 @@ importers:
         specifier: 'catalog:'
         version: 0.1.6
       '@trieoh/identityx-sdk-ts':
-        specifier: 'catalog:'
-        version: 0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: workspace:*
+        version: link:../../sdk/ts/identityx
       '@trieoh/ui-base':
         specifier: workspace:*
         version: link:../../lib/ts/ui-base
@@ -738,8 +736,8 @@ importers:
         specifier: 'catalog:'
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
-        specifier: 'catalog:'
-        version: 0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: workspace:*
+        version: link:../../../sdk/ts/identityx
 
   lib/ts/front-core:
     dependencies:
@@ -769,8 +767,8 @@ importers:
         specifier: 'catalog:'
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
-        specifier: 'catalog:'
-        version: 0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: workspace:*
+        version: link:../../../sdk/ts/identityx
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.17
@@ -3478,12 +3476,6 @@ packages:
 
   '@trieoh/identityx-access-sdk-ts@0.1.6':
     resolution: {integrity: sha512-DMCuwonE+DWIibenlQgbCVSBs/+WSIYLFF8WiHEnjbQ3t/5sJguSMtRwIStLZsrtPa66vdNIlkFJlbnMH8YgNg==}
-
-  '@trieoh/identityx-sdk-ts@0.14.0':
-    resolution: {integrity: sha512-DA3yZHTDtmXM1bPMA3eo+DKtVTQXVU0iNRAoBtwAUjCPwQTsMNH2HSwp3oY0lwVtKMh9PtI850NUt3vesIIjmA==}
-    peerDependencies:
-      react: ^19.2.0
-      react-dom: ^19.2.0
 
   '@tybys/wasm-util@0.10.2':
     resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
@@ -7800,24 +7792,6 @@ snapshots:
   '@trieoh/identityx-access-sdk-ts@0.1.6':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
-
-  '@trieoh/identityx-sdk-ts@0.14.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      '@hookform/resolvers': 5.4.0(react-hook-form@7.80.0(react@19.2.7))
-      '@trieoh/envoy-fetch-ts': 0.1.5
-      class-variance-authority: 0.7.1
-      clsx: 2.1.1
-      lucide-react: 1.21.0(react@19.2.7)
-      motion: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      react-hook-form: 7.80.0(react@19.2.7)
-      sonner: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      tailwind-merge: 3.6.0
-      ua-parser-js: 2.0.10
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - '@emotion/is-prop-valid'
 
   '@tybys/wasm-util@0.10.2':
     dependencies:
