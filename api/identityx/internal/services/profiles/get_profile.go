@@ -18,12 +18,14 @@ func (o *Operations) GetProfile(ctx context.Context, actorID, projectID uuid.UUI
 		return nil, err
 	}
 
-	// project users can read their own profile; any other read requires a
-	// project member (member role or above)
+	// anyone scoped to the project may read any profile in it; platform
+	// actors need a project member role (member or above)
 	if ident.Sub.ID != actorID {
-		err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
-		if err != nil {
-			return nil, err
+		if ident.Sub.ProjectID == nil || *ident.Sub.ProjectID != projectID {
+			err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

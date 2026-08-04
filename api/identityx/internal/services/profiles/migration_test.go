@@ -39,6 +39,16 @@ func testIdentityFor(actorID uuid.UUID) context.Context {
 	})
 }
 
+func testIdentityScopedTo(actorID, projectID uuid.UUID) context.Context {
+	ctx := testIdentityFor(actorID)
+	ident, err := models.RequireIdentity(ctx)
+	if err != nil {
+		panic(err)
+	}
+	ident.Sub.ProjectID = &projectID
+	return ctx
+}
+
 func schemaOf(projectID *uuid.UUID, version int) *models.ProjectProfileSchema {
 	return &models.ProjectProfileSchema{
 		ProjectID: projectID,
@@ -339,7 +349,44 @@ func TestGetProfileAllowsSelfReadWithoutMembership(t *testing.T) {
 	}
 }
 
-func TestGetProfileDeniesProjectUserReadingOthers(t *testing.T) {
+func TestGetProfileAllowsProjectUserReadingOtherProjectUsers(t *testing.T) {
+	mock.SetUp(t)
+	requesterID := uuid.New()
+	targetID := uuid.New()
+	projectID := uuid.New()
+	profile := &models.ActorProfile{
+		ActorID:       targetID,
+		Profile:       json.RawMessage(`{"full_name":"Jane"}`),
+		SchemaVersion: 1,
+	}
+
+	profiles := mock.Mock[ports.ProfileRepo]()
+	mock.When(profiles.Get(mock.AnyContext(), mock.Equal(targetID))).ThenReturn(profile, nil)
+
+	actors := mock.Mock[ports.ActorRepo]()
+	mockProjectActor(actors, targetID, projectID)
+
+	// requester is a project user (scoped actor, no membership row): the
+	// member gate must not be consulted for same-project reads
+	projects := mock.Mock[ports.ProjectRepo]()
+
+	// no schema configured: nothing to migrate
+	schemas := mock.Mock[ports.ProfileSchemaRepo]()
+	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).
+		ThenReturn(nil, fun.ErrNotFound("project_profile_schema not found"))
+
+	got, err := testOps(profiles, schemas, actors, projects).
+		GetProfile(testIdentityScopedTo(requesterID, projectID), targetID, projectID)
+	if err != nil {
+		t.Fatalf("GetProfile: %v", err)
+	}
+	_, _ = mock.Verify(projects, mock.Never()).GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())
+	if got.ActorID != targetID {
+		t.Fatalf("want target profile, got %+v", got)
+	}
+}
+
+func TestGetProfileDeniesPlatformRequesterWithoutMembership(t *testing.T) {
 	mock.SetUp(t)
 	requesterID := uuid.New()
 	targetID := uuid.New()
@@ -348,7 +395,7 @@ func TestGetProfileDeniesProjectUserReadingOthers(t *testing.T) {
 	actors := mock.Mock[ports.ActorRepo]()
 	mockProjectActor(actors, targetID, projectID)
 
-	// requester is a project user with no membership row -> GetRole not found
+	// requester is a platform actor with no membership row -> GetRole not found
 	projects := mock.Mock[ports.ProjectRepo]()
 	mock.When(projects.GetRole(mock.AnyContext(), mock.Equal(requesterID), mock.Equal(projectID))).
 		ThenReturn(models.ProjectRole(""), fun.ErrNotFound("project member not found"))
@@ -356,7 +403,7 @@ func TestGetProfileDeniesProjectUserReadingOthers(t *testing.T) {
 	_, err := testOps(mock.Mock[ports.ProfileRepo](), mock.Mock[ports.ProfileSchemaRepo](), actors, projects).
 		GetProfile(testIdentityFor(requesterID), targetID, projectID)
 	if !fun.Is(err, fun.CodeForbidden) {
-		t.Fatalf("want forbidden for project user reading another's profile, got %v", err)
+		t.Fatalf("want forbidden for platform requester reading another's profile, got %v", err)
 	}
 }
 
