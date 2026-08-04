@@ -9,7 +9,7 @@ or sharpened.
 - **Actor** — a human, service, or machine identity in IdentityX; everything that can authenticate.
 - **Organization** — top-level tenant in IdentityX; members hold roles (member/admin/owner).
 - **Project** — an IdentityX workspace under an organization; scope for API keys and profiles.
-- **Project user vs Project member** — a project user is an actor scoped to the project (`actors.project_id` set, no role row); a project member holds a `project_members` role (member/admin/owner). Project users may read and update only their own profile; members may read any profile in the project, and admin/owner may also update any profile in it.
+- **Project user vs Project member** — a project user is an actor scoped to the project (`actors.project_id` set, no role row); a project member holds a `project_members` role (member/admin/owner). Profiles and profile schemas are public reads (anonymous GETs are served); project users may update only their own profile; members may read any profile in the project, and admin/owner may also update any profile in it.
 - **Profile / Profile schema** — a user's public identity in IdentityX (name, pfp, socials minimum); shaped by a versioned JSON schema per platform/project; one instance per user carrying its schema version, auto-migrated when a new version validates, else kept and flagged for admin.
 - **Event** — a Univents gathering; owned by members with roles (owner/admin/staff).
 - **Edition** — one run of an Event, with its own dates and registration window.

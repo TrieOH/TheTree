@@ -1833,10 +1833,8 @@ paths:
       summary: Get the platform-wide profile schema
       description: |
         Fetches the platform-wide JSON Schema used to validate actor
-        profiles (applies to actors with no project). Requires a
-        platform-level client.
-      security:
-        - bearerAuth: []
+        profiles (applies to actors with no project). Public read.
+      security: []
       responses:
         '200':
           description: Platform profile schema
@@ -1907,9 +1905,8 @@ paths:
       summary: Get the project profile schema
       description: |
         Fetches the JSON Schema used to validate actor profiles within
-        the project. Any actor scoped to the project can read it.
-      security:
-        - bearerAuth: []
+        the project. Public read.
+      security: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
       responses:
@@ -1979,10 +1976,8 @@ paths:
       summary: Get a platform actor's profile
       description: |
         Fetches the platform-scoped profile (actor with no project) of
-        the given actor. Requires a platform-level client.
-      security:
-        - bearerAuth: []
-        - apiKeyAuth: []
+        the given actor. Public read.
+      security: []
       parameters:
         - $ref: '#/components/parameters/ActorID'
       responses:
@@ -2057,11 +2052,8 @@ paths:
       summary: Get a project actor's profile
       description: |
         Fetches the project-scoped profile of the given actor within the
-        project. Project users may read their own profile; project members
-        may read any profile in the project.
-      security:
-        - bearerAuth: []
-        - apiKeyAuth: []
+        project. Public read.
+      security: []
       parameters:
         - $ref: '#/components/parameters/ProjectID'
         - $ref: '#/components/parameters/ActorID'

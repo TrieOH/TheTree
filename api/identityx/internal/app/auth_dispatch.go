@@ -42,7 +42,7 @@ var clientOnlyOps = []string{
 	"listProjects", "createProject", "listProjectMembers",
 	"addProjectMember", "removeProjectMember",
 	"getPlatformProfile", "upsertPlatformProfile",
-	"getPlatformProfileSchema", "upsertPlatformProfileSchema",
+	"upsertPlatformProfileSchema",
 	"upsertProjectProfileSchema",
 	"listOutdatedPlatformProfiles",
 }
