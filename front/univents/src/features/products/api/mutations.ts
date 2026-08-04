@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type {
   CreateInitialProductOutputI,
   ProductI,
@@ -109,7 +110,8 @@ export function useCreateInitialProductMutation() {
       syncProductCaches(queryClient, variables.editionId, product);
       toast.success("Produto criado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar o produto")),
   });
 }
 
@@ -123,7 +125,10 @@ export function useUpdateProductMutation() {
       syncProductCaches(queryClient, product.edition_id, product);
       toast.success("Produto atualizado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar o produto"),
+      ),
   });
 }
 
@@ -141,7 +146,8 @@ export function useDeleteProductMutation() {
       );
       toast.success("Produto excluído com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível excluir o produto")),
   });
 }
 
@@ -170,7 +176,8 @@ export function useCreateVariantMutation() {
       syncVariantCaches(queryClient, variables.productId, variant);
       toast.success("Variação criada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar a variação")),
   });
 }
 
@@ -184,7 +191,10 @@ export function useUpdateVariantMutation() {
       syncVariantCaches(queryClient, variant.product_id, variant);
       toast.success("Variação atualizada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar a variação"),
+      ),
   });
 }
 
@@ -202,6 +212,9 @@ export function useDeleteVariantMutation() {
       );
       toast.success("Variação excluída com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir a variação"),
+      ),
   });
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type {
   OccurrenceCreateOutput,
   ProgramCreateInput,
@@ -29,7 +30,8 @@ export function useProgramMutation(editionId: string) {
       void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
       toast.success("Programa salvo");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível salvar o programa")),
   });
 }
 
@@ -44,7 +46,10 @@ export function useDeleteProgramMutation(editionId: string) {
       });
       toast.success("Programa excluído");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir o programa"),
+      ),
   });
 }
 
@@ -71,7 +76,10 @@ export function useOccurrenceMutation(editionId: string) {
       });
       toast.success("Ocorrência salva");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível salvar a ocorrência"),
+      ),
   });
 }
 
@@ -85,6 +93,9 @@ export function useDeleteOccurrenceMutation(editionId: string) {
       });
       toast.success("Ocorrência excluída");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir a ocorrência"),
+      ),
   });
 }

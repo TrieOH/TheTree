@@ -59,7 +59,7 @@ export function ProfileImageInput({
       <label
         htmlFor={id}
         className={cn(
-          "group relative flex cursor-pointer overflow-hidden border border-dashed",
+          "group relative flex cursor-pointer overflow-hidden border border-dashed bg-background",
           "transition-colors focus-within:ring-2 focus-within:ring-ring",
           dragging ? "border-primary bg-primary/10" : "border-border",
           isAvatar

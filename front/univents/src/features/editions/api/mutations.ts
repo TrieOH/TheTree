@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type {
   EditionCreateOutputI,
   EditionI,
@@ -61,7 +62,8 @@ export function useCreateEditionMutation() {
       syncEditionCaches(queryClient, edition);
       toast.success("Edição criada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar a edição")),
   });
 }
 
@@ -75,7 +77,10 @@ export function usePatchEditionMutation() {
       syncEditionCaches(queryClient, edition);
       toast.success("Edição atualizada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar a edição"),
+      ),
   });
 }
 
@@ -94,6 +99,7 @@ export function usePublishEditionMutation() {
       });
       toast.success("Edição publicada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível publicar a edição")),
   });
 }
