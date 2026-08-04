@@ -1,4 +1,4 @@
-import { Copy, QrCode } from "lucide-react";
+import { Copy, Share2 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
 import {
@@ -31,7 +31,7 @@ export function ProfileShareDialog({
         )}
         aria-label="Abrir QR Code do perfil"
       >
-        <QrCode className="size-5" />
+        <Share2 className="size-5" />
       </DialogTrigger>
       <DialogContent className="max-w-[calc(100%-2rem)] shadow-2xl sm:max-w-sm">
         <DialogHeader className="text-center">

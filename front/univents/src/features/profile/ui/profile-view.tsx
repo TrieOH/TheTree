@@ -1,14 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
-import {
-  Building2,
-  Calendar,
-  CircleAlert,
-  Copy,
-  Globe,
-  Mail,
-  MapPin,
-} from "lucide-react";
+import { Calendar, CircleAlert, Copy, Globe, Mail, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
@@ -241,7 +233,7 @@ export function ProfileView({
             </div>
           </ProfileCard>
 
-          <ProfileCard title="Especializações">
+          <ProfileCard title="Idiomas">
             {specializations.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {specializations.map((item: string) => (
@@ -255,38 +247,6 @@ export function ProfileView({
               </div>
             ) : (
               <EmptyState message="Adicione suas especializações para destacar seu perfil." />
-            )}
-          </ProfileCard>
-
-          <ProfileCard title="Contato">
-            {hasContact ? (
-              <div className="flex flex-wrap gap-2">
-                {profile.website && (
-                  <ProfileLink
-                    href={profile.website}
-                    label="Website"
-                    icon={<Globe className="size-4" />}
-                  />
-                )}
-                {profile.visibility?.hideContactEmail === false &&
-                  profile.contactEmail && (
-                    <ProfileLink
-                      href={`mailto:${profile.contactEmail}`}
-                      label={profile.contactEmail}
-                      icon={<Mail className="size-4" />}
-                    />
-                  )}
-                {socials.map(([network, value]) => (
-                  <ProfileLink
-                    key={network}
-                    href={socialHref(network, value)}
-                    label={capitalize(network)}
-                    icon={<Globe className="size-4" />}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
             )}
           </ProfileCard>
         </div>
@@ -317,7 +277,7 @@ export function ProfileView({
             </div>
           )}
 
-          <ProfileCard title="Redes Sociais">
+          <ProfileCard title="Contato">
             {hasContact ? (
               <div className="grid grid-cols-2 gap-1">
                 {profile.website && (
@@ -329,11 +289,13 @@ export function ProfileView({
                 )}
                 {profile.visibility?.hideContactEmail === false &&
                   profile.contactEmail && (
-                    <SocialButton
-                      href={`mailto:${profile.contactEmail}`}
-                      label="Email"
-                      icon={<Mail className="size-4" />}
-                    />
+                    <div className="hidden md:block">
+                      <SocialButton
+                        href={`mailto:${profile.contactEmail}`}
+                        label="E-mail"
+                        icon={<Mail className="size-4" />}
+                      />
+                    </div>
                   )}
                 {socials.map(([network, value]) => (
                   <SocialButton
@@ -345,33 +307,9 @@ export function ProfileView({
                 ))}
               </div>
             ) : (
-              <EmptyState message="Nenhuma rede social adicionada." />
+              <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
             )}
           </ProfileCard>
-
-          {!profile.visibility?.hideOrganization && profile.organization ? (
-            <ProfileCard title="Organização">
-              <div className="flex items-center gap-3 rounded-md border border-primary/15 bg-primary/5 p-3">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
-                  <Building2 className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-card-foreground">
-                    {profile.organization}
-                  </p>
-                  {profile.role && (
-                    <p className="truncate text-sm text-muted-foreground">
-                      {profile.role}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </ProfileCard>
-          ) : (
-            <ProfileCard title="Organização">
-              <EmptyState message="Nenhuma organização vinculada." />
-            </ProfileCard>
-          )}
         </div>
       </div>
     </main>
@@ -399,28 +337,6 @@ function ProfileCard({
       </h2>
       {children}
     </section>
-  );
-}
-
-function ProfileLink({
-  href,
-  label,
-  icon,
-}: {
-  href: string;
-  label: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      target={href.startsWith("mailto:") ? undefined : "_blank"}
-      rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
-    >
-      {icon}
-      {label}
-    </a>
   );
 }
 
@@ -540,7 +456,7 @@ function completenessHint(profile: ReturnType<typeof asUniventsProfile>) {
   )
     return "Adicione sua localização para completar o perfil.";
   if (!(profile.specializations?.length || profile.languages?.length))
-    return "Adicione ao menos uma especialização para completar o perfil.";
+    return "Adicione ao menos um idioma para completar o perfil.";
   if (
     !(
       profile.website ||

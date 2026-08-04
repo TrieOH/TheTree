@@ -297,7 +297,7 @@ function InlineProfileEditor({
             <div className="mt-3">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="min-w-0 space-y-1.5">
-                  <Label htmlFor="profile-handle">Handle</Label>
+                  <Label htmlFor="profile-handle">Nome de usuário</Label>
                   <Input
                     id="profile-handle"
                     value={handle}
@@ -362,25 +362,20 @@ function InlineProfileEditor({
               onChange={onChange}
               path={["aboutMe"]}
               compact
+              hideLabel
             />
           </EditorCard>
-          <EditorCard title="Especializações">
+          <EditorCard title="Idiomas">
             <EditorField
               schema={schema}
               values={values}
               onChange={onChange}
-              path={["specializations"]}
+              path={[
+                schema.properties?.languages ? "languages" : "specializations",
+              ]}
               compact
+              hideLabel
             />
-            {!schema.properties?.specializations && (
-              <EditorField
-                schema={schema}
-                values={values}
-                onChange={onChange}
-                path={["languages"]}
-                compact
-              />
-            )}
           </EditorCard>
           <EditorCard title="Contato" icon={<Globe className="size-4" />}>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -504,12 +499,14 @@ function EditorField({
   onChange,
   path,
   compact = false,
+  hideLabel = false,
 }: {
   schema: ProfileSchemaNode;
   values: ProfileData;
   onChange: (values: ProfileData) => void;
   path: string[];
   compact?: boolean;
+  hideLabel?: boolean;
 }) {
   const field = findSchemaField(schema, path);
   if (!field) return null;
@@ -520,9 +517,11 @@ function EditorField({
     : field.type;
   return (
     <div className={cn("space-y-2", compact && "space-y-1.5")}>
-      <Label htmlFor={id} className="text-sm font-medium">
-        {fieldLabel(path.at(-1) ?? "", field)}
-      </Label>
+      {!hideLabel && (
+        <Label htmlFor={id} className="text-sm font-medium">
+          {fieldLabel(path.at(-1) ?? "", field)}
+        </Label>
+      )}
       <SchemaInput
         id={id}
         field={field}
@@ -667,6 +666,8 @@ function SchemaInput({
         onChange={onChange}
       />
     );
+  if (nameFromId(id) === "pronouns")
+    return <PronounsInput id={id} value={value} onChange={onChange} />;
   if (nameFromId(id) === "timezone") {
     const selectedTimezone = typeof value === "string" ? value : "";
     const timezoneOptions = Array.from(
@@ -768,6 +769,54 @@ function SchemaInput({
   );
 }
 
+const PRONOUNS = [
+  "ela/dela",
+  "ele/dele",
+  "elu/delu",
+  "ela/ele",
+  "prefiro não informar",
+];
+
+function PronounsInput({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: JsonValue | undefined;
+  onChange: (value: JsonValue) => void;
+}) {
+  const current = typeof value === "string" ? value : "";
+  const isOther = current !== "" && !PRONOUNS.includes(current);
+  const [otherSelected, setOtherSelected] = useState(isOther);
+  const options = [
+    ...PRONOUNS.map((pronoun) => ({ value: pronoun, label: pronoun })),
+    { value: "outro", label: "Outro" },
+  ];
+  return (
+    <div className="space-y-2">
+      <TimezoneCombobox
+        id={id}
+        value={isOther || otherSelected ? "outro" : current}
+        options={options}
+        onChange={(next) => {
+          setOtherSelected(next === "outro");
+          onChange(next === "outro" ? "" : next);
+        }}
+      />
+      {(isOther || otherSelected) && (
+        <Input
+          aria-label="Outros pronomes"
+          value={isOther ? current : ""}
+          placeholder="Digite seus pronomes"
+          className="h-10 bg-background"
+          onChange={(event) => onChange(event.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ArrayDraftInput({
   id,
   value,
@@ -783,17 +832,76 @@ function ArrayDraftInput({
 }) {
   const canonical = value.map(String).join(", ");
   const [draft, setDraft] = useState(canonical);
+  const isLanguageField = ["languages", "specializations"].includes(
+    nameFromId(id),
+  );
 
-  useEffect(() => setDraft(canonical), [canonical]);
+  useEffect(() => {
+    if (!isLanguageField) setDraft(canonical);
+  }, [canonical, isLanguageField]);
 
-  const commit = () => {
-    const items = draft
+  const commit = (nextDraft: string) => {
+    const items = nextDraft
       .split(/[,;\n]+/)
       .map((item) => item.trim())
       .filter(Boolean);
     onChange(items);
     setDraft(items.join(", "));
   };
+
+  const addItem = (item: string) => {
+    const next = [...value.map(String), item.trim()].filter(Boolean);
+    onChange(next);
+    setDraft("");
+  };
+
+  if (isLanguageField)
+    return (
+      <div className="space-y-2">
+        {value.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {value.map((item) => (
+              <button
+                key={String(item)}
+                type="button"
+                className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs"
+                onClick={() =>
+                  onChange(value.filter((entry) => entry !== item))
+                }
+                title="Remover idioma"
+              >
+                {String(item)} ×
+              </button>
+            ))}
+          </div>
+        )}
+        <Input
+          id={id}
+          value={draft}
+          placeholder={placeholder}
+          className="h-10 bg-background"
+          onChange={(event) => {
+            const next = event.target.value;
+            const parts = next.split(/[,;\n]+/);
+            if (parts.length > 1) {
+              const added = parts
+                .slice(0, -1)
+                .map((part) => part.trim())
+                .filter(Boolean);
+              onChange([...value.map(String), ...added]);
+              setDraft(parts.at(-1) ?? "");
+            } else setDraft(next);
+          }}
+          onBlur={() => draft.trim() && addItem(draft)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              if (draft.trim()) addItem(draft);
+            }
+          }}
+        />
+      </div>
+    );
 
   return (
     <Input
@@ -803,11 +911,11 @@ function ArrayDraftInput({
       placeholder={placeholder}
       className="h-10 bg-background"
       onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
+      onBlur={() => commit(draft)}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          commit();
+          commit(draft);
         }
       }}
     />
@@ -876,8 +984,8 @@ const FIELD_LABELS: Record<string, string> = {
   region: "Estado ou região",
   country: "País",
   countryCode: "Código do país",
-  languages: "Idiomas ou especializações",
-  specializations: "Especializações",
+  languages: "Idiomas",
+  specializations: "Idiomas",
   timezone: "Fuso horário",
   hideSocials: "Ocultar redes sociais",
   hideLocation: "Ocultar localização",
@@ -900,8 +1008,8 @@ const FIELD_PLACEHOLDERS: Record<string, string> = {
   region: "Ex.: São Paulo",
   country: "Ex.: Brasil",
   countryCode: "Ex.: BR",
-  languages: "Ex.: Português, Inglês",
-  specializations: "Ex.: Tecnologia, Eventos",
+  languages: "Digite um idioma e separe por vírgula",
+  specializations: "Digite um idioma e separe por vírgula",
   x: "Ex.: @univents ou x.com/univents",
   twitter: "Ex.: @univents ou twitter.com/univents",
   instagram: "Ex.: @univents ou instagram.com/univents",

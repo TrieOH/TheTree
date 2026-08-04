@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Pencil, Settings } from "lucide-react";
+import { Mail, Pencil, Settings } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/shadcn/avatar";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
@@ -73,6 +73,16 @@ export function ProfileHeader({
                 {profile.pronouns}
               </p>
             )}
+            {profile.visibility?.hideContactEmail === false &&
+              profile.contactEmail && (
+                <a
+                  href={`mailto:${profile.contactEmail}`}
+                  className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  <Mail className="size-3.5" />
+                  {profile.contactEmail}
+                </a>
+              )}
           </div>
           {ownProfile && (
             <div className="mb-4 flex gap-2">
