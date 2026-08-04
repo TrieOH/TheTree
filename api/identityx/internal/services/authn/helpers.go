@@ -258,7 +258,8 @@ func (o *Operations) updateExistingIdentity(
 }
 
 // registerNewIdentity creates the actor and its external identity for a
-// first-time OAuth login.
+// first-time OAuth login. When the flow was started from a project, the new
+// actor is scoped to that project so its tokens carry the project id.
 func (o *Operations) registerNewIdentity(
 	ctx context.Context,
 	provider string,
@@ -266,8 +267,10 @@ func (o *Operations) registerNewIdentity(
 	encryptedAccess string,
 	encryptedRefresh *string,
 	tokenExpiresAt *time.Time,
+	projectID *uuid.UUID,
 ) (*models.Actor, error) {
 	actor, err := o.actors.Register(ctx, models.Actor{
+		ProjectID:  projectID,
 		AuthMethod: models.AuthMethod(provider),
 		Email:      &info.Email,
 		Type:       models.HumanActorType,

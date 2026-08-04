@@ -78,7 +78,7 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 				"this project has disabled " + provider + " login; contact the project to enable it",
 			)
 		}
-		actor, err = o.registerNewIdentity(ctx, provider, info, encryptedAccess, encryptedRefresh, tokenExpiresAt)
+		actor, err = o.registerNewIdentity(ctx, provider, info, encryptedAccess, encryptedRefresh, tokenExpiresAt, loginState.ProjectID)
 	}
 	if err != nil {
 		return nil, err
