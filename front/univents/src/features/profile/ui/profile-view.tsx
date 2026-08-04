@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
-import { Calendar, CircleAlert, Copy, Globe, Mail, MapPin } from "lucide-react";
+import { Calendar, CircleAlert, Copy, Globe, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
@@ -98,25 +98,14 @@ export function ProfileView({
 
   const profile = asUniventsProfile(result?.profile ?? {});
   const name = profileDisplayName(profile);
-  const location = profile.visibility?.hideLocation
-    ? []
-    : [
-        profile.location?.city,
-        profile.location?.region,
-        profile.location?.country,
-      ].filter(Boolean);
-  const socials = profile.visibility?.hideSocials
-    ? []
-    : Object.entries(profile.socials ?? {}).filter(
-        (entry): entry is [string, string] => Boolean(entry[1]),
-      );
+  const socials = Object.entries(profile.socials ?? {}).filter(
+    (entry): entry is [string, string] => Boolean(entry[1]),
+  );
 
-  const specializations = profile.specializations ?? profile.languages ?? [];
+  const specializations = profile.languages ?? [];
 
   const hasContact =
-    profile.website ||
-    (profile.visibility?.hideContactEmail === false && profile.contactEmail) ||
-    socials.length > 0;
+    profile.website || profile.contactEmail || socials.length > 0;
   const completeness = profileCompleteness(profile);
 
   return (
@@ -173,36 +162,6 @@ export function ProfileView({
             )}
 
             <div className="mt-6 flex flex-wrap gap-6 border-t border-border pt-5">
-              {location.length > 0 ? (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <MapPin className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">
-                      Localização
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {location.join(", ")}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <MapPin className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">
-                      Localização
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Não informado
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {profile.createdAt ? (
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -287,16 +246,15 @@ export function ProfileView({
                     icon={<Globe className="size-4" />}
                   />
                 )}
-                {profile.visibility?.hideContactEmail === false &&
-                  profile.contactEmail && (
-                    <div className="hidden md:block">
-                      <SocialButton
-                        href={`mailto:${profile.contactEmail}`}
-                        label="E-mail"
-                        icon={<Mail className="size-4" />}
-                      />
-                    </div>
-                  )}
+                {profile.contactEmail && (
+                  <div className="hidden md:block">
+                    <SocialButton
+                      href={`mailto:${profile.contactEmail}`}
+                      label="E-mail"
+                      icon={<Mail className="size-4" />}
+                    />
+                  </div>
+                )}
                 {socials.map(([network, value]) => (
                   <SocialButton
                     key={network}
@@ -378,17 +336,18 @@ function ProfileSkeleton() {
           <div className="mt-4 space-y-2">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-64" />
+            <Skeleton className="h-4 w-40" />
           </div>
         </div>
       </div>
       <div className="mx-auto mt-5 hidden max-w-7xl gap-5 px-4 md:grid md:grid-cols-[1fr_280px]">
         <div className="space-y-5">
+          <Skeleton className="h-36 rounded-md" />
           <Skeleton className="h-32 rounded-md" />
-          <Skeleton className="h-48 rounded-md" />
         </div>
         <div className="space-y-5">
           <Skeleton className="h-64 rounded-md" />
-          <Skeleton className="h-40 rounded-md" />
+          <Skeleton className="h-24 rounded-md" />
         </div>
       </div>
     </main>
@@ -447,15 +406,7 @@ function completenessHint(profile: ReturnType<typeof asUniventsProfile>) {
     return 'Preencha a seção "Sobre mim" para completar o perfil.';
   if (!(profile.role || profile.organization))
     return "Adicione sua função ou organização para completar o perfil.";
-  if (
-    !(
-      profile.location?.city ||
-      profile.location?.region ||
-      profile.location?.country
-    )
-  )
-    return "Adicione sua localização para completar o perfil.";
-  if (!(profile.specializations?.length || profile.languages?.length))
+  if (!profile.languages?.length)
     return "Adicione ao menos um idioma para completar o perfil.";
   if (
     !(

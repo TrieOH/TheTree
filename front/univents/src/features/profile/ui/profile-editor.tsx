@@ -1,5 +1,5 @@
 import type { JsonValue, ProfileData } from "@trieoh/identityx-sdk-ts";
-import { ArrowLeft, CircleAlert, Globe, MapPin, Save } from "lucide-react";
+import { ArrowLeft, CircleAlert, Globe, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { preprocessImageUpload } from "@/features/storage/api";
@@ -117,7 +117,7 @@ export function ProfileEditor({
           </div>
         </div>
         <div className="mx-auto mt-5 grid max-w-7xl gap-5 px-4 md:grid-cols-[minmax(0,1fr)_360px]">
-          <Skeleton className="h-80 rounded-md" />
+          <Skeleton className="h-96 rounded-md" />
           <Skeleton className="h-64 rounded-md" />
         </div>
       </main>
@@ -173,7 +173,10 @@ export function ProfileEditor({
               }
             });
             const response = await save(
-              withProfileTimestamps(original, nextValues),
+              projectProfileValues(
+                schema,
+                withProfileTimestamps(original, nextValues),
+              ),
               handle.trim() || undefined,
             );
             if (!response.success)
@@ -402,14 +405,6 @@ function InlineProfileEditor({
         </div>
 
         <aside className="space-y-5">
-          <EditorCard title="Localização" icon={<MapPin className="size-4" />}>
-            <EditorObject
-              schema={schema}
-              values={values}
-              onChange={onChange}
-              name="location"
-            />
-          </EditorCard>
           <EditorCard title="Privacidade">
             <EditorObject
               schema={schema}
@@ -830,11 +825,11 @@ function ArrayDraftInput({
   required: boolean;
   onChange: (value: JsonValue) => void;
 }) {
-  const canonical = value.map(String).join(", ");
-  const [draft, setDraft] = useState(canonical);
   const isLanguageField = ["languages", "specializations"].includes(
     nameFromId(id),
   );
+  const canonical = value.map(String).join(", ");
+  const [draft, setDraft] = useState(isLanguageField ? "" : canonical);
 
   useEffect(() => {
     if (!isLanguageField) setDraft(canonical);
@@ -1084,6 +1079,29 @@ function normalizeProfileLinks(values: ProfileData): ProfileData {
     }
   }
   return next;
+}
+
+function projectProfileValues(
+  schema: ProfileSchemaNode,
+  values: ProfileData,
+): ProfileData {
+  const project = (node: ProfileSchemaNode, value: JsonValue): JsonValue => {
+    if (
+      value === null ||
+      Array.isArray(value) ||
+      !node.properties ||
+      typeof value !== "object"
+    )
+      return value;
+    const result: Record<string, JsonValue> = {};
+    for (const [name, child] of Object.entries(node.properties)) {
+      const childValue = value[name];
+      if (childValue !== undefined) result[name] = project(child, childValue);
+    }
+    return result;
+  };
+
+  return project(schema, values) as ProfileData;
 }
 
 function timezoneLabel(timezone: string): string {

@@ -56,14 +56,16 @@ export function ProfileHeader({
             <h1 className="text-2xl font-semibold text-card-foreground">
               {name}
             </h1>
+            {profile.legalName &&
+              profile.legalName !== name &&
+              profile.visibility?.hideLegalName === false && (
+                <p className="text-sm text-muted-foreground">
+                  {profile.legalName}
+                </p>
+              )}
             {(profile.role || profile.organization) && (
               <p className="mt-1 text-sm text-muted-foreground">
-                {[
-                  profile.role,
-                  !profile.visibility?.hideOrganization
-                    ? profile.organization
-                    : undefined,
-                ]
+                {[profile.role, profile.organization]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
@@ -73,16 +75,15 @@ export function ProfileHeader({
                 {profile.pronouns}
               </p>
             )}
-            {profile.visibility?.hideContactEmail === false &&
-              profile.contactEmail && (
-                <a
-                  href={`mailto:${profile.contactEmail}`}
-                  className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  <Mail className="size-3.5" />
-                  {profile.contactEmail}
-                </a>
-              )}
+            {profile.contactEmail && (
+              <a
+                href={`mailto:${profile.contactEmail}`}
+                className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <Mail className="size-3.5" />
+                {profile.contactEmail}
+              </a>
+            )}
           </div>
           {ownProfile && (
             <div className="mb-4 flex gap-2">
@@ -125,14 +126,16 @@ export function ProfileHeader({
             <h1 className="text-3xl font-semibold tracking-tight text-card-foreground">
               {name}
             </h1>
+            {profile.legalName &&
+              profile.legalName !== name &&
+              profile.visibility?.hideLegalName === false && (
+                <p className="text-sm text-muted-foreground">
+                  {profile.legalName}
+                </p>
+              )}
             {(profile.role || profile.organization) && (
               <p className="text-[15px] text-muted-foreground">
-                {[
-                  profile.role,
-                  !profile.visibility?.hideOrganization
-                    ? profile.organization
-                    : undefined,
-                ]
+                {[profile.role, profile.organization]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
