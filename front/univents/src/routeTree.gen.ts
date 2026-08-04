@@ -19,6 +19,7 @@ import { Route as ComparativeRouteImport } from './routes/comparative'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
@@ -101,6 +102,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
 } as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
@@ -377,7 +384,6 @@ export interface FileRoutesByTo {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
@@ -387,6 +393,7 @@ export interface FileRoutesByTo {
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
+  '/profile': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
@@ -429,6 +436,7 @@ export interface FileRoutesById {
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
@@ -473,6 +481,7 @@ export interface FileRouteTypes {
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
+    | '/profile/'
     | '/auth/$provider/callback'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
@@ -505,7 +514,6 @@ export interface FileRouteTypes {
     | '/comparative'
     | '/contact'
     | '/privacy'
-    | '/profile'
     | '/terms'
     | '/admin/uploads'
     | '/profile/$actorId'
@@ -515,6 +523,7 @@ export interface FileRouteTypes {
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events'
+    | '/profile'
     | '/auth/$provider/callback'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
@@ -556,6 +565,7 @@ export interface FileRouteTypes {
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
+    | '/profile/'
     | '/auth_/$provider/callback'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
@@ -660,6 +670,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
     }
     '/events/': {
       id: '/events/'
@@ -964,12 +981,14 @@ interface ProfileRouteChildren {
   ProfileActorIdRoute: typeof ProfileActorIdRoute
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
 const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileActorIdRoute: ProfileActorIdRoute,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
 }
 
 const ProfileRouteWithChildren =
