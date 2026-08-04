@@ -18,6 +18,19 @@ import (
 
 const schemaV2 = `{"type":"object","required":["full_name","display_name"],"properties":{"full_name":{"type":"string"},"display_name":{"type":"string"}}}`
 
+// schemaV1Full is the OLD platform profile schema (more fields: tagline,
+// location, full visibility block). schemaV2New is the NEW schema with
+// fewer fields — both pasted verbatim from the reported incident.
+const schemaV1Full = `{"$id":"https://api.univents.com.br/schemas/profile.schema.json","type":"object","title":"Profile","$schema":"https://json-schema.org/draft/2020-12/schema","required":["legalName","preferredName","createdAt","updatedAt"],"properties":{"role":{"type":"string","maxLength":100,"description":"What the user does for work / job title (e.g. 'Backend Engineer', 'Product Designer', 'Student'). Distinct from platform RBAC roles."},"pfpUrl":{"type":["string","null"],"format":"uri","description":"Profile picture URL."},"aboutMe":{"type":"string","maxLength":2000,"description":"Freeform bio."},"socials":{"type":"object","properties":{"x":{"type":["string","null"],"maxLength":200},"github":{"type":["string","null"],"maxLength":200},"twitch":{"type":["string","null"],"maxLength":200},"bluesky":{"type":["string","null"],"maxLength":200},"discord":{"type":["string","null"],"maxLength":200},"youtube":{"type":["string","null"],"maxLength":200},"linkedin":{"type":["string","null"],"maxLength":200},"instagram":{"type":["string","null"],"maxLength":200}},"description":"Handles/URLs only, no OAuth tokens here.","additionalProperties":false},"tagline":{"type":"string","maxLength":140,"description":"Short one-liner shown under the name (optional, separate from full bio)."},"website":{"type":["string","null"],"format":"uri"},"location":{"type":"object","properties":{"city":{"type":"string","maxLength":100},"region":{"type":"string","maxLength":100},"country":{"type":"string","maxLength":100},"countryCode":{"type":"string","maxLength":2,"minLength":2,"description":"ISO 3166-1 alpha-2."}},"additionalProperties":false},"pronouns":{"type":"string","maxLength":30},"timezone":{"type":"string","description":"IANA timezone, e.g. 'America/Sao_Paulo'."},"bannerUrl":{"type":["string","null"],"format":"uri","description":"Profile banner/cover image URL."},"createdAt":{"type":"string","format":"date-time"},"languages":{"type":"array","items":{"type":"string","description":"BCP-47 language tag, e.g. 'pt-BR', 'en'."},"maxItems":10},"legalName":{"type":"string","maxLength":200,"minLength":1,"description":"Full legal name. Used for certificates, invoices, and compliance. Not shown publicly unless hideLegalName is false."},"updatedAt":{"type":"string","format":"date-time"},"visibility":{"type":"object","properties":{"hideSocials":{"type":"boolean","default":false},"hideLocation":{"type":"boolean","default":false},"hideLegalName":{"type":"boolean","default":true},"hideContactEmail":{"type":"boolean","default":true},"hideOrganization":{"type":"boolean","default":false}},"description":"Per-field visibility flags. true = hidden from other users.","additionalProperties":false},"contactEmail":{"type":["string","null"],"format":"email","description":"Public contact email, optional and distinct from account login email."},"organization":{"type":"string","maxLength":150,"description":"Company, school, or org the user represents."},"preferredName":{"type":"string","maxLength":100,"minLength":1,"description":"Display name shown across the platform (profile, badges, event rosters)."},"profileCompleteness":{"type":"integer","maximum":100,"minimum":0,"description":"Computed, not user-editable. Percentage of profile fields filled."}},"description":"User-facing profile for a Univents member.","additionalProperties":false}`
+
+// schemaV2New is the NEW schema: fewer fields than v1 — tagline and
+// location are gone, visibility only keeps hideLegalName.
+const schemaV2New = `{"$id":"https://api.univents.com.br/schemas/profile.schema.json","type":"object","title":"Profile","$schema":"https://json-schema.org/draft/2020-12/schema","required":["legalName","preferredName","createdAt","updatedAt"],"properties":{"role":{"type":"string","maxLength":100,"description":"What the user does for work / job title (e.g. 'Backend Engineer', 'Product Designer', 'Student'). Distinct from platform RBAC roles."},"pfpUrl":{"type":["string","null"],"format":"uri","description":"Profile picture URL."},"aboutMe":{"type":"string","maxLength":2000,"description":"Freeform bio."},"socials":{"type":"object","properties":{"x":{"type":["string","null"],"maxLength":200},"github":{"type":["string","null"],"maxLength":200},"twitch":{"type":["string","null"],"maxLength":200},"bluesky":{"type":["string","null"],"maxLength":200},"discord":{"type":["string","null"],"maxLength":200},"youtube":{"type":["string","null"],"maxLength":200},"linkedin":{"type":["string","null"],"maxLength":200},"instagram":{"type":["string","null"],"maxLength":200}},"description":"Handles/URLs only, no OAuth tokens here.","additionalProperties":false},"website":{"type":["string","null"],"format":"uri"},"pronouns":{"type":"string","maxLength":30},"timezone":{"type":"string","description":"IANA timezone, e.g. 'America/Sao_Paulo'."},"bannerUrl":{"type":["string","null"],"format":"uri","description":"Profile banner/cover image URL."},"createdAt":{"type":"string","format":"date-time"},"languages":{"type":"array","items":{"type":"string","description":"BCP-47 language tag, e.g. 'pt-BR', 'en'."},"maxItems":10},"legalName":{"type":"string","maxLength":200,"minLength":1,"description":"Full legal name. Used for certificates, invoices, and compliance. Not shown publicly unless hideLegalName is false."},"updatedAt":{"type":"string","format":"date-time"},"visibility":{"type":"object","properties":{"hideLegalName":{"type":"boolean","default":true}},"description":"Per-field visibility flags. true = hidden from other users.","additionalProperties":false},"contactEmail":{"type":["string","null"],"format":"email","description":"Public contact email, optional and distinct from account login email."},"organization":{"type":"string","maxLength":150,"description":"Company, school, or org the user represents."},"preferredName":{"type":"string","maxLength":100,"minLength":1,"description":"Display name shown across the platform (profile, badges, event rosters)."},"profileCompleteness":{"type":"integer","maximum":100,"minimum":0,"description":"Computed, not user-editable. Percentage of profile fields filled."}},"description":"User-facing profile for a Univents member.","additionalProperties":false}`
+
+// fullyFilledV1Profile is a profile with every v1 field filled in,
+// including the fields v2 removed (tagline, location, visibility extras).
+const fullyFilledV1Profile = `{"role":"Backend Engineer","pfpUrl":"https://cdn.univents.com.br/jane/pfp.png","aboutMe":"Backend engineer building events platforms.","socials":{"x":"https://x.com/janedoe","github":"https://github.com/janedoe","twitch":null,"bluesky":null,"discord":null,"youtube":null,"linkedin":"https://linkedin.com/in/janedoe","instagram":null},"tagline":"Building the future of events.","website":"https://janedoe.dev","location":{"city":"São Paulo","region":"SP","country":"Brazil","countryCode":"BR"},"pronouns":"she/her","timezone":"America/Sao_Paulo","bannerUrl":"https://cdn.univents.com.br/jane/banner.png","createdAt":"2024-01-01T00:00:00Z","languages":["pt-BR","en"],"legalName":"Jane Doe","updatedAt":"2024-01-02T00:00:00Z","visibility":{"hideSocials":false,"hideLocation":false,"hideLegalName":true,"hideContactEmail":true,"hideOrganization":false},"contactEmail":"jane@univents.com.br","organization":"Univents","preferredName":"Jane","profileCompleteness":100}`
+
 func testOps(profiles ports.ProfileRepo, schemas ports.ProfileSchemaRepo, actors ports.ActorRepo, projects ports.ProjectRepo) *Operations {
 	return NewOperations(profiles, schemas, actors, authz.New(nil, projects))
 }
@@ -625,5 +638,109 @@ func TestListOutdatedPlatformProfiles(t *testing.T) {
 	}
 	if len(got) != 1 {
 		t.Fatalf("want 1 profile, got %+v", got)
+	}
+}
+
+// ── reproduction: schema shrinks from v1 to v2 ──────────────────────────
+
+// TestGetProfileAfterSchemaShrinksV1ToV2 pins the on-demand auto-migration
+// for the reported incident:
+//
+//  1. active schema is v1 (old, more fields)
+//  2. user profile is set fully filled out per v1
+//  3. schema is updated to v2 (fewer fields)
+//  4. GET the user profile
+//
+// Expected: the v1 document is migrated on read — the fields v2 forbids
+// (tagline, location, visibility extras) are dropped, the document is
+// persisted as schema_version 2 and NOT outdated. The user does nothing;
+// only a missing required field falls through to admin resolution
+// (outdated=true).
+func TestGetProfileAfterSchemaShrinksV1ToV2(t *testing.T) {
+	mock.SetUp(t)
+	actorID := uuid.New()
+	projectID := uuid.New()
+
+	// step 1 — schema is v1 (old shape, more fields)
+	activeSchema := schemaOf(&projectID, 1)
+	activeSchema.Schema = json.RawMessage(schemaV1Full)
+
+	schemas := mock.Mock[ports.ProfileSchemaRepo]()
+	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).ThenAnswer(func(args []any) []any {
+		return []any{activeSchema, nil}
+	})
+
+	actors := mock.Mock[ports.ActorRepo]()
+	mockProjectActor(actors, actorID, projectID)
+
+	// step 2 — user profile fully filled out per v1 (single Upsert stub
+	// captures every write: the step-2 stamp and the step-4 migration)
+	var upserts []models.ActorProfile
+	profiles := mock.Mock[ports.ProfileRepo]()
+	mock.When(profiles.Upsert(mock.AnyContext(), mock.Any[models.ActorProfile]())).ThenAnswer(func(args []any) []any {
+		p := args[1].(models.ActorProfile)
+		upserts = append(upserts, p)
+		return []any{&upserts[len(upserts)-1], nil}
+	})
+
+	ops := testOps(profiles, schemas, actors, mock.Mock[ports.ProjectRepo]())
+	_, err := ops.UpsertProfile(testIdentityFor(actorID), models.UpsertProfileInput{
+		ActorID: actorID,
+		Profile: json.RawMessage(fullyFilledV1Profile),
+	}, projectID)
+	if err != nil {
+		t.Fatalf("step 2 UpsertProfile: %v", err)
+	}
+	if len(upserts) != 1 || upserts[0].SchemaVersion != 1 {
+		t.Fatalf("step 2: want stamped schema_version=1, got %+v", upserts)
+	}
+
+	// step 3 — schema updated to v2 (fewer fields)
+	activeSchema = schemaOf(&projectID, 2)
+	activeSchema.Schema = json.RawMessage(schemaV2New)
+
+	// step 4 — GET the profile: must auto-migrate the document to v2
+	stored := &models.ActorProfile{
+		ActorID:       actorID,
+		Profile:       json.RawMessage(fullyFilledV1Profile),
+		SchemaVersion: 1,
+	}
+	mock.When(profiles.Get(mock.AnyContext(), mock.Equal(actorID))).ThenReturn(stored, nil)
+
+	got, err := ops.GetProfile(testIdentityFor(actorID), actorID, projectID)
+	if err != nil {
+		t.Fatalf("step 4 GetProfile: %v", err)
+	}
+	if got.SchemaVersion != 2 || got.Outdated {
+		t.Fatalf("step 4: want migrated profile v2 not outdated, got %+v", got)
+	}
+
+	// the document was rewritten on read: v1-only fields dropped, kept intact
+	if len(upserts) != 2 {
+		t.Fatalf("step 4: want the migration to persist the pruned doc, upserts=%+v", upserts)
+	}
+	migrated := upserts[1]
+	if migrated.SchemaVersion != 2 || migrated.Outdated {
+		t.Fatalf("step 4: want persisted v2 not outdated, got %+v", migrated)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(migrated.Profile, &doc); err != nil {
+		t.Fatalf("unmarshal migrated profile: %v", err)
+	}
+	if _, ok := doc["tagline"]; ok {
+		t.Fatalf("migrated doc must drop tagline, got %s", migrated.Profile)
+	}
+	if _, ok := doc["location"]; ok {
+		t.Fatalf("migrated doc must drop location, got %s", migrated.Profile)
+	}
+	vis, _ := doc["visibility"].(map[string]any)
+	if _, ok := vis["hideSocials"]; ok {
+		t.Fatalf("migrated doc must drop hideSocials, got %s", migrated.Profile)
+	}
+	if vis["hideLegalName"] != true {
+		t.Fatalf("migrated doc must keep hideLegalName, got %s", migrated.Profile)
+	}
+	if doc["legalName"] != "Jane Doe" {
+		t.Fatalf("migrated doc must keep legalName, got %s", migrated.Profile)
 	}
 }
