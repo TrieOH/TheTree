@@ -5,7 +5,7 @@ packages:
 
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.14.0
+  '@trieoh/identityx-sdk-ts': ^0.14.4
   '@trieoh/identityx-access-sdk-ts': ^0.1.6
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -70,7 +70,6 @@ overrides:
   "@tanstack/query-core": "5.101.4"
   "@tanstack/router-core": "1.171.15"
   postcss: ">=8.5.18"
-  '@trieoh/identityx-sdk-ts': 'workspace:*'
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
