@@ -139,26 +139,23 @@ async function putFileToStorage(
 ): Promise<string> {
   const aws = getAwsClient(env);
   const uploadUrl = getS3Url(key, env);
-  uploadUrl.searchParams.set(
-    "X-Amz-Expires",
-    String(getUploadExpiresSeconds(env)),
-  );
-
-  const signed = await aws.sign(
-    new Request(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-    }),
-    { aws: { signQuery: true } },
-  );
-
-  const res = await fetch(signed.url, {
+  const res = await aws.fetch(uploadUrl.toString(), {
     method: "PUT",
     body: file,
     headers: { "Content-Type": file.type },
   });
 
-  if (!res.ok) throw new Error("Failed to upload file");
+  if (!res.ok) {
+    const responseBody = await res.text().catch(() => "");
+    const storageMessage = responseBody.match(
+      /<Message>(.*?)<\/Message>/s,
+    )?.[1];
+    throw new Error(
+      `Falha ao enviar imagem para o storage (${res.status})${
+        storageMessage ? `: ${storageMessage}` : ""
+      }`,
+    );
+  }
 
   return `${getS3Url("", env).toString()}${key}`;
 }

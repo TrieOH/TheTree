@@ -6,6 +6,7 @@ import z from "zod";
 
 const callbackSearchSchema = z.object({
   code: z.string().optional(),
+  state: z.string().optional(),
 });
 
 const providerSchema = z.enum(["google", "github"]);
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/auth/$provider/callback")({
 function CallbackPage() {
   const navigate = Route.useNavigate();
   const { provider } = Route.useParams();
-  const { code } = Route.useSearch();
+  const { code, state } = Route.useSearch();
   const router = useRouter();
   const { auth } = useAuth();
   const calledRef = useRef(false);
@@ -33,12 +34,12 @@ function CallbackPage() {
     calledRef.current = true;
 
     async function authenticate() {
-      if (!code) {
+      if (!code || !state) {
         navigate({ to: "/auth" });
         return;
       }
       try {
-        const res = await auth.completeProviderLogin(provider, code);
+        const res = await auth.completeProviderLogin(provider, code, state);
         if (res.success) {
           await navigate({ to: "/admin" });
           toast.success(res.message ?? "Login successful!");
@@ -53,7 +54,7 @@ function CallbackPage() {
     }
 
     authenticate();
-  }, [provider, code, navigate]);
+  }, [provider, code, state, navigate, auth, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

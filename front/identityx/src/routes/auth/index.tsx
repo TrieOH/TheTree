@@ -52,7 +52,6 @@ function RouteComponent() {
       onLoginSuccess={handleLoginSuccess}
       onSignUpSuccess={handleSignUpSuccess}
       onFailed={handleFailure}
-      providers={["google", "github"]}
       backLink={
         <Link
           to="/"

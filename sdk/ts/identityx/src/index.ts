@@ -14,3 +14,12 @@ export type {
   TokenClaims,
   TokenSubject,
 } from "./types/token-types";
+export type {
+  OAuthProviderDiscoveryItem,
+  ActorProfile,
+  JsonSchemaProperty,
+  ProfileData,
+  ProfileSchema,
+  UpsertProfileRequest,
+  UpsertProfileSchemaRequest,
+} from "./types/auth-types";

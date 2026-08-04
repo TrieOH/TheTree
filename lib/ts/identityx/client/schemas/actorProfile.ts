@@ -84,5 +84,9 @@ export interface ActorProfile {
   actor_id: Uuid;
   /** The profile data, validated against the active profile schema. */
   profile: ActorProfileProfile;
+  /** Profile schema version the profile was validated against. */
+  schema_version: number;
+  /** Whether the profile failed to migrate to the active schema. */
+  outdated: boolean;
   updated_at: string;
 }

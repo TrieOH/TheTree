@@ -1,10 +1,11 @@
-import { clearAuthTokens, getUserInfo, saveAuthSession } from "../utils/token-utils";
+import { clearAuthTokens, getStoredRefreshToken, getUserInfo, saveAuthSession } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
 import type { IntrospectResponse } from "../types/instropect-types";
 import { AuthTokens } from "../types/token-types";
 import type { OAuthProviderI } from "../types/common-types";
+import { ActorProfile, OAuthProviderDiscoveryItem, ProfileSchema, UpsertProfileRequest, UpsertProfileSchemaRequest } from "../types/auth-types";
 
 export interface AuthCallbacks {
   onLogin?: (res: ApiResponse<AuthTokens>) => void;
@@ -53,13 +54,18 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
   },
 
   loginWithProvider: async (provider: OAuthProviderI) => {
-    const url = `/auth/${provider}/connect`;
+    if (env.PROJECT_ID) validateProjectKey();
+    const query = env.PROJECT_ID
+      ? `?${new URLSearchParams({ project_id: env.PROJECT_ID })}`
+      : "";
+    const url = `/auth/${provider}/connect${query}`;
     const res = await apiInstance.get<{ url: string }>(url, { requiresAuth: false });
     return res;
   },
 
-  completeProviderLogin: async (provider: OAuthProviderI, code: string) => {
-    const url = `/auth/${provider}/callback?code=${code}`;
+  completeProviderLogin: async (provider: OAuthProviderI, code: string, state: string) => {
+    const query = new URLSearchParams({ code, state });
+    const url = `/auth/${provider}/callback?${query}`;
     const res = await apiInstance.get<AuthTokens>(url, { requiresAuth: false });
     if (res.success) {
       saveAuthSession(res.data);
@@ -143,15 +149,86 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     });
   },
 
+  getOAuthProviders: async (overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+
+    const query = projectId ? `?project_id=${projectId}` : "";
+    const url = `/auth/oauth-providers${query}`;
+
+    return apiInstance.get<OAuthProviderDiscoveryItem[]>(url, { requiresAuth: false });
+  },
+
+  getProjectProfile: async (actorId: string, overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+
+    const url = `/projects/${projectId}/actors/${actorId}/profile`;
+    return apiInstance.get<ActorProfile>(url);
+  },
+
+  getPlatformProfile: async (actorId: string) =>
+    apiInstance.get<ActorProfile>(`/actors/${actorId}/profile`),
+
+  upsertPlatformProfile: async (actorId: string, data: UpsertProfileRequest) =>
+    apiInstance.put<ActorProfile>(`/actors/${actorId}/profile`, data),
+
+  getProfileSchema: async (overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+    const url = projectId
+      ? `/projects/${projectId}/profile-schema`
+      : "/profile-schema";
+    return apiInstance.get<ProfileSchema>(url);
+  },
+
+  upsertProfileSchema: async (
+    data: UpsertProfileSchemaRequest,
+    overrideProjectId?: string,
+  ) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+    const url = projectId
+      ? `/projects/${projectId}/profile-schema`
+      : "/profile-schema";
+    return apiInstance.put<ProfileSchema>(url, data);
+  },
+
+  getActorProfile: async (actorId: string, overrideProjectId?: string) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    return projectId
+      ? apiInstance.get<ActorProfile>(`/projects/${projectId}/actors/${actorId}/profile`)
+      : apiInstance.get<ActorProfile>(`/actors/${actorId}/profile`);
+  },
+
+  upsertActorProfile: async (
+    actorId: string,
+    data: UpsertProfileRequest,
+    overrideProjectId?: string,
+  ) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    return projectId
+      ? apiInstance.put<ActorProfile>(`/projects/${projectId}/actors/${actorId}/profile`, data)
+      : apiInstance.put<ActorProfile>(`/actors/${actorId}/profile`, data);
+  },
+
+  upsertProjectProfile: async (
+    actorId: string,
+    data: UpsertProfileRequest,
+    overrideProjectId?: string
+  ) => {
+    const projectId = overrideProjectId ?? env.PROJECT_ID;
+    if (projectId) validateProjectKey();
+
+    const url = `/projects/${projectId}/actors/${actorId}/profile`;
+    return apiInstance.put<ActorProfile>(url, data);
+  },
+
   health: async () => {
     return apiInstance.get<{ service: string; status: string }>("/health", {
       requiresAuth: false,
     });
   },
-
-  authHealth: async () => {
-    return apiInstance.get<{ service: string; status: string; user_id: string }>("/protected/health");
-  }
 });
 
 export type AuthService = ReturnType<typeof createAuthService>;
