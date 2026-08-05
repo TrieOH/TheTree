@@ -3,16 +3,10 @@
   "name": "Univents",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/web-app-manifest-512x512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
+      "src": "/favicon.svg?v=2",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
