@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronLeft, Menu } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { Logo } from "@/shared/ui/logo";
 import { useSidebar } from "../hooks/use-sidebar";
 import { getAdminBackLink, getAdminShellLabel } from "../sidebar-menu";
 
@@ -40,7 +41,10 @@ export function MobileTopbar() {
           </button>
         )}
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex items-center gap-2">
+          <div className="w-8 h-8 shrink-0">
+            <Logo variant="icon" />
+          </div>
           <h1 className="truncate text-sm font-semibold text-foreground">
             {label.title}
           </h1>
