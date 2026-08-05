@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
@@ -30,6 +31,7 @@ export interface ProfileViewProps {
     success: boolean;
     data?: ActorProfile;
     message?: string;
+    code?: number;
   }>;
   ownProfile?: boolean;
   viewerActorId?: string;
@@ -46,10 +48,12 @@ export function ProfileView({
     enabled: Boolean(actorId),
     queryFn: async () => {
       const response = await loadProfile(actorId ?? "");
-      if (!response.success || !response.data)
-        throw new Error(
+      if (!response.success || !response.data) {
+        throw queryError(
           response.message || "Não foi possível carregar este perfil.",
+          response.code,
         );
+      }
       return response.data;
     },
   });

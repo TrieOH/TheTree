@@ -12,22 +12,37 @@ export interface QueryClientConfig {
   maxRetries?: number
 }
 
-function getErrorStatus(error: unknown): number | undefined {
-  if (error instanceof ApiError) {
-    const envelope = error.envelope as { code?: unknown };
-    return typeof envelope.code === "number" ? envelope.code : undefined;
-  }
+export class QueryError extends Error {
+  readonly envelope: { code?: number; message: string };
 
+  constructor(message: string, code?: number) {
+    super(message);
+    this.name = "QueryError";
+    this.envelope = { message, code };
+  }
+}
+
+function getErrorStatus(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
 
+  if (error instanceof ApiError || error instanceof QueryError) {
+    return error.envelope.code;
+  }
+
   const candidate = error as {
-    code?: unknown;
-    envelope?: { code?: unknown };
+    status?: unknown;
+    response?: { status?: unknown };
   };
-  if (typeof candidate.code === "number") return candidate.code;
-  return typeof candidate.envelope?.code === "number"
-    ? candidate.envelope.code
-    : undefined;
+  const status = [
+    candidate.status,
+    candidate.response?.status,
+  ].find((value): value is number => typeof value === "number");
+
+  return status;
+}
+
+export function queryError(message: string, code?: number): QueryError {
+  return new QueryError(message, code);
 }
 
 /**

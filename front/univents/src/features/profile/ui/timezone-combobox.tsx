@@ -7,6 +7,9 @@ interface TimezoneComboboxProps {
   value: string;
   options: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
 }
 
 export function TimezoneCombobox({
@@ -14,6 +17,9 @@ export function TimezoneCombobox({
   value,
   options,
   onChange,
+  placeholder = "Selecione o fuso horário…",
+  searchPlaceholder = "Buscar cidade ou fuso…",
+  emptyMessage = "Nenhum fuso encontrado.",
 }: TimezoneComboboxProps) {
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -57,7 +63,7 @@ export function TimezoneCombobox({
         onClick={() => setOpen((current) => !current)}
       >
         <span className={cn("truncate", !selected && "text-muted-foreground")}>
-          {selected?.label ?? "Selecione o fuso horário…"}
+          {selected?.label ?? placeholder}
         </span>
         <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
       </button>
@@ -68,7 +74,7 @@ export function TimezoneCombobox({
             <input
               ref={searchRef}
               value={query}
-              placeholder="Buscar cidade ou fuso…"
+              placeholder={searchPlaceholder}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -94,7 +100,7 @@ export function TimezoneCombobox({
               ))
             ) : (
               <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                Nenhum fuso encontrado.
+                {emptyMessage}
               </p>
             )}
           </div>
