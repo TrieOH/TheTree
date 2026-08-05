@@ -1,5 +1,18 @@
 import type { TokenSubject } from "@trieoh/identityx-sdk-ts";
 
+export interface BffIntrospectResponse {
+  cred: { id?: string; type: "token" | "api_key" };
+  subject: {
+    id: string;
+    project_id?: string;
+    email?: string;
+    verified_at?: string;
+    type: "human" | "service" | "machine";
+    capabilities: Record<string, SerializableValue>;
+    metadata: Record<string, SerializableValue>;
+  };
+}
+
 export type SerializableValue =
   | string
   | number
@@ -10,6 +23,18 @@ export type SerializableValue =
 
 export type ProxyHttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type IdentityXOAuthProvider = "github" | "google";
+
+export interface IdentityXTransportLogEvent {
+  layer: "bff-server" | "bff-client";
+  operation: string;
+  method: string;
+  path: string;
+  duration_ms: number;
+  success: boolean;
+  status?: number;
+  error_id?: string;
+  message?: string;
+}
 
 export interface ServerAuthResult {
   success: boolean;
@@ -27,6 +52,7 @@ export interface ServerSessionSnapshot {
 
 export interface ServerProxyRequest {
   path: string;
+  target?: "api" | "identityx";
   method?: ProxyHttpMethod;
   body?: SerializableValue;
   headers?: Record<string, string>;

@@ -1,10 +1,12 @@
 import { createDefaultFetchClient, type DefaultFetchResult } from "@trieoh/envoy-fetch-ts";
 import type { AuthProviderAdapter, AuthService } from "@trieoh/identityx-sdk-ts/react";
-import type { ApiResponse } from "@trieoh/identityx-sdk-ts";
+import { createFetcher, type ApiResponse } from "@trieoh/identityx-sdk-ts";
 import type { AuthTokens } from "@trieoh/identityx-sdk-ts";
 import type {
+  BffIntrospectResponse,
   SerializableValue,
   IdentityXOAuthProvider,
+  IdentityXTransportLogEvent,
   ProxyHttpMethod,
   ServerAuthResult,
   ServerOperationResult,
@@ -33,12 +35,26 @@ export interface IdentityXServerFunctions {
     ServerOperationResult<{ url: string }>
   >;
   completeProviderLogin?: ServerFunction<
-    { provider: IdentityXOAuthProvider; code: string },
+    { provider: IdentityXOAuthProvider; code: string; state: string },
     ServerAuthResult
   >;
   logout: ServerFunction<void, ServerAuthResult>;
   refresh: ServerFunction<void, ServerAuthResult>;
   restore: ServerFunction<void, ServerSessionSnapshot>;
+  introspect?: ServerFunction<
+    { apiKey?: string } | undefined,
+    ServerProxyResult<BffIntrospectResponse>
+  >;
+  request?: ServerFunction<ServerProxyRequest, ServerProxyResult>;
+}
+
+export interface TanStackIdentityXClientOptions {
+  mode?: "bff" | "direct";
+  apiBaseURL?: string;
+  authBaseURL?: string;
+  projectId?: string;
+  log?: (event: IdentityXTransportLogEvent) => void;
+  logSuccesses?: boolean;
 }
 
 function authResponse<T>(result: ServerAuthResult): ApiResponse<T> {
@@ -61,6 +77,7 @@ function authResponse<T>(result: ServerAuthResult): ApiResponse<T> {
 
 export function createTanStackIdentityXAuthProviderAdapter(
   functions: IdentityXServerFunctions,
+  options: TanStackIdentityXClientOptions = {},
 ): AuthProviderAdapter {
   return {
     restoreSession: () => functions.restore({ data: undefined }),
@@ -71,6 +88,45 @@ export function createTanStackIdentityXAuthProviderAdapter(
       setProfile,
       setAuthenticated,
     }): AuthService {
+      const proxyResponse = async <T>(
+        operation: string,
+        path: string,
+        method: ProxyHttpMethod = "GET",
+        body?: SerializableValue,
+      ): Promise<ApiResponse<T>> => {
+        if (!functions.request) {
+          throw new Error(`IdentityX BFF request transport is not configured for ${operation}`);
+        }
+        const started = performance.now();
+        const result = await functions.request({
+          data: {
+            path,
+            target: "identityx",
+            method,
+            ...(body === undefined ? {} : { body }),
+          },
+        });
+        const event: IdentityXTransportLogEvent = {
+          layer: "bff-client",
+          operation,
+          method,
+          path,
+          duration_ms: Math.round(performance.now() - started),
+          success: result.success,
+          status: result.code,
+          ...(result.error_id ? { error_id: result.error_id } : {}),
+          ...(result.message ? { message: result.message } : {}),
+        };
+        if (options.logSuccesses || !result.success) {
+          (options.log ?? defaultTransportLogger)(event);
+        }
+        return proxyResultToApiResponse<T>(result);
+      };
+      const projectPath = (suffix: string, overrideProjectId?: string) => {
+        const projectId = overrideProjectId ?? options.projectId;
+        return projectId ? `/projects/${projectId}${suffix}` : suffix;
+      };
+
       return {
         ...defaultAuth,
         isSetupDone: functions.isSetupDone
@@ -78,15 +134,15 @@ export function createTanStackIdentityXAuthProviderAdapter(
           : defaultAuth.isSetupDone,
         setup: functions.setup
           ? async (email, password) => {
-              const result = await functions.setup!({ data: { email, password } });
-              const response = authResponse<AuthTokens>(result);
-              if (result.success) {
-                setProfile(result.profile ?? null);
-                setAuthenticated(true);
-                callbacks.onSetup?.(response);
-              }
-              return response;
+            const result = await functions.setup!({ data: { email, password } });
+            const response = authResponse<AuthTokens>(result);
+            if (result.success) {
+              setProfile(result.profile ?? null);
+              setAuthenticated(true);
+              callbacks.onSetup?.(response);
             }
+            return response;
+          }
           : defaultAuth.setup,
         profile: getProfile,
         login: async (email, password) => {
@@ -101,32 +157,32 @@ export function createTanStackIdentityXAuthProviderAdapter(
         },
         register: functions.register
           ? async (email, password) => {
-              const result = await functions.register!({ data: { email, password } });
-              const response = authResponse<void>(result);
-              if (result.success) callbacks.onRegister?.(response);
-              return response;
-            }
+            const result = await functions.register!({ data: { email, password } });
+            const response = authResponse<void>(result);
+            if (result.success) callbacks.onRegister?.(response);
+            return response;
+          }
           : defaultAuth.register,
         loginWithProvider: functions.loginWithProvider
           ? async (provider) => {
-              const result = await functions.loginWithProvider!({ data: { provider } });
-              const base = authResponse<{ url: string }>(result);
-              return result.success
-                ? { ...base, success: true, data: result.data! }
-                : base;
-            }
+            const result = await functions.loginWithProvider!({ data: { provider } });
+            const base = authResponse<{ url: string }>(result);
+            return result.success
+              ? { ...base, success: true, data: result.data! }
+              : base;
+          }
           : defaultAuth.loginWithProvider,
         completeProviderLogin: functions.completeProviderLogin
-          ? async (provider, code) => {
-              const result = await functions.completeProviderLogin!({ data: { provider, code } });
-              const response = authResponse<AuthTokens>(result);
-              if (result.success) {
-                setProfile(result.profile ?? null);
-                setAuthenticated(true);
-                callbacks.onLogin?.(response);
-              }
-              return response;
+          ? async (provider, code, state) => {
+            const result = await functions.completeProviderLogin!({ data: { provider, code, state } });
+            const response = authResponse<AuthTokens>(result);
+            if (result.success) {
+              setProfile(result.profile ?? null);
+              setAuthenticated(true);
+              callbacks.onLogin?.(response);
             }
+            return response;
+          }
           : defaultAuth.completeProviderLogin,
         logout: async () => {
           const result = await functions.logout({ data: undefined });
@@ -148,15 +204,127 @@ export function createTanStackIdentityXAuthProviderAdapter(
           }
           return response;
         },
+        introspect: functions.introspect
+          ? async (apiKey?: string) => {
+            if (apiKey) return defaultAuth.introspect(apiKey);
+
+            const result = await functions.introspect!({ data: apiKey ? { apiKey } : undefined });
+            const base = {
+              module: "identityx-bff",
+              message: result.message ?? (result.success ? "OK" : "Introspect failed"),
+              timestamp: new Date().toISOString(),
+              code: result.code,
+            };
+            if (result.success) {
+              return { ...base, success: true, data: result.data! };
+            }
+            return {
+              ...base,
+              success: false,
+              error_id: result.error_id ?? "INTROSPECT_ERROR",
+              ...(result.trace ? { trace: result.trace } : {}),
+            };
+          }
+          : defaultAuth.introspect,
+        ...(functions.request ? {
+          sendForgotPassword: (email: string) =>
+            proxyResponse<void>("sendForgotPassword", "/auth/forgot-password", "POST", {
+              email,
+              ...(options.projectId ? { project_id: options.projectId } : {}),
+            }),
+          resetPassword: (token: string, password: string) =>
+            proxyResponse<void>("resetPassword", "/auth/reset-password", "POST", { token, password }),
+          verifyEmail: (token: string) =>
+            proxyResponse<void>("verifyEmail", "/auth/verify-email", "POST", { token }),
+          resendVerifyEmail: (email: string) =>
+            proxyResponse<void>("resendVerifyEmail", "/auth/resend-verification", "POST", {
+              email,
+              ...(options.projectId ? { project_id: options.projectId } : {}),
+            }),
+          getProjectProfile: (actorId: string, projectId?: string) =>
+            proxyResponse("getProjectProfile", projectPath(`/actors/${actorId}/profile`, projectId)),
+          upsertProjectProfile: (actorId: string, data: { profile: Record<string, unknown> }, projectId?: string) =>
+            proxyResponse("upsertProjectProfile", projectPath(`/actors/${actorId}/profile`, projectId), "PUT", data as SerializableValue),
+          getPlatformProfile: (actorId: string) =>
+            proxyResponse("getPlatformProfile", `/actors/${actorId}/profile`),
+          upsertPlatformProfile: (actorId: string, data: { profile: Record<string, unknown> }) =>
+            proxyResponse("upsertPlatformProfile", `/actors/${actorId}/profile`, "PUT", data as SerializableValue),
+          getProfileSchema: (projectId?: string) =>
+            proxyResponse("getProfileSchema", projectPath("/profile-schema", projectId)),
+          upsertProfileSchema: (data: { schema: Record<string, unknown>; active: boolean }, projectId?: string) =>
+            proxyResponse("upsertProfileSchema", projectPath("/profile-schema", projectId), "PUT", data as SerializableValue),
+          getActorProfile: (actorId: string, projectId?: string) =>
+            proxyResponse("getActorProfile", projectPath(`/actors/${actorId}/profile`, projectId)),
+          upsertActorProfile: (actorId: string, data: { profile: Record<string, unknown> }, projectId?: string) =>
+            proxyResponse("upsertActorProfile", projectPath(`/actors/${actorId}/profile`, projectId), "PUT", data as SerializableValue),
+        } : {}),
       };
     },
   };
 }
 
+export function createTanStackIdentityXIntegration(
+  functions: IdentityXServerFunctions & {
+    request: ServerFunction<ServerProxyRequest, ServerProxyResult>;
+  },
+  options: TanStackIdentityXClientOptions = {},
+) {
+  if (options.mode === "direct") {
+    if (!options.apiBaseURL) {
+      throw new Error("IdentityX direct transport requires apiBaseURL");
+    }
+    const authFetcher = createFetcher({
+      baseURL: options.apiBaseURL,
+      authBaseURL: options.authBaseURL,
+    });
+    return {
+      mode: "direct" as const,
+      authAdapter: undefined,
+      authFetcher,
+      authQueryFetcher: async <T>(path: string): Promise<T> => {
+        const result = await authFetcher.get<T>(path);
+        if (!result.success) throw result;
+        return result.data;
+      },
+    };
+  }
+
+  const fetchers = createTanStackServerProxyFetchers(functions.request, options);
+  return {
+    mode: "bff" as const,
+    authAdapter: createTanStackIdentityXAuthProviderAdapter(functions, options),
+    ...fetchers,
+  };
+}
+
+function proxyResultToApiResponse<T>(result: ServerProxyResult): ApiResponse<T> {
+  const base = {
+    module: "identityx-bff",
+    message: result.message ?? (result.success ? "OK" : "Request failed"),
+    timestamp: new Date().toISOString(),
+    code: result.code,
+  };
+  return result.success
+    ? { ...base, success: true, data: result.data as T }
+    : {
+        ...base,
+        success: false,
+        error_id: result.error_id ?? "IDENTITYX_BFF_ERROR",
+        ...(result.trace ? { trace: result.trace } : {}),
+      };
+}
+
+function defaultTransportLogger(event: IdentityXTransportLogEvent): void {
+  const method = event.success ? "info" : "error";
+  console[method]("[identityx-transport]", event);
+}
+
 export function createTanStackServerProxyFetchers(
   proxy: ServerFunction<ServerProxyRequest, ServerProxyResult>,
+  options: TanStackIdentityXClientOptions = {},
 ) {
   const adapter = async (url: string, init?: RequestInit): Promise<Response> => {
+    const started = performance.now();
     const headers = Object.fromEntries(new Headers(init?.headers).entries());
     let body: SerializableValue | undefined;
     if (typeof init?.body === "string" && init.body.length > 0) {
@@ -182,6 +350,20 @@ export function createTanStackServerProxyFetchers(
         ...(Object.keys(headers).length === 0 ? {} : { headers }),
       },
     });
+    const event: IdentityXTransportLogEvent = {
+      layer: "bff-client",
+      operation: "apiRequest",
+      method,
+      path: url.split("?", 1)[0] ?? url,
+      duration_ms: Math.round(performance.now() - started),
+      success: result.success,
+      status: result.code,
+      ...(result.error_id ? { error_id: result.error_id } : {}),
+      ...(result.message ? { message: result.message } : {}),
+    };
+    if (options.logSuccesses || !result.success) {
+      (options.log ?? defaultTransportLogger)(event);
+    }
     const payload = {
       module: "server-proxy",
       message: result.message ?? (result.success ? "OK" : "Request failed"),

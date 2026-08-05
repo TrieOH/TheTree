@@ -1,5 +1,6 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { BadgeCheck, FileX2, Hash, Loader2, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -19,6 +20,9 @@ import {
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
+import type { EventI } from "@/features/events/model";
+import { profileKeys } from "@/features/profile/api/query-keys";
+import { asUniventsProfile } from "@/features/profile/model/profile-data";
 import { programsQueryOptions } from "@/features/programs/api";
 import type { ProgramI } from "@/features/programs/model";
 import { Badge } from "@/shared/ui/shadcn/badge";
@@ -61,6 +65,7 @@ type VerifiedTemplateSectionProps = {
   payload: CertificationI;
   activityLookup: Map<string, ProgramI>;
   editionLookup: Map<string, EditionI>;
+  eventLookup: Map<string, EventI>;
 };
 
 function VerifiedTemplateSection({
@@ -69,7 +74,9 @@ function VerifiedTemplateSection({
   payload,
   activityLookup,
   editionLookup,
+  eventLookup,
 }: VerifiedTemplateSectionProps) {
+  const { auth } = useAuth();
   const { data: linkedTemplate } = useQuery<CertificationTemplateI | null>({
     queryKey: templateQuery.query?.queryKey ?? ["certifications", "default"],
     queryFn: async (context): Promise<CertificationTemplateI | null> => {
@@ -79,6 +86,14 @@ function VerifiedTemplateSection({
     },
   });
   const templateData = getCertificationTemplateOrDefault(linkedTemplate);
+  const { data: participantName = "" } = useQuery({
+    queryKey: profileKeys.certificateName(payload.user_id),
+    queryFn: async () => {
+      const response = await auth.getActorProfile(payload.user_id);
+      if (!response.success || !response.data) return "";
+      return asUniventsProfile(response.data.profile ?? {}).legalName ?? "";
+    },
+  });
 
   const variables = useMemo(() => {
     const activity =
@@ -90,17 +105,30 @@ function VerifiedTemplateSection({
         ? payload.edition_id
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
+    const event = edition ? (eventLookup.get(edition.event_id) ?? null) : null;
 
     return {
+      participant_name: participantName,
+      event_name: event?.full_name ?? "",
+      edition_name: edition?.name ?? "",
       activity_name:
         payload.program_id === null
           ? (edition?.name ?? "")
           : (activity?.name ?? edition?.name ?? ""),
+      participation_type: payload.program_id === null ? "edição" : "atividade",
+      location: edition?.location_name ?? "",
       certified_at: formatCertifiedAt(payload.issued_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
     };
-  }, [activityLookup, editionLookup, hash, payload]);
+  }, [
+    activityLookup,
+    editionLookup,
+    eventLookup,
+    hash,
+    participantName,
+    payload,
+  ]);
 
   return (
     <div className="mb-6 overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -139,6 +167,10 @@ function VerifyCertificationPage() {
   const payload = data?.cert ?? null;
 
   const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
+  const eventLookup = useMemo(
+    () => new Map(events.map((event) => [event.id, event])),
+    [events],
+  );
   const editionQueries = useQueries({
     queries: events.map((event) => ({
       ...allPublicEditionsQueryOptions(event.id),
@@ -225,6 +257,7 @@ function VerifyCertificationPage() {
             payload={payload}
             activityLookup={activityLookup}
             editionLookup={editionLookup}
+            eventLookup={eventLookup}
           />
         )}
 

@@ -1,12 +1,14 @@
 import { useSession, getRequest } from "@tanstack/react-start/server";
 import type { AuthTokens, TokenClaims, TokenSubject } from "@trieoh/identityx-sdk-ts";
 import type {
+  BffIntrospectResponse,
   ServerAuthResult,
   ServerOperationResult,
   ServerProxyRequest,
   ServerProxyResult,
   ServerSessionSnapshot,
   SerializableValue,
+  IdentityXTransportLogEvent,
 } from "./types";
 
 interface IdentityXSessionData {
@@ -41,10 +43,19 @@ export interface TanStackIdentityXBffConfig {
     secure?: boolean;
   };
   apiBaseURL: string;
+  observability?: {
+    log?: (event: IdentityXTransportLogEvent) => void;
+    logSuccesses?: boolean;
+  };
 }
 
 function joinURL(base: string, path: string): string {
   return `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
+
+function defaultBffLogger(event: IdentityXTransportLogEvent): void {
+  const method = event.success ? "info" : "error";
+  console[method]("[identityx-bff]", event);
 }
 
 function decodeClaims(token: string): TokenClaims | null {
@@ -118,6 +129,53 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
 
   const session = () => useSession<IdentityXSessionData>(sessionConfig);
 
+  const observedFetch = async (
+    operation: string,
+    url: string,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const started = performance.now();
+    const method = (init?.method ?? "GET").toUpperCase();
+    const path = new URL(url).pathname;
+    try {
+      const response = await fetch(url, init);
+      const failureEnvelope = response.ok
+        ? undefined
+        : await readEnvelope(response.clone());
+      const event: IdentityXTransportLogEvent = {
+        layer: "bff-server",
+        operation,
+        method,
+        path,
+        duration_ms: Math.round(performance.now() - started),
+        success: response.ok,
+        status: response.status,
+        ...(failureEnvelope?.error_id || failureEnvelope?.error?.code
+          ? { error_id: failureEnvelope.error_id ?? failureEnvelope.error?.code }
+          : {}),
+        ...(!response.ok
+          ? { message: failureEnvelope?.message ?? failureEnvelope?.error?.message ?? response.statusText }
+          : {}),
+      };
+      if (config.observability?.logSuccesses || !response.ok) {
+        (config.observability?.log ?? defaultBffLogger)(event);
+      }
+      return response;
+    } catch (error) {
+      const event: IdentityXTransportLogEvent = {
+        layer: "bff-server",
+        operation,
+        method,
+        path,
+        duration_ms: Math.round(performance.now() - started),
+        success: false,
+        message: error instanceof Error ? error.message : "Network request failed",
+      };
+      (config.observability?.log ?? defaultBffLogger)(event);
+      throw error;
+    }
+  };
+
   const projectQuery = () => config.identityX.projectId
     ? `?project_id=${encodeURIComponent(config.identityX.projectId)}`
     : "";
@@ -126,7 +184,7 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     path: string,
     init: RequestInit,
   ): Promise<ServerAuthResult> {
-    const response = await fetch(joinURL(config.identityX.baseURL, path), init);
+    const response = await observedFetch("authenticate", joinURL(config.identityX.baseURL, path), init);
     const envelope = await readEnvelope<AuthTokens>(response);
     const normalized = normalize(response, envelope);
     if (!normalized.success || !envelope.data) return normalized;
@@ -167,7 +225,8 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
 
     let response: Response;
     try {
-      response = await fetch(
+      response = await observedFetch(
+        "refresh",
         joinURL(config.identityX.baseURL, "/auth/refresh"),
         {
           method: "POST",
@@ -197,11 +256,11 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         sessionInvalid,
         error: response.ok
           ? {
-              success: false,
-              code: 502,
-              error_id: "INVALID_REFRESH_RESPONSE",
-              message: "Authentication service returned invalid tokens",
-            }
+            success: false,
+            code: 502,
+            error_id: "INVALID_REFRESH_RESPONSE",
+            message: "Authentication service returned invalid tokens",
+          }
           : normalized,
       };
     }
@@ -235,8 +294,41 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
 
   return {
     async isSetupDone(): Promise<ServerAuthResult> {
-      const response = await fetch(joinURL(config.identityX.baseURL, "/auth/setup"));
+      const response = await observedFetch("isSetupDone", joinURL(config.identityX.baseURL, "/auth/setup"));
       return normalize(response, await readEnvelope(response));
+    },
+
+    async introspect(
+      apiKey?: string,
+    ): Promise<ServerProxyResult<BffIntrospectResponse>> {
+      if (apiKey) {
+        const response = await observedFetch(
+          "introspectApiKey",
+          joinURL(config.identityX.baseURL, "/auth/introspect"),
+          { headers: { "X-API-KEY": apiKey } },
+        );
+        return normalize(
+          response,
+          await readEnvelope<BffIntrospectResponse>(response),
+        );
+      }
+
+      const resolution = await validTokens();
+      if (!resolution.success) return resolution.error;
+
+      const response = await observedFetch(
+        "introspect",
+        joinURL(config.identityX.baseURL, "/auth/introspect"),
+        {
+          headers: {
+            Authorization: `Bearer ${resolution.tokens.access_token}`,
+          },
+        },
+      );
+      return normalize(
+        response,
+        await readEnvelope<BffIntrospectResponse>(response),
+      );
     },
 
     async setup(email: string, password: string): Promise<ServerAuthResult> {
@@ -256,7 +348,8 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     },
 
     async register(email: string, password: string): Promise<ServerAuthResult> {
-      const response = await fetch(
+      const response = await observedFetch(
+        "register",
         joinURL(config.identityX.baseURL, `/auth/register${projectQuery()}`),
         {
           method: "POST",
@@ -270,7 +363,7 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     async loginWithProvider(
       provider: "github" | "google",
     ): Promise<ServerOperationResult<{ url: string }>> {
-      const response = await fetch(joinURL(
+      const response = await observedFetch("loginWithProvider", joinURL(
         config.identityX.baseURL,
         `/auth/${provider}/connect${projectQuery()}`,
       ));
@@ -280,9 +373,11 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     async completeProviderLogin(
       provider: "github" | "google",
       code: string,
+      state: string,
     ): Promise<ServerAuthResult> {
+      const query = new URLSearchParams({ code, state });
       return authenticate(
-        `/auth/${provider}/callback?code=${encodeURIComponent(code)}`,
+        `/auth/${provider}/callback?${query}`,
         { method: "GET" },
       );
     },
@@ -290,15 +385,15 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     async logout(): Promise<ServerAuthResult> {
       const current = await session();
       const resolution = await validTokens();
-      const accessToken = resolution.success
-        ? resolution.tokens.access_token
-        : undefined;
       let result: ServerAuthResult = { success: true, code: 204 };
 
-      if (accessToken) {
-        const response = await fetch(joinURL(config.identityX.baseURL, "/auth/logout"), {
+      if (resolution.success) {
+        const response = await observedFetch("logout", joinURL(config.identityX.baseURL, "/auth/logout"), {
           method: "POST",
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: {
+            Authorization: `Bearer ${resolution.tokens.access_token}`,
+            "Refresh-Token": resolution.tokens.refresh_token,
+          },
         });
         result = normalize(response, await readEnvelope(response));
       }
@@ -311,10 +406,10 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
       const resolution = await refreshTokens();
       return resolution.success
         ? {
-            success: true,
-            code: 200,
-            profile: getProfile(resolution.tokens),
-          }
+          success: true,
+          code: 200,
+          profile: getProfile(resolution.tokens),
+        }
         : resolution.error;
     },
 
@@ -348,16 +443,38 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         }
       }
 
+      const anonymousAuthRequest =
+        input.target === "identityx" &&
+        method === "POST" &&
+        [
+          "/auth/verify-email",
+          "/auth/resend-verification",
+          "/auth/forgot-password",
+          "/auth/reset-password",
+        ].includes(input.path);
       const resolution = await validTokens();
-      if (!resolution.success) return resolution.error;
+      if (
+        !resolution.success &&
+        !anonymousAuthRequest &&
+        (method !== "GET" || !resolution.sessionInvalid)
+      ) {
+        return resolution.error;
+      }
 
       const headers = new Headers(input.headers);
-      headers.set("Authorization", `Bearer ${resolution.tokens.access_token}`);
+      if (resolution.success) {
+        headers.set("Authorization", `Bearer ${resolution.tokens.access_token}`);
+      }
       if (input.body !== undefined && !headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }
 
-      const response = await fetch(joinURL(config.apiBaseURL, input.path), {
+      const targetBaseURL = input.target === "identityx"
+        ? config.identityX.baseURL
+        : config.apiBaseURL;
+      const response = await observedFetch(
+        input.target === "identityx" ? "identityXRequest" : "apiRequest",
+        joinURL(targetBaseURL, input.path), {
         method,
         headers,
         body: input.body === undefined ? undefined : JSON.stringify(input.body),

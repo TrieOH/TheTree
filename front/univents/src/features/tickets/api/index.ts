@@ -1,6 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, publicQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import {
+  createTicketType,
+  getTicketType,
+  listTicketTypes,
+  patchTicketType,
+} from "@trieoh/univents-api";
+import type { PatchTicketTypeRequest } from "@trieoh/univents-api/schemas";
 import type { TicketCreateOutputI, TicketI } from "../model";
 import { ticketKeys } from "./query-keys";
 
@@ -12,10 +19,7 @@ import { ticketKeys } from "./query-keys";
  */
 export const createTicketFn = createClientOnlyFn(
   (ticketData: TicketCreateOutputI, editionId: string) => {
-    return authFetcher.post<TicketI>(
-      `/editions/${editionId}/ticket-types`,
-      ticketData,
-    );
+    return createTicketType(editionId, ticketData).then(orvalData<TicketI>);
   },
 );
 
@@ -27,17 +31,21 @@ export const createTicketFn = createClientOnlyFn(
  */
 export const patchTicketFn = createClientOnlyFn(
   (ticketData: TicketCreateOutputI, ticketId: string) => {
-    return authFetcher.patch<TicketI>(`/ticket-types/${ticketId}`, ticketData);
+    return patchTicketType(ticketId, ticketData as PatchTicketTypeRequest).then(
+      orvalData<TicketI>,
+    );
   },
 );
 
 /**
- * Fetches all tickets for a specific edition from the server.
+ * Fetches all tickets for a specific edition from the server. (Public)
  * @param editionId - the edition id
  * @returns A promise that resolves to an array of Ticket objects.
  */
 const getAllTicketsFn = async (editionId: string) => {
-  return publicQueryFetcher<TicketI[]>(`/editions/${editionId}/ticket-types`);
+  return listTicketTypes(editionId, { public: true }).then(
+    orvalData<TicketI[]>,
+  );
 };
 
 /**
@@ -54,14 +62,14 @@ export const allTicketsQueryOptions = (editionId: string) => {
 };
 
 /**
- * Fetches a ticket by ID from the server.
+ * Fetches a ticket by ID from the server. (Public)
  * @param ticketId - the ticket id
  * @returns A promise that resolves to a Ticket object.
  */
 const getTicketByIdFn = async (ticketId: string) => {
-  return publicQueryFetcher<TicketI | null>(`/ticket-types/${ticketId}`).catch(
-    () => null,
-  );
+  return getTicketType(ticketId, { public: true })
+    .then(orvalData<TicketI | null>)
+    .catch(() => null);
 };
 
 /**

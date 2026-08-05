@@ -1,5 +1,6 @@
 import { useMultiStepForm } from "@/widgets/multi-step-form/hooks/use-multi-step-form";
 import { MultiStepFormModal } from "@/widgets/multi-step-form/ui/multi-step-form-modal";
+import type { EventMemberWithEmailI } from "../api/members";
 import {
   type EventMemberCreateInput,
   type EventMemberCreateOutput,
@@ -10,7 +11,9 @@ import { createEventMemberFormSteps } from "../model/member-form-steps";
 interface ManageEventMemberModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (values: EventMemberCreateOutput) => boolean | Promise<boolean>;
+  onCreate: (
+    values: EventMemberCreateOutput,
+  ) => boolean | Promise<boolean | EventMemberWithEmailI>;
 }
 
 const defaultValues: EventMemberCreateInput = {
@@ -28,7 +31,9 @@ export function ManageEventMemberModal({
     steps: createEventMemberFormSteps(),
     defaultValues,
     resetOnSuccessValues: defaultValues,
-    onSubmit: onCreate,
+    onSubmit: async (values): Promise<boolean> => {
+      return Boolean(await onCreate(values));
+    },
     onSubmitSuccess: () => onOpenChange(false),
   });
 

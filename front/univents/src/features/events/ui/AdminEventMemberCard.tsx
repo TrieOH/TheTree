@@ -2,7 +2,7 @@ import { ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
-import type { EventMemberI } from "../api/members";
+import type { EventMemberWithEmailI } from "../api/members";
 import type { EventMemberRole } from "../model/member";
 
 const roleConfig: Record<
@@ -27,9 +27,9 @@ const roleConfig: Record<
 };
 
 export interface AdminEventMemberCardProps {
-  member: EventMemberI;
+  member: EventMemberWithEmailI;
   index?: number;
-  onRemove: (member: EventMemberI) => void;
+  onRemove: (member: EventMemberWithEmailI) => void;
 }
 
 export function AdminEventMemberCard({

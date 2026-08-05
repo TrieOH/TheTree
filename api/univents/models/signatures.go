@@ -48,25 +48,6 @@ type SignatureRequest struct {
 	DeletedAt       *time.Time             `json:"deleted_at"`
 }
 
-type AddSignatureRequest struct {
-	SignatoryName   string     `json:"signatory_name"    validate:"required,min=2,max=256"`
-	SignatoryTitle  *string    `json:"signatory_title"`
-	SignatoryEmail  *string    `json:"signatory_email"`
-	SignatoryUserID *uuid.UUID `json:"signatory_user_id"`
-	ImageURL        string     `json:"image_url"         validate:"required,url"`
-}
-
-func (r AddSignatureRequest) ToInput(editionID uuid.UUID) AddSignatureInput {
-	return AddSignatureInput{
-		EditionID:       editionID,
-		SignatoryName:   r.SignatoryName,
-		SignatoryTitle:  r.SignatoryTitle,
-		SignatoryEmail:  r.SignatoryEmail,
-		SignatoryUserID: r.SignatoryUserID,
-		ImageURL:        r.ImageURL,
-	}
-}
-
 type AddSignatureInput struct {
 	EditionID       uuid.UUID  `json:"edition_id"`
 	SignatoryName   string     `json:"signatory_name"`
@@ -74,29 +55,6 @@ type AddSignatureInput struct {
 	SignatoryEmail  *string    `json:"signatory_email"`
 	SignatoryUserID *uuid.UUID `json:"signatory_user_id"`
 	ImageURL        string     `json:"image_url"`
-}
-
-type CreateSignatureRequestRequest struct {
-	SignatoryName   string     `json:"signatory_name"    validate:"required,min=2,max=256"`
-	SignatoryTitle  *string    `json:"signatory_title"`
-	SignatoryEmail  *string    `json:"signatory_email"   validate:"required,email"`
-	SignatoryUserID *uuid.UUID `json:"signatory_user_id"`
-	ExpiresInDays   int        `json:"expires_in_days"   validate:"omitempty,gte=1,lte=365"`
-}
-
-func (r CreateSignatureRequestRequest) ToInput(editionID uuid.UUID) CreateSignatureRequestInput {
-	days := r.ExpiresInDays
-	if days == 0 {
-		days = 7
-	}
-	return CreateSignatureRequestInput{
-		EditionID:       editionID,
-		SignatoryName:   r.SignatoryName,
-		SignatoryTitle:  r.SignatoryTitle,
-		SignatoryEmail:  r.SignatoryEmail,
-		SignatoryUserID: r.SignatoryUserID,
-		ExpiresInDays:   days,
-	}
 }
 
 type CreateSignatureRequestInput struct {

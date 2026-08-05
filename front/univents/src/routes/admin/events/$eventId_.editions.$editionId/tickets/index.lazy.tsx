@@ -143,15 +143,15 @@ function RouteComponent() {
             data: values,
           });
 
-          return res.success ? res.data : false;
+          return res || false;
         }}
         onUpdate={async (ticketId, values) => {
-          const res = await updateTicketMutation.mutateAsync({
+          const ticket = await updateTicketMutation.mutateAsync({
             ticketId,
             data: values,
           });
 
-          return res.success ? res.data : false;
+          return ticket || false;
         }}
       />
     </div>

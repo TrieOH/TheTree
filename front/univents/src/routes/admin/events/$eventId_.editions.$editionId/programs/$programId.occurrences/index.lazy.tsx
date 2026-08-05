@@ -145,12 +145,12 @@ function OccurrencesRoute() {
           )
         }
         onSave={async (data) => {
-          const response = await mutation.mutateAsync({
+          const occurrence = await mutation.mutateAsync({
             id: modal.occurrence?.id,
             programId,
             data,
           });
-          return response.success;
+          return Boolean(occurrence);
         }}
       />
     </div>

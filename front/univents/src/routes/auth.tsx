@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ModernAuth } from "@trieoh/identityx-sdk-ts/react";
+import { toast } from "sonner";
 import z from "zod";
 import { requireGuest } from "@/features/auths/lib/route-guard";
 
@@ -18,10 +19,13 @@ function AuthPage() {
   const router = useRouter();
   const search = Route.useSearch();
 
-  const handleLoginSuccess = async () => {
+  const handleLoginSuccess = async (message?: string) => {
     const auth = router.options.context.auth;
 
-    if (!auth) return;
+    if (!auth) {
+      toast.error("Não foi possível inicializar a autenticação");
+      return;
+    }
 
     router.update({
       context: {
@@ -32,13 +36,19 @@ function AuthPage() {
 
     const destination = search.redirect || "/profile";
     await navigate({ to: destination, replace: true });
+    toast.success(message ?? "Login realizado com sucesso");
     router.options.context.queryClient.invalidateQueries();
   };
 
-  const handleSignUpSuccess = async () => {};
+  const handleSignUpSuccess = async (message?: string) => {
+    toast.success(message ?? "Conta criada com sucesso");
+  };
 
-  const handleFailure = async (message: string) => {
-    void message;
+  const handleFailure = async (message: string, trace?: string[]) => {
+    const description = trace?.join("\n").replaceAll("trace: ", "");
+    toast.error(message || "Não foi possível concluir a autenticação", {
+      description,
+    });
   };
 
   return (
@@ -48,7 +58,6 @@ function AuthPage() {
         onLoginSuccess={handleLoginSuccess}
         onSignUpSuccess={handleSignUpSuccess}
         onFailed={handleFailure}
-        providers={["google", "github"]}
       />
     </div>
   );

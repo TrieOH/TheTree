@@ -12,12 +12,12 @@ import {
 import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
 import { Label } from "@/shared/ui/shadcn/label";
-import type { EventMemberI } from "../api/members";
+import type { EventMemberWithEmailI } from "../api/members";
 
 interface RemoveEventMemberModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  member: EventMemberI | null;
+  member: EventMemberWithEmailI | null;
   onRemove: (userId: string, email: string) => Promise<boolean>;
 }
 

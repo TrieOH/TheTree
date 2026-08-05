@@ -162,11 +162,11 @@ function EditionsRoute() {
             return false;
           }
 
-          const res = await createEditionMutation.mutateAsync({
+          const edition = await createEditionMutation.mutateAsync({
             eventId,
             data: values,
           });
-          return res.success ? res.data : false;
+          return edition ? edition : false;
         }}
       />
 
@@ -191,12 +191,12 @@ function EditionsRoute() {
               return false;
             }
 
-            const res = await patchEditionMutation.mutateAsync({
+            const edition = await patchEditionMutation.mutateAsync({
               eventId,
               editionId: editionToEdit.id,
               data: values,
             });
-            return res.success ? res.data : false;
+            return edition ? edition : false;
           }}
         />
       ) : null}
@@ -218,11 +218,11 @@ function EditionsRoute() {
         loading={publishEditionMutation.isPending}
         onConfirm={async () => {
           if (!editionToPublish) return;
-          const res = await publishEditionMutation.mutateAsync({
+          await publishEditionMutation.mutateAsync({
             eventId,
             editionId: editionToPublish.id,
           });
-          if (res.success) setEditionToPublish(null);
+          setEditionToPublish(null);
         }}
       />
     </div>

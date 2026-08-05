@@ -80,9 +80,12 @@ export async function preprocessImageUpload(
   path?: string,
   idempotencyKey?: string,
 ): Promise<string> {
-  const optimizedFile = await resizeImageForModeration(file);
+  const moderationFile = await resizeImageForModeration(file);
   const formData = new FormData();
-  formData.append("file", optimizedFile);
+  formData.append("file", file);
+  if (moderationFile !== file) {
+    formData.append("moderationFile", moderationFile);
+  }
   if (path) formData.append("path", path);
   if (idempotencyKey) formData.append("idempotencyKey", idempotencyKey);
 

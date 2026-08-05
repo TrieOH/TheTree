@@ -37,16 +37,12 @@ function RouteComponent() {
   const { mutate: createOrganization, isPending: isCreating } = useMutation({
     mutationFn: (data: OrganizationCreateI) => createOrganizationFn(data),
     onSuccess: (response) => {
-      if (response.success) {
-        queryClient.setQueryData(
-          allOrganizationsQueryOptions().queryKey,
-          (oldData: OrganizationI[] = []) => {
-            return [response.data, ...oldData];
-          },
-        );
-        setIsCreateOpen(false);
-        toast.success(response.message || "Namespace created successfully");
-      } else toast.error(response.message || "Failed to create namespace");
+      queryClient.setQueryData(
+        allOrganizationsQueryOptions().queryKey,
+        (oldData: OrganizationI[] = []) => [response, ...oldData],
+      );
+      setIsCreateOpen(false);
+      toast.success("Namespace created successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });

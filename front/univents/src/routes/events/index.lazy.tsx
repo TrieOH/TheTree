@@ -274,7 +274,7 @@ function EventsPage() {
           onOpenChange={setModalOpen}
           onCreate={(values) =>
             createMutation.mutateAsync(values).then(
-              (res) => (res.success ? res.data : false),
+              (res) => res || false,
               () => false,
             )
           }

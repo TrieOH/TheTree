@@ -38,10 +38,17 @@ type Actor struct {
 	DeletedAt    *time.Time       `json:"deleted_at"`
 }
 
+// ActorProfile is a single profile document per actor. SchemaVersion points
+// at the profile schema version the document was validated against;
+// Outdated flags documents that no longer validate against the active
+// schema and were not migrated (admin resolves them manually).
 type ActorProfile struct {
-	ActorID   uuid.UUID       `json:"actor_id"`
-	Profile   json.RawMessage `json:"profile"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ActorID       uuid.UUID       `json:"actor_id"`
+	Handle        *string         `json:"handle"`
+	Profile       json.RawMessage `json:"profile"`
+	SchemaVersion int             `json:"schema_version"`
+	Outdated      bool            `json:"outdated"`
+	UpdatedAt     time.Time       `json:"updated_at"`
 }
 
 type OAuthProvider string
@@ -62,21 +69,6 @@ type ActorExternalIdentities struct {
 	TokenExpiresAt        *time.Time    `json:"token_expires_at"`
 	CreatedAt             time.Time     `json:"created_at"`
 	UpdatedAt             time.Time     `json:"updated_at"`
-}
-
-type CreateActorRequest struct {
-	AuthMethod AuthMethod `json:"auth_method" validate:"required,oneof=password api_key"`
-	Type       ActorType  `json:"type"        validate:"required,oneof=human service machine"`
-	Email      *string    `json:"email"`
-}
-
-func (r CreateActorRequest) ToInput(projectID *uuid.UUID) CreateActorInput {
-	return CreateActorInput{
-		AuthMethod: r.AuthMethod,
-		Type:       r.Type,
-		Email:      r.Email,
-		ProjectID:  projectID,
-	}
 }
 
 type CreateActorInput struct {

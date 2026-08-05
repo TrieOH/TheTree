@@ -18,6 +18,10 @@ const (
 	sqlcVersion         = "1.31.1"
 	gotestsumVersion    = "1.13.0"
 	golangciLintVersion = "2.12.2"
+	// oapiCodegenVersion must stay in sync with the binary baked into the
+	// go-tools image (git.trieoh.com/trieoh/go-tools:3), which the service
+	// Dockerfiles copy for their builds.
+	oapiCodegenVersion = "2.8.0"
 )
 
 // baseGo returns a container with the full repo source mounted.
@@ -103,18 +107,53 @@ func (m *Thetree) sqlcGenerate(c *dagger.Container, service string) *dagger.Cont
 	})
 }
 
+// withOapiCodegen installs the oapi-codegen binary in the container.
+// Installing from source (matching `just generate-oapi`'s `go run @v2.8.0`):
+// the oapi-codegen/oapi-codegen fork publishes no release binaries, so the
+// tarball download fails with a non-gzip 404 page. The production
+// Dockerfiles copy the binary from the go-tools image instead.
+func (m *Thetree) withOapiCodegen(c *dagger.Container) *dagger.Container {
+	return c.WithExec([]string{
+		"sh", "-c",
+		fmt.Sprintf(
+			"GOBIN=/usr/local/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v%s",
+			oapiCodegenVersion,
+		),
+	})
+}
+
+// oapiGenerate regenerates the OpenAPI handler bindings (internal/openapi)
+// from api-spec.yml for a service. Generated bindings import
+// github.com/oapi-codegen/runtime; since the code is not committed (and
+// `go mod tidy` would drop an unimported require), the dep is pinned here
+// at generation time only — go.mod in the repo stays clean.
+func (m *Thetree) oapiGenerate(c *dagger.Container, service string) *dagger.Container {
+	return c.WithExec([]string{
+		"sh", "-c",
+		fmt.Sprintf(
+			"cd api/%s && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && "+
+				"oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && "+
+				"go get github.com/oapi-codegen/runtime@v1.6.0",
+			service,
+		),
+	})
+}
+
 // Compile builds a single service.
 func (m *Thetree) Compile(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withSqlc(m.baseGoScoped(source, service))
+	c := m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service)))
 	c = m.sqlcGenerate(c, service)
+	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{"sh", "-c", fmt.Sprintf("cd api/%s && go build ./...", service)})
 	return c.Stdout(ctx)
 }
 
 // Lint runs golangci-lint for a single service.
 func (m *Thetree) Lint(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withGolangciLint(m.withSqlc(m.baseGoScoped(source, service)))
+	c := m.withGolangciLint(m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service))))
 	c = m.sqlcGenerate(c, service)
+	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{
 		"sh", "-c",
 		fmt.Sprintf("cd api/%s && golangci-lint run ./... --config=/workspace/.golangci.yml", service),
@@ -124,8 +163,9 @@ func (m *Thetree) Lint(ctx context.Context, source *dagger.Directory, service st
 
 // Test runs gotestsum for a single service.
 func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withGotestsum(m.withSqlc(m.baseGoScoped(source, service)))
+	c := m.withGotestsum(m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service))))
 	c = m.sqlcGenerate(c, service)
+	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{
 		"sh", "-c",
 		fmt.Sprintf("cd api/%s && gotestsum --format testdox --format-hide-empty-pkg ./...", service),
@@ -134,6 +174,8 @@ func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service st
 }
 
 // CI runs compile, lint, and test for the given services (comma-separated or "all").
+// Generated OpenAPI bindings (internal/openapi) are not committed; every
+// build path regenerates them from api-spec.yml (see oapiGenerate).
 func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services string) (string, error) {
 	list := parseServices(services)
 	var out string

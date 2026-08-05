@@ -99,26 +99,12 @@ type ProjectOAuthProviders struct {
 	ProjectID             uuid.UUID     `json:"project_id"`
 	Provider              OAuthProvider `json:"provider"`
 	ClientID              string        `json:"client_id"`
-	EncryptedClientSecret string        `json:"encrypted_client_secret"`
+	EncryptedClientSecret string        `json:"-"`
+	CallbackURL           string        `json:"callback_url"`
 	Scopes                []string      `json:"scopes"`
 	Enabled               bool          `json:"enabled"`
 	CreatedAt             time.Time     `json:"created_at"`
 	UpdatedAt             time.Time     `json:"updated_at"`
-}
-
-type CreateProjectRequest struct {
-	Name      string  `json:"name"             validate:"required,min=3"`
-	Domain    *string `json:"domain,omitempty" validate:"omitempty,url"`
-	BrandSlug string  `json:"brand_slug"`
-}
-
-func (r CreateProjectRequest) ToInput(orgID *uuid.UUID) CreateProjectInput {
-	return CreateProjectInput{
-		OrganizationID: orgID,
-		Name:           r.Name,
-		Domain:         r.Domain,
-		BrandSlug:      r.BrandSlug,
-	}
 }
 
 type CreateProjectInput struct {
@@ -128,34 +114,10 @@ type CreateProjectInput struct {
 	BrandSlug      string
 }
 
-type AddProjectMemberRequest struct {
-	ActorEmail string      `json:"actor_email"`
-	Role       ProjectRole `json:"role"`
-}
-
-func (r *AddProjectMemberRequest) ToInput(projectID uuid.UUID) AddProjectMemberInput {
-	return AddProjectMemberInput{
-		ActorEmail: r.ActorEmail,
-		Role:       r.Role,
-		ProjectID:  projectID,
-	}
-}
-
 type AddProjectMemberInput struct {
 	ActorEmail string      `json:"actor_email"`
 	Role       ProjectRole `json:"role"`
 	ProjectID  uuid.UUID   `json:"project_id"`
-}
-
-type RemoveProjectMemberRequest struct {
-	ActorEmail string `json:"actor_email"`
-}
-
-func (r *RemoveProjectMemberRequest) ToInput(projectID uuid.UUID) RemoveProjectMemberInput {
-	return RemoveProjectMemberInput{
-		ActorEmail: r.ActorEmail,
-		ProjectID:  projectID,
-	}
 }
 
 type RemoveProjectMemberInput struct {

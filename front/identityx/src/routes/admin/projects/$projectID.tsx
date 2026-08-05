@@ -1,6 +1,14 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { LayoutContext } from "@trieoh/ui-base";
-import { Component, Fingerprint, KeySquare, User2 } from "lucide-react";
+import {
+  Component,
+  Fingerprint,
+  IdCard,
+  KeySquare,
+  Link2,
+  Mail,
+  User2,
+} from "lucide-react";
 import { useState } from "react";
 import z from "zod";
 import { cn } from "@/shared/lib/utils";
@@ -47,6 +55,27 @@ function ProjectLayout() {
       to: "/admin/projects/$projectID/members",
       params: { projectID },
       icon: User2,
+      exact: true,
+    },
+    {
+      label: "OAuth",
+      to: "/admin/projects/$projectID/oauth",
+      params: { projectID },
+      icon: Link2,
+      exact: true,
+    },
+    {
+      label: "Profiles",
+      to: "/admin/projects/$projectID/profiles",
+      params: { projectID },
+      icon: IdCard,
+      exact: true,
+    },
+    {
+      label: "Emails",
+      to: "/admin/projects/$projectID/emails",
+      params: { projectID },
+      icon: Mail,
       exact: true,
     },
   ];

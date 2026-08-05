@@ -184,7 +184,7 @@ function RouteComponent() {
               })
             : createMutation.mutateAsync(values)
           ).then(
-            (res) => (res.success ? res.data : false),
+            (res) => res || false,
             () => false,
           )
         }
@@ -198,10 +198,8 @@ function RouteComponent() {
         confirmLabel="Publicar"
         onConfirm={async () => {
           if (!publishingEvent) return;
-          const response = await publishEventMutation.mutateAsync(
-            publishingEvent.id,
-          );
-          if (response.success) setPublishingEvent(null);
+          await publishEventMutation.mutateAsync(publishingEvent.id);
+          setPublishingEvent(null);
         }}
         variant="success"
         loading={publishEventMutation.isPending}

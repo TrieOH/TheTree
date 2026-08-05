@@ -14,6 +14,10 @@
     "tsc": "pnpm -r tsc",
     "deploy": "pnpm -r deploy",
     "typegen": "pnpm -r cf-typegen",
+    "orval": "orval",
     "clean": "pnpm -r exec rm -rf dist .turbo node_modules"
+  },
+  "devDependencies": {
+    "orval": "^8.23.0"
   }
 }

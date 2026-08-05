@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type { TicketCreateOutputI, TicketI } from "../model";
 import { createTicketFn, patchTicketFn } from "./index";
 import { ticketKeys } from "./query-keys";
@@ -47,15 +48,11 @@ export function useCreateTicketMutation() {
     mutationFn: ({ editionId, data }: CreateTicketInput) =>
       createTicketFn(data, editionId),
     onSuccess: (res, variables) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao criar ticket");
-        return;
-      }
-
-      syncTicketCaches(queryClient, variables.editionId, res.data);
+      syncTicketCaches(queryClient, variables.editionId, res);
       toast.success("Ticket criado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar o ticket")),
   });
 }
 
@@ -65,17 +62,14 @@ export function useUpdateTicketMutation() {
   return useMutation({
     mutationFn: ({ ticketId, data }: UpdateTicketInput) =>
       patchTicketFn(data, ticketId),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao atualizar ticket");
-        return;
-      }
-
-      // We need editionId to sync cache - get it from response data
-      const editionId = res.data.edition_id;
-      syncTicketCaches(queryClient, editionId, res.data);
+    onSuccess: (ticket) => {
+      const editionId = ticket.edition_id;
+      syncTicketCaches(queryClient, editionId, ticket);
       toast.success("Ticket atualizado com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar o ticket"),
+      ),
   });
 }

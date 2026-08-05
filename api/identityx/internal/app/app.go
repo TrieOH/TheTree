@@ -2,11 +2,14 @@ package app
 
 import (
 	"IdentityX/internal/config"
+	"IdentityX/internal/emails"
 	"IdentityX/internal/jobs"
+	"IdentityX/internal/repos"
 	"IdentityX/internal/sqlc"
 	"context"
 
 	"lib/database"
+	"lib/email"
 	"lib/errx"
 	"lib/globals"
 	"lib/httpserver"
@@ -20,9 +23,10 @@ import (
 )
 
 type IdentityX struct {
-	db    *pgxpool.Pool
-	river *river.Client[pgx.Tx]
-	cfg   config.Config
+	db          *pgxpool.Pool
+	river       *river.Client[pgx.Tx]
+	cfg         config.Config
+	emailClient *email.Client
 }
 
 var app IdentityX
@@ -35,6 +39,8 @@ func Start() {
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)
+
+	app.emailClient = email.NewClient(app.cfg.ToEmailConfig())
 
 	sqlcQueries := sqlc.New(app.db)
 	has, err := sqlcQueries.HasAnyActor(ctx)
@@ -49,11 +55,20 @@ func Start() {
 	app.river = libriver.NewClient(app.db, libriver.NewWorkers(
 		libriver.Register[jobs.CreateCryptoKeyArgs](jobs.NewCreateCryptoKeyWorker(sqlcQueries)),
 		libriver.Register[jobs.CleanupBlacklistArgs](jobs.NewCleanupBlacklistWorker(sqlcQueries)),
+		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(sqlcQueries)),
+		libriver.Register[emails.SendAuthEmailArgs](jobs.NewSendAuthEmailWorker(app.emailClient, repos.NewEmailTemplates(sqlcQueries))),
 	), nil, []*river.PeriodicJob{
 		river.NewPeriodicJob(
 			river.PeriodicInterval(5*time.Minute),
 			func() (river.JobArgs, *river.InsertOpts) {
 				return jobs.CleanupBlacklistArgs{}, nil
+			},
+			&river.PeriodicJobOpts{RunOnStart: true},
+		),
+		river.NewPeriodicJob(
+			river.PeriodicInterval(5*time.Minute),
+			func() (river.JobArgs, *river.InsertOpts) {
+				return jobs.CleanupActionTokensArgs{}, nil
 			},
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),

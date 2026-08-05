@@ -171,9 +171,7 @@ function SignatureForm({
     try {
       const selected = await buildSignatureFile();
       const imageUrl = await uploadFile(selected, "signature-requests");
-      const response = await fulfillSignatureRequestFn(token, imageUrl);
-      if (!response.success)
-        throw new Error(response.message || "Convite expirado");
+      await fulfillSignatureRequestFn(token, imageUrl);
       toast.success("Assinatura enviada com sucesso");
       onSigned(new Date().toISOString());
     } catch (error) {
@@ -191,14 +189,7 @@ function SignatureForm({
     if (!token) return;
     setDenying(true);
     try {
-      const response = await denySignatureRequestFn(
-        token,
-        "Recusada pelo signatário",
-      );
-      if (!response.success)
-        throw new Error(
-          response.message || "Não foi possível recusar o convite",
-        );
+      await denySignatureRequestFn(token, "Recusada pelo signatário");
       toast.success("Solicitação recusada");
       await navigate({ to: "/" });
     } catch (error) {

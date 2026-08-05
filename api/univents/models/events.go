@@ -67,35 +67,12 @@ type EventMember struct {
 	DeletedAt *time.Time      `json:"deleted_at"`
 }
 
-type CreateEventRequest struct {
+type CreateEventInput struct {
 	FullName     string  `json:"full_name"     validate:"required,min=2"`
 	Acronym      *string `json:"acronym"`
 	Slug         string  `json:"slug"          validate:"required,min=2"`
 	Description  *string `json:"description"`
 	ContactEmail *string `json:"contact_email"`
-}
-
-type PatchEventRequest struct {
-	FullName     string  `json:"full_name"     validate:"required,min=2"`
-	Acronym      *string `json:"acronym"`
-	Slug         string  `json:"slug"          validate:"required,min=2"`
-	Description  *string `json:"description"`
-	LogoURL      *string `json:"logo_url"`
-	BannerURL    *string `json:"banner_url"`
-	ContactEmail *string `json:"contact_email"`
-}
-
-func (r PatchEventRequest) ToInput(eventID uuid.UUID) PatchEventInput {
-	return PatchEventInput{
-		EventID:      eventID,
-		FullName:     r.FullName,
-		Acronym:      r.Acronym,
-		Slug:         r.Slug,
-		Description:  r.Description,
-		LogoURL:      r.LogoURL,
-		BannerURL:    r.BannerURL,
-		ContactEmail: r.ContactEmail,
-	}
 }
 
 type PatchEventInput struct {
@@ -109,11 +86,11 @@ type PatchEventInput struct {
 	ContactEmail *string
 }
 
-type AddEventMemberRequest struct {
+type AddEventMemberInput struct {
 	Email string          `json:"email" validate:"required,email"`
 	Role  EventMemberRole `json:"role"  validate:"required,oneof=owner admin staff"`
 }
 
-type RemoveMemberRequest struct {
+type RemoveMemberInput struct {
 	Email string `json:"email" validate:"required,email"`
 }

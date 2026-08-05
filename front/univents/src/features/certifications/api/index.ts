@@ -1,11 +1,22 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-
+import { orvalData } from "@trieoh/api-client";
 import {
-  authFetcher,
-  publicQueryFetcher,
-  tanstackQueryFetcher,
-} from "@/shared/lib/api/fetch";
+  createCertificationTemplate,
+  deleteCertificationTemplate,
+  getCertification,
+  getCertificationTemplate,
+  invalidateCertification,
+  linkCertificationTemplate,
+  listCertificationEmissionErrors,
+  listCertificationTemplateLinks,
+  listCertificationTemplates,
+  listEditionCertifications,
+  listMyCertifications,
+  unlinkCertificationTemplate,
+  updateCertificationTemplate,
+  verifyCertification,
+} from "@trieoh/univents-api";
 import type {
   CertificationEmissionErrorI,
   CertificationI,
@@ -18,37 +29,35 @@ import { certificationKeys } from "./query-keys";
 
 export const createCertificationTemplateFn = createClientOnlyFn(
   async (editionId: string, templateData: CertificationTemplateCreateI) => {
-    return authFetcher.post<CertificationTemplateI>(
-      `/editions/${editionId}/certifications/templates`,
-      templateData,
+    return createCertificationTemplate(editionId, templateData).then(
+      orvalData<CertificationTemplateI>,
     );
   },
 );
 
 export const updateCertificationTemplateFn = createClientOnlyFn(
   (templateId: string, data: CertificationTemplateCreateI) =>
-    authFetcher.put<CertificationTemplateI>(
-      `/certifications/templates/${templateId}`,
-      {
-        ...data,
-        design_data: data.design_data,
-      },
-    ),
+    updateCertificationTemplate(templateId, {
+      ...data,
+      design_data: data.design_data,
+    }).then(orvalData<CertificationTemplateI>),
 );
 
 export const deleteCertificationTemplateFn = createClientOnlyFn(
   (templateId: string) =>
-    authFetcher.delete<null>(`/certifications/templates/${templateId}`),
+    deleteCertificationTemplate(templateId).then(orvalData<null>),
 );
 
 export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
-  return publicQueryFetcher<VerifyCertificationResponseI>(`/verify/${hash}`);
+  return verifyCertification(hash, { public: true }).then(
+    orvalData<VerifyCertificationResponseI>,
+  );
 });
 
 export const getAllCertificationTemplatesFn = createClientOnlyFn(
   async (editionId: string) => {
-    return tanstackQueryFetcher<CertificationTemplateI[]>(
-      `/editions/${editionId}/certifications/templates`,
+    return listCertificationTemplates(editionId, { public: true }).then(
+      orvalData<CertificationTemplateI[]>,
     );
   },
 );
@@ -62,8 +71,8 @@ export const allCertificationTemplatesQueryOptions = (editionId: string) => {
 
 export const getCertificationTemplateFn = createClientOnlyFn(
   async (templateId: string) => {
-    return tanstackQueryFetcher<CertificationTemplateI>(
-      `/certifications/templates/${templateId}`,
+    return getCertificationTemplate(templateId, { public: true }).then(
+      orvalData<CertificationTemplateI>,
     );
   },
 );
@@ -77,8 +86,8 @@ export const certificationTemplateQueryOptions = (templateId: string) => {
 
 export const getCertificationTemplateLinksFn = createClientOnlyFn(
   (templateId: string) =>
-    tanstackQueryFetcher<CertificationTemplateProgramI[]>(
-      `/certifications/templates/${templateId}/links`,
+    listCertificationTemplateLinks(templateId, { public: true }).then(
+      orvalData<CertificationTemplateProgramI[]>,
     ),
 );
 
@@ -90,20 +99,20 @@ export const certificationTemplateLinksQueryOptions = (templateId: string) =>
 
 export const linkCertificationTemplateFn = createClientOnlyFn(
   (templateId: string, programId: string) =>
-    authFetcher.post<null>(`/certifications/templates/${templateId}/link`, {
-      program_id: programId,
-    }),
+    linkCertificationTemplate(templateId, { program_id: programId }).then(
+      orvalData<null>,
+    ),
 );
 
 export const unlinkCertificationTemplateFn = createClientOnlyFn(
   (templateId: string, programId: string) =>
-    authFetcher.delete<null>(`/certifications/templates/${templateId}/link`, {
-      program_id: programId,
-    }),
+    unlinkCertificationTemplate(templateId, { program_id: programId }).then(
+      orvalData<null>,
+    ),
 );
 
 export const getCertificationFn = createClientOnlyFn((certId: string) => {
-  return tanstackQueryFetcher<CertificationI>(`/certifications/${certId}`);
+  return getCertification(certId).then(orvalData<CertificationI>);
 });
 
 export const certificationQueryOptions = (certId: string) => {
@@ -114,7 +123,7 @@ export const certificationQueryOptions = (certId: string) => {
 };
 
 export const getAllCertificationsByUserFn = createClientOnlyFn(async () => {
-  return tanstackQueryFetcher<CertificationI[]>(`/certifications`);
+  return listMyCertifications().then(orvalData<CertificationI[]>);
 });
 
 export const certificationsByUserQueryOptions = () => {
@@ -126,16 +135,13 @@ export const certificationsByUserQueryOptions = () => {
 
 export const getCertificationsByEditionFn = createClientOnlyFn(
   (editionId: string) =>
-    tanstackQueryFetcher<CertificationI[]>(
-      `/editions/${editionId}/certifications`,
-    ),
+    listEditionCertifications(editionId).then(orvalData<CertificationI[]>),
 );
 
 export const invalidateCertificationFn = createClientOnlyFn(
   ({ certificationId, reason }: { certificationId: string; reason?: string }) =>
-    authFetcher.post<null>(
-      `/certifications/${certificationId}/invalidate`,
-      reason ? { reason } : {},
+    invalidateCertification(certificationId, { reason: reason ?? "" }).then(
+      orvalData<null>,
     ),
 );
 
@@ -147,8 +153,8 @@ export const certificationsByEditionQueryOptions = (editionId: string) =>
 
 export const getEmissionErrorsByEditionFn = createClientOnlyFn(
   (editionId: string) =>
-    tanstackQueryFetcher<CertificationEmissionErrorI[]>(
-      `/editions/${editionId}/certifications/emission-errors`,
+    listCertificationEmissionErrors(editionId).then(
+      orvalData<CertificationEmissionErrorI[]>,
     ),
 );
 

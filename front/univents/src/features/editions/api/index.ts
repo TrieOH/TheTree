@@ -1,10 +1,16 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { orvalData } from "@trieoh/api-client";
 import {
-  authFetcher,
-  authQueryFetcher,
-  publicQueryFetcher,
-} from "@/shared/lib/api/fetch";
+  createEdition,
+  getActiveEdition,
+  listDraftEditions,
+  listPastEditions,
+  listPublicEditions,
+  listUpcomingEditions,
+  patchEdition,
+  publishEdition,
+} from "@trieoh/univents-api";
 import {
   type EditionApiI,
   type EditionCreateOutputI,
@@ -13,18 +19,12 @@ import {
 } from "../model";
 import { editionKeys } from "./query-keys";
 
-/**
- * Creates a new Edition on the server.
- * @param editionData - The data for the new edition.
- * @returns A promise that resolves to the API response containing the newly created edition.
- */
 export const createEditionFn = createClientOnlyFn(
   async (editionData: EditionCreateOutputI, eventId: string) => {
-    const res = await authFetcher.post<EditionApiI>(
-      `/events/${eventId}/editions`,
-      editionData,
+    const edition = await createEdition(eventId, editionData).then(
+      orvalData<EditionApiI>,
     );
-    return res.success ? { ...res, data: normalizeEdition(res.data) } : res;
+    return normalizeEdition(edition);
   },
 );
 
@@ -34,65 +34,65 @@ export const patchEditionFn = createClientOnlyFn(
     editionId: string,
     editionData: EditionPatchOutputI,
   ) => {
-    const res = await authFetcher.patch<EditionApiI>(
-      `/events/${eventId}/editions/${editionId}`,
-      editionData,
+    const edition = await patchEdition(eventId, editionId, editionData).then(
+      orvalData<EditionApiI>,
     );
-    return res.success ? { ...res, data: normalizeEdition(res.data) } : res;
+    return normalizeEdition(edition);
   },
 );
 
 export const publishEditionFn = createClientOnlyFn(
   (eventId: string, editionId: string) =>
-    authFetcher.post<null>(`/events/${eventId}/editions/${editionId}/publish`),
+    publishEdition(eventId, editionId).then(orvalData<null>),
 );
 
-/**
- * Fetches all event editions from the server.
- * @param eventId - The event id
- * @returns A promise that resolves to an array of Edition objects.
- */
 export const getAllPublicEditionsFn = async (eventId: string) => {
-  const editions = await publicQueryFetcher<EditionApiI[]>(
-    `/events/${eventId}/editions`,
+  const editions = await listPublicEditions(eventId, { public: true }).then(
+    orvalData<EditionApiI[]>,
   );
   return editions.filter((edition) => !edition.is_draft).map(normalizeEdition);
 };
 
-const getPublicEdition = async (path: string) => {
+const getActiveEditionPublic = async (eventId: string) => {
   try {
-    return normalizeEdition(await publicQueryFetcher<EditionApiI>(path));
+    const edition = await getActiveEdition(eventId, { public: true }).then(
+      orvalData<EditionApiI>,
+    );
+    return normalizeEdition(edition);
   } catch {
     return null;
   }
 };
 
-const getPublicEditions = async (path: string) =>
-  (await publicQueryFetcher<EditionApiI[]>(path)).map(normalizeEdition);
+const getPublicEditions = async (
+  eventId: string,
+  kind: "past" | "upcoming",
+) => {
+  const fn = kind === "past" ? listPastEditions : listUpcomingEditions;
+  const editions = await fn(eventId, { public: true }).then(
+    orvalData<EditionApiI[]>,
+  );
+  return editions.map(normalizeEdition);
+};
 
 export const activeEditionQueryOptions = (eventId: string) =>
   queryOptions({
     queryKey: editionKeys.activeByEvent(eventId),
-    queryFn: () => getPublicEdition(`/events/${eventId}/editions/active`),
+    queryFn: () => getActiveEditionPublic(eventId),
   });
 
 export const pastEditionsQueryOptions = (eventId: string) =>
   queryOptions({
     queryKey: editionKeys.pastByEvent(eventId),
-    queryFn: () => getPublicEditions(`/events/${eventId}/editions/past`),
+    queryFn: () => getPublicEditions(eventId, "past"),
   });
 
 export const upcomingEditionsQueryOptions = (eventId: string) =>
   queryOptions({
     queryKey: editionKeys.upcomingByEvent(eventId),
-    queryFn: () => getPublicEditions(`/events/${eventId}/editions/upcoming`),
+    queryFn: () => getPublicEditions(eventId, "upcoming"),
   });
 
-/**
- * Query options for fetching all event editions, using TanStack Query.
- * @param eventId - The event id
- * @returns An object containing the query key and query function for fetching all event editions.
- */
 export const allPublicEditionsQueryOptions = (eventId: string) => {
   return queryOptions({
     queryKey: editionKeys.publicListByEvent(eventId),
@@ -100,15 +100,10 @@ export const allPublicEditionsQueryOptions = (eventId: string) => {
   });
 };
 
-/**
- * Fetches all admin event editions from the server.
- * @param eventId - The event id
- * @returns A promise that resolves to an array of Edition objects.
- */
 export const getDraftEditionsFn = createClientOnlyFn(
   async (eventId: string) => {
-    const editions = await authQueryFetcher<EditionApiI[]>(
-      `/events/${eventId}/editions/draft`,
+    const editions = await listDraftEditions(eventId).then(
+      orvalData<EditionApiI[]>,
     );
     return editions.map(normalizeEdition);
   },
@@ -129,11 +124,6 @@ export const getAllAdminEditionsFn = createClientOnlyFn(
   },
 );
 
-/**
- * Query options for fetching all admin event editions, using TanStack Query.
- * @param eventId - The event id
- * @returns An object containing the query key and query function for fetching all admin event editions.
- */
 export const allAdminEditionsQueryOptions = (eventId: string) => {
   return queryOptions({
     queryKey: editionKeys.adminListByEvent(eventId),

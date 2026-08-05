@@ -178,7 +178,7 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                     return;
                   }
 
-                  const res = await saveMutation.mutateAsync({
+                  await saveMutation.mutateAsync({
                     eventId,
                     editionId,
                     data: {
@@ -190,16 +190,11 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                     },
                   });
 
-                  if (res.success) {
-                    toast.success("Assinatura criada com sucesso");
-                    void navigate({
-                      to: "/admin/events/$eventId/editions/$editionId/signatures",
-                      params: { eventId, editionId },
-                    });
-                    return;
-                  }
-
-                  toast.error(res.message || "Erro ao criar assinatura");
+                  toast.success("Assinatura criada com sucesso");
+                  void navigate({
+                    to: "/admin/events/$eventId/editions/$editionId/signatures",
+                    params: { eventId, editionId },
+                  });
                 } catch (error) {
                   toast.error(
                     error instanceof Error

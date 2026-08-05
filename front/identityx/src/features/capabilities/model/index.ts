@@ -1,7 +1,7 @@
 import type {
   Capability,
   CreateCapabilityRequest,
-} from "@trieoh/identityx-models";
+} from "@trieoh/identityx-api/schemas";
 import z from "zod";
 
 export const capabilityCreateSchema = z.object({

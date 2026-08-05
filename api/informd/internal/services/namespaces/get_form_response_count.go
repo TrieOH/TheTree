@@ -1,0 +1,29 @@
+package namespaces
+
+import (
+	"context"
+	idx "sdk/identityx"
+
+	"Informd/models"
+	"lib/telemetry"
+
+	"github.com/google/uuid"
+)
+
+// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+func (o *Operations) GetFormResponseCount(ctx context.Context, _, formID uuid.UUID) (int, error) {
+	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.GetFormResponseCount")
+	defer span.End()
+
+	ident, err := idx.RequireIdentity(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	err = o.authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
+	if err != nil {
+		return 0, err
+	}
+
+	return o.forms.ResponsesCount(ctx, formID)
+}

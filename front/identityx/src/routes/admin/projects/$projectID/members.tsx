@@ -74,15 +74,13 @@ function RouteComponent() {
   const { mutate: addMemberToProject, isPending: isCreating } = useMutation({
     mutationFn: (data: MemberAddToProjectI) =>
       addMemberToProjectFn(projectID, data, organizationID),
-    onSuccess: (response) => {
-      if (response.success) {
-        queryClient.invalidateQueries({
-          queryKey: allProjectMembersQueryOptions(projectID, organizationID)
-            .queryKey,
-        });
-        setIsCreateOpen(false);
-        toast.success(response.message || "Member added successfully");
-      } else toast.error(response.message || "Failed to add member");
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: allProjectMembersQueryOptions(projectID, organizationID)
+          .queryKey,
+      });
+      setIsCreateOpen(false);
+      toast.success("Member added successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -91,16 +89,14 @@ function RouteComponent() {
     useMutation({
       mutationFn: (email: string) =>
         removeMemberFromProjectFn(projectID, email, organizationID),
-      onSuccess: (response) => {
-        if (response.success) {
-          queryClient.invalidateQueries({
-            queryKey: allProjectMembersQueryOptions(projectID, organizationID)
-              .queryKey,
-          });
-          setMemberToRemove(null);
-          setConfirmEmail("");
-          toast.success("Member removed successfully");
-        } else toast.error(response.message || "Failed to remove member");
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: allProjectMembersQueryOptions(projectID, organizationID)
+            .queryKey,
+        });
+        setMemberToRemove(null);
+        setConfirmEmail("");
+        toast.success("Member removed successfully");
       },
       onError: (error: Error) => toast.error(error.message),
     });

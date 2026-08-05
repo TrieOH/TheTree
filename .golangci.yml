@@ -97,7 +97,6 @@ linters:
     - gomoddirectives       # keep go.mod replace/retract/exclude directives clean
 
     # --- code health ---
-    - ireturn               # accept interfaces, return concrete types
     - interfacebloat        # too many methods on one interface — time to split it
     - decorder              # declarations in order: types → consts → vars → funcs [auto-fix]
     - noinlineerr           # inline error handling: if err := x(); err != nil → split lines

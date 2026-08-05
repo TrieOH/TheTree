@@ -139,26 +139,23 @@ async function putFileToStorage(
 ): Promise<string> {
   const aws = getAwsClient(env);
   const uploadUrl = getS3Url(key, env);
-  uploadUrl.searchParams.set(
-    "X-Amz-Expires",
-    String(getUploadExpiresSeconds(env)),
-  );
-
-  const signed = await aws.sign(
-    new Request(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-    }),
-    { aws: { signQuery: true } },
-  );
-
-  const res = await fetch(signed.url, {
+  const res = await aws.fetch(uploadUrl.toString(), {
     method: "PUT",
     body: file,
     headers: { "Content-Type": file.type },
   });
 
-  if (!res.ok) throw new Error("Failed to upload file");
+  if (!res.ok) {
+    const responseBody = await res.text().catch(() => "");
+    const storageMessage = responseBody.match(
+      /<Message>(.*?)<\/Message>/s,
+    )?.[1];
+    throw new Error(
+      `Falha ao enviar imagem para o storage (${res.status})${
+        storageMessage ? `: ${storageMessage}` : ""
+      }`,
+    );
+  }
 
   return `${getS3Url("", env).toString()}${key}`;
 }
@@ -166,6 +163,7 @@ async function putFileToStorage(
 async function readImageFormData(request: Request) {
   const formData = await request.formData();
   const file = formData.get("file");
+  const moderationFile = formData.get("moderationFile");
   const path = formData.get("path");
   const idempotencyKey = formData.get("idempotencyKey");
 
@@ -173,6 +171,7 @@ async function readImageFormData(request: Request) {
 
   return {
     file,
+    moderationFile: moderationFile instanceof File ? moderationFile : file,
     path: typeof path === "string" ? path : "",
     idempotencyKey: typeof idempotencyKey === "string" ? idempotencyKey : "",
   };
@@ -239,7 +238,8 @@ export async function handleStorageImagePreprocess(
 ): Promise<Response> {
   try {
     validateEnv(env);
-    const { file, path, idempotencyKey } = await readImageFormData(request);
+    const { file, moderationFile, path, idempotencyKey } =
+      await readImageFormData(request);
     const allowedTypes = getAllowedTypes(env);
     const maxSize = getMaxSize(env);
 
@@ -257,7 +257,21 @@ export async function handleStorageImagePreprocess(
       );
     }
 
-    const approved = await moderateFileBytes(file, env);
+    if (!allowedTypes.includes(moderationFile.type)) {
+      return Response.json(
+        { error: buildAllowedTypesErrorMessage(allowedTypes) },
+        { status: 400 },
+      );
+    }
+
+    if (moderationFile.size > maxSize) {
+      return Response.json(
+        { error: "File exceeds 10MB limit" },
+        { status: 400 },
+      );
+    }
+
+    const approved = await moderateFileBytes(moderationFile, env);
     if (!approved) return Response.json({ approved: false });
 
     const key = buildStorageKey(file.name, path, idempotencyKey);

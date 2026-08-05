@@ -1,0 +1,4197 @@
+openapi: 3.1.0
+
+info:
+  title: Univents API
+  summary: Events, editions, ticketing, and certifications service for TrieOH
+  description: |
+    Univents is TrieOH's events service: events and editions (runs),
+    ticket types and products, programs (schedules), badge and
+    certification templates, and signature workflows for certificates.
+
+    ## Authentication
+
+    All protected endpoints require a bearer JWT issued by IdentityX:
+
+    | Scheme | Header |
+    |---|---|
+    | Bearer JWT | `Authorization: Bearer <token>` |
+
+    Public (read-only) endpoints take no auth: event/edition browsing,
+    products, programs, signatures, and certification verification.
+
+    ### Signature-request tokens
+
+    The signature fulfillment routes — `POST /signature-requests/fulfill`,
+    `POST /signature-requests/deny`, `POST /signatures/revoke` — are NOT
+    JWT-authenticated. They are authenticated by an HMAC-signed JWT passed
+    as the `token` query parameter (issued when the signature request was
+    created). The token binds the request to a single signature
+    request/edition.
+
+    ## Response envelope
+
+    Every JSON response is the `fun.Response` envelope:
+
+    ```json
+    {
+      "code": 200,
+      "message": "",
+      "data": { "...": "operation payload" },
+      "error": null,
+      "pagination": null,
+      "timestamp": "2026-01-01T12:00:00Z",
+      "module": "Univents"
+    }
+    ```
+
+    - Success: `data` carries the payload. Errors: `error` carries an
+      `AppError` — `{ "code", "message", "fields", "meta" }`.
+    - `pagination` is reserved for paged list endpoints (currently
+      unused by Univents routes).
+
+    ## Error codes → HTTP status
+
+    The `error.code` sentinel maps to the HTTP status:
+
+    | code | status |
+    |---|---|
+    | `BAD_REQUEST`, `VALIDATION_ERROR` | 400 |
+    | `UNAUTHORIZED` | 401 |
+    | `PAYMENT_REQUIRED` | 402 |
+    | `FORBIDDEN` | 403 |
+    | `NOT_FOUND` | 404 |
+    | `METHOD_NOT_ALLOWED` | 405 |
+    | `CONFLICT` | 409 |
+    | `UNPROCESSABLE_ENTITY` | 422 |
+    | `TOO_MANY_REQUESTS` | 429 |
+    | `INTERNAL_ERROR` | 500 |
+    | `NOT_IMPLEMENTED` | 501 |
+    | `BAD_GATEWAY` | 502 |
+    | `SERVICE_UNAVAILABLE` | 503 |
+
+    ## Custom methods
+
+    A few lookups are AIP custom methods (`:verb` suffix, AIP-136): they
+    look up a resource by a natural key instead of its ID:
+
+    - `GET /events/{event_slug}:by-slug`
+    - `GET /events/{event_slug}:by-slug/editions/{edition_slug}:by-slug`
+    - `GET /editions/{edition_id}/products/{vendor_code}:by-code`
+    - `GET /editions/{edition_id}/variants/{vendor_code}:by-code`
+
+    These are part of the public interface — the frontend depends on
+    them — and must not be renamed or removed.
+
+    ## Amounts
+
+    Prices are integer cents (`price_cents`, `price`) — `int64`, never
+    floats.
+
+    ## Rate limits
+
+    The harness applies a fixed rate limit of 400 requests/second with a
+    burst of 20, keyed by client IP. Exceeded requests receive
+    `429 TOO_MANY_REQUESTS`.
+  version: 0.1.0
+  contact:
+    name: TrieOH
+    url: https://trieoh.com/support
+    email: contact@trieoh.com
+  license:
+    name: TSAL
+    url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/univents/LICENSE
+
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+
+servers:
+  - url: https://api.univents.com.br
+    description: Production
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: system
+    description: Reserved for system level operations such as /health
+
+  - name: events
+    description: Event lifecycle, members, and public browsing
+
+  - name: editions
+    description: Edition (event run) lifecycle, drafts, and publication
+
+  - name: ticket_types
+    description: Ticket types for an edition
+
+  - name: products
+    description: Products and variants (merchandise) for an edition
+
+  - name: programs
+    description: Program schedules and occurrences
+
+  - name: badges
+    description: Badge templates for an edition
+
+  - name: signatures
+    description: Signature records, signature requests, and fulfillment
+
+  - name: certifications
+    description: Certification templates, emission, and verification
+
+externalDocs:
+  description: Full TrieOH documentation
+  url: https://docs.trieoh.com
+
+security:
+  - bearerAuth: []
+
+paths:
+  /docs/openapi.yml:
+    get:
+      tags: [system]
+      operationId: getOpenAPISpec
+      summary: Get the OpenAPI specification
+      description: |
+        Returns this service's OpenAPI 3.1 specification in YAML — the
+        same content as api/<svc>/api-spec.yml, embedded and served by
+        the harness. Docs tooling fetches this URL to render the API
+        reference. Public.
+      security: []
+      responses:
+        '200':
+          description: The OpenAPI 3.1 document
+          content:
+            application/yaml:
+              schema:
+                type: string
+                description: The OpenAPI 3.1 document in YAML.
+
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      summary: Health check
+      description: Harness-owned liveness probe. Public.
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: "ok"
+                  service:
+                    type: string
+                    const: "Univents"
+
+  /events:
+    get:
+      tags: [events]
+      operationId: listPublicEvents
+      summary: List public events
+      description: |
+        Lists publicly visible events (active events with published
+        editions). Public.
+      security: []
+      responses:
+        '200':
+          description: Public events
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Event'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [events]
+      operationId: createEvent
+      summary: Create an event
+      description: |
+        Creates an event owned by the authenticated actor. The creator
+        becomes the event owner. New events start in `draft` status.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            example:
+              full_name: TrieOH Developers Conference
+              acronym: TDC
+              slug: trieoh-dev-conf
+              description: A yearly gathering of TrieOH developers.
+              contact_email: events@trieoh.com
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_slug}:by-slug:
+    get:
+      tags: [events]
+      operationId: getEventBySlug
+      summary: Get an event by slug
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        event by its slug. Public.
+      security: []
+      parameters:
+        - name: event_slug
+          in: path
+          required: true
+          description: Event slug.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested event
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/owned:
+    get:
+      tags: [events]
+      operationId: listOwnedEvents
+      summary: List events you own
+      description: |
+        Lists the events owned by the authenticated actor.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Events owned by the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/joined:
+    get:
+      tags: [events]
+      operationId: listJoinedEvents
+      summary: List events you are a member of
+      description: |
+        Lists the events the authenticated actor is a member of (any
+        role: owner, admin, or staff).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Events the actor belongs to
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}:
+    patch:
+      tags: [events]
+      operationId: patchEvent
+      summary: Update an event
+      description: |
+        Updates event details. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEventRequest'
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/publish:
+    post:
+      tags: [events]
+      operationId: publishEvent
+      summary: Publish an event
+      description: |
+        Moves the event from `draft` to `active`. Requires an owner or
+        admin role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '204':
+          description: Event published
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/discontinue:
+    post:
+      tags: [events]
+      operationId: discontinueEvent
+      summary: Discontinue an event
+      description: |
+        Discontinues an active event (status becomes `discontinued`).
+        Requires an owner or admin role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '204':
+          description: Event discontinued
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/members:
+    get:
+      tags: [events]
+      operationId: listEventMembers
+      summary: List event members
+      description: |
+        Lists the members of an event with their roles. Requires an
+        owner, admin, or staff role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '200':
+          description: Event members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EventMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [events]
+      operationId: addEventMember
+      summary: Add an event member
+      description: |
+        Adds an actor (by email) to the event with the given role. The
+        authenticated actor must be an owner or admin.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddEventMemberRequest'
+            example:
+              email: user@example.com
+              role: staff
+      responses:
+        '201':
+          description: Member added
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EventMember'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/members/{user_id}:
+    delete:
+      tags: [events]
+      operationId: removeEventMember
+      summary: Remove an event member
+      description: |
+        Removes a member from the event by email. The authenticated actor
+        must be an owner or admin. NOTE: the `user_id` path parameter is
+        part of the interface but the member to remove is identified by
+        the request body email.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+        - name: user_id
+          in: path
+          required: true
+          description: User (actor) ID of the member to remove.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  x-go-type: string
+                  x-oapi-codegen-extra-tags:
+                    validate: "required,email"
+      responses:
+        '204':
+          description: Member removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_slug}:by-slug/editions/{edition_slug}:by-slug:
+    get:
+      tags: [editions]
+      operationId: getEditionBySlug
+      summary: Get an edition by event slug and edition slug
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a single
+        edition by its slug nested under its event's slug. Public.
+      security: []
+      parameters:
+        - name: event_slug
+          in: path
+          required: true
+          description: Event slug.
+          schema:
+            type: string
+        - name: edition_slug
+          in: path
+          required: true
+          description: Edition slug.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested edition
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Edition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions:
+    get:
+      tags: [editions]
+      operationId: listPublicEditions
+      summary: List an event's public editions
+      description: |
+        Lists the published (non-draft) editions of an event. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '200':
+          description: Public editions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Edition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [editions]
+      operationId: createEdition
+      summary: Create an edition
+      description: |
+        Creates a draft edition (run) of the event. The actor must be an
+        owner or admin of the event. Draft editions are invisible to
+        public listing until published.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEditionRequest'
+            example:
+              name: TrieOH Dev Conf 2026
+              slug: "2026"
+              starts_at: '2026-05-04T09:00:00Z'
+              ends_at: '2026-05-06T18:00:00Z'
+      responses:
+        '201':
+          description: Edition created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Edition'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions/active:
+    get:
+      tags: [editions]
+      operationId: getActiveEdition
+      summary: Get the event's active edition
+      description: |
+        Fetches the currently running (or next upcoming) published
+        edition of the event. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '200':
+          description: The active edition
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Edition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions/past:
+    get:
+      tags: [editions]
+      operationId: listPastEditions
+      summary: List the event's past editions
+      description: |
+        Lists the published editions that already ended. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '200':
+          description: Past editions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Edition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions/upcoming:
+    get:
+      tags: [editions]
+      operationId: listUpcomingEditions
+      summary: List the event's upcoming editions
+      description: |
+        Lists the published editions that have not started yet. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '200':
+          description: Upcoming editions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Edition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions/draft:
+    get:
+      tags: [editions]
+      operationId: listDraftEditions
+      summary: List the event's draft editions
+      description: |
+        Lists the unpublished (draft) editions of an event. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '200':
+          description: Draft editions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Edition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions/{edition_id}:
+    patch:
+      tags: [editions]
+      operationId: patchEdition
+      summary: Update an edition
+      description: |
+        Updates edition details (dates, location, branding). The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEditionRequest'
+      responses:
+        '200':
+          description: Edition updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Edition'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/editions/{edition_id}/publish:
+    post:
+      tags: [editions]
+      operationId: publishEdition
+      summary: Publish an edition
+      description: |
+        Publishes a draft edition, making it publicly visible and open
+        for registrations. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '204':
+          description: Edition published
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/ticket-types:
+    get:
+      tags: [ticket_types]
+      operationId: listTicketTypes
+      summary: List an edition's ticket types
+      description: |
+        Lists the ticket types available for the edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition ticket types
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TicketType'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [ticket_types]
+      operationId: createTicketType
+      summary: Create a ticket type
+      description: |
+        Creates a ticket type for the edition (price in cents, optional
+        max quantity, access level for gated areas). The actor must be
+        an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketTypeRequest'
+            example:
+              name: General Admission
+              description: Standard entry ticket.
+              access_level: 0
+              price_cents: 15000
+              max_quantity: 500
+      responses:
+        '201':
+          description: Ticket type created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TicketType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /ticket-types/{ticket_type_id}:
+    get:
+      tags: [ticket_types]
+      operationId: getTicketType
+      summary: Get a ticket type
+      description: Fetches a single ticket type. Public.
+      security: []
+      parameters:
+        - name: ticket_type_id
+          in: path
+          required: true
+          description: Ticket type ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested ticket type
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TicketType'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [ticket_types]
+      operationId: patchTicketType
+      summary: Update a ticket type
+      description: |
+        Updates ticket type details. The actor must be an owner or admin
+        of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket_type_id
+          in: path
+          required: true
+          description: Ticket type ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTicketTypeRequest'
+      responses:
+        '200':
+          description: Ticket type updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TicketType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/products:
+    get:
+      tags: [products]
+      operationId: listEditionProducts
+      summary: List an edition's products
+      description: |
+        Lists the products (merchandise, add-ons) available for the
+        edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition products
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [products]
+      operationId: createInitialProduct
+      summary: Create a product with its first variant
+      description: |
+        Creates a product and its first variant in one call. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInitialProductRequest'
+            example:
+              requires_registration: false
+              vendor_code: TEE-2026
+              variant_vendor_code: TEE-2026-BLACK-M
+              name: Conference T-Shirt
+              description: Black, size M.
+              price: 8900
+              stock: 100
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/products/{vendor_code}:by-code:
+    get:
+      tags: [products]
+      operationId: getProductByVendorCode
+      summary: Get an edition product by vendor code
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a product
+        by its vendor code within the edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+        - name: vendor_code
+          in: path
+          required: true
+          description: Product vendor code.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested product
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/variants/{vendor_code}:by-code:
+    get:
+      tags: [products]
+      operationId: getVariantByVendorCode
+      summary: Get an edition variant by vendor code
+      description: |
+        AIP custom method (`:verb` suffix per AIP-136). Fetches a product
+        variant by its vendor code within the edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+        - name: vendor_code
+          in: path
+          required: true
+          description: Variant vendor code.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested variant
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProductVariant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /products/{product_id}:
+    get:
+      tags: [products]
+      operationId: getProduct
+      summary: Get a product
+      description: Fetches a single product. Public.
+      security: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested product
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [products]
+      operationId: patchProduct
+      summary: Update a product
+      description: |
+        Updates product details. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductRequest'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [products]
+      operationId: deleteProduct
+      summary: Delete a product
+      description: |
+        Soft-deletes a product (and its variants). The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Product deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /products/{product_id}/variants:
+    get:
+      tags: [products]
+      operationId: listProductVariants
+      summary: List a product's variants
+      description: Lists the variants of a product. Public.
+      security: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Product variants
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProductVariant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [products]
+      operationId: createProductVariant
+      summary: Create a product variant
+      description: |
+        Adds a variant to an existing product. The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: Product ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductVariantRequest'
+            example:
+              vendor_code: TEE-2026-WHITE-L
+              name: Conference T-Shirt (White, L)
+              description: White, size L.
+              price: 8900
+              stock: 50
+      responses:
+        '201':
+          description: Variant created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProductVariant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /variants/{variant_id}:
+    patch:
+      tags: [products]
+      operationId: patchProductVariant
+      summary: Update a product variant
+      description: |
+        Updates variant details. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: variant_id
+          in: path
+          required: true
+          description: Variant ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductVariantRequest'
+      responses:
+        '200':
+          description: Variant updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProductVariant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [products]
+      operationId: deleteProductVariant
+      summary: Delete a product variant
+      description: |
+        Soft-deletes a variant. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: variant_id
+          in: path
+          required: true
+          description: Variant ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Variant deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/programs:
+    get:
+      tags: [programs]
+      operationId: listEditionPrograms
+      summary: List an edition's programs
+      description: |
+        Lists the programs (schedule items: activities and checkpoints)
+        of the edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition programs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Program'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [programs]
+      operationId: createProgram
+      summary: Create a program
+      description: |
+        Creates a program (activity or checkpoint) for the edition. The
+        actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProgramRequest'
+            example:
+              kind: activity
+              name: Opening Keynote
+              description: Welcome and keynote session.
+              min_access_level: 0
+              staff_only: false
+              price: 0
+      responses:
+        '201':
+          description: Program created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Program'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /programs/{program_id}:
+    get:
+      tags: [programs]
+      operationId: getProgram
+      summary: Get a program
+      description: Fetches a single program. Public.
+      security: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested program
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Program'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [programs]
+      operationId: patchProgram
+      summary: Update a program
+      description: |
+        Updates program details. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProgramRequest'
+      responses:
+        '200':
+          description: Program updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Program'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [programs]
+      operationId: deleteProgram
+      summary: Delete a program
+      description: |
+        Soft-deletes a program and its occurrences. The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The deleted program
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Program'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /programs/{program_id}/occurrences:
+    get:
+      tags: [programs]
+      operationId: listProgramOccurrences
+      summary: List a program's occurrences
+      description: |
+        Lists the occurrences (dated sessions) of a program. Public.
+      security: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Program occurrences
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProgramOccurrence'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [programs]
+      operationId: createProgramOccurrence
+      summary: Create a program occurrence
+      description: |
+        Adds a dated occurrence to a program. The actor must be an owner
+        or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProgramOccurrenceRequest'
+            example:
+              starts_at: '2026-05-04T09:00:00Z'
+              ends_at: '2026-05-04T10:30:00Z'
+              max_capacity: 200
+      responses:
+        '201':
+          description: Occurrence created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramOccurrence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/occurrences:
+    get:
+      tags: [programs]
+      operationId: listEditionOccurrences
+      summary: List an edition's occurrences
+      description: |
+        Lists all occurrences across the edition's programs. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition occurrences
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProgramOccurrence'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /occurrences/{occurrence_id}:
+    get:
+      tags: [programs]
+      operationId: getOccurrence
+      summary: Get an occurrence
+      description: Fetches a single program occurrence. Public.
+      security: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested occurrence
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramOccurrence'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [programs]
+      operationId: patchOccurrence
+      summary: Update an occurrence
+      description: |
+        Updates occurrence times and capacity. The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProgramOccurrenceRequest'
+      responses:
+        '200':
+          description: Occurrence updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramOccurrence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [programs]
+      operationId: deleteOccurrence
+      summary: Delete an occurrence
+      description: |
+        Soft-deletes an occurrence. The actor must be an owner or admin
+        of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The deleted occurrence
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramOccurrence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/badges:
+    get:
+      tags: [badges]
+      operationId: listBadgeTemplates
+      summary: List an edition's badge templates
+      description: |
+        Lists the badge templates of the edition. Requires an owner,
+        admin, or staff role on the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition badge templates
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [badges]
+      operationId: createBadgeTemplate
+      summary: Create a badge template
+      description: |
+        Creates a badge template for the edition (design data is
+        opaque JSON consumed by the badge renderer). The actor must be
+        an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBadgeTemplateRequest'
+            example:
+              name: Standard Badge
+              design_data:
+                background: "#1b2a4a"
+      responses:
+        '201':
+          description: Badge template created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /badges/{template_id}:
+    get:
+      tags: [badges]
+      operationId: getBadgeTemplate
+      summary: Get a badge template
+      description: |
+        Fetches a single badge template. Requires an owner, admin, or
+        staff role on the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Badge template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested badge template
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [badges]
+      operationId: deleteBadgeTemplate
+      summary: Delete a badge template
+      description: |
+        Deletes a badge template. The actor must be an owner or admin of
+        the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Badge template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Badge template deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/signatures:
+    get:
+      tags: [signatures]
+      operationId: listEditionSignatures
+      summary: List an edition's signatures
+      description: |
+        Lists the signatures (approved signatory images) of the edition.
+        Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition signatures
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Signature'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [signatures]
+      operationId: createSignature
+      summary: Create a signature
+      description: |
+        Registers a signature (signatory name, title, and signature
+        image URL) for the edition, for use on certificates. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSignatureRequest'
+            example:
+              signatory_name: Jane Doe
+              signatory_title: Head of Education
+              signatory_email: jane@trieoh.com
+              image_url: https://cdn.trieoh.com/signatures/jane.png
+      responses:
+        '201':
+          description: Signature created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Signature'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signatures/{signature_id}:
+    get:
+      tags: [signatures]
+      operationId: getSignature
+      summary: Get a signature
+      description: Fetches a single signature. Public.
+      security: []
+      parameters:
+        - name: signature_id
+          in: path
+          required: true
+          description: Signature ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested signature
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Signature'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [signatures]
+      operationId: deleteSignature
+      summary: Delete a signature
+      description: |
+        Deletes a signature. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: signature_id
+          in: path
+          required: true
+          description: Signature ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Signature deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/signature-requests:
+    get:
+      tags: [signatures]
+      operationId: listEditionSignatureRequests
+      summary: List an edition's signature requests
+      description: |
+        Lists the signature requests issued for the edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition signature requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SignatureRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [signatures]
+      operationId: createSignatureRequest
+      summary: Create a signature request
+      description: |
+        Issues a signature request to a signatory (by email). The
+        request carries a token the signatory uses to fulfill or deny
+        via the public fulfill/deny endpoints; it expires after
+        `expires_in_days` (default 7, max 365). The actor must be an
+        owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSignatureRequestRequest'
+            example:
+              signatory_name: Jane Doe
+              signatory_title: Head of Education
+              signatory_email: jane@example.com
+              expires_in_days: 14
+      responses:
+        '201':
+          description: Signature request created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SignatureRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signature-requests/{request_id}:
+    get:
+      tags: [signatures]
+      operationId: getSignatureRequest
+      summary: Get a signature request
+      description: Fetches a single signature request. Public.
+      security: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          description: Signature request ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested signature request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SignatureRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signature-requests/{request_id}/cancel:
+    post:
+      tags: [signatures]
+      operationId: cancelSignatureRequest
+      summary: Cancel a signature request
+      description: |
+        Cancels a pending signature request, optionally with a reason.
+        The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          description: Signature request ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: [ string, "null" ]
+                  description: Why the request was cancelled.
+      responses:
+        '204':
+          description: Signature request cancelled
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signature-requests/fulfill:
+    post:
+      tags: [signatures]
+      operationId: fulfillSignatureRequest
+      summary: Fulfill a signature request
+      description: |
+        Completes a pending signature request by uploading the signatory's
+        signature image. Authenticated by the signature-request token
+        passed as the `token` query parameter (NOT a JWT). The token
+        binds this call to a single request/edition.
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: HMAC-signed signature-request token.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image_url]
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                  description: URL of the uploaded signature image.
+            example:
+              image_url: https://cdn.trieoh.com/signatures/jane.png
+      responses:
+        '201':
+          description: Signature created from the fulfilled request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Signature'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signature-requests/deny:
+    post:
+      tags: [signatures]
+      operationId: denySignatureRequest
+      summary: Deny a signature request
+      description: |
+        Denies a pending signature request. Authenticated by the
+        signature-request token passed as the `token` query parameter
+        (NOT a JWT).
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: HMAC-signed signature-request token.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: [ string, "null" ]
+                  description: Why the request was denied.
+            example:
+              reason: Signature image no longer available
+      responses:
+        '204':
+          description: Signature request denied
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signatures/revoke:
+    post:
+      tags: [signatures]
+      operationId: revokeSignature
+      summary: Revoke a signature
+      description: |
+        Revokes a previously fulfilled signature. Authenticated by the
+        signature token passed as the `token` query parameter (NOT a
+        JWT).
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: HMAC-signed signature token.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Signature revoked
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/certifications/templates:
+    get:
+      tags: [certifications]
+      operationId: listCertificationTemplates
+      summary: List an edition's certification templates
+      description: |
+        Lists the certification templates of the edition. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition certification templates
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CertificationTemplate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [certifications]
+      operationId: createCertificationTemplate
+      summary: Create a certification template
+      description: |
+        Creates a certification template for the edition (`edition_attendance`
+        or `program_attendance`; the latter is linked to programs after
+        creation). The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCertificationTemplateRequest'
+            example:
+              kind: edition_attendance
+              name: Edition Attendance Certificate
+              description: Awarded to attendees of the edition.
+              design_data:
+                background: "#ffffff"
+      responses:
+        '201':
+          description: Certification template created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CertificationTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /certifications/templates/{template_id}:
+    get:
+      tags: [certifications]
+      operationId: getCertificationTemplate
+      summary: Get a certification template
+      description: Fetches a single certification template. Public.
+      security: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested template
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CertificationTemplate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [certifications]
+      operationId: updateCertificationTemplate
+      summary: Update a certification template
+      description: |
+        Updates a certification template's details and design. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCertificationTemplateRequest'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CertificationTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [certifications]
+      operationId: deleteCertificationTemplate
+      summary: Delete a certification template
+      description: |
+        Deletes a certification template. The actor must be an owner or
+        admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '204':
+          description: Template deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /certifications/templates/{template_id}/link:
+    post:
+      tags: [certifications]
+      operationId: linkCertificationTemplate
+      summary: Link a program to a certification template
+      description: |
+        Links a program to a `program_attendance` certification
+        template, making the template eligible for that program's
+        attendees. The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertTemplateProgramRequest'
+            example:
+              program_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '201':
+          description: Program linked to the template
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [certifications]
+      operationId: unlinkCertificationTemplate
+      summary: Unlink a program from a certification template
+      description: |
+        Removes a program link from a certification template. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertTemplateProgramRequest'
+      responses:
+        '204':
+          description: Program unlinked from the template
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /certifications/templates/{template_id}/links:
+    get:
+      tags: [certifications]
+      operationId: listCertificationTemplateLinks
+      summary: List a template's program links
+      description: |
+        Lists the program links of a certification template. Public.
+      security: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Certification template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Template program links
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CertificationTemplateProgram'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /verify/{hash}:
+    get:
+      tags: [certifications]
+      operationId: verifyCertification
+      summary: Verify a certification by hash
+      description: |
+        Verifies a certification by its public verification hash.
+        Returns validity and the certificate when found. Public.
+      security: []
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          description: Certification verification hash.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VerifyCertResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /certifications/{cert_id}:
+    get:
+      tags: [certifications]
+      operationId: getCertification
+      summary: Get a certification
+      description: |
+        Fetches a single certification (emitted certificate). The actor
+        must be the certificate holder or an event member.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cert_id
+          in: path
+          required: true
+          description: Certification ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The requested certification
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Certification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/certifications:
+    get:
+      tags: [certifications]
+      operationId: listEditionCertifications
+      summary: List an edition's certifications
+      description: |
+        Lists the certifications emitted for the edition. The actor must
+        be an owner, admin, or staff of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition certifications
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Certification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /certifications:
+    get:
+      tags: [certifications]
+      operationId: listMyCertifications
+      summary: List your certifications
+      description: |
+        Lists the certifications issued to the authenticated actor.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Certifications issued to the actor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Certification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /certifications/{cert_id}/invalidate:
+    post:
+      tags: [certifications]
+      operationId: invalidateCertification
+      summary: Invalidate a certification
+      description: |
+        Invalidates an emitted certification with a reason. The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cert_id
+          in: path
+          required: true
+          description: Certification ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvalidCertReason'
+            example:
+              reason: Erroneous emission
+      responses:
+        '204':
+          description: Certification invalidated
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/certifications/emission-errors:
+    get:
+      tags: [certifications]
+      operationId: listCertificationEmissionErrors
+      summary: List an edition's emission errors
+      description: |
+        Lists the certification emission errors recorded for the
+        edition (attendees whose certificates failed to emit). The actor
+        must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition emission errors
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CertEmissionError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT issued by IdentityX, signed with Ed25519
+
+  parameters:
+    EventID:
+      name: event_id
+      in: path
+      required: true
+      description: Event ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    EditionID:
+      name: edition_id
+      in: path
+      required: true
+      description: Edition ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+  responses:
+    BadRequest:
+      description: Invalid request payload or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Insufficient permissions for the requested operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: The request conflicts with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      x-go-type: uuid.UUID
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    NullableUUID:
+      type: [ string, "null" ]
+      format: uuid
+      x-go-type: '*uuid.UUID'
+      x-go-type-skip-optional-pointer: true
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    Response:
+      type: object
+      description: |
+        The `fun.Response` envelope wrapping every JSON payload. On
+        success `data` carries the operation payload; on failure `error`
+        carries the AppError.
+      required: [code, message, timestamp, module]
+      properties:
+        code:
+          type: integer
+          description: HTTP status code, duplicated for convenience.
+        message:
+          type: string
+          description: Informational message; often empty on success.
+        data:
+          type: object
+          description: The operation payload. Shape is documented per operation.
+        error:
+          allOf:
+            - $ref: '#/components/schemas/Error'
+          description: Present (non-null) only on failure.
+        pagination:
+          allOf:
+            - $ref: '#/components/schemas/PaginationMeta'
+          description: Present only on paged list endpoints.
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          description: Service that produced the response.
+
+    Error:
+      type: object
+      title: AppError
+      description: The `fun.AppError` object carried in the envelope's `error` field.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - PAYMENT_REQUIRED
+            - FORBIDDEN
+            - NOT_FOUND
+            - METHOD_NOT_ALLOWED
+            - CONFLICT
+            - UNPROCESSABLE_ENTITY
+            - TOO_MANY_REQUESTS
+            - INTERNAL_ERROR
+            - NOT_IMPLEMENTED
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+        message:
+          type: string
+        fields:
+          type: array
+          description: Per-field validation errors (validation failures only).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        meta:
+          type: object
+          description: Arbitrary key/value context.
+          additionalProperties: true
+        debug:
+          type: object
+          description: Development-only diagnostics; stripped outside development environments.
+          properties:
+            raw_error:
+              type: string
+            stack_trace:
+              type: string
+
+    ErrorResponse:
+      type: object
+      description: The envelope as sent on failure.
+      required: [code, message, error, timestamp, module]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        error:
+          $ref: '#/components/schemas/Error'
+        timestamp:
+          type: string
+          format: date-time
+        module:
+          type: string
+          description: Service that produced the response.
+
+    PaginationMeta:
+      type: object
+      description: Pagination metadata for paged list endpoints (currently unused by Univents routes).
+      required: [page, limit, total, has_next, has_prev]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+        next_page:
+          type: integer
+        prev_page:
+          type: integer
+
+    EventStatus:
+      x-go-type: models.EventStatus
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [draft, active, discontinued]
+
+    Event:
+      x-go-type: models.Event
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: An event. Mirrors `models.Event`.
+      required: [id, owner_id, full_name, slug, status, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_id:
+          $ref: '#/components/schemas/UUID'
+        full_name:
+          type: string
+        acronym:
+          type: [ string, "null" ]
+        slug:
+          type: string
+        description:
+          type: [ string, "null" ]
+        style:
+          type: [ object, "null" ]
+          description: Styling hints for the event's public pages.
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        payssage_seller_id:
+          $ref: '#/components/schemas/NullableUUID'
+        payssage_wallet_id:
+          $ref: '#/components/schemas/NullableUUID'
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateEventRequest:
+      type: object
+      description: Request body for event creation. Mirrors `models.CreateEventRequest`.
+      required: [full_name, slug]
+      properties:
+        full_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        acronym:
+          type: [ string, "null" ]
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+
+    PatchEventRequest:
+      type: object
+      description: Request body for event updates. Mirrors `models.PatchEventRequest`.
+      required: [full_name, slug]
+      properties:
+        full_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        acronym:
+          type: [ string, "null" ]
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+
+    EventMemberRole:
+      x-go-type: models.EventMemberRole
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [owner, admin, staff]
+
+    EventMember:
+      x-go-type: models.EventMember
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: Membership of a user in an event. Mirrors `models.EventMember`.
+      required: [id, event_id, user_id, role, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        event_id:
+          $ref: '#/components/schemas/UUID'
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        role:
+          $ref: '#/components/schemas/EventMemberRole'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    AddEventMemberRequest:
+      type: object
+      description: Request body for adding an event member. Mirrors `models.AddEventMemberRequest`.
+      required: [email, role]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        role:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=owner admin staff"
+          $ref: '#/components/schemas/EventMemberRole'
+
+    Edition:
+      x-go-type: models.Edition
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One run of an event. Mirrors `models.Edition`.
+      required: [id, event_id, name, slug, is_draft, starts_at, ends_at, created_by, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        event_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        slug:
+          type: string
+        tagline:
+          type: [ string, "null" ]
+        description:
+          type: [ string, "null" ]
+        is_draft:
+          type: boolean
+          description: Whether the edition is unpublished.
+        registration_opens_at:
+          type: [ string, "null" ]
+          format: date-time
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        location_name:
+          type: [ string, "null" ]
+        location_description:
+          type: [ string, "null" ]
+          description: Venue address.
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateEditionRequest:
+      type: object
+      description: Request body for edition creation. Mirrors `models.CreateEditionRequest`.
+      required: [name, slug, starts_at, ends_at]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+
+    PatchEditionRequest:
+      type: object
+      description: Request body for edition updates. Mirrors `models.PatchEditionRequest`.
+      required: [name, slug, starts_at, ends_at]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        slug:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        tagline:
+          type: [ string, "null" ]
+        description:
+          type: [ string, "null" ]
+        registration_opens_at:
+          type: [ string, "null" ]
+          format: date-time
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        location_name:
+          type: [ string, "null" ]
+        location_description:
+          type: [ string, "null" ]
+        logo_url:
+          type: [ string, "null" ]
+          format: uri
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        contact_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+
+    TicketType:
+      x-go-type: models.TicketType
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A purchasable ticket type. `price_cents` is integer cents. Mirrors `models.TicketType`.
+      required: [id, edition_id, name, access_level, price_cents, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        access_level:
+          type: integer
+          description: Minimum access level the ticket grants (gates areas/programs).
+        price_cents:
+          type: integer
+          format: int64
+          description: Price in integer cents.
+        max_quantity:
+          type: [ integer, "null" ]
+          description: Maximum number of tickets for sale; null = unlimited.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateTicketTypeRequest:
+      type: object
+      description: Request body for ticket type creation. Mirrors `models.CreateTicketTypeRequest`.
+      required: [name, access_level, price_cents]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        access_level:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          minimum: 0
+        price_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        max_quantity:
+          type: [ integer, "null" ]
+          description: Null = unlimited.
+
+    PatchTicketTypeRequest:
+      type: object
+      description: Request body for ticket type updates. Mirrors `models.PatchTicketTypeRequest`.
+      required: [name, access_level, price_cents]
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        access_level:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          minimum: 0
+        price_cents:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        max_quantity:
+          type: [ integer, "null" ]
+
+    Product:
+      x-go-type: models.Product
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A purchasable product for an edition. Mirrors `models.Product`.
+      required: [id, edition_id, vendor_code, requires_registration, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        vendor_code:
+          type: string
+          description: Caller-defined unique product code within the edition.
+        requires_registration:
+          type: boolean
+          description: Whether buying this product requires an event registration.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    ProductVariant:
+      x-go-type: models.ProductVariant
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A variant (size/color/... ) of a product. `price` is integer cents. Mirrors `models.ProductVariant`.
+      required: [id, edition_id, product_id, vendor_code, name, price, gallery_urls, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        product_id:
+          $ref: '#/components/schemas/UUID'
+        vendor_code:
+          type: string
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        price:
+          type: integer
+          format: int64
+          description: Price in integer cents.
+        stock:
+          type: [ integer, "null" ]
+          description: Remaining stock; null = unlimited.
+        gallery_urls:
+          type: array
+          description: Gallery image URLs (JSON array).
+          items:
+            type: string
+            format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateInitialProductRequest:
+      type: object
+      description: Request body for creating a product with its first variant. Mirrors `models.CreateInitialProductRequest`.
+      required: [vendor_code, variant_vendor_code, name, price]
+      properties:
+        requires_registration:
+          type: boolean
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        variant_vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        price:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+          description: Price in integer cents.
+        stock:
+          type: [ integer, "null" ]
+          minimum: 0
+
+    CreateProductVariantRequest:
+      type: object
+      description: Request body for variant creation. Mirrors `models.CreateProductVariantRequest`.
+      required: [vendor_code, name, price]
+      properties:
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        price:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        stock:
+          type: [ integer, "null" ]
+          minimum: 0
+
+    PatchProductRequest:
+      type: object
+      description: Request body for product updates. Mirrors `models.PatchProductRequest`.
+      required: [vendor_code, requires_registration]
+      properties:
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        requires_registration:
+          type: boolean
+
+    PatchProductVariantRequest:
+      type: object
+      description: Request body for variant updates. Mirrors `models.PatchProductVariantRequest`.
+      required: [vendor_code, name, price]
+      properties:
+        vendor_code:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 255
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        price:
+          x-oapi-codegen-extra-tags:
+            validate: "min=0"
+          type: integer
+          format: int64
+          minimum: 0
+        stock:
+          type: [ integer, "null" ]
+          minimum: 0
+        gallery_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    ProgramKind:
+      x-go-type: models.ProgramKind
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [activity, checkpoint]
+
+    Program:
+      x-go-type: models.Program
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A schedule item of an edition. Mirrors `models.Program`.
+      required: [id, edition_id, kind, name, staff_only, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        kind:
+          $ref: '#/components/schemas/ProgramKind'
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        min_access_level:
+          type: [ integer, "null" ]
+          description: Minimum ticket access level required; null = open to all.
+        staff_only:
+          type: boolean
+        price:
+          type: [ integer, "null" ]
+          format: int64
+          description: Price in integer cents; null = free.
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateProgramRequest:
+      type: object
+      description: Request body for program creation. Mirrors `models.CreateProgramRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=activity checkpoint"
+          $ref: '#/components/schemas/ProgramKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        min_access_level:
+          type: [ integer, "null" ]
+          minimum: 0
+        staff_only:
+          type: boolean
+        price:
+          type: [ integer, "null" ]
+          format: int64
+
+    PatchProgramRequest:
+      type: object
+      description: Request body for program updates. Mirrors `models.PatchProgramRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=activity checkpoint"
+          $ref: '#/components/schemas/ProgramKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+        description:
+          type: [ string, "null" ]
+        min_access_level:
+          type: [ integer, "null" ]
+          minimum: 0
+        staff_only:
+          type: boolean
+        price:
+          type: [ integer, "null" ]
+          format: int64
+        banner_url:
+          type: [ string, "null" ]
+          format: uri
+
+    ProgramOccurrence:
+      x-go-type: models.ProgramOccurrence
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A dated session of a program. Mirrors `models.ProgramOccurrence`.
+      required: [id, program_id, edition_id, starts_at, ends_at, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        program_id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        max_capacity:
+          type: [ integer, "null" ]
+          description: Maximum attendees; null = unlimited.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateProgramOccurrenceRequest:
+      type: object
+      description: Request body for occurrence creation. Mirrors `models.CreateProgramOccurrenceRequest`.
+      required: [starts_at, ends_at]
+      properties:
+        starts_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        ends_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        max_capacity:
+          type: [ integer, "null" ]
+          description: Null = unlimited.
+
+    PatchProgramOccurrenceRequest:
+      type: object
+      description: Request body for occurrence updates. Mirrors `models.PatchProgramOccurrenceRequest`.
+      required: [starts_at, ends_at]
+      properties:
+        starts_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        ends_at:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          format: date-time
+        max_capacity:
+          type: [ integer, "null" ]
+
+    BadgeTemplate:
+      x-go-type: models.BadgeTemplate
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A badge design template. Mirrors `models.BadgeTemplate`.
+      required: [id, edition_id, name, design_data, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        ticket_type_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Ticket type the badge applies to; null = all.
+        name:
+          type: string
+        design_data:
+          type: object
+          description: Opaque design data consumed by the badge renderer.
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateBadgeTemplateRequest:
+      type: object
+      description: Request body for badge template creation. Mirrors `models.CreateBadgeTemplateRequest`.
+      required: [name, design_data]
+      properties:
+        ticket_type_id:
+          $ref: '#/components/schemas/NullableUUID'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,max=256"
+          type: string
+          maxLength: 256
+        design_data:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: object
+          additionalProperties: true
+
+    Signature:
+      x-go-type: models.Signature
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: An approved signatory image used on certificates. Mirrors `models.Signature`.
+      required: [id, edition_id, created_by, signatory_name, image_url, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        signatory_name:
+          type: string
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        signatory_user_id:
+          $ref: '#/components/schemas/NullableUUID'
+        image_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    AddSignatureRequest:
+      type: object
+      description: Request body for signature creation. Mirrors `models.AddSignatureRequest`.
+      required: [signatory_name, image_url]
+      properties:
+        signatory_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        signatory_user_id:
+          $ref: '#/components/schemas/NullableUUID'
+        image_url:
+          x-oapi-codegen-extra-tags:
+            validate: "required,url"
+          type: string
+          format: uri
+
+    SignatureRequestStatus:
+      x-go-type: models.SignatureRequestStatus
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [pending, completed, expired, cancelled]
+
+    SignatureRequest:
+      x-go-type: models.SignatureRequest
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: |
+        A request for a signatory to approve a signature. Fulfillment and
+        denial are authenticated by the request's token (see top-level
+        docs). Mirrors `models.SignatureRequest`.
+      required: [id, edition_id, created_by, signatory_name, idempotency_key, status, expires_at, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        created_by:
+          $ref: '#/components/schemas/UUID'
+        signatory_name:
+          type: string
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-go-type: string
+          type: [ string, "null" ]
+          format: email
+        signatory_user_id:
+          $ref: '#/components/schemas/NullableUUID'
+        idempotency_key:
+          $ref: '#/components/schemas/UUID'
+          description: Key guaranteeing the request is only processed once.
+        status:
+          $ref: '#/components/schemas/SignatureRequestStatus'
+        status_reason:
+          type: [ string, "null" ]
+          description: Reason for denial, when denied.
+        expires_at:
+          type: string
+          format: date-time
+        signature_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Signature produced by fulfillment, once completed.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateSignatureRequestRequest:
+      type: object
+      description: Request body for signature request creation. Mirrors `models.CreateSignatureRequestRequest`.
+      required: [signatory_name, signatory_email]
+      properties:
+        signatory_name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        signatory_title:
+          type: [ string, "null" ]
+        signatory_email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        signatory_user_id:
+          $ref: '#/components/schemas/NullableUUID'
+        expires_in_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: Token lifetime in days. Defaults to 7 when omitted.
+
+    CertificationTemplateKind:
+      x-go-type: models.CertificationTemplateKind
+      x-go-type-import:
+        path: univents/models
+      type: string
+      enum: [edition_attendance, program_attendance]
+
+    CertificationTemplate:
+      x-go-type: models.CertificationTemplate
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A certificate design template. Mirrors `models.CertificationTemplate`.
+      required: [id, edition_id, kind, name, design_data, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        kind:
+          $ref: '#/components/schemas/CertificationTemplateKind'
+        name:
+          type: string
+        description:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          description: Opaque design data consumed by the certificate renderer.
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        deleted_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CreateCertificationTemplateRequest:
+      type: object
+      description: Request body for certification template creation. Mirrors `models.CreateCertificationTemplateRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=edition_attendance program_attendance"
+          $ref: '#/components/schemas/CertificationTemplateKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        description:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          additionalProperties: true
+
+    UpdateCertificationTemplateRequest:
+      type: object
+      description: Request body for certification template updates. Mirrors `models.UpdateCertificationTemplateRequest`.
+      required: [kind, name]
+      properties:
+        kind:
+          x-oapi-codegen-extra-tags:
+            validate: "required,oneof=edition_attendance program_attendance"
+          $ref: '#/components/schemas/CertificationTemplateKind'
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=2"
+          type: string
+          minLength: 2
+          maxLength: 256
+        description:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          additionalProperties: true
+
+    CertificationTemplateProgram:
+      x-go-type: models.CertificationTemplateProgram
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A program link on a certification template. Mirrors `models.CertificationTemplateProgram`.
+      required: [id, template_id, program_id, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        template_id:
+          $ref: '#/components/schemas/UUID'
+        program_id:
+          $ref: '#/components/schemas/UUID'
+        created_at:
+          type: string
+          format: date-time
+
+    CertTemplateProgramRequest:
+      type: object
+      description: Request body for (un)linking a program to a template. Mirrors `models.CertTemplateProgramRequest`.
+      required: [program_id]
+      properties:
+        program_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+
+    Certification:
+      x-go-type: models.Certification
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: An emitted certificate. Mirrors `models.Certification`.
+      required: [id, edition_id, registration_id, user_id, verification_hash, valid, email_sent, issued_at, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        template_id:
+          $ref: '#/components/schemas/NullableUUID'
+        registration_id:
+          $ref: '#/components/schemas/UUID'
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        program_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Program the certificate was emitted for, when program-scoped.
+        verification_hash:
+          type: string
+          description: Public hash used by the /verify/{hash} endpoint.
+        valid:
+          type: boolean
+          description: Whether the certificate is currently valid.
+        invalid_reason:
+          type: [ string, "null" ]
+        email_sent:
+          type: boolean
+        issued_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    CertEmissionError:
+      x-go-type: models.CertEmissionError
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A failed certificate emission attempt. Mirrors `models.CertEmissionError`.
+      required: [id, edition_id, user_id, error_message, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        template_id:
+          $ref: '#/components/schemas/NullableUUID'
+        program_id:
+          $ref: '#/components/schemas/NullableUUID'
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    InvalidCertReason:
+      type: object
+      description: Request body for certificate invalidation. Mirrors `models.InvalidCertReason`.
+      required: [reason]
+      properties:
+        reason:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    VerifyCertResponse:
+      x-go-type: models.VerifyCertResponse
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: Result of certificate verification. Mirrors `models.VerifyCertResponse`.
+      required: [valid]
+      properties:
+        valid:
+          type: boolean
+        template_id:
+          $ref: '#/components/schemas/NullableUUID'
+        cert:
+          allOf:
+            - $ref: '#/components/schemas/Certification'
+          description: The certificate, when found.

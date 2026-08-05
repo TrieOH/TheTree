@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type {
   OccurrenceCreateOutput,
   ProgramCreateInput,
@@ -14,6 +15,7 @@ import {
   patchProgramFn,
 } from ".";
 import { programKeys } from "./query-keys";
+
 export function useProgramMutation(editionId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -24,31 +26,33 @@ export function useProgramMutation(editionId: string) {
       id?: string;
       data: ProgramCreateInput | ProgramCreateOutput;
     }) => (id ? patchProgramFn(id, data) : createProgramFn(editionId, data)),
-    onSuccess: (r) => {
-      if (!r.success)
-        return toast.error(r.message || "Não foi possível salvar o programa");
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
       toast.success("Programa salvo");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível salvar o programa")),
   });
 }
+
 export function useDeleteProgramMutation(editionId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteProgramFn,
-    onSuccess: (r) => {
-      if (!r.success)
-        return toast.error(r.message || "Não foi possível excluir o programa");
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
       void qc.invalidateQueries({
         queryKey: programKeys.occurrences(editionId),
       });
       toast.success("Programa excluído");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir o programa"),
+      ),
   });
 }
+
 export function useOccurrenceMutation(editionId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -66,31 +70,32 @@ export function useOccurrenceMutation(editionId: string) {
         throw new Error("programId é obrigatório para criar uma ocorrência");
       return createOccurrenceFn(programId, data);
     },
-    onSuccess: (r) => {
-      if (!r.success)
-        return toast.error(r.message || "Não foi possível salvar a ocorrência");
+    onSuccess: () => {
       void qc.invalidateQueries({
         queryKey: programKeys.occurrences(editionId),
       });
       toast.success("Ocorrência salva");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível salvar a ocorrência"),
+      ),
   });
 }
+
 export function useDeleteOccurrenceMutation(editionId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteOccurrenceFn,
-    onSuccess: (r) => {
-      if (!r.success)
-        return toast.error(
-          r.message || "Não foi possível excluir a ocorrência",
-        );
+    onSuccess: () => {
       void qc.invalidateQueries({
         queryKey: programKeys.occurrences(editionId),
       });
       toast.success("Ocorrência excluída");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir a ocorrência"),
+      ),
   });
 }

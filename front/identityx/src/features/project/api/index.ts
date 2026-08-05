@@ -1,6 +1,18 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { orvalData } from "@trieoh/api-client";
+import {
+  addOrganizationProjectMember,
+  addProjectMember,
+  createOrganizationProject,
+  createProject,
+  listOrganizationProjectMembers,
+  listOrganizationProjects,
+  listProjectMembers,
+  listProjects,
+  removeOrganizationProjectMember,
+  removeProjectMember,
+} from "@trieoh/identityx-api";
 import type {
   MemberAddToProjectI,
   ProjectCreateI,
@@ -17,11 +29,10 @@ import type {
 export const createProjectFn = createClientOnlyFn(
   (projectData: ProjectCreateI, orgId?: string) => {
     if (orgId)
-      return authFetcher.post<ProjectI>(
-        `/organizations/${orgId}/projects`,
-        projectData,
+      return createOrganizationProject(orgId, projectData).then(
+        orvalData<ProjectI>,
       );
-    return authFetcher.post<ProjectI>("/projects", projectData);
+    return createProject(projectData).then(orvalData<ProjectI>);
   },
 );
 
@@ -31,11 +42,8 @@ export const createProjectFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of ProjectI objects.
  */
 export const getProjectsFn = createClientOnlyFn(async (orgId?: string) => {
-  if (orgId)
-    return await tanstackQueryFetcher<ProjectI[]>(
-      `/organizations/${orgId}/projects`,
-    );
-  return await tanstackQueryFetcher<ProjectI[]>("/projects");
+  if (orgId) return listOrganizationProjects(orgId).then(orvalData<ProjectI[]>);
+  return listProjects().then(orvalData<ProjectI[]>);
 });
 
 /**
@@ -66,11 +74,12 @@ export const addMemberToProjectFn = createClientOnlyFn(
     organization_id?: string,
   ) => {
     if (organization_id)
-      return authFetcher.post(
-        `/organizations/${organization_id}/projects/${project_id}/members`,
+      return addOrganizationProjectMember(
+        organization_id,
+        project_id,
         memberData,
-      );
-    return authFetcher.post(`/projects/${project_id}/members`, memberData);
+      ).then(orvalData<void>);
+    return addProjectMember(project_id, memberData).then(orvalData<void>);
   },
 );
 
@@ -84,13 +93,12 @@ export const addMemberToProjectFn = createClientOnlyFn(
 export const removeMemberFromProjectFn = createClientOnlyFn(
   (project_id: string, actor_email: string, organization_id?: string) => {
     if (organization_id)
-      return authFetcher.delete(
-        `/organizations/${organization_id}/projects/${project_id}/members`,
-        { actor_email },
-      );
-    return authFetcher.delete(`/projects/${project_id}/members`, {
-      actor_email,
-    });
+      return removeOrganizationProjectMember(organization_id, project_id, {
+        actor_email,
+      }).then(orvalData<void>);
+    return removeProjectMember(project_id, { actor_email }).then(
+      orvalData<void>,
+    );
   },
 );
 
@@ -103,12 +111,10 @@ export const removeMemberFromProjectFn = createClientOnlyFn(
 export const getAllProjectMembersFn = createClientOnlyFn(
   (project_id: string, organization_id?: string) => {
     if (organization_id)
-      return tanstackQueryFetcher<ProjectMemberI[]>(
-        `/organizations/${organization_id}/projects/${project_id}/members`,
+      return listOrganizationProjectMembers(organization_id, project_id).then(
+        orvalData<ProjectMemberI[]>,
       );
-    return tanstackQueryFetcher<ProjectMemberI[]>(
-      `/projects/${project_id}/members`,
-    );
+    return listProjectMembers(project_id).then(orvalData<ProjectMemberI[]>);
   },
 );
 

@@ -62,14 +62,12 @@ function RouteComponent() {
   const { mutate: createActor, isPending: isCreating } = useMutation({
     mutationFn: (data: ActorCreateI) =>
       createActorFn(projectID, data, organizationID),
-    onSuccess: (response) => {
-      if (response.success) {
-        queryClient.invalidateQueries({
-          queryKey: allActorsQueryOptions(projectID, organizationID).queryKey,
-        });
-        setIsCreateOpen(false);
-        toast.success(response.message || "Actor created successfully");
-      } else toast.error(response.message || "Failed to create actor");
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: allActorsQueryOptions(projectID, organizationID).queryKey,
+      });
+      setIsCreateOpen(false);
+      toast.success("Actor created successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });

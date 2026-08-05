@@ -19,16 +19,25 @@ import { Route as ComparativeRouteImport } from './routes/comparative'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as ProfileConfigRouteImport } from './routes/profile/config'
+import { Route as ProfileActorIdRouteImport } from './routes/profile/$actorId'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth_/verify-email'
+import { Route as AuthVerifyRouteImport } from './routes/auth_/verify'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth_/reset-password'
+import { Route as AuthResetRouteImport } from './routes/auth_/reset'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth_/forgot-password'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
-import { Route as EventsSlugProfileRouteImport } from './routes/events/$slug/profile'
+import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
@@ -39,10 +48,12 @@ import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } f
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/index'
 import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
 import { Route as AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/index'
+import { Route as AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/index'
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/invites'
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/callback.payment'
+import { Route as AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/$productId.variants/index'
 
 const AdminEventsEventIdIndexLazyRouteImport = createFileRoute(
@@ -99,6 +110,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -120,6 +136,46 @@ const SignatureRequestsFulfillRoute =
     path: '/signature-requests/fulfill',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileConfigRoute = ProfileConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileActorIdRoute = ProfileActorIdRouteImport.update({
+  id: '/$actorId',
+  path: '/$actorId',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth_/verify-email',
+  path: '/auth/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth_/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth_/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth_/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUploadsRoute = AdminUploadsRouteImport.update({
   id: '/uploads',
   path: '/uploads',
@@ -149,9 +205,9 @@ const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
   path: '/events/$slug/programs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsSlugProfileRoute = EventsSlugProfileRouteImport.update({
-  id: '/events/$slug/profile',
-  path: '/events/$slug/profile',
+const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
+  id: '/auth_/$provider/callback',
+  path: '/auth/$provider/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsEventIdIndexLazyRoute =
@@ -251,6 +307,12 @@ const AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute =
     path: '/events/$eventId/editions/$editionId/certifications/',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminEventsEventIdEditionsEditionIdBadgesIndexRoute =
+  AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/badges/',
+    path: '/events/$eventId/editions/$editionId/badges/',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute =
   AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRouteImport.update({
     id: '/events/$eventId_/editions/$editionId/programs/calendar',
@@ -285,6 +347,12 @@ const AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute =
     path: '/events/$eventId/editions/$editionId/callback/payment',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminEventsEventIdEditionsEditionIdBadgesEditorRoute =
+  AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/badges/editor',
+    path: '/events/$eventId/editions/$editionId/badges/editor',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute =
   AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRouteImport.update(
     {
@@ -317,14 +385,23 @@ export interface FileRoutesByFullPath {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
-  '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/profile/': typeof ProfileIndexRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -336,11 +413,13 @@ export interface FileRoutesByFullPath {
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId/editions/$editionId/badges/editor': typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   '/admin/events/$eventId/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
   '/admin/events/$eventId/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
   '/admin/events/$eventId/editions/$editionId/signatures/invites': typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
   '/admin/events/$eventId/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
+  '/admin/events/$eventId/editions/$editionId/badges/': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   '/admin/events/$eventId/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
@@ -356,14 +435,22 @@ export interface FileRoutesByTo {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
-  '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/profile': typeof ProfileIndexRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
@@ -374,11 +461,13 @@ export interface FileRoutesByTo {
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId/editions/$editionId/badges/editor': typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   '/admin/events/$eventId/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
   '/admin/events/$eventId/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
   '/admin/events/$eventId/editions/$editionId/signatures/invites': typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
   '/admin/events/$eventId/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
+  '/admin/events/$eventId/editions/$editionId/badges': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId/editions/$editionId/certifications': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   '/admin/events/$eventId/editions/$editionId/products': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
@@ -395,14 +484,23 @@ export interface FileRoutesById {
   '/comparative': typeof ComparativeRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth_/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth_/reset': typeof AuthResetRoute
+  '/auth_/reset-password': typeof AuthResetPasswordRoute
+  '/auth_/verify': typeof AuthVerifyRoute
+  '/auth_/verify-email': typeof AuthVerifyEmailRoute
+  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
-  '/events/$slug/profile': typeof EventsSlugProfileRoute
+  '/profile/': typeof ProfileIndexRoute
+  '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -414,11 +512,13 @@ export interface FileRoutesById {
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId_/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
   '/admin/events/$eventId_/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/badges/editor': typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   '/admin/events/$eventId_/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   '/admin/events/$eventId_/editions/$editionId/certifications/editor': typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
   '/admin/events/$eventId_/editions/$editionId/signatures/editor': typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute
   '/admin/events/$eventId_/editions/$editionId/signatures/invites': typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute
   '/admin/events/$eventId_/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
+  '/admin/events/$eventId_/editions/$editionId/badges/': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId_/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
@@ -439,11 +539,20 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/auth/forgot-password'
+    | '/auth/reset'
+    | '/auth/reset-password'
+    | '/auth/verify'
+    | '/auth/verify-email'
+    | '/profile/$actorId'
+    | '/profile/config'
+    | '/profile/edit'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
-    | '/events/$slug/profile'
+    | '/profile/'
+    | '/auth/$provider/callback'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -455,11 +564,13 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId/editions/$editionId/signatures'
     | '/admin/events/$eventId/editions/$editionId/'
+    | '/admin/events/$eventId/editions/$editionId/badges/editor'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
     | '/admin/events/$eventId/editions/$editionId/certifications/editor'
     | '/admin/events/$eventId/editions/$editionId/signatures/editor'
     | '/admin/events/$eventId/editions/$editionId/signatures/invites'
     | '/admin/events/$eventId/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId/editions/$editionId/badges/'
     | '/admin/events/$eventId/editions/$editionId/certifications/'
     | '/admin/events/$eventId/editions/$editionId/products/'
     | '/admin/events/$eventId/editions/$editionId/signatures/'
@@ -475,14 +586,22 @@ export interface FileRouteTypes {
     | '/comparative'
     | '/contact'
     | '/privacy'
-    | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/auth/forgot-password'
+    | '/auth/reset'
+    | '/auth/reset-password'
+    | '/auth/verify'
+    | '/auth/verify-email'
+    | '/profile/$actorId'
+    | '/profile/config'
+    | '/profile/edit'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events'
-    | '/events/$slug/profile'
+    | '/profile'
+    | '/auth/$provider/callback'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events'
@@ -493,11 +612,13 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/members'
     | '/admin/events/$eventId/editions/$editionId'
+    | '/admin/events/$eventId/editions/$editionId/badges/editor'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
     | '/admin/events/$eventId/editions/$editionId/certifications/editor'
     | '/admin/events/$eventId/editions/$editionId/signatures/editor'
     | '/admin/events/$eventId/editions/$editionId/signatures/invites'
     | '/admin/events/$eventId/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId/editions/$editionId/badges'
     | '/admin/events/$eventId/editions/$editionId/certifications'
     | '/admin/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/$editionId/signatures'
@@ -516,11 +637,20 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/auth_/forgot-password'
+    | '/auth_/reset'
+    | '/auth_/reset-password'
+    | '/auth_/verify'
+    | '/auth_/verify-email'
+    | '/profile/$actorId'
+    | '/profile/config'
+    | '/profile/edit'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
-    | '/events/$slug/profile'
+    | '/profile/'
+    | '/auth_/$provider/callback'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -532,11 +662,13 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId_/editions/$editionId/signatures'
     | '/admin/events/$eventId_/editions/$editionId/'
+    | '/admin/events/$eventId_/editions/$editionId/badges/editor'
     | '/admin/events/$eventId_/editions/$editionId/callback/payment'
     | '/admin/events/$eventId_/editions/$editionId/certifications/editor'
     | '/admin/events/$eventId_/editions/$editionId/signatures/editor'
     | '/admin/events/$eventId_/editions/$editionId/signatures/invites'
     | '/admin/events/$eventId_/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId_/editions/$editionId/badges/'
     | '/admin/events/$eventId_/editions/$editionId/certifications/'
     | '/admin/events/$eventId_/editions/$editionId/products/'
     | '/admin/events/$eventId_/editions/$editionId/signatures/'
@@ -553,13 +685,18 @@ export interface RootRouteChildren {
   ComparativeRoute: typeof ComparativeRoute
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
-  ProfileRoute: typeof ProfileRoute
+  ProfileRoute: typeof ProfileRouteWithChildren
   TermsRoute: typeof TermsRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetRoute: typeof AuthResetRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
+  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
   SignaturesRevokeRoute: typeof SignaturesRevokeRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
-  EventsSlugProfileRoute: typeof EventsSlugProfileRoute
+  AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
@@ -625,6 +762,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/events/': {
       id: '/events/'
       path: '/events'
@@ -651,6 +795,62 @@ declare module '@tanstack/react-router' {
       path: '/signature-requests/fulfill'
       fullPath: '/signature-requests/fulfill'
       preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/config': {
+      id: '/profile/config'
+      path: '/config'
+      fullPath: '/profile/config'
+      preLoaderRoute: typeof ProfileConfigRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/$actorId': {
+      id: '/profile/$actorId'
+      path: '/$actorId'
+      fullPath: '/profile/$actorId'
+      preLoaderRoute: typeof ProfileActorIdRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/auth_/verify-email': {
+      id: '/auth_/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/verify': {
+      id: '/auth_/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/reset-password': {
+      id: '/auth_/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/forgot-password': {
+      id: '/auth_/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/uploads': {
@@ -688,11 +888,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugProgramsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$slug/profile': {
-      id: '/events/$slug/profile'
-      path: '/events/$slug/profile'
-      fullPath: '/events/$slug/profile'
-      preLoaderRoute: typeof EventsSlugProfileRouteImport
+    '/auth_/$provider/callback': {
+      id: '/auth_/$provider/callback'
+      path: '/auth/$provider/callback'
+      fullPath: '/auth/$provider/callback'
+      preLoaderRoute: typeof AuthProviderCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/$eventId/': {
@@ -779,6 +979,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/events/$eventId_/editions/$editionId/badges/': {
+      id: '/admin/events/$eventId_/editions/$editionId/badges/'
+      path: '/events/$eventId/editions/$editionId/badges'
+      fullPath: '/admin/events/$eventId/editions/$editionId/badges/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/events/$eventId_/editions/$editionId/programs/calendar': {
       id: '/admin/events/$eventId_/editions/$editionId/programs/calendar'
       path: '/events/$eventId/editions/$editionId/programs/calendar'
@@ -812,6 +1019,13 @@ declare module '@tanstack/react-router' {
       path: '/events/$eventId/editions/$editionId/callback/payment'
       fullPath: '/admin/events/$eventId/editions/$editionId/callback/payment'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/badges/editor': {
+      id: '/admin/events/$eventId_/editions/$editionId/badges/editor'
+      path: '/events/$eventId/editions/$editionId/badges/editor'
+      fullPath: '/admin/events/$eventId/editions/$editionId/badges/editor'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/': {
@@ -860,9 +1074,11 @@ interface AdminRouteChildren {
   AdminEventsEventIdMembersIndexRoute: typeof AdminEventsEventIdMembersIndexRoute
   AdminEventsEventIdEditionsEditionIdSignaturesRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
   AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  AdminEventsEventIdEditionsEditionIdBadgesEditorRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
   AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute
+  AdminEventsEventIdEditionsEditionIdBadgesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   AdminEventsEventIdEditionsEditionIdProductsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   AdminEventsEventIdEditionsEditionIdTicketsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
@@ -881,12 +1097,16 @@ const AdminRouteChildren: AdminRouteChildren = {
     AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren,
   AdminEventsEventIdEditionsEditionIdIndexRoute:
     AdminEventsEventIdEditionsEditionIdIndexRoute,
+  AdminEventsEventIdEditionsEditionIdBadgesEditorRoute:
+    AdminEventsEventIdEditionsEditionIdBadgesEditorRoute,
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
     AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute,
   AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute:
     AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute,
   AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute:
     AdminEventsEventIdEditionsEditionIdProgramsCalendarLazyRoute,
+  AdminEventsEventIdEditionsEditionIdBadgesIndexRoute:
+    AdminEventsEventIdEditionsEditionIdBadgesIndexRoute,
   AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute:
     AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute,
   AdminEventsEventIdEditionsEditionIdProductsIndexRoute:
@@ -903,6 +1123,23 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ProfileRouteChildren {
+  ProfileActorIdRoute: typeof ProfileActorIdRoute
+  ProfileConfigRoute: typeof ProfileConfigRoute
+  ProfileEditRoute: typeof ProfileEditRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
+}
+
+const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileActorIdRoute: ProfileActorIdRoute,
+  ProfileConfigRoute: ProfileConfigRoute,
+  ProfileEditRoute: ProfileEditRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
+}
+
+const ProfileRouteWithChildren =
+  ProfileRoute._addFileChildren(ProfileRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -910,13 +1147,18 @@ const rootRouteChildren: RootRouteChildren = {
   ComparativeRoute: ComparativeRoute,
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
-  ProfileRoute: ProfileRoute,
+  ProfileRoute: ProfileRouteWithChildren,
   TermsRoute: TermsRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetRoute: AuthResetRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
+  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
   SignaturesRevokeRoute: SignaturesRevokeRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
-  EventsSlugProfileRoute: EventsSlugProfileRoute,
+  AuthProviderCallbackRoute: AuthProviderCallbackRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugTicketsRoute: EventsSlugTicketsRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,

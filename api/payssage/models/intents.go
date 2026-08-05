@@ -49,25 +49,6 @@ const (
 	StatusDetailOther               IntentStatusDetail = "other"
 )
 
-type CreateIntentRequest struct {
-	SellerID             uuid.UUID        `json:"seller_id"`
-	Currency             string           `json:"currency"`
-	AmountCents          int64            `json:"amount_cents"`
-	CheckoutProviderData json.RawMessage  `json:"checkout_provider_data"`
-	Metadata             *json.RawMessage `json:"metadata"`
-}
-
-func (r CreateIntentRequest) ToInput(walletID uuid.UUID) CreateIntentInput {
-	return CreateIntentInput{
-		WalletID:     walletID,
-		SellerID:     r.SellerID,
-		Currency:     r.Currency,
-		AmountCents:  r.AmountCents,
-		CheckoutData: r.CheckoutProviderData,
-		Metadata:     r.Metadata,
-	}
-}
-
 type CreateIntentInput struct {
 	WalletID     uuid.UUID
 	SellerID     uuid.UUID
@@ -77,7 +58,7 @@ type CreateIntentInput struct {
 	Metadata     *json.RawMessage
 }
 
-type HardCreateIntentRequest struct {
+type HardCreateIntentInput struct {
 	WalletID     uuid.UUID        `json:"wallet_id"`
 	SellerID     uuid.UUID        `json:"seller_id"`
 	CollectorID  *uuid.UUID       `json:"collector_id"`

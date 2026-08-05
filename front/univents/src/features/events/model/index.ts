@@ -1,3 +1,4 @@
+import type { Event, EventStatus } from "@trieoh/univents-api/schemas";
 import z from "zod";
 
 export const eventCreateSchema = z.object({
@@ -40,23 +41,5 @@ export const eventCreateSchema = z.object({
 export type EventCreateInputI = z.input<typeof eventCreateSchema>;
 export type EventCreateOutputI = z.output<typeof eventCreateSchema>;
 
-export type EventStatusI = "draft" | "active" | "discontinued";
-
-export interface EventI {
-  id: string;
-  owner_id: string;
-  full_name: string;
-  acronym: string | null;
-  slug: string;
-  description: string | null;
-  style: unknown | null;
-  payssage_seller_id: string | null;
-  payssage_wallet_id: string | null;
-  logo_url: string | null;
-  banner_url: string | null;
-  contact_email: string | null;
-  status: EventStatusI;
-  created_at: string;
-  updated_at: string | null;
-  deleted_at: string | null;
-}
+export type EventStatusI = EventStatus;
+export type EventI = Event;

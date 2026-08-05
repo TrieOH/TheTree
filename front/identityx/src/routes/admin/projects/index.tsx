@@ -29,15 +29,11 @@ function RouteComponent() {
   const { mutate: createProject, isPending: isCreating } = useMutation({
     mutationFn: (data: ProjectCreateI) => createProjectFn(data, organizationID),
     onSuccess: (response) => {
-      if (response.success) {
-        queryClient.setQueryData(
-          allProjectsQueryOptions(organizationID).queryKey,
-          (oldData: ProjectI[] = []) => {
-            return [response.data, ...oldData];
-          },
-        );
-        toast.success(response.message || "Project created successfully");
-      } else toast.error(response.message || "Failed to create project");
+      queryClient.setQueryData(
+        allProjectsQueryOptions(organizationID).queryKey,
+        (oldData: ProjectI[] = []) => [response, ...oldData],
+      );
+      toast.success("Project created successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });

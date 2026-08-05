@@ -15,9 +15,11 @@ import { ModernSignUp } from "./Modern/ModernSignUp";
 import { ModernForgotPassword } from "./Modern/ModernForgotPassword";
 import { ModernResetPassword } from "./Modern/ModernResetPassword";
 import { ModernVerifyEmail } from "./Modern/ModernVerifyEmail";
+import { ModernResendVerification } from "./Modern/ModernResendVerification";
 import { ModernSetup } from "./Modern/ModernSetup";
 import { ModernAuth } from "./Modern/ModernAuth";
 import { ModernIntrospect } from "./Modern/ModernIntrospect";
+import { ModernProfile } from "./Modern/ModernProfile";
 
 export {
   SignIn,
@@ -27,9 +29,11 @@ export {
   ModernForgotPassword,
   ModernResetPassword,
   ModernVerifyEmail,
+  ModernResendVerification,
   ModernSetup,
   ModernAuth,
   ModernIntrospect,
+  ModernProfile,
   BasicLogoutButton,
   Copyright,
   BasicInputField,

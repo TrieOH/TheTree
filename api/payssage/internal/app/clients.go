@@ -2,26 +2,18 @@ package app
 
 import (
 	"context"
-	"lib/errx"
+
 	"payssage/internal/config"
-	"time"
 
 	idx "sdk/identityx"
+
+	"time"
 
 	"resty.dev/v3"
 )
 
 func SetupIdentityX(cfg config.Config) *idx.Client {
-	client, err := idx.Bootstrap(context.Background(), idx.Config{
-		BaseURL:   cfg.IdxURL,
-		APIKey:    cfg.IdxAPIKey,
-		ProjectID: cfg.IdxProjectID,
-		Debug:     true,
-	})
-	if err != nil {
-		errx.Exit(err, "error creating identityx client")
-	}
-	return client
+	return idx.MustBootstrap(context.Background(), cfg.ToIdentityXConfig())
 }
 
 func SetupHTTPClient() *resty.Client {

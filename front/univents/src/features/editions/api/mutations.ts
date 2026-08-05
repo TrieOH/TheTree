@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/errors";
 import type {
   EditionCreateOutputI,
   EditionI,
@@ -57,16 +58,12 @@ export function useCreateEditionMutation() {
   return useMutation({
     mutationFn: ({ eventId, data }: CreateEditionInput) =>
       createEditionFn(data, eventId),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao criar edição");
-        return;
-      }
-
-      syncEditionCaches(queryClient, res.data);
+    onSuccess: (edition) => {
+      syncEditionCaches(queryClient, edition);
       toast.success("Edição criada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível criar a edição")),
   });
 }
 
@@ -76,16 +73,14 @@ export function usePatchEditionMutation() {
   return useMutation({
     mutationFn: ({ eventId, editionId, data }: PatchEditionInput) =>
       patchEditionFn(eventId, editionId, data),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao atualizar edição");
-        return;
-      }
-
-      syncEditionCaches(queryClient, res.data);
+    onSuccess: (edition) => {
+      syncEditionCaches(queryClient, edition);
       toast.success("Edição atualizada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar a edição"),
+      ),
   });
 }
 
@@ -95,12 +90,7 @@ export function usePublishEditionMutation() {
   return useMutation({
     mutationFn: ({ eventId, editionId }: PublishEditionInput) =>
       publishEditionFn(eventId, editionId),
-    onSuccess: (res, { eventId }) => {
-      if (!res.success) {
-        toast.error(res.message || "Erro ao publicar edição");
-        return;
-      }
-
+    onSuccess: (_res, { eventId }) => {
       void queryClient.invalidateQueries({
         queryKey: editionKeys.adminListByEvent(eventId),
       });
@@ -109,6 +99,7 @@ export function usePublishEditionMutation() {
       });
       toast.success("Edição publicada com sucesso!");
     },
-    onError: () => toast.error("Erro ao conectar com o servidor"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível publicar a edição")),
   });
 }

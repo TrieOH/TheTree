@@ -95,13 +95,11 @@ function RouteComponent() {
   const { mutate: createApiKey, isPending: isCreating } = useMutation({
     mutationFn: (data: ApiKeyCreateI) => rotateApiKeyFn(projectID, data),
     onSuccess: (response) => {
-      if (response.success) {
-        setCreatedKey(response.data);
-        queryClient.invalidateQueries({
-          queryKey: allApiKeysQueryOptions(projectID).queryKey,
-        });
-        toast.success(response.message || "API key created successfully");
-      } else toast.error(response.message || "Failed to create API key");
+      setCreatedKey(response);
+      queryClient.invalidateQueries({
+        queryKey: allApiKeysQueryOptions(projectID).queryKey,
+      });
+      toast.success("API key created successfully");
     },
     onError: (error: Error) => toast.error(error.message),
   });

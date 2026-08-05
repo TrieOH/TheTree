@@ -10,18 +10,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type service struct {
+type Service struct {
 	forms      ports.FormsRepo
 	namespaces ports.NamespaceRepo
 }
 
-func New(forms ports.FormsRepo, namespaces ports.NamespaceRepo) *service {
-	return &service{forms: forms, namespaces: namespaces}
+func New(forms ports.FormsRepo, namespaces ports.NamespaceRepo) *Service {
+	return &Service{forms: forms, namespaces: namespaces}
 }
 
-var Service *service
-
-func (s *service) CheckForm(ctx context.Context, actorID, formID uuid.UUID, minRole libauthz.Role) error {
+func (s *Service) CheckForm(ctx context.Context, actorID, formID uuid.UUID, minRole libauthz.Role) error {
 	form, err := s.forms.GetByID(ctx, formID)
 	if err != nil {
 		return err
@@ -49,7 +47,7 @@ func (s *service) CheckForm(ctx context.Context, actorID, formID uuid.UUID, minR
 	return libauthz.Min(namespaceRole, minRole)
 }
 
-func (s *service) CheckNamespace(ctx context.Context, actorID, namespaceID uuid.UUID, minRole libauthz.Role) error {
+func (s *Service) CheckNamespace(ctx context.Context, actorID, namespaceID uuid.UUID, minRole libauthz.Role) error {
 	role, err := s.namespaces.GetRole(ctx, actorID, namespaceID)
 	if err != nil {
 		return libauthz.ForbiddenIfNotFound(err)

@@ -13,7 +13,13 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
+import { Route as AuthVerifyRouteImport } from './routes/auth/verify'
 import { Route as AuthSetupRouteImport } from './routes/auth/setup'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthResetRouteImport } from './routes/auth/reset'
+import { Route as AuthResendVerificationRouteImport } from './routes/auth/resend-verification'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AdminIntrospectRouteImport } from './routes/admin/introspect'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
 import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
@@ -22,7 +28,10 @@ import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provide
 import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/projects/$projectID'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
 import { Route as AdminProjectsProjectIDIndexRouteImport } from './routes/admin/projects/$projectID/index'
+import { Route as AdminProjectsProjectIDProfilesRouteImport } from './routes/admin/projects/$projectID/profiles'
+import { Route as AdminProjectsProjectIDOauthRouteImport } from './routes/admin/projects/$projectID/oauth'
 import { Route as AdminProjectsProjectIDMembersRouteImport } from './routes/admin/projects/$projectID/members'
+import { Route as AdminProjectsProjectIDEmailsRouteImport } from './routes/admin/projects/$projectID/emails'
 import { Route as AdminProjectsProjectIDCapabilitiesRouteImport } from './routes/admin/projects/$projectID/capabilities'
 import { Route as AdminProjectsProjectIDActorsRouteImport } from './routes/admin/projects/$projectID/actors'
 
@@ -46,9 +55,39 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth/verify-email',
+  path: '/auth/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSetupRoute = AuthSetupRouteImport.update({
   id: '/auth/setup',
   path: '/auth/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResendVerificationRoute = AuthResendVerificationRouteImport.update({
+  id: '/auth/resend-verification',
+  path: '/auth/resend-verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIntrospectRoute = AdminIntrospectRouteImport.update({
@@ -94,10 +133,28 @@ const AdminProjectsProjectIDIndexRoute =
     path: '/',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
+const AdminProjectsProjectIDProfilesRoute =
+  AdminProjectsProjectIDProfilesRouteImport.update({
+    id: '/profiles',
+    path: '/profiles',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
+const AdminProjectsProjectIDOauthRoute =
+  AdminProjectsProjectIDOauthRouteImport.update({
+    id: '/oauth',
+    path: '/oauth',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
 const AdminProjectsProjectIDMembersRoute =
   AdminProjectsProjectIDMembersRouteImport.update({
     id: '/members',
     path: '/members',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
+const AdminProjectsProjectIDEmailsRoute =
+  AdminProjectsProjectIDEmailsRouteImport.update({
+    id: '/emails',
+    path: '/emails',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
 const AdminProjectsProjectIDCapabilitiesRoute =
@@ -118,7 +175,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
   '/admin/introspect': typeof AdminIntrospectRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/resend-verification': typeof AuthResendVerificationRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/setup': typeof AuthSetupRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
@@ -128,13 +191,22 @@ export interface FileRoutesByFullPath {
   '/admin/projects/': typeof AdminProjectsIndexRoute
   '/admin/projects/$projectID/actors': typeof AdminProjectsProjectIDActorsRoute
   '/admin/projects/$projectID/capabilities': typeof AdminProjectsProjectIDCapabilitiesRoute
+  '/admin/projects/$projectID/emails': typeof AdminProjectsProjectIDEmailsRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
+  '/admin/projects/$projectID/oauth': typeof AdminProjectsProjectIDOauthRoute
+  '/admin/projects/$projectID/profiles': typeof AdminProjectsProjectIDProfilesRoute
   '/admin/projects/$projectID/': typeof AdminProjectsProjectIDIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/introspect': typeof AdminIntrospectRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/resend-verification': typeof AuthResendVerificationRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/setup': typeof AuthSetupRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
@@ -143,7 +215,10 @@ export interface FileRoutesByTo {
   '/admin/projects': typeof AdminProjectsIndexRoute
   '/admin/projects/$projectID/actors': typeof AdminProjectsProjectIDActorsRoute
   '/admin/projects/$projectID/capabilities': typeof AdminProjectsProjectIDCapabilitiesRoute
+  '/admin/projects/$projectID/emails': typeof AdminProjectsProjectIDEmailsRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
+  '/admin/projects/$projectID/oauth': typeof AdminProjectsProjectIDOauthRoute
+  '/admin/projects/$projectID/profiles': typeof AdminProjectsProjectIDProfilesRoute
   '/admin/projects/$projectID': typeof AdminProjectsProjectIDIndexRoute
 }
 export interface FileRoutesById {
@@ -152,7 +227,13 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
   '/admin/introspect': typeof AdminIntrospectRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/resend-verification': typeof AuthResendVerificationRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/setup': typeof AuthSetupRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
@@ -162,7 +243,10 @@ export interface FileRoutesById {
   '/admin/projects/': typeof AdminProjectsIndexRoute
   '/admin/projects/$projectID/actors': typeof AdminProjectsProjectIDActorsRoute
   '/admin/projects/$projectID/capabilities': typeof AdminProjectsProjectIDCapabilitiesRoute
+  '/admin/projects/$projectID/emails': typeof AdminProjectsProjectIDEmailsRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
+  '/admin/projects/$projectID/oauth': typeof AdminProjectsProjectIDOauthRoute
+  '/admin/projects/$projectID/profiles': typeof AdminProjectsProjectIDProfilesRoute
   '/admin/projects/$projectID/': typeof AdminProjectsProjectIDIndexRoute
 }
 export interface FileRouteTypes {
@@ -172,7 +256,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/$organizationID'
     | '/admin/introspect'
+    | '/auth/forgot-password'
+    | '/auth/resend-verification'
+    | '/auth/reset'
+    | '/auth/reset-password'
     | '/auth/setup'
+    | '/auth/verify'
+    | '/auth/verify-email'
     | '/admin/'
     | '/auth/'
     | '/admin/$organizationID/members'
@@ -182,13 +272,22 @@ export interface FileRouteTypes {
     | '/admin/projects/'
     | '/admin/projects/$projectID/actors'
     | '/admin/projects/$projectID/capabilities'
+    | '/admin/projects/$projectID/emails'
     | '/admin/projects/$projectID/members'
+    | '/admin/projects/$projectID/oauth'
+    | '/admin/projects/$projectID/profiles'
     | '/admin/projects/$projectID/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin/introspect'
+    | '/auth/forgot-password'
+    | '/auth/resend-verification'
+    | '/auth/reset'
+    | '/auth/reset-password'
     | '/auth/setup'
+    | '/auth/verify'
+    | '/auth/verify-email'
     | '/admin'
     | '/auth'
     | '/admin/$organizationID/members'
@@ -197,7 +296,10 @@ export interface FileRouteTypes {
     | '/admin/projects'
     | '/admin/projects/$projectID/actors'
     | '/admin/projects/$projectID/capabilities'
+    | '/admin/projects/$projectID/emails'
     | '/admin/projects/$projectID/members'
+    | '/admin/projects/$projectID/oauth'
+    | '/admin/projects/$projectID/profiles'
     | '/admin/projects/$projectID'
   id:
     | '__root__'
@@ -205,7 +307,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/$organizationID'
     | '/admin/introspect'
+    | '/auth/forgot-password'
+    | '/auth/resend-verification'
+    | '/auth/reset'
+    | '/auth/reset-password'
     | '/auth/setup'
+    | '/auth/verify'
+    | '/auth/verify-email'
     | '/admin/'
     | '/auth/'
     | '/admin/$organizationID/members'
@@ -215,14 +323,23 @@ export interface FileRouteTypes {
     | '/admin/projects/'
     | '/admin/projects/$projectID/actors'
     | '/admin/projects/$projectID/capabilities'
+    | '/admin/projects/$projectID/emails'
     | '/admin/projects/$projectID/members'
+    | '/admin/projects/$projectID/oauth'
+    | '/admin/projects/$projectID/profiles'
     | '/admin/projects/$projectID/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResendVerificationRoute: typeof AuthResendVerificationRoute
+  AuthResetRoute: typeof AuthResetRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSetupRoute: typeof AuthSetupRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
+  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   AuthIndexRoute: typeof AuthIndexRoute
   AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
 }
@@ -257,11 +374,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/auth/verify-email': {
+      id: '/auth/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/setup': {
       id: '/auth/setup'
       path: '/auth/setup'
       fullPath: '/auth/setup'
       preLoaderRoute: typeof AuthSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset': {
+      id: '/auth/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/resend-verification': {
+      id: '/auth/resend-verification'
+      path: '/auth/resend-verification'
+      fullPath: '/auth/resend-verification'
+      preLoaderRoute: typeof AuthResendVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/introspect': {
@@ -320,11 +479,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjectsProjectIDIndexRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
+    '/admin/projects/$projectID/profiles': {
+      id: '/admin/projects/$projectID/profiles'
+      path: '/profiles'
+      fullPath: '/admin/projects/$projectID/profiles'
+      preLoaderRoute: typeof AdminProjectsProjectIDProfilesRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
+    '/admin/projects/$projectID/oauth': {
+      id: '/admin/projects/$projectID/oauth'
+      path: '/oauth'
+      fullPath: '/admin/projects/$projectID/oauth'
+      preLoaderRoute: typeof AdminProjectsProjectIDOauthRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
     '/admin/projects/$projectID/members': {
       id: '/admin/projects/$projectID/members'
       path: '/members'
       fullPath: '/admin/projects/$projectID/members'
       preLoaderRoute: typeof AdminProjectsProjectIDMembersRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
+    '/admin/projects/$projectID/emails': {
+      id: '/admin/projects/$projectID/emails'
+      path: '/emails'
+      fullPath: '/admin/projects/$projectID/emails'
+      preLoaderRoute: typeof AdminProjectsProjectIDEmailsRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
     '/admin/projects/$projectID/capabilities': {
@@ -360,7 +540,10 @@ const AdminOrganizationIDRouteWithChildren =
 interface AdminProjectsProjectIDRouteChildren {
   AdminProjectsProjectIDActorsRoute: typeof AdminProjectsProjectIDActorsRoute
   AdminProjectsProjectIDCapabilitiesRoute: typeof AdminProjectsProjectIDCapabilitiesRoute
+  AdminProjectsProjectIDEmailsRoute: typeof AdminProjectsProjectIDEmailsRoute
   AdminProjectsProjectIDMembersRoute: typeof AdminProjectsProjectIDMembersRoute
+  AdminProjectsProjectIDOauthRoute: typeof AdminProjectsProjectIDOauthRoute
+  AdminProjectsProjectIDProfilesRoute: typeof AdminProjectsProjectIDProfilesRoute
   AdminProjectsProjectIDIndexRoute: typeof AdminProjectsProjectIDIndexRoute
 }
 
@@ -369,7 +552,10 @@ const AdminProjectsProjectIDRouteChildren: AdminProjectsProjectIDRouteChildren =
     AdminProjectsProjectIDActorsRoute: AdminProjectsProjectIDActorsRoute,
     AdminProjectsProjectIDCapabilitiesRoute:
       AdminProjectsProjectIDCapabilitiesRoute,
+    AdminProjectsProjectIDEmailsRoute: AdminProjectsProjectIDEmailsRoute,
     AdminProjectsProjectIDMembersRoute: AdminProjectsProjectIDMembersRoute,
+    AdminProjectsProjectIDOauthRoute: AdminProjectsProjectIDOauthRoute,
+    AdminProjectsProjectIDProfilesRoute: AdminProjectsProjectIDProfilesRoute,
     AdminProjectsProjectIDIndexRoute: AdminProjectsProjectIDIndexRoute,
   }
 
@@ -399,7 +585,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResendVerificationRoute: AuthResendVerificationRoute,
+  AuthResetRoute: AuthResetRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSetupRoute: AuthSetupRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
+  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   AuthIndexRoute: AuthIndexRoute,
   AuthProviderCallbackRoute: AuthProviderCallbackRoute,
 }

@@ -1,0 +1,12 @@
+package: openapi
+generate:
+  models: true
+  chi-server: true
+output-options:
+  skip-prune: true
+  # harness-owned routes — registered by httpserver.NewRouter, not by the generated handler
+  exclude-operation-ids:
+    - getHealth
+    - getOpenAPISpec
+compatibility:
+  always-prefix-enum-values: false

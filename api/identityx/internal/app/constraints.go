@@ -24,7 +24,7 @@ func SetupConstraintMessages() {
 		"uniq_projects_slug":    "a project with this slug already exists",
 		"uniq_verified_domain":  "this domain is already verified by another project",
 		"chk_brand_slug_format": "brand slug must contain only lowercase letters",
-		"chk_brand_slug_length": "brand slug length must be between 3 and 48 characters",
+		"chk_brand_slug_length": "brand slug length must be between 3 and 32 characters",
 
 		// project_members
 		"chk_project_members_role": "project role must be one of: owner, admin, member",
@@ -32,6 +32,10 @@ func SetupConstraintMessages() {
 		// project_oauth_providers
 		"chk_project_oauth_providers_provider": "OAuth provider must be one of: google, github",
 		"uniq_project_oauth_provider":          "this OAuth provider is already configured for this project",
+
+		// oauth_login_states
+		"chk_oauth_login_states_provider": "OAuth provider must be one of: google, github",
+		"uniq_oauth_login_state":          "duplicate OAuth login state",
 
 		// platform_roles
 		"chk_platform_roles_role": "platform role must be one of: super_admin, admin, support",
@@ -44,10 +48,22 @@ func SetupConstraintMessages() {
 
 		// profile schemas
 		"uniq_project_profile_schema_project_id": "a profile schema already exists for this project",
+		"uniq_profile_schema_version_per_scope":  "this profile schema version already exists for the scope",
+		"uniq_profile_schema_version_platform":   "a platform profile schema version already exists",
+
+		// actor profiles
+		"uniq_actor_profiles_handle": "this handle is already in use by another profile",
 
 		// crypto_keys
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",
 		"chk_crypto_keys_status": "crypto key status must be one of: active, retiring, retired, revoked",
+
+		// email_templates
+		"chk_email_templates_kind":        "email template kind must be one of: verify, reset",
+		"uniq_email_template_per_project": "this project already has an email template of this kind",
+
+		// action_tokens
+		"chk_action_tokens_purpose": "action token purpose must be one of: email_verify, password_reset",
 
 		// blacklist_entries
 		"chk_blacklist_entries_type":         "blacklist entry type must be one of: actor, token, api_key, email, ip",

@@ -1,8 +1,7 @@
-import { createTanStackServerProxyFetchers } from "@trieoh/front-core/auth/tanstack/client";
-import { authenticatedProxyServerFn } from "@/integrations/auth/server-functions";
+import { configureApiClient, createOrvalTransport } from "@trieoh/api-client";
+import { identityXIntegration } from "@/integrations/auth/adapter";
 
-const { authFetcher, authQueryFetcher } = createTanStackServerProxyFetchers(
-  authenticatedProxyServerFn,
-);
-
-export { authFetcher, authQueryFetcher as tanstackQueryFetcher };
+configureApiClient({
+  baseURL: "",
+  transport: createOrvalTransport(identityXIntegration.authFetcher),
+});

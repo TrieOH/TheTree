@@ -23,6 +23,7 @@ func (app *IdentityX) SetupAuthMiddlewares(
 	apiKeysRepo ports.APIKeysRepo,
 	actorsRepo ports.ActorRepo,
 	capabilitiesRepo ports.CapabilityRepo,
+	blacklistRepo ports.BlacklistRepo,
 ) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
@@ -51,6 +52,15 @@ func (app *IdentityX) SetupAuthMiddlewares(
 		_, err = crypto.VerifyToken(tokenStr, cryptoKey.PublicKey, claims)
 		if err != nil {
 			return nil, fun.ErrUnauthorized("invalid access token")
+		}
+		// a token blacklisted at logout (or by refresh rotation) must not
+		// authenticate anymore
+		_, err = blacklistRepo.GetByTargetAndType(ctx, claims.ID, models.BlacklistEntryTypeToken)
+		if err == nil {
+			return nil, fun.ErrUnauthorized("token has been revoked")
+		}
+		if !fun.Is(err, fun.CodeNotFound) {
+			return nil, err
 		}
 		return claims, nil
 	}

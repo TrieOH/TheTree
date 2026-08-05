@@ -4,6 +4,8 @@ import (
 	"lib/database"
 	"lib/errx"
 
+	idx "sdk/identityx"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
 )
@@ -59,6 +61,15 @@ type MercadoPagoConfig struct {
 	MpWebhookSecret   string `env:"MP_WEBHOOK_SECRET,required"`
 	MpTestAccessToken string `env:"MP_TEST_ACCESS_TOKEN,required"`
 	MpTestPublicKey   string `env:"MP_TEST_PUBLIC_KEY,required"`
+}
+
+func (cfg Config) ToIdentityXConfig() idx.Config {
+	return idx.Config{
+		BaseURL:   cfg.IdxURL,
+		APIKey:    cfg.IdxAPIKey,
+		ProjectID: cfg.IdxProjectID,
+		Debug:     true,
+	}
 }
 
 func (cfg Config) ToDBConfig() database.Config {

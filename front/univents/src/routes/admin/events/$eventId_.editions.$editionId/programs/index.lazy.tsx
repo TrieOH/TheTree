@@ -276,11 +276,11 @@ function ProgramsRoute() {
         program={editing}
         onOpenChange={setModalOpen}
         onSave={async (data) => {
-          const response = await mutation.mutateAsync({
+          const program = await mutation.mutateAsync({
             id: editing?.id,
             data,
           });
-          return response.success;
+          return Boolean(program);
         }}
       />
     </div>

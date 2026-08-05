@@ -4,6 +4,8 @@ import (
 	"lib/database"
 	"lib/errx"
 
+	idx "sdk/identityx"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
 )
@@ -37,12 +39,22 @@ type Config struct {
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
+	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 
 	// Profiling
 	ProfilePort string `env:"PROFILE_PORT"`
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
+}
+
+func (cfg Config) ToIdentityXConfig() idx.Config {
+	return idx.Config{
+		BaseURL:   cfg.IdxURL,
+		APIKey:    cfg.IdxAPIKey,
+		ProjectID: cfg.IdxProjectID,
+		Debug:     true,
+	}
 }
 
 func (cfg Config) ToDBConfig() database.Config {

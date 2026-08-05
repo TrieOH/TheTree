@@ -38,6 +38,10 @@ type Config struct {
 	// SkipLogPrefixes are extra request prefixes the request logger should
 	// ignore, on top of the always-skipped /metrics and /health.
 	SkipLogPrefixes []string
+	// OpenAPISpec, when set, is served at GET /docs/openapi.yml — the
+	// service's OpenAPI 3.1 specification (the same content as
+	// api/<svc>/api-spec.yml), for docs tooling to fetch and render.
+	OpenAPISpec []byte
 	// Routes receives the chi router and registers the backend's feature
 	// routes, auth middlewares, and any extra mounts (riverui, websockets).
 	Routes func(r *chi.Mux)
@@ -96,9 +100,18 @@ func NewRouter(cfg Config) http.Handler {
 	}
 	r.Get("/health", fh.Health(cfg.AppName).Handle)
 
+	if len(cfg.OpenAPISpec) > 0 {
+		spec := cfg.OpenAPISpec
+		r.Get("/docs/openapi.yml", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/yaml")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(spec)
+		})
+	}
+
 	return otelhttp.NewHandler(r, "http.server",
 		otelhttp.WithFilter(func(r *http.Request) bool {
-			return r.URL.Path != "/health"
+			return r.URL.Path != "/health" && r.URL.Path != "/docs/openapi.yml"
 		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/metrics"
@@ -163,7 +176,7 @@ func collectors() (*mws.Collectors, error) {
 
 // stack is the standard middleware stack shared by every backend.
 func stack(cfg Config) []func(http.Handler) http.Handler {
-	skipLog := append([]string{"/metrics", "/health"}, cfg.SkipLogPrefixes...)
+	skipLog := append([]string{"/metrics", "/health", "/docs/openapi.yml"}, cfg.SkipLogPrefixes...)
 
 	collectors, err := collectors()
 	if err != nil {

@@ -19,6 +19,17 @@ import {
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts"
 
 export type { ApiError }
+export {
+  configureApiClient,
+  createOrvalTransport,
+  customInstance,
+  type ApiClientConfig,
+  type ApiTransport,
+} from "./orval-mutator"
+
+/** Extracts the payload from Orval's full HTTP response wrapper. */
+export const orvalData = <T>(response: { data: unknown }): T =>
+  response.data as T
 
 export interface AppFetcherConfig {
   /** Base URL for the main API. */
@@ -41,7 +52,7 @@ export interface AppFetchers {
 }
 
 /**
- * Create all three fetcher variants every app needs.
+ * Create all fetcher variants every app needs.
  */
 export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
   const {

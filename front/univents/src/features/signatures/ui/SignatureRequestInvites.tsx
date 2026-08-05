@@ -33,12 +33,7 @@ export function SignatureRequestInvites({ editionId }: { editionId: string }) {
 
   const cancelInvite = async (request: SignatureRequestI) => {
     try {
-      const response = await cancelSignatureRequestFn(request.id);
-      if (!response.success) {
-        throw new Error(
-          response.message || "Não foi possível cancelar o convite",
-        );
-      }
+      await cancelSignatureRequestFn(request.id);
       await requestsQuery.refetch();
     } catch (error) {
       toast.error(

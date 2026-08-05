@@ -5,6 +5,8 @@ import (
 	"lib/email"
 	"lib/errx"
 
+	idx "sdk/identityx"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
 )
@@ -68,6 +70,15 @@ type Config struct {
 	SMTPPassword string `env:"SMTP_PASSWORD"`
 	SMTPFrom     string `env:"SMTP_FROM,required"`
 	SMTPTLS      bool   `env:"SMTPTLS"            envDefault:"true"`
+}
+
+func (cfg Config) ToIdentityXConfig() idx.Config {
+	return idx.Config{
+		BaseURL:   cfg.IdxURL,
+		APIKey:    cfg.IdxAPIKey,
+		ProjectID: cfg.IdxProjectID,
+		Debug:     cfg.DebugMode,
+	}
 }
 
 func (cfg Config) ToDBConfig() database.Config {
