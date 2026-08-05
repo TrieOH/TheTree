@@ -3407,12 +3407,12 @@ components:
           type: [ string, "null" ]
         access_level:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           minimum: 0
         price_cents:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           format: int64
           minimum: 0
@@ -3434,12 +3434,12 @@ components:
           type: [ string, "null" ]
         access_level:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           minimum: 0
         price_cents:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           format: int64
           minimum: 0
@@ -3545,7 +3545,7 @@ components:
           type: [ string, "null" ]
         price:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           format: int64
           minimum: 0
@@ -3574,7 +3574,7 @@ components:
           type: [ string, "null" ]
         price:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           format: int64
           minimum: 0
@@ -3616,7 +3616,7 @@ components:
           type: [ string, "null" ]
         price:
           x-oapi-codegen-extra-tags:
-            validate: "required"
+            validate: "min=0"
           type: integer
           format: int64
           minimum: 0
