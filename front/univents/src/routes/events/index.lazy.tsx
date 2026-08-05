@@ -17,6 +17,7 @@ import { EventCard } from "@/features/events/ui/EventCard";
 import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import { readInplaceEditPreference } from "@/features/profile/lib/preferences";
 import { cn } from "@/shared/lib/utils";
+import { Logo } from "@/shared/ui/logo";
 import { Button } from "@/shared/ui/shadcn/button";
 import {
   Drawer,
@@ -143,12 +144,17 @@ function EventsPage() {
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-2 h-14">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground">
-              Eventos
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({filteredEvents.length})
-              </span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8">
+                <Logo variant="icon" imgClassName="object-left" />
+              </div>
+              <h1 className="text-lg md:text-xl font-semibold text-foreground border-l border-border pl-3">
+                Eventos
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({filteredEvents.length})
+                </span>
+              </h1>
+            </div>
             {/* Desktop */}
             <nav className="hidden sm:flex items-center bg-muted rounded-lg p-1 ml-auto">
               {visibleFilters.map((option) => (
