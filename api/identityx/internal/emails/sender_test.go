@@ -81,7 +81,7 @@ func TestSenderSendVerifyPlatformActor(t *testing.T) {
 	}
 }
 
-func TestSenderSendResetRequiresVerifiedDomain(t *testing.T) {
+func TestSenderSendResetRequiresDomain(t *testing.T) {
 	mock.SetUp(t)
 	actor := actorWithEmail()
 	project := &models.Project{ID: uuid.New(), Name: "Acme"} // no domain
@@ -89,16 +89,15 @@ func TestSenderSendResetRequiresVerifiedDomain(t *testing.T) {
 	sender, _ := stubSender(t, mock.Mock[ports.ActionTokenRepo]())
 	err := sender.SendReset(context.Background(), actor, project)
 	if err == nil || !fun.Is(err, fun.CodeInternal) {
-		t.Fatalf("project without verified domain must fail, got %v", err)
+		t.Fatalf("project without domain must fail, got %v", err)
 	}
 }
 
 func TestSenderSendVerifyProjectActorUsesDomain(t *testing.T) {
 	mock.SetUp(t)
 	actor := actorWithEmail()
-	now := time.Now()
 	domain := "acme.example.com"
-	project := &models.Project{ID: uuid.New(), Name: "Acme", Domain: &domain, DomainVerifiedAt: &now}
+	project := &models.Project{ID: uuid.New(), Name: "Acme", Domain: &domain}
 
 	tokens := mock.Mock[ports.ActionTokenRepo]()
 	_ = mock.When(tokens.Insert(mock.AnyContext(), mock.Any[models.ActionToken]())).
