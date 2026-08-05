@@ -26,6 +26,18 @@ UPDATE actors
 SET last_login_at = NOW()
 WHERE id = @actor_id;
 
+-- name: UpdateActorVerifiedAt :exec
+UPDATE actors
+SET verified_at = @verified_at,
+    updated_at = NOW()
+WHERE id = @actor_id;
+
+-- name: UpdateActorPasswordHash :exec
+UPDATE actors
+SET password_hash = @password_hash,
+    updated_at = NOW()
+WHERE id = @actor_id;
+
 -- name: HasAnyActor :one
 SELECT EXISTS (SELECT 1 FROM actors LIMIT 1) AS exists;
 

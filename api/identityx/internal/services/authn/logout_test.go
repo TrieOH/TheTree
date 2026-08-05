@@ -122,6 +122,9 @@ func TestLogout(t *testing.T) {
 				mock.Mock[ports.ExternalIdentitiesRepo](),
 				mock.Mock[ports.ProjectOAuthProvidersRepo](),
 				mock.Mock[ports.OAuthLoginStatesRepo](),
+				mock.Mock[ports.ActionTokenRepo](),
+				mock.Mock[ports.EmailSender](),
+				[]byte("test-hmac"),
 			)
 
 			err := ops.Logout(tt.ctx, models.LogoutInput{
@@ -158,6 +161,9 @@ func TestLogoutErrorIsUnauthorized(t *testing.T) {
 		mock.Mock[ports.ExternalIdentitiesRepo](),
 		mock.Mock[ports.ProjectOAuthProvidersRepo](),
 		mock.Mock[ports.OAuthLoginStatesRepo](),
+		mock.Mock[ports.ActionTokenRepo](),
+		mock.Mock[ports.EmailSender](),
+		[]byte("test-hmac"),
 	)
 
 	err := ops.Logout(ctxWithIdentity(), models.LogoutInput{
@@ -220,6 +226,9 @@ func TestRefresh(t *testing.T) {
 				mock.Mock[ports.ExternalIdentitiesRepo](),
 				mock.Mock[ports.ProjectOAuthProvidersRepo](),
 				mock.Mock[ports.OAuthLoginStatesRepo](),
+				mock.Mock[ports.ActionTokenRepo](),
+				mock.Mock[ports.EmailSender](),
+				[]byte("test-hmac"),
 			)
 
 			out, err := ops.Refresh(context.Background(), tt.refreshToken)

@@ -14,6 +14,7 @@ import (
 	"IdentityX/internal/handlers/api_keys"
 	"IdentityX/internal/handlers/authn"
 	"IdentityX/internal/handlers/capabilities"
+	"IdentityX/internal/handlers/email_templates"
 	"IdentityX/internal/handlers/oauth_providers"
 	"IdentityX/internal/handlers/organizations"
 	"IdentityX/internal/handlers/profile_schemas"
@@ -29,6 +30,7 @@ type Server struct {
 	apiKeys        *api_keys.Handlers
 	authn          *authn.Handlers
 	capabilities   *capabilities.Handlers
+	emailTemplates *email_templates.Handlers
 	organizations  *organizations.Handlers
 	oauthProviders *oauth_providers.Handlers
 	profileSchemas *profile_schemas.Handlers
@@ -43,6 +45,7 @@ func NewServer(ops *services.Operations) *Server {
 		apiKeys:        api_keys.New(ops.APIKeys),
 		authn:          authn.New(ops.Authn),
 		capabilities:   capabilities.New(ops.Capabilities),
+		emailTemplates: email_templates.New(ops.EmailTemplates),
 		organizations:  organizations.New(ops.Organizations),
 		oauthProviders: oauth_providers.New(ops.OAuthProviders),
 		profileSchemas: profile_schemas.New(ops.ProfileSchemas),
@@ -263,4 +266,36 @@ func (s *Server) ListCapabilities(ctx context.Context, req openapi.ListCapabilit
 
 func (s *Server) CreateCapability(ctx context.Context, req openapi.CreateCapabilityRequestObject) (openapi.CreateCapabilityResponseObject, error) {
 	return s.capabilities.CreateCapability(ctx, req)
+}
+
+func (s *Server) PostVerifyEmail(ctx context.Context, req openapi.PostVerifyEmailRequestObject) (openapi.PostVerifyEmailResponseObject, error) {
+	return s.authn.PostVerifyEmail(ctx, req)
+}
+
+func (s *Server) PostResendVerification(ctx context.Context, req openapi.PostResendVerificationRequestObject) (openapi.PostResendVerificationResponseObject, error) {
+	return s.authn.PostResendVerification(ctx, req)
+}
+
+func (s *Server) PostForgotPassword(ctx context.Context, req openapi.PostForgotPasswordRequestObject) (openapi.PostForgotPasswordResponseObject, error) {
+	return s.authn.PostForgotPassword(ctx, req)
+}
+
+func (s *Server) PostResetPassword(ctx context.Context, req openapi.PostResetPasswordRequestObject) (openapi.PostResetPasswordResponseObject, error) {
+	return s.authn.PostResetPassword(ctx, req)
+}
+
+func (s *Server) ListEmailTemplates(ctx context.Context, req openapi.ListEmailTemplatesRequestObject) (openapi.ListEmailTemplatesResponseObject, error) {
+	return s.emailTemplates.ListEmailTemplates(ctx, req)
+}
+
+func (s *Server) GetEmailTemplate(ctx context.Context, req openapi.GetEmailTemplateRequestObject) (openapi.GetEmailTemplateResponseObject, error) {
+	return s.emailTemplates.GetEmailTemplate(ctx, req)
+}
+
+func (s *Server) PutEmailTemplate(ctx context.Context, req openapi.PutEmailTemplateRequestObject) (openapi.PutEmailTemplateResponseObject, error) {
+	return s.emailTemplates.PutEmailTemplate(ctx, req)
+}
+
+func (s *Server) DeleteEmailTemplate(ctx context.Context, req openapi.DeleteEmailTemplateRequestObject) (openapi.DeleteEmailTemplateResponseObject, error) {
+	return s.emailTemplates.DeleteEmailTemplate(ctx, req)
 }

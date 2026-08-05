@@ -14,6 +14,9 @@ type Operations struct {
 	externalIdentities ports.ExternalIdentitiesRepo
 	oauthProviders     ports.ProjectOAuthProvidersRepo
 	oauthLoginStates   ports.OAuthLoginStatesRepo
+	actionTokens       ports.ActionTokenRepo
+	emailSender        ports.EmailSender
+	hmacSecret         []byte
 }
 
 func NewOperations(
@@ -25,6 +28,9 @@ func NewOperations(
 	externalIdentities ports.ExternalIdentitiesRepo,
 	oauthProviders ports.ProjectOAuthProvidersRepo,
 	oauthLoginStates ports.OAuthLoginStatesRepo,
+	actionTokens ports.ActionTokenRepo,
+	emailSender ports.EmailSender,
+	hmacSecret []byte,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		actors:             actors,
@@ -35,5 +41,8 @@ func NewOperations(
 		externalIdentities: externalIdentities,
 		oauthProviders:     oauthProviders,
 		oauthLoginStates:   oauthLoginStates,
+		actionTokens:       actionTokens,
+		emailSender:        emailSender,
+		hmacSecret:         hmacSecret,
 	})
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"IdentityX/internal/authz"
+	"IdentityX/internal/emails"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/repos"
 	"IdentityX/internal/services"
@@ -27,7 +28,16 @@ func (app *IdentityX) initRepos(q *sqlc.Queries) *repos.Repos {
 
 func (app *IdentityX) initOperations(r *repos.Repos) *services.Operations {
 	authzSvc := authz.New(r.Organizations, r.Projects)
-	return services.NewOperations(r, authzSvc, app.cfg.HmacSecret)
+	sender := emails.NewSender(
+		r.ActionTokens,
+		[]byte(app.cfg.HmacSecret),
+		app.cfg.EmailVerifyTokenTTL,
+		app.cfg.EmailResetTokenTTL,
+		app.cfg.AppURL,
+		app.cfg.AppName,
+		app.river,
+	)
+	return services.NewOperations(r, authzSvc, app.cfg.HmacSecret, sender)
 }
 
 func (app *IdentityX) initMiddlewares(r *repos.Repos) middlewares {

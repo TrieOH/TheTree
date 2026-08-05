@@ -39,6 +39,9 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		mock.Mock[ports.ExternalIdentitiesRepo](),
 		mock.Mock[ports.ProjectOAuthProvidersRepo](),
 		mock.Mock[ports.OAuthLoginStatesRepo](),
+		mock.Mock[ports.ActionTokenRepo](),
+		mock.Mock[ports.EmailSender](),
+		[]byte("test-hmac"),
 	)
 	server := handlers.NewServer(&services.Operations{Authn: ops})
 	jwtStub := func(next http.Handler) http.Handler {

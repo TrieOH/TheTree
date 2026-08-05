@@ -68,10 +68,15 @@ func validateAndStamp(schema *models.ProjectProfileSchema, profile json.RawMessa
 }
 
 // migrateOnDemand moves a profile to the active schema version when the
-// read path finds it behind: documents that still validate bump the version
-// pointer, documents that no longer validate keep their current version and
-// get flagged as outdated for manual resolution. The write is skipped when
-// the migration state would not change, so reads stay stable.
+// read path finds it behind. Documents that already validate bump the
+// version pointer. Documents that only carry fields the new schema forbids
+// (additionalProperties: false) are auto-migrated on read: the forbidden
+// fields are dropped, the pruned document is persisted at the new version.
+// Only when the pruned document still does not validate — e.g. the new
+// schema requires a field the old document cannot provide — does the
+// profile keep its version and get flagged outdated for admin resolution.
+// The write is skipped when the migration state would not change, so reads
+// stay stable.
 func (o *Operations) migrateOnDemand(ctx context.Context, profile *models.ActorProfile, projectID *uuid.UUID) (*models.ActorProfile, error) {
 	ctx, span := telemetry.StartSpan(ctx, "migrateOnDemand")
 	defer span.End()
@@ -87,14 +92,31 @@ func (o *Operations) migrateOnDemand(ctx context.Context, profile *models.ActorP
 		return profile, nil
 	}
 
-	version, outdated := schema.Version, false
-	err = jsonschema.Validate(schema.Schema, profile.Profile)
-	if err != nil {
-		version, outdated = profile.SchemaVersion, true
-	}
-	if version == profile.SchemaVersion && outdated == profile.Outdated {
-		return profile, nil
+	// fast path: the document already validates against the new schema,
+	// only the version pointer needs bumping
+	if err := jsonschema.Validate(schema.Schema, profile.Profile); err == nil {
+		return o.profiles.SetMigrationState(ctx, profile.ActorID, schema.Version, false)
 	}
 
-	return o.profiles.SetMigrationState(ctx, profile.ActorID, version, outdated)
+	// auto-migrate: drop the fields the new schema forbids, re-validate,
+	// and persist the pruned document at the new version
+	if pruned, perr := pruneToSchema(schema.Schema, profile.Profile); perr == nil {
+		err := jsonschema.Validate(schema.Schema, pruned)
+		if err == nil {
+			return o.profiles.Upsert(ctx, models.ActorProfile{
+				ActorID:       profile.ActorID,
+				Handle:        profile.Handle,
+				Profile:       pruned,
+				SchemaVersion: schema.Version,
+				Outdated:      false,
+			})
+		}
+	}
+
+	// cannot auto-migrate (e.g. a new required field): keep the current
+	// version and flag the profile for admin resolution
+	if profile.Outdated {
+		return profile, nil
+	}
+	return o.profiles.SetMigrationState(ctx, profile.ActorID, profile.SchemaVersion, true)
 }

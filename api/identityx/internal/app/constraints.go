@@ -58,6 +58,13 @@ func SetupConstraintMessages() {
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",
 		"chk_crypto_keys_status": "crypto key status must be one of: active, retiring, retired, revoked",
 
+		// email_templates
+		"chk_email_templates_kind":        "email template kind must be one of: verify, reset",
+		"uniq_email_template_per_project": "this project already has an email template of this kind",
+
+		// action_tokens
+		"chk_action_tokens_purpose": "action token purpose must be one of: email_verify, password_reset",
+
 		// blacklist_entries
 		"chk_blacklist_entries_type":         "blacklist entry type must be one of: actor, token, api_key, email, ip",
 		"uniq_blacklist_target_type_project": "this target is already blacklisted for this scope",

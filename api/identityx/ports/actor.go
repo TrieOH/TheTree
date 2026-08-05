@@ -3,6 +3,7 @@ package ports
 import (
 	"IdentityX/models"
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -14,4 +15,6 @@ type ActorRepo interface {
 	List(ctx context.Context, projectID uuid.UUID) ([]models.Actor, error)
 	GetProjectServiceAccount(ctx context.Context, id uuid.UUID) (*models.Actor, error)
 	UpdateLastLoginAt(ctx context.Context, actorID uuid.UUID) error
+	SetVerifiedAt(ctx context.Context, actorID uuid.UUID, at time.Time) error
+	UpdatePasswordHash(ctx context.Context, actorID uuid.UUID, hash string) error
 }

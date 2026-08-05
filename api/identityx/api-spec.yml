@@ -268,6 +268,141 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /auth/verify-email:
+    post:
+      tags: [authn]
+      operationId: postVerifyEmail
+      summary: Verify an email address
+      description: |
+        Redeems the single-use JWT carried by a verification email and
+        marks the actor's email as verified. The token is HMAC-signed,
+        purpose-scoped, expires after a short TTL, and is consumed on
+        first use (jti anti-replay). Re-clicking a consumed link on an
+        already-verified account succeeds (idempotent).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/resend-verification:
+    post:
+      tags: [authn]
+      operationId: postResendVerification
+      summary: Resend the verification email
+      description: |
+        Mints a fresh verification link and emails it to the given
+        address. Always returns 200 — unknown emails and already-verified
+        accounts are silent no-ops, so the endpoint does not leak which
+        emails are registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+            example:
+              email: user@example.com
+      responses:
+        '200':
+          description: Verification email sent (or silently skipped)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/forgot-password:
+    post:
+      tags: [authn]
+      operationId: postForgotPassword
+      summary: Request a password reset link
+      description: |
+        Mints a single-use password-reset link and emails it to the given
+        address. Always returns 200 — unknown emails and passwordless
+        (OAuth-only) accounts are silent no-ops, so the endpoint does not
+        leak which emails are registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            example:
+              email: user@example.com
+      responses:
+        '200':
+          description: Reset link emailed (or silently skipped)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/reset-password:
+    post:
+      tags: [authn]
+      operationId: postResetPassword
+      summary: Set a new password with a reset link
+      description: |
+        Redeems the single-use JWT carried by a password-reset email and
+        replaces the actor's password. The token is HMAC-signed,
+        purpose-scoped, expires after a short TTL, and is consumed on
+        first use — a consumed token is dead and a new link must be
+        requested.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+              password: S3curePassw0rd!
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
   /auth/login:
     post:
       tags: [authn]
@@ -1455,6 +1590,173 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /projects/{project_id}/email-templates:
+    get:
+      tags: [projects]
+      operationId: listEmailTemplates
+      summary: List a project's effective email templates
+      description: |
+        Lists the effective templates for every kind — the project's
+        override when one exists, otherwise the baked-in default — each
+        tagged with its source (`default` or `override`). The
+        authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Effective email templates
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EffectiveEmailTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/email-templates/{kind}:
+    get:
+      tags: [projects]
+      operationId: getEmailTemplate
+      summary: Get a project's effective email template
+      description: |
+        Returns the effective template for one kind — the project's
+        override when one exists, otherwise the baked-in default. The
+        authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/EmailTemplateKind'
+      responses:
+        '200':
+          description: Effective email template
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EffectiveEmailTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      tags: [projects]
+      operationId: putEmailTemplate
+      summary: Upsert a project's email template override
+      description: |
+        Saves the project's override for one kind. The body is a Go
+        template rendered with the same variables as the built-in
+        defaults: `ActionURL`, `ProjectName`, `Expiry`, `ProjectDomain`,
+        `Email`. The body must reference `{{.ActionURL}}` at least once
+        (the actionable link always comes from IdentityX) and must render;
+        violations are rejected with 422-style validation errors. The
+        authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/EmailTemplateKind'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTemplateBody'
+            example:
+              subject: Welcome to Acme — confirm your email
+              body: |
+                <p>Hi there!</p>
+                <p><a href="{{.ActionURL}}">Confirm my email</a></p>
+      responses:
+        '200':
+          description: Email template override saved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EffectiveEmailTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          description: Template fails the mandate (missing ActionURL) or does not render
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      tags: [projects]
+      operationId: deleteEmailTemplate
+      summary: Delete a project's email template override
+      description: |
+        Removes the project's override for one kind, restoring the
+        built-in default. Deleting a kind that has no override is a
+        no-op. The authenticated actor must be an admin or owner of the
+        project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+        - $ref: '#/components/parameters/EmailTemplateKind'
+      responses:
+        '200':
+          description: Email template override removed (default restored)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
   /projects/{project_id}/api_keys:
     post:
       tags: [apikeys]
@@ -2291,6 +2593,13 @@ components:
       description: Unique profile handle.
       schema:
         type: string
+    EmailTemplateKind:
+      name: kind
+      in: path
+      required: true
+      description: Email template kind.
+      schema:
+        $ref: '#/components/schemas/EmailTemplateKind'
 
   responses:
     BadRequest:
@@ -2607,6 +2916,115 @@ components:
         `/auth/login`. Mirrors `models.IDXRegisterRequest` /
         `models.IDXLoginRequest`.
 
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: The HMAC JWT from the verification link.
+      description: Request body for `POST /auth/verify-email`.
+
+    ResendVerificationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email,min=3,max=254"
+          x-go-type: string
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+          description: Email address to (re)send the verification link to.
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Project the actor belongs to. Omit for IdentityX itself.
+      description: Request body for `POST /auth/resend-verification`.
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email,min=3,max=254"
+          x-go-type: string
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+          description: Email address to send the reset link to.
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Project the actor belongs to. Omit for IdentityX itself.
+      description: Request body for `POST /auth/forgot-password`.
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: The HMAC JWT from the reset link.
+        password:
+          x-oapi-codegen-extra-tags:
+            validate: "required,passwd,min=8,max=72"
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: New password.
+      description: Request body for `POST /auth/reset-password`.
+
+    EmailTemplateKind:
+      type: string
+      enum: [verify, reset]
+      description: The kind of auth email. `verify` and `reset`.
+
+    EmailTemplateBody:
+      type: object
+      required: [subject, body]
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: |
+            Email subject. A Go template rendered with the same variables
+            as the body (`ActionURL`, `ProjectName`, `Expiry`,
+            `ProjectDomain`, `Email`).
+        body:
+          type: string
+          minLength: 1
+          description: |
+            HTML email body. A Go template rendered with the same
+            variables; must include `{{.ActionURL}}` at least once — the
+            actionable link always comes from IdentityX.
+      description: Request body for `PUT /projects/{project_id}/email-templates/{kind}`.
+
+    EffectiveEmailTemplate:
+      type: object
+      required: [kind, subject, body, source]
+      properties:
+        kind:
+          $ref: '#/components/schemas/EmailTemplateKind'
+        subject:
+          type: string
+          description: Effective subject (override or default).
+        body:
+          type: string
+          description: Effective body (override or default).
+        source:
+          type: string
+          enum: [default, override]
+          description: Whether this is the project's override or the built-in default.
+      description: |
+        The effective template for one kind, as served by the email
+        template endpoints.
+
     UserTokensOutput:
       x-go-type: models.UserTokensOutput
       x-go-type-import:
@@ -2669,6 +3087,13 @@ components:
           description: Actor's email address, if applicable for this actor type.
         type:
           $ref: '#/components/schemas/ActorType'
+        verified_at:
+          type: [ string, "null" ]
+          format: date-time
+          description: |
+            When the actor's email was verified (via the verification link
+            or an OAuth provider). Null means unverified; downstream
+            applications decide what to do with it.
         capabilities:
           type: [ object, "null" ]
           description: |
