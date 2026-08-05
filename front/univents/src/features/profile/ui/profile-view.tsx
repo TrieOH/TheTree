@@ -1,10 +1,7 @@
-import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
-import { CircleAlert, Globe, Mail } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Globe, Mail } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { buttonVariants } from "@/shared/ui/shadcn/button";
-import { Skeleton } from "@/shared/ui/shadcn/skeleton";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
 import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
 import githubIcon from "@/shared/ui/social-icons/assets/github.svg";
@@ -13,6 +10,7 @@ import linkedinIcon from "@/shared/ui/social-icons/assets/linkedin.svg";
 import twitchIcon from "@/shared/ui/social-icons/assets/twitch.svg";
 import xIcon from "@/shared/ui/social-icons/assets/x.svg";
 import youtubeIcon from "@/shared/ui/social-icons/assets/youtube.svg";
+import { profileKeys } from "../api/query-keys";
 import {
   asUniventsProfile,
   profileCompleteness,
@@ -20,6 +18,11 @@ import {
   socialHref,
 } from "../model/profile-data";
 import { ProfileHeader } from "./profile-header";
+import {
+  completenessHint,
+  MissingPublicProfile,
+  ProfileSkeleton,
+} from "./profile-view-state";
 
 export interface ProfileViewProps {
   actorId?: string;
@@ -38,58 +41,24 @@ export function ProfileView({
   ownProfile = false,
   viewerActorId,
 }: ProfileViewProps) {
-  const [result, setResult] = useState<ActorProfile>();
-  const [error, setError] = useState<string>();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    setError(undefined);
-    setResult(undefined);
-    if (!actorId) {
-      setError(
-        "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.",
-      );
-      setLoading(false);
-      return () => {
-        active = false;
-      };
-    }
-    setLoading(true);
-    loadProfile(actorId)
-      .then((response) => {
-        if (!active) return;
-        if (response.success && response.data) setResult(response.data);
-        else
-          setError(
-            response.message || "Não foi possível carregar este perfil.",
-          );
-      })
-      .catch((cause: unknown) => {
-        if (!active) return;
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "Não foi possível carregar este perfil.",
+  const profileQuery = useQuery({
+    queryKey: profileKeys.detail(actorId ?? ""),
+    enabled: Boolean(actorId),
+    queryFn: async () => {
+      const response = await loadProfile(actorId ?? "");
+      if (!response.success || !response.data)
+        throw new Error(
+          response.message || "Não foi possível carregar este perfil.",
         );
-      })
-      .finally(() => active && setLoading(false));
-    return () => {
-      active = false;
-    };
-  }, [actorId, loadProfile]);
+      return response.data;
+    },
+  });
+  const result = profileQuery.data;
+  const error = actorId
+    ? profileQuery.error?.message
+    : "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
 
-  useEffect(() => {
-    const updateProfile = (event: Event) => {
-      const profile = (event as CustomEvent<ActorProfile["profile"]>).detail;
-      setResult((current) => (current ? { ...current, profile } : current));
-    };
-    window.addEventListener("univents:profile-updated", updateProfile);
-    return () =>
-      window.removeEventListener("univents:profile-updated", updateProfile);
-  }, []);
-
-  if (loading) return <ProfileSkeleton />;
+  if (profileQuery.isLoading) return <ProfileSkeleton />;
   if (error && !ownProfile) return <MissingPublicProfile />;
 
   const profile = asUniventsProfile(result?.profile ?? {});
@@ -301,90 +270,8 @@ function EmptyState({ message }: { message: string }) {
   return <p className="text-sm italic text-muted-foreground/70">{message}</p>;
 }
 
-function ProfileSkeleton() {
-  return (
-    <main className="min-h-dvh bg-background pb-28">
-      <div className="w-full">
-        <Skeleton className="h-44 w-full md:h-56" />
-        <div className="mx-auto max-w-7xl px-4">
-          <Skeleton className="-mt-14 size-28 rounded-full border-4 border-border md:-mt-16 md:size-32" />
-          <div className="mt-4 space-y-2">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-4 w-40" />
-          </div>
-        </div>
-      </div>
-      <div className="mx-auto mt-5 hidden max-w-7xl gap-5 px-4 md:grid md:grid-cols-[1fr_280px]">
-        <div className="space-y-5">
-          <Skeleton className="h-36 rounded-md" />
-          <Skeleton className="h-32 rounded-md" />
-        </div>
-        <div className="space-y-5">
-          <Skeleton className="h-64 rounded-md" />
-          <Skeleton className="h-24 rounded-md" />
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function MissingPublicProfile() {
-  return (
-    <main className="relative min-h-dvh overflow-hidden bg-background">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none blur-md opacity-50"
-      >
-        <ProfileSkeleton />
-      </div>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/35 px-4 backdrop-blur-sm">
-        <div
-          role="alert"
-          className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-center shadow-xl"
-        >
-          <CircleAlert className="mx-auto size-8 text-muted-foreground" />
-          <h1 className="mt-4 text-xl font-semibold">Perfil não encontrado</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Este perfil não existe ou não está mais disponível.
-          </p>
-          <Link
-            to="/profile"
-            className={buttonVariants({ className: "mt-5 w-full" })}
-          >
-            Ir para o meu perfil
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
-}
-
 /* ========== Helpers ========== */
 
 function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function completenessHint(profile: ReturnType<typeof asUniventsProfile>) {
-  if (!(profile.preferredName || profile.legalName))
-    return "Adicione seu nome para completar o perfil.";
-  if (!profile.pfpUrl) return "Adicione uma foto para completar o perfil.";
-  if (!profile.bannerUrl)
-    return "Adicione uma imagem de capa para completar o perfil.";
-  if (!profile.aboutMe)
-    return 'Preencha a seção "Sobre mim" para completar o perfil.';
-  if (!(profile.role || profile.organization))
-    return "Adicione sua função ou organização para completar o perfil.";
-  if (!profile.languages?.length)
-    return "Adicione ao menos um idioma para completar o perfil.";
-  if (
-    !(
-      profile.website ||
-      profile.contactEmail ||
-      Object.values(profile.socials ?? {}).some(Boolean)
-    )
-  )
-    return "Adicione uma forma de contato para completar o perfil.";
-  return "Perfil completo!";
 }

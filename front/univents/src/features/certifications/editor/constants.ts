@@ -78,6 +78,12 @@ export const CERTIFICATE_VARIABLES = [
     description: "Nome da atividade ou edição",
   },
   {
+    key: "participation_type",
+    token: "{{participation_type}}",
+    label: "Tipo de participação",
+    description: "Edição ou atividade",
+  },
+  {
     key: "location",
     token: "{{location}}",
     label: "Local",

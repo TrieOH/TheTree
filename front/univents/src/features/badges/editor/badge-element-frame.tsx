@@ -87,7 +87,7 @@ export function BadgeElementFrame({
               key={handle}
               aria-hidden="true"
               className={cn(
-                "absolute size-3 rounded-full border-2 border-ring bg-popover shadow-sm",
+                "absolute size-4 touch-none rounded-full border-2 border-ring bg-popover shadow-sm",
                 HANDLE_CLASS[handle],
               )}
               onPointerDown={startResize(handle)}

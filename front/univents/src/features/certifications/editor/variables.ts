@@ -11,7 +11,7 @@ export function replaceCertificateVariables(
   values: CertificateVariableValues,
 ): string {
   return text.replace(
-    /\{\{(participant_name|event_name|edition_name|activity_name|location|certified_at|cert_hash|verify_url)\}\}/g,
+    /\{\{(participant_name|event_name|edition_name|activity_name|participation_type|location|certified_at|cert_hash|verify_url)\}\}/g,
     (token, key: CertificateVariableKey) => values[key] ?? token,
   );
 }

@@ -19,7 +19,6 @@ export interface UniventsProfile {
   pfpUrl?: string | null;
   bannerUrl?: string | null;
   aboutMe?: string;
-  tagline?: string;
   website?: string | null;
   pronouns?: string;
   timezone?: string;

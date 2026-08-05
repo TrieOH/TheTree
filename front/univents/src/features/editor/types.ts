@@ -69,7 +69,7 @@ export const DEFAULT_VARIABLES: VariableDefinition[] = [
     key: "edition_name",
     label: "Nome da edição",
     description: "Nome da edição do evento",
-    defaultValue: "EDIÇÃO",
+    defaultValue: "Edição",
   },
   {
     key: "activity_name",
@@ -82,6 +82,12 @@ export const DEFAULT_VARIABLES: VariableDefinition[] = [
     label: "Data de certificação",
     description: "Data em que o certificado foi emitido",
     defaultValue: "",
+  },
+  {
+    key: "participation_type",
+    label: "Tipo de participação",
+    description: "Edição ou atividade",
+    defaultValue: "edição",
   },
   {
     key: "location",

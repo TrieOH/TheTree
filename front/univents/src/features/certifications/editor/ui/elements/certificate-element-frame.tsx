@@ -97,7 +97,7 @@ export function CertificateElementFrame({
               aria-hidden="true"
               onPointerDown={startResize(handle)}
               className={cn(
-                "absolute size-3 rounded-full border-2 border-ring bg-popover shadow-sm",
+                "absolute size-4 touch-none rounded-full border-2 border-ring bg-popover shadow-sm",
                 RESIZE_HANDLE_CLASS[handle],
               )}
             />

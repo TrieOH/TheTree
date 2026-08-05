@@ -74,6 +74,7 @@ export function RichTextToolbar({
   }>;
 }) {
   const [fontSize, setFontSize] = useState("24");
+  const [textColor, setTextColor] = useState(DEFAULT_CERTIFICATE_TEXT_COLOR);
   const disabled = !controller;
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export function RichTextToolbar({
           ? "—"
           : String(selectionStyles.fontSize),
       );
+      if (selectionStyles.color) setTextColor(selectionStyles.color);
     }
   }, [selectionStyles]);
 
@@ -243,11 +245,14 @@ export function RichTextToolbar({
       <div className="relative h-7 w-8 shrink-0">
         <Input
           type="color"
-          value={selectionStyles?.color ?? DEFAULT_CERTIFICATE_TEXT_COLOR}
+          value={textColor}
           disabled={disabled}
           aria-label="Cor do texto"
           className="h-7 w-8 rounded-md p-1"
-          onChange={(event) => controller?.setColor(event.target.value)}
+          onChange={(event) => {
+            setTextColor(event.target.value);
+            controller?.setColor(event.target.value);
+          }}
         />
         {controller && selectionStyles?.color === null ? (
           <span

@@ -1,18 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Loader2, Monitor, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, Monitor, Save } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/shadcn/button";
 import { allSignaturesQueryOptions } from "../../../signatures/api";
 import { certificationTemplateQueryOptions } from "../../api";
-import {
-  useCreateCertificationTemplateMutation,
-  useUpdateCertificationTemplateMutation,
-} from "../../api/mutations";
 import { certificationTemplateCreateSchema } from "../../model";
 import { certificateEditorActions } from "../store";
-import { uploadCertificateAssets } from "../upload-assets";
 import { CertificateCanvas } from "./certificate-canvas";
 import { CertificatePropertiesPanel } from "./certificate-properties-panel";
 import { CertificateTextToolbar } from "./certificate-text-toolbar";
@@ -29,8 +24,6 @@ export function CertificateEditor({
   editionId,
   templateId,
 }: CertificateEditorProps) {
-  const navigate = useNavigate();
-  const [uploadingAssets, setUploadingAssets] = useState(false);
   const { data: signatures = [] } = useQuery(
     allSignaturesQueryOptions(eventId, editionId),
   );
@@ -56,10 +49,7 @@ export function CertificateEditor({
     );
   }, [signatures]);
 
-  const createTemplate = useCreateCertificationTemplateMutation();
-  const updateTemplate = useUpdateCertificationTemplateMutation();
-
-  async function saveTemplate() {
+  function saveTemplate() {
     const result = certificationTemplateCreateSchema.safeParse(
       certificateEditorActions.getDraft(),
     );
@@ -67,29 +57,17 @@ export function CertificateEditor({
       toast.error(result.error.issues[0]?.message ?? "Template inválido");
       return;
     }
-    setUploadingAssets(true);
-    try {
-      const data = await uploadCertificateAssets(
-        result.data,
-        eventId,
-        editionId,
-      );
-      const onSuccess = () => {
-        void navigate({
-          to: "/admin/events/$eventId/editions/$editionId/certifications",
-          params: { eventId, editionId },
-        });
-      };
-      if (templateId) {
-        updateTemplate.mutate({ templateId, data }, { onSuccess });
-      } else {
-        createTemplate.mutate({ eventId, editionId, data }, { onSuccess });
-      }
-    } catch {
-      toast.error("Não foi possível enviar as imagens do certificado");
-    } finally {
-      setUploadingAssets(false);
-    }
+    console.log({ eventId, editionId, templateId, template: result.data });
+
+    /*
+    const data = await uploadCertificateAssets(result.data, eventId, editionId);
+    const onSuccess = () => void navigate({
+      to: "/admin/events/$eventId/editions/$editionId/certifications",
+      params: { eventId, editionId },
+    });
+    if (templateId) updateTemplate.mutate({ templateId, data }, { onSuccess });
+    else createTemplate.mutate({ eventId, editionId, data }, { onSuccess });
+    */
   }
 
   return (
@@ -118,23 +96,8 @@ export function CertificateEditor({
             </span>
           </div>
 
-          <Button
-            type="button"
-            variant="default"
-            disabled={
-              uploadingAssets ||
-              createTemplate.isPending ||
-              updateTemplate.isPending
-            }
-            onClick={() => void saveTemplate()}
-          >
-            {uploadingAssets ||
-            createTemplate.isPending ||
-            updateTemplate.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
+          <Button type="button" variant="default" onClick={saveTemplate}>
+            <Save className="size-4" />
             Salvar
           </Button>
         </header>

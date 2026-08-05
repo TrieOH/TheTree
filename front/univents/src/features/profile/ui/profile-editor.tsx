@@ -312,9 +312,9 @@ function InlineProfileEditor({
                   <Input
                     id="profile-handle"
                     value={handle}
-                    placeholder="seu-handle"
+                    placeholder="seu nickname"
                     pattern={"[^\\s/]+"}
-                    title="Use um handle sem espaços ou barras"
+                    title="Use um nickname sem espaços ou barras"
                     autoCapitalize="none"
                     autoComplete="username"
                     spellCheck={false}
@@ -322,42 +322,22 @@ function InlineProfileEditor({
                     onChange={(event) => onHandleChange(event.target.value)}
                   />
                 </div>
-                <EditorField
-                  schema={schema}
-                  values={values}
-                  onChange={onChange}
-                  path={["preferredName"]}
-                />
-                <EditorField
-                  schema={schema}
-                  values={values}
-                  onChange={onChange}
-                  path={["legalName"]}
-                />
-                <EditorField
-                  schema={schema}
-                  values={values}
-                  onChange={onChange}
-                  path={["role"]}
-                />
-                <EditorField
-                  schema={schema}
-                  values={values}
-                  onChange={onChange}
-                  path={["organization"]}
-                />
-                <EditorField
-                  schema={schema}
-                  values={values}
-                  onChange={onChange}
-                  path={["pronouns"]}
-                />
-                <EditorField
-                  schema={schema}
-                  values={values}
-                  onChange={onChange}
-                  path={["tagline"]}
-                />
+                {[
+                  "preferredName",
+                  "legalName",
+                  "role",
+                  "organization",
+                  "pronouns",
+                  "tagline",
+                ].map((name) => (
+                  <EditorField
+                    key={name}
+                    schema={schema}
+                    values={values}
+                    onChange={onChange}
+                    path={[name]}
+                  />
+                ))}
               </div>
             </div>
           </div>

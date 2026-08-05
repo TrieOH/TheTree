@@ -21,6 +21,7 @@ import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
+import { profileKeys } from "@/features/profile/api/query-keys";
 import { asUniventsProfile } from "@/features/profile/model/profile-data";
 import { programsQueryOptions } from "@/features/programs/api";
 import type { ProgramI } from "@/features/programs/model";
@@ -86,7 +87,7 @@ function VerifiedTemplateSection({
   });
   const templateData = getCertificationTemplateOrDefault(linkedTemplate);
   const { data: participantName = "" } = useQuery({
-    queryKey: ["certifications", "participant-name", payload.user_id],
+    queryKey: profileKeys.certificateName(payload.user_id),
     queryFn: async () => {
       const response = await auth.getActorProfile(payload.user_id);
       if (!response.success || !response.data) return "";
@@ -114,6 +115,7 @@ function VerifiedTemplateSection({
         payload.program_id === null
           ? (edition?.name ?? "")
           : (activity?.name ?? edition?.name ?? ""),
+      participation_type: payload.program_id === null ? "edição" : "atividade",
       location: edition?.location_name ?? "",
       certified_at: formatCertifiedAt(payload.issued_at),
       cert_hash: hash,
