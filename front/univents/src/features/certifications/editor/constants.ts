@@ -54,10 +54,34 @@ export const CERTIFICATE_ELEMENT_OVERFLOW: Record<
 
 export const CERTIFICATE_VARIABLES = [
   {
+    key: "participant_name",
+    token: "{{participant_name}}",
+    label: "Nome completo do participante",
+    description: "Nome legal informado no perfil do participante",
+  },
+  {
+    key: "event_name",
+    token: "{{event_name}}",
+    label: "Nome do evento",
+    description: "Nome do evento",
+  },
+  {
+    key: "edition_name",
+    token: "{{edition_name}}",
+    label: "Nome da edição",
+    description: "Nome da edição do evento",
+  },
+  {
     key: "activity_name",
     token: "{{activity_name}}",
     label: "Nome da atividade/edição",
     description: "Nome da atividade ou edição",
+  },
+  {
+    key: "location",
+    token: "{{location}}",
+    label: "Local",
+    description: "Local informado na edição",
   },
   {
     key: "certified_at",

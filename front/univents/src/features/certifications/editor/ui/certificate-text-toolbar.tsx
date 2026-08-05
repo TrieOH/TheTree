@@ -19,7 +19,11 @@ import {
   CERTIFICATE_VARIABLES,
   DEFAULT_CERTIFICATE_TEXT_COLOR,
 } from "../constants";
-import { useCertificateEditorState } from "../store";
+import {
+  type CertificateRichTextController,
+  type CertificateTextSelectionStyles,
+  useCertificateEditorState,
+} from "../store";
 import { ToolbarCombobox } from "./toolbar-combobox";
 
 const FONT_OPTIONS = CERTIFICATE_FONT_FAMILIES.map((font) => ({
@@ -48,6 +52,27 @@ export function CertificateTextToolbar() {
   const selectionStyles = useCertificateEditorState(
     (state) => state.textSelectionStyles,
   );
+  return (
+    <RichTextToolbar
+      controller={controller}
+      selectionStyles={selectionStyles}
+    />
+  );
+}
+
+export function RichTextToolbar({
+  controller,
+  selectionStyles,
+  variableOptions = VARIABLE_OPTIONS,
+}: {
+  controller: CertificateRichTextController | null;
+  selectionStyles: CertificateTextSelectionStyles | null;
+  variableOptions?: Array<{
+    value: string;
+    label: string;
+    description?: string;
+  }>;
+}) {
   const [fontSize, setFontSize] = useState("24");
   const disabled = !controller;
 
@@ -235,7 +260,7 @@ export function CertificateTextToolbar() {
         ) : null}
       </div>
       <ToolbarCombobox
-        options={VARIABLE_OPTIONS}
+        options={variableOptions}
         placeholder="Inserir informação dinâmica"
         searchPlaceholder="Buscar informação…"
         disabled={disabled}

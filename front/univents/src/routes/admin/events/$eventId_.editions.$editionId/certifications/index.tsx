@@ -151,7 +151,11 @@ function RouteComponent() {
             if (!open) setViewingTemplate(null);
           }}
           variables={{
+            participant_name: "Nome completo do participante",
+            event_name: "Nome do evento",
+            edition_name: edition?.name ?? "Nome da edição",
             activity_name: edition?.name ?? "Nome da edição",
+            location: edition?.location_name ?? "Local da edição",
             certified_at: "DD/MM/AAAA",
             cert_hash: "HASH-DE-EXEMPLO",
             verify_url: window.location.href,

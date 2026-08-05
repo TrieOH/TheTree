@@ -15,9 +15,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
   const { pathname } = useLocation();
   const isCertificateEditor = pathname.endsWith("/certifications/editor");
+  const isBadgeEditor = pathname.endsWith("/badges/editor");
   const isCalendarEditor = pathname.endsWith("/programs/calendar");
 
-  if (isCertificateEditor || isCalendarEditor) {
+  if (isCertificateEditor || isBadgeEditor || isCalendarEditor) {
     return (
       <div className="h-dvh overflow-hidden bg-background">{children}</div>
     );

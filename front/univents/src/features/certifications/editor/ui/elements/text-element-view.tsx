@@ -13,26 +13,55 @@ import {
   paragraphsToHtml,
 } from "../../rich-text/dom-serializer";
 import { CertificateLineHeight } from "../../rich-text/line-height-extension";
-import { certificateEditorActions } from "../../store";
+import {
+  type CertificateRichTextController,
+  type CertificateTextSelectionStyles,
+  certificateEditorActions,
+} from "../../store";
 import type { TextCertificateElement } from "../../types";
 
 interface TextElementViewProps {
   element: TextCertificateElement;
   editing?: boolean;
+  adapter?: TextElementAdapter;
 }
+
+export interface TextElementAdapter {
+  updateParagraphs: (
+    elementId: string,
+    paragraphs: TextCertificateElement["paragraphs"],
+  ) => void;
+  setController: (controller: CertificateRichTextController | null) => void;
+  setSelectionStyles: (styles: CertificateTextSelectionStyles | null) => void;
+  stopEditing: () => void;
+}
+
+const certificateAdapter: TextElementAdapter = {
+  updateParagraphs,
+  setController: certificateEditorActions.setRichTextController,
+  setSelectionStyles: certificateEditorActions.setTextSelectionStyles,
+  stopEditing: certificateEditorActions.stopEditing,
+};
 
 export function TextElementView({
   element,
   editing = false,
+  adapter = certificateAdapter,
 }: TextElementViewProps) {
   return editing ? (
-    <EditableTextElement element={element} />
+    <EditableTextElement element={element} adapter={adapter} />
   ) : (
     <StaticTextElement element={element} />
   );
 }
 
-function EditableTextElement({ element }: { element: TextCertificateElement }) {
+function EditableTextElement({
+  element,
+  adapter,
+}: {
+  element: TextCertificateElement;
+  adapter: TextElementAdapter;
+}) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -59,20 +88,19 @@ function EditableTextElement({ element }: { element: TextCertificateElement }) {
       },
       handleKeyDown: (_view, event) => {
         if (event.key !== "Escape") return false;
-        certificateEditorActions.stopEditing();
+        adapter.stopEditing();
         return true;
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
-      updateParagraphs(element.id, domToParagraphs(currentEditor.view.dom));
-      certificateEditorActions.setTextSelectionStyles(
-        readSelectionStyles(currentEditor),
+      adapter.updateParagraphs(
+        element.id,
+        domToParagraphs(currentEditor.view.dom),
       );
+      adapter.setSelectionStyles(readSelectionStyles(currentEditor));
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
-      certificateEditorActions.setTextSelectionStyles(
-        readSelectionStyles(currentEditor),
-      );
+      adapter.setSelectionStyles(readSelectionStyles(currentEditor));
     },
   });
 
@@ -85,8 +113,8 @@ function EditableTextElement({ element }: { element: TextCertificateElement }) {
   useEffect(() => {
     if (!editor) return;
     const commit = () =>
-      updateParagraphs(element.id, domToParagraphs(editor.view.dom));
-    certificateEditorActions.setRichTextController({
+      adapter.updateParagraphs(element.id, domToParagraphs(editor.view.dom));
+    adapter.setController({
       elementId: element.id,
       commit,
       toggleBold: () => void editor.chain().focus().toggleBold().run(),
@@ -107,14 +135,14 @@ function EditableTextElement({ element }: { element: TextCertificateElement }) {
     });
 
     return () => {
-      certificateEditorActions.setRichTextController(null);
-      certificateEditorActions.setTextSelectionStyles(null);
+      adapter.setController(null);
+      adapter.setSelectionStyles(null);
     };
-  }, [editor, element.id]);
+  }, [adapter, editor, element.id]);
 
   useEffect(() => {
-    certificateEditorActions.setTextSelectionStyles(selectionStyles);
-  }, [selectionStyles]);
+    adapter.setSelectionStyles(selectionStyles);
+  }, [adapter, selectionStyles]);
 
   if (!editor) return null;
   return (
