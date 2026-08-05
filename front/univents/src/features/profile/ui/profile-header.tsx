@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Mail, Pencil, Settings } from "lucide-react";
+import { Calendar, Mail, Pencil, Settings } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/shadcn/avatar";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
@@ -9,6 +9,7 @@ import { ProfileShareDialog } from "./profile-share-dialog";
 interface ProfileHeaderProps {
   profile: UniventsProfile;
   name: string;
+  handle?: string;
   ownProfile: boolean;
   profileUrl: string;
 }
@@ -16,6 +17,7 @@ interface ProfileHeaderProps {
 export function ProfileHeader({
   profile,
   name,
+  handle,
   ownProfile,
   profileUrl,
 }: ProfileHeaderProps) {
@@ -53,9 +55,21 @@ export function ProfileHeader({
             />
           </div>
           <div className="mt-3 pb-4 text-center">
-            <h1 className="text-2xl font-semibold text-card-foreground">
-              {name}
-            </h1>
+            <div className="flex items-baseline justify-center gap-2">
+              <h1 className="text-2xl font-semibold text-card-foreground">
+                {name}
+              </h1>
+              {profile.pronouns && (
+                <span className="text-sm text-muted-foreground">
+                  {profile.pronouns}
+                </span>
+              )}
+            </div>
+            {handle && (
+              <p className="text-sm text-muted-foreground">
+                @{handle.replace(/^@/, "")}
+              </p>
+            )}
             {profile.legalName &&
               profile.legalName !== name &&
               profile.visibility?.hideLegalName === false && (
@@ -70,11 +84,7 @@ export function ProfileHeader({
                   .join(" · ")}
               </p>
             )}
-            {profile.pronouns && (
-              <p className="text-sm text-muted-foreground">
-                {profile.pronouns}
-              </p>
-            )}
+            <MemberSince createdAt={profile.createdAt} centered />
             {profile.contactEmail && (
               <a
                 href={`mailto:${profile.contactEmail}`}
@@ -121,11 +131,23 @@ export function ProfileHeader({
               size="desktop"
             />
           </div>
-          {ownProfile && <DesktopActions />}
+          {ownProfile && <DesktopActions profileUrl={profileUrl} />}
           <div className="pt-18">
-            <h1 className="text-3xl font-semibold tracking-tight text-card-foreground">
-              {name}
-            </h1>
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-3xl font-semibold tracking-tight text-card-foreground">
+                {name}
+              </h1>
+              {profile.pronouns && (
+                <span className="text-sm text-muted-foreground">
+                  {profile.pronouns}
+                </span>
+              )}
+            </div>
+            {handle && (
+              <p className="text-sm text-muted-foreground">
+                @{handle.replace(/^@/, "")}
+              </p>
+            )}
             {profile.legalName &&
               profile.legalName !== name &&
               profile.visibility?.hideLegalName === false && (
@@ -140,16 +162,39 @@ export function ProfileHeader({
                   .join(" · ")}
               </p>
             )}
-            {profile.pronouns && (
-              <p className="text-sm text-muted-foreground">
-                {profile.pronouns}
-              </p>
-            )}
+            <MemberSince createdAt={profile.createdAt} />
           </div>
         </div>
       </div>
     </section>
   );
+}
+
+function MemberSince({
+  createdAt,
+  centered = false,
+}: {
+  createdAt?: string;
+  centered?: boolean;
+}) {
+  return (
+    <p
+      className={cn(
+        "mt-1 flex items-center gap-1.5 text-sm text-muted-foreground",
+        centered && "justify-center",
+      )}
+    >
+      <Calendar className="size-3.5" />
+      Membro desde {createdAt ? formatMemberSince(createdAt) : "—"}
+    </p>
+  );
+}
+
+function formatMemberSince(iso: string) {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function ProfileAvatar({
@@ -176,9 +221,13 @@ function ProfileAvatar({
   );
 }
 
-function DesktopActions() {
+function DesktopActions({ profileUrl }: { profileUrl: string }) {
   return (
     <div className="absolute right-0 top-4 flex gap-2">
+      <ProfileShareDialog
+        profileUrl={profileUrl}
+        className="size-10 rounded-md shadow-sm"
+      />
       <Link
         to="/profile/edit"
         className={buttonVariants({

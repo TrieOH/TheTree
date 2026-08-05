@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
-import { Calendar, CircleAlert, Copy, Globe, Mail } from "lucide-react";
+import { CircleAlert, Globe, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
@@ -20,7 +20,6 @@ import {
   socialHref,
 } from "../model/profile-data";
 import { ProfileHeader } from "./profile-header";
-import { ProfileQrCode } from "./profile-qr-code";
 
 export interface ProfileViewProps {
   actorId?: string;
@@ -30,29 +29,18 @@ export interface ProfileViewProps {
     message?: string;
   }>;
   ownProfile?: boolean;
+  viewerActorId?: string;
 }
 
 export function ProfileView({
   actorId,
   loadProfile,
   ownProfile = false,
+  viewerActorId,
 }: ProfileViewProps) {
   const [result, setResult] = useState<ActorProfile>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
-  const [profileUrl, setProfileUrl] = useState(
-    actorId ? `/profile/${actorId}` : "/profile",
-  );
-
-  useEffect(() => {
-    const publicIdentifier = result?.handle || actorId;
-    setProfileUrl(
-      new URL(
-        publicIdentifier ? `/profile/${publicIdentifier}` : "/profile",
-        window.location.origin,
-      ).toString(),
-    );
-  }, [actorId, result?.handle]);
 
   useEffect(() => {
     let active = true;
@@ -105,6 +93,12 @@ export function ProfileView({
   if (error && !ownProfile) return <MissingPublicProfile />;
 
   const profile = asUniventsProfile(result?.profile ?? {});
+  const isOwnProfile = ownProfile || result?.actor_id === viewerActorId;
+  const publicIdentifier = result?.handle || actorId;
+  const profileUrl = new URL(
+    publicIdentifier ? `/profile/${publicIdentifier}` : "/profile",
+    window.location.origin,
+  ).toString();
   const name = profileDisplayName(profile);
   const socials = Object.entries(profile.socials ?? {}).filter(
     (entry): entry is [string, string] => Boolean(entry[1]),
@@ -121,14 +115,15 @@ export function ProfileView({
       <ProfileHeader
         profile={profile}
         name={name}
-        ownProfile={ownProfile}
+        handle={result?.handle ?? undefined}
+        ownProfile={isOwnProfile}
         profileUrl={profileUrl}
       />
 
       <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
         {/* ---- Main Column ---- */}
         <div className="space-y-5">
-          {ownProfile && completeness < 100 && (
+          {isOwnProfile && completeness < 100 && (
             <ProfileCard title="Integridade do Perfil">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">
@@ -154,7 +149,7 @@ export function ProfileView({
             </ProfileCard>
           )}
 
-          {error && ownProfile && (
+          {error && isOwnProfile && (
             <p role="status" className="text-sm text-muted-foreground">
               Seu perfil ainda não foi criado. Use “Editar perfil” para começar.
             </p>
@@ -168,44 +163,18 @@ export function ProfileView({
             ) : (
               <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
             )}
-
-            <div className="mt-6 flex flex-wrap gap-6 border-t border-border pt-5">
-              {profile.createdAt ? (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Calendar className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">
-                      Membro desde
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatMemberSince(profile.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <Calendar className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">
-                      Membro desde
-                    </p>
-                    <p className="text-sm text-muted-foreground">—</p>
-                  </div>
-                </div>
-              )}
-            </div>
           </ProfileCard>
+        </div>
 
+        {/* ---- Sidebar ---- */}
+        <div className="space-y-5">
           <ProfileCard title="Idiomas">
             {specializations.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {specializations.map((item: string) => (
+                {specializations.map((item: string, index) => (
                   <span
-                    key={item}
+                    // biome-ignore lint/suspicious/noArrayIndexKey: duplicate languages are valid and these tags hold no state
+                    key={`${item}-${index}`}
                     className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
                   >
                     {item}
@@ -213,36 +182,9 @@ export function ProfileView({
                 ))}
               </div>
             ) : (
-              <EmptyState message="Adicione suas especializações para destacar seu perfil." />
+              <EmptyState message="Adicione idiomas para destacar seu perfil." />
             )}
           </ProfileCard>
-        </div>
-
-        {/* ---- Sidebar ---- */}
-        <div className="space-y-5">
-          {ownProfile && (
-            <div className="hidden md:block">
-              <ProfileCard title="Compartilhar perfil">
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <ProfileQrCode value={profileUrl} />
-                  <p className="text-sm text-muted-foreground">
-                    Escaneie para abrir e salvar este perfil.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => navigator.clipboard.writeText(profileUrl)}
-                    className={buttonVariants({
-                      variant: "outline",
-                      className: "h-9 w-full rounded-md",
-                    })}
-                  >
-                    <Copy className="mr-2 size-4" />
-                    Copiar link do perfil
-                  </button>
-                </div>
-              </ProfileCard>
-            </div>
-          )}
 
           <ProfileCard title="Contato">
             {hasContact ? (
@@ -422,11 +364,6 @@ function MissingPublicProfile() {
 
 function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function formatMemberSince(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 function completenessHint(profile: ReturnType<typeof asUniventsProfile>) {

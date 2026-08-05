@@ -306,7 +306,7 @@ function InlineProfileEditor({
               className="-mt-12 md:-mt-16"
             />
             <div className="mt-3">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="min-w-0 space-y-1.5">
                   <Label htmlFor="profile-handle">Nome de usuário</Label>
                   <Input
@@ -884,13 +884,15 @@ function ArrayDraftInput({
       <div className="space-y-2">
         {value.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {value.map((item) => (
+            {value.map((item, index) => (
               <button
-                key={String(item)}
+                key={`${String(item)}-${index}`}
                 type="button"
                 className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs"
                 onClick={() =>
-                  onChange(value.filter((entry) => entry !== item))
+                  onChange(
+                    value.filter((_, entryIndex) => entryIndex !== index),
+                  )
                 }
                 title="Remover idioma"
               >
