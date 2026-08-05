@@ -130,17 +130,16 @@ func (s *Sender) jobProjectID(actor *models.Actor, project *models.Project) *uui
 	return actor.ProjectID
 }
 
-// resolveBase picks the link base: the project's verified domain for
-// project actors, APP_URL for platform actors. A project without a
-// verified domain is a misconfigured tenant — fail loudly rather than
-// mail broken links.
+// resolveBase picks the link base: the project's domain for project
+// actors, APP_URL for platform actors. A project without a domain is a
+// misconfigured tenant — fail loudly rather than mail broken links.
 func (s *Sender) resolveBase(_ context.Context, kind models.EmailTemplateKind, project *models.Project) (baseDomain, projectName string, err error) {
 	if project == nil {
 		return s.appURL, s.appName, nil
 	}
-	if project.Domain == nil || project.DomainVerifiedAt == nil {
+	if project.Domain == nil {
 		return "", "", fun.ErrInternal(fmt.Sprintf(
-			"cannot send %s email for project %s: no verified domain configured",
+			"cannot send %s email for project %s: no domain configured",
 			kind, project.ID,
 		))
 	}
