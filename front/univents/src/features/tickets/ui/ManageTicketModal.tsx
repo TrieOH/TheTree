@@ -67,6 +67,7 @@ export function ManageTicketModal({
 
       return Boolean(result);
     },
+    resetOnSuccessValues: isEditing ? undefined : emptyDefaultValues,
     onSubmitSuccess: () => onOpenChange(false),
   });
 
