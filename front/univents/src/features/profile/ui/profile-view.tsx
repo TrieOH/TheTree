@@ -5,6 +5,14 @@ import { useEffect, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
 import { Skeleton } from "@/shared/ui/shadcn/skeleton";
+import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
+import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
+import githubIcon from "@/shared/ui/social-icons/assets/github.svg";
+import instagramIcon from "@/shared/ui/social-icons/assets/instagram.svg";
+import linkedinIcon from "@/shared/ui/social-icons/assets/linkedin.svg";
+import twitchIcon from "@/shared/ui/social-icons/assets/twitch.svg";
+import xIcon from "@/shared/ui/social-icons/assets/x.svg";
+import youtubeIcon from "@/shared/ui/social-icons/assets/youtube.svg";
 import {
   asUniventsProfile,
   profileCompleteness,
@@ -260,7 +268,7 @@ export function ProfileView({
                     key={network}
                     href={socialHref(network, value)}
                     label={capitalize(network)}
-                    icon={<Globe className="size-4" />}
+                    icon={<SocialIcon network={network} />}
                   />
                 ))}
               </div>
@@ -319,6 +327,31 @@ function SocialButton({
       </span>
       <span className="truncate">{label}</span>
     </a>
+  );
+}
+
+const SOCIAL_ICONS: Record<string, string> = {
+  x: xIcon,
+  github: githubIcon,
+  twitch: twitchIcon,
+  bluesky: blueskyIcon,
+  discord: discordIcon,
+  youtube: youtubeIcon,
+  linkedin: linkedinIcon,
+  instagram: instagramIcon,
+};
+
+function SocialIcon({ network }: { network: string }) {
+  const src = SOCIAL_ICONS[network];
+  const preserveColors = ["youtube", "bluesky", "linkedin"].includes(network);
+  return src ? (
+    <img
+      src={src}
+      alt={`${capitalize(network)} — ícone`}
+      className={`size-4 object-contain${preserveColors ? "" : " dark:invert"}`}
+    />
+  ) : (
+    <Globe className="size-4" />
   );
 }
 

@@ -8,6 +8,14 @@ import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
 import { Label } from "@/shared/ui/shadcn/label";
 import { Skeleton } from "@/shared/ui/shadcn/skeleton";
+import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
+import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
+import githubIcon from "@/shared/ui/social-icons/assets/github.svg";
+import instagramIcon from "@/shared/ui/social-icons/assets/instagram.svg";
+import linkedinIcon from "@/shared/ui/social-icons/assets/linkedin.svg";
+import twitchIcon from "@/shared/ui/social-icons/assets/twitch.svg";
+import xIcon from "@/shared/ui/social-icons/assets/x.svg";
+import youtubeIcon from "@/shared/ui/social-icons/assets/youtube.svg";
 import type { ProfileSchemaNode } from "../model/profile-data";
 import {
   applyProfileSchemaDefaults,
@@ -599,15 +607,19 @@ function SchemaFields({
             className={cn(
               fieldType === "boolean"
                 ? "flex min-w-0 items-center justify-between gap-4 rounded-md border border-border bg-background p-3"
-                : "space-y-2",
+                : path[0] === "socials"
+                  ? "flex min-w-0 items-center gap-2"
+                  : "space-y-2",
             )}
           >
-            <div>
-              <Label htmlFor={id}>
-                {fieldLabel(name, field)}
-                {isRequired ? " *" : ""}
-              </Label>
-            </div>
+            {path[0] !== "socials" && (
+              <div>
+                <Label htmlFor={id}>
+                  {fieldLabel(name, field)}
+                  {isRequired ? " *" : ""}
+                </Label>
+              </div>
+            )}
             <SchemaInput
               id={id}
               field={field}
@@ -729,29 +741,46 @@ function SchemaInput({
     ? normalizeSocialProfile(fieldName, stringValue)
     : "";
   return (
-    <div className="min-w-0 space-y-1.5">
-      <Input
-        id={id}
-        type={displayType}
-        inputMode={fieldName === "website" || isSocial ? "url" : undefined}
-        required={required}
-        placeholder={fieldPlaceholder(fieldName)}
-        className="h-10 bg-background"
-        value={stringValue}
-        onChange={(event) => {
-          const next = event.target.value;
-          onChange(
-            isSocial && /^https?:\/\//i.test(next)
-              ? normalizeSocialProfile(fieldName, next)
-              : inputValue(field, inputType, next),
-          );
-        }}
-        onBlur={() => {
-          if (fieldName === "website") onChange(normalizeWebsite(stringValue));
-          else if (isSocial)
-            onChange(normalizeSocialProfile(fieldName, stringValue));
-        }}
-      />
+    <div className="min-w-0 flex-1 space-y-1.5">
+      <div className="relative">
+        {isSocial && socialIconSources[fieldName] && (
+          <span className="pointer-events-none border border-border absolute inset-y-0 left-0 flex w-10 items-center justify-center rounded-l-lg bg-primary">
+            <img
+              src={socialIconSources[fieldName]}
+              alt={`${fieldLabel(fieldName, field)} — ícone`}
+              className={cn(
+                "size-4 object-contain",
+                !["youtube", "bluesky", "linkedin"].includes(fieldName) &&
+                  "dark:invert",
+              )}
+            />
+          </span>
+        )}
+        <Input
+          id={id}
+          type={displayType}
+          inputMode={fieldName === "website" || isSocial ? "url" : undefined}
+          required={required}
+          placeholder={fieldPlaceholder(fieldName)}
+          className={cn("h-10 bg-background", isSocial && "pl-11!")}
+          value={stringValue}
+          aria-label={isSocial ? fieldLabel(fieldName, field) : undefined}
+          onChange={(event) => {
+            const next = event.target.value;
+            onChange(
+              isSocial && /^https?:\/\//i.test(next)
+                ? normalizeSocialProfile(fieldName, next)
+                : inputValue(field, inputType, next),
+            );
+          }}
+          onBlur={() => {
+            if (fieldName === "website")
+              onChange(normalizeWebsite(stringValue));
+            else if (isSocial)
+              onChange(normalizeSocialProfile(fieldName, stringValue));
+          }}
+        />
+      </div>
       {normalizedSocial && (
         <p
           className="truncate text-right text-xs text-muted-foreground"
@@ -957,6 +986,17 @@ function writeValue(
   });
   return next;
 }
+
+const socialIconSources: Record<string, string> = {
+  x: xIcon,
+  github: githubIcon,
+  twitch: twitchIcon,
+  bluesky: blueskyIcon,
+  discord: discordIcon,
+  youtube: youtubeIcon,
+  linkedin: linkedinIcon,
+  instagram: instagramIcon,
+};
 
 function humanize(value: string): string {
   return value
