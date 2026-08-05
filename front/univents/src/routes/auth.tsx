@@ -3,6 +3,7 @@ import { ModernAuth, useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { toast } from "sonner";
 import z from "zod";
 import { requireGuest } from "@/features/auths/lib/route-guard";
+import { Logo } from "@/shared/ui/logo";
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(""),
@@ -62,7 +63,11 @@ function AuthPage() {
   };
 
   return (
-    <div className="[&>main]:py-16">
+    <div className="relative [&>main]:py-16 [&>main]:pt-52 md:[&>main]:pt-56">
+      <div className="absolute left-1/2 top-16 md:top-20 z-20 w-32 md:w-40 -translate-x-1/2">
+        <Logo variant="complete" priority imgClassName="h-auto max-h-16 md:max-h-20" />
+      </div>
+
       <ModernAuth
         initialView="signin"
         onLoginSuccess={handleLoginSuccess}
