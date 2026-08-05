@@ -1,32 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-<body style="margin: 0; padding: 0; background: #f6f7f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f6f7f9; padding: 32px 16px;">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Verify your email</title>
+  <style>
+    @media screen and (max-width: 480px) {
+      .email-shell { padding: 24px 10px !important; }
+      .email-card-content { padding: 26px 20px 30px 20px !important; }
+      .email-title { font-size: 22px !important; }
+      .email-button { width: 100% !important; }
+      .email-button a { box-sizing: border-box !important; display: block !important; width: 100% !important; text-align: center !important; }
+    }
+  </style>
+</head>
+
+<body style="margin:0; padding:0; background-color:#f8f7fb; color:#111827; font-family:Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; background-color:#f8f7fb;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+      <td align="center" class="email-shell" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px;">
           <tr>
-            <td style="padding: 32px 40px;">
-              {{if .ProjectName}}<p style="margin: 0 0 24px; color: #6b7280; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase;">{{.ProjectName}}</p>{{end}}
-              <h1 style="margin: 0 0 16px; color: #111827; font-size: 22px; line-height: 1.3;">Verify your email address</h1>
-              <p style="margin: 0 0 24px; color: #374151; font-size: 15px; line-height: 1.6;">
-                Hi{{if .Email}} {{.Email}}{{end}},<br>
-                Please confirm that this email address belongs to you to finish setting up your account.
-              </p>
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
+            <td align="center" style="padding:0 0 24px 0;">
+              <div style="color:#7627a3; font-size:25px; font-weight:bold; letter-spacing:-0.5px;">
+                {{if .ProjectName}}{{.ProjectName}}{{else}}IdentityX{{end}}
+              </div>
+              <div style="padding-top:5px; color:#64748b; font-size:11px; letter-spacing:1.5px; text-transform:uppercase;">
+                Secure identity and access
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff; border:1px solid #e9e1ef; border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="background: #111827; border-radius: 8px;">
-                    <a href="{{.ActionURL}}" style="display: inline-block; padding: 12px 28px; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none;">Verify my email</a>
+                  <td style="height:5px; background-color:#7627a3; border-radius:12px 12px 0 0; font-size:1px; line-height:1px;">&nbsp;</td>
+                </tr>
+                <tr>
+                  <td class="email-card-content" style="padding:32px 32px 36px 32px;">
+                    <h1 class="email-title" style="margin:0 0 8px 0; color:#171225; font-size:24px; line-height:1.25; font-weight:bold;">
+                      Verify your email address
+                    </h1>
+                    <p style="margin:0 0 28px 0; color:#64748b; font-size:14px; line-height:1.5;">
+                      Complete your account setup
+                    </p>
+                    <p style="margin:0 0 16px 0; color:#334155; font-size:15px; line-height:1.65;">
+                      Hello{{if .Email}} {{.Email}}{{end}},
+                    </p>
+                    <p style="margin:0 0 24px 0; color:#334155; font-size:15px; line-height:1.65;">
+                      Please confirm that this email address belongs to you to finish setting up your account{{if .ProjectName}} on <strong style="color:#171225;">{{.ProjectName}}</strong>{{end}}.
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#7627a3" class="email-button" style="border-radius:7px;">
+                          <a href="{{.ActionURL}}" style="display:inline-block; padding:14px 26px; border:1px solid #7627a3; border-radius:7px; background-color:#7627a3; color:#ffffff; font-size:14px; font-weight:bold; text-decoration:none;">
+                            Verify my email
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:28px 0 8px 0; color:#64748b; font-size:13px; line-height:1.5;">
+                      This link expires in {{.Expiry}} minutes. If the button doesn't work, copy and paste this URL:
+                    </p>
+                    <p style="margin:0; color:#7627a3; font-size:12px; line-height:1.5; word-break:break-all;">
+                      {{.ActionURL}}
+                    </p>
                   </td>
                 </tr>
               </table>
-              <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.5;">
-                This link expires in {{.Expiry}} minutes. If the button above doesn't work, copy and paste this address into your browser:
-              </p>
-              <p style="margin: 0 0 24px; color: #111827; font-size: 13px; line-height: 1.5; word-break: break-all;">{{.ActionURL}}</p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.5;">
-                If you didn't create an account{{if .ProjectDomain}} on {{.ProjectDomain}}{{end}}, you can safely ignore this email.
-              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:20px 16px 0 16px; color:#94a3b8; font-size:12px; line-height:1.5;">
+              If you didn't create an account{{if .ProjectDomain}} on {{.ProjectDomain}}{{end}}, you can safely ignore this email.
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:10px 16px 0 16px; color:#c4b5d0; font-size:11px;">
+              &copy; {{if .ProjectName}}{{.ProjectName}}{{else}}IdentityX{{end}}
             </td>
           </tr>
         </table>
@@ -34,4 +87,5 @@
     </tr>
   </table>
 </body>
+
 </html>
