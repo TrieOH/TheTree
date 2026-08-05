@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { z } from "zod";
 import { cn } from "@/shared/lib/utils";
+import { Logo } from "@/shared/ui/logo";
 import { Footer } from "@/widgets/landing/ui/Footer";
 import { ModeSelector } from "@/widgets/landing/ui/ModeSelector";
 import { OrganizerView } from "@/widgets/landing/ui/OrganizerView";
@@ -42,7 +43,10 @@ function Index() {
     >
       <div className="px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="pb-4 md:pb-10">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto flex flex-col items-center">
+            <div className="mb-8 md:mb-12 mt-4 md:mt-8 w-32 md:w-48">
+              <Logo variant="complete" />
+            </div>
             <ModeSelector
               current={as}
               onChange={setMode}
