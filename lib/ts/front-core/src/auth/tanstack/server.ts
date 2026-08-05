@@ -430,8 +430,21 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         }
       }
 
+      const anonymousAuthRequest =
+        input.target === "identityx" &&
+        method === "POST" &&
+        [
+          "/auth/verify-email",
+          "/auth/resend-verification",
+          "/auth/forgot-password",
+          "/auth/reset-password",
+        ].includes(input.path);
       const resolution = await validTokens();
-      if (!resolution.success && (method !== "GET" || !resolution.sessionInvalid)) {
+      if (
+        !resolution.success &&
+        !anonymousAuthRequest &&
+        (method !== "GET" || !resolution.sessionInvalid)
+      ) {
         return resolution.error;
       }
 

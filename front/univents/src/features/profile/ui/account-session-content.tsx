@@ -1,10 +1,22 @@
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { CheckCircle2, Fingerprint, Mail } from "lucide-react";
+import { CheckCircle2, Fingerprint, Mail, MailWarning } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/shared/ui/shadcn/button";
 import { Skeleton } from "@/shared/ui/shadcn/skeleton";
 
 export function AccountSessionContent() {
   const { auth, isInitializing, isAuthenticated } = useAuth();
+  const [, setRefreshVersion] = useState(0);
+  const [resending, setResending] = useState(false);
   const profile = auth.profile();
+
+  useEffect(() => {
+    if (!profile?.email || profile.verified_at) return;
+    auth.refresh().then((response) => {
+      if (response.success) setRefreshVersion((version) => version + 1);
+    });
+  }, [auth, profile?.email, profile?.verified_at]);
 
   if (isInitializing) {
     return (
@@ -24,7 +36,7 @@ export function AccountSessionContent() {
     );
   }
 
-  const { email, id } = profile;
+  const { email, id, verified_at: verifiedAt } = profile;
 
   return (
     <div className="space-y-1 pt-1 pb-0">
@@ -39,7 +51,17 @@ export function AccountSessionContent() {
               Perfil autenticado
             </p>
           </div>
-          <CheckCircle2 className="ml-auto size-5 text-emerald-500" />
+          {verifiedAt ? (
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <CheckCircle2 className="size-4" />
+              Verificado
+            </span>
+          ) : (
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+              <MailWarning className="size-4" />
+              Não verificado
+            </span>
+          )}
         </div>
         <div className="space-y-1.5 border-t border-border/30 pt-2">
           <div className="flex items-center gap-3">
@@ -50,6 +72,35 @@ export function AccountSessionContent() {
                 {email || "Não disponível"}
               </p>
             </div>
+            {!verifiedAt && email && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={resending}
+                onClick={async () => {
+                  setResending(true);
+                  try {
+                    const response = await auth.resendVerifyEmail(email);
+                    if (!response.success)
+                      throw new Error(
+                        response.message || "Não foi possível enviar o e-mail",
+                      );
+                    toast.success("E-mail de verificação enviado");
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Não foi possível enviar o e-mail",
+                    );
+                  } finally {
+                    setResending(false);
+                  }
+                }}
+              >
+                {resending ? "Enviando…" : "Reenviar verificação"}
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-3 border-t border-border/30 pt-1.5">
             <Fingerprint className="size-5 shrink-0 text-muted-foreground" />

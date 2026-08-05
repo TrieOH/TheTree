@@ -27,6 +27,11 @@ import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileActorIdRouteImport } from './routes/profile/$actorId'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth_/verify-email'
+import { Route as AuthVerifyRouteImport } from './routes/auth_/verify'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth_/reset-password'
+import { Route as AuthResetRouteImport } from './routes/auth_/reset'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth_/forgot-password'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
@@ -143,6 +148,31 @@ const ProfileActorIdRoute = ProfileActorIdRouteImport.update({
   id: '/$actorId',
   path: '/$actorId',
   getParentRoute: () => ProfileRoute,
+} as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth_/verify-email',
+  path: '/auth/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth_/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth_/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth_/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUploadsRoute = AdminUploadsRouteImport.update({
   id: '/uploads',
@@ -344,6 +374,11 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -386,6 +421,11 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -429,6 +469,11 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth_/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth_/reset': typeof AuthResetRoute
+  '/auth_/reset-password': typeof AuthResetPasswordRoute
+  '/auth_/verify': typeof AuthVerifyRoute
+  '/auth_/verify-email': typeof AuthVerifyEmailRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -474,6 +519,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/auth/forgot-password'
+    | '/auth/reset'
+    | '/auth/reset-password'
+    | '/auth/verify'
+    | '/auth/verify-email'
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
@@ -516,6 +566,11 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/uploads'
+    | '/auth/forgot-password'
+    | '/auth/reset'
+    | '/auth/reset-password'
+    | '/auth/verify'
+    | '/auth/verify-email'
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
@@ -558,6 +613,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/admin/uploads'
+    | '/auth_/forgot-password'
+    | '/auth_/reset'
+    | '/auth_/reset-password'
+    | '/auth_/verify'
+    | '/auth_/verify-email'
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
@@ -601,6 +661,11 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   TermsRoute: typeof TermsRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetRoute: typeof AuthResetRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
+  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
   SignaturesRevokeRoute: typeof SignaturesRevokeRoute
   VerifyHashRoute: typeof VerifyHashRoute
@@ -726,6 +791,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/$actorId'
       preLoaderRoute: typeof ProfileActorIdRouteImport
       parentRoute: typeof ProfileRoute
+    }
+    '/auth_/verify-email': {
+      id: '/auth_/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/verify': {
+      id: '/auth_/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/reset-password': {
+      id: '/auth_/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/forgot-password': {
+      id: '/auth_/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/uploads': {
       id: '/admin/uploads'
@@ -1003,6 +1103,11 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   TermsRoute: TermsRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetRoute: AuthResetRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
+  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
   SignaturesRevokeRoute: SignaturesRevokeRoute,
   VerifyHashRoute: VerifyHashRoute,

@@ -227,7 +227,20 @@ export function createTanStackIdentityXAuthProviderAdapter(
           }
           : defaultAuth.introspect,
         ...(functions.request ? {
-          resendVerifyEmail: () => proxyResponse<void>("resendVerifyEmail", "/account/verify/resend", "POST"),
+          sendForgotPassword: (email: string) =>
+            proxyResponse<void>("sendForgotPassword", "/auth/forgot-password", "POST", {
+              email,
+              ...(options.projectId ? { project_id: options.projectId } : {}),
+            }),
+          resetPassword: (token: string, password: string) =>
+            proxyResponse<void>("resetPassword", "/auth/reset-password", "POST", { token, password }),
+          verifyEmail: (token: string) =>
+            proxyResponse<void>("verifyEmail", "/auth/verify-email", "POST", { token }),
+          resendVerifyEmail: (email: string) =>
+            proxyResponse<void>("resendVerifyEmail", "/auth/resend-verification", "POST", {
+              email,
+              ...(options.projectId ? { project_id: options.projectId } : {}),
+            }),
           getProjectProfile: (actorId: string, projectId?: string) =>
             proxyResponse("getProjectProfile", projectPath(`/actors/${actorId}/profile`, projectId)),
           upsertProjectProfile: (actorId: string, data: { profile: Record<string, unknown> }, projectId?: string) =>
