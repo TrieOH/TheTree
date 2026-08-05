@@ -1,9 +1,11 @@
 package config
 
 import (
+	"strconv"
 	"time"
 
 	"lib/database"
+	"lib/email"
 	"lib/errx"
 
 	"github.com/caarlos0/env/v11"
@@ -52,6 +54,10 @@ type Config struct {
 	AccessTokenLifetime  time.Duration `env:"ACCESS_TOKEN_LIFETIME,required"`
 	RefreshTokenLifetime time.Duration `env:"REFRESH_TOKEN_LIFETIME,required"`
 
+	// Action tokens (email verify / password reset links)
+	EmailVerifyTokenTTL time.Duration `env:"EMAIL_VERIFY_TOKEN_TTL" envDefault:"10m"`
+	EmailResetTokenTTL  time.Duration `env:"EMAIL_RESET_TOKEN_TTL"  envDefault:"10m"`
+
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
 	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
@@ -74,6 +80,21 @@ func (cfg *Config) ToDBConfig() database.Config {
 		RootHost:      "postgres",
 		RootPort:      "5432",
 		MigrationPath: cfg.MigrationPath,
+	}
+}
+
+func (cfg *Config) ToEmailConfig() email.Config {
+	port, err := strconv.Atoi(cfg.SMTPPort)
+	if err != nil {
+		port = 587
+	}
+	return email.Config{
+		Host:     cfg.SMTPHost,
+		Port:     port,
+		Username: cfg.SMTPUser,
+		Password: cfg.SMTPPass,
+		From:     cfg.SMTPFrom,
+		TLS:      cfg.SMTPTLS,
 	}
 }
 

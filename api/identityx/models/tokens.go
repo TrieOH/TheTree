@@ -13,6 +13,7 @@ type AccessSub struct {
 	ProjectID    *uuid.UUID       `json:"project_id"`
 	Email        *string          `json:"email"`
 	Type         ActorType        `json:"type"`
+	VerifiedAt   *time.Time       `json:"verified_at"`
 	Capabilities json.RawMessage  `json:"capabilities"`
 	Metadata     *json.RawMessage `json:"metadata"`
 }

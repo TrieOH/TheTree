@@ -101,7 +101,8 @@ func (o *Operations) migrateOnDemand(ctx context.Context, profile *models.ActorP
 	// auto-migrate: drop the fields the new schema forbids, re-validate,
 	// and persist the pruned document at the new version
 	if pruned, perr := pruneToSchema(schema.Schema, profile.Profile); perr == nil {
-		if err := jsonschema.Validate(schema.Schema, pruned); err == nil {
+		err := jsonschema.Validate(schema.Schema, pruned)
+		if err == nil {
 			return o.profiles.Upsert(ctx, models.ActorProfile{
 				ActorID:       profile.ActorID,
 				Handle:        profile.Handle,

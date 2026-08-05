@@ -8,12 +8,14 @@ package repos
 import (
 	"IdentityX/internal/sqlc"
 
+	"IdentityX/internal/repos/action_tokens"
 	"IdentityX/internal/repos/actors"
 	"IdentityX/internal/repos/api_keys"
 	"IdentityX/internal/repos/authn"
 	"IdentityX/internal/repos/blacklist"
 	"IdentityX/internal/repos/capabilities"
 	"IdentityX/internal/repos/crypto_keys"
+	"IdentityX/internal/repos/email_templates"
 	"IdentityX/internal/repos/oauth_providers"
 	"IdentityX/internal/repos/organizations"
 	"IdentityX/internal/repos/platform_roles"
@@ -27,9 +29,11 @@ type (
 	Actors         = actors.Repo
 	APIKeys        = api_keys.Repo
 	Authn          = authn.Repo
+	ActionTokens   = action_tokens.Repo
 	Blacklist      = blacklist.Repo
 	Capabilities   = capabilities.Repo
 	CryptoKeys     = crypto_keys.Repo
+	EmailTemplates = email_templates.Repo
 	Organizations  = organizations.Repo
 	OAuthProviders = oauth_providers.Repo
 	PlatformRoles  = platform_roles.Repo
@@ -42,9 +46,11 @@ var (
 	NewActors         = actors.NewRepo
 	NewAPIKeys        = api_keys.NewRepo
 	NewAuthn          = authn.NewRepo
+	NewActionTokens   = action_tokens.NewRepo
 	NewBlacklist      = blacklist.NewRepo
 	NewCapabilities   = capabilities.NewRepo
 	NewCryptoKeys     = crypto_keys.NewRepo
+	NewEmailTemplates = email_templates.NewRepo
 	NewOrganizations  = organizations.NewRepo
 	NewOAuthProviders = oauth_providers.NewRepo
 	NewPlatformRoles  = platform_roles.NewRepo
@@ -58,9 +64,11 @@ type Repos struct {
 	Actors         *Actors
 	APIKeys        *APIKeys
 	Authn          *Authn
+	ActionTokens   *ActionTokens
 	Blacklist      *Blacklist
 	Capabilities   *Capabilities
 	CryptoKeys     *CryptoKeys
+	EmailTemplates *EmailTemplates
 	Organizations  *Organizations
 	OAuthProviders *OAuthProviders
 	PlatformRoles  *PlatformRoles
@@ -77,9 +85,11 @@ func New(q *sqlc.Queries) *Repos {
 		Actors:             NewActors(q),
 		APIKeys:            NewAPIKeys(q),
 		Authn:              NewAuthn(q),
+		ActionTokens:       NewActionTokens(q),
 		Blacklist:          NewBlacklist(q),
 		Capabilities:       NewCapabilities(q),
 		CryptoKeys:         NewCryptoKeys(q),
+		EmailTemplates:     NewEmailTemplates(q),
 		Organizations:      NewOrganizations(q),
 		OAuthProviders:     NewOAuthProviders(q),
 		PlatformRoles:      NewPlatformRoles(q),

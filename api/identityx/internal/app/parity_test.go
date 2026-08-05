@@ -183,6 +183,30 @@ func (stubStrict) ListOutdatedProjectProfiles(_ context.Context, _ openapi.ListO
 func (stubStrict) GetProfileByHandle(_ context.Context, _ openapi.GetProfileByHandleRequestObject) (openapi.GetProfileByHandleResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) PostVerifyEmail(_ context.Context, _ openapi.PostVerifyEmailRequestObject) (openapi.PostVerifyEmailResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PostResendVerification(_ context.Context, _ openapi.PostResendVerificationRequestObject) (openapi.PostResendVerificationResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PostForgotPassword(_ context.Context, _ openapi.PostForgotPasswordRequestObject) (openapi.PostForgotPasswordResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PostResetPassword(_ context.Context, _ openapi.PostResetPasswordRequestObject) (openapi.PostResetPasswordResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListEmailTemplates(_ context.Context, _ openapi.ListEmailTemplatesRequestObject) (openapi.ListEmailTemplatesResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) GetEmailTemplate(_ context.Context, _ openapi.GetEmailTemplateRequestObject) (openapi.GetEmailTemplateResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PutEmailTemplate(_ context.Context, _ openapi.PutEmailTemplateRequestObject) (openapi.PutEmailTemplateResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) DeleteEmailTemplate(_ context.Context, _ openapi.DeleteEmailTemplateRequestObject) (openapi.DeleteEmailTemplateResponseObject, error) {
+	return nil, errStub
+}
 
 // labeled middleware stubs record their names when run.
 var parityInvocations []string

@@ -11,6 +11,7 @@ import (
 	"IdentityX/internal/services/api_keys"
 	"IdentityX/internal/services/authn"
 	"IdentityX/internal/services/capabilities"
+	"IdentityX/internal/services/email_templates"
 	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/internal/services/organizations"
 	"IdentityX/internal/services/profile_schemas"
@@ -18,6 +19,7 @@ import (
 	"IdentityX/internal/services/projects"
 
 	"IdentityX/internal/authz"
+	"IdentityX/internal/emails"
 )
 
 // Type and constructor aliases for each feature's operations package.
@@ -26,8 +28,9 @@ type (
 	APIKeys        = api_keys.Operations
 	Authn          = authn.Operations
 	Capabilities   = capabilities.Operations
-	Organizations  = organizations.Operations
+	EmailTemplates = email_templates.Operations
 	OAuthProviders = oauth_providers.Operations
+	Organizations  = organizations.Operations
 	ProfileSchemas = profile_schemas.Operations
 	Profiles       = profiles.Operations
 	Projects       = projects.Operations
@@ -38,8 +41,9 @@ var (
 	NewAPIKeys        = api_keys.NewOperations
 	NewAuthn          = authn.NewOperations
 	NewCapabilities   = capabilities.NewOperations
-	NewOrganizations  = organizations.NewOperations
+	NewEmailTemplates = email_templates.NewOperations
 	NewOAuthProviders = oauth_providers.NewOperations
+	NewOrganizations  = organizations.NewOperations
 	NewProfileSchemas = profile_schemas.NewOperations
 	NewProfiles       = profiles.NewOperations
 	NewProjects       = projects.NewOperations
@@ -52,8 +56,9 @@ type Operations struct {
 	APIKeys        *APIKeys
 	Authn          *Authn
 	Capabilities   *Capabilities
-	Organizations  *Organizations
+	EmailTemplates *EmailTemplates
 	OAuthProviders *OAuthProviders
+	Organizations  *Organizations
 	ProfileSchemas *ProfileSchemas
 	Profiles       *Profiles
 	Projects       *Projects
@@ -61,13 +66,15 @@ type Operations struct {
 
 // NewOperations wires every feature's operations from the shared repos.
 // hmacSecret is the API-key signing secret (app config), passed through to
-// the api_keys service.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, hmacSecret string) *Operations {
+// the api_keys and authn services. sender dispatches the async verify/reset
+// emails minted by authn.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, hmacSecret string, sender *emails.Sender) *Operations {
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, r.ExternalIdentities, r.OAuthProviders, r.OAuthProviders),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, r.ExternalIdentities, r.OAuthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
+		EmailTemplates: NewEmailTemplates(r.EmailTemplates, r.Projects, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),
 		OAuthProviders: NewOAuthProviders(r.OAuthProviders, r.Projects, authzSvc),
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),

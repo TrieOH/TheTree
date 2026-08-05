@@ -92,6 +92,7 @@ func (o *Operations) newAccessToken(actor models.Actor, jti, kid uuid.UUID, expi
 			ProjectID:    actor.ProjectID,
 			Email:        actor.Email,
 			Type:         actor.Type,
+			VerifiedAt:   actor.VerifiedAt,
 			Capabilities: nil,
 			Metadata:     nil,
 		},
@@ -274,6 +275,9 @@ func (o *Operations) registerNewIdentity(
 		AuthMethod: models.AuthMethod(provider),
 		Email:      &info.Email,
 		Type:       models.HumanActorType,
+		// The provider already verified the email (Google/GitHub), so the
+		// account ships verified and never needs the verify link.
+		VerifiedAt: new(time.Now()),
 	})
 	if err != nil {
 		return nil, err

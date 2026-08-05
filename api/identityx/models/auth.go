@@ -30,3 +30,22 @@ type LogoutInput struct {
 	AccessToken  string
 	RefreshToken string
 }
+
+type VerifyEmailInput struct {
+	Token string
+}
+
+type ResendVerificationInput struct {
+	Email     string
+	ProjectID *uuid.UUID
+}
+
+type ForgotPasswordInput struct {
+	Email     string
+	ProjectID *uuid.UUID
+}
+
+type ResetPasswordInput struct {
+	Token       string
+	NewPassword string
+}

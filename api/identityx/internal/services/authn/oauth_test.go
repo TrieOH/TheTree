@@ -94,6 +94,9 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 		r.actors, r.projects,
 		mock.Mock[ports.PlatformRolesRepo](),
 		r.keys, r.blacklist, r.external, r.providers, r.states,
+		mock.Mock[ports.ActionTokenRepo](),
+		mock.Mock[ports.EmailSender](),
+		[]byte("test-hmac"),
 	)
 	return ops, r
 }
