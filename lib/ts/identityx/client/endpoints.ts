@@ -106,8 +106,11 @@ import type {
   CreateOrganizationRequest,
   CreateProjectRequest,
   CredentialRequest,
+  EffectiveEmailTemplate,
+  EmailTemplateBody,
   ErrorResponse,
   ForbiddenResponse,
+  ForgotPasswordRequest,
   GetHealth200,
   GetJWKS200,
   GetJWKSParams,
@@ -130,13 +133,16 @@ import type {
   RemoveOrgProjectMemberRequest,
   RemoveOrganizationMemberRequest,
   RemoveProjectMemberRequest,
+  ResendVerificationRequest,
+  ResetPasswordRequest,
   ServiceUnavailableResponse,
   SupportedOAuthProviders,
   UnauthorizedResponse,
   UpdateOAuthProviderRequest,
   UpsertProfileRequest,
   UpsertProfileSchemaRequest,
-  UserTokensOutput
+  UserTokensOutput,
+  VerifyEmailRequest
 } from './schemas';
 
 import { customInstance } from '../../api-client/src/orval-mutator';
@@ -667,6 +673,424 @@ export const usePostRegister = <TError = ErrorType<BadRequestResponse | Conflict
         TContext
       > => {
       return useMutation(getPostRegisterMutationOptions(options));
+    }
+
+export type postVerifyEmailResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type postVerifyEmailResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type postVerifyEmailResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type postVerifyEmailResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type postVerifyEmailResponseSuccess = (postVerifyEmailResponse200) & {
+  headers: Headers;
+};
+export type postVerifyEmailResponseError = (postVerifyEmailResponse400 | postVerifyEmailResponse500 | postVerifyEmailResponse503) & {
+  headers: Headers;
+};
+
+export type postVerifyEmailResponse = (postVerifyEmailResponseSuccess | postVerifyEmailResponseError)
+
+export const getPostVerifyEmailUrl = () => {
+
+
+
+
+  return `/auth/verify-email`
+}
+
+/**
+ * Redeems the single-use JWT carried by a verification email and
+ * marks the actor's email as verified. The token is HMAC-signed,
+ * purpose-scoped, expires after a short TTL, and is consumed on
+ * first use (jti anti-replay). Re-clicking a consumed link on an
+ * already-verified account succeeds (idempotent).
+ * @summary Verify an email address
+ */
+export const postVerifyEmail = async (verifyEmailRequest: VerifyEmailRequest, options?: Parameters<typeof customInstance>[1]): Promise<postVerifyEmailResponse> => {
+
+  return customInstance<postVerifyEmailResponse>(getPostVerifyEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(verifyEmailRequest)
+  }
+);}
+
+
+
+
+
+export const getPostVerifyEmailMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postVerifyEmail>>, TError,{data: BodyType<VerifyEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postVerifyEmail>>, TError,{data: BodyType<VerifyEmailRequest>}, TContext> => {
+
+const mutationKey = ['postVerifyEmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postVerifyEmail>>, {data: BodyType<VerifyEmailRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postVerifyEmail(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostVerifyEmailMutationResult = NonNullable<Awaited<ReturnType<typeof postVerifyEmail>>>
+    export type PostVerifyEmailMutationBody = BodyType<VerifyEmailRequest>
+    export type PostVerifyEmailMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Verify an email address
+ */
+export const usePostVerifyEmail = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postVerifyEmail>>, TError,{data: BodyType<VerifyEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postVerifyEmail>>,
+        TError,
+        {data: BodyType<VerifyEmailRequest>},
+        TContext
+      > => {
+      return useMutation(getPostVerifyEmailMutationOptions(options));
+    }
+
+export type postResendVerificationResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type postResendVerificationResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type postResendVerificationResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type postResendVerificationResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type postResendVerificationResponseSuccess = (postResendVerificationResponse200) & {
+  headers: Headers;
+};
+export type postResendVerificationResponseError = (postResendVerificationResponse400 | postResendVerificationResponse500 | postResendVerificationResponse503) & {
+  headers: Headers;
+};
+
+export type postResendVerificationResponse = (postResendVerificationResponseSuccess | postResendVerificationResponseError)
+
+export const getPostResendVerificationUrl = () => {
+
+
+
+
+  return `/auth/resend-verification`
+}
+
+/**
+ * Mints a fresh verification link and emails it to the given
+ * address. Always returns 200 — unknown emails and already-verified
+ * accounts are silent no-ops, so the endpoint does not leak which
+ * emails are registered.
+ * @summary Resend the verification email
+ */
+export const postResendVerification = async (resendVerificationRequest: ResendVerificationRequest, options?: Parameters<typeof customInstance>[1]): Promise<postResendVerificationResponse> => {
+
+  return customInstance<postResendVerificationResponse>(getPostResendVerificationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resendVerificationRequest)
+  }
+);}
+
+
+
+
+
+export const getPostResendVerificationMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResendVerification>>, TError,{data: BodyType<ResendVerificationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postResendVerification>>, TError,{data: BodyType<ResendVerificationRequest>}, TContext> => {
+
+const mutationKey = ['postResendVerification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postResendVerification>>, {data: BodyType<ResendVerificationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postResendVerification(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostResendVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof postResendVerification>>>
+    export type PostResendVerificationMutationBody = BodyType<ResendVerificationRequest>
+    export type PostResendVerificationMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Resend the verification email
+ */
+export const usePostResendVerification = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResendVerification>>, TError,{data: BodyType<ResendVerificationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postResendVerification>>,
+        TError,
+        {data: BodyType<ResendVerificationRequest>},
+        TContext
+      > => {
+      return useMutation(getPostResendVerificationMutationOptions(options));
+    }
+
+export type postForgotPasswordResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type postForgotPasswordResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type postForgotPasswordResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type postForgotPasswordResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type postForgotPasswordResponseSuccess = (postForgotPasswordResponse200) & {
+  headers: Headers;
+};
+export type postForgotPasswordResponseError = (postForgotPasswordResponse400 | postForgotPasswordResponse500 | postForgotPasswordResponse503) & {
+  headers: Headers;
+};
+
+export type postForgotPasswordResponse = (postForgotPasswordResponseSuccess | postForgotPasswordResponseError)
+
+export const getPostForgotPasswordUrl = () => {
+
+
+
+
+  return `/auth/forgot-password`
+}
+
+/**
+ * Mints a single-use password-reset link and emails it to the given
+ * address. Always returns 200 — unknown emails and passwordless
+ * (OAuth-only) accounts are silent no-ops, so the endpoint does not
+ * leak which emails are registered.
+ * @summary Request a password reset link
+ */
+export const postForgotPassword = async (forgotPasswordRequest: ForgotPasswordRequest, options?: Parameters<typeof customInstance>[1]): Promise<postForgotPasswordResponse> => {
+
+  return customInstance<postForgotPasswordResponse>(getPostForgotPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(forgotPasswordRequest)
+  }
+);}
+
+
+
+
+
+export const getPostForgotPasswordMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postForgotPassword>>, TError,{data: BodyType<ForgotPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postForgotPassword>>, TError,{data: BodyType<ForgotPasswordRequest>}, TContext> => {
+
+const mutationKey = ['postForgotPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postForgotPassword>>, {data: BodyType<ForgotPasswordRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postForgotPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostForgotPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postForgotPassword>>>
+    export type PostForgotPasswordMutationBody = BodyType<ForgotPasswordRequest>
+    export type PostForgotPasswordMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Request a password reset link
+ */
+export const usePostForgotPassword = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postForgotPassword>>, TError,{data: BodyType<ForgotPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postForgotPassword>>,
+        TError,
+        {data: BodyType<ForgotPasswordRequest>},
+        TContext
+      > => {
+      return useMutation(getPostForgotPasswordMutationOptions(options));
+    }
+
+export type postResetPasswordResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type postResetPasswordResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type postResetPasswordResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type postResetPasswordResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type postResetPasswordResponseSuccess = (postResetPasswordResponse200) & {
+  headers: Headers;
+};
+export type postResetPasswordResponseError = (postResetPasswordResponse400 | postResetPasswordResponse500 | postResetPasswordResponse503) & {
+  headers: Headers;
+};
+
+export type postResetPasswordResponse = (postResetPasswordResponseSuccess | postResetPasswordResponseError)
+
+export const getPostResetPasswordUrl = () => {
+
+
+
+
+  return `/auth/reset-password`
+}
+
+/**
+ * Redeems the single-use JWT carried by a password-reset email and
+ * replaces the actor's password. The token is HMAC-signed,
+ * purpose-scoped, expires after a short TTL, and is consumed on
+ * first use — a consumed token is dead and a new link must be
+ * requested.
+ * @summary Set a new password with a reset link
+ */
+export const postResetPassword = async (resetPasswordRequest: ResetPasswordRequest, options?: Parameters<typeof customInstance>[1]): Promise<postResetPasswordResponse> => {
+
+  return customInstance<postResetPasswordResponse>(getPostResetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resetPasswordRequest)
+  }
+);}
+
+
+
+
+
+export const getPostResetPasswordMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResetPassword>>, TError,{data: BodyType<ResetPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postResetPassword>>, TError,{data: BodyType<ResetPasswordRequest>}, TContext> => {
+
+const mutationKey = ['postResetPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postResetPassword>>, {data: BodyType<ResetPasswordRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postResetPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postResetPassword>>>
+    export type PostResetPasswordMutationBody = BodyType<ResetPasswordRequest>
+    export type PostResetPasswordMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Set a new password with a reset link
+ */
+export const usePostResetPassword = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResetPassword>>, TError,{data: BodyType<ResetPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postResetPassword>>,
+        TError,
+        {data: BodyType<ResetPasswordRequest>},
+        TContext
+      > => {
+      return useMutation(getPostResetPasswordMutationOptions(options));
     }
 
 export type postLoginResponse200 = {
@@ -4181,6 +4605,491 @@ export function useGetActorByEmail<TData = Awaited<ReturnType<typeof getActorByE
 
 
 
+
+export type listEmailTemplatesResponse200 = {
+  data: EffectiveEmailTemplate[]
+  status: 200
+}
+
+export type listEmailTemplatesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listEmailTemplatesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listEmailTemplatesResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listEmailTemplatesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listEmailTemplatesResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type listEmailTemplatesResponseSuccess = (listEmailTemplatesResponse200) & {
+  headers: Headers;
+};
+export type listEmailTemplatesResponseError = (listEmailTemplatesResponse401 | listEmailTemplatesResponse403 | listEmailTemplatesResponse404 | listEmailTemplatesResponse500 | listEmailTemplatesResponse503) & {
+  headers: Headers;
+};
+
+export type listEmailTemplatesResponse = (listEmailTemplatesResponseSuccess | listEmailTemplatesResponseError)
+
+export const getListEmailTemplatesUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/email-templates`
+}
+
+/**
+ * Lists the effective templates for every kind — the project's
+ * override when one exists, otherwise the baked-in default — each
+ * tagged with its source (`default` or `override`). The
+ * authenticated actor must be an admin or owner of the project.
+ * @summary List a project's effective email templates
+ */
+export const listEmailTemplates = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<listEmailTemplatesResponse> => {
+
+  return customInstance<listEmailTemplatesResponse>(getListEmailTemplatesUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEmailTemplatesQueryKey = (projectId: string,) => {
+    return [
+    `/projects/${projectId}/email-templates`
+    ] as const;
+    }
+
+
+export const getListEmailTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listEmailTemplates>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailTemplates>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEmailTemplatesQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEmailTemplates>>> = ({ signal }) => listEmailTemplates(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEmailTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEmailTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listEmailTemplates>>>
+export type ListEmailTemplatesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List a project's effective email templates
+ */
+
+export function useListEmailTemplates<TData = Awaited<ReturnType<typeof listEmailTemplates>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailTemplates>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEmailTemplatesQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getEmailTemplateResponse200 = {
+  data: EffectiveEmailTemplate
+  status: 200
+}
+
+export type getEmailTemplateResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getEmailTemplateResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getEmailTemplateResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getEmailTemplateResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getEmailTemplateResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type getEmailTemplateResponseSuccess = (getEmailTemplateResponse200) & {
+  headers: Headers;
+};
+export type getEmailTemplateResponseError = (getEmailTemplateResponse401 | getEmailTemplateResponse403 | getEmailTemplateResponse404 | getEmailTemplateResponse500 | getEmailTemplateResponse503) & {
+  headers: Headers;
+};
+
+export type getEmailTemplateResponse = (getEmailTemplateResponseSuccess | getEmailTemplateResponseError)
+
+export const getGetEmailTemplateUrl = (projectId: string,
+    kind: 'verify' | 'reset',) => {
+
+
+
+
+  return `/projects/${projectId}/email-templates/${kind}`
+}
+
+/**
+ * Returns the effective template for one kind — the project's
+ * override when one exists, otherwise the baked-in default. The
+ * authenticated actor must be an admin or owner of the project.
+ * @summary Get a project's effective email template
+ */
+export const getEmailTemplate = async (projectId: string,
+    kind: 'verify' | 'reset', options?: Parameters<typeof customInstance>[1]): Promise<getEmailTemplateResponse> => {
+
+  return customInstance<getEmailTemplateResponse>(getGetEmailTemplateUrl(projectId,kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailTemplateQueryKey = (projectId: string,
+    kind: 'verify' | 'reset',) => {
+    return [
+    `/projects/${projectId}/email-templates/${kind}`
+    ] as const;
+    }
+
+
+export const getGetEmailTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getEmailTemplate>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string,
+    kind: 'verify' | 'reset', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailTemplateQueryKey(projectId,kind);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailTemplate>>> = ({ signal }) => getEmailTemplate(projectId,kind, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && kind !== null && kind !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailTemplate>>>
+export type GetEmailTemplateQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Get a project's effective email template
+ */
+
+export function useGetEmailTemplate<TData = Awaited<ReturnType<typeof getEmailTemplate>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ projectId: string,
+    kind: 'verify' | 'reset', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailTemplateQueryOptions(projectId,kind,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type putEmailTemplateResponse200 = {
+  data: EffectiveEmailTemplate
+  status: 200
+}
+
+export type putEmailTemplateResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type putEmailTemplateResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type putEmailTemplateResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type putEmailTemplateResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type putEmailTemplateResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type putEmailTemplateResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type putEmailTemplateResponseSuccess = (putEmailTemplateResponse200) & {
+  headers: Headers;
+};
+export type putEmailTemplateResponseError = (putEmailTemplateResponse400 | putEmailTemplateResponse401 | putEmailTemplateResponse403 | putEmailTemplateResponse404 | putEmailTemplateResponse500 | putEmailTemplateResponse503) & {
+  headers: Headers;
+};
+
+export type putEmailTemplateResponse = (putEmailTemplateResponseSuccess | putEmailTemplateResponseError)
+
+export const getPutEmailTemplateUrl = (projectId: string,
+    kind: 'verify' | 'reset',) => {
+
+
+
+
+  return `/projects/${projectId}/email-templates/${kind}`
+}
+
+/**
+ * Saves the project's override for one kind. The body is a Go
+ * template rendered with the same variables as the built-in
+ * defaults: `ActionURL`, `ProjectName`, `Expiry`, `ProjectDomain`,
+ * `Email`. The body must reference `{{.ActionURL}}` at least once
+ * (the actionable link always comes from IdentityX) and must render;
+ * violations are rejected with 422-style validation errors. The
+ * authenticated actor must be an admin or owner of the project.
+ * @summary Upsert a project's email template override
+ */
+export const putEmailTemplate = async (projectId: string,
+    kind: 'verify' | 'reset',
+    emailTemplateBody: EmailTemplateBody, options?: Parameters<typeof customInstance>[1]): Promise<putEmailTemplateResponse> => {
+
+  return customInstance<putEmailTemplateResponse>(getPutEmailTemplateUrl(projectId,kind),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(emailTemplateBody)
+  }
+);}
+
+
+
+
+
+export const getPutEmailTemplateMutationOptions = <TError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}, TContext> => {
+
+const mutationKey = ['putEmailTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}> = (props) => {
+          const {projectId,kind,data} = props ?? {};
+
+          return  putEmailTemplate(projectId,kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutEmailTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof putEmailTemplate>>>
+    export type PutEmailTemplateMutationBody = BodyType<EmailTemplateBody>
+    export type PutEmailTemplateMutationError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Upsert a project's email template override
+ */
+export const usePutEmailTemplate = <TError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putEmailTemplate>>,
+        TError,
+        {projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>},
+        TContext
+      > => {
+      return useMutation(getPutEmailTemplateMutationOptions(options));
+    }
+
+export type deleteEmailTemplateResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type deleteEmailTemplateResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteEmailTemplateResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deleteEmailTemplateResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type deleteEmailTemplateResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type deleteEmailTemplateResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type deleteEmailTemplateResponseSuccess = (deleteEmailTemplateResponse200) & {
+  headers: Headers;
+};
+export type deleteEmailTemplateResponseError = (deleteEmailTemplateResponse401 | deleteEmailTemplateResponse403 | deleteEmailTemplateResponse404 | deleteEmailTemplateResponse500 | deleteEmailTemplateResponse503) & {
+  headers: Headers;
+};
+
+export type deleteEmailTemplateResponse = (deleteEmailTemplateResponseSuccess | deleteEmailTemplateResponseError)
+
+export const getDeleteEmailTemplateUrl = (projectId: string,
+    kind: 'verify' | 'reset',) => {
+
+
+
+
+  return `/projects/${projectId}/email-templates/${kind}`
+}
+
+/**
+ * Removes the project's override for one kind, restoring the
+ * built-in default. Deleting a kind that has no override is a
+ * no-op. The authenticated actor must be an admin or owner of the
+ * project.
+ * @summary Delete a project's email template override
+ */
+export const deleteEmailTemplate = async (projectId: string,
+    kind: 'verify' | 'reset', options?: Parameters<typeof customInstance>[1]): Promise<deleteEmailTemplateResponse> => {
+
+  return customInstance<deleteEmailTemplateResponse>(getDeleteEmailTemplateUrl(projectId,kind),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteEmailTemplateMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset'}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset'}, TContext> => {
+
+const mutationKey = ['deleteEmailTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset'}> = (props) => {
+          const {projectId,kind} = props ?? {};
+
+          return  deleteEmailTemplate(projectId,kind,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteEmailTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEmailTemplate>>>
+
+    export type DeleteEmailTemplateMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Delete a project's email template override
+ */
+export const useDeleteEmailTemplate = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset'}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteEmailTemplate>>,
+        TError,
+        {projectId: string;kind: 'verify' | 'reset'},
+        TContext
+      > => {
+      return useMutation(getDeleteEmailTemplateMutationOptions(options));
+    }
 
 export type createAPIKeyResponse201 = {
   data: CreateAPIKeyResponse

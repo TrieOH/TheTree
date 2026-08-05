@@ -9,7 +9,7 @@ export default function ResendVerifyEmailWithProvider({
 }: ResendVerifyEmailWithProviderProps) {
   return (
     <AuthProvider baseURL="http://localhost:8080" isProjectMode={isProjectMode}>
-      <ResendVerifyEmail />
+      <ResendVerifyEmail email="user@example.com" />
     </AuthProvider>
   )
 }

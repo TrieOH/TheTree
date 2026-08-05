@@ -70,6 +70,7 @@ overrides:
   "@tanstack/query-core": "5.101.4"
   "@tanstack/router-core": "1.171.15"
   postcss: ">=8.5.18"
+  '@trieoh/identityx-sdk-ts': 'workspace:*'
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:

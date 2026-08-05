@@ -74,43 +74,14 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ActorType } from './actorType';
-import type { NullableUUID } from './nullableUUID';
-import type { SubjectCapabilities } from './subjectCapabilities';
-import type { SubjectMetadata } from './subjectMetadata';
-import type { Uuid } from './uuid';
 
 /**
- * The actor this identity resolves to. Mirrors `models.Subject`.
+ * Request body for `POST /auth/verify-email`.
  */
-export interface Subject {
-  /** Unique identifier of the actor. */
-  id: Uuid;
-  /** Project this actor is scoped to, if any. */
-  project_id?: NullableUUID | null;
+export interface VerifyEmailRequest {
   /**
-     * Actor's email address, if applicable for this actor type.
-     * @nullable
+     * The HMAC JWT from the verification link.
+     * @minLength 1
      */
-  email?: string | null;
-  type: ActorType;
-  /**
-     * When the actor's email was verified (via the verification link
-     * or an OAuth provider). Null means unverified; downstream
-     * applications decide what to do with it.
-     * @nullable
-     */
-  verified_at?: string | null;
-  /**
-     * Actor's capability grants as a JSON array of `resource:action`
-     * strings (JSON-encoded array carried in a JSON field). Shape is
-     * opaque to the API contract.
-     * @nullable
-     */
-  capabilities: SubjectCapabilities;
-  /**
-     * Arbitrary actor metadata, opaque to the API contract.
-     * @nullable
-     */
-  metadata?: SubjectMetadata;
+  token: string;
 }

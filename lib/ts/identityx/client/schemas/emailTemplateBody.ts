@@ -74,43 +74,24 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ActorType } from './actorType';
-import type { NullableUUID } from './nullableUUID';
-import type { SubjectCapabilities } from './subjectCapabilities';
-import type { SubjectMetadata } from './subjectMetadata';
-import type { Uuid } from './uuid';
 
 /**
- * The actor this identity resolves to. Mirrors `models.Subject`.
+ * Request body for `PUT /projects/{project_id}/email-templates/{kind}`.
  */
-export interface Subject {
-  /** Unique identifier of the actor. */
-  id: Uuid;
-  /** Project this actor is scoped to, if any. */
-  project_id?: NullableUUID | null;
+export interface EmailTemplateBody {
   /**
-     * Actor's email address, if applicable for this actor type.
-     * @nullable
+     * Email subject. A Go template rendered with the same variables
+     * as the body (`ActionURL`, `ProjectName`, `Expiry`,
+     * `ProjectDomain`, `Email`).
+     * @minLength 1
+     * @maxLength 200
      */
-  email?: string | null;
-  type: ActorType;
+  subject: string;
   /**
-     * When the actor's email was verified (via the verification link
-     * or an OAuth provider). Null means unverified; downstream
-     * applications decide what to do with it.
-     * @nullable
+     * HTML email body. A Go template rendered with the same
+     * variables; must include `{{.ActionURL}}` at least once — the
+     * actionable link always comes from IdentityX.
+     * @minLength 1
      */
-  verified_at?: string | null;
-  /**
-     * Actor's capability grants as a JSON array of `resource:action`
-     * strings (JSON-encoded array carried in a JSON field). Shape is
-     * opaque to the API contract.
-     * @nullable
-     */
-  capabilities: SubjectCapabilities;
-  /**
-     * Arbitrary actor metadata, opaque to the API contract.
-     * @nullable
-     */
-  metadata?: SubjectMetadata;
+  body: string;
 }
