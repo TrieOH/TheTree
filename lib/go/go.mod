@@ -6,10 +6,10 @@ require (
 	github.com/MintzyG/fun v0.10.6
 	github.com/MintzyG/fun/bind v0.1.1
 	github.com/MintzyG/fun/middlewares v0.1.3
-	github.com/aws/aws-sdk-go-v2 v1.43.3
-	github.com/aws/aws-sdk-go-v2/config v1.32.34
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.33
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.4
+	github.com/aws/aws-sdk-go-v2 v1.43.4
+	github.com/aws/aws-sdk-go-v2/config v1.32.35
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.34
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.5
 	github.com/exaring/otelpgx v0.11.1
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-playground/validator/v10 v10.30.3
@@ -18,8 +18,8 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/pressly/goose/v3 v3.27.3
 	github.com/prometheus/client_golang v1.24.1
-	github.com/riverqueue/river v0.42.0
-	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.42.0
+	github.com/riverqueue/river v0.43.0
+	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.43.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0
@@ -41,18 +41,18 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.16 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.34 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.34 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.34 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.35 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.35 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.35 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.35 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.36 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.27 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.34 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.5.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.33.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.45.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.28 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.36 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.5.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.33.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.45.4 // indirect
 	github.com/aws/smithy-go v1.27.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -102,9 +102,9 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	github.com/riverqueue/river/riverdriver v0.42.0 // indirect
-	github.com/riverqueue/river/rivershared v0.42.0 // indirect
-	github.com/riverqueue/river/rivertype v0.42.0 // indirect
+	github.com/riverqueue/river/riverdriver v0.43.0 // indirect
+	github.com/riverqueue/river/rivershared v0.43.0 // indirect
+	github.com/riverqueue/river/rivertype v0.43.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/sethvargo/go-retry v0.4.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.7 // indirect
@@ -120,7 +120,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
-	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
