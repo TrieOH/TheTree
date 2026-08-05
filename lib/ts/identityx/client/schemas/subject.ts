@@ -95,6 +95,13 @@ export interface Subject {
   email?: string | null;
   type: ActorType;
   /**
+     * When the actor's email was verified (via the verification link
+     * or an OAuth provider). Null means unverified; downstream
+     * applications decide what to do with it.
+     * @nullable
+     */
+  verified_at?: string | null;
+  /**
      * Actor's capability grants as a JSON array of `resource:action`
      * strings (JSON-encoded array carried in a JSON field). Shape is
      * opaque to the API contract.

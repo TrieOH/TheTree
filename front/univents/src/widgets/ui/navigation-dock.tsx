@@ -257,7 +257,11 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
 
   const mouseX = useMotionValue(0);
 
-  if (location.pathname.endsWith("/certifications/editor")) return null;
+  if (
+    location.pathname.endsWith("/certifications/editor") ||
+    location.pathname.endsWith("/badges/editor")
+  )
+    return null;
   if (location.pathname === "/profile/edit") return null;
   if (navItems.length === 0) return null;
 

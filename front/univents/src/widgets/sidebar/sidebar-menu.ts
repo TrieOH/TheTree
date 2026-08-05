@@ -1,5 +1,6 @@
 import {
   Activity,
+  BadgeCheck,
   Boxes,
   CalendarDays,
   FileText,
@@ -75,6 +76,14 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             to: "/admin/events/$eventId/editions/$editionId/products",
             params: { eventId, editionId },
             icon: Boxes,
+            exact: false,
+          },
+          {
+            id: "edition-badges",
+            label: "Crachás",
+            to: "/admin/events/$eventId/editions/$editionId/badges",
+            params: { eventId, editionId },
+            icon: BadgeCheck,
             exact: false,
           },
           {

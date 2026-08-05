@@ -4,11 +4,13 @@ import BasicSubmitButton from "../Form/BasicSubmitButton";
 import CardAvatar from "../Form/CardAvatar";
 
 export interface ResendVerifyEmailProps {
+  email: string;
   onSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
 }
 
 export function ResendVerifyEmail({
+  email,
   onSuccess,
   onFailed,
 }: ResendVerifyEmailProps) {
@@ -18,7 +20,7 @@ export function ResendVerifyEmail({
 
   const handleResend = async () => {
     setLoading(true);
-    const res = await auth.resendVerifyEmail();
+    const res = await auth.resendVerifyEmail(email);
     if (res.success) {
       setSent(true);
       if (onSuccess) await onSuccess(res.message);

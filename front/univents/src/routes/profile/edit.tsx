@@ -1,8 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ProfileData } from "@trieoh/identityx-sdk-ts";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useCallback } from "react";
 import { requireAuth } from "@/features/auths/lib/route-guard";
+import { profileKeys } from "@/features/profile/api/query-keys";
 import type { ProfileSchemaNode } from "@/features/profile/model/profile-data";
 import { ProfileEditor } from "@/features/profile/ui/profile-editor";
 
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/profile/edit")({
 
 function EditProfilePage() {
   const { auth } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const actorId = auth.profile()?.id;
   const load = useCallback(async () => {
@@ -47,11 +50,10 @@ function EditProfilePage() {
       load={load}
       save={save}
       onCancel={() => navigate({ to: "/profile" })}
-      onSaved={(profile) => {
-        window.dispatchEvent(
-          new CustomEvent("univents:profile-updated", { detail: profile }),
-        );
-        void navigate({ to: "/profile" });
+      onSaved={() => {
+        void queryClient
+          .invalidateQueries({ queryKey: profileKeys.all, refetchType: "all" })
+          .then(() => navigate({ to: "/profile" }));
       }}
     />
   );

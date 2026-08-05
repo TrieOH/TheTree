@@ -112,35 +112,42 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
   sendForgotPassword: async (email: string) => {
     const options = { requiresAuth: false };
-    if (env.PROJECT_ID) {
-      validateProjectKey();
-      return apiInstance.post<void>(
-        "/account/forgot-password",
-        { email, project_id: env.PROJECT_ID },
-        options
-      );
-    }
-    return apiInstance.post<void>("/account/forgot-password", { email }, options);
+    if (env.PROJECT_ID) validateProjectKey();
+    return apiInstance.post<void>(
+      "/auth/forgot-password",
+      { email, ...(env.PROJECT_ID ? { project_id: env.PROJECT_ID } : {}) },
+      options,
+    );
   },
 
-  resetPassword: async (token: string, new_password: string) => {
+  resetPassword: async (token: string, password: string) => {
     const res = await apiInstance.post<void>(
-      `/account/reset-password?token=${token}`,
-      { new_password },
-      { requiresAuth: false }
+      "/auth/reset-password",
+      { token, password },
+      { requiresAuth: false },
     );
     if (res.success) callbacks?.onResetPassword?.(res);
     return res;
   },
 
   verifyEmail: async (token: string) => {
-    const url = `/account/verify?token=${token}`;
-    const res = await apiInstance.post<void>(url);
+    const res = await apiInstance.post<void>(
+      "/auth/verify-email",
+      { token },
+      { requiresAuth: false },
+    );
     if (res.success) callbacks?.onVerify?.(res);
     return res;
   },
 
-  resendVerifyEmail: async () => apiInstance.post<void>("/account/verify/resend"),
+  resendVerifyEmail: async (email: string) => {
+    if (env.PROJECT_ID) validateProjectKey();
+    return apiInstance.post<void>(
+      "/auth/resend-verification",
+      { email, ...(env.PROJECT_ID ? { project_id: env.PROJECT_ID } : {}) },
+      { requiresAuth: false },
+    );
+  },
 
   introspect: async (apiKey?: string) => {
     return apiInstance.get<IntrospectResponse>("/auth/introspect", {

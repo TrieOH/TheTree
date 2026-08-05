@@ -10,6 +10,7 @@ export const Route = createFileRoute("/profile/$actorId")({
 function PublicProfilePage() {
   const { actorId } = Route.useParams();
   const { auth } = useAuth();
+  const viewerActorId = auth.profile()?.id;
   const navigate = useNavigate();
   const loadProfile = useCallback(
     async (identifier: string) => {
@@ -34,5 +35,11 @@ function PublicProfilePage() {
     },
     [auth, navigate],
   );
-  return <ProfileView actorId={actorId} loadProfile={loadProfile} />;
+  return (
+    <ProfileView
+      actorId={actorId}
+      loadProfile={loadProfile}
+      viewerActorId={viewerActorId}
+    />
+  );
 }

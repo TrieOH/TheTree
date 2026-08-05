@@ -36,7 +36,7 @@ export function ModernVerifyEmail({
       const res = await auth.verifyEmail(token);
 
       if (res.success) {
-        await auth.refresh();
+        await auth.refresh().catch(() => undefined);
         setStatus("success");
         setMessage(res.message || "E-mail verificado com sucesso!");
         if (onSuccess) await onSuccess(res.message);

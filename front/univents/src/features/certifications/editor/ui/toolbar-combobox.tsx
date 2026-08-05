@@ -114,6 +114,7 @@ export function ToolbarCombobox({
         <div
           className={cn(
             "absolute top-full left-0 z-50 mt-1 w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
+            iconOnly && "w-64 max-w-none",
             dropdownClassName,
           )}
         >
@@ -122,7 +123,7 @@ export function ToolbarCombobox({
             <input
               value={query}
               placeholder={searchPlaceholder}
-              className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+              className="h-7 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "ArrowDown") {
@@ -157,7 +158,7 @@ export function ToolbarCombobox({
                     role="option"
                     aria-selected={option.value === value}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors",
+                      "flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors",
                       index === highlightedIndex
                         ? "bg-primary/10"
                         : "hover:bg-muted",
@@ -168,7 +169,7 @@ export function ToolbarCombobox({
                     <span className="min-w-0">
                       <span className="block truncate">{option.label}</span>
                       {option.description ? (
-                        <span className="block truncate text-[10px] text-muted-foreground">
+                        <span className="block truncate text-xs text-muted-foreground">
                           {option.description}
                         </span>
                       ) : null}

@@ -19,6 +19,7 @@ export interface TokenSubject {
   id: string;
   project_id: string | null;
   email: string | null;
+  verified_at: string | null;
   type: ActorType;
   capabilities: { [key: string]: JsonValue } | null;
   metadata: { [key: string]: JsonValue } | null;

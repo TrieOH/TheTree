@@ -54,6 +54,24 @@ export interface ValidationError {
 
 export const DEFAULT_VARIABLES: VariableDefinition[] = [
   {
+    key: "participant_name",
+    label: "Nome completo do participante",
+    description: "Nome legal informado no perfil do participante",
+    defaultValue: "NOME DO PARTICIPANTE",
+  },
+  {
+    key: "event_name",
+    label: "Nome do evento",
+    description: "Nome do evento",
+    defaultValue: "EVENTO",
+  },
+  {
+    key: "edition_name",
+    label: "Nome da edição",
+    description: "Nome da edição do evento",
+    defaultValue: "Edição",
+  },
+  {
     key: "activity_name",
     label: "Nome da atividade/edição",
     description: "Nome da atividade ou edição",
@@ -64,6 +82,18 @@ export const DEFAULT_VARIABLES: VariableDefinition[] = [
     label: "Data de certificação",
     description: "Data em que o certificado foi emitido",
     defaultValue: "",
+  },
+  {
+    key: "participation_type",
+    label: "Tipo de participação",
+    description: "Edição ou atividade",
+    defaultValue: "edição",
+  },
+  {
+    key: "location",
+    label: "Local",
+    description: "Local informado na edição",
+    defaultValue: "LOCAL",
   },
   {
     key: "cert_hash",

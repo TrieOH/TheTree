@@ -6,6 +6,7 @@ import {
   IdCard,
   KeySquare,
   Link2,
+  Mail,
   User2,
 } from "lucide-react";
 import { useState } from "react";
@@ -68,6 +69,13 @@ function ProjectLayout() {
       to: "/admin/projects/$projectID/profiles",
       params: { projectID },
       icon: IdCard,
+      exact: true,
+    },
+    {
+      label: "Emails",
+      to: "/admin/projects/$projectID/emails",
+      params: { projectID },
+      icon: Mail,
       exact: true,
     },
   ];

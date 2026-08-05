@@ -19,28 +19,14 @@ export interface UniventsProfile {
   pfpUrl?: string | null;
   bannerUrl?: string | null;
   aboutMe?: string;
-  tagline?: string;
   website?: string | null;
   pronouns?: string;
   timezone?: string;
   contactEmail?: string | null;
   organization?: string;
   languages?: string[];
-  specializations?: string[];
-  location?: {
-    city?: string;
-    region?: string;
-    country?: string;
-    countryCode?: string;
-  };
   socials?: Record<string, string | null | undefined>;
-  visibility?: {
-    hideSocials?: boolean;
-    hideLocation?: boolean;
-    hideLegalName?: boolean;
-    hideContactEmail?: boolean;
-    hideOrganization?: boolean;
-  };
+  visibility?: { hideLegalName?: boolean };
   createdAt?: string;
   updatedAt?: string;
   profileCompleteness?: number;
@@ -68,12 +54,7 @@ export function profileCompleteness(profile: UniventsProfile): number {
     Boolean(profile.bannerUrl),
     Boolean(profile.aboutMe),
     Boolean(profile.role || profile.organization),
-    Boolean(
-      profile.location?.city ||
-        profile.location?.region ||
-        profile.location?.country,
-    ),
-    Boolean(profile.specializations?.length || profile.languages?.length),
+    Boolean(profile.languages?.length),
     Boolean(profile.website || profile.contactEmail || hasSocial),
   ];
 
@@ -132,6 +113,7 @@ export function socialHref(network: string, value: string): string {
     youtube: "https://youtube.com/@",
     linkedin: "https://linkedin.com/in/",
     instagram: "https://instagram.com/",
+    discord: "https://discord.com/users/",
   };
   return bases[network] ? `${bases[network]}${handle}` : value;
 }

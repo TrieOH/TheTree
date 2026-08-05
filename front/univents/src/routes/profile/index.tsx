@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useCallback } from "react";
 import { requireAuth } from "@/features/auths/lib/route-guard";
@@ -11,10 +11,21 @@ export const Route = createFileRoute("/profile/")({
 
 function MyProfilePage() {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const actorId = auth.profile()?.id;
   const loadProfile = useCallback(
-    (id: string) => auth.getActorProfile(id),
-    [auth],
+    async (id: string) => {
+      const response = await auth.getActorProfile(id);
+      if (response.success && response.data) {
+        await navigate({
+          to: "/profile/$actorId",
+          params: { actorId: response.data.handle || id },
+          replace: true,
+        });
+      }
+      return response;
+    },
+    [auth, navigate],
   );
 
   return <ProfileView actorId={actorId} loadProfile={loadProfile} ownProfile />;

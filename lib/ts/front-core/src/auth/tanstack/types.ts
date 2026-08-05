@@ -6,6 +6,7 @@ export interface BffIntrospectResponse {
     id: string;
     project_id?: string;
     email?: string;
+    verified_at?: string;
     type: "human" | "service" | "machine";
     capabilities: Record<string, SerializableValue>;
     metadata: Record<string, SerializableValue>;
