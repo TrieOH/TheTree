@@ -111,6 +111,9 @@ import type {
   AddEventMemberRequest,
   AddSignatureRequest,
   BadRequestResponse,
+  BadgeEditionEmission,
+  BadgePrintItem,
+  BadgeProfileGroups,
   BadgeTemplate,
   CancelSignatureRequestBody,
   CertEmissionError,
@@ -137,6 +140,7 @@ import type {
   ForbiddenResponse,
   FulfillSignatureRequestBody,
   FulfillSignatureRequestParams,
+  GetEditionBadgesPrintParams,
   GetHealth200,
   InternalServerErrorResponse,
   InvalidCertReason,
@@ -158,6 +162,7 @@ import type {
   SignatureRequest,
   TicketType,
   UnauthorizedResponse,
+  UpdateBadgeTemplateRequest,
   UpdateCertificationTemplateRequest,
   Uuid,
   VerifyCertResponse
@@ -5762,6 +5767,471 @@ export const useDeleteBadgeTemplate = <TError = ErrorType<UnauthorizedResponse |
       > => {
       return useMutation(getDeleteBadgeTemplateMutationOptions(options));
     }
+
+export type updateBadgeTemplateResponse200 = {
+  data: BadgeTemplate
+  status: 200
+}
+
+export type updateBadgeTemplateResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type updateBadgeTemplateResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateBadgeTemplateResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateBadgeTemplateResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateBadgeTemplateResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type updateBadgeTemplateResponseSuccess = (updateBadgeTemplateResponse200) & {
+  headers: Headers;
+};
+export type updateBadgeTemplateResponseError = (updateBadgeTemplateResponse400 | updateBadgeTemplateResponse401 | updateBadgeTemplateResponse403 | updateBadgeTemplateResponse404 | updateBadgeTemplateResponse500) & {
+  headers: Headers;
+};
+
+export type updateBadgeTemplateResponse = (updateBadgeTemplateResponseSuccess | updateBadgeTemplateResponseError)
+
+export const getUpdateBadgeTemplateUrl = (templateId: Uuid,) => {
+
+
+
+
+  return `/badges/${templateId}`
+}
+
+/**
+ * Updates a badge template's name and/or design data. The target
+ * ticket type is immutable — move a template by deleting and
+ * recreating it. Designs are read live, so emissions re-render
+ * automatically; no emails are sent. The actor must be an owner or
+ * admin of the event.
+ * @summary Update a badge template
+ */
+export const updateBadgeTemplate = async (templateId: Uuid,
+    updateBadgeTemplateRequest: UpdateBadgeTemplateRequest, options?: Parameters<typeof customInstance>[1]): Promise<updateBadgeTemplateResponse> => {
+
+  return customInstance<updateBadgeTemplateResponse>(getUpdateBadgeTemplateUrl(templateId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateBadgeTemplateRequest)
+  }
+);}
+
+
+
+
+
+export const getUpdateBadgeTemplateMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBadgeTemplate>>, TError,{templateId: Uuid;data: BodyType<UpdateBadgeTemplateRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBadgeTemplate>>, TError,{templateId: Uuid;data: BodyType<UpdateBadgeTemplateRequest>}, TContext> => {
+
+const mutationKey = ['updateBadgeTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBadgeTemplate>>, {templateId: Uuid;data: BodyType<UpdateBadgeTemplateRequest>}> = (props) => {
+          const {templateId,data} = props ?? {};
+
+          return  updateBadgeTemplate(templateId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBadgeTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof updateBadgeTemplate>>>
+    export type UpdateBadgeTemplateMutationBody = BodyType<UpdateBadgeTemplateRequest>
+    export type UpdateBadgeTemplateMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Update a badge template
+ */
+export const useUpdateBadgeTemplate = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBadgeTemplate>>, TError,{templateId: Uuid;data: BodyType<UpdateBadgeTemplateRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBadgeTemplate>>,
+        TError,
+        {templateId: Uuid;data: BodyType<UpdateBadgeTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateBadgeTemplateMutationOptions(options));
+    }
+
+export type listUserBadgesResponse200 = {
+  data: BadgeProfileGroups
+  status: 200
+}
+
+export type listUserBadgesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listUserBadgesResponseSuccess = (listUserBadgesResponse200) & {
+  headers: Headers;
+};
+export type listUserBadgesResponseError = (listUserBadgesResponse500) & {
+  headers: Headers;
+};
+
+export type listUserBadgesResponse = (listUserBadgesResponseSuccess | listUserBadgesResponseError)
+
+export const getListUserBadgesUrl = (userId: Uuid,) => {
+
+
+
+
+  return `/users/${userId}/badges`
+}
+
+/**
+ * Lists a user's active badges grouped by origin (attendant,
+ * staff), each split into current and past editions. Public —
+ * badges are meant to be shown on profiles.
+ * @summary List a user's badges
+ */
+export const listUserBadges = async (userId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<listUserBadgesResponse> => {
+
+  return customInstance<listUserBadgesResponse>(getListUserBadgesUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListUserBadgesQueryKey = (userId: Uuid,) => {
+    return [
+    `/users/${userId}/badges`
+    ] as const;
+    }
+
+
+export const getListUserBadgesQueryOptions = <TData = Awaited<ReturnType<typeof listUserBadges>>, TError = ErrorType<InternalServerErrorResponse>>(userId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUserBadges>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUserBadgesQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUserBadges>>> = ({ signal }) => listUserBadges(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUserBadges>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListUserBadgesQueryResult = NonNullable<Awaited<ReturnType<typeof listUserBadges>>>
+export type ListUserBadgesQueryError = ErrorType<InternalServerErrorResponse>
+
+
+/**
+ * @summary List a user's badges
+ */
+
+export function useListUserBadges<TData = Awaited<ReturnType<typeof listUserBadges>>, TError = ErrorType<InternalServerErrorResponse>>(
+ userId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUserBadges>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListUserBadgesQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listEditionBadgeEmissionsResponse200 = {
+  data: BadgeEditionEmission[]
+  status: 200
+}
+
+export type listEditionBadgeEmissionsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listEditionBadgeEmissionsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listEditionBadgeEmissionsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listEditionBadgeEmissionsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listEditionBadgeEmissionsResponseSuccess = (listEditionBadgeEmissionsResponse200) & {
+  headers: Headers;
+};
+export type listEditionBadgeEmissionsResponseError = (listEditionBadgeEmissionsResponse401 | listEditionBadgeEmissionsResponse403 | listEditionBadgeEmissionsResponse404 | listEditionBadgeEmissionsResponse500) & {
+  headers: Headers;
+};
+
+export type listEditionBadgeEmissionsResponse = (listEditionBadgeEmissionsResponseSuccess | listEditionBadgeEmissionsResponseError)
+
+export const getListEditionBadgeEmissionsUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/badges/emissions`
+}
+
+/**
+ * Lists every badge emission of the edition (active and revoked)
+ * for browsing. Holder names are derived by the front from
+ * IdentityX profiles. The actor must be an owner or admin of the
+ * event.
+ * @summary List an edition's badge emissions
+ */
+export const listEditionBadgeEmissions = async (editionId: string, options?: Parameters<typeof customInstance>[1]): Promise<listEditionBadgeEmissionsResponse> => {
+
+  return customInstance<listEditionBadgeEmissionsResponse>(getListEditionBadgeEmissionsUrl(editionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEditionBadgeEmissionsQueryKey = (editionId: string,) => {
+    return [
+    `/editions/${editionId}/badges/emissions`
+    ] as const;
+    }
+
+
+export const getListEditionBadgeEmissionsQueryOptions = <TData = Awaited<ReturnType<typeof listEditionBadgeEmissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditionBadgeEmissions>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEditionBadgeEmissionsQueryKey(editionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEditionBadgeEmissions>>> = ({ signal }) => listEditionBadgeEmissions(editionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEditionBadgeEmissions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEditionBadgeEmissionsQueryResult = NonNullable<Awaited<ReturnType<typeof listEditionBadgeEmissions>>>
+export type ListEditionBadgeEmissionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary List an edition's badge emissions
+ */
+
+export function useListEditionBadgeEmissions<TData = Awaited<ReturnType<typeof listEditionBadgeEmissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditionBadgeEmissions>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEditionBadgeEmissionsQueryOptions(editionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getEditionBadgesPrintResponse200 = {
+  data: BadgePrintItem[]
+  status: 200
+}
+
+export type getEditionBadgesPrintResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getEditionBadgesPrintResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getEditionBadgesPrintResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getEditionBadgesPrintResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getEditionBadgesPrintResponseSuccess = (getEditionBadgesPrintResponse200) & {
+  headers: Headers;
+};
+export type getEditionBadgesPrintResponseError = (getEditionBadgesPrintResponse401 | getEditionBadgesPrintResponse403 | getEditionBadgesPrintResponse404 | getEditionBadgesPrintResponse500) & {
+  headers: Headers;
+};
+
+export type getEditionBadgesPrintResponse = (getEditionBadgesPrintResponseSuccess | getEditionBadgesPrintResponseError)
+
+export const getGetEditionBadgesPrintUrl = (editionId: string,
+    params?: GetEditionBadgesPrintParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["emission_ids"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
+
+
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/editions/${editionId}/badges/print?${stringifiedParams}` : `/editions/${editionId}/badges/print`
+}
+
+/**
+ * Returns the print payload for the edition's active emissions
+ * (all by default, or a specific set via emission_ids): the design
+ * plus the variables resolved from Univents' own data (event and
+ * edition names, ticket name, action URL). Holder names are
+ * derived by the front from IdentityX profiles. The actor must be
+ * an owner or admin of the event.
+ * @summary Get badge print data
+ */
+export const getEditionBadgesPrint = async (editionId: string,
+    params?: GetEditionBadgesPrintParams, options?: Parameters<typeof customInstance>[1]): Promise<getEditionBadgesPrintResponse> => {
+
+  return customInstance<getEditionBadgesPrintResponse>(getGetEditionBadgesPrintUrl(editionId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEditionBadgesPrintQueryKey = (editionId: string,
+    params?: GetEditionBadgesPrintParams,) => {
+    return [
+    `/editions/${editionId}/badges/print`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEditionBadgesPrintQueryOptions = <TData = Awaited<ReturnType<typeof getEditionBadgesPrint>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(editionId: string,
+    params?: GetEditionBadgesPrintParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEditionBadgesPrint>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEditionBadgesPrintQueryKey(editionId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEditionBadgesPrint>>> = ({ signal }) => getEditionBadgesPrint(editionId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEditionBadgesPrint>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEditionBadgesPrintQueryResult = NonNullable<Awaited<ReturnType<typeof getEditionBadgesPrint>>>
+export type GetEditionBadgesPrintQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary Get badge print data
+ */
+
+export function useGetEditionBadgesPrint<TData = Awaited<ReturnType<typeof getEditionBadgesPrint>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string,
+    params?: GetEditionBadgesPrintParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEditionBadgesPrint>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEditionBadgesPrintQueryOptions(editionId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type listEditionSignaturesResponse200 = {
   data: Signature[]
