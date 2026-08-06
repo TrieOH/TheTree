@@ -2,6 +2,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useAuthActions } from "@trieoh/front-core";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { Logo } from "@/shared/ui/logo";
 import { useSidebar } from "../hooks/use-sidebar";
 import { getAdminShellLabel, getAdminSidebarSections } from "../sidebar-menu";
 import { SidebarItem } from "./sidebar-item";
@@ -46,13 +47,24 @@ export function Sidebar() {
               collapsed ? "lg:pointer-events-none lg:opacity-0" : "opacity-100",
             )}
           >
-            <p className="truncate text-sm font-semibold text-foreground">
-              <span className="mr-2 text-xs uppercase tracking-[0.28em] text-primary">
-                Univents
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 shrink-0 transition-all duration-300">
+                <Logo
+                  variant="icon"
+                  imgClassName="object-left"
+                />
+              </div>
+              <span className={cn(
+                "text-muted-foreground/70 transition-opacity",
+                collapsed && "hidden"
+              )}>·</span>
+              <span className={cn(
+                "ml-2 text-sm font-semibold truncate transition-opacity",
+                collapsed && "hidden"
+              )}>
+                {getAdminShellLabel(pathname).title}
               </span>
-              <span className="text-muted-foreground/70">·</span>
-              <span className="ml-2">{getAdminShellLabel(pathname).title}</span>
-            </p>
+            </div>
           </div>
 
           <button
