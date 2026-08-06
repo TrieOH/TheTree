@@ -2,7 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/shared/lib/errors";
 import type { BadgeTemplateCreate } from "../model";
-import { createBadgeTemplateFn, deleteBadgeTemplateFn } from ".";
+import {
+  createBadgeTemplateFn,
+  deleteBadgeTemplateFn,
+  updateBadgeTemplateFn,
+} from ".";
 import { badgeKeys } from "./query-keys";
 
 export function useCreateBadgeTemplateMutation() {
@@ -23,6 +27,31 @@ export function useCreateBadgeTemplateMutation() {
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, "Não foi possível criar o template")),
+  });
+}
+
+export function useUpdateBadgeTemplateMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      templateId,
+      data,
+    }: {
+      templateId: string;
+      editionId: string;
+      data: BadgeTemplateCreate;
+    }) => updateBadgeTemplateFn(templateId, data),
+    onSuccess: (_, { editionId, templateId }) => {
+      void client.invalidateQueries({
+        queryKey: badgeKeys.byEdition(editionId),
+      });
+      void client.invalidateQueries({ queryKey: badgeKeys.detail(templateId) });
+      toast.success("Template de crachá atualizado");
+    },
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível atualizar o template"),
+      ),
   });
 }
 

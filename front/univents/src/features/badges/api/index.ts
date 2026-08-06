@@ -5,9 +5,19 @@ import {
   createBadgeTemplate,
   deleteBadgeTemplate,
   getBadgeTemplate,
+  getEditionBadgesPrint,
   listBadgeTemplates,
+  listEditionBadgeEmissions,
+  listUserBadges,
+  updateBadgeTemplate,
 } from "@trieoh/univents-api";
-import type { BadgeTemplate, BadgeTemplateCreate } from "../model";
+import type {
+  BadgeEditionEmission,
+  BadgePrintItem,
+  BadgeProfileGroups,
+  BadgeTemplate,
+  BadgeTemplateCreate,
+} from "../model";
 import { badgeKeys } from "./query-keys";
 
 export const listBadgeTemplatesFn = createClientOnlyFn((editionId: string) =>
@@ -28,8 +38,50 @@ export const badgeTemplateQueryOptions = (templateId: string) =>
   });
 export const createBadgeTemplateFn = createClientOnlyFn(
   (editionId: string, data: BadgeTemplateCreate) =>
-    createBadgeTemplate(editionId, data).then(orvalData<BadgeTemplate>),
+    createBadgeTemplate(editionId, {
+      ...data,
+      origin: data.origin ?? null,
+    }).then(orvalData<BadgeTemplate>),
+);
+export const updateBadgeTemplateFn = createClientOnlyFn(
+  (templateId: string, data: BadgeTemplateCreate) =>
+    updateBadgeTemplate(templateId, {
+      name: data.name,
+      design_data: data.design_data,
+    }).then(orvalData<BadgeTemplate>),
 );
 export const deleteBadgeTemplateFn = createClientOnlyFn((templateId: string) =>
   deleteBadgeTemplate(templateId).then(orvalData<null>),
 );
+
+export const userBadgesQueryOptions = (userId: string) =>
+  queryOptions({
+    queryKey: badgeKeys.user(userId),
+    enabled: Boolean(userId),
+    queryFn: () =>
+      listUserBadges(userId, { public: true }).then(
+        orvalData<BadgeProfileGroups>,
+      ),
+  });
+
+export const badgeEmissionsQueryOptions = (editionId: string) =>
+  queryOptions({
+    queryKey: badgeKeys.emissions(editionId),
+    queryFn: () =>
+      listEditionBadgeEmissions(editionId).then(
+        orvalData<BadgeEditionEmission[]>,
+      ),
+  });
+
+export const badgePrintQueryOptions = (
+  editionId: string,
+  emissionIds?: string[],
+) =>
+  queryOptions({
+    queryKey: badgeKeys.print(editionId, emissionIds),
+    enabled: false,
+    queryFn: () =>
+      getEditionBadgesPrint(editionId, { emission_ids: emissionIds }).then(
+        orvalData<BadgePrintItem[]>,
+      ),
+  });

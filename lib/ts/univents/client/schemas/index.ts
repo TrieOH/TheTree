@@ -112,6 +112,7 @@ export * from './badgeProfileBadgeOrigin';
 export * from './badgeProfileGroups';
 export * from './badgeTemplate';
 export * from './badgeTemplateDesignData';
+export * from './badgeTemplateOrigin';
 export * from './badRequestResponse';
 export * from './cancelSignatureRequestBody';
 export * from './certEmissionError';

@@ -1,5 +1,12 @@
 import z from "zod";
 
+export type {
+  BadgeEditionEmission,
+  BadgePrintItem,
+  BadgeProfileBadge,
+  BadgeProfileGroups,
+} from "@trieoh/univents-api/schemas";
+
 const bounds = z.object({
   id: z.string(),
   x: z.number(),
@@ -61,6 +68,7 @@ export const badgeDesignSchema = z.object({
 export const badgeTemplateCreateSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   ticket_type_id: z.string().nullable(),
+  origin: z.enum(["staff"]).nullable().optional(),
   design_data: badgeDesignSchema,
 });
 

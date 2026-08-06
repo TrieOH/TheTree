@@ -88,7 +88,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <AuthContextUpdater>
                   <UploadQueueProvider>
                     {children}
-                    <NavigationDock />
+                    <NavigationDock className="print:hidden" />
                   </UploadQueueProvider>
                   <TanStackDevtools
                     config={{

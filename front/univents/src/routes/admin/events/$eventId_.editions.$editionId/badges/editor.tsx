@@ -3,9 +3,21 @@ import { BadgeEditor } from "@/features/badges/editor/badge-editor";
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/editor",
-)({ component: RouteComponent });
+)({
+  validateSearch: (search: Record<string, unknown>) => ({
+    templateId: typeof search.templateId === "string" ? search.templateId : "",
+  }),
+  component: RouteComponent,
+});
 
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams();
-  return <BadgeEditor eventId={eventId} editionId={editionId} />;
+  const { templateId } = Route.useSearch();
+  return (
+    <BadgeEditor
+      eventId={eventId}
+      editionId={editionId}
+      templateId={templateId || undefined}
+    />
+  );
 }

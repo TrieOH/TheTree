@@ -3,18 +3,19 @@ import type { BadgeTemplateCreate } from "./model";
 export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
   name: "Crachá padrão",
   ticket_type_id: null,
+  origin: null,
   design_data: {
-    canvas: { width: 638, height: 1011 },
+    canvas: { width: 321, height: 204 },
     backgroundColor: "#ffffff",
     background: null,
     elements: [
       {
         id: "default-event",
         type: "text",
-        x: 64,
-        y: 90,
-        width: 510,
-        height: 80,
+        x: 32,
+        y: 18,
+        width: 257,
+        height: 20,
         paragraphs: [
           {
             align: "center",
@@ -22,7 +23,7 @@ export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
             runs: [
               {
                 text: "{{event_name}}",
-                fontSize: 28,
+                fontSize: 9,
                 fontFamily: "Inter, sans-serif",
                 color: "#64748b",
                 bold: true,
@@ -36,10 +37,10 @@ export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
       {
         id: "default-name",
         type: "text",
-        x: 54,
-        y: 390,
-        width: 530,
-        height: 130,
+        x: 27,
+        y: 78,
+        width: 267,
+        height: 30,
         paragraphs: [
           {
             align: "center",
@@ -47,7 +48,7 @@ export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
             runs: [
               {
                 text: "{{participant_name}}",
-                fontSize: 48,
+                fontSize: 18,
                 fontFamily: "Inter, sans-serif",
                 color: "#0f172a",
                 bold: true,
@@ -61,10 +62,10 @@ export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
       {
         id: "default-ticket",
         type: "text",
-        x: 84,
-        y: 535,
-        width: 470,
-        height: 60,
+        x: 42,
+        y: 112,
+        width: 237,
+        height: 16,
         paragraphs: [
           {
             align: "center",
@@ -72,7 +73,7 @@ export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
             runs: [
               {
                 text: "{{ticket_name}}",
-                fontSize: 24,
+                fontSize: 10,
                 fontFamily: "Inter, sans-serif",
                 color: "#475569",
                 bold: false,
@@ -86,10 +87,10 @@ export const DEFAULT_BADGE_TEMPLATE: BadgeTemplateCreate = {
       {
         id: "default-qr",
         type: "qr",
-        x: 219,
-        y: 720,
-        width: 200,
-        height: 200,
+        x: 140,
+        y: 148,
+        width: 44,
+        height: 44,
         value: "{{checkin_url}}",
         foreground: "#0f172a",
         background: "#ffffff",

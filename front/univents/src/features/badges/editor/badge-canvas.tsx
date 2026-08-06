@@ -162,6 +162,7 @@ export function BadgeCanvas({
     const target = event.target as HTMLElement;
     if (target.closest("[data-badge-element], [data-canvas-controls]")) return;
     onSelect(null);
+    setEditingId(null);
     panStart.current = {
       pointerX: event.clientX,
       pointerY: event.clientY,
@@ -259,7 +260,10 @@ export function BadgeCanvas({
               canvas={design.canvas}
               selected={selectedId === element.id}
               editing={editingId === element.id}
-              onSelect={() => onSelect(element.id)}
+              onSelect={() => {
+                if (editingId && editingId !== element.id) setEditingId(null);
+                onSelect(element.id);
+              }}
               onDoubleClick={
                 element.type === "text"
                   ? () => setEditingId(element.id)

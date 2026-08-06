@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  BadgeCheck,
   ImageIcon,
   Loader2,
   Monitor,
@@ -11,9 +12,11 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { badgeTemplateQueryOptions } from "@/features/badges/api";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
 import { Label } from "@/shared/ui/shadcn/label";
@@ -23,7 +26,10 @@ import type {
 } from "../../certifications/editor/store";
 import { RichTextToolbar } from "../../certifications/editor/ui/certificate-text-toolbar";
 import { ToolbarCombobox } from "../../certifications/editor/ui/toolbar-combobox";
-import { useCreateBadgeTemplateMutation } from "../api/mutations";
+import {
+  useCreateBadgeTemplateMutation,
+  useUpdateBadgeTemplateMutation,
+} from "../api/mutations";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
 import type { BadgeElement, BadgeTemplateCreate } from "../model";
 import { badgeTemplateCreateSchema } from "../model";
@@ -48,17 +54,40 @@ const VARIABLE_OPTIONS = VARIABLES.map(([value, label, description]) => ({
 }));
 
 const uid = () => crypto.randomUUID();
+const PX_PER_MM = 96 / 25.4;
+const pxToMm = (value: number) => Number((value / PX_PER_MM).toFixed(1));
+const mmToPx = (value: number) => Math.round(value * PX_PER_MM);
 
 const BADGE_SIZE_PRESETS = [
-  { value: "portrait", label: "Vertical (638×1011)", width: 638, height: 1011 },
+  {
+    value: "portrait",
+    label: "Vertical (54 × 85 mm)",
+    width: 204,
+    height: 321,
+  },
   {
     value: "landscape",
-    label: "Horizontal (1011×638)",
-    width: 1011,
-    height: 638,
+    label: "Horizontal (85 × 54 mm)",
+    width: 321,
+    height: 204,
   },
-  { value: "square", label: "Quadrado (800×800)", width: 800, height: 800 },
+  {
+    value: "square",
+    label: "Quadrado (60 × 60 mm)",
+    width: 227,
+    height: 227,
+  },
 ] as const;
+
+function layerLabel(element: BadgeElement) {
+  if (element.type === "image") return "Imagem";
+  if (element.type === "qr") return "QR Code";
+  const text = element.paragraphs
+    .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
+    .join("")
+    .trim();
+  return text || "Texto vazio";
+}
 
 function readImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -72,12 +101,19 @@ function readImage(file: File): Promise<string> {
 export function BadgeEditor({
   eventId,
   editionId,
+  templateId,
 }: {
   eventId: string;
   editionId: string;
+  templateId?: string;
 }) {
   const navigate = useNavigate();
   const createMutation = useCreateBadgeTemplateMutation();
+  const updateMutation = useUpdateBadgeTemplateMutation();
+  const templateQuery = useQuery({
+    ...badgeTemplateQueryOptions(templateId ?? ""),
+    enabled: Boolean(templateId),
+  });
   const { data: tickets = [] } = useQuery(allTicketsQueryOptions(editionId));
   const [draft, setDraft] = useState<BadgeTemplateCreate>(() =>
     structuredClone(DEFAULT_BADGE_TEMPLATE),
@@ -90,6 +126,12 @@ export function BadgeEditor({
     useState<CertificateTextSelectionStyles | null>(null);
   const selected =
     draft.design_data.elements.find((item) => item.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (templateQuery.data) {
+      setDraft(structuredClone(templateQuery.data));
+    }
+  }, [templateQuery.data]);
 
   const updateDesign = useCallback(
     (changes: Partial<BadgeTemplateCreate["design_data"]>) =>
@@ -112,6 +154,34 @@ export function BadgeEditor({
       })),
     [],
   );
+  const resizeCanvas = (canvas: { width: number; height: number }) => {
+    const previous = draft.design_data.canvas;
+    if (canvas.width < 200 || canvas.height < 200) return;
+    const scaleX = canvas.width / previous.width;
+    const scaleY = canvas.height / previous.height;
+    const fontScale = Math.sqrt(scaleX * scaleY);
+    updateDesign({
+      canvas,
+      elements: draft.design_data.elements.map((element) => ({
+        ...element,
+        x: element.x * scaleX,
+        y: element.y * scaleY,
+        width: element.width * scaleX,
+        height: element.height * scaleY,
+        ...(element.type === "text"
+          ? {
+              paragraphs: element.paragraphs.map((paragraph) => ({
+                ...paragraph,
+                runs: paragraph.runs.map((run) => ({
+                  ...run,
+                  fontSize: Math.max(6, Math.round(run.fontSize * fontScale)),
+                })),
+              })),
+            }
+          : {}),
+      })) as BadgeElement[],
+    });
+  };
   const textAdapter = useMemo(
     () => ({
       updateParagraphs: (
@@ -128,6 +198,20 @@ export function BadgeEditor({
     updateDesign({ elements: [...draft.design_data.elements, element] });
     setSelectedId(element.id);
   };
+  const moveElement = (id: string, direction: -1 | 1) => {
+    const elements = [...draft.design_data.elements];
+    const index = elements.findIndex((element) => element.id === id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= elements.length) return;
+    [elements[index], elements[target]] = [elements[target], elements[index]];
+    updateDesign({ elements });
+  };
+  const deleteElement = (id: string) => {
+    updateDesign({
+      elements: draft.design_data.elements.filter((item) => item.id !== id),
+    });
+    setSelectedId(null);
+  };
 
   async function save() {
     const parsed = badgeTemplateCreateSchema.safeParse(draft);
@@ -138,16 +222,14 @@ export function BadgeEditor({
     setUploading(true);
     try {
       const data = await uploadBadgeAssets(parsed.data, eventId, editionId);
-      createMutation.mutate(
-        { editionId, data },
-        {
-          onSuccess: () =>
-            void navigate({
-              to: "/admin/events/$eventId/editions/$editionId/badges",
-              params: { eventId, editionId },
-            }),
-        },
-      );
+      const onSuccess = () =>
+        void navigate({
+          to: "/admin/events/$eventId/editions/$editionId/badges",
+          params: { eventId, editionId },
+        });
+      if (templateId)
+        updateMutation.mutate({ templateId, data, editionId }, { onSuccess });
+      else createMutation.mutate({ editionId, data }, { onSuccess });
     } catch {
       toast.error("Não foi possível enviar as imagens do crachá");
     } finally {
@@ -178,9 +260,13 @@ export function BadgeEditor({
           </div>
           <Button
             onClick={() => void save()}
-            disabled={createMutation.isPending || uploading}
+            disabled={
+              createMutation.isPending || updateMutation.isPending || uploading
+            }
           >
-            {createMutation.isPending || uploading ? (
+            {createMutation.isPending ||
+            updateMutation.isPending ||
+            uploading ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <Save className="size-4" />
@@ -215,6 +301,7 @@ export function BadgeEditor({
                 searchPlaceholder="Buscar ingresso..."
                 className="w-full"
                 triggerClassName="h-9"
+                disabled={Boolean(templateId)}
                 onChange={(value) =>
                   setDraft({
                     ...draft,
@@ -222,23 +309,54 @@ export function BadgeEditor({
                   })
                 }
               />
-              <p className="text-xs text-muted-foreground">
-                Só pode existir um template por tipo de ingresso.
-              </p>
+              {templateId && (
+                <p className="text-xs text-muted-foreground">
+                  O ingresso associado não pode ser alterado após a criação.
+                </p>
+              )}
+            </div>
+            <div className="mt-5 space-y-2">
+              <Label htmlFor="badge-origin">Origem do crachá</Label>
+              <ToolbarCombobox
+                value={draft.origin ?? ""}
+                options={[
+                  { value: "", label: "Participante / padrão" },
+                  { value: "staff", label: "Equipe (staff)" },
+                ]}
+                placeholder="Selecione a origem"
+                className="w-full"
+                triggerClassName="h-9"
+                disabled={Boolean(templateId)}
+                onChange={(value) =>
+                  setDraft({
+                    ...draft,
+                    origin: value === "staff" ? "staff" : null,
+                  })
+                }
+              />
+              {templateId && (
+                <p className="text-xs text-muted-foreground">
+                  A origem não pode ser alterada após a criação.
+                </p>
+              )}
             </div>
             <div className="mt-6">
               <Label>Adicionar</Label>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
+                  className="h-16 flex-col gap-1"
                   onClick={() =>
                     addElement({
                       id: uid(),
                       type: "text",
-                      x: 100,
-                      y: 300,
-                      width: 438,
-                      height: 80,
+                      x: draft.design_data.canvas.width * 0.15,
+                      y: draft.design_data.canvas.height * 0.4,
+                      width: draft.design_data.canvas.width * 0.7,
+                      height: Math.max(
+                        32,
+                        draft.design_data.canvas.height * 0.15,
+                      ),
                       paragraphs: [
                         {
                           align: "center",
@@ -246,7 +364,7 @@ export function BadgeEditor({
                           runs: [
                             {
                               text: "Novo texto",
-                              fontSize: 32,
+                              fontSize: 18,
                               fontFamily: "Inter, sans-serif",
                               color: "#0f172a",
                               bold: false,
@@ -262,7 +380,7 @@ export function BadgeEditor({
                   <Type className="size-4" />
                   Texto
                 </Button>
-                <label className="col-span-2 inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-muted text-sm font-medium hover:bg-accent">
+                <label className="inline-flex h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-muted text-sm font-medium hover:bg-accent">
                   <ImageIcon className="size-4" />
                   Imagem
                   <input
@@ -275,10 +393,10 @@ export function BadgeEditor({
                         addElement({
                           id: uid(),
                           type: "image",
-                          x: 159,
-                          y: 180,
-                          width: 320,
-                          height: 220,
+                          x: draft.design_data.canvas.width * 0.2,
+                          y: draft.design_data.canvas.height * 0.2,
+                          width: draft.design_data.canvas.width * 0.6,
+                          height: draft.design_data.canvas.height * 0.6,
                           src: await readImage(file),
                           fit: "contain",
                           radius: 0,
@@ -296,7 +414,12 @@ export function BadgeEditor({
                 <Input
                   type="color"
                   className="w-14 p-1"
-                  value={draft.design_data.backgroundColor}
+                  value={
+                    draft.design_data.backgroundColor === "transparent"
+                      ? "#ffffff"
+                      : draft.design_data.backgroundColor
+                  }
+                  disabled={draft.design_data.backgroundColor === "transparent"}
                   onChange={(event) =>
                     updateDesign({ backgroundColor: event.target.value })
                   }
@@ -315,6 +438,20 @@ export function BadgeEditor({
                   />
                 </label>
               </div>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={draft.design_data.backgroundColor === "transparent"}
+                  onChange={(event) =>
+                    updateDesign({
+                      backgroundColor: event.target.checked
+                        ? "transparent"
+                        : "#ffffff",
+                    })
+                  }
+                />
+                Fundo transparente
+              </label>
               {draft.design_data.background && (
                 <Button
                   variant="ghost"
@@ -326,7 +463,7 @@ export function BadgeEditor({
               )}
             </div>
             <div className="mt-6 space-y-2">
-              <Label>Tamanho (px)</Label>
+              <Label>Tamanho (mm)</Label>
               <ToolbarCombobox
                 value={
                   BADGE_SIZE_PRESETS.find(
@@ -344,37 +481,107 @@ export function BadgeEditor({
                     (item) => item.value === value,
                   );
                   if (preset)
-                    updateDesign({
-                      canvas: { width: preset.width, height: preset.height },
+                    resizeCanvas({
+                      width: preset.width,
+                      height: preset.height,
                     });
                 }}
               />
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
-                  value={draft.design_data.canvas.width}
+                  value={pxToMm(draft.design_data.canvas.width)}
                   onChange={(e) =>
-                    updateDesign({
-                      canvas: {
-                        ...draft.design_data.canvas,
-                        width: Number(e.target.value),
-                      },
+                    resizeCanvas({
+                      ...draft.design_data.canvas,
+                      width: mmToPx(Number(e.target.value)),
                     })
                   }
                 />
                 <Input
                   type="number"
-                  value={draft.design_data.canvas.height}
+                  value={pxToMm(draft.design_data.canvas.height)}
                   onChange={(e) =>
-                    updateDesign({
-                      canvas: {
-                        ...draft.design_data.canvas,
-                        height: Number(e.target.value),
-                      },
+                    resizeCanvas({
+                      ...draft.design_data.canvas,
+                      height: mmToPx(Number(e.target.value)),
                     })
                   }
                 />
               </div>
+            </div>
+            <div className="mt-6 space-y-2">
+              <Label>Camadas</Label>
+              <ul className="space-y-1">
+                {[...draft.design_data.elements]
+                  .reverse()
+                  .map((element, reversedIndex) => {
+                    const index =
+                      draft.design_data.elements.length - 1 - reversedIndex;
+                    const Icon =
+                      element.type === "text"
+                        ? Type
+                        : element.type === "image"
+                          ? ImageIcon
+                          : BadgeCheck;
+                    return (
+                      <li
+                        key={element.id}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-sm",
+                          selectedId === element.id
+                            ? "border-ring bg-muted"
+                            : "border-transparent hover:bg-muted/60",
+                        )}
+                        onClick={() => setSelectedId(element.id)}
+                      >
+                        <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {layerLabel(element)}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Trazer para frente"
+                          disabled={
+                            index === draft.design_data.elements.length - 1
+                          }
+                          className="rounded p-0.5 disabled:opacity-30"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            moveElement(element.id, 1);
+                          }}
+                        >
+                          <ArrowUp className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Enviar para trás"
+                          disabled={index === 0}
+                          className="rounded p-0.5 disabled:opacity-30"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            moveElement(element.id, -1);
+                          }}
+                        >
+                          <ArrowDown className="size-3.5" />
+                        </button>
+                        {element.type !== "qr" ? (
+                          <button
+                            type="button"
+                            aria-label="Excluir camada"
+                            className="rounded p-0.5 hover:bg-destructive hover:text-destructive-foreground"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteElement(element.id);
+                            }}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+              </ul>
             </div>
           </aside>
           <div className="flex min-w-90 flex-1 flex-col">
@@ -390,12 +597,7 @@ export function BadgeEditor({
               onChangeElement={updateElement}
               textAdapter={textAdapter}
               onDeleteElement={(id) => {
-                updateDesign({
-                  elements: draft.design_data.elements.filter(
-                    (item) => item.id !== id,
-                  ),
-                });
-                setSelectedId(null);
+                deleteElement(id);
               }}
             />
           </div>
@@ -576,25 +778,25 @@ export function BadgeEditor({
                 )}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label>Largura</Label>
+                    <Label>Largura (mm)</Label>
                     <Input
                       type="number"
-                      value={Math.round(selected.width)}
+                      value={pxToMm(selected.width)}
                       onChange={(e) =>
                         updateElement(selected.id, {
-                          width: Number(e.target.value),
+                          width: mmToPx(Number(e.target.value)),
                         })
                       }
                     />
                   </div>
                   <div>
-                    <Label>Altura</Label>
+                    <Label>Altura (mm)</Label>
                     <Input
                       type="number"
-                      value={Math.round(selected.height)}
+                      value={pxToMm(selected.height)}
                       onChange={(e) =>
                         updateElement(selected.id, {
-                          height: Number(e.target.value),
+                          height: mmToPx(Number(e.target.value)),
                         })
                       }
                     />
@@ -638,12 +840,7 @@ export function BadgeEditor({
                     variant="destructive"
                     className="w-full"
                     onClick={() => {
-                      updateDesign({
-                        elements: draft.design_data.elements.filter(
-                          (item) => item.id !== selected.id,
-                        ),
-                      });
-                      setSelectedId(null);
+                      deleteElement(selected.id);
                     }}
                   >
                     <Trash2 className="size-4" />

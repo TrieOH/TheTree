@@ -5483,8 +5483,10 @@ export const getCreateBadgeTemplateUrl = (editionId: string,) => {
 
 /**
  * Creates a badge template for the edition (design data is
- * opaque JSON consumed by the badge renderer). The actor must be
- * an owner or admin of the event.
+ * opaque JSON consumed by the badge renderer). Set origin to
+ * "staff" for the edition's staff-only design (ticket_type_id must
+ * be absent); at most one staff template per edition. The actor must
+ * be an owner or admin of the event.
  * @summary Create a badge template
  */
 export const createBadgeTemplate = async (editionId: string,
@@ -5817,8 +5819,8 @@ export const getUpdateBadgeTemplateUrl = (templateId: Uuid,) => {
 
 /**
  * Updates a badge template's name and/or design data. The target
- * ticket type is immutable — move a template by deleting and
- * recreating it. Designs are read live, so emissions re-render
+ * ticket type and origin are immutable — move a template by deleting
+ * and recreating it. Designs are read live, so emissions re-render
  * automatically; no emails are sent. The actor must be an owner or
  * admin of the event.
  * @summary Update a badge template

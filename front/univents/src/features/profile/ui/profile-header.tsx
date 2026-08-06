@@ -12,6 +12,8 @@ interface ProfileHeaderProps {
   handle?: string;
   ownProfile: boolean;
   profileUrl: string;
+  activeTab: "about" | "badges";
+  onTabChange: (tab: "about" | "badges") => void;
 }
 
 export function ProfileHeader({
@@ -20,6 +22,8 @@ export function ProfileHeader({
   handle,
   ownProfile,
   profileUrl,
+  activeTab,
+  onTabChange,
 }: ProfileHeaderProps) {
   const bannerStyle = profile.bannerUrl
     ? {
@@ -166,6 +170,28 @@ export function ProfileHeader({
           </div>
         </div>
       </div>
+      <nav className="mx-auto flex max-w-7xl px-4">
+        {(
+          [
+            ["about", "Sobre"],
+            ["badges", "Crachás"],
+          ] as const
+        ).map(([tab, label]) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => onTabChange(tab)}
+            className={cn(
+              "border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+              activeTab === tab
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
     </section>
   );
 }

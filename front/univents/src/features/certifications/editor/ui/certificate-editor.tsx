@@ -1,13 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Monitor, Save } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import {
+  useCreateCertificationTemplateMutation,
+  useUpdateCertificationTemplateMutation,
+} from "@/features/certifications/api/mutations";
 import { Button } from "@/shared/ui/shadcn/button";
 import { allSignaturesQueryOptions } from "../../../signatures/api";
 import { certificationTemplateQueryOptions } from "../../api";
 import { certificationTemplateCreateSchema } from "../../model";
 import { certificateEditorActions } from "../store";
+import { uploadCertificateAssets } from "../upload-assets";
 import { CertificateCanvas } from "./certificate-canvas";
 import { CertificatePropertiesPanel } from "./certificate-properties-panel";
 import { CertificateTextToolbar } from "./certificate-text-toolbar";
@@ -49,7 +54,11 @@ export function CertificateEditor({
     );
   }, [signatures]);
 
-  function saveTemplate() {
+  const navigate = useNavigate();
+  const createTemplate = useCreateCertificationTemplateMutation();
+  const updateTemplate = useUpdateCertificationTemplateMutation();
+
+  async function saveTemplate() {
     const result = certificationTemplateCreateSchema.safeParse(
       certificateEditorActions.getDraft(),
     );
@@ -57,17 +66,15 @@ export function CertificateEditor({
       toast.error(result.error.issues[0]?.message ?? "Template inválido");
       return;
     }
-    console.log({ eventId, editionId, templateId, template: result.data });
 
-    /*
     const data = await uploadCertificateAssets(result.data, eventId, editionId);
-    const onSuccess = () => void navigate({
-      to: "/admin/events/$eventId/editions/$editionId/certifications",
-      params: { eventId, editionId },
-    });
+    const onSuccess = () =>
+      void navigate({
+        to: "/admin/events/$eventId/editions/$editionId/certifications",
+        params: { eventId, editionId },
+      });
     if (templateId) updateTemplate.mutate({ templateId, data }, { onSuccess });
     else createTemplate.mutate({ eventId, editionId, data }, { onSuccess });
-    */
   }
 
   return (
