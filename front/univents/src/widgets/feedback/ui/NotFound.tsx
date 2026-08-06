@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { cn } from "@/shared/lib/utils";
+import { Logo } from "@/shared/ui/logo";
 import { buttonVariants } from "@/shared/ui/shadcn/button";
 
 export default function NotFound() {
@@ -17,6 +18,12 @@ export default function NotFound() {
         transition={{ duration: 0.5 }}
         className="max-w-md w-full min-h-[80vh] space-y-8"
       >
+        <div className="flex justify-center mt-6 md:mt-10 mb-6">
+          <div className="w-20 md:w-28">
+            <Logo variant="complete" />
+          </div>
+        </div>
+
         <div className="relative group">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
