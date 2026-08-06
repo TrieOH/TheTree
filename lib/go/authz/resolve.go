@@ -10,17 +10,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Registry maps a security-scheme combination to the middleware that
-// enforces it. Combinations are the sorted union of the scheme names in an
-// operation's security blocks, joined with "+". The empty combination is
-// public and never looked up.
-//
-// A backend registers exactly the combinations its spec uses — e.g.
-// "bearerAuth" (JWT), "apiKeyAuth", and "apiKeyAuth+bearerAuth" for the
-// OR-style anyAuth middleware. An operation whose combination has no entry
-// is an error at construction: the spec and the backend's auth stack
-// disagree, and that must fail startup, not production.
-type Registry map[string]func(http.Handler) http.Handler
+// Primitives holds the auth middlewares a backend provides. The resolver
+// derives each operation's chain from the spec's security blocks: the union
+// of the scheme names an operation lists selects the primitive that enforces
+// it — JWT for "bearerAuth", APIKey for "apiKeyAuth", Any (the OR
+// composition, e.g. fun's AnyAuth) when both are listed. There is no
+// per-combination registry to keep in sync with the spec; the spec is the
+// single source of truth for who may call what, and with which scheme. An
+// operation whose combination has no primitive is an error at construction:
+// the spec and the backend's auth stack disagree, and that must fail
+// startup, not production.
+type Primitives struct {
+	JWT    func(http.Handler) http.Handler // enforces scheme "bearerAuth"
+	APIKey func(http.Handler) http.Handler // enforces scheme "apiKeyAuth"
+	Any    func(http.Handler) http.Handler // enforces any combination of the two (OR)
+}
 
 // Options carries per-backend decorations the spec cannot express.
 type Options struct {
@@ -29,23 +33,18 @@ type Options struct {
 	// to gate everything until /auth/setup has run.
 	SetupGuard     func(http.Handler) http.Handler
 	SkipSetupGuard []string
-	// ClientOnly, when set with ClientOnlyOps, is appended to the chain of
-	// every listed operation (spec-form operationIds). identityx uses it to
-	// require a platform-level client identity (nil ProjectID) on the
-	// platform operations. Both lists are validated against the spec at
-	// construction: an unknown operationId fails startup instead of
-	// silently dropping a guard.
-	ClientOnly    func(http.Handler) http.Handler
-	ClientOnlyOps []string
 }
 
 // ResolvedOperation is one spec operation with its effective security.
-// Schemes is the sorted union of the scheme names across the operation's
-// security blocks (or the spec default); empty means public.
+// Blocks are the operation's security blocks (the spec default applied
+// where the operation declares none): a list of blocks, each a list of
+// scheme names. Schemes is their flattened sorted union; empty means
+// public.
 type ResolvedOperation struct {
 	Method      string
 	Path        string
 	OperationID string
+	Blocks      [][]string
 	Schemes     []string
 }
 
@@ -92,22 +91,30 @@ func SpecOperations(spec []byte) ([]ResolvedOperation, error) {
 			if blocks == nil {
 				blocks = doc.Security
 			}
+			var names [][]string
 			set := make(map[string]bool)
 			for _, block := range blocks {
+				schemes := make([]string, 0, len(block))
 				for scheme := range block {
-					set[scheme] = true
+					schemes = append(schemes, scheme)
+				}
+				sort.Strings(schemes)
+				names = append(names, schemes)
+				for _, s := range schemes {
+					set[s] = true
 				}
 			}
-			schemes := make([]string, 0, len(set))
-			for scheme := range set {
-				schemes = append(schemes, scheme)
+			union := make([]string, 0, len(set))
+			for s := range set {
+				union = append(union, s)
 			}
-			sort.Strings(schemes)
+			sort.Strings(union)
 			ops = append(ops, ResolvedOperation{
 				Method:      m.method,
 				Path:        path,
 				OperationID: m.op.OperationID,
-				Schemes:     schemes,
+				Blocks:      names,
+				Schemes:     union,
 			})
 		}
 	}
@@ -127,6 +134,32 @@ func GeneratedOperationID(specID string) string {
 	return strings.ToUpper(specID[:1]) + specID[1:]
 }
 
+// forCombination returns the primitive enforcing a scheme combination (the
+// sorted union of scheme names joined with "+"), or an error when the
+// backend registered no primitive for it or the primitive is nil. The empty
+// combination is public and never looked up.
+func (p Primitives) forCombination(combination string) (func(http.Handler) http.Handler, error) {
+	switch combination {
+	case "bearerAuth":
+		if p.JWT == nil {
+			return nil, errors.New("primitives.JWT is nil")
+		}
+		return p.JWT, nil
+	case "apiKeyAuth":
+		if p.APIKey == nil {
+			return nil, errors.New("primitives.APIKey is nil")
+		}
+		return p.APIKey, nil
+	case "apiKeyAuth+bearerAuth":
+		if p.Any == nil {
+			return nil, errors.New("primitives.Any is nil")
+		}
+		return p.Any, nil
+	default:
+		return nil, fmt.Errorf("no primitive for security combination %q", combination)
+	}
+}
+
 // Resolver derives every operation's middleware chain from the spec's
 // security blocks: the spec is the single source of truth for who may call
 // what, and with which scheme. Chains are keyed by generated-form
@@ -137,11 +170,13 @@ type Resolver struct {
 }
 
 // NewResolver parses the OpenAPI spec and resolves every operation's chain.
-// It errors when an operation's security combination has no Registry entry,
-// when the spec is not valid YAML, when a named operation in SkipSetupGuard
-// or ClientOnlyOps does not exist in the spec, or when ClientOnlyOps is set
-// without a ClientOnly middleware — all fail startup, not production.
-func NewResolver(spec []byte, registry Registry, opts Options) (*Resolver, error) {
+// It errors when an operation's security combination has no primitive (or a
+// nil one), when a single security block lists multiple schemes (AND
+// semantics — the resolver composes OR across blocks; write the spec's
+// alternatives as separate blocks), when the spec is not valid YAML, or when
+// a named operation in SkipSetupGuard does not exist in the spec — all fail
+// startup, not production.
+func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, error) {
 	ops, err := SpecOperations(spec)
 	if err != nil {
 		return nil, err
@@ -150,6 +185,11 @@ func NewResolver(spec []byte, registry Registry, opts Options) (*Resolver, error
 	known := make(map[string]bool, len(ops))
 	for _, op := range ops {
 		known[op.OperationID] = true
+		for _, block := range op.Blocks {
+			if len(block) > 1 {
+				return nil, fmt.Errorf("authz resolver: %s %s: security block lists multiple schemes %v (AND) — express OR as separate blocks", op.Method, op.OperationID, block)
+			}
+		}
 	}
 
 	skipSetup := make(map[string]bool, len(opts.SkipSetupGuard))
@@ -160,36 +200,18 @@ func NewResolver(spec []byte, registry Registry, opts Options) (*Resolver, error
 		skipSetup[id] = true
 	}
 
-	clientOnlyOps := make(map[string]bool, len(opts.ClientOnlyOps))
-	for _, id := range opts.ClientOnlyOps {
-		if !known[id] {
-			return nil, fmt.Errorf("authz resolver: ClientOnlyOps: operation %q not found in spec", id)
-		}
-		clientOnlyOps[id] = true
-	}
-	if len(clientOnlyOps) > 0 && opts.ClientOnly == nil {
-		return nil, errors.New("authz resolver: ClientOnlyOps set without a ClientOnly middleware")
-	}
-
 	r := &Resolver{chains: make(map[string][]func(http.Handler) http.Handler, len(ops))}
 	for _, op := range ops {
 		var chain []func(http.Handler) http.Handler
 		if len(op.Schemes) > 0 {
-			key := strings.Join(op.Schemes, "+")
-			mw, ok := registry[key]
-			if !ok {
-				return nil, fmt.Errorf("authz resolver: %s %s: security combination %q not registered", op.Method, op.OperationID, key)
-			}
-			if mw == nil {
-				return nil, fmt.Errorf("authz resolver: %s %s: middleware for combination %q is nil", op.Method, op.OperationID, key)
+			mw, err := primitives.forCombination(strings.Join(op.Schemes, "+"))
+			if err != nil {
+				return nil, fmt.Errorf("authz resolver: %s %s: %w", op.Method, op.OperationID, err)
 			}
 			chain = []func(http.Handler) http.Handler{mw}
 		}
 		if opts.SetupGuard != nil && !skipSetup[op.OperationID] {
 			chain = append([]func(http.Handler) http.Handler{opts.SetupGuard}, chain...)
-		}
-		if clientOnlyOps[op.OperationID] {
-			chain = append(chain, opts.ClientOnly)
 		}
 		r.chains[GeneratedOperationID(op.OperationID)] = chain
 	}

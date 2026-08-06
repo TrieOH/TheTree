@@ -25,47 +25,26 @@ func setupGuard() func(http.Handler) http.Handler {
 	}
 }
 
-// clientOnlyOps are the operations requiring a platform-level client
-// identity (nil ProjectID). The list is validated against the spec at
-// resolver construction (an unknown operationId fails startup), and the
-// guard is applied by the resolver itself.
-var clientOnlyOps = []string{
-	"listActors", "createActor", "getActor", "getActorByEmail",
-	"createAPIKey",
-	"createCapability",
-	"listOrganizations", "createOrganization", "listOrganizationMembers",
-	"addOrganizationMember", "removeOrganizationMember",
-	"listOrganizationProjects", "createOrganizationProject",
-	"listOrganizationProjectActors", "createOrganizationProjectActor",
-	"listOrganizationProjectMembers", "addOrganizationProjectMember",
-	"removeOrganizationProjectMember", "getOrganizationProjectActor",
-	"listProjects", "createProject", "listProjectMembers",
-	"addProjectMember", "removeProjectMember",
-	"getPlatformProfile", "upsertPlatformProfile",
-	"upsertPlatformProfileSchema",
-	"upsertProjectProfileSchema",
-	"listOutdatedPlatformProfiles",
-}
-
 // authResolver derives every operation's chain from the spec's security
-// blocks, keyed by generated-form operationId. The setup guard, the
-// platform-client scope guard, and their op lists are validated against the
-// spec at construction; a mismatch fails boot, never production.
+// blocks, keyed by generated-form operationId. The setup guard and its op
+// list are validated against the spec at construction; a mismatch fails
+// boot, never production. Platform-vs-project scope is not a chain concern:
+// it is enforced per handler via handlers.RequireClientOnly (platform-only
+// operations) and handlers.RequireProjectClientOnly (project-scoped
+// operations, not used yet).
 func authResolver(mw middlewares, guard func(http.Handler) http.Handler) (*authz.Resolver, error) {
-	return authz.NewResolver(spec.OpenAPISpec, authz.Registry{
-		"bearerAuth":            mw.jwtAuth,
-		"apiKeyAuth":            mw.apiKeyAuth,
-		"apiKeyAuth+bearerAuth": mw.anyAuth,
+	return authz.NewResolver(spec.OpenAPISpec, authz.Primitives{
+		JWT:    mw.jwtAuth,
+		APIKey: mw.apiKeyAuth,
+		Any:    mw.anyAuth,
 	}, authz.Options{
 		SetupGuard:     guard,
 		SkipSetupGuard: []string{"getSetup", "postSetup"},
-		ClientOnly:     mw.clientOnly,
-		ClientOnlyOps:  clientOnlyOps,
 	})
 }
 
 // resolveAuthChains composes the spec-derived chains. Fails at boot when
-// the spec and the middleware registry disagree.
+// the spec and the middleware primitives disagree.
 func resolveAuthChains(mw middlewares) (map[string][]func(http.Handler) http.Handler, error) {
 	resolver, err := authResolver(mw, setupGuard())
 	if err != nil {

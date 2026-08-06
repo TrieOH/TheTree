@@ -9,6 +9,11 @@ import (
 )
 
 func (h *Handlers) CreateProject(ctx context.Context, req openapi.CreateProjectRequestObject) (openapi.CreateProjectResponseObject, error) {
+	err := models.RequireClientOnly(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	project, err := h.ops.Create(ctx, models.CreateProjectInput{
 		Name:      req.Body.Name,
 		Domain:    req.Body.Domain,

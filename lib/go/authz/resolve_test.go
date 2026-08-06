@@ -57,6 +57,11 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyAuth: []
+  /apikey:
+    get:
+      operationId: getAPIKey
+      security:
+        - apiKeyAuth: []
   /setup:
     get:
       operationId: getSetup
@@ -80,11 +85,28 @@ paths:
       security:
         - oauth2: []
 `
+	specAndBlock = `
+openapi: 3.1.0
+info: {title: t, version: "1"}
+paths:
+  /z:
+    get:
+      operationId: getZ
+      security:
+        - bearerAuth: []
+          apiKeyAuth: []
+`
 )
 
-func mustResolver(t *testing.T, spec string, registry Registry, opts Options) *Resolver {
+var testPrimitives = Primitives{
+	JWT:    named("JWT"),
+	APIKey: named("APIKey"),
+	Any:    named("AnyAuth"),
+}
+
+func mustResolver(t *testing.T, spec string, primitives Primitives, opts Options) *Resolver {
 	t.Helper()
-	r, err := NewResolver([]byte(spec), registry, opts)
+	r, err := NewResolver([]byte(spec), primitives, opts)
 	if err != nil {
 		t.Fatalf("NewResolver: %v", err)
 	}
@@ -106,11 +128,7 @@ func TestGeneratedOperationID(t *testing.T) {
 }
 
 func TestResolverDefaultSecurityAndOverrides(t *testing.T) {
-	registry := Registry{
-		"bearerAuth":            named("JWT"),
-		"apiKeyAuth+bearerAuth": named("AnyAuth"),
-	}
-	r := mustResolver(t, specWithDefault, registry, Options{})
+	r := mustResolver(t, specWithDefault, testPrimitives, Options{})
 
 	if got := run(r.Chains()["GetPublic"]); len(got) != 0 {
 		t.Fatalf("getPublic must be public, ran %v", got)
@@ -121,31 +139,44 @@ func TestResolverDefaultSecurityAndOverrides(t *testing.T) {
 	if got := run(r.Chains()["GetJWT"]); len(got) != 1 || got[0] != "JWT" {
 		t.Fatalf("getJWT must be bearerAuth, ran %v", got)
 	}
+	if got := run(r.Chains()["GetAPIKey"]); len(got) != 1 || got[0] != "APIKey" {
+		t.Fatalf("getAPIKey must be apiKeyAuth, ran %v", got)
+	}
 	if got := run(r.Chains()["GetAny"]); len(got) != 1 || got[0] != "AnyAuth" {
-		t.Fatalf("getAny must use the OR combination, ran %v", got)
+		t.Fatalf("getAny must derive the OR combination to AnyAuth, ran %v", got)
 	}
 }
 
 func TestResolverNoDefaultMeansPublic(t *testing.T) {
-	r := mustResolver(t, specNoDefault, Registry{"bearerAuth": named("JWT")}, Options{})
+	r := mustResolver(t, specNoDefault, testPrimitives, Options{})
 	if got := run(r.Chains()["GetX"]); len(got) != 0 {
 		t.Fatalf("operation without default security must be public, ran %v", got)
 	}
 }
 
 func TestResolverUnregisteredCombinationFails(t *testing.T) {
-	_, err := NewResolver([]byte(specUnknownScheme), Registry{"bearerAuth": named("JWT")}, Options{})
+	_, err := NewResolver([]byte(specUnknownScheme), testPrimitives, Options{})
 	if err == nil {
 		t.Fatal("want error for unregistered security combination, got nil")
 	}
 }
 
-func TestResolverSetupGuard(t *testing.T) {
-	registry := Registry{
-		"bearerAuth":            named("JWT"),
-		"apiKeyAuth+bearerAuth": named("AnyAuth"),
+func TestResolverAndBlockFails(t *testing.T) {
+	_, err := NewResolver([]byte(specAndBlock), testPrimitives, Options{})
+	if err == nil || !strings.Contains(err.Error(), "separate blocks") {
+		t.Fatalf("want error for single-block AND security, got %v", err)
 	}
-	r := mustResolver(t, specWithDefault, registry, Options{
+}
+
+func TestResolverNilPrimitiveFails(t *testing.T) {
+	_, err := NewResolver([]byte(specWithDefault), Primitives{}, Options{})
+	if err == nil || !strings.Contains(err.Error(), "primitives.JWT is nil") {
+		t.Fatalf("want error for nil primitive, got %v", err)
+	}
+}
+
+func TestResolverSetupGuard(t *testing.T) {
+	r := mustResolver(t, specWithDefault, testPrimitives, Options{
 		SetupGuard:     named("setupGuard"),
 		SkipSetupGuard: []string{"getDefaulted"},
 	})
@@ -163,54 +194,11 @@ func TestResolverSetupGuard(t *testing.T) {
 	}
 }
 
-func TestResolverClientOnly(t *testing.T) {
-	registry := Registry{
-		"bearerAuth":            named("JWT"),
-		"apiKeyAuth+bearerAuth": named("AnyAuth"),
-	}
-	r := mustResolver(t, specWithDefault, registry, Options{
-		ClientOnly:    named("ClientOnly"),
-		ClientOnlyOps: []string{"getJWT", "getSetup"},
-	})
-
-	// client-only op: scheme middleware then the client scope guard
-	if got := run(r.Chains()["GetJWT"]); len(got) != 2 || got[0] != "JWT" || got[1] != "ClientOnly" {
-		t.Fatalf("client-only protected op must run auth then client guard, ran %v", got)
-	}
-	// public client-only op: guard alone, still applied
-	if got := run(r.Chains()["GetSetup"]); len(got) != 1 || got[0] != "ClientOnly" {
-		t.Fatalf("public client-only op must still run the client guard, ran %v", got)
-	}
-	// op not in the list keeps its chain untouched
-	if got := run(r.Chains()["GetAny"]); len(got) != 1 || got[0] != "AnyAuth" {
-		t.Fatalf("unlisted op must not gain the client guard, ran %v", got)
-	}
-}
-
 func TestResolverUnknownOperationListFails(t *testing.T) {
-	registry := Registry{"bearerAuth": named("JWT")}
-
-	_, err := NewResolver([]byte(specWithDefault), registry, Options{
-		ClientOnlyOps: []string{"getNotInSpec"},
-		ClientOnly:    named("ClientOnly"),
+	_, err := NewResolver([]byte(specWithDefault), testPrimitives, Options{
+		SkipSetupGuard: []string{"getNotInSpec"},
 	})
 	if err == nil || !strings.Contains(err.Error(), "getNotInSpec") {
-		t.Fatalf("want error naming the unknown ClientOnlyOps entry, got %v", err)
-	}
-
-	_, err = NewResolver([]byte(specWithDefault), registry, Options{
-		SkipSetupGuard: []string{"getAlsoNotInSpec"},
-	})
-	if err == nil || !strings.Contains(err.Error(), "getAlsoNotInSpec") {
 		t.Fatalf("want error naming the unknown SkipSetupGuard entry, got %v", err)
-	}
-}
-
-func TestResolverClientOnlyOpsWithoutMiddlewareFails(t *testing.T) {
-	_, err := NewResolver([]byte(specWithDefault), Registry{"bearerAuth": named("JWT")}, Options{
-		ClientOnlyOps: []string{"getJWT"},
-	})
-	if err == nil {
-		t.Fatal("want error for ClientOnlyOps without a ClientOnly middleware, got nil")
 	}
 }

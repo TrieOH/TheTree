@@ -10,9 +10,8 @@ import (
 )
 
 // pass-through stubs for the shared test router.
-func mwJWT(next http.Handler) http.Handler        { return next }
-func mwAnyAuth(next http.Handler) http.Handler    { return next }
-func mwClientOnly(next http.Handler) http.Handler { return next }
+func mwJWT(next http.Handler) http.Handler     { return next }
+func mwAnyAuth(next http.Handler) http.Handler { return next }
 
 // newTestRouter mounts the strict server with the real middleware stack
 // (validation + auth dispatch + fun-envelope error handlers) on a fresh

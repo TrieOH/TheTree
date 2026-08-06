@@ -28,8 +28,7 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 		jwtAuth:    mwJWT,
 		apiKeyAuth: mwJWT,
 		anyAuth:    mwAnyAuth,
-		clientOnly: mwClientOnly,
-	}, server)
+	}, server, nil)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/auth/logout", nil)
 	req.Header.Set("Origin", "http://localhost:3000")
@@ -58,7 +57,6 @@ func TestSwapSmokeSetupFlow(t *testing.T) {
 		jwtAuth:    mwJWT,
 		apiKeyAuth: mwJWT,
 		anyAuth:    mwAnyAuth,
-		clientOnly: mwClientOnly,
 	})
 
 	globals.MarkSetupComplete()
