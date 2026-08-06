@@ -209,6 +209,9 @@ export function PronounsInput({
           setOtherSelected(next === "outro");
           onChange(next === "outro" ? "" : next);
         }}
+        placeholder="Selecione seus pronomes…"
+        searchPlaceholder="Buscar pronome…"
+        emptyMessage="Nenhum pronome encontrado."
       />
       {(isOther || otherSelected) && (
         <Input

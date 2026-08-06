@@ -4,6 +4,8 @@ export type { PostHogConfig } from "./providers/posthog"
 export {
   TanStackQueryProvider,
   createQueryClient,
+  QueryError,
+  queryError,
 } from "./providers/tanstack-query"
 export type { QueryClientConfig } from "./providers/tanstack-query"
 export { AuthContextUpdater } from "./providers/auth-context"

@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
 import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
@@ -30,6 +34,7 @@ export interface ProfileViewProps {
     success: boolean;
     data?: ActorProfile;
     message?: string;
+    code?: number;
   }>;
   ownProfile?: boolean;
   viewerActorId?: string;
@@ -41,15 +46,18 @@ export function ProfileView({
   ownProfile = false,
   viewerActorId,
 }: ProfileViewProps) {
+  const navigate = useNavigate();
   const profileQuery = useQuery({
     queryKey: profileKeys.detail(actorId ?? ""),
     enabled: Boolean(actorId),
     queryFn: async () => {
       const response = await loadProfile(actorId ?? "");
-      if (!response.success || !response.data)
-        throw new Error(
+      if (!response.success || !response.data) {
+        throw queryError(
           response.message || "Não foi possível carregar este perfil.",
+          response.code,
         );
+      }
       return response.data;
     },
   });
@@ -57,6 +65,18 @@ export function ProfileView({
   const error = actorId
     ? profileQuery.error?.message
     : "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
+
+  useEffect(() => {
+    if (!error || !ownProfile) return;
+    toast.info("Seu perfil ainda não foi criado", {
+      id: "profile-not-created",
+      description: "Você pode criar seu perfil agora.",
+      action: {
+        label: "Editar perfil",
+        onClick: () => void navigate({ to: "/profile/edit" }),
+      },
+    });
+  }, [error, navigate, ownProfile]);
 
   if (profileQuery.isLoading) return <ProfileSkeleton />;
   if (error && !ownProfile) return <MissingPublicProfile />;
@@ -116,12 +136,6 @@ export function ProfileView({
                 {completenessHint(profile)}
               </p>
             </ProfileCard>
-          )}
-
-          {error && isOwnProfile && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Seu perfil ainda não foi criado. Use “Editar perfil” para começar.
-            </p>
           )}
 
           <ProfileCard title="Sobre mim">

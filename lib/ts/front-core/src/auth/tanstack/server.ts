@@ -209,6 +209,19 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         },
       };
     }
+    if (refreshToken.split(".").length !== 3) {
+      await current.clear();
+      return {
+        success: false,
+        sessionInvalid: true,
+        error: {
+          success: false,
+          code: 401,
+          error_id: "REFRESH_TOKEN_MALFORMED",
+          message: "Session expired",
+        },
+      };
+    }
 
     let response: Response;
     try {

@@ -74,7 +74,6 @@ const FIELD_LABELS: Record<string, string> = {
   preferredName: "Nome de exibição",
   legalName: "Nome completo",
   pronouns: "Pronomes",
-  tagline: "Frase de apresentação",
   aboutMe: "Sobre mim",
   role: "Função",
   organization: "Organização",
@@ -88,11 +87,8 @@ const FIELD_LABELS: Record<string, string> = {
   languages: "Idiomas",
   specializations: "Idiomas",
   timezone: "Fuso horário",
-  hideSocials: "Ocultar redes sociais",
-  hideLocation: "Ocultar localização",
   hideLegalName: "Ocultar nome completo",
   hideContactEmail: "Ocultar e-mail de contato",
-  hideOrganization: "Ocultar organização",
 };
 
 const FIELD_PLACEHOLDERS: Record<string, string> = {

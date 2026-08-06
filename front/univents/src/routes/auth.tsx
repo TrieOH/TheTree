@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { ModernAuth } from "@trieoh/identityx-sdk-ts/react";
+import { ModernAuth, useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { toast } from "sonner";
 import z from "zod";
 import { requireGuest } from "@/features/auths/lib/route-guard";
@@ -18,6 +18,7 @@ function AuthPage() {
   const navigate = Route.useNavigate();
   const router = useRouter();
   const search = Route.useSearch();
+  const { auth: sessionAuth } = useAuth();
 
   const handleLoginSuccess = async (message?: string) => {
     const auth = router.options.context.auth;
@@ -37,6 +38,15 @@ function AuthPage() {
     const destination = search.redirect || "/profile";
     await navigate({ to: destination, replace: true });
     toast.success(message ?? "Login realizado com sucesso");
+    if (!sessionAuth.profile()?.verified_at) {
+      toast.warning("Seu e-mail ainda não foi verificado", {
+        description: "Verifique sua conta para liberar todos os recursos.",
+        action: {
+          label: "Verificar agora",
+          onClick: () => void navigate({ to: "/profile/config" }),
+        },
+      });
+    }
     router.options.context.queryClient.invalidateQueries();
   };
 
