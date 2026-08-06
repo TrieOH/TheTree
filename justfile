@@ -54,6 +54,18 @@ test:
     cd api/payssage && just test
     cd api/univents && just test
 
+# Update every Go module in the workspace to the latest dependency versions,
+# then sync go.work.sum.
+goup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for f in $(find . -name go.mod -not -path "*/node_modules/*" -not -path "*/vendor/*"); do
+      dir=$(dirname "$f")
+      echo "==> updating $dir"
+      (cd "$dir" && go get -u ./... && go mod tidy)
+    done
+    go work sync
+
 generate +SERVICES="identityx informd payssage univents":
     #!/usr/bin/env bash
     for svc in {{SERVICES}}; do
