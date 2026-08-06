@@ -12,9 +12,10 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
+	"riverqueue.com/riverui"
 )
 
-func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server) http.Handler {
+func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
 	chains, err := resolveAuthChains(middlewares)
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
@@ -24,6 +25,13 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server) 
 		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, chains)
+
+			// nil in tests; wired in run via initRiver
+			if riverUIHandler != nil {
+				r.Group(func(r chi.Router) {
+					r.Mount("/riverui", riverUIHandler)
+				})
+			}
 		},
 	})
 }

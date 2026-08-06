@@ -2,9 +2,7 @@ package app
 
 import (
 	"IdentityX/internal/config"
-	"IdentityX/internal/emails"
 	"IdentityX/internal/jobs"
-	"IdentityX/internal/repos"
 	"IdentityX/internal/sqlc"
 	"context"
 
@@ -13,9 +11,7 @@ import (
 	"lib/errx"
 	"lib/globals"
 	"lib/httpserver"
-	libriver "lib/river"
 	"lib/telemetry"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,7 +20,6 @@ import (
 
 type IdentityX struct {
 	db          *pgxpool.Pool
-	river       *river.Client[pgx.Tx]
 	cfg         config.Config
 	emailClient *email.Client
 }
@@ -50,41 +45,6 @@ func Start() {
 	if has {
 		globals.MarkSetupComplete()
 	}
-
-	libriver.Migrate(ctx, app.db)
-	app.river = libriver.NewClient(app.db, libriver.NewWorkers(
-		libriver.Register[jobs.CreateCryptoKeyArgs](jobs.NewCreateCryptoKeyWorker(sqlcQueries)),
-		libriver.Register[jobs.CleanupBlacklistArgs](jobs.NewCleanupBlacklistWorker(sqlcQueries)),
-		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(sqlcQueries)),
-		libriver.Register[emails.SendAuthEmailArgs](jobs.NewSendAuthEmailWorker(app.emailClient, repos.NewEmailTemplates(sqlcQueries))),
-	), nil, []*river.PeriodicJob{
-		river.NewPeriodicJob(
-			river.PeriodicInterval(5*time.Minute),
-			func() (river.JobArgs, *river.InsertOpts) {
-				return jobs.CleanupBlacklistArgs{}, nil
-			},
-			&river.PeriodicJobOpts{RunOnStart: true},
-		),
-		river.NewPeriodicJob(
-			river.PeriodicInterval(5*time.Minute),
-			func() (river.JobArgs, *river.InsertOpts) {
-				return jobs.CleanupActionTokensArgs{}, nil
-			},
-			&river.PeriodicJobOpts{RunOnStart: true},
-		),
-	})
-	err = app.river.Start(ctx)
-	if err != nil {
-		errx.Exit(err, "failed to start river client")
-	}
-	defer func() {
-		err = app.river.Stop(ctx)
-		if err != nil {
-			telemetry.Log().Info("failed to stop river client")
-		}
-	}()
-
-	EnsureKeysExist(ctx, app.db, app.river)
 
 	shutdown := telemetry.InitTracer(ctx, app.cfg.AppName)
 	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)

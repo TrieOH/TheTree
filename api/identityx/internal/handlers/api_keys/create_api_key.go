@@ -9,6 +9,11 @@ import (
 )
 
 func (h *Handlers) CreateAPIKey(ctx context.Context, req openapi.CreateAPIKeyRequestObject) (openapi.CreateAPIKeyResponseObject, error) {
+	err := models.RequireClientOnly(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	key, raw, err := h.ops.Create(ctx, models.CreateAPIKeyInput{
 		SubjectID:    req.Body.SubjectId,
 		Capabilities: derefSlice(req.Body.Capabilities),

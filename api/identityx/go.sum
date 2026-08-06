@@ -73,6 +73,8 @@ github.com/prometheus/common v0.70.1 h1:1HvjP4D5oL3t8RsPlwxA9onvvStjtIHYE5XuuwOi
 github.com/prometheus/common v0.70.1/go.mod h1:VdFUQDMZK3VLkurFUVhia6uys/0suUp86TJz5qbJRhc=
 github.com/prometheus/procfs v0.21.1 h1:GljZCt+zSTS+NZq88cyQ1LjZ+RCHp3uVuabBWA5+OJI=
 github.com/prometheus/procfs v0.21.1/go.mod h1:aB55Cww9pdSJVHk0hUf0inxWyyjPogFIjmHKYgMKmtY=
+github.com/riverqueue/apiframe v0.0.0-20251229202423-2b52ce1c482e h1:OwOgxT3MRpOj5Mp6DhFdZP43FOQOf2hhywAuT5XZCR4=
+github.com/riverqueue/apiframe v0.0.0-20251229202423-2b52ce1c482e/go.mod h1:O7UmsAMjpMYuToN4au5GNXdmN1gli+5FTldgXqAfaD0=
 github.com/riverqueue/river v0.43.0 h1:3Dx6D3s6x+LM64UXRNJ79LvHxbE7XHywQUbMJOKEkbg=
 github.com/riverqueue/river v0.43.0/go.mod h1:cj0PdXI8jFTyNSAuVsItUhceQPYgRKdWLzBH5COLN4g=
 github.com/riverqueue/river/riverdriver v0.43.0 h1:gZOXFrUO4eoltx1aS389qBcMnYu0/vHjwUiLRjhKAd0=
@@ -132,3 +134,5 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+riverqueue.com/riverui v0.17.0 h1:iUkQ2zoxrAjqTjk1R5WUK7/PMM/EseTkUgmwYEzsp6E=
+riverqueue.com/riverui v0.17.0/go.mod h1:5EsPg9ORURjHkeBkY+SYesppOnh9Nb+3AY+1cFcNKWM=

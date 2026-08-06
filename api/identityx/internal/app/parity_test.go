@@ -281,17 +281,15 @@ func TestRouterRoutesMatchSpec(t *testing.T) {
 
 // TestAuthMatrixMatchesSpec asserts every operation's chain, composed from
 // the spec's security blocks, runs the middlewares the spec declares: the
-// setup guard (except the two setup routes), the scheme combination's
-// middleware, and the platform-client scope guard for client-only
-// operations. Chains are keyed by generated-form operationID; the
-// client-only list is validated against the spec inside the resolver, so
-// this test no longer re-derives expectations from the same list it feeds.
+// setup guard (except the two setup routes) and the scheme combination's
+// derived primitive. Chains are keyed by generated-form operationID; the
+// spec is the single source of the expectations, so the resolver cannot
+// drift from it without failing startup or this test.
 func TestAuthMatrixMatchesSpec(t *testing.T) {
 	mw := middlewares{
 		jwtAuth:    labelMW("JWT"),
 		apiKeyAuth: labelMW("APIKey"),
 		anyAuth:    labelMW("AnyAuth"),
-		clientOnly: labelMW("ClientOnly"),
 	}
 	resolver, err := authResolver(mw, labelMW("setupGuard"))
 	if err != nil {
@@ -302,10 +300,6 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 	ops, err := authz.SpecOperations(spec.OpenAPISpec)
 	if err != nil {
 		t.Fatalf("SpecOperations: %v", err)
-	}
-	clientOnly := make(map[string]bool, len(clientOnlyOps))
-	for _, op := range clientOnlyOps {
-		clientOnly[op] = true
 	}
 
 	var mismatches []string
@@ -318,15 +312,14 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 			switch strings.Join(op.Schemes, "+") {
 			case "bearerAuth":
 				want = append(want, "JWT")
+			case "apiKeyAuth":
+				want = append(want, "APIKey")
 			case "apiKeyAuth+bearerAuth":
 				want = append(want, "AnyAuth")
 			default:
 				mismatches = append(mismatches, op.OperationID+": unexpected scheme combination "+strings.Join(op.Schemes, "+"))
 				continue
 			}
-		}
-		if clientOnly[op.OperationID] {
-			want = append(want, "ClientOnly")
 		}
 		if got := runChain(chains[authz.GeneratedOperationID(op.OperationID)]); !slices.Equal(got, want) {
 			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))

@@ -27,7 +27,6 @@ func schemaTestRouter(t *testing.T) http.Handler {
 		jwtAuth:    mwJWT,
 		apiKeyAuth: mwJWT,
 		anyAuth:    mwAnyAuth,
-		clientOnly: mwClientOnly,
 	})
 }
 

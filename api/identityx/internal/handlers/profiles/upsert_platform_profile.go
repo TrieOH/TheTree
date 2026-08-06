@@ -9,6 +9,11 @@ import (
 )
 
 func (h *Handlers) UpsertPlatformProfile(ctx context.Context, req openapi.UpsertPlatformProfileRequestObject) (openapi.UpsertPlatformProfileResponseObject, error) {
+	err := models.RequireClientOnly(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	profile, err := h.ops.UpsertPlatformProfile(ctx, models.UpsertProfileInput{
 		ActorID: req.ActorId,
 		Handle:  req.Body.Handle,

@@ -17,6 +17,7 @@ require (
 	github.com/riverqueue/river/rivertype v0.43.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/oauth2 v0.36.0
+	riverqueue.com/riverui v0.17.0
 )
 
 require (
@@ -40,6 +41,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
+	github.com/riverqueue/apiframe v0.0.0-20251229202423-2b52ce1c482e // indirect
 	github.com/riverqueue/river/riverdriver v0.43.0 // indirect
 	github.com/riverqueue/river/rivershared v0.43.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect

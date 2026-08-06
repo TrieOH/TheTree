@@ -8,7 +8,12 @@ import (
 )
 
 func (h *Handlers) AddOrganizationMember(ctx context.Context, req openapi.AddOrganizationMemberRequestObject) (openapi.AddOrganizationMemberResponseObject, error) {
-	err := h.ops.AddMember(ctx, models.AddOrganizationMemberInput{
+	err := models.RequireClientOnly(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.ops.AddMember(ctx, models.AddOrganizationMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		Role:           req.Body.Role,
 		OrganizationID: req.OrganizationId,
