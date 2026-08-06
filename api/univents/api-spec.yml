@@ -1963,6 +1963,173 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [badges]
+      operationId: updateBadgeTemplate
+      summary: Update a badge template
+      description: |
+        Updates a badge template's name and/or design data. The target
+        ticket type is immutable — move a template by deleting and
+        recreating it. Designs are read live, so emissions re-render
+        automatically; no emails are sent. The actor must be an owner or
+        admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_id
+          in: path
+          required: true
+          description: Badge template ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBadgeTemplateRequest'
+            example:
+              name: Standard Badge v2
+              design_data:
+                background: "#123456"
+      responses:
+        '200':
+          description: Badge template updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{user_id}/badges:
+    get:
+      tags: [badges]
+      operationId: listUserBadges
+      summary: List a user's badges
+      description: |
+        Lists a user's active badges grouped by origin (attendant,
+        staff), each split into current and past editions. Public —
+        badges are meant to be shown on profiles.
+      security: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User (actor) ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The user's badges grouped by origin
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BadgeProfileGroups'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/badges/emissions:
+    get:
+      tags: [badges]
+      operationId: listEditionBadgeEmissions
+      summary: List an edition's badge emissions
+      description: |
+        Lists every badge emission of the edition (active and revoked)
+        for browsing. Holder names are derived by the front from
+        IdentityX profiles. The actor must be an owner or admin of the
+        event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Edition badge emissions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BadgeEditionEmission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/badges/print:
+    get:
+      tags: [badges]
+      operationId: getEditionBadgesPrint
+      summary: Get badge print data
+      description: |
+        Returns the print payload for the edition's active emissions
+        (all by default, or a specific set via emission_ids): the design
+        plus the variables resolved from Univents' own data (event and
+        edition names, ticket name, action URL). Holder names are
+        derived by the front from IdentityX profiles. The actor must be
+        an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+        - name: emission_ids
+          in: query
+          required: false
+          description: Optional emission IDs to print; defaults to all active.
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Badge print payload
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BadgePrintItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /editions/{edition_id}/signatures:
     get:
@@ -3847,6 +4014,179 @@ components:
             validate: "required"
           type: object
           additionalProperties: true
+
+    UpdateBadgeTemplateRequest:
+      type: object
+      description: Request body for badge template update. Mirrors `models.UpdateBadgeTemplateInput`.
+      properties:
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "max=256"
+          type: string
+          maxLength: 256
+        design_data:
+          type: object
+          additionalProperties: true
+
+    BadgeEmission:
+      x-go-type: models.BadgeEmission
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One badge awarded to a person for an edition. Mirrors `models.BadgeEmission`.
+      required: [id, edition_id, user_id, origin, status, emitted_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        origin:
+          type: string
+          enum: [participant, staff]
+        registration_id:
+          $ref: '#/components/schemas/NullableUUID'
+        status:
+          type: string
+          enum: [active, revoked]
+        status_reason:
+          type: [ string, "null" ]
+        email_sent_at:
+          type: [ string, "null" ]
+          format: date-time
+        emitted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    BadgeOriginGroup:
+      x-go-type: models.BadgeOriginGroup
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One origin's badges, split into current and past editions. Mirrors `models.BadgeOriginGroup`.
+      required: [current, past]
+      properties:
+        current:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeProfileBadge'
+        past:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeProfileBadge'
+
+    BadgeProfileGroups:
+      x-go-type: models.BadgeProfileGroups
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: A user's badges grouped by origin. Mirrors `models.BadgeProfileGroups`.
+      required: [attendant, staff]
+      properties:
+        attendant:
+          $ref: '#/components/schemas/BadgeOriginGroup'
+        staff:
+          $ref: '#/components/schemas/BadgeOriginGroup'
+
+    BadgeProfileBadge:
+      x-go-type: models.BadgeProfileBadge
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One badge as shown on a profile, self-contained for the front renderer. Mirrors `models.BadgeProfileBadge`.
+      required: [emission_id, edition_id, edition_name, event_name, origin, action_url]
+      properties:
+        emission_id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        edition_name:
+          type: string
+        event_name:
+          type: string
+        origin:
+          type: string
+          enum: [participant, staff]
+        template_id:
+          $ref: '#/components/schemas/NullableUUID'
+        template_name:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          additionalProperties: true
+        ticket_name:
+          type: [ string, "null" ]
+        action_url:
+          type: string
+          description: The QR payload (profile URL).
+
+    BadgeEditionEmission:
+      x-go-type: models.BadgeEditionEmission
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: An emission as browsed by the edition owner. Mirrors `models.BadgeEditionEmission`.
+      required: [id, user_id, origin, status, emitted_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        origin:
+          type: string
+          enum: [participant, staff]
+        status:
+          type: string
+          enum: [active, revoked]
+        status_reason:
+          type: [ string, "null" ]
+        ticket_name:
+          type: [ string, "null" ]
+        template_id:
+          $ref: '#/components/schemas/NullableUUID'
+        template_name:
+          type: [ string, "null" ]
+        emitted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    BadgePrintItem:
+      x-go-type: models.BadgePrintItem
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: The per-emission print payload. Mirrors `models.BadgePrintItem`.
+      required: [emission_id, user_id, origin, event_name, edition_name, action_url]
+      properties:
+        emission_id:
+          $ref: '#/components/schemas/UUID'
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        origin:
+          type: string
+          enum: [participant, staff]
+        event_name:
+          type: string
+        edition_name:
+          type: string
+        ticket_name:
+          type: [ string, "null" ]
+        template_id:
+          $ref: '#/components/schemas/NullableUUID'
+        template_name:
+          type: [ string, "null" ]
+        design_data:
+          type: object
+          additionalProperties: true
+        action_url:
+          type: string
 
     Signature:
       x-go-type: models.Signature

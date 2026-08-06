@@ -99,6 +99,22 @@ func (s *Server) CreateBadgeTemplate(ctx context.Context, req openapi.CreateBadg
 	return s.badges.CreateBadgeTemplate(ctx, req)
 }
 
+func (s *Server) UpdateBadgeTemplate(ctx context.Context, req openapi.UpdateBadgeTemplateRequestObject) (openapi.UpdateBadgeTemplateResponseObject, error) {
+	return s.badges.UpdateBadgeTemplate(ctx, req)
+}
+
+func (s *Server) ListUserBadges(ctx context.Context, req openapi.ListUserBadgesRequestObject) (openapi.ListUserBadgesResponseObject, error) {
+	return s.badges.ListUserBadges(ctx, req)
+}
+
+func (s *Server) ListEditionBadgeEmissions(ctx context.Context, req openapi.ListEditionBadgeEmissionsRequestObject) (openapi.ListEditionBadgeEmissionsResponseObject, error) {
+	return s.badges.ListEditionBadgeEmissions(ctx, req)
+}
+
+func (s *Server) GetEditionBadgesPrint(ctx context.Context, req openapi.GetEditionBadgesPrintRequestObject) (openapi.GetEditionBadgesPrintResponseObject, error) {
+	return s.badges.GetEditionBadgesPrint(ctx, req)
+}
+
 func (s *Server) ListEditionCertifications(ctx context.Context, req openapi.ListEditionCertificationsRequestObject) (openapi.ListEditionCertificationsResponseObject, error) {
 	return s.certs.ListEditionCertifications(ctx, req)
 }

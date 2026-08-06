@@ -23,7 +23,7 @@ func TestDiscontinue_OwnerCanDiscontinueActive(t *testing.T) {
 	eventID := uuid.New()
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -58,7 +58,7 @@ func TestDiscontinue_AdminCanDiscontinueActive(t *testing.T) {
 	ownerID := uuid.New()
 	adminID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: adminID},
@@ -92,7 +92,7 @@ func TestDiscontinue_CannotDiscontinueNonActive(t *testing.T) {
 	eventID := uuid.New()
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -124,7 +124,7 @@ func TestDiscontinue_StaffForbidden(t *testing.T) {
 	ownerID := uuid.New()
 	staffID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: staffID},
@@ -154,7 +154,7 @@ func TestDiscontinue_NoIdentity(t *testing.T) {
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	err := cmd.Discontinue(context.Background(), uuid.New())
 	if err == nil {

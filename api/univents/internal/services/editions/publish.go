@@ -8,6 +8,8 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
+
+	"go.uber.org/zap"
 )
 
 func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
@@ -38,5 +40,17 @@ func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
 		return err
 	}
 
-	return o.editions.Publish(ctx, editionID)
+	err = o.editions.Publish(ctx, editionID)
+	if err != nil {
+		return err
+	}
+
+	err = o.badges.AwardStaffBadgesForEdition(ctx, editionID)
+	if err != nil {
+		telemetry.Log().Error("failed to award staff badges for edition",
+			zap.String("edition_id", editionID.String()),
+			zap.Error(err))
+	}
+
+	return nil
 }

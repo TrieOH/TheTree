@@ -13,31 +13,34 @@ import (
 	"univents/internal/repos/events"
 	"univents/internal/repos/products"
 	"univents/internal/repos/programs"
+	"univents/internal/repos/registrations"
 	"univents/internal/repos/signatures"
 	"univents/internal/repos/ticket_types"
 )
 
 // Type and constructor aliases for each feature's repo package.
 type (
-	Events      = events.Repo
-	Editions    = editions.Repo
-	TicketTypes = ticket_types.Repo
-	Products    = products.Repo
-	Programs    = programs.Repo
-	Badges      = badges.Repo
-	Signatures  = signatures.Repo
-	Certs       = certifications.Repo
+	Events        = events.Repo
+	Editions      = editions.Repo
+	TicketTypes   = ticket_types.Repo
+	Products      = products.Repo
+	Programs      = programs.Repo
+	Badges        = badges.Repo
+	Signatures    = signatures.Repo
+	Certs         = certifications.Repo
+	Registrations = registrations.Repo
 )
 
 var (
-	NewEvents      = events.NewRepo
-	NewEditions    = editions.NewRepo
-	NewTicketTypes = ticket_types.NewRepo
-	NewProducts    = products.NewRepo
-	NewPrograms    = programs.NewRepo
-	NewBadges      = badges.NewRepo
-	NewSignatures  = signatures.NewRepo
-	NewCerts       = certifications.NewRepo
+	NewEvents        = events.NewRepo
+	NewEditions      = editions.NewRepo
+	NewTicketTypes   = ticket_types.NewRepo
+	NewProducts      = products.NewRepo
+	NewPrograms      = programs.NewRepo
+	NewBadges        = badges.NewRepo
+	NewSignatures    = signatures.NewRepo
+	NewCerts         = certifications.NewRepo
+	NewRegistrations = registrations.NewRepo
 )
 
 // Repos is the aggregate of every feature repo, constructed once at startup.
@@ -54,6 +57,7 @@ type Repos struct {
 	Signatures        *Signatures
 	SignatureRequests *Signatures
 	Certs             *Certs
+	Registrations     *Registrations
 }
 
 // New constructs every feature repo from the shared query handle.
@@ -69,5 +73,6 @@ func New(q *sqlc.Queries) *Repos {
 		Signatures:        NewSignatures(q),
 		SignatureRequests: NewSignatures(q),
 		Certs:             NewCerts(q),
+		Registrations:     NewRegistrations(q),
 	}
 }

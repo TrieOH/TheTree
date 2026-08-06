@@ -45,5 +45,10 @@ func SetupConstraintMessages() {
 
 		// certification_templates
 		"chk_certification_templates_kind_valid": "Certification template kind must be one of: edition_attendance, program_attendance.",
+
+		// badge_emissions
+		"chk_badge_emissions_origin_valid":         "Badge emission origin must be one of: participant, staff.",
+		"chk_badge_emissions_status_valid":         "Badge emission status must be one of: active, revoked.",
+		"uniq_badge_emissions_edition_user_origin": "This person already has a badge for this edition and origin.",
 	})
 }

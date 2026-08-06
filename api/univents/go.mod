@@ -13,6 +13,7 @@ require (
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/ovechkin-dm/mockio v1.0.2
 	github.com/riverqueue/river v0.43.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	go.uber.org/zap v1.28.0
 	riverqueue.com/riverui v0.17.0
 )
