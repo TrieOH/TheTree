@@ -138,6 +138,15 @@ export function ProfileEditor({
       <form
         onSubmit={async (event) => {
           event.preventDefault();
+          const submittedHandle = handle.trim().replace(/^@/, "");
+          if (
+            /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
+              submittedHandle,
+            )
+          ) {
+            toast.error("Escolha um handle que não seja um UUID.");
+            return;
+          }
           setSaving(true);
           try {
             const imageEntries = Object.entries(pendingImages) as [

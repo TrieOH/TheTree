@@ -1,32 +1,23 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { useCallback } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { requireAuth } from "@/features/auths/lib/route-guard";
-import { ProfileView } from "@/features/profile/ui/profile-view";
 
 export const Route = createFileRoute("/profile/")({
-  beforeLoad: requireAuth,
-  component: MyProfilePage,
+  beforeLoad: async (args) => {
+    requireAuth(args);
+    const sessionAuth = args.context.auth?.auth;
+    const actorId = sessionAuth?.profile()?.id;
+
+    if (actorId) {
+      const response = await sessionAuth?.getActorProfile(actorId);
+      const profileId =
+        response?.success && response.data?.handle
+          ? response.data.handle
+          : actorId;
+
+      throw redirect({
+        to: "/profile/$actorId",
+        params: { actorId: profileId },
+      });
+    }
+  },
 });
-
-function MyProfilePage() {
-  const { auth } = useAuth();
-  const navigate = useNavigate();
-  const actorId = auth.profile()?.id;
-  const loadProfile = useCallback(
-    async (id: string) => {
-      const response = await auth.getActorProfile(id);
-      if (response.success && response.data) {
-        await navigate({
-          to: "/profile/$actorId",
-          params: { actorId: response.data.handle || id },
-          replace: true,
-        });
-      }
-      return response;
-    },
-    [auth, navigate],
-  );
-
-  return <ProfileView actorId={actorId} loadProfile={loadProfile} ownProfile />;
-}

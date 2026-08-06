@@ -39,6 +39,7 @@ function PublicProfilePage() {
     <ProfileView
       actorId={actorId}
       loadProfile={loadProfile}
+      ownProfile={actorId === viewerActorId}
       viewerActorId={viewerActorId}
     />
   );
