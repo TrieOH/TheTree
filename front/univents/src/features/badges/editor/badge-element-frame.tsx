@@ -20,6 +20,8 @@ interface BadgeElementFrameProps {
   scale: number;
   zIndex: number;
   canvas: { width: number; height: number };
+  minSize?: number;
+  overflowAllowance?: number;
   selected: boolean;
   editing?: boolean;
   onSelect: () => void;
@@ -34,6 +36,8 @@ export function BadgeElementFrame({
   scale,
   zIndex,
   canvas,
+  minSize = 4,
+  overflowAllowance = 0,
   selected,
   editing = false,
   onSelect,
@@ -46,9 +50,9 @@ export function BadgeElementFrame({
     bounds,
     scale,
     canvas,
-    overflowAllowance: 0.5,
-    minWidth: 24,
-    minHeight: 24,
+    overflowAllowance,
+    minWidth: minSize,
+    minHeight: minSize,
     onChange: onChangeBounds,
   });
 
@@ -68,7 +72,10 @@ export function BadgeElementFrame({
       }}
       onPointerDown={(event) => {
         onSelect();
-        if (!editing) startDrag(event);
+        if (!editing) {
+          event.preventDefault();
+          startDrag(event);
+        }
       }}
       onDoubleClick={onDoubleClick}
     >

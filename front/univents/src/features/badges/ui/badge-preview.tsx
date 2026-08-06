@@ -1,4 +1,4 @@
-import { ProfileQrCode } from "../../profile/ui/profile-qr-code";
+import QRCode from "qrcode";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
 import {
   type BadgeElement,
@@ -131,7 +131,7 @@ function BadgeElementPreview({
   if (element.type === "qr") {
     return (
       <div className="absolute" style={style}>
-        <ProfileQrCode value={actionUrl} size={160} className="size-full" />
+        <PreviewQrCode element={element} value={actionUrl} />
       </div>
     );
   }
@@ -151,5 +151,64 @@ function BadgeElementPreview({
     >
       {text}
     </div>
+  );
+}
+
+function PreviewQrCode({
+  element,
+  value,
+}: {
+  element: Extract<BadgeElement, { type: "qr" }>;
+  value: string;
+}) {
+  const matrix = QRCode.create(
+    value || "https://univents.app/check-in",
+  ).modules;
+  const margin = 2;
+  const size = matrix.size + margin * 2;
+  const modules = [];
+
+  for (let row = 0; row < matrix.size; row++) {
+    for (let column = 0; column < matrix.size; column++) {
+      if (!matrix.get(row, column)) continue;
+      const x = column + margin;
+      const y = row + margin;
+      modules.push(
+        element.style === "dots" ? (
+          <circle
+            key={`${row}-${column}`}
+            cx={x + 0.5}
+            cy={y + 0.5}
+            r="0.42"
+            fill={element.foreground}
+          />
+        ) : (
+          <rect
+            key={`${row}-${column}`}
+            x={x}
+            y={y}
+            width="1"
+            height="1"
+            rx={element.style === "rounded" ? 0.28 : 0}
+            fill={element.foreground}
+          />
+        ),
+      );
+    }
+  }
+
+  return (
+    <svg
+      role="img"
+      aria-label="QR Code de check-in"
+      className="size-full"
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ background: element.background }}
+      shapeRendering={
+        element.style === "square" ? "crispEdges" : "geometricPrecision"
+      }
+    >
+      {modules}
+    </svg>
   );
 }

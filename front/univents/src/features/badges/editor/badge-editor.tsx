@@ -380,7 +380,7 @@ export function BadgeEditor({
                   <Type className="size-4" />
                   Texto
                 </Button>
-                <label className="inline-flex h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-muted text-sm font-medium hover:bg-accent">
+                <label className="inline-flex h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50">
                   <ImageIcon className="size-4" />
                   Imagem
                   <input

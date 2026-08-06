@@ -50,19 +50,22 @@ export function Sidebar() {
           >
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 shrink-0 transition-all duration-300">
-                <Logo
-                  variant="icon"
-                  imgClassName="object-left"
-                />
+                <Logo variant="icon" imgClassName="object-left" />
               </div>
-              <span className={cn(
-                "text-muted-foreground/70 transition-opacity",
-                collapsed && "hidden"
-              )}>·</span>
-              <span className={cn(
-                "ml-2 text-sm font-semibold truncate transition-opacity",
-                collapsed && "hidden"
-              )}>
+              <span
+                className={cn(
+                  "text-muted-foreground/70 transition-opacity",
+                  collapsed && "hidden",
+                )}
+              >
+                ·
+              </span>
+              <span
+                className={cn(
+                  "ml-2 text-sm font-semibold truncate transition-opacity",
+                  collapsed && "hidden",
+                )}
+              >
                 {getAdminShellLabel(pathname).title}
               </span>
             </div>

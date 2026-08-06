@@ -150,8 +150,10 @@ function EditableTextElement({
       editor={editor}
       className="certificate-rich-text-host h-full w-full"
       style={{
-        fontSize: "24px",
-        fontFamily: DEFAULT_CERTIFICATE_FONT,
+        fontSize: element.paragraphs[0]?.runs[0]?.fontSize ?? 16,
+        fontFamily:
+          element.paragraphs[0]?.runs[0]?.fontFamily ??
+          DEFAULT_CERTIFICATE_FONT,
         color: DEFAULT_CERTIFICATE_TEXT_COLOR,
       }}
       onPointerDown={(event) => event.stopPropagation()}

@@ -65,7 +65,11 @@ function AuthPage() {
   return (
     <div className="relative [&>main]:py-16 [&>main]:pt-52 md:[&>main]:pt-56">
       <div className="absolute left-1/2 top-16 md:top-20 z-20 w-32 md:w-40 -translate-x-1/2">
-        <Logo variant="complete" priority imgClassName="h-auto max-h-16 md:max-h-20" />
+        <Logo
+          variant="complete"
+          priority
+          imgClassName="h-auto max-h-16 md:max-h-20"
+        />
       </div>
 
       <ModernAuth

@@ -1,5 +1,5 @@
-import type { HTMLAttributes } from "react";
 import { useTheme } from "next-themes";
+import type { HTMLAttributes } from "react";
 import { cn } from "@/shared/lib/utils";
 
 export interface LogoProps extends HTMLAttributes<HTMLDivElement> {
@@ -52,7 +52,11 @@ export function Logo({
       src={getSrc(v)}
       alt={`Univents Logo ${v}`}
       loading={loading}
-      className={cn("w-full h-auto object-contain", variantClassName, imgClassName)}
+      className={cn(
+        "w-full h-auto object-contain",
+        variantClassName,
+        imgClassName,
+      )}
     />
   );
 
@@ -60,7 +64,7 @@ export function Logo({
     <div
       className={cn(
         "relative flex items-center justify-center w-full h-full",
-        className
+        className,
       )}
       {...props}
     >

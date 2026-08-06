@@ -122,6 +122,7 @@ export function BadgeCanvas({
 }: BadgeCanvasProps) {
   const { ref: stageRef, size: viewport } = useElementSize<HTMLDivElement>();
   const [zoom, setZoom] = useState(1);
+  const [panning, setPanning] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const effectiveTextAdapter = useMemo(
     () => ({ ...textAdapter, stopEditing: () => setEditingId(null) }),
@@ -168,13 +169,22 @@ export function BadgeCanvas({
       pointerY: event.clientY,
       ...pan,
     };
+    setPanning(true);
     event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function finishPan(event: ReactPointerEvent<HTMLDivElement>) {
+    panStart.current = null;
+    setPanning(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   return (
     <main
       ref={stageRef}
-      className="relative min-w-90 flex-1 touch-none overflow-hidden"
+      className={`relative min-w-90 flex-1 touch-none overflow-hidden ${panning ? "cursor-grabbing" : "cursor-grab"}`}
       style={CHECKERBOARD}
       onPointerDown={startPan}
       onPointerMove={(event) => {
@@ -185,16 +195,13 @@ export function BadgeCanvas({
           y: start.y + event.clientY - start.pointerY,
         });
       }}
-      onPointerUp={() => {
-        panStart.current = null;
-      }}
-      onPointerCancel={() => {
-        panStart.current = null;
-      }}
+      onPointerUp={finishPan}
+      onPointerCancel={finishPan}
     >
       <div
         data-canvas-controls
-        className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-muted bg-card p-1 shadow-lg"
+        className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 select-none items-center gap-1 rounded-lg border border-muted bg-card p-1 shadow-lg"
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <button
           type="button"
@@ -258,6 +265,8 @@ export function BadgeCanvas({
               scale={scale}
               zIndex={index + 1}
               canvas={design.canvas}
+              minSize={element.type === "qr" ? 32 : 4}
+              overflowAllowance={element.type === "image" ? 0.5 : 0}
               selected={selectedId === element.id}
               editing={editingId === element.id}
               onSelect={() => {
