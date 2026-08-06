@@ -1,22 +1,27 @@
 {
-  "short_name": "Univents",
   "name": "Univents",
+  "short_name": "Univents",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
-      "type": "image/png",
+      "src": "/web-app-manifest-192x192.png?v=2",
       "sizes": "192x192",
-      "purpose": "maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
-      "type": "image/png",
+      "src": "/web-app-manifest-512x512.png?v=2",
       "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512-maskable.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
-  "display": "standalone",
   "theme_color": "#ffffff",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "display": "standalone"
 }
