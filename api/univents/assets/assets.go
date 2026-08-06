@@ -65,3 +65,20 @@ func RenderCertGrantedEmail(data CertGrantedEmailData) (string, error) {
 	}
 	return buf.String(), nil
 }
+
+type BadgeEmittedEmailData struct {
+	AttendeeName string
+	EventName    string
+	EditionName  string
+	BadgeLink    string
+	QRDataURI    string
+}
+
+func RenderBadgeEmittedEmail(data BadgeEmittedEmailData) (string, error) {
+	var buf bytes.Buffer
+	err := templates.ExecuteTemplate(&buf, "badge_emitted.html", data)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}

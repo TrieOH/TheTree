@@ -23,7 +23,7 @@ func TestPublish_OwnerCanPublishDraft(t *testing.T) {
 	eventID := uuid.New()
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -58,7 +58,7 @@ func TestPublish_AdminCanPublishDraft(t *testing.T) {
 	ownerID := uuid.New()
 	adminID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: adminID},
@@ -93,7 +93,7 @@ func TestPublish_NonAdminForbidden(t *testing.T) {
 	ownerID := uuid.New()
 	staffID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: staffID},
@@ -126,7 +126,7 @@ func TestPublish_CannotPublishNonDraft(t *testing.T) {
 	eventID := uuid.New()
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -154,7 +154,7 @@ func TestPublish_NoIdentityInCtx(t *testing.T) {
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 	ctx := context.Background()
 
 	err := cmd.Publish(ctx, uuid.New())

@@ -27,7 +27,7 @@ func TestCreate_Success(t *testing.T) {
 	ownerID := uuid.New()
 	eventID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -75,7 +75,7 @@ func TestCreate_NoIdentity(t *testing.T) {
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	_, err := cmd.Create(context.Background(), models.CreateEventInput{
 		FullName: "Test Event",
@@ -97,7 +97,7 @@ func TestCreate_RepoCreateFails(t *testing.T) {
 
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc)
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},

@@ -62,13 +62,14 @@ type Operations struct {
 // HMAC secret). Authorization arrives by injection through the same seam —
 // no service-locator globals.
 func NewOperations(r *repos.Repos, authzSvc *authz.Service, objStorage *objectstorage.Client, idxClient *idx.Client, emailClient *email.Client, hmacSecret string) *Operations {
+	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, emailClient, authzSvc)
 	return &Operations{
-		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc),
-		Editions:    NewEditions(r.Events, r.Editions, authzSvc),
+		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps),
+		Editions:    NewEditions(r.Events, r.Editions, authzSvc, badgesOps),
 		TicketTypes: NewTicketTypes(r.Events, r.Editions, r.TicketTypes, authzSvc),
 		Products:    NewProducts(r.Events, r.Editions, r.Products, authzSvc),
 		Programs:    NewPrograms(r.Events, r.Editions, r.Programs, r.Occurrences, authzSvc),
-		Badges:      NewBadges(r.Badges, r.Editions, authzSvc),
+		Badges:      badgesOps,
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
 	}

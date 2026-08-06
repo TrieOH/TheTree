@@ -63,6 +63,18 @@ func (stubStrict) ListBadgeTemplates(_ context.Context, _ openapi.ListBadgeTempl
 func (stubStrict) CreateBadgeTemplate(_ context.Context, _ openapi.CreateBadgeTemplateRequestObject) (openapi.CreateBadgeTemplateResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) UpdateBadgeTemplate(_ context.Context, _ openapi.UpdateBadgeTemplateRequestObject) (openapi.UpdateBadgeTemplateResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListUserBadges(_ context.Context, _ openapi.ListUserBadgesRequestObject) (openapi.ListUserBadgesResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListEditionBadgeEmissions(_ context.Context, _ openapi.ListEditionBadgeEmissionsRequestObject) (openapi.ListEditionBadgeEmissionsResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) GetEditionBadgesPrint(_ context.Context, _ openapi.GetEditionBadgesPrintRequestObject) (openapi.GetEditionBadgesPrintResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListEditionCertifications(_ context.Context, _ openapi.ListEditionCertificationsRequestObject) (openapi.ListEditionCertificationsResponseObject, error) {
 	return nil, errStub
 }

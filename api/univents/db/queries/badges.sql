@@ -19,3 +19,19 @@ UPDATE badge_templates
 SET deleted_at = now(),
     updated_at = now()
 WHERE id = $1;
+
+-- name: UpdateBadgeTemplate :one
+UPDATE badge_templates
+SET
+    name        = @name,
+    design_data = @design_data,
+    updated_at  = now()
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- name: ListBadgeTemplatesByEditionIDs :many
+SELECT *
+FROM badge_templates
+WHERE edition_id = ANY(@edition_ids::uuid[])
+  AND deleted_at IS NULL;
