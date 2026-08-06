@@ -27,13 +27,6 @@ export function createSignatureRequestFormSteps(): StepConfig<SignatureRequestCr
           placeholder: "nome@exemplo.com",
           inputType: "email",
         },
-        {
-          kind: "text",
-          name: "signatory_user_id",
-          label: "ID do usuário",
-          placeholder: "Opcional",
-          optional: true,
-        },
       ],
     },
     {

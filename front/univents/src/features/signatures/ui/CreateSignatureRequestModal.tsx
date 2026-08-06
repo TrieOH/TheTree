@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { createSignatureRequestFn } from "@/features/signatures/api";
+import { findActorIdByEmailServerFn } from "@/features/signatures/api/actor-lookup";
 import {
   type SignatureRequestCreateInputI,
   type SignatureRequestCreateOutputI,
@@ -44,7 +45,9 @@ export function CreateSignatureRequestModal({
         await createSignatureRequestFn(editionId, {
           ...values,
           signatory_title: values.signatory_title || undefined,
-          signatory_user_id: values.signatory_user_id || undefined,
+          signatory_user_id: await findActorIdByEmailServerFn({
+            data: { email: values.signatory_email },
+          }),
         });
         await onCreated();
         return true;
