@@ -14,6 +14,7 @@ func (repo *Repo) Create(ctx context.Context, template *models.BadgeTemplate) (*
 	row, err := database.Queries(ctx, repo.q).CreateBadgeTemplate(ctx, sqlc.CreateBadgeTemplateParams{
 		EditionID:    template.EditionID,
 		TicketTypeID: template.TicketTypeID,
+		Origin:       (*string)(template.Origin),
 		Name:         template.Name,
 		DesignData:   template.DesignData,
 	})

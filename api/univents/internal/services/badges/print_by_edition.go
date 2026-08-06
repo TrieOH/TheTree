@@ -63,7 +63,7 @@ func (o *Operations) PrintByEdition(ctx context.Context, editionID uuid.UUID, em
 			TicketName:  v.TicketName,
 			ActionURL:   profileURL(v.UserID),
 		}
-		if t := idx.match(v.EditionID, v.TicketTypeID); t != nil {
+		if t := idx.match(v.EditionID, v.TicketTypeID, v.Origin); t != nil {
 			id := t.ID
 			name := t.Name
 			item.TemplateID = &id

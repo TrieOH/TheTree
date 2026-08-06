@@ -50,5 +50,9 @@ func SetupConstraintMessages() {
 		"chk_badge_emissions_origin_valid":         "Badge emission origin must be one of: participant, staff.",
 		"chk_badge_emissions_status_valid":         "Badge emission status must be one of: active, revoked.",
 		"uniq_badge_emissions_edition_user_origin": "This person already has a badge for this edition and origin.",
+
+		// badge_templates
+		"chk_badge_template_scope_valid":   "Badge template scope must be the edition default (null) or staff (staff, without a ticket type).",
+		"idx_one_badge_template_per_scope": "This edition already has a template for this scope (default, ticket type, or staff).",
 	})
 }

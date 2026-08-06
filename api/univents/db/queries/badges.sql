@@ -1,8 +1,8 @@
 -- name: CreateBadgeTemplate :one
 INSERT INTO badge_templates (
-    edition_id, ticket_type_id, name, design_data
+    edition_id, ticket_type_id, origin, name, design_data
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5
 ) RETURNING *;
 
 -- name: GetBadgeTemplateByID :one

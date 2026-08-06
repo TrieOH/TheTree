@@ -1860,8 +1860,10 @@ paths:
       summary: Create a badge template
       description: |
         Creates a badge template for the edition (design data is
-        opaque JSON consumed by the badge renderer). The actor must be
-        an owner or admin of the event.
+        opaque JSON consumed by the badge renderer). Set origin to
+        "staff" for the edition's staff-only design (ticket_type_id must
+        be absent); at most one staff template per edition. The actor must
+        be an owner or admin of the event.
       security:
         - bearerAuth: []
       parameters:
@@ -1969,8 +1971,8 @@ paths:
       summary: Update a badge template
       description: |
         Updates a badge template's name and/or design data. The target
-        ticket type is immutable — move a template by deleting and
-        recreating it. Designs are read live, so emissions re-render
+        ticket type and origin are immutable — move a template by deleting
+        and recreating it. Designs are read live, so emissions re-render
         automatically; no emails are sent. The actor must be an owner or
         admin of the event.
       security:
@@ -3966,6 +3968,18 @@ components:
         max_capacity:
           type: [ integer, "null" ]
 
+    BadgeTemplateOrigin:
+      x-go-type: '*models.BadgeTemplateOrigin'
+      x-go-type-skip-optional-pointer: true
+      x-go-type-import:
+        path: univents/models
+      type: [ string, "null" ]
+      enum: [staff]
+      description: |
+        Badge template scope. null = default (edition default or per ticket
+        type); 'staff' = the edition's staff-only design (ticket_type_id is
+        null). At most one staff template per edition.
+
     BadgeTemplate:
       x-go-type: models.BadgeTemplate
       x-go-type-import:
@@ -3980,7 +3994,9 @@ components:
           $ref: '#/components/schemas/UUID'
         ticket_type_id:
           $ref: '#/components/schemas/NullableUUID'
-          description: Ticket type the badge applies to; null = all.
+          description: Ticket type the badge applies to; null = edition default / staff.
+        origin:
+          $ref: '#/components/schemas/BadgeTemplateOrigin'
         name:
           type: string
         design_data:
@@ -4004,6 +4020,10 @@ components:
       properties:
         ticket_type_id:
           $ref: '#/components/schemas/NullableUUID'
+        origin:
+          x-oapi-codegen-extra-tags:
+            validate: "omitempty,oneof=staff"
+          $ref: '#/components/schemas/BadgeTemplateOrigin'
         name:
           x-oapi-codegen-extra-tags:
             validate: "required,max=256"

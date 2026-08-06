@@ -20,6 +20,7 @@ func (h *Handlers) CreateBadgeTemplate(ctx context.Context, req openapi.CreateBa
 	template, err := h.ops.CreateTemplate(ctx, models.CreateBadgeTemplateInput{
 		EditionID:    req.EditionId,
 		TicketTypeID: req.Body.TicketTypeId,
+		Origin:       req.Body.Origin,
 		Name:         req.Body.Name,
 		DesignData:   design,
 	})
