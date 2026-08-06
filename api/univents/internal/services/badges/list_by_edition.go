@@ -50,7 +50,7 @@ func (o *Operations) ListByEdition(ctx context.Context, editionID uuid.UUID) ([]
 			EmittedAt:    v.EmittedAt,
 			UpdatedAt:    v.UpdatedAt,
 		}
-		if t := idx.match(v.EditionID, v.TicketTypeID); t != nil {
+		if t := idx.match(v.EditionID, v.TicketTypeID, v.Origin); t != nil {
 			id := t.ID
 			name := t.Name
 			item.TemplateID = &id

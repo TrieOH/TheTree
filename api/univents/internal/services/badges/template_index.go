@@ -11,9 +11,12 @@ import (
 
 // editionTemplates indexes one edition's templates for derivation:
 // a specific ticket-type template wins over the edition default (NULL
-// ticket_type_id); no match at all yields no template (placeholder badge).
+// ticket_type_id); the staff-only template (origin 'staff') wins for
+// staff-origin emissions; no match at all yields no template (placeholder
+// badge).
 type editionTemplates struct {
 	defaultT *models.BadgeTemplate
+	staffT   *models.BadgeTemplate
 	byTicket map[uuid.UUID]*models.BadgeTemplate
 }
 
@@ -27,9 +30,12 @@ func indexTemplates(templates []models.BadgeTemplate) templateIndex {
 		if et.byTicket == nil {
 			et.byTicket = map[uuid.UUID]*models.BadgeTemplate{}
 		}
-		if t.TicketTypeID == nil {
+		switch {
+		case t.Origin != nil && *t.Origin == models.BadgeTemplateOriginStaff:
+			et.staffT = t
+		case t.TicketTypeID == nil:
 			et.defaultT = t
-		} else {
+		default:
 			et.byTicket[*t.TicketTypeID] = t
 		}
 		idx[t.EditionID] = et
@@ -37,10 +43,13 @@ func indexTemplates(templates []models.BadgeTemplate) templateIndex {
 	return idx
 }
 
-func (idx templateIndex) match(editionID uuid.UUID, ticketTypeID *uuid.UUID) *models.BadgeTemplate {
+func (idx templateIndex) match(editionID uuid.UUID, ticketTypeID *uuid.UUID, origin models.BadgeEmissionOrigin) *models.BadgeTemplate {
 	et, ok := idx[editionID]
 	if !ok {
 		return nil
+	}
+	if origin == models.BadgeEmissionOriginStaff && et.staffT != nil {
+		return et.staffT
 	}
 	if ticketTypeID != nil {
 		if t, ok := et.byTicket[*ticketTypeID]; ok {
@@ -71,7 +80,7 @@ func (o *Operations) loadTemplateIndex(ctx context.Context, views []models.Badge
 }
 
 func profileBadge(v models.BadgeEmissionView, idx templateIndex) models.BadgeProfileBadge {
-	t := idx.match(v.EditionID, v.TicketTypeID)
+	t := idx.match(v.EditionID, v.TicketTypeID, v.Origin)
 	badge := models.BadgeProfileBadge{
 		EmissionID:  v.ID,
 		EditionID:   v.EditionID,

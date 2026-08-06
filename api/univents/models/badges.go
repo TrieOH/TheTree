@@ -7,26 +7,36 @@ import (
 	"github.com/google/uuid"
 )
 
+// BadgeTemplateOrigin scopes a badge template. nil means the default scope
+// (edition default or per-ticket-type); BadgeTemplateOriginStaff is the
+// edition's staff-only design.
+type BadgeTemplateOrigin string
+
+const BadgeTemplateOriginStaff BadgeTemplateOrigin = "staff"
+
 type BadgeTemplate struct {
-	ID           uuid.UUID       `json:"id"`
-	EditionID    uuid.UUID       `json:"edition_id"`
-	TicketTypeID *uuid.UUID      `json:"ticket_type_id"`
-	Name         string          `json:"name"`
-	DesignData   json.RawMessage `json:"design_data"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    *time.Time      `json:"updated_at"`
-	DeletedAt    *time.Time      `json:"deleted_at"`
+	ID           uuid.UUID            `json:"id"`
+	EditionID    uuid.UUID            `json:"edition_id"`
+	TicketTypeID *uuid.UUID           `json:"ticket_type_id"`
+	Origin       *BadgeTemplateOrigin `json:"origin"`
+	Name         string               `json:"name"`
+	DesignData   json.RawMessage      `json:"design_data"`
+	CreatedAt    time.Time            `json:"created_at"`
+	UpdatedAt    *time.Time           `json:"updated_at"`
+	DeletedAt    *time.Time           `json:"deleted_at"`
 }
 
 type CreateBadgeTemplateInput struct {
 	EditionID    uuid.UUID
 	TicketTypeID *uuid.UUID
+	Origin       *BadgeTemplateOrigin
 	Name         string
 	DesignData   json.RawMessage
 }
 
 // UpdateBadgeTemplateInput is the PATCH body: nil fields are left unchanged.
-// ticket_type_id is immutable and cannot be patched.
+// ticket_type_id and origin are immutable (scope is set at creation and
+// changed by delete + create) and cannot be patched.
 type UpdateBadgeTemplateInput struct {
 	TemplateID uuid.UUID
 	Name       *string

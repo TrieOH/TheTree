@@ -28,6 +28,7 @@ func mapBadgeTemplate(src sqlc.BadgeTemplate) models.BadgeTemplate {
 		ID:           src.ID,
 		EditionID:    src.EditionID,
 		TicketTypeID: src.TicketTypeID,
+		Origin:       (*models.BadgeTemplateOrigin)(src.Origin),
 		Name:         src.Name,
 		DesignData:   src.DesignData,
 		CreatedAt:    src.CreatedAt,
