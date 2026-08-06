@@ -3,8 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { userBadgesQueryOptions } from "@/features/badges/api";
+import type { BadgeProfileBadge } from "@/features/badges/model";
+import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { cn } from "@/shared/lib/utils";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
 import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
@@ -47,6 +50,7 @@ export function ProfileView({
   viewerActorId,
 }: ProfileViewProps) {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"about" | "badges">("about");
   const profileQuery = useQuery({
     queryKey: profileKeys.detail(actorId ?? ""),
     enabled: Boolean(actorId),
@@ -62,6 +66,9 @@ export function ProfileView({
     },
   });
   const result = profileQuery.data;
+  const { data: badges } = useQuery(
+    userBadgesQueryOptions(result?.actor_id ?? ""),
+  );
   const error = actorId
     ? profileQuery.error?.message
     : "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
@@ -85,7 +92,7 @@ export function ProfileView({
   const isOwnProfile = ownProfile || result?.actor_id === viewerActorId;
   const publicIdentifier = result?.handle || actorId;
   const profileUrl = new URL(
-    publicIdentifier ? `/profile/${publicIdentifier}` : "/profile",
+    publicIdentifier ? `/profile/${publicIdentifier}` : "/",
     window.location.origin,
   ).toString();
   const name = profileDisplayName(profile);
@@ -107,103 +114,135 @@ export function ProfileView({
         handle={result?.handle ?? undefined}
         ownProfile={isOwnProfile}
         profileUrl={profileUrl}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
-      <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
-        {/* ---- Main Column ---- */}
-        <div className="space-y-5">
-          {isOwnProfile && completeness < 100 && (
-            <ProfileCard title="Integridade do Perfil">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {completeness >= 100
-                    ? "Perfil completo!"
-                    : "Complete seu perfil"}
-                </span>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  {completeness}% completo
-                </span>
-              </div>
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{
-                    width: `${completeness}%`,
-                  }}
-                />
-              </div>
-              <p className="mt-3 text-sm italic text-muted-foreground">
-                {completenessHint(profile)}
-              </p>
-            </ProfileCard>
-          )}
-
-          <ProfileCard title="Sobre mim">
-            {profile.aboutMe ? (
-              <p className="whitespace-pre-wrap text-[15px] leading-[1.7] text-muted-foreground">
-                {profile.aboutMe}
-              </p>
-            ) : (
-              <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
-            )}
-          </ProfileCard>
+      {activeTab === "badges" ? (
+        <div className="mx-auto mt-5 max-w-7xl px-4">
+          <ProfileBadges
+            badges={
+              badges?.attendant.current.concat(badges.staff.current) ?? []
+            }
+            profileUrl={profileUrl}
+          />
         </div>
-
-        {/* ---- Sidebar ---- */}
-        <div className="space-y-5">
-          <ProfileCard title="Idiomas">
-            {specializations.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {specializations.map((item: string, index) => (
-                  <span
-                    // biome-ignore lint/suspicious/noArrayIndexKey: duplicate languages are valid and these tags hold no state
-                    key={`${item}-${index}`}
-                    className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
-                  >
-                    {item}
+      ) : (
+        <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
+          {/* ---- Main Column ---- */}
+          <div className="space-y-5">
+            {isOwnProfile && completeness < 100 && (
+              <ProfileCard title="Integridade do Perfil">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {completeness >= 100
+                      ? "Perfil completo!"
+                      : "Complete seu perfil"}
                   </span>
-                ))}
-              </div>
-            ) : (
-              <EmptyState message="Adicione idiomas para destacar seu perfil." />
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    {completeness}% completo
+                  </span>
+                </div>
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{
+                      width: `${completeness}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-3 text-sm italic text-muted-foreground">
+                  {completenessHint(profile)}
+                </p>
+              </ProfileCard>
             )}
-          </ProfileCard>
 
-          <ProfileCard title="Contato">
-            {hasContact ? (
-              <div className="grid grid-cols-2 gap-1">
-                {profile.website && (
-                  <SocialButton
-                    href={profile.website}
-                    label="Website"
-                    icon={<Globe className="size-4" />}
-                  />
-                )}
-                {profile.contactEmail && (
-                  <div className="hidden md:block">
+            <ProfileCard title="Sobre mim">
+              {profile.aboutMe ? (
+                <p className="whitespace-pre-wrap text-[15px] leading-[1.7] text-muted-foreground">
+                  {profile.aboutMe}
+                </p>
+              ) : (
+                <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
+              )}
+            </ProfileCard>
+          </div>
+
+          {/* ---- Sidebar ---- */}
+          <div className="space-y-5">
+            <ProfileCard title="Idiomas">
+              {specializations.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {specializations.map((item: string, index) => (
+                    <span
+                      // biome-ignore lint/suspicious/noArrayIndexKey: duplicate languages are valid and these tags hold no state
+                      key={`${item}-${index}`}
+                      className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState message="Adicione idiomas para destacar seu perfil." />
+              )}
+            </ProfileCard>
+
+            <ProfileCard title="Contato">
+              {hasContact ? (
+                <div className="grid grid-cols-2 gap-1">
+                  {profile.website && (
                     <SocialButton
-                      href={`mailto:${profile.contactEmail}`}
-                      label="E-mail"
-                      icon={<Mail className="size-4" />}
+                      href={profile.website}
+                      label="Website"
+                      icon={<Globe className="size-4" />}
                     />
-                  </div>
-                )}
-                {socials.map(([network, value]) => (
-                  <SocialButton
-                    key={network}
-                    href={socialHref(network, value)}
-                    label={capitalize(network)}
-                    icon={<SocialIcon network={network} />}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
-            )}
-          </ProfileCard>
+                  )}
+                  {profile.contactEmail && (
+                    <div className="hidden md:block">
+                      <SocialButton
+                        href={`mailto:${profile.contactEmail}`}
+                        label="E-mail"
+                        icon={<Mail className="size-4" />}
+                      />
+                    </div>
+                  )}
+                  {socials.map(([network, value]) => (
+                    <SocialButton
+                      key={network}
+                      href={socialHref(network, value)}
+                      label={capitalize(network)}
+                      icon={<SocialIcon network={network} />}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
+              )}
+            </ProfileCard>
+          </div>
         </div>
-      </div>
+      )}
     </main>
+  );
+}
+
+function ProfileBadges({
+  badges,
+  profileUrl,
+}: {
+  badges: BadgeProfileBadge[];
+  profileUrl: string;
+}) {
+  if (badges.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-start justify-center gap-2 sm:justify-start!">
+      {badges.map((badge) => (
+        <div key={badge.emission_id} className="flex items-start">
+          <BadgePreview badge={badge} framed={false} actionUrl={profileUrl} />
+        </div>
+      ))}
+    </div>
   );
 }
 

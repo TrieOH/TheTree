@@ -20,6 +20,8 @@ interface BadgeElementFrameProps {
   scale: number;
   zIndex: number;
   canvas: { width: number; height: number };
+  minSize?: number;
+  overflowAllowance?: number;
   selected: boolean;
   editing?: boolean;
   onSelect: () => void;
@@ -34,6 +36,8 @@ export function BadgeElementFrame({
   scale,
   zIndex,
   canvas,
+  minSize = 4,
+  overflowAllowance = 0,
   selected,
   editing = false,
   onSelect,
@@ -46,9 +50,9 @@ export function BadgeElementFrame({
     bounds,
     scale,
     canvas,
-    overflowAllowance: 0,
-    minWidth: 24,
-    minHeight: 24,
+    overflowAllowance,
+    minWidth: minSize,
+    minHeight: minSize,
     onChange: onChangeBounds,
   });
 
@@ -68,7 +72,10 @@ export function BadgeElementFrame({
       }}
       onPointerDown={(event) => {
         onSelect();
-        if (!editing) startDrag(event);
+        if (!editing) {
+          event.preventDefault();
+          startDrag(event);
+        }
       }}
       onDoubleClick={onDoubleClick}
     >
@@ -87,7 +94,7 @@ export function BadgeElementFrame({
               key={handle}
               aria-hidden="true"
               className={cn(
-                "absolute size-4 touch-none rounded-full border-2 border-ring bg-popover shadow-sm",
+                "absolute size-3 touch-none rounded-full border border-ring bg-popover shadow-sm",
                 HANDLE_CLASS[handle],
               )}
               onPointerDown={startResize(handle)}
@@ -96,12 +103,12 @@ export function BadgeElementFrame({
           {onDelete ? (
             <button
               type="button"
-              className="absolute -top-3.5 -right-3.5 flex size-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+              className="absolute -top-2.5 -right-2.5 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
               aria-label="Excluir elemento"
               onPointerDown={(event) => event.stopPropagation()}
               onClick={onDelete}
             >
-              <Trash2 className="size-3.5" />
+              <Trash2 className="size-3" />
             </button>
           ) : null}
         </>

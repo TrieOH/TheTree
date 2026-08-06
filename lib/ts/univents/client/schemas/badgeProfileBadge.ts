@@ -93,17 +93,26 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { BadgeTemplateOrigin } from './badgeTemplateOrigin';
-import type { CreateBadgeTemplateRequestDesignData } from './createBadgeTemplateRequestDesignData';
+import type { BadgeProfileBadgeDesignData } from './badgeProfileBadgeDesignData';
+import type { BadgeProfileBadgeOrigin } from './badgeProfileBadgeOrigin';
 import type { NullableUUID } from './nullableUUID';
+import type { Uuid } from './uuid';
 
 /**
- * Request body for badge template creation. Mirrors `models.CreateBadgeTemplateRequest`.
+ * One badge as shown on a profile, self-contained for the front renderer. Mirrors `models.BadgeProfileBadge`.
  */
-export interface CreateBadgeTemplateRequest {
-  ticket_type_id?: NullableUUID | null;
-  origin?: BadgeTemplateOrigin | null;
-  /** @maxLength 256 */
-  name: string;
-  design_data: CreateBadgeTemplateRequestDesignData;
+export interface BadgeProfileBadge {
+  emission_id: Uuid;
+  edition_id: Uuid;
+  edition_name: string;
+  event_name: string;
+  origin: BadgeProfileBadgeOrigin;
+  template_id?: NullableUUID | null;
+  /** @nullable */
+  template_name?: string | null;
+  design_data?: BadgeProfileBadgeDesignData;
+  /** @nullable */
+  ticket_name?: string | null;
+  /** The QR payload (profile URL). */
+  action_url: string;
 }

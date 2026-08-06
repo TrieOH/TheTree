@@ -34,6 +34,7 @@ export function Sidebar() {
         aria-label="Admin navigation"
         className={cn(
           "fixed inset-y-0 left-0 z-60 flex h-dvh w-72 flex-col border-r border-border/60 bg-card/95 shadow-xl shadow-black/5 backdrop-blur-xl",
+          "print:hidden",
           "transition-[width,transform] duration-300 ease-in-out",
           collapsed ? "lg:w-18" : "lg:w-[18rem]",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
@@ -49,19 +50,22 @@ export function Sidebar() {
           >
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 shrink-0 transition-all duration-300">
-                <Logo
-                  variant="icon"
-                  imgClassName="object-left"
-                />
+                <Logo variant="icon" imgClassName="object-left" />
               </div>
-              <span className={cn(
-                "text-muted-foreground/70 transition-opacity",
-                collapsed && "hidden"
-              )}>·</span>
-              <span className={cn(
-                "ml-2 text-sm font-semibold truncate transition-opacity",
-                collapsed && "hidden"
-              )}>
+              <span
+                className={cn(
+                  "text-muted-foreground/70 transition-opacity",
+                  collapsed && "hidden",
+                )}
+              >
+                ·
+              </span>
+              <span
+                className={cn(
+                  "ml-2 text-sm font-semibold truncate transition-opacity",
+                  collapsed && "hidden",
+                )}
+              >
                 {getAdminShellLabel(pathname).title}
               </span>
             </div>

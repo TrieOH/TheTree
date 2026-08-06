@@ -34,7 +34,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
           (collapsed ? "lg:pl-18" : "lg:pl-72")
         }
       >
-        <MobileTopbar />
+        <div className="print:hidden">
+          <MobileTopbar />
+        </div>
         <div className="sticky top-0 z-30 hidden bg-card/95 shadow-sm shadow-black/5 lg:block">
           <Breadcrumb />
         </div>

@@ -94,6 +94,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BadgeTemplateDesignData } from './badgeTemplateDesignData';
+import type { BadgeTemplateOrigin } from './badgeTemplateOrigin';
 import type { NullableUUID } from './nullableUUID';
 import type { Uuid } from './uuid';
 
@@ -103,8 +104,9 @@ import type { Uuid } from './uuid';
 export interface BadgeTemplate {
   id: Uuid;
   edition_id: Uuid;
-  /** Ticket type the badge applies to; null = all. */
+  /** Ticket type the badge applies to; null = edition default / staff. */
   ticket_type_id?: NullableUUID | null;
+  origin?: BadgeTemplateOrigin | null;
   name: string;
   /** Opaque design data consumed by the badge renderer. */
   design_data: BadgeTemplateDesignData;

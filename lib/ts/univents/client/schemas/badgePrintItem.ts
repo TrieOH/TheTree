@@ -93,17 +93,25 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { BadgeTemplateOrigin } from './badgeTemplateOrigin';
-import type { CreateBadgeTemplateRequestDesignData } from './createBadgeTemplateRequestDesignData';
+import type { BadgePrintItemDesignData } from './badgePrintItemDesignData';
+import type { BadgePrintItemOrigin } from './badgePrintItemOrigin';
 import type { NullableUUID } from './nullableUUID';
+import type { Uuid } from './uuid';
 
 /**
- * Request body for badge template creation. Mirrors `models.CreateBadgeTemplateRequest`.
+ * The per-emission print payload. Mirrors `models.BadgePrintItem`.
  */
-export interface CreateBadgeTemplateRequest {
-  ticket_type_id?: NullableUUID | null;
-  origin?: BadgeTemplateOrigin | null;
-  /** @maxLength 256 */
-  name: string;
-  design_data: CreateBadgeTemplateRequestDesignData;
+export interface BadgePrintItem {
+  emission_id: Uuid;
+  user_id: Uuid;
+  origin: BadgePrintItemOrigin;
+  event_name: string;
+  edition_name: string;
+  /** @nullable */
+  ticket_name?: string | null;
+  template_id?: NullableUUID | null;
+  /** @nullable */
+  template_name?: string | null;
+  design_data?: BadgePrintItemDesignData;
+  action_url: string;
 }

@@ -93,17 +93,12 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { BadgeTemplateOrigin } from './badgeTemplateOrigin';
-import type { CreateBadgeTemplateRequestDesignData } from './createBadgeTemplateRequestDesignData';
-import type { NullableUUID } from './nullableUUID';
+import type { BadgeProfileBadge } from './badgeProfileBadge';
 
 /**
- * Request body for badge template creation. Mirrors `models.CreateBadgeTemplateRequest`.
+ * One origin's badges, split into current and past editions. Mirrors `models.BadgeOriginGroup`.
  */
-export interface CreateBadgeTemplateRequest {
-  ticket_type_id?: NullableUUID | null;
-  origin?: BadgeTemplateOrigin | null;
-  /** @maxLength 256 */
-  name: string;
-  design_data: CreateBadgeTemplateRequestDesignData;
+export interface BadgeOriginGroup {
+  current: BadgeProfileBadge[];
+  past: BadgeProfileBadge[];
 }

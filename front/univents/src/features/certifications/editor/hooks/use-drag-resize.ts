@@ -135,20 +135,44 @@ export function useDragResize({
       let { x, y, width, height } = start;
 
       if (interaction.handle === "se") {
-        width = Math.max(minWidth, start.width + dx);
-        height = Math.max(minHeight, start.height + dy);
+        width = Math.min(
+          canvas.width * (1 + overflowAllowance),
+          Math.max(minWidth, start.width + dx),
+        );
+        height = Math.min(
+          canvas.height * (1 + overflowAllowance),
+          Math.max(minHeight, start.height + dy),
+        );
       } else if (interaction.handle === "nw") {
-        width = Math.max(minWidth, start.width - dx);
-        height = Math.max(minHeight, start.height - dy);
+        width = Math.min(
+          canvas.width * (1 + overflowAllowance),
+          Math.max(minWidth, start.width - dx),
+        );
+        height = Math.min(
+          canvas.height * (1 + overflowAllowance),
+          Math.max(minHeight, start.height - dy),
+        );
         x = right - width;
         y = bottom - height;
       } else if (interaction.handle === "ne") {
-        width = Math.max(minWidth, start.width + dx);
-        height = Math.max(minHeight, start.height - dy);
+        width = Math.min(
+          canvas.width * (1 + overflowAllowance),
+          Math.max(minWidth, start.width + dx),
+        );
+        height = Math.min(
+          canvas.height * (1 + overflowAllowance),
+          Math.max(minHeight, start.height - dy),
+        );
         y = bottom - height;
       } else {
-        width = Math.max(minWidth, start.width - dx);
-        height = Math.max(minHeight, start.height + dy);
+        width = Math.min(
+          canvas.width * (1 + overflowAllowance),
+          Math.max(minWidth, start.width - dx),
+        );
+        height = Math.min(
+          canvas.height * (1 + overflowAllowance),
+          Math.max(minHeight, start.height + dy),
+        );
         x = right - width;
       }
 

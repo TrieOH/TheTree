@@ -1,87 +1,62 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import { BadgeCheck, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { BadgeCheck, FileText, Plus, Printer } from "lucide-react";
 import { useMemo, useState } from "react";
-import { badgeTemplatesQueryOptions } from "@/features/badges/api";
+import {
+  badgePrintQueryOptions,
+  badgeTemplatesQueryOptions,
+} from "@/features/badges/api";
 import { useDeleteBadgeTemplateMutation } from "@/features/badges/api/mutations";
-import type { BadgeTemplate } from "@/features/badges/model";
+import type { BadgePrintItem, BadgeTemplate } from "@/features/badges/model";
+import { badgeDesignSchema } from "@/features/badges/model";
+import AdminBadgeCard from "@/features/badges/ui/AdminBadgeCard";
+import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui/shadcn/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shared/ui/shadcn/dropdown-menu";
+// Using AdminBadgeCard component for card rendering.
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/",
 )({ component: RouteComponent });
 
-function BadgeMiniature({ template }: { template: BadgeTemplate }) {
-  const design = template.design_data;
+/* BadgeMiniature extracted to `AdminBadgeCard` */
+
+function PrintableBadge({ badge }: { badge: BadgePrintItem }) {
+  const design = badgeDesignSchema.safeParse(badge.design_data).success
+    ? badgeDesignSchema.parse(badge.design_data)
+    : null;
+  const widthMm = design ? design.canvas.width / (96 / 25.4) : 85;
+  const heightMm = design ? design.canvas.height / (96 / 25.4) : 54;
+
   return (
-    <div className="flex h-52 items-center justify-center overflow-hidden bg-muted/60 p-4">
-      <div
-        className="relative h-44 overflow-hidden shadow-md"
-        style={{
-          aspectRatio: `${design.canvas.width}/${design.canvas.height}`,
-          backgroundColor: design.backgroundColor,
-          backgroundImage: design.background
-            ? `url(${design.background})`
-            : undefined,
-          backgroundSize: "cover",
-        }}
-      >
-        {design.elements
-          .filter((element) => element.type === "text")
-          .map((element) => (
-            <div
-              key={element.id}
-              className="absolute overflow-hidden"
-              style={{
-                left: `${(element.x / design.canvas.width) * 100}%`,
-                top: `${(element.y / design.canvas.height) * 100}%`,
-                width: `${(element.width / design.canvas.width) * 100}%`,
-                height: `${(element.height / design.canvas.height) * 100}%`,
-                color: element.paragraphs[0]?.runs[0]?.color,
-                fontWeight: element.paragraphs[0]?.runs[0]?.bold
-                  ? "bold"
-                  : "normal",
-                textAlign: element.paragraphs[0]?.align,
-                fontSize: Math.max(
-                  5,
-                  (element.paragraphs[0]?.runs[0]?.fontSize ?? 24) * 0.17,
-                ),
-              }}
-            >
-              {element.paragraphs
-                .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
-                .join("\n")}
-            </div>
-          ))}
-      </div>
-    </div>
+    <article
+      className="overflow-hidden bg-transparent text-black shadow print:break-inside-avoid print:shadow-none"
+      style={{ width: `${widthMm}mm`, height: `${heightMm}mm` }}
+    >
+      <BadgePreview
+        badge={badge}
+        className="relative h-full w-full rounded-none border-0 shadow-none"
+      />
+    </article>
   );
 }
 
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams();
+  const navigate = useNavigate();
+  const remove = useDeleteBadgeTemplateMutation();
   const [filter, setFilter] = useState("");
+  const [emissionFilter, setEmissionFilter] = useState("");
+  const [activeSection, setActiveSection] = useState<"templates" | "emissions">(
+    "templates",
+  );
   const { data: templates = [] } = useQuery(
     badgeTemplatesQueryOptions(editionId),
   );
+  const printQuery = useQuery(badgePrintQueryOptions(editionId));
   const { data: tickets = [] } = useQuery(allTicketsQueryOptions(editionId));
-  const remove = useDeleteBadgeTemplateMutation();
   const filtered = useMemo(
     () =>
       templates.filter((item) =>
@@ -92,95 +67,231 @@ function RouteComponent() {
   const ticketNames = new Map(
     tickets.map((ticket) => [ticket.id, ticket.name]),
   );
+  const printItems = printQuery.data ?? [];
+  const filteredPrintItems = useMemo(() => {
+    const search = emissionFilter.trim().toLowerCase();
+    if (!search) return printItems;
+    return printItems.filter((item) =>
+      [item.event_name, item.edition_name, item.ticket_name, item.template_name]
+        .filter(Boolean)
+        .some((value) => value?.toLowerCase().includes(search)),
+    );
+  }, [emissionFilter, printItems]);
   return (
-    <div className="p-6 pb-28">
-      <PaginatedContainer<BadgeTemplate>
-        items={filtered}
-        layout="grid"
-        minItemWidth="16rem"
-        pageSize={8}
-        gap="6"
-        filterValue={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Buscar templates..."
-        itemLabel="templates"
-        headerActions={
-          <Link
-            to="/admin/events/$eventId/editions/$editionId/badges/editor"
-            params={{ eventId, editionId }}
-            className={cn(
-              "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
-            )}
-          >
-            <Plus className="size-4" />
-            Novo template
-          </Link>
-        }
-        emptyState={
-          <EmptyState
-            icon={BadgeCheck}
-            eyebrow="Crachás"
-            title="Nenhum template encontrado"
-            description="Crie um template totalmente personalizado ou parta do padrão do sistema."
-            className="border-0 bg-transparent"
+    <>
+      <div className="hidden print:block">
+        <div className="flex flex-wrap content-start gap-[4mm] p-[10mm]">
+          {printItems?.map((badge) => (
+            <PrintableBadge key={badge.emission_id} badge={badge} />
+          ))}
+        </div>
+      </div>
+      <div className="p-6 pb-28 print:hidden">
+        <nav className="mb-6 flex gap-1 border-b border-border">
+          {(["templates", "emissions"] as const).map((section) => (
+            <button
+              key={section}
+              type="button"
+              onClick={() => setActiveSection(section)}
+              className={cn(
+                "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium",
+                activeSection === section
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground",
+              )}
+            >
+              {section === "templates" ? (
+                <>
+                  <FileText className="size-4" /> Templates
+                </>
+              ) : (
+                <>
+                  <BadgeCheck className="size-4" /> Crachás emitidos
+                </>
+              )}
+            </button>
+          ))}
+        </nav>
+        {activeSection === "templates" ? (
+          <PaginatedContainer<BadgeTemplate>
+            items={filtered}
+            layout="grid"
+            minItemWidth="16rem"
+            pageSize={8}
+            gap="6"
+            filterValue={filter}
+            onFilterChange={setFilter}
+            filterPlaceholder="Buscar templates..."
+            itemLabel="templates"
+            headerActions={
+              <Link
+                to="/admin/events/$eventId/editions/$editionId/badges/editor"
+                params={{ eventId, editionId }}
+                search={{ templateId: "" }}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
+                )}
+              >
+                <Plus className="size-4" />
+                Novo template
+              </Link>
+            }
+            emptyState={
+              <EmptyState
+                icon={BadgeCheck}
+                eyebrow="Crachás"
+                title="Nenhum template encontrado"
+                description="Crie um template totalmente personalizado ou parta do padrão do sistema."
+                className="border-0 bg-transparent"
+              />
+            }
+            renderItems={(slice) =>
+              slice.map((template, i) => (
+                <AdminBadgeCard
+                  key={template.id}
+                  item={template}
+                  kind="template"
+                  index={i}
+                  ticketName={
+                    template.ticket_type_id
+                      ? (ticketNames.get(template.ticket_type_id) ??
+                        "Ingresso associado")
+                      : "Padrão da edição"
+                  }
+                  onView={() =>
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id },
+                    })
+                  }
+                  onEdit={() =>
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id },
+                    })
+                  }
+                  onDelete={() => remove.mutate({ templateId: template.id })}
+                />
+              ))
+            }
           />
-        }
-        renderItems={(slice) =>
-          slice.map((template) => (
-            <Card key={template.id} className="overflow-hidden p-0">
-              <BadgeMiniature template={template} />
-              <CardHeader className="px-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-base">{template.name}</CardTitle>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {template.ticket_type_id
-                        ? (ticketNames.get(template.ticket_type_id) ??
-                          "Ingresso associado")
-                        : "Padrão da edição"}
-                    </p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Abrir ações do template"
-                        />
-                      }
-                    >
-                      <MoreVertical className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() =>
-                          remove.mutate({ templateId: template.id })
-                        }
-                      >
-                        <Trash2 className="size-4" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 text-xs text-muted-foreground">
-                {template.design_data.canvas.width} ×{" "}
-                {template.design_data.canvas.height}px ·{" "}
-                {template.design_data.elements.length} elementos
-              </CardContent>
-              <CardFooter className="border-t px-4 py-3">
-                <span className="text-xs text-muted-foreground">
-                  Criado em{" "}
-                  {new Date(template.created_at).toLocaleDateString("pt-BR")}
-                </span>
-              </CardFooter>
-            </Card>
-          ))
-        }
-      />
-    </div>
+        ) : (
+          <PaginatedContainer<BadgePrintItem>
+            items={filteredPrintItems}
+            layout="grid"
+            minItemWidth="16rem"
+            pageSize={8}
+            gap="6"
+            filterValue={emissionFilter}
+            onFilterChange={setEmissionFilter}
+            filterPlaceholder="Buscar crachá..."
+            itemLabel="crachás"
+            headerActions={
+              <Button
+                variant="default"
+                disabled={printQuery.isFetching}
+                onClick={async () => {
+                  const result = await printQuery.refetch();
+                  if (result.data) {
+                    requestAnimationFrame(() => window.print());
+                  }
+                }}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-2 rounded-lg",
+                )}
+              >
+                <Printer className="size-4" />
+                {printQuery.isFetching ? "Preparando…" : "Imprimir crachás"}
+              </Button>
+            }
+            emptyState={
+              <EmptyState
+                title="Nenhum crachá emitido"
+                description="As emissões aparecerão aqui."
+              />
+            }
+            renderItems={(slice) =>
+              slice.map((badge, i) => (
+                <AdminBadgeCard
+                  key={badge.emission_id}
+                  item={badge}
+                  kind="emission"
+                  index={i}
+                  onView={() => undefined}
+                />
+              ))
+            }
+          />
+        )}
+        {false && (
+          <PaginatedContainer<BadgeTemplate>
+            items={filtered}
+            layout="grid"
+            minItemWidth="16rem"
+            pageSize={8}
+            gap="6"
+            filterValue={filter}
+            onFilterChange={setFilter}
+            filterPlaceholder="Buscar templates..."
+            itemLabel="templates"
+            headerActions={
+              <Link
+                to="/admin/events/$eventId/editions/$editionId/badges/editor"
+                params={{ eventId, editionId }}
+                search={{ templateId: "" }}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
+                )}
+              >
+                <Plus className="size-4" />
+                Novo template
+              </Link>
+            }
+            emptyState={
+              <EmptyState
+                icon={BadgeCheck}
+                eyebrow="Crachás"
+                title="Nenhum template encontrado"
+                description="Crie um template totalmente personalizado ou parta do padrão do sistema."
+                className="border-0 bg-transparent"
+              />
+            }
+            renderItems={(slice) =>
+              slice.map((template, i) => (
+                <AdminBadgeCard
+                  key={template.id}
+                  item={template}
+                  kind="template"
+                  index={i}
+                  ticketName={
+                    template.ticket_type_id
+                      ? (ticketNames.get(template.ticket_type_id) ??
+                        "Ingresso associado")
+                      : "Padrão da edição"
+                  }
+                  onView={() =>
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id },
+                    })
+                  }
+                  onEdit={() =>
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id },
+                    })
+                  }
+                  onDelete={() => remove.mutate({ templateId: template.id })}
+                />
+              ))
+            }
+          />
+        )}
+      </div>
+    </>
   );
 }

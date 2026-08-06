@@ -93,17 +93,26 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { BadgeTemplateOrigin } from './badgeTemplateOrigin';
-import type { CreateBadgeTemplateRequestDesignData } from './createBadgeTemplateRequestDesignData';
+import type { BadgeEmissionOrigin } from './badgeEmissionOrigin';
+import type { BadgeEmissionStatus } from './badgeEmissionStatus';
 import type { NullableUUID } from './nullableUUID';
+import type { Uuid } from './uuid';
 
 /**
- * Request body for badge template creation. Mirrors `models.CreateBadgeTemplateRequest`.
+ * One badge awarded to a person for an edition. Mirrors `models.BadgeEmission`.
  */
-export interface CreateBadgeTemplateRequest {
-  ticket_type_id?: NullableUUID | null;
-  origin?: BadgeTemplateOrigin | null;
-  /** @maxLength 256 */
-  name: string;
-  design_data: CreateBadgeTemplateRequestDesignData;
+export interface BadgeEmission {
+  id: Uuid;
+  edition_id: Uuid;
+  user_id: Uuid;
+  origin: BadgeEmissionOrigin;
+  registration_id?: NullableUUID | null;
+  status: BadgeEmissionStatus;
+  /** @nullable */
+  status_reason?: string | null;
+  /** @nullable */
+  email_sent_at?: string | null;
+  emitted_at: string;
+  /** @nullable */
+  updated_at?: string | null;
 }
