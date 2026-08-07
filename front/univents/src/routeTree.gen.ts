@@ -37,6 +37,7 @@ import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
+import { Route as EventsSlugProductsRouteImport } from './routes/events/$slug/products'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
@@ -203,6 +204,11 @@ const EventsSlugTicketsRoute = EventsSlugTicketsRouteImport.update({
 const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
   id: '/events/$slug/programs',
   path: '/events/$slug/programs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsSlugProductsRoute = EventsSlugProductsRouteImport.update({
+  id: '/events/$slug/products',
+  path: '/events/$slug/products',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
+  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -451,6 +458,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
+  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
@@ -501,6 +509,7 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
+  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -553,6 +562,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/profile/'
     | '/auth/$provider/callback'
+    | '/events/$slug/products'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -602,6 +612,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/profile'
     | '/auth/$provider/callback'
+    | '/events/$slug/products'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/profile/'
     | '/auth_/$provider/callback'
+    | '/events/$slug/products'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -697,6 +709,7 @@ export interface RootRouteChildren {
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
+  EventsSlugProductsRoute: typeof EventsSlugProductsRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
@@ -886,6 +899,13 @@ declare module '@tanstack/react-router' {
       path: '/events/$slug/programs'
       fullPath: '/events/$slug/programs'
       preLoaderRoute: typeof EventsSlugProgramsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$slug/products': {
+      id: '/events/$slug/products'
+      path: '/events/$slug/products'
+      fullPath: '/events/$slug/products'
+      preLoaderRoute: typeof EventsSlugProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth_/$provider/callback': {
@@ -1159,6 +1179,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   AuthProviderCallbackRoute: AuthProviderCallbackRoute,
+  EventsSlugProductsRoute: EventsSlugProductsRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugTicketsRoute: EventsSlugTicketsRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
