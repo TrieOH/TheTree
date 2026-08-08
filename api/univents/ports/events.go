@@ -18,6 +18,10 @@ type EventRepo interface {
 	Discontinue(ctx context.Context, id uuid.UUID) error
 	Patch(ctx context.Context, id uuid.UUID, event *models.Event) (*models.Event, error)
 
+	// Payments
+	SetPaymentsConfig(ctx context.Context, id uuid.UUID, sellerID, walletID *uuid.UUID, publicKey *string) (*models.Event, error)
+	ClearPaymentsConfig(ctx context.Context, id uuid.UUID) (*models.Event, error)
+
 	// Members
 	GetMember(ctx context.Context, eventID, userID uuid.UUID) (*models.EventMember, error)
 	GetRole(ctx context.Context, actorID, eventID uuid.UUID) (models.EventMemberRole, error)

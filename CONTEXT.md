@@ -22,7 +22,7 @@ or sharpened.
 - **Intent** — a Payssage payment attempt (checkout); statuses flow from the provider.
 - **Purchase** — an Edition-scoped order (tickets/products/program spots) created at checkout; items are reserved pending and confirmed or expired by a river worker; the record of truth for a buyer's shopping.
 - **Doação (Donation)** — a gift to an Event (not a purchase): amount chosen by the donor (suggestions R$ 1/5/10 or free, minimum R$ 1); paid via a Payssage intent on the event's seller/wallet; recorded in its own table; no reservation or stock involved.
-- **Wallet / Collector / Seller** — Payssage ownership units; payment methods (e.g. MercadoPago) connect to a Collector or Seller via OAuth.
+- **Wallet / Collector / Seller** — Payssage ownership units; payment methods (e.g. MercadoPago) connect to a Collector or Seller via OAuth. Each Univents event owns **one Payssage wallet**, platform-managed (owned by the owner of Univents via the service API key, created lazily at first connect with a 5% marketplace fee); the event's **seller** is the connected provider account, and its provider public key is stored on the event (`events.payssage_*`). Unlink keeps the wallet; checkout/doação consume the event's seller + wallet.
 - **Webhook endpoint / Webhook event / Webhook delivery** — Payssage fan-out of provider events to tenants.
 - **Form / Namespace / Response / Step / Field** — Informd's multi-tenant form survey model.
 

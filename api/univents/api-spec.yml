@@ -383,6 +383,118 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{event_id}/payments/connect:
+    post:
+      tags: [events]
+      operationId: connectEventPayments
+      summary: Connect a Payssage seller to the event
+      description: |
+        Ensures the event's Payssage wallet exists (created lazily under the
+        platform identity, with the 5% marketplace fee) and starts the
+        provider OAuth flow for a seller on that wallet. Returns the provider
+        consent URL to send the user to, plus the event's wallet id. The
+        actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectEventPaymentsRequest'
+      responses:
+        '200':
+          description: Provider consent URL and event wallet
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ConnectEventPaymentsResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/payments/complete:
+    post:
+      tags: [events]
+      operationId: completeEventPayments
+      summary: Persist the connected seller on the event
+      description: |
+        Persists the seller and provider public key delivered by the OAuth
+        callback (seller_id is payssage's credential_id) on the event, after
+        verifying the seller belongs to the event's wallet. The actor must be
+        an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteEventPaymentsRequest'
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{event_id}/payments:
+    delete:
+      tags: [events]
+      operationId: disconnectEventPayments
+      summary: Disconnect the event's seller (unlink only)
+      description: |
+        Clears the seller and provider public key from the event. The wallet
+        is kept — it is the event's permanent payment container — and can be
+        reconnected later. The actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventID'
+      responses:
+        '204':
+          description: Seller unlinked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{event_id}/publish:
     post:
       tags: [events]
@@ -3279,6 +3391,8 @@ components:
           $ref: '#/components/schemas/NullableUUID'
         payssage_wallet_id:
           $ref: '#/components/schemas/NullableUUID'
+        payssage_public_key:
+          type: [ string, "null" ]
         logo_url:
           type: [ string, "null" ]
           format: uri
@@ -3352,6 +3466,41 @@ components:
           x-go-type: string
           type: [ string, "null" ]
           format: email
+
+    ConnectEventPaymentsRequest:
+      type: object
+      description: Request body for connecting a Payssage seller to an event.
+      required: [provider]
+      properties:
+        provider:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    ConnectEventPaymentsResult:
+      type: object
+      description: Provider consent URL to send the user to, plus the event's wallet id.
+      required: [auth_url, wallet_id]
+      properties:
+        auth_url:
+          type: string
+          format: uri
+        wallet_id:
+          $ref: '#/components/schemas/UUID'
+
+    CompleteEventPaymentsRequest:
+      type: object
+      description: Request body for persisting the connected seller on the event. Mirrors the payssage OAuth callback params (credential_id + public_key).
+      required: [seller_id, public_key]
+      properties:
+        seller_id:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          $ref: '#/components/schemas/UUID'
+        public_key:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
 
     EventMemberRole:
       x-go-type: models.EventMemberRole

@@ -11,6 +11,7 @@ import (
 	"univents/internal/services/certifications"
 	"univents/internal/services/editions"
 	"univents/internal/services/events"
+	"univents/internal/services/payments"
 	"univents/internal/services/products"
 	"univents/internal/services/programs"
 	"univents/internal/services/signatures"
@@ -31,6 +32,7 @@ type (
 	Badges      = badges.Operations
 	Signatures  = signatures.Operations
 	Certs       = certifications.Operations
+	Payments    = payments.Operations
 )
 
 var (
@@ -42,6 +44,7 @@ var (
 	NewBadges      = badges.NewOperations
 	NewSignatures  = signatures.NewOperations
 	NewCerts       = certifications.NewOperations
+	NewPayments    = payments.NewOperations
 )
 
 // Operations is the aggregate of every feature's operations, constructed
@@ -55,13 +58,14 @@ type Operations struct {
 	Badges      *Badges
 	Signatures  *Signatures
 	Certs       *Certs
+	Payments    *Payments
 }
 
 // NewOperations wires every feature's operations from the shared repos and
 // the app's external dependencies (object storage, IdentityX client, email,
 // HMAC secret). Authorization arrives by injection through the same seam —
 // no service-locator globals.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, objStorage *objectstorage.Client, idxClient *idx.Client, emailClient *email.Client, hmacSecret string) *Operations {
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, objStorage *objectstorage.Client, idxClient *idx.Client, emailClient *email.Client, hmacSecret string, payssageClient payments.PayssageClient) *Operations {
 	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, emailClient, authzSvc)
 	return &Operations{
 		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps),
@@ -72,5 +76,6 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, objStorage *objectst
 		Badges:      badgesOps,
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
+		Payments:    NewPayments(r.Events, payssageClient, authzSvc),
 	}
 }

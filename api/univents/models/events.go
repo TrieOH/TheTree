@@ -16,22 +16,23 @@ const (
 )
 
 type Event struct {
-	ID               uuid.UUID        `json:"id"`
-	OwnerID          uuid.UUID        `json:"owner_id"`
-	FullName         string           `json:"full_name"`
-	Acronym          *string          `json:"acronym"`
-	Slug             string           `json:"slug"`
-	Description      *string          `json:"description"`
-	Style            *json.RawMessage `json:"style"`
-	Status           EventStatus      `json:"status"`
-	PayssageSellerID *uuid.UUID       `json:"payssage_seller_id"`
-	PayssageWalletID *uuid.UUID       `json:"payssage_wallet_id"`
-	LogoURL          *string          `json:"logo_url"`
-	BannerURL        *string          `json:"banner_url"`
-	ContactEmail     *string          `json:"contact_email"`
-	CreatedAt        time.Time        `json:"created_at"`
-	UpdatedAt        *time.Time       `json:"updated_at"`
-	DeletedAt        *time.Time       `json:"deleted_at"`
+	ID                uuid.UUID        `json:"id"`
+	OwnerID           uuid.UUID        `json:"owner_id"`
+	FullName          string           `json:"full_name"`
+	Acronym           *string          `json:"acronym"`
+	Slug              string           `json:"slug"`
+	Description       *string          `json:"description"`
+	Style             *json.RawMessage `json:"style"`
+	Status            EventStatus      `json:"status"`
+	PayssageSellerID  *uuid.UUID       `json:"payssage_seller_id"`
+	PayssageWalletID  *uuid.UUID       `json:"payssage_wallet_id"`
+	PayssagePublicKey *string          `json:"payssage_public_key"`
+	LogoURL           *string          `json:"logo_url"`
+	BannerURL         *string          `json:"banner_url"`
+	ContactEmail      *string          `json:"contact_email"`
+	CreatedAt         time.Time        `json:"created_at"`
+	UpdatedAt         *time.Time       `json:"updated_at"`
+	DeletedAt         *time.Time       `json:"deleted_at"`
 }
 
 type EventMemberRole string

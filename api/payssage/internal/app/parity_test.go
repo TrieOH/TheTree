@@ -154,11 +154,11 @@ func labelMW(name string) func(http.Handler) http.Handler {
 // runChain executes a chain and returns the middleware names that ran.
 func runChain(chain []func(http.Handler) http.Handler) []string {
 	parityInvocations = nil
-	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	for i := len(chain) - 1; i >= 0; i-- {
+	var next http.Handler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
+	for i := range slices.Backward(chain) {
 		next = chain[i](next)
 	}
-	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	next.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
 	return parityInvocations
 }
 
@@ -215,7 +215,7 @@ func TestRouterRoutesMatchSpec(t *testing.T) {
 // declares: public operations get none, protected operations get the JWT
 // middleware.
 func TestAuthMatrixMatchesSpec(t *testing.T) {
-	mw := middlewares{jwtAuth: labelMW("JWT")}
+	mw := middlewares{jwtAuth: labelMW("JWT"), apiKeyAuth: labelMW("APIKey"), anyAuth: labelMW("Any")}
 	resolver, err := authResolver(mw)
 	if err != nil {
 		t.Fatalf("authResolver: %v", err)
@@ -233,6 +233,8 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 			switch strings.Join(op.Schemes, "+") {
 			case "bearerAuth":
 				want = append(want, "JWT")
+			case "apiKeyAuth+bearerAuth":
+				want = append(want, "Any")
 			default:
 				mismatches = append(mismatches, op.OperationID+": unexpected scheme combination "+strings.Join(op.Schemes, "+"))
 				continue

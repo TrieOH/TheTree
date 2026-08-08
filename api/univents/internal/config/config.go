@@ -29,10 +29,11 @@ type Config struct {
 	IdxProjectID uuid.UUID `env:"IDENTITY_X_PROJECT_ID,required"`
 
 	// Payssage
-	// PayssageURL           string `env:"PAYSSAGE_URL,required"`
-	// PayssageProvider      string `env:"PAYSSAGE_PROVIDER,required"`
-	// PayssageAPIKey        string `env:"PAYSSAGE_API_KEY,required"`
-	// PayssageWebhookSecret string `env:"PAYSSAGE_WEBHOOK_SECRET,required"`
+	PayssageURL    string `env:"PAYSSAGE_URL,required"`
+	PayssageAPIKey string `env:"PAYSSAGE_API_KEY,required"`
+	PayssageAppURL string `env:"PAYSSAGE_APP_URL,required"`
+	// PayssageProvider      string `env:"PAYSSAGE_PROVIDER,required"`      // single provider (mercado_pago) today
+	// PayssageWebhookSecret string `env:"PAYSSAGE_WEBHOOK_SECRET,required"` // webhooks are a later slice
 
 	// Postgres (own DB)
 	PostgresHost     string `env:"UNIVENTS_POSTGRES_HOST,required"`
