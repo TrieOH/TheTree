@@ -10,6 +10,7 @@ import (
 	"univents/internal/config"
 
 	idx "sdk/identityx"
+	payssage "sdk/payssage"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,6 +20,7 @@ type Univents struct {
 	idxClient   *idx.Client
 	objStorage  *objectstorage.Client
 	emailClient *email.Client
+	payssage    *payssage.Client
 
 	cfg config.Config
 }
@@ -36,6 +38,7 @@ func Start() {
 	app.idxClient = SetupIdentityX(app.cfg)
 	app.objStorage = SetupObjectStorage(app.cfg)
 	app.emailClient = email.NewClient(app.cfg.ToEmailConfig())
+	app.payssage = SetupPayssage(app.cfg)
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)

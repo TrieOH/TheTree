@@ -3,55 +3,52 @@ package payssage
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
-type SetupProviderRequest struct {
-	IsMarketplace    bool   `json:"is_marketplace"`
-	FeeBps           int    `json:"fee_bps"`
-	FinalRedirectURL string `json:"final_redirect_url"`
+type OAuthFlow string
+
+const (
+	OAuthFlowCollector OAuthFlow = "collector"
+	OAuthFlowSeller    OAuthFlow = "seller"
+)
+
+type ConnectProviderRequest struct {
+	Flow             OAuthFlow  `json:"flow"`
+	WalletID         *uuid.UUID `json:"wallet_id,omitempty"`
+	OrganizationID   *uuid.UUID `json:"organization_id,omitempty"`
+	FinalRedirectURL string     `json:"final_redirect_url"`
 }
 
-type ConnectSellerRequest struct {
-	FinalRedirectURL string `json:"final_redirect_url"`
+// ConnectProviderPayload is what actually goes over the wire: the provider
+// redirect URI is derived from the client's AppURL, so callers only supply
+// the flow and the final redirect.
+type ConnectProviderPayload struct {
+	Flow                OAuthFlow  `json:"flow"`
+	WalletID            *uuid.UUID `json:"wallet_id,omitempty"`
+	OrganizationID      *uuid.UUID `json:"organization_id,omitempty"`
+	ProviderRedirectURL string     `json:"provider_redirect_url"`
+	FinalRedirectURL    string     `json:"final_redirect_url"`
 }
 
-type OAuthRedirectResponse struct {
-	RedirectURL string `json:"redirect_url"`
-}
-
-// SetupProvider begins the OAuth flow for a workspace owner to connect a payment provider.
-// Returns a redirect URL — the caller is responsible for redirecting the user to it.
-func (c *Client) SetupProvider(ctx context.Context, workspaceName, provider string, req SetupProviderRequest) (string, error) {
-	var out OAuthRedirectResponse
-	err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/providers/%s/setup", workspaceName, provider), req, &out)
+// ConnectProvider starts a payment-provider OAuth connection (flow
+// `collector` or `seller`). It returns the provider consent URL — the caller
+// is responsible for redirecting the user to it. The provider redirect URI is
+// the Payssage app's own `/callback/{provider}` route (built from the
+// client's AppURL), and after the flow completes Payssage redirects the
+// browser to FinalRedirectURL.
+func (c *Client) ConnectProvider(ctx context.Context, provider string, req ConnectProviderRequest) (string, error) {
+	var out string
+	err := c.do(ctx, "POST", fmt.Sprintf("/providers/%s/connect", provider), ConnectProviderPayload{
+		Flow:                req.Flow,
+		WalletID:            req.WalletID,
+		OrganizationID:      req.OrganizationID,
+		ProviderRedirectURL: fmt.Sprintf("%s/callback/%s", c.appURL, provider),
+		FinalRedirectURL:    req.FinalRedirectURL,
+	}, &out)
 	if err != nil {
 		return "", err
 	}
-	return out.RedirectURL, nil
-}
-
-// ConnectSeller begins the OAuth flow for a seller to connect their account for split payments.
-// Returns a redirect URL — the caller is responsible for redirecting the user to it.
-func (c *Client) ConnectSeller(ctx context.Context, workspaceName, provider string, req ConnectSellerRequest) (string, error) {
-	var out OAuthRedirectResponse
-	err := c.do(ctx, "POST", fmt.Sprintf("/workspaces/%s/providers/%s/connect", workspaceName, provider), req, &out)
-	if err != nil {
-		return "", err
-	}
-	return out.RedirectURL, nil
-}
-
-// SetMarketplaceConfig sets the marketplace configuration for a workspace.
-func (c *Client) SetMarketplaceConfig(ctx context.Context, workspaceName string, req SetMarketplaceConfigRequest) (*MarketplaceConfig, error) {
-	var out MarketplaceConfig
-	err := c.do(ctx, "PUT", fmt.Sprintf("/workspaces/%s/marketplace", workspaceName), req, &out)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// DeleteMarketplaceConfig removes the marketplace configuration for a workspace.
-func (c *Client) DeleteMarketplaceConfig(ctx context.Context, workspaceName string) error {
-	return c.do(ctx, "DELETE", fmt.Sprintf("/workspaces/%s/marketplace", workspaceName), nil, nil)
+	return out, nil
 }

@@ -11,7 +11,10 @@ import (
 )
 
 // pass-through stubs for the shared test router.
-func mwJWT(next http.Handler) http.Handler { return next }
+func mwAPIKey(next http.Handler) http.Handler { return next }
+func mwAny(next http.Handler) http.Handler {
+	return next
+}
 
 // newTestRouter mounts the strict server with the real middleware stack
 // (raw-request capture + validation + auth dispatch + fun-envelope error

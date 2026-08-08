@@ -144,6 +144,15 @@ func (stubStrict) PatchEvent(_ context.Context, _ openapi.PatchEventRequestObjec
 func (stubStrict) DiscontinueEvent(_ context.Context, _ openapi.DiscontinueEventRequestObject) (openapi.DiscontinueEventResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) CompleteEventPayments(_ context.Context, _ openapi.CompleteEventPaymentsRequestObject) (openapi.CompleteEventPaymentsResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ConnectEventPayments(_ context.Context, _ openapi.ConnectEventPaymentsRequestObject) (openapi.ConnectEventPaymentsResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) DisconnectEventPayments(_ context.Context, _ openapi.DisconnectEventPaymentsRequestObject) (openapi.DisconnectEventPaymentsResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListPublicEditions(_ context.Context, _ openapi.ListPublicEditionsRequestObject) (openapi.ListPublicEditionsResponseObject, error) {
 	return nil, errStub
 }

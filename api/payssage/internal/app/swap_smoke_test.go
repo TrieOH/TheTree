@@ -20,9 +20,9 @@ func rejectJWT(_ http.Handler) http.Handler {
 
 func TestSwapSmokeAuthDispatch(t *testing.T) {
 	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(t, server, middlewares{jwtAuth: rejectJWT})
-
 	// JWT-protected route without a token -> 401 fun envelope via the dispatch
+	r := newTestRouter(t, server, middlewares{jwtAuth: rejectJWT, apiKeyAuth: mwAPIKey, anyAuth: mwAny})
+
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/wallets", nil)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)

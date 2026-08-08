@@ -63,6 +63,27 @@ WHERE id = @id
   AND deleted_at IS NULL
 RETURNING *;
 
+-- name: SetEventPaymentsConfig :one
+UPDATE events
+SET
+    payssage_seller_id   = @payssage_seller_id,
+    payssage_wallet_id   = @payssage_wallet_id,
+    payssage_public_key  = @payssage_public_key,
+    updated_at           = now()
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- name: ClearEventPaymentsConfig :one
+UPDATE events
+SET
+    payssage_seller_id  = NULL,
+    payssage_public_key = NULL,
+    updated_at          = now()
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
 -- name: GetEventMember :one
 SELECT *
 FROM event_members
