@@ -42,6 +42,7 @@ import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provid
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
+import { Route as EventsEventIdPayssageOauthCallbackRouteImport } from './routes/events/$eventId/payssage/oauth/callback'
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events/$eventId/editions/$editionId/products'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures'
@@ -249,6 +250,12 @@ const AdminEventsEventIdEditionsIndexRoute =
       (d) => d.Route,
     ),
   )
+const EventsEventIdPayssageOauthCallbackRoute =
+  EventsEventIdPayssageOauthCallbackRouteImport.update({
+    id: '/events/$eventId/payssage/oauth/callback',
+    path: '/events/$eventId/payssage/oauth/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EventsEventIdEditionsEditionIdProductsRoute =
   EventsEventIdEditionsEditionIdProductsRouteImport.update({
     id: '/events/$eventId/editions/$editionId/products',
@@ -416,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
@@ -466,6 +474,7 @@ export interface FileRoutesByTo {
   '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
@@ -517,6 +526,7 @@ export interface FileRoutesById {
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId_/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
@@ -570,6 +580,7 @@ export interface FileRouteTypes {
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
+    | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId/editions/$editionId/signatures'
@@ -620,6 +631,7 @@ export interface FileRouteTypes {
     | '/events/$slug/editions'
     | '/admin/events/$eventId'
     | '/events/$eventId/editions/$editionId/products'
+    | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/members'
     | '/admin/events/$eventId/editions/$editionId'
@@ -670,6 +682,7 @@ export interface FileRouteTypes {
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
+    | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId_/editions/$editionId/signatures'
@@ -715,6 +728,7 @@ export interface RootRouteChildren {
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
   EventsSlugEditionsIndexRoute: typeof EventsSlugEditionsIndexRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
+  EventsEventIdPayssageOauthCallbackRoute: typeof EventsEventIdPayssageOauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -942,6 +956,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/events/$eventId/editions/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/events/$eventId/payssage/oauth/callback': {
+      id: '/events/$eventId/payssage/oauth/callback'
+      path: '/events/$eventId/payssage/oauth/callback'
+      fullPath: '/events/$eventId/payssage/oauth/callback'
+      preLoaderRoute: typeof EventsEventIdPayssageOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/events/$eventId/editions/$editionId/products': {
       id: '/events/$eventId/editions/$editionId/products'
@@ -1186,6 +1207,8 @@ const rootRouteChildren: RootRouteChildren = {
   EventsSlugEditionsIndexRoute: EventsSlugEditionsIndexRoute,
   EventsEventIdEditionsEditionIdProductsRoute:
     EventsEventIdEditionsEditionIdProductsRoute,
+  EventsEventIdPayssageOauthCallbackRoute:
+    EventsEventIdPayssageOauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

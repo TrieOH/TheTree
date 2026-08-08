@@ -1,34 +1,29 @@
-// import { createServerFn } from "@tanstack/react-start";
-// import { workspaceService } from "@soramux/payssage-sdk-ts"
-// import { paymentConnectSchema, paymentDisconnectSchema } from "../model";
+import { createClientOnlyFn } from "@tanstack/react-start";
+import { orvalData } from "@trieoh/api-client";
+import {
+  completeEventPayments,
+  connectEventPayments,
+  disconnectEventPayments,
+} from "@trieoh/univents-api";
+import type {
+  CompleteEventPaymentsRequest,
+  ConnectEventPaymentsResult,
+  Event,
+} from "@trieoh/univents-api/schemas";
+import type { PaymentProviderI } from "../model";
 
-// /**
-//  * Connect seller to Workspace on the server.
-//  * @param payData - The data for the new payment connection.
-//  * @returns A promise that resolves to the API response containing the newly created connection.
-//  */
-// export const connectEditionSellerToWorkspaceFn = createServerFn({ method: 'POST' })
-//   .inputValidator(paymentConnectSchema)
-//   .handler(async ({ data }) => {
-//     const { provider, workspace_name, ...payData } = data
-//     return workspaceService.connectProvider(
-//       workspace_name,
-//       provider,
-//       payData
-//     );
-//   })
+export const connectEventSellerFn = createClientOnlyFn(
+  (eventId: string, provider: PaymentProviderI) =>
+    connectEventPayments(eventId, { provider }).then(
+      orvalData<ConnectEventPaymentsResult>,
+    ),
+);
 
-// /**
-//  * Disconnect seller from Workspace on the server.
-//  * @param payData - The data for perform the payment disconnect
-//  * @returns A promise that resolves to the API response containing the removed connection.
-//  */
-// export const disconnectEditionSellerToWorkspaceFn = createServerFn({ method: 'POST' })
-//   .inputValidator(paymentDisconnectSchema)
-//   .handler(async ({ data }) => {
-//     const { workspace_name, credential_id } = data
-//     return workspaceService.disconnectProvider(
-//       workspace_name,
-//       credential_id,
-//     );
-//   })
+export const completeEventSellerFn = createClientOnlyFn(
+  (eventId: string, data: CompleteEventPaymentsRequest) =>
+    completeEventPayments(eventId, data).then(orvalData<Event>),
+);
+
+export const disconnectEventSellerFn = createClientOnlyFn((eventId: string) =>
+  disconnectEventPayments(eventId).then(orvalData<null>),
+);

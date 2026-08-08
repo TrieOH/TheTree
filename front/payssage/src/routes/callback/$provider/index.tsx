@@ -14,13 +14,6 @@ type CallbackLoaderData =
   | { ok: true; redirectTo: string }
   | { ok: false; message: string };
 
-const cleanRedirectUrl = (redirectTo: string) => {
-  const url = new URL(redirectTo);
-  url.searchParams.delete("credential_id");
-  url.searchParams.delete("public_key");
-  return url.toString();
-};
-
 export const Route = createFileRoute("/callback/$provider/")({
   validateSearch: (search) => queryParams.parse(search),
 
@@ -44,7 +37,7 @@ export const Route = createFileRoute("/callback/$provider/")({
 
       if (!res.success)
         return { ok: false, message: "Failed to connect provider." };
-      return { ok: true, redirectTo: cleanRedirectUrl(res.data) };
+      return { ok: true, redirectTo: res.data };
     } catch {
       return {
         ok: false,

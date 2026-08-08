@@ -1,4 +1,4 @@
-import { authFetcher } from "#/shared/lib/api/fetch";
+import { authFetcher, publicFetcher } from "#/shared/lib/api/fetch";
 import type { ConnectRequest, RevokeRequest } from "../model";
 
 export const getProviderCallbackUrl = (provider: string) =>
@@ -18,6 +18,6 @@ export const getProviderCallbackFn = (
   state: string,
   provider: string,
 ) =>
-  authFetcher.get<string>(
+  publicFetcher.get<string>(
     `/providers/${provider}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
   );
