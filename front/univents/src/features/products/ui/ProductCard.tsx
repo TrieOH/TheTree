@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Check,
   ChevronLeft,
@@ -8,6 +7,7 @@ import {
   ShoppingCart,
   UserCheck,
 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import {
@@ -55,22 +55,21 @@ export function ProductCard({
     items.find((item) => item.id === variantId && item.type === "product");
 
   const nextImage = (variantId: string, totalImages: number) => {
-    setImageIndexes(prev => ({
+    setImageIndexes((prev) => ({
       ...prev,
-      [variantId]: ((prev[variantId] ?? 0) + 1) % totalImages
+      [variantId]: ((prev[variantId] ?? 0) + 1) % totalImages,
     }));
   };
 
   const prevImage = (variantId: string, totalImages: number) => {
-    setImageIndexes(prev => ({
+    setImageIndexes((prev) => ({
       ...prev,
-      [variantId]: ((prev[variantId] ?? 0) - 1 + totalImages) % totalImages
+      [variantId]: ((prev[variantId] ?? 0) - 1 + totalImages) % totalImages,
     }));
   };
 
   return (
-    <div className="w-full max-w-88 space-y-2">
-      {/* Product Header — no card, just a label row */}
+    <div className="w-88 max-w-full space-y-2">
       <div className="relative flex h-10 items-center border-b border-border/50 px-1">
         <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
           {product.vendor_code}
@@ -91,14 +90,15 @@ export function ProductCard({
         )}
       </div>
 
-      {/* Variants — each is its own card */}
+      {/* Variants - each is its own card */}
       <div className="flex flex-col gap-2">
         {displayVariants.map((variant) => {
           const inCart = getInCart(variant.id);
           const currentImageIndex = imageIndexes[variant.id] ?? 0;
           const hasMultipleImages = (variant.gallery_urls?.length ?? 0) > 1;
           const isOutOfStock = variant.stock !== null && variant.stock <= 0;
-          const isLowStock = variant.stock !== null && variant.stock > 0 && variant.stock <= 5;
+          const isLowStock =
+            variant.stock !== null && variant.stock > 0 && variant.stock <= 5;
 
           return (
             <div
@@ -107,7 +107,7 @@ export function ProductCard({
             >
               {/* Fixed-height top row: image + info + price/stock */}
               <div className="flex items-start gap-3 h-16">
-                {/* Image — fixed 64x64 */}
+                {/* Image - fixed 64x64 */}
                 <div className="relative shrink-0">
                   {variant.gallery_urls?.[currentImageIndex] ? (
                     <div className="relative size-16 rounded-md overflow-hidden ring-1 ring-border/60 bg-muted">
@@ -119,30 +119,40 @@ export function ProductCard({
                       {hasMultipleImages && (
                         <>
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              prevImage(variant.id, variant.gallery_urls!.length);
+                              prevImage(
+                                variant.id,
+                                variant.gallery_urls?.length ?? 0,
+                              );
                             }}
                             className="absolute left-0.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
                           >
                             <ChevronLeft className="w-3 h-3" />
                           </button>
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              nextImage(variant.id, variant.gallery_urls!.length);
+                              nextImage(
+                                variant.id,
+                                variant.gallery_urls?.length ?? 0,
+                              );
                             }}
                             className="absolute right-0.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
                           >
                             <ChevronRight className="w-3 h-3" />
                           </button>
                           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                            {variant.gallery_urls.map((_, idx) => (
+                            {variant.gallery_urls.map((url, idx) => (
                               <div
-                                key={idx}
+                                key={url}
                                 className={cn(
                                   "w-1 h-1 rounded-full transition-colors",
-                                  idx === currentImageIndex ? "bg-white" : "bg-white/50"
+                                  idx === currentImageIndex
+                                    ? "bg-white"
+                                    : "bg-white/50",
                                 )}
                               />
                             ))}
@@ -157,7 +167,7 @@ export function ProductCard({
                   )}
                 </div>
 
-                {/* Info — fixed 1 line name + 1 line desc */}
+                {/* Info - fixed 1 line name + 1 line desc */}
                 <div className="min-w-0 flex-1 flex flex-col justify-center h-16">
                   <p className="text-sm font-semibold text-foreground leading-5 truncate">
                     {variant.name}
@@ -171,14 +181,14 @@ export function ProductCard({
                   )}
                 </div>
 
-                {/* Price + Stock — aligned right, fixed height */}
+                {/* Price + Stock */}
                 <div className="shrink-0 flex flex-col justify-center h-16 text-right">
                   <span
                     className={cn(
                       "text-sm font-bold tabular-nums leading-5",
                       variant.price === 0
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-foreground"
+                        : "text-foreground",
                     )}
                   >
                     {formatPrice(variant.price)}
@@ -190,7 +200,9 @@ export function ProductCard({
                         aria-label="Estoque ilimitado"
                       />
                     ) : isOutOfStock ? (
-                      <span className="text-destructive font-medium">Esgotado</span>
+                      <span className="text-destructive font-medium">
+                        Esgotado
+                      </span>
                     ) : (
                       <>
                         <Package
@@ -217,14 +229,14 @@ export function ProductCard({
                 </div>
               </div>
 
-              {/* Cart button — always full width below, fixed height */}
+              {/* Cart button */}
               {editionId && !isOutOfStock && (
                 <Button
                   size="sm"
                   variant={inCart ? "secondary" : "default"}
                   className={cn(
                     "mt-3 h-9 w-full gap-2 text-xs font-semibold transition-all",
-                    inCart && "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    inCart && "bg-emerald-600 hover:bg-emerald-700 text-white",
                   )}
                   onClick={() =>
                     addItem(
@@ -256,6 +268,7 @@ export function ProductCard({
 
               {isOutOfStock && (
                 <Button
+                  type="button"
                   size="sm"
                   variant="outline"
                   disabled
@@ -270,11 +283,13 @@ export function ProductCard({
 
         {hasMoreVariants && (
           <button
+            type="button"
             onClick={() => onViewAllVariants?.(product, variants)}
             className="py-2 text-center hover:bg-muted/30 rounded-xl transition-colors"
           >
             <span className="text-xs text-muted-foreground font-medium hover:text-foreground transition-colors">
-              +{remaining} {remaining === 1 ? "variante" : "variantes"} disponível{remaining > 1 ? "is" : ""}
+              +{remaining} {remaining === 1 ? "variante" : "variantes"}{" "}
+              disponível{remaining > 1 ? "is" : ""}
             </span>
           </button>
         )}

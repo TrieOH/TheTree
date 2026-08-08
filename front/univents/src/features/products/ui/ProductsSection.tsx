@@ -12,7 +12,10 @@ interface ProductsSectionProps {
   eventSlug: string;
 }
 
-export function ProductsSection({ editionId, eventSlug }: ProductsSectionProps) {
+export function ProductsSection({
+  editionId,
+  eventSlug,
+}: ProductsSectionProps) {
   if (!editionId) return null;
 
   const { data: products } = useSuspenseQuery(
