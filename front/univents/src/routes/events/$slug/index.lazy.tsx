@@ -188,7 +188,10 @@ function RouteComponent() {
             editionId={activeEdition?.id}
             eventSlug={event.slug}
           />
-          <ProductsSection editionId={activeEdition?.id} />
+          <ProductsSection
+            editionId={activeEdition?.id}
+            eventSlug={event.slug}
+          />
           <OtherEditionsSection
             editions={[...pastEditions, ...upcomingEditions]}
             currentEditionId={activeEdition?.id}
