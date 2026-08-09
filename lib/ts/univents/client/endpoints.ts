@@ -121,7 +121,10 @@ import type {
   Certification,
   CertificationTemplate,
   CertificationTemplateProgram,
+  CompleteEventPaymentsRequest,
   ConflictResponse,
+  ConnectEventPaymentsRequest,
+  ConnectEventPaymentsResult,
   CreateBadgeTemplateRequest,
   CreateCertificationTemplateRequest,
   CreateEditionRequest,
@@ -996,6 +999,345 @@ export const usePatchEvent = <TError = ErrorType<BadRequestResponse | Unauthoriz
         TContext
       > => {
       return useMutation(getPatchEventMutationOptions(options));
+    }
+
+export type connectEventPaymentsResponse200 = {
+  data: ConnectEventPaymentsResult
+  status: 200
+}
+
+export type connectEventPaymentsResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type connectEventPaymentsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type connectEventPaymentsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type connectEventPaymentsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type connectEventPaymentsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type connectEventPaymentsResponseSuccess = (connectEventPaymentsResponse200) & {
+  headers: Headers;
+};
+export type connectEventPaymentsResponseError = (connectEventPaymentsResponse400 | connectEventPaymentsResponse401 | connectEventPaymentsResponse403 | connectEventPaymentsResponse404 | connectEventPaymentsResponse500) & {
+  headers: Headers;
+};
+
+export type connectEventPaymentsResponse = (connectEventPaymentsResponseSuccess | connectEventPaymentsResponseError)
+
+export const getConnectEventPaymentsUrl = (eventId: string,) => {
+
+
+
+
+  return `/events/${eventId}/payments/connect`
+}
+
+/**
+ * Ensures the event's Payssage wallet exists (created lazily under the
+ * platform identity, with the 5% marketplace fee) and starts the
+ * provider OAuth flow for a seller on that wallet. Returns the provider
+ * consent URL to send the user to, plus the event's wallet id. The
+ * actor must be an owner or admin of the event.
+ * @summary Connect a Payssage seller to the event
+ */
+export const connectEventPayments = async (eventId: string,
+    connectEventPaymentsRequest: ConnectEventPaymentsRequest, options?: Parameters<typeof customInstance>[1]): Promise<connectEventPaymentsResponse> => {
+
+  return customInstance<connectEventPaymentsResponse>(getConnectEventPaymentsUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(connectEventPaymentsRequest)
+  }
+);}
+
+
+
+
+
+export const getConnectEventPaymentsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectEventPayments>>, TError,{eventId: string;data: BodyType<ConnectEventPaymentsRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof connectEventPayments>>, TError,{eventId: string;data: BodyType<ConnectEventPaymentsRequest>}, TContext> => {
+
+const mutationKey = ['connectEventPayments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof connectEventPayments>>, {eventId: string;data: BodyType<ConnectEventPaymentsRequest>}> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  connectEventPayments(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConnectEventPaymentsMutationResult = NonNullable<Awaited<ReturnType<typeof connectEventPayments>>>
+    export type ConnectEventPaymentsMutationBody = BodyType<ConnectEventPaymentsRequest>
+    export type ConnectEventPaymentsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Connect a Payssage seller to the event
+ */
+export const useConnectEventPayments = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectEventPayments>>, TError,{eventId: string;data: BodyType<ConnectEventPaymentsRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof connectEventPayments>>,
+        TError,
+        {eventId: string;data: BodyType<ConnectEventPaymentsRequest>},
+        TContext
+      > => {
+      return useMutation(getConnectEventPaymentsMutationOptions(options));
+    }
+
+export type completeEventPaymentsResponse200 = {
+  data: Event
+  status: 200
+}
+
+export type completeEventPaymentsResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type completeEventPaymentsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type completeEventPaymentsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type completeEventPaymentsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type completeEventPaymentsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type completeEventPaymentsResponseSuccess = (completeEventPaymentsResponse200) & {
+  headers: Headers;
+};
+export type completeEventPaymentsResponseError = (completeEventPaymentsResponse400 | completeEventPaymentsResponse401 | completeEventPaymentsResponse403 | completeEventPaymentsResponse404 | completeEventPaymentsResponse500) & {
+  headers: Headers;
+};
+
+export type completeEventPaymentsResponse = (completeEventPaymentsResponseSuccess | completeEventPaymentsResponseError)
+
+export const getCompleteEventPaymentsUrl = (eventId: string,) => {
+
+
+
+
+  return `/events/${eventId}/payments/complete`
+}
+
+/**
+ * Persists the seller and provider public key delivered by the OAuth
+ * callback (seller_id is payssage's credential_id) on the event, after
+ * verifying the seller belongs to the event's wallet. The actor must be
+ * an owner or admin of the event.
+ * @summary Persist the connected seller on the event
+ */
+export const completeEventPayments = async (eventId: string,
+    completeEventPaymentsRequest: CompleteEventPaymentsRequest, options?: Parameters<typeof customInstance>[1]): Promise<completeEventPaymentsResponse> => {
+
+  return customInstance<completeEventPaymentsResponse>(getCompleteEventPaymentsUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(completeEventPaymentsRequest)
+  }
+);}
+
+
+
+
+
+export const getCompleteEventPaymentsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeEventPayments>>, TError,{eventId: string;data: BodyType<CompleteEventPaymentsRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeEventPayments>>, TError,{eventId: string;data: BodyType<CompleteEventPaymentsRequest>}, TContext> => {
+
+const mutationKey = ['completeEventPayments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeEventPayments>>, {eventId: string;data: BodyType<CompleteEventPaymentsRequest>}> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  completeEventPayments(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteEventPaymentsMutationResult = NonNullable<Awaited<ReturnType<typeof completeEventPayments>>>
+    export type CompleteEventPaymentsMutationBody = BodyType<CompleteEventPaymentsRequest>
+    export type CompleteEventPaymentsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Persist the connected seller on the event
+ */
+export const useCompleteEventPayments = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeEventPayments>>, TError,{eventId: string;data: BodyType<CompleteEventPaymentsRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeEventPayments>>,
+        TError,
+        {eventId: string;data: BodyType<CompleteEventPaymentsRequest>},
+        TContext
+      > => {
+      return useMutation(getCompleteEventPaymentsMutationOptions(options));
+    }
+
+export type disconnectEventPaymentsResponse204 = {
+  data: void
+  status: 204
+}
+
+export type disconnectEventPaymentsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type disconnectEventPaymentsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type disconnectEventPaymentsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type disconnectEventPaymentsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type disconnectEventPaymentsResponseSuccess = (disconnectEventPaymentsResponse204) & {
+  headers: Headers;
+};
+export type disconnectEventPaymentsResponseError = (disconnectEventPaymentsResponse401 | disconnectEventPaymentsResponse403 | disconnectEventPaymentsResponse404 | disconnectEventPaymentsResponse500) & {
+  headers: Headers;
+};
+
+export type disconnectEventPaymentsResponse = (disconnectEventPaymentsResponseSuccess | disconnectEventPaymentsResponseError)
+
+export const getDisconnectEventPaymentsUrl = (eventId: string,) => {
+
+
+
+
+  return `/events/${eventId}/payments`
+}
+
+/**
+ * Clears the seller and provider public key from the event. The wallet
+ * is kept — it is the event's permanent payment container — and can be
+ * reconnected later. The actor must be an owner or admin of the event.
+ * @summary Disconnect the event's seller (unlink only)
+ */
+export const disconnectEventPayments = async (eventId: string, options?: Parameters<typeof customInstance>[1]): Promise<disconnectEventPaymentsResponse> => {
+
+  return customInstance<disconnectEventPaymentsResponse>(getDisconnectEventPaymentsUrl(eventId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisconnectEventPaymentsMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectEventPayments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectEventPayments>>, TError,{eventId: string}, TContext> => {
+
+const mutationKey = ['disconnectEventPayments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectEventPayments>>, {eventId: string}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  disconnectEventPayments(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectEventPaymentsMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectEventPayments>>>
+
+    export type DisconnectEventPaymentsMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Disconnect the event's seller (unlink only)
+ */
+export const useDisconnectEventPayments = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectEventPayments>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectEventPayments>>,
+        TError,
+        {eventId: string},
+        TContext
+      > => {
+      return useMutation(getDisconnectEventPaymentsMutationOptions(options));
     }
 
 export type publishEventResponse204 = {

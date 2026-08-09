@@ -1,4 +1,6 @@
 import { useQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import {
   productsByEditionQueryOptions,
   productVariantsQueryOptions,
@@ -7,9 +9,13 @@ import { ProductCard } from "./ProductCard";
 
 interface ProductsSectionProps {
   editionId?: string;
+  eventSlug: string;
 }
 
-export function ProductsSection({ editionId }: ProductsSectionProps) {
+export function ProductsSection({
+  editionId,
+  eventSlug,
+}: ProductsSectionProps) {
   if (!editionId) return null;
 
   const { data: products } = useSuspenseQuery(
@@ -41,8 +47,8 @@ export function ProductsSection({ editionId }: ProductsSectionProps) {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-5 max-w-5xl mx-auto">
-          {productsWithVariants.map(({ product, variants }) => (
+        <div className="flex flex-wrap justify-center gap-5 max-w-6xl mx-auto">
+          {productsWithVariants.slice(0, 3).map(({ product, variants }) => (
             <ProductCard
               key={product.id}
               product={product}
@@ -51,6 +57,17 @@ export function ProductsSection({ editionId }: ProductsSectionProps) {
               editionId={editionId}
             />
           ))}
+        </div>
+
+        <div className="mt-6 text-center">
+          <Link
+            to="/events/$slug/products"
+            params={{ slug: eventSlug }}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
+          >
+            Ver todos os produtos
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>

@@ -81,7 +81,7 @@ function TooltipContent({
           {children}
           <TooltipPrimitive.Arrow
             className={cn(
-              "z-100 size-2 rotate-45 rounded-[2px]",
+              "z-100 size-2 rotate-45 rounded-xs",
               // Arrow
               "bg-popover border-r border-b border-border/50",
               // Positioning

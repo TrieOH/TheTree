@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleAlert,
+  CreditCard,
   Eye,
   LayoutGrid,
   Users,
@@ -23,8 +24,14 @@ import {
   useDiscontinueEventMutation,
   usePublishEventMutation,
 } from "@/features/events/api/mutations";
+import {
+  useConnectEventSellerMutation,
+  useDisconnectEventSellerMutation,
+} from "@/features/payments/api/mutations";
+import type { PaymentProviderI } from "@/features/payments/model";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
+import { Button } from "@/shared/ui/shadcn/button";
 import {
   Card,
   CardContent,
@@ -58,6 +65,18 @@ const statusConfig = {
   },
 } as const;
 
+const paymentProviders: Array<{
+  id: PaymentProviderI;
+  name: string;
+  description: string;
+}> = [
+  {
+    id: "mercadopago",
+    name: "Mercado Pago",
+    description: "Receba por Pix e cartão de crédito.",
+  },
+];
+
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
 });
@@ -68,6 +87,8 @@ function EventOverviewRoute() {
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false);
+  const [disconnectSellerConfirmOpen, setDisconnectSellerConfirmOpen] =
+    useState(false);
   const event =
     [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
     null;
@@ -76,6 +97,8 @@ function EventOverviewRoute() {
 
   const publishEventMutation = usePublishEventMutation();
   const discontinueEventMutation = useDiscontinueEventMutation();
+  const connectSellerMutation = useConnectEventSellerMutation();
+  const disconnectSellerMutation = useDisconnectEventSellerMutation();
 
   const copyLink = () => {
     if (!event) return;
@@ -259,6 +282,64 @@ function EventOverviewRoute() {
 
         <Card className="border-border/60 bg-card/95 shadow-sm">
           <CardHeader className="border-b border-border/60">
+            <CardTitle>Pagamentos</CardTitle>
+            <CardDescription>
+              Escolha a conta que receberá as vendas deste evento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 py-5 md:grid-cols-2 xl:grid-cols-3">
+            {paymentProviders.map((provider) => {
+              const connected = Boolean(event?.payssage_seller_id);
+
+              return (
+                <div
+                  key={provider.id}
+                  className="flex min-h-36 flex-col justify-between gap-5 rounded-xl border border-border/60 bg-muted/15 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-background p-2.5 shadow-sm">
+                        <CreditCard className="size-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{provider.name}</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {provider.description}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={connected ? "default" : "secondary"}>
+                      {connected ? "Conectado" : "Disponível"}
+                    </Badge>
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    variant={connected ? "outline" : "default"}
+                    disabled={
+                      !event ||
+                      connectSellerMutation.isPending ||
+                      disconnectSellerMutation.isPending
+                    }
+                    onClick={() =>
+                      connected
+                        ? setDisconnectSellerConfirmOpen(true)
+                        : connectSellerMutation.mutate({
+                            eventId,
+                            provider: provider.id,
+                          })
+                    }
+                  >
+                    {connected ? "Desconectar conta" : "Conectar conta"}
+                  </Button>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 bg-card/95 shadow-sm">
+          <CardHeader className="border-b border-border/60">
             <CardTitle>Checklist do evento</CardTitle>
             <CardDescription>
               Itens derivados dos dados já cadastrados no evento.
@@ -361,6 +442,21 @@ function EventOverviewRoute() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertModal
+        open={disconnectSellerConfirmOpen}
+        onOpenChange={setDisconnectSellerConfirmOpen}
+        title="Desconectar Mercado Pago?"
+        description="Este evento deixará de receber novos pagamentos até uma conta ser conectada novamente."
+        confirmLabel="Desconectar"
+        variant="destructive"
+        loading={disconnectSellerMutation.isPending}
+        onConfirm={() => {
+          disconnectSellerMutation.mutate(eventId, {
+            onSuccess: () => setDisconnectSellerConfirmOpen(false),
+          });
+        }}
+      />
 
       <AlertModal
         open={publishConfirmOpen}

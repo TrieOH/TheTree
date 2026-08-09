@@ -37,10 +37,12 @@ import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
+import { Route as EventsSlugProductsRouteImport } from './routes/events/$slug/products'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
+import { Route as EventsEventIdPayssageOauthCallbackRouteImport } from './routes/events/$eventId/payssage/oauth/callback'
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events/$eventId/editions/$editionId/products'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures'
@@ -205,6 +207,11 @@ const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
   path: '/events/$slug/programs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsSlugProductsRoute = EventsSlugProductsRouteImport.update({
+  id: '/events/$slug/products',
+  path: '/events/$slug/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
   id: '/auth_/$provider/callback',
   path: '/auth/$provider/callback',
@@ -243,6 +250,12 @@ const AdminEventsEventIdEditionsIndexRoute =
       (d) => d.Route,
     ),
   )
+const EventsEventIdPayssageOauthCallbackRoute =
+  EventsEventIdPayssageOauthCallbackRouteImport.update({
+    id: '/events/$eventId/payssage/oauth/callback',
+    path: '/events/$eventId/payssage/oauth/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EventsEventIdEditionsEditionIdProductsRoute =
   EventsEventIdEditionsEditionIdProductsRouteImport.update({
     id: '/events/$eventId/editions/$editionId/products',
@@ -402,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
+  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -409,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
@@ -451,6 +466,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
+  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
@@ -458,6 +474,7 @@ export interface FileRoutesByTo {
   '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
@@ -501,6 +518,7 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
+  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -508,6 +526,7 @@ export interface FileRoutesById {
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId_/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesRouteWithChildren
@@ -553,6 +572,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/profile/'
     | '/auth/$provider/callback'
+    | '/events/$slug/products'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -560,6 +580,7 @@ export interface FileRouteTypes {
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
+    | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId/editions/$editionId/signatures'
@@ -602,6 +623,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/profile'
     | '/auth/$provider/callback'
+    | '/events/$slug/products'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events'
@@ -609,6 +631,7 @@ export interface FileRouteTypes {
     | '/events/$slug/editions'
     | '/admin/events/$eventId'
     | '/events/$eventId/editions/$editionId/products'
+    | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/members'
     | '/admin/events/$eventId/editions/$editionId'
@@ -651,6 +674,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/profile/'
     | '/auth_/$provider/callback'
+    | '/events/$slug/products'
     | '/events/$slug/programs'
     | '/events/$slug/tickets'
     | '/admin/events/'
@@ -658,6 +682,7 @@ export interface FileRouteTypes {
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
+    | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId_/editions/$editionId/signatures'
@@ -697,11 +722,13 @@ export interface RootRouteChildren {
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
+  EventsSlugProductsRoute: typeof EventsSlugProductsRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
   EventsSlugEditionsIndexRoute: typeof EventsSlugEditionsIndexRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
+  EventsEventIdPayssageOauthCallbackRoute: typeof EventsEventIdPayssageOauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -888,6 +915,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugProgramsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$slug/products': {
+      id: '/events/$slug/products'
+      path: '/events/$slug/products'
+      fullPath: '/events/$slug/products'
+      preLoaderRoute: typeof EventsSlugProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth_/$provider/callback': {
       id: '/auth_/$provider/callback'
       path: '/auth/$provider/callback'
@@ -922,6 +956,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/events/$eventId/editions/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/events/$eventId/payssage/oauth/callback': {
+      id: '/events/$eventId/payssage/oauth/callback'
+      path: '/events/$eventId/payssage/oauth/callback'
+      fullPath: '/events/$eventId/payssage/oauth/callback'
+      preLoaderRoute: typeof EventsEventIdPayssageOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/events/$eventId/editions/$editionId/products': {
       id: '/events/$eventId/editions/$editionId/products'
@@ -1159,12 +1200,15 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   AuthProviderCallbackRoute: AuthProviderCallbackRoute,
+  EventsSlugProductsRoute: EventsSlugProductsRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugTicketsRoute: EventsSlugTicketsRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
   EventsSlugEditionsIndexRoute: EventsSlugEditionsIndexRoute,
   EventsEventIdEditionsEditionIdProductsRoute:
     EventsEventIdEditionsEditionIdProductsRoute,
+  EventsEventIdPayssageOauthCallbackRoute:
+    EventsEventIdPayssageOauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
