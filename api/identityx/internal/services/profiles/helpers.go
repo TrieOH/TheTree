@@ -94,13 +94,15 @@ func (o *Operations) migrateOnDemand(ctx context.Context, profile *models.ActorP
 
 	// fast path: the document already validates against the new schema,
 	// only the version pointer needs bumping
-	if err := jsonschema.Validate(schema.Schema, profile.Profile); err == nil {
+	err = jsonschema.Validate(schema.Schema, profile.Profile)
+	if err == nil {
 		return o.profiles.SetMigrationState(ctx, profile.ActorID, schema.Version, false)
 	}
 
 	// auto-migrate: drop the fields the new schema forbids, re-validate,
 	// and persist the pruned document at the new version
-	if pruned, perr := pruneToSchema(schema.Schema, profile.Profile); perr == nil {
+	pruned, perr := pruneToSchema(schema.Schema, profile.Profile)
+	if perr == nil {
 		err := jsonschema.Validate(schema.Schema, pruned)
 		if err == nil {
 			return o.profiles.Upsert(ctx, models.ActorProfile{

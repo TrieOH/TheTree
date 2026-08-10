@@ -15,13 +15,11 @@ import (
 type Config struct {
 	BaseURL string // Payssage API base URL
 	APIKey  string // IdentityX access API key resolving to the platform/service actor
-	AppURL  string // Payssage app base URL (used to build provider OAuth callback URLs)
 }
 
 type Client struct {
 	baseURL    string
 	apiKey     string
-	appURL     string
 	httpClient *http.Client
 }
 
@@ -29,7 +27,6 @@ func New(cfg Config) *Client {
 	return &Client{
 		baseURL:    strings.TrimRight(cfg.BaseURL, "/"),
 		apiKey:     cfg.APIKey,
-		appURL:     strings.TrimRight(cfg.AppURL, "/"),
 		httpClient: &http.Client{Timeout: 15 * time.Second},
 	}
 }

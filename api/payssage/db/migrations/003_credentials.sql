@@ -7,7 +7,6 @@ CREATE TABLE oauth_states (
     provider           TEXT NOT NULL,
     flow               TEXT NOT NULL,
     final_redirect_url      TEXT NOT NULL,
-    provider_redirect_url  TEXT NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at         TIMESTAMPTZ NOT NULL,
 
@@ -48,6 +47,10 @@ CREATE TABLE sellers (
 CREATE UNIQUE INDEX uniq_sellers_active
     ON sellers (wallet_id, provider_user_id)
     WHERE revoked_at IS NULL;
+-- TODO(seller-sharing): with Univents on a single platform wallet, one
+-- provider account should be usable across events; this per-(wallet,
+-- provider_user_id) uniqueness blocks that (a second event connecting the
+-- same account fails). Revisit once multi-event needs it.
 
 CREATE INDEX idx_sellers_wallet_id ON sellers (wallet_id);
 

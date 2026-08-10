@@ -25,8 +25,8 @@ import (
 //
 // Pass an empty mPath to skip migrations (e.g. when the test manages its
 // own schema).
-func Postgres(t testing.TB, mPath string) *pgxpool.Pool {
-	t.Helper()
+func Postgres(tb testing.TB, mPath string) *pgxpool.Pool {
+	tb.Helper()
 
 	ctx := context.Background()
 	container, err := postgres.Run(ctx, "postgres:18-alpine",
@@ -44,30 +44,31 @@ func Postgres(t testing.TB, mPath string) *pgxpool.Pool {
 		),
 	)
 	if err != nil {
-		t.Fatalf("testdb: start postgres container: %v", err)
+		tb.Fatalf("testdb: start postgres container: %v", err)
 	}
 
 	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
-		t.Fatalf("testdb: connection string: %v", err)
+		tb.Fatalf("testdb: connection string: %v", err)
 	}
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		t.Fatalf("testdb: open pool: %v", err)
+		tb.Fatalf("testdb: open pool: %v", err)
 	}
-	if err := pool.Ping(ctx); err != nil {
-		t.Fatalf("testdb: ping: %v", err)
+	err = pool.Ping(ctx)
+	if err != nil {
+		tb.Fatalf("testdb: ping: %v", err)
 	}
 
 	if mPath != "" {
 		err := database.RunMigrations(pool, mPath)
 		if err != nil {
-			t.Fatalf("testdb: migrations: %v", err)
+			tb.Fatalf("testdb: migrations: %v", err)
 		}
 	}
 
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		pool.Close()
 		_ = testcontainers.TerminateContainer(container)
 	})

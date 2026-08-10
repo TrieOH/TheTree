@@ -100,7 +100,8 @@ func TestGetPlatformProfileAfterSchemaShrinksV1ToV2RealDB(t *testing.T) {
 
 	// the stored document was rewritten: v1-only fields dropped, kept intact
 	var doc map[string]any
-	if err := json.Unmarshal(raw.Profile, &doc); err != nil {
+	err = json.Unmarshal(raw.Profile, &doc)
+	if err != nil {
 		t.Fatalf("unmarshal persisted profile: %v", err)
 	}
 	if _, ok := doc["tagline"]; ok {
@@ -144,26 +145,29 @@ func TestGetPlatformProfileFlagsWhenV2AddsRequiredFieldRealDB(t *testing.T) {
 	actorID := actor.ID
 
 	// v1 does not require display_name
-	if _, err := r.ProfileSchemas.Upsert(ctx, models.ProjectProfileSchema{
+	_, err = r.ProfileSchemas.Upsert(ctx, models.ProjectProfileSchema{
 		ProjectID: nil,
 		Schema:    json.RawMessage(`{"type":"object","properties":{"full_name":{"type":"string"}},"additionalProperties":false}`),
 		Active:    true,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("upsert schema v1: %v", err)
 	}
 	// user saved a profile without display_name
-	if _, err := ops.UpsertPlatformProfile(testIdentityFor(actorID), models.UpsertProfileInput{
+	_, err = ops.UpsertPlatformProfile(testIdentityFor(actorID), models.UpsertProfileInput{
 		ActorID: actorID,
 		Profile: json.RawMessage(`{"full_name":"Jane"}`),
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("UpsertPlatformProfile: %v", err)
 	}
 	// v2 adds display_name as required
-	if _, err := r.ProfileSchemas.Upsert(ctx, models.ProjectProfileSchema{
+	_, err = r.ProfileSchemas.Upsert(ctx, models.ProjectProfileSchema{
 		ProjectID: nil,
 		Schema:    json.RawMessage(`{"type":"object","required":["display_name"],"properties":{"full_name":{"type":"string"},"display_name":{"type":"string"}},"additionalProperties":false}`),
 		Active:    true,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("upsert schema v2: %v", err)
 	}
 
@@ -176,7 +180,8 @@ func TestGetPlatformProfileFlagsWhenV2AddsRequiredFieldRealDB(t *testing.T) {
 	}
 	// document must NOT have been rewritten
 	var doc map[string]any
-	if err := json.Unmarshal(got.Profile, &doc); err != nil {
+	err = json.Unmarshal(got.Profile, &doc)
+	if err != nil {
 		t.Fatalf("unmarshal flagged profile: %v", err)
 	}
 	if len(doc) != 1 || doc["full_name"] != "Jane" {

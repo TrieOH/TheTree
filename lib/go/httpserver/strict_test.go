@@ -32,7 +32,7 @@ func TestAuthDispatchRunsChainForProtectedOperation(t *testing.T) {
 		"PostLogout": {jwt},
 	})
 
-	handler := dispatch(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+	handler := dispatch(func(ctx context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 		if got := ctx.Value(adSentinelKey); got != adSentinel {
 			return nil, fmt.Errorf("handler saw stale context: sentinel %v, want %v", got, adSentinel)
 		}
@@ -56,7 +56,7 @@ func TestAuthDispatchSkipsPublicOperation(t *testing.T) {
 	dispatch := AuthDispatch(map[string][]func(http.Handler) http.Handler{
 		"GetJWKS": nil, // public operation — empty chain
 	})
-	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+	handler := dispatch(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 		ran = true
 		return "ok", nil
 	}, "GetJWKS")
@@ -71,14 +71,14 @@ func TestAuthDispatchSkipsPublicOperation(t *testing.T) {
 
 func TestAuthDispatchRejectionShortCircuits(t *testing.T) {
 	dispatch := AuthDispatch(map[string][]func(http.Handler) http.Handler{
-		"PostLogout": {func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		"PostLogout": {func(_ http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 			})
 		}},
 	})
 	var called bool
-	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+	handler := dispatch(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 		called = true
 		return "ok", nil
 	}, "PostLogout")
@@ -105,7 +105,7 @@ func TestAuthDispatchUnknownOperationFailsClosed(t *testing.T) {
 		"PostLogout": {func(next http.Handler) http.Handler { return next }},
 	})
 	var called bool
-	handler := dispatch(func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+	handler := dispatch(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 		called = true
 		return "ok", nil
 	}, "RenamedOperation") // in the generated server but not in the spec
@@ -137,7 +137,7 @@ func TestValidateMiddlewareValidatesBody(t *testing.T) {
 	validator.SetupValidator()
 	validate := ValidateMiddleware()
 
-	handler := validate(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+	handler := validate(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 		return "ok", nil
 	}, "CreateThing")
 
@@ -161,7 +161,7 @@ func TestValidateMiddlewareSkipsBodylessRequest(t *testing.T) {
 	validate := ValidateMiddleware()
 
 	var called bool
-	handler := validate(func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+	handler := validate(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 		called = true
 		return "ok", nil
 	}, "GetThing")

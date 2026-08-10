@@ -13,11 +13,13 @@ import (
 // the schema; callers must re-run jsonschema.Validate.
 func pruneToSchema(schema, doc json.RawMessage) (json.RawMessage, error) {
 	var sch map[string]any
-	if err := json.Unmarshal(schema, &sch); err != nil {
+	err := json.Unmarshal(schema, &sch)
+	if err != nil {
 		return nil, fmt.Errorf("prune: invalid schema json: %w", err)
 	}
 	var inst any
-	if err := json.Unmarshal(doc, &inst); err != nil {
+	err = json.Unmarshal(doc, &inst)
+	if err != nil {
 		return nil, fmt.Errorf("prune: invalid instance json: %w", err)
 	}
 	pruned, err := pruneNode(sch, inst)

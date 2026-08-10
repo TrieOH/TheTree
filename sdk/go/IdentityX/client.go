@@ -64,7 +64,8 @@ func Bootstrap(ctx context.Context, cfg Config) (*Client, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if _, err := client.Tokens.GetJWKS(ctx, false); err != nil {
+	_, err = client.Tokens.GetJWKS(ctx, false)
+	if err != nil {
 		return nil, err
 	}
 	return client, nil

@@ -23,6 +23,17 @@ func (c *Client) CreateWallet(ctx context.Context, req CreateWalletRequest) (*Wa
 	return &out, nil
 }
 
+// GetWallet fetches a wallet by id. Used for fail-fast boot checks (split
+// 2) and direct lookups.
+func (c *Client) GetWallet(ctx context.Context, walletID uuid.UUID) (*Wallet, error) {
+	var out Wallet
+	err := c.do(ctx, "GET", fmt.Sprintf("/wallets/%s", walletID), nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // SetWalletFee sets a wallet's marketplace fee in basis points (bps;
 // 100 bps = 1%).
 func (c *Client) SetWalletFee(ctx context.Context, walletID uuid.UUID, feeBps int) error {

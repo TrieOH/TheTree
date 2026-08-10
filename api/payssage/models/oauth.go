@@ -27,16 +27,15 @@ func (f OAuthFlow) String() string {
 }
 
 type OAuthState struct {
-	State               string     `json:"state"`
-	WalletID            *uuid.UUID `json:"wallet_id"`
-	OrganizationID      *uuid.UUID `json:"organization_id"`
-	OwnerID             uuid.UUID  `json:"owner_id"`
-	Provider            string     `json:"provider"`
-	Flow                OAuthFlow  `json:"flow"`
-	FinalRedirectURL    string     `json:"final_redirect_url"`
-	ProviderRedirectURL string     `json:"provider_redirect_url"`
-	CreatedAt           time.Time  `json:"created_at"`
-	ExpiresAt           time.Time  `json:"expires_at"`
+	State            string     `json:"state"`
+	WalletID         *uuid.UUID `json:"wallet_id"`
+	OrganizationID   *uuid.UUID `json:"organization_id"`
+	OwnerID          uuid.UUID  `json:"owner_id"`
+	Provider         string     `json:"provider"`
+	Flow             OAuthFlow  `json:"flow"`
+	FinalRedirectURL string     `json:"final_redirect_url"`
+	CreatedAt        time.Time  `json:"created_at"`
+	ExpiresAt        time.Time  `json:"expires_at"`
 }
 
 type ProviderCredential struct {
@@ -56,12 +55,11 @@ type ProviderCredentialData struct {
 }
 
 type ConnectInput struct {
-	Provider            string
-	Flow                OAuthFlow
-	ProviderRedirectURL string
-	FinalRedirectURL    string
-	WalletID            *uuid.UUID
-	OrganizationID      *uuid.UUID
+	Provider         string
+	Flow             OAuthFlow
+	FinalRedirectURL string
+	WalletID         *uuid.UUID
+	OrganizationID   *uuid.UUID
 }
 
 type RevokeInput struct {

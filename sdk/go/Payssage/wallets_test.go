@@ -27,7 +27,7 @@ func newTestClient(t *testing.T, status int, envelope string) (*Client, func() *
 		_, _ = w.Write([]byte(envelope))
 	}))
 	t.Cleanup(srv.Close)
-	return New(Config{BaseURL: srv.URL, APIKey: "test-api-key", AppURL: "https://pay.example"}), func() *http.Request { return captured }, func() string { return body }
+	return New(Config{BaseURL: srv.URL, APIKey: "test-api-key"}), func() *http.Request { return captured }, func() string { return body }
 }
 
 func TestCreateWallet(t *testing.T) {
@@ -134,8 +134,8 @@ func TestConnectProvider(t *testing.T) {
 	if payload["flow"] != "seller" || payload["wallet_id"] != walletID.String() {
 		t.Fatalf("unexpected payload: %s", getBody())
 	}
-	if payload["provider_redirect_url"] != "https://pay.example/callback/mercado_pago" {
-		t.Fatalf("unexpected provider_redirect_url: %s", getBody())
+	if _, ok := payload["provider_redirect_url"]; ok {
+		t.Fatalf("provider_redirect_url must not be sent (D7): %s", getBody())
 	}
 	if payload["final_redirect_url"] != "https://events.example/events/abc/payssage/oauth/callback" {
 		t.Fatalf("unexpected final_redirect_url: %s", getBody())

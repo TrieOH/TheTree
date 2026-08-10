@@ -666,7 +666,7 @@ func TestGetProfileAfterSchemaShrinksV1ToV2(t *testing.T) {
 	activeSchema.Schema = json.RawMessage(schemaV1Full)
 
 	schemas := mock.Mock[ports.ProfileSchemaRepo]()
-	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).ThenAnswer(func(args []any) []any {
+	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).ThenAnswer(func(_ []any) []any {
 		return []any{activeSchema, nil}
 	})
 
@@ -724,7 +724,8 @@ func TestGetProfileAfterSchemaShrinksV1ToV2(t *testing.T) {
 		t.Fatalf("step 4: want persisted v2 not outdated, got %+v", migrated)
 	}
 	var doc map[string]any
-	if err := json.Unmarshal(migrated.Profile, &doc); err != nil {
+	err = json.Unmarshal(migrated.Profile, &doc)
+	if err != nil {
 		t.Fatalf("unmarshal migrated profile: %v", err)
 	}
 	if _, ok := doc["tagline"]; ok {

@@ -30,7 +30,7 @@ func (o *Operations) Callback(ctx context.Context, providerStr, code, stateStr s
 	}
 
 	oauthProvider := providers.PayssageProviders.OAuth[provider]
-	credentialData, err := oauthProvider.ExchangeCode(ctx, code, state.ProviderRedirectURL)
+	credentialData, err := oauthProvider.ExchangeCode(ctx, code)
 	if err != nil {
 		return "", err
 	}

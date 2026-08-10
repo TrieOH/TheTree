@@ -14,14 +14,20 @@ import (
 	"go.uber.org/zap"
 )
 
-func (p *Provider) ExchangeCode(ctx context.Context, code, redirectURI string) (models.ProviderCredentialData, error) {
-	body, err := json.Marshal(map[string]any{
+// tokenRequestBody is the MP token-exchange body. The redirect URI is
+// Payssage's own configured callback (D7) — extracted for testability.
+func (p *Provider) tokenRequestBody(code string) map[string]any {
+	return map[string]any{
 		"grant_type":    "authorization_code",
 		"client_id":     p.cfg.MpClientID,
 		"client_secret": p.cfg.MpClientSecret,
 		"code":          code,
-		"redirect_uri":  redirectURI,
-	})
+		"redirect_uri":  p.cfg.MpRedirectURI,
+	}
+}
+
+func (p *Provider) ExchangeCode(ctx context.Context, code string) (models.ProviderCredentialData, error) {
+	body, err := json.Marshal(p.tokenRequestBody(code))
 	if err != nil {
 		telemetry.Log().Error("error marshaling MP exchange code request body", zap.Error(err))
 		return models.ProviderCredentialData{}, err
