@@ -1,3 +1,16 @@
+-- name: CreateProgramParticipation :one
+INSERT INTO program_participations (edition_id, occurrence_id, registration_id, status)
+VALUES (@edition_id, @occurrence_id, @registration_id, @status)
+RETURNING *;
+
+-- name: UpdateProgramParticipationStatus :one
+UPDATE program_participations
+SET
+    status     = @status,
+    updated_at = now()
+WHERE id = @id
+RETURNING *;
+
 -- name: CreateProgram :one
 INSERT INTO programs (edition_id, kind, name, description, min_access_level, staff_only, price)
 VALUES (@edition_id, @kind, @name, @description, @min_access_level, @staff_only, @price)

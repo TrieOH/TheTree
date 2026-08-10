@@ -50,3 +50,21 @@ func mapVariant(src sqlc.ProductVariant) models.ProductVariant {
 		DeletedAt:   src.DeletedAt,
 	}
 }
+
+func mapProductPurchase(src sqlc.ProductPurchase) models.ProductPurchase {
+	return models.ProductPurchase{
+		ID:               src.ID,
+		EditionID:        src.EditionID,
+		VariantID:        src.VariantID,
+		PurchaserID:      src.PurchaserID,
+		RecipientID:      src.RecipientID,
+		RegistrationID:   src.RegistrationID,
+		Quantity:         src.Quantity,
+		Status:           models.ProductPurchaseStatus(src.Status),
+		StatusReason:     src.StatusReason,
+		PayssageIntentID: src.PayssageIntentID,
+		CreatedAt:        src.CreatedAt,
+		UpdatedAt:        src.UpdatedAt,
+		DeletedAt:        src.DeletedAt,
+	}
+}

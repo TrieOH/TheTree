@@ -56,6 +56,18 @@ func mapProgramOccurrence(src sqlc.ProgramOccurrence) models.ProgramOccurrence {
 	}
 }
 
+func mapParticipation(src sqlc.ProgramParticipation) models.ProgramParticipation {
+	return models.ProgramParticipation{
+		ID:             src.ID,
+		EditionID:      src.EditionID,
+		OccurrenceID:   src.OccurrenceID,
+		RegistrationID: src.RegistrationID,
+		Status:         models.ProgramParticipationStatus(src.Status),
+		CreatedAt:      src.CreatedAt,
+		UpdatedAt:      src.UpdatedAt,
+	}
+}
+
 func priceValue(p *int64) int64 {
 	if p == nil {
 		return 0
