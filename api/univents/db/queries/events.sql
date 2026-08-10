@@ -67,7 +67,6 @@ RETURNING *;
 UPDATE events
 SET
     payssage_seller_id   = @payssage_seller_id,
-    payssage_wallet_id   = @payssage_wallet_id,
     payssage_public_key  = @payssage_public_key,
     updated_at           = now()
 WHERE id = @id

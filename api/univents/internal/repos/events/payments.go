@@ -10,12 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *Repo) SetPaymentsConfig(ctx context.Context, id uuid.UUID, sellerID, walletID *uuid.UUID, publicKey *string) (*models.Event, error) {
+func (repo *Repo) SetPaymentsConfig(ctx context.Context, id uuid.UUID, sellerID *uuid.UUID, publicKey *string) (*models.Event, error) {
 	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.SetPaymentsConfig")
 	defer span.End()
 	result, err := database.Queries(ctx, repo.q).SetEventPaymentsConfig(ctx, sqlc.SetEventPaymentsConfigParams{
 		PayssageSellerID:  sellerID,
-		PayssageWalletID:  walletID,
 		PayssagePublicKey: publicKey,
 		ID:                id,
 	})

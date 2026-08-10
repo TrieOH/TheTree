@@ -45,7 +45,6 @@ func mapEvent(src sqlc.Event) models.Event {
 		Style:             src.Style,
 		Status:            models.EventStatus(src.Status),
 		PayssageSellerID:  src.PayssageSellerID,
-		PayssageWalletID:  src.PayssageWalletID,
 		PayssagePublicKey: src.PayssagePublicKey,
 		LogoURL:           src.LogoUrl,
 		BannerURL:         src.BannerUrl,

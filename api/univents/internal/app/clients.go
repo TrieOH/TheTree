@@ -9,6 +9,8 @@ import (
 
 	idx "sdk/identityx"
 	payssage "sdk/payssage"
+
+	"github.com/google/uuid"
 )
 
 func SetupIdentityX(cfg config.Config) *idx.Client {
@@ -25,6 +27,16 @@ func SetupPayssage(cfg config.Config) *payssage.Client {
 		BaseURL: cfg.PayssageURL,
 		APIKey:  cfg.PayssageAPIKey,
 	})
+}
+
+// VerifyPayssageWallet is the fail-fast boot check for the platform wallet
+// (D6): every event's seller lives on this one precreated wallet, so a wrong
+// or unreachable wallet id means the store cannot work — do not start.
+func VerifyPayssageWallet(ctx context.Context, client *payssage.Client, walletID uuid.UUID) {
+	_, err := client.GetWallet(ctx, walletID)
+	if err != nil {
+		errx.Exit(err, "payssage platform wallet check failed (PAYSSAGE_WALLET_ID)")
+	}
 }
 
 func SetupObjectStorage(cfg config.Config) *objectstorage.Client {

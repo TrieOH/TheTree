@@ -5,8 +5,8 @@ import "lib/database"
 func SetupConstraintMessages() {
 	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
 		// events
-		"chk_event_status_valid":             "Event status must be one of: draft, active, discontinued.",
-		"chk_event_payments_config_complete": "Both Payssage seller ID and wallet ID must be set together, or neither.",
+		"chk_event_status_valid":                        "Event status must be one of: draft, active, discontinued.",
+		"chk_event_payments_public_key_requires_seller": "An event's Payssage public key requires a connected seller.",
 
 		// event_members
 		"chk_event_members_role_valid": "Member role must be one of: owner, admin, staff.",

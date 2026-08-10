@@ -11,8 +11,9 @@ import (
 )
 
 // Disconnect unlinks the seller from the event (unlink only): the seller and
-// the provider public key are cleared, the wallet is kept — it is the event's
-// permanent payment container, and reconnecting reuses it.
+// the provider public key are cleared. The platform wallet itself is
+// env-configured (D6) and untouched — reconnecting just re-OAuths a seller
+// onto it.
 func (o *Operations) Disconnect(ctx context.Context, eventID uuid.UUID) (*models.Event, error) {
 	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Disconnect")
 	defer span.End()

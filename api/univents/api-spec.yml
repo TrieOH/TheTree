@@ -3389,8 +3389,6 @@ components:
           $ref: '#/components/schemas/EventStatus'
         payssage_seller_id:
           $ref: '#/components/schemas/NullableUUID'
-        payssage_wallet_id:
-          $ref: '#/components/schemas/NullableUUID'
         payssage_public_key:
           type: [ string, "null" ]
         logo_url:

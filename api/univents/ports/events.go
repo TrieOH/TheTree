@@ -19,7 +19,7 @@ type EventRepo interface {
 	Patch(ctx context.Context, id uuid.UUID, event *models.Event) (*models.Event, error)
 
 	// Payments
-	SetPaymentsConfig(ctx context.Context, id uuid.UUID, sellerID, walletID *uuid.UUID, publicKey *string) (*models.Event, error)
+	SetPaymentsConfig(ctx context.Context, id uuid.UUID, sellerID *uuid.UUID, publicKey *string) (*models.Event, error)
 	ClearPaymentsConfig(ctx context.Context, id uuid.UUID) (*models.Event, error)
 
 	// Members
