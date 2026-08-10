@@ -13,6 +13,7 @@ import (
 	"univents/internal/repos/events"
 	"univents/internal/repos/products"
 	"univents/internal/repos/programs"
+	"univents/internal/repos/purchases"
 	"univents/internal/repos/registrations"
 	"univents/internal/repos/signatures"
 	"univents/internal/repos/ticket_types"
@@ -29,6 +30,7 @@ type (
 	Signatures    = signatures.Repo
 	Certs         = certifications.Repo
 	Registrations = registrations.Repo
+	Purchases     = purchases.Repo
 )
 
 var (
@@ -41,11 +43,13 @@ var (
 	NewSignatures    = signatures.NewRepo
 	NewCerts         = certifications.NewRepo
 	NewRegistrations = registrations.NewRepo
+	NewPurchases     = purchases.NewRepo
 )
 
 // Repos is the aggregate of every feature repo, constructed once at startup.
 // Occurrences and SignatureRequests are served by the programs and
-// signatures repos respectively.
+// signatures repos respectively. Product purchases and program
+// participations are served by the products and programs repos.
 type Repos struct {
 	Events            *Events
 	Editions          *Editions
@@ -58,6 +62,7 @@ type Repos struct {
 	SignatureRequests *Signatures
 	Certs             *Certs
 	Registrations     *Registrations
+	Purchases         *Purchases
 }
 
 // New constructs every feature repo from the shared query handle.
@@ -74,5 +79,6 @@ func New(q *sqlc.Queries) *Repos {
 		SignatureRequests: NewSignatures(q),
 		Certs:             NewCerts(q),
 		Registrations:     NewRegistrations(q),
+		Purchases:         NewPurchases(q),
 	}
 }

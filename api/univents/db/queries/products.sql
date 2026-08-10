@@ -1,3 +1,17 @@
+-- name: CreateProductPurchase :one
+INSERT INTO product_purchases (edition_id, variant_id, purchaser_id, registration_id, quantity, status, status_reason, payssage_intent_id)
+VALUES (@edition_id, @variant_id, @purchaser_id, @registration_id, @quantity, @status, @status_reason, @payssage_intent_id)
+RETURNING *;
+
+-- name: UpdateProductPurchaseStatus :one
+UPDATE product_purchases
+SET
+    status        = @status,
+    status_reason = @status_reason,
+    updated_at    = now()
+WHERE id = @id
+RETURNING *;
+
 -- name: CreateProduct :one
 INSERT INTO products (edition_id, vendor_code, requires_registration)
 VALUES (@edition_id, @vendor_code, @requires_registration)

@@ -54,5 +54,17 @@ func SetupConstraintMessages() {
 		// badge_templates
 		"chk_badge_template_scope_valid":   "Badge template scope must be the edition default (null) or staff (staff, without a ticket type).",
 		"idx_one_badge_template_per_scope": "This edition already has a template for this scope (default, ticket type, or staff).",
+
+		// purchases (store)
+		"chk_purchases_status_valid":                   "Purchase status must be one of: pending, approved, expired, cancelled.",
+		"uniq_purchases_pending_per_purchaser_edition": "This person already has a pending purchase for this edition.",
+
+		// purchase_items
+		"chk_purchase_items_type_valid":          "Purchase item type must be one of: ticket, product, program_occurrence.",
+		"chk_purchase_items_quantity_positive":   "Purchase item quantity must be greater than zero.",
+		"uniq_purchase_items_purchase_type_item": "This item is already in this purchase.",
+
+		// ws_tokens
+		"uniq_ws_tokens_token_hash": "This webhook token has already been issued.",
 	})
 }

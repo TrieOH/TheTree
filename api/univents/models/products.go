@@ -17,6 +17,35 @@ type Product struct {
 	DeletedAt            *time.Time `json:"deleted_at"`
 }
 
+// ProductPurchase is one buyer's purchase of a product variant at an
+// edition (a purchase_items materialization, D4). Created pending at
+// checkout; flipped confirmed/cancelled/expired by the webhook receiver
+// (split 4) and the expiry worker (split 7).
+type ProductPurchaseStatus string
+
+const (
+	ProductPurchaseStatusPending   ProductPurchaseStatus = "pending"
+	ProductPurchaseStatusConfirmed ProductPurchaseStatus = "confirmed"
+	ProductPurchaseStatusCancelled ProductPurchaseStatus = "cancelled"
+	ProductPurchaseStatusExpired   ProductPurchaseStatus = "expired"
+)
+
+type ProductPurchase struct {
+	ID               uuid.UUID             `json:"id"`
+	EditionID        uuid.UUID             `json:"edition_id"`
+	VariantID        uuid.UUID             `json:"variant_id"`
+	PurchaserID      uuid.UUID             `json:"purchaser_id"`
+	RecipientID      *uuid.UUID            `json:"recipient_id"`
+	RegistrationID   *uuid.UUID            `json:"registration_id"`
+	Quantity         int                   `json:"quantity"`
+	Status           ProductPurchaseStatus `json:"status"`
+	StatusReason     *string               `json:"status_reason"`
+	PayssageIntentID *uuid.UUID            `json:"payssage_intent_id"`
+	CreatedAt        time.Time             `json:"created_at"`
+	UpdatedAt        *time.Time            `json:"updated_at"`
+	DeletedAt        *time.Time            `json:"deleted_at"`
+}
+
 type ProductVariant struct {
 	ID          uuid.UUID       `json:"id"`
 	EditionID   uuid.UUID       `json:"edition_id"`
