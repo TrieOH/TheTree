@@ -25,7 +25,6 @@ type Event struct {
 	Style             *json.RawMessage `json:"style"`
 	Status            EventStatus      `json:"status"`
 	PayssageSellerID  *uuid.UUID       `json:"payssage_seller_id"`
-	PayssageWalletID  *uuid.UUID       `json:"payssage_wallet_id"`
 	PayssagePublicKey *string          `json:"payssage_public_key"`
 	LogoURL           *string          `json:"logo_url"`
 	BannerURL         *string          `json:"banner_url"`

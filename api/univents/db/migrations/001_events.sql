@@ -23,9 +23,9 @@ CREATE TABLE events (
     ),
 
     payssage_seller_id UUID,
-    payssage_wallet_id UUID,
-    CONSTRAINT chk_event_payments_config_complete CHECK (
-        (payssage_seller_id IS NULL) = (payssage_wallet_id IS NULL)
+    payssage_public_key TEXT,
+    CONSTRAINT chk_event_payments_public_key_requires_seller CHECK (
+        payssage_public_key IS NULL OR payssage_seller_id IS NOT NULL
     ),
 
     logo_url TEXT,

@@ -40,6 +40,10 @@ func Start() {
 	app.emailClient = email.NewClient(app.cfg.ToEmailConfig())
 	app.payssage = SetupPayssage(app.cfg)
 
+	// Fail fast on the platform wallet: wrong/missing PAYSSAGE_WALLET_ID or
+	// an unreachable Payssage must stop the boot, not surface at checkout.
+	VerifyPayssageWallet(ctx, app.payssage, app.cfg.PayssageWalletID)
+
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)
 

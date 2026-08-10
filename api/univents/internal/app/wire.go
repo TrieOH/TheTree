@@ -34,7 +34,7 @@ func (app *Univents) initRepos() *repos.Repos {
 
 func (app *Univents) initOperations(r *repos.Repos) *services.Operations {
 	authzSvc := authz.New(r.Events)
-	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret, app.payssage)
+	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret, app.payssage, app.cfg.PayssageWalletID)
 }
 
 func (app *Univents) initHandlers(ops *services.Operations) *handlers.Server {

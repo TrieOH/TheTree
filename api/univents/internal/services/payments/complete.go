@@ -13,8 +13,8 @@ import (
 
 // Complete persists the seller + provider public key on the event, after the
 // OAuth callback delivered them (seller_id = payssage's credential_id). The
-// seller must belong to the event's wallet — verified against Payssage, so a
-// forged or foreign seller id is rejected.
+// seller must belong to the platform wallet (env-configured, D6) — verified
+// against Payssage, so a forged or foreign seller id is rejected.
 func (o *Operations) Complete(ctx context.Context, eventID, sellerID uuid.UUID, publicKey string) (*models.Event, error) {
 	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Complete")
 	defer span.End()
@@ -34,11 +34,7 @@ func (o *Operations) Complete(ctx context.Context, eventID, sellerID uuid.UUID, 
 		return nil, err
 	}
 
-	if event.PayssageWalletID == nil {
-		return nil, fun.ErrBadRequest("event has no payssage wallet; connect first")
-	}
-
-	sellers, err := o.payssage.ListWalletSellers(ctx, *event.PayssageWalletID)
+	sellers, err := o.payssage.ListWalletSellers(ctx, o.walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +46,8 @@ func (o *Operations) Complete(ctx context.Context, eventID, sellerID uuid.UUID, 
 		}
 	}
 	if !belongs {
-		return nil, fun.ErrBadRequest("seller does not belong to the event's wallet")
+		return nil, fun.ErrBadRequest("seller does not belong to the platform payssage wallet")
 	}
 
-	return o.events.SetPaymentsConfig(ctx, event.ID, &sellerID, event.PayssageWalletID, &publicKey)
+	return o.events.SetPaymentsConfig(ctx, event.ID, &sellerID, &publicKey)
 }
