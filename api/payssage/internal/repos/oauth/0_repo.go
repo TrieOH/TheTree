@@ -23,15 +23,14 @@ func NewRepo(q *sqlc.Queries) *Repo {
 
 func mapState(src sqlc.OauthState) models.OAuthState {
 	return models.OAuthState{
-		State:               src.State,
-		WalletID:            src.WalletID,
-		OrganizationID:      src.OrganizationID,
-		OwnerID:             src.OwnerID,
-		Provider:            src.Provider,
-		Flow:                models.OAuthFlow(src.Flow),
-		FinalRedirectURL:    src.FinalRedirectUrl,
-		ProviderRedirectURL: src.ProviderRedirectUrl,
-		CreatedAt:           src.CreatedAt,
-		ExpiresAt:           src.ExpiresAt,
+		State:            src.State,
+		WalletID:         src.WalletID,
+		OrganizationID:   src.OrganizationID,
+		OwnerID:          src.OwnerID,
+		Provider:         src.Provider,
+		Flow:             models.OAuthFlow(src.Flow),
+		FinalRedirectURL: src.FinalRedirectUrl,
+		CreatedAt:        src.CreatedAt,
+		ExpiresAt:        src.ExpiresAt,
 	}
 }

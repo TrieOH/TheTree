@@ -35,7 +35,7 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 	return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
 		chain, ok := chains[operationID]
 		if !ok {
-			return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+			return func(_ context.Context, w http.ResponseWriter, _ *http.Request, _ any) (any, error) {
 				fun.InternalServerError("operation not registered with auth resolver").Send(w)
 				return nil, nil
 			}
@@ -43,7 +43,7 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 		if len(chain) == 0 {
 			return f
 		}
-		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return func(_ context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 			var resp any
 			var ferr error
 			var called bool

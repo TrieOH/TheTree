@@ -17,13 +17,13 @@ func SetupIdentityX(cfg config.Config) *idx.Client {
 
 // SetupPayssage builds the service-to-service Payssage client. Calls are
 // authenticated with the platform API key, so wallets/sellers are owned by
-// the owner of Univents (the platform identity). The SDK builds the provider
-// OAuth callback URLs from the payssage app URL.
+// the owner of Univents (the platform identity). The provider OAuth callback
+// URL is Payssage's own concern (D7) — univents' `PAYSSAGE_URL` is
+// server-to-server only.
 func SetupPayssage(cfg config.Config) *payssage.Client {
 	return payssage.New(payssage.Config{
 		BaseURL: cfg.PayssageURL,
 		APIKey:  cfg.PayssageAPIKey,
-		AppURL:  cfg.PayssageAppURL,
 	})
 }
 

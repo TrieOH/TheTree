@@ -1,6 +1,6 @@
 -- name: CreateOAuthState :one
-INSERT INTO oauth_states (state, wallet_id, organization_id, owner_id, provider, flow, final_redirect_url, provider_redirect_url, expires_at)
-VALUES (@state, @wallet_id, @organization_id, @owner_id, @provider, @flow, @final_redirect_url, @provider_redirect_url, @expires_at)
+INSERT INTO oauth_states (state, wallet_id, organization_id, owner_id, provider, flow, final_redirect_url, expires_at)
+VALUES (@state, @wallet_id, @organization_id, @owner_id, @provider, @flow, @final_redirect_url, @expires_at)
 RETURNING *;
 
 -- name: GetOAuthState :one

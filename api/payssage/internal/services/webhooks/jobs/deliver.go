@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"payssage/ports"
 	"time"
@@ -58,6 +59,32 @@ func NewDeliverWebhookWorker(
 	}
 }
 
+// webhookEnvelope is the delivery body sent to tenant endpoints (D2): the
+// correlation key is the Payssage intent id — never a provider-specific id.
+// `payload` carries the raw provider event payload. The signature covers the
+// envelope bytes, not the inner payload.
+type webhookEnvelope struct {
+	IntentID   uuid.UUID       `json:"intent_id"`
+	WalletID   uuid.UUID       `json:"wallet_id"`
+	Provider   string          `json:"provider"`
+	ExternalID string          `json:"external_id"`
+	EventType  string          `json:"event_type"`
+	Payload    json.RawMessage `json:"payload"`
+}
+
+// buildEnvelope wraps a webhook event's raw provider payload in the tenant
+// delivery envelope. The envelope is what gets signed and POSTed.
+func buildEnvelope(event *models.WebhookEvent) ([]byte, error) {
+	return json.Marshal(webhookEnvelope{
+		IntentID:   event.IntentID,
+		WalletID:   event.WalletID,
+		Provider:   event.Provider,
+		ExternalID: event.ExternalID,
+		EventType:  event.EventType,
+		Payload:    event.Payload,
+	})
+}
+
 func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[DeliverWebhookArgs]) error {
 	delivery, err := w.deliveries.GetByID(ctx, job.Args.DeliveryID)
 	if err != nil {
@@ -83,14 +110,20 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[DeliverW
 		return err
 	}
 
-	signature := signPayload(endpoint.Secret, event.Payload)
+	envelope, err := buildEnvelope(event)
+	if err != nil {
+		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("build envelope: %v", err))
+		return err
+	}
+
+	signature := signPayload(endpoint.Secret, envelope)
 
 	resp, reqErr := w.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Payssage-Signature", signature).
 		SetHeader("X-Payssage-Event-Type", event.EventType).
-		SetBody([]byte(event.Payload)).
+		SetBody(envelope).
 		Post(endpoint.URL)
 
 	attempts := delivery.Attempts + 1

@@ -120,7 +120,7 @@ func TestCORSPreflightAllowsConfiguredHeaders(t *testing.T) {
 	allowed := rec.Header().Get("Access-Control-Allow-Headers")
 	for _, want := range []string{"Refresh-Token", "Authorization"} {
 		found := false
-		for _, h := range strings.Split(allowed, ",") {
+		for h := range strings.SplitSeq(allowed, ",") {
 			if strings.EqualFold(strings.TrimSpace(h), want) {
 				found = true
 				break

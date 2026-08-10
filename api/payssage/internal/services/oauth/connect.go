@@ -77,19 +77,20 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 	}
 
 	_, err = o.oauth.Create(ctx, models.OAuthState{
-		State:               stateToken,
-		WalletID:            walletID,
-		OrganizationID:      organizationID,
-		OwnerID:             ident.Sub.ID,
-		Provider:            provider.String(),
-		Flow:                payload.Flow,
-		FinalRedirectURL:    payload.FinalRedirectURL,
-		ProviderRedirectURL: payload.ProviderRedirectURL,
-		ExpiresAt:           time.Now().Add(5 * time.Minute),
+		State:            stateToken,
+		WalletID:         walletID,
+		OrganizationID:   organizationID,
+		OwnerID:          ident.Sub.ID,
+		Provider:         provider.String(),
+		Flow:             payload.Flow,
+		FinalRedirectURL: payload.FinalRedirectURL,
+		ExpiresAt:        time.Now().Add(5 * time.Minute),
 	})
 	if err != nil {
 		return "", err
 	}
 
-	return providers.PayssageProviders.OAuth[provider].BuildAuthURL(stateToken, payload.ProviderRedirectURL), nil
+	// The provider redirect URI is Payssage's own callback (config-owned,
+	// D7) — the provider builds the auth URL with it internally.
+	return providers.PayssageProviders.OAuth[provider].BuildAuthURL(stateToken), nil
 }
