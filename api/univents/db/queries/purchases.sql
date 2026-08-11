@@ -44,6 +44,21 @@ WHERE id = @id
   AND deleted_at IS NULL
 RETURNING *;
 
+-- name: UpdatePurchaseStatusIf :one
+-- Guarded status transition (webhook receiver, split 4): only flips when
+-- the purchase is in the expected @from_status state, so a duplicate
+-- delivery is a no-op (idempotent webhook). Returns no rows when the guard
+-- misses.
+UPDATE purchases
+SET
+    status        = @to_status,
+    status_reason = @status_reason,
+    updated_at    = now()
+WHERE id = @id
+  AND status = @from_status
+  AND deleted_at IS NULL
+RETURNING *;
+
 -- name: ListPurchaseItemsByPurchase :many
 SELECT *
 FROM purchase_items

@@ -14,6 +14,7 @@ type Repo struct {
 }
 
 var _ ports.ProductRepo = (*Repo)(nil)
+var _ ports.ProductPurchaseRepo = (*Repo)(nil)
 
 func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{

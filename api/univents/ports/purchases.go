@@ -25,6 +25,12 @@ type PurchaseRepo interface {
 	GetByIntentID(ctx context.Context, intentID uuid.UUID) (*models.Purchase, error)
 	ListByPurchaser(ctx context.Context, purchaserID uuid.UUID) ([]models.Purchase, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.PurchaseStatus, reason *string) (*models.Purchase, error)
+	// UpdateStatusIf performs a guarded status transition (WHERE status =
+	// from) and returns (nil, nil) when the guard misses. The webhook
+	// receiver (split 4) uses it so duplicate deliveries are idempotent
+	// no-ops: approve pending→approved, late-approve expired→approved,
+	// failure pending→cancelled.
+	UpdateStatusIf(ctx context.Context, id uuid.UUID, from, to models.PurchaseStatus, reason *string) (*models.Purchase, error)
 	ListItemsByPurchase(ctx context.Context, purchaseID uuid.UUID) ([]models.PurchaseItem, error)
 
 	// Availability returns the stock position of every purchasable item in

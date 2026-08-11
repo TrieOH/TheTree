@@ -267,6 +267,9 @@ func (stubStrict) DeleteProductVariant(_ context.Context, _ openapi.DeleteProduc
 func (stubStrict) PatchProductVariant(_ context.Context, _ openapi.PatchProductVariantRequestObject) (openapi.PatchProductVariantResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) ReceivePayssageWebhook(_ context.Context, _ openapi.ReceivePayssageWebhookRequestObject) (openapi.ReceivePayssageWebhookResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) VerifyCertification(_ context.Context, _ openapi.VerifyCertificationRequestObject) (openapi.VerifyCertificationResponseObject, error) {
 	return nil, errStub
 }

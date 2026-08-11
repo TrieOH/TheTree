@@ -16,12 +16,16 @@ import (
 	"univents/internal/services/programs"
 	"univents/internal/services/signatures"
 	"univents/internal/services/ticket_types"
+	"univents/internal/services/webhooks"
 
+	"lib/database"
 	"lib/email"
 	"lib/objectstorage"
 	idx "sdk/identityx"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 )
 
 // Type and constructor aliases for each feature's operations package.
@@ -35,6 +39,7 @@ type (
 	Signatures  = signatures.Operations
 	Certs       = certifications.Operations
 	Payments    = payments.Operations
+	Webhooks    = webhooks.Operations
 )
 
 var (
@@ -47,6 +52,7 @@ var (
 	NewSignatures  = signatures.NewOperations
 	NewCerts       = certifications.NewOperations
 	NewPayments    = payments.NewOperations
+	NewWebhooks    = webhooks.NewOperations
 )
 
 // Operations is the aggregate of every feature's operations, constructed
@@ -61,13 +67,27 @@ type Operations struct {
 	Signatures  *Signatures
 	Certs       *Certs
 	Payments    *Payments
+	Webhooks    *Webhooks
 }
 
 // NewOperations wires every feature's operations from the shared repos and
 // the app's external dependencies (object storage, IdentityX client, email,
 // HMAC secret). Authorization arrives by injection through the same seam —
 // no service-locator globals.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, objStorage *objectstorage.Client, idxClient *idx.Client, emailClient *email.Client, hmacSecret string, payssageClient payments.PayssageClient, platformWalletID uuid.UUID) *Operations {
+func NewOperations(
+	r *repos.Repos,
+	authzSvc *authz.Service,
+	objStorage *objectstorage.Client,
+	idxClient *idx.Client,
+	emailClient *email.Client,
+	hmacSecret string,
+	payssageClient payments.PayssageClient,
+	platformWalletID uuid.UUID,
+	notifier *database.Notifier,
+	riverClient *river.Client[pgx.Tx],
+	tx database.TxRunner,
+	webhookSecret string,
+) *Operations {
 	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, emailClient, authzSvc)
 	return &Operations{
 		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps),
@@ -79,5 +99,6 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, objStorage *objectst
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
 		Payments:    NewPayments(r.Events, payssageClient, authzSvc, platformWalletID),
+		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
 	}
 }

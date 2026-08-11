@@ -13,6 +13,8 @@ type Repo struct {
 	dbe database.ErrorHandler
 }
 
+var _ ports.ProgramParticipationRepo = (*Repo)(nil)
+
 var (
 	_ ports.ProgramRepo           = (*Repo)(nil)
 	_ ports.ProgramOccurrenceRepo = (*Repo)(nil)
