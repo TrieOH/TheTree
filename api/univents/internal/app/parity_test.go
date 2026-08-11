@@ -270,6 +270,12 @@ func (stubStrict) PatchProductVariant(_ context.Context, _ openapi.PatchProductV
 func (stubStrict) ReceivePayssageWebhook(_ context.Context, _ openapi.ReceivePayssageWebhookRequestObject) (openapi.ReceivePayssageWebhookResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) GetCheckout(_ context.Context, _ openapi.GetCheckoutRequestObject) (openapi.GetCheckoutResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListMyPurchases(_ context.Context, _ openapi.ListMyPurchasesRequestObject) (openapi.ListMyPurchasesResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) VerifyCertification(_ context.Context, _ openapi.VerifyCertificationRequestObject) (openapi.VerifyCertificationResponseObject, error) {
 	return nil, errStub
 }

@@ -140,6 +140,12 @@ tags:
   - name: webhooks
     description: Payssage webhook ingestion (payment confirmation)
 
+  - name: checkouts
+    description: Checkout resume — the buyer's source of truth (read-only)
+
+  - name: purchases
+    description: The buyer's purchase history (read-only)
+
 externalDocs:
   description: Full TrieOH documentation
   url: https://docs.trieoh.com
@@ -3197,6 +3203,77 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /checkouts/{purchase_id}:
+    get:
+      tags: [checkouts]
+      operationId: getCheckout
+      summary: Resume a purchase
+      description: |
+        The buyer's single source of truth for a purchase (issue #61: "fonte
+        da verdade: tabela de purchases"): reads `purchases` + `purchase_items`
+        and, when the purchase is still `pending` and carries a Payssage
+        intent, the intent's current status — so a resume surfaces
+        `intent.updated` without polling. Owner-only: the caller must be the
+        purchase's `purchaser_id`; anything else is 404 (no existence leak).
+        Strictly a read — the webhook receiver and the expiry worker own all
+        status changes.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: purchase_id
+          in: path
+          required: true
+          description: Purchase ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Purchase state with items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Checkout'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /purchases:
+    get:
+      tags: [purchases]
+      operationId: listMyPurchases
+      summary: List my purchases
+      description: |
+        Lists the authenticated user's purchases with their items, newest
+        first. The purchases table is the record of truth (issue #61); items
+        come from `purchase_items` — the availability ledger (D4). Read-only;
+        no state transitions.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's purchases
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MyPurchases'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -3591,6 +3668,102 @@ components:
           x-oapi-codegen-extra-tags:
             validate: "required"
           description: Raw provider event payload.
+
+    PurchaseStatus:
+      type: string
+      description: Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment cancels.
+      enum: [pending, approved, expired, cancelled]
+
+    PurchaseItemType:
+      type: string
+      description: What kind of item a purchase line refers to — one of the three purchasable tables (D4).
+      enum: [ticket, product, program_occurrence]
+
+    PurchaseItem:
+      type: object
+      description: One line of a purchase — a reserved/ordered item; `purchase_items` is the availability ledger (D4).
+      required: [item_type, item_id, quantity, unit_price_cents]
+      properties:
+        item_type:
+          $ref: '#/components/schemas/PurchaseItemType'
+        item_id:
+          $ref: '#/components/schemas/UUID'
+        quantity:
+          type: integer
+          minimum: 1
+          description: How many units of this item the purchase holds.
+        unit_price_cents:
+          type: integer
+          format: int64
+          description: Server-computed unit price at checkout, in cents.
+
+    Purchase:
+      type: object
+      description: |
+        One purchase with its items — the shared read shape (used by
+        `listMyPurchases` and, plus `intent_status`, by `getCheckout`).
+        Mirrors the split-6 WS snapshot and split-7 checkout response so the
+        front treats resume == snapshot == checkout uniformly.
+      required: [purchase_id, edition_id, status, total_cents, currency, expires_at, items]
+      properties:
+        purchase_id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/PurchaseStatus'
+        status_reason:
+          type: [ string, "null" ]
+          description: Why the purchase is in its current status (e.g. `refunded_after_expiry`, D1).
+        total_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        payment_method:
+          type: [ string, "null" ]
+        payssage_intent_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: The Payssage intent correlation key (D2). Null for free orders and pre-checkout seeds.
+        qr_code:
+          type: [ string, "null" ]
+        qr_code_base64:
+          type: [ string, "null" ]
+        expires_at:
+          type: string
+          format: date-time
+          description: Reservation deadline (checkout time + 10:01, split 7).
+        created_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseItem'
+
+    Checkout:
+      allOf:
+        - $ref: '#/components/schemas/Purchase'
+        - type: object
+          description: The getCheckout resume payload — the purchase plus the intent's current status when it is pending (surfaces `intent.updated` on resume).
+          properties:
+            intent_status:
+              type: [ string, "null" ]
+              description: |
+                The Payssage intent's current status (pending/processing/
+                succeeded/cancelled/rejected/failed/refunded). Present only
+                when the purchase is pending and has an intent; best-effort —
+                omitted when Payssage is unreachable.
+
+    MyPurchases:
+      type: object
+      description: The caller's purchases, newest first.
+      required: [purchases]
+      properties:
+        purchases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Purchase'
 
     EventMemberRole:
       x-go-type: models.EventMemberRole
