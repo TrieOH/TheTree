@@ -9,11 +9,13 @@ import (
 	"univents/internal/repos"
 	"univents/internal/services/badges"
 	"univents/internal/services/certifications"
+	"univents/internal/services/checkouts"
 	"univents/internal/services/editions"
 	"univents/internal/services/events"
 	"univents/internal/services/payments"
 	"univents/internal/services/products"
 	"univents/internal/services/programs"
+	"univents/internal/services/purchases"
 	"univents/internal/services/signatures"
 	"univents/internal/services/ticket_types"
 	"univents/internal/services/webhooks"
@@ -22,6 +24,7 @@ import (
 	"lib/email"
 	"lib/objectstorage"
 	idx "sdk/identityx"
+	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -40,6 +43,8 @@ type (
 	Certs       = certifications.Operations
 	Payments    = payments.Operations
 	Webhooks    = webhooks.Operations
+	Checkouts   = checkouts.Operations
+	Purchases   = purchases.Operations
 )
 
 var (
@@ -53,6 +58,8 @@ var (
 	NewCerts       = certifications.NewOperations
 	NewPayments    = payments.NewOperations
 	NewWebhooks    = webhooks.NewOperations
+	NewCheckouts   = checkouts.NewOperations
+	NewPurchases   = purchases.NewOperations
 )
 
 // Operations is the aggregate of every feature's operations, constructed
@@ -68,6 +75,8 @@ type Operations struct {
 	Certs       *Certs
 	Payments    *Payments
 	Webhooks    *Webhooks
+	Checkouts   *Checkouts
+	Purchases   *Purchases
 }
 
 // NewOperations wires every feature's operations from the shared repos and
@@ -81,7 +90,7 @@ func NewOperations(
 	idxClient *idx.Client,
 	emailClient *email.Client,
 	hmacSecret string,
-	payssageClient payments.PayssageClient,
+	payssageClient *payssage.Client,
 	platformWalletID uuid.UUID,
 	notifier *database.Notifier,
 	riverClient *river.Client[pgx.Tx],
@@ -100,5 +109,7 @@ func NewOperations(
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
 		Payments:    NewPayments(r.Events, payssageClient, authzSvc, platformWalletID),
 		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
+		Checkouts:   NewCheckouts(r.Purchases, payssageClient),
+		Purchases:   NewPurchases(r.Purchases),
 	}
 }
