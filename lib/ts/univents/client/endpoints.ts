@@ -159,6 +159,7 @@ import type {
   ProductVariant,
   Program,
   ProgramOccurrence,
+  ReceivePayssageWebhookRequest,
   RemoveEventMemberBody,
   RevokeSignatureParams,
   Signature,
@@ -9312,3 +9313,125 @@ export function useListCertificationEmissionErrors<TData = Awaited<ReturnType<ty
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
+
+
+export type receivePayssageWebhookResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type receivePayssageWebhookResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type receivePayssageWebhookResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type receivePayssageWebhookResponseSuccess = (receivePayssageWebhookResponse200) & {
+  headers: Headers;
+};
+export type receivePayssageWebhookResponseError = (receivePayssageWebhookResponse400 | receivePayssageWebhookResponse500) & {
+  headers: Headers;
+};
+
+export type receivePayssageWebhookResponse = (receivePayssageWebhookResponseSuccess | receivePayssageWebhookResponseError)
+
+export const getReceivePayssageWebhookUrl = () => {
+
+
+
+
+  return `/webhooks/payssage`
+}
+
+/**
+ * Ingestion endpoint called by Payssage when a payment event occurs on
+ * an intent. The body is the Payssage delivery envelope (D2) — the
+ * correlation key is `intent_id`, never a provider-specific id:
+ *
+ * ```json
+ * {
+ *   "intent_id": "...", "wallet_id": "...", "provider": "mercadopago",
+ *   "external_id": "<provider_payment_id>",
+ *   "event_type": "payment.succeeded",
+ *   "payload": { "...": "raw provider payload" }
+ * }
+ * ```
+ *
+ * Authenticated by the `X-Payssage-Signature` header — hex
+ * (HMAC-SHA256(raw body, `PAYSSAGE_WEBHOOK_SECRET`)). A signature
+ * mismatch is rejected with 400 (Payssage does not retry). Returns 200
+ * after successful processing so Payssage stops retrying; returns
+ * non-2xx when the purchase cannot be correlated yet (card race, D3)
+ * so Payssage retries. This is the only component that confirms
+ * payment — checkout never self-approves (D3). Public: Payssage
+ * cannot send an Authorization header.
+ * @summary Receive a Payssage webhook delivery
+ */
+export const receivePayssageWebhook = async (receivePayssageWebhookRequest: ReceivePayssageWebhookRequest, options?: Parameters<typeof customInstance>[1]): Promise<receivePayssageWebhookResponse> => {
+
+  return customInstance<receivePayssageWebhookResponse>(getReceivePayssageWebhookUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(receivePayssageWebhookRequest)
+  }
+);}
+
+
+
+
+
+export const getReceivePayssageWebhookMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receivePayssageWebhook>>, TError,{data: BodyType<ReceivePayssageWebhookRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof receivePayssageWebhook>>, TError,{data: BodyType<ReceivePayssageWebhookRequest>}, TContext> => {
+
+const mutationKey = ['receivePayssageWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof receivePayssageWebhook>>, {data: BodyType<ReceivePayssageWebhookRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  receivePayssageWebhook(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReceivePayssageWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof receivePayssageWebhook>>>
+    export type ReceivePayssageWebhookMutationBody = BodyType<ReceivePayssageWebhookRequest>
+    export type ReceivePayssageWebhookMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Receive a Payssage webhook delivery
+ */
+export const useReceivePayssageWebhook = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receivePayssageWebhook>>, TError,{data: BodyType<ReceivePayssageWebhookRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof receivePayssageWebhook>>,
+        TError,
+        {data: BodyType<ReceivePayssageWebhookRequest>},
+        TContext
+      > => {
+      return useMutation(getReceivePayssageWebhookMutationOptions(options));
+    }

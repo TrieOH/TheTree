@@ -76,11 +76,22 @@
  * | `X-Payssage-Signature` | `hex( HMAC-SHA256( payload, endpoint.secret ) )` |
  * | `X-Payssage-Event-Type` | Normalized event type (e.g. `payment.succeeded`) |
  *
- * The body is the raw provider event payload. Verify the signature
- * before trusting the payload. Deliveries are retried up to **5
- * attempts** (any 2xx counts as success; request failures and non-2xx
- * count as failed attempts), after which the delivery is marked
- * `failed`.
+ * The body is a JSON envelope carrying the raw provider event payload
+ * plus the correlation key — the Payssage `intent_id` (never a
+ * provider-specific id):
+ *
+ * ```json
+ * {
+ *   "intent_id": "...", "wallet_id": "...", "provider": "mercadopago",
+ *   "external_id": "<mp_payment_id>", "event_type": "payment.succeeded",
+ *   "payload": { ...raw provider payload... }
+ * }
+ * ```
+ *
+ * Verify the signature before trusting the payload. Deliveries are
+ * retried up to **5 attempts** (any 2xx counts as success; request
+ * failures and non-2xx count as failed attempts), after which the
+ * delivery is marked `failed`.
  *
  * ## Rate limits
  *

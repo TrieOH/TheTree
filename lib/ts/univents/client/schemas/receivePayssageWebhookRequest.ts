@@ -93,41 +93,20 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { EventStatus } from './eventStatus';
-import type { EventStyle } from './eventStyle';
-import type { NullableUUID } from './nullableUUID';
-import type { Uuid } from './uuid';
+import type { ReceivePayssageWebhookRequestPayload } from './receivePayssageWebhookRequestPayload';
 
 /**
- * An event. Mirrors `models.Event`.
+ * The Payssage webhook delivery envelope (D2). Correlation is by
+ * `intent_id` — the receiver loads the purchase on it, never on a
+ * provider-specific id. Every field is required: a malformed body is
+ * rejected with 400 and payssage does not retry.
  */
-export interface Event {
-  id: Uuid;
-  owner_id: Uuid;
-  full_name: string;
-  /** @nullable */
-  acronym?: string | null;
-  slug: string;
-  /** @nullable */
-  description?: string | null;
-  /**
-     * Styling hints for the event's public pages.
-     * @nullable
-     */
-  style?: EventStyle;
-  status: EventStatus;
-  payssage_seller_id?: NullableUUID | null;
-  /** @nullable */
-  payssage_public_key?: string | null;
-  /** @nullable */
-  logo_url?: string | null;
-  /** @nullable */
-  banner_url?: string | null;
-  /** @nullable */
-  contact_email?: string | null;
-  created_at: string;
-  /** @nullable */
-  updated_at?: string | null;
-  /** @nullable */
-  deleted_at?: string | null;
+export interface ReceivePayssageWebhookRequest {
+  intent_id: string;
+  wallet_id: string;
+  provider: string;
+  external_id: string;
+  event_type: string;
+  /** Raw provider event payload. */
+  payload: ReceivePayssageWebhookRequestPayload;
 }

@@ -174,6 +174,8 @@ export * from './productVariant';
 export * from './program';
 export * from './programKind';
 export * from './programOccurrence';
+export * from './receivePayssageWebhookRequest';
+export * from './receivePayssageWebhookRequestPayload';
 export * from './removeEventMemberBody';
 export * from './response';
 export * from './responseData';
