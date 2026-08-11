@@ -9,11 +9,13 @@ package handlers
 import (
 	"univents/internal/handlers/badges"
 	"univents/internal/handlers/certifications"
+	"univents/internal/handlers/checkouts"
 	"univents/internal/handlers/editions"
 	"univents/internal/handlers/events"
 	"univents/internal/handlers/payments"
 	"univents/internal/handlers/products"
 	"univents/internal/handlers/programs"
+	"univents/internal/handlers/purchases"
 	"univents/internal/handlers/signatures"
 	"univents/internal/handlers/ticket_types"
 	"univents/internal/handlers/webhooks"
@@ -36,6 +38,8 @@ type (
 	CertificationHandlers = certifications.Handlers
 	PaymentHandlers       = payments.Handlers
 	WebhookHandlers       = webhooks.Handlers
+	CheckoutHandlers      = checkouts.Handlers
+	PurchaseHandlers      = purchases.Handlers
 )
 
 type Server struct {
@@ -49,6 +53,8 @@ type Server struct {
 	*CertificationHandlers
 	*PaymentHandlers
 	*WebhookHandlers
+	*CheckoutHandlers
+	*PurchaseHandlers
 }
 
 // NewServer wires the per-feature handlers from the services aggregate.
@@ -64,5 +70,7 @@ func NewServer(ops *services.Operations) *Server {
 		CertificationHandlers: certifications.New(ops.Certs),
 		PaymentHandlers:       payments.New(ops.Payments),
 		WebhookHandlers:       webhooks.New(ops.Webhooks),
+		CheckoutHandlers:      checkouts.New(ops.Checkouts),
+		PurchaseHandlers:      purchases.New(ops.Purchases),
 	}
 }
