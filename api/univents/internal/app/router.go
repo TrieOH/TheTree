@@ -8,6 +8,7 @@ import (
 	"lib/httpserver"
 	spec "univents"
 	"univents/internal/handlers"
+	"univents/internal/handlers/webhooks"
 	"univents/internal/openapi"
 
 	"github.com/MintzyG/fun"
@@ -50,6 +51,11 @@ func mountStrict(r *chi.Mux, h *handlers.Server, chains map[string][]func(http.H
 		})
 	openapi.HandlerWithOptions(strict, openapi.ChiServerOptions{
 		BaseRouter: r,
+		// The raw-request capture runs first so the Payssage webhook can
+		// verify the signature against the exact body bytes payssage POSTed
+		// (the strict server decodes the body afterwards; D2). Path-scoped
+		// to /webhooks/ inside the middleware.
+		Middlewares: []openapi.MiddlewareFunc{webhooks.RawRequestMiddleware},
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
 			var required *openapi.RequiredParamError
 			var invalid *openapi.InvalidParamFormatError

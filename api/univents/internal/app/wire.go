@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"lib/database"
 	"lib/errx"
 	libriver "lib/river"
 	"log/slog"
@@ -32,9 +33,9 @@ func (app *Univents) initRepos() *repos.Repos {
 	return repos.New(sqlc.New(app.db))
 }
 
-func (app *Univents) initOperations(r *repos.Repos) *services.Operations {
+func (app *Univents) initOperations(r *repos.Repos, notifier *database.Notifier, riverClient *river.Client[pgx.Tx], tx database.TxRunner) *services.Operations {
 	authzSvc := authz.New(r.Events)
-	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret, app.payssage, app.cfg.PayssageWalletID)
+	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret, app.payssage, app.cfg.PayssageWalletID, notifier, riverClient, tx, app.cfg.PayssageWebhookSecret)
 }
 
 func (app *Univents) initHandlers(ops *services.Operations) *handlers.Server {
