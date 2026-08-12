@@ -85,6 +85,47 @@
  * Prices are integer cents (`price_cents`, `price`) — `int64`, never
  * floats.
  *
+ * ## Raw realtime routes (not spec ops)
+ *
+ * Two live surfaces are **raw routes** — deliberately NOT OpenAPI
+ * operations: WebSocket handshakes cannot carry Authorization headers,
+ * and streaming responses must bypass the fun/validate envelope machinery
+ * (which buffers the body). They are documented here instead.
+ *
+ * ### `WS /ws?token=...` — per-purchase socket (one-time token)
+ *
+ * The only live-update channel for a buyer. Opens with the one-time token
+ * from `GET /ws/token` (proves prior REST auth for this purchase);
+ * missing/already-used/expired tokens are rejected (401). The socket
+ * first receives the current state, then live frames until a terminal
+ * event closes it:
+ *
+ * ```json
+ * {"type":"purchase.snapshot","payload":{"purchase_id":"…","edition_id":"…","status":"pending","intent_id":"…","intent_status":"pending","total_cents":1234,"items":[],"expires_at":"…"}}
+ * {"type":"intent.updated","payload":{"purchase_id":"…","intent_id":"…","status":"succeeded"}}
+ * {"type":"purchase.confirmed","payload":{"purchase_id":"…"}}
+ * {"type":"purchase.expired","payload":{"purchase_id":"…"}}
+ * {"type":"purchase.cancelled","payload":{"purchase_id":"…","status_detail":"insufficient_funds"}}
+ * ```
+ *
+ * The snapshot mirrors the `getCheckout` resume shape (front treats
+ * resume == snapshot == checkout uniformly) and carries `intent_status`
+ * best-effort when the purchase is pending. A reconnect always uses a
+ * fresh token and restores context from the snapshot — no resume polling.
+ * The socket closes on any terminal event (confirmed/expired/cancelled)
+ * and on the cancelled frame the `status_detail` is the provider's
+ * failure vocabulary fetched via `GetIntent` (best-effort).
+ *
+ * ### `GET /editions/{edition_id}/store/stream` — storefront SSE (public)
+ *
+ * One stream per edition: on connect it sends `event: snapshot` with a
+ * JSON array of every purchasable item's stock position, then relays
+ * `event: stock` deltas — `{"id": "…", "item_type": "ticket", "stock": 12}`
+ * (`item_type` is one of `ticket | product | program_occurrence`; `stock`
+ * is `null` when the item is unlimited). Numbers are always recomputed
+ * from the DB by the relay — publishers never send stock values. A `: ping`
+ * comment line keeps the stream alive every ~30s.
+ *
  * ## Rate limits
  *
  * The harness applies a fixed rate limit of 400 requests/second with a
@@ -146,6 +187,7 @@ import type {
   FulfillSignatureRequestParams,
   GetEditionBadgesPrintParams,
   GetHealth200,
+  GetWsTokenParams,
   InternalServerErrorResponse,
   InvalidCertReason,
   MyPurchases,
@@ -171,7 +213,8 @@ import type {
   UpdateBadgeTemplateRequest,
   UpdateCertificationTemplateRequest,
   Uuid,
-  VerifyCertResponse
+  VerifyCertResponse,
+  WsToken
 } from './schemas';
 
 import { customInstance } from '../../api-client/src/orval-mutator';
@@ -9645,6 +9688,127 @@ export function useListMyPurchases<TData = Awaited<ReturnType<typeof listMyPurch
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListMyPurchasesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getWsTokenResponse200 = {
+  data: WsToken
+  status: 200
+}
+
+export type getWsTokenResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getWsTokenResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getWsTokenResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getWsTokenResponseSuccess = (getWsTokenResponse200) & {
+  headers: Headers;
+};
+export type getWsTokenResponseError = (getWsTokenResponse401 | getWsTokenResponse404 | getWsTokenResponse500) & {
+  headers: Headers;
+};
+
+export type getWsTokenResponse = (getWsTokenResponseSuccess | getWsTokenResponseError)
+
+export const getGetWsTokenUrl = (params: GetWsTokenParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/ws/token?${stringifiedParams}` : `/ws/token`
+}
+
+/**
+ * Owner-only: the caller must be the purchase's `purchaser_id`
+ * (anything else is 404 — no existence leak). Issues a fresh one-time
+ * token for the raw `WS /ws?token=...` socket: a 32-byte random value
+ * stored as its SHA-256 hash, valid 10 minutes, consumed by the first
+ * handshake. The token is a handshake-auth shim — it proves prior REST
+ * auth for this purchase and nothing more (no refresh dance, no
+ * scopes). Reconnect = fresh token: the front re-requests before the
+ * 10-minute expiry and re-opens the socket.
+ * @summary Issue a one-time WebSocket handshake token
+ */
+export const getWsToken = async (params: GetWsTokenParams, options?: Parameters<typeof customInstance>[1]): Promise<getWsTokenResponse> => {
+
+  return customInstance<getWsTokenResponse>(getGetWsTokenUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWsTokenQueryKey = (params?: GetWsTokenParams,) => {
+    return [
+    `/ws/token`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWsTokenQueryOptions = <TData = Awaited<ReturnType<typeof getWsToken>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(params: GetWsTokenParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWsToken>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWsTokenQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWsToken>>> = ({ signal }) => getWsToken(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWsToken>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWsTokenQueryResult = NonNullable<Awaited<ReturnType<typeof getWsToken>>>
+export type GetWsTokenQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary Issue a one-time WebSocket handshake token
+ */
+
+export function useGetWsToken<TData = Awaited<ReturnType<typeof getWsToken>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ params: GetWsTokenParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWsToken>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWsTokenQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

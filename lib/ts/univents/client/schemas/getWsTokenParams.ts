@@ -134,23 +134,11 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { ProgramKind } from './programKind';
+import type { Uuid } from './uuid';
 
+export type GetWsTokenParams = {
 /**
- * Request body for program creation. Mirrors `models.CreateProgramRequest`.
+ * Purchase to bind the token to.
  */
-export interface CreateProgramRequest {
-  kind: ProgramKind;
-  /** @minLength 2 */
-  name: string;
-  /** @nullable */
-  description?: string | null;
-  /**
-     * @minimum 0
-     * @nullable
-     */
-  min_access_level?: number | null;
-  staff_only?: boolean;
-  /** @nullable */
-  price?: number | null;
-}
+purchase_id: Uuid;
+};

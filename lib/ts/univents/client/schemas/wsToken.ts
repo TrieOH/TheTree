@@ -134,23 +134,17 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { ProgramKind } from './programKind';
 
 /**
- * Request body for program creation. Mirrors `models.CreateProgramRequest`.
+ * A one-time WebSocket handshake token for one purchase (split 6):
+ * the raw value is returned exactly once here and stored only as its
+ * SHA-256 hash, valid 10 minutes, consumed by the first
+ * `WS /ws?token=...` handshake. The front re-requests before
+ * `expires_at` when it needs to reconnect.
  */
-export interface CreateProgramRequest {
-  kind: ProgramKind;
-  /** @minLength 2 */
-  name: string;
-  /** @nullable */
-  description?: string | null;
-  /**
-     * @minimum 0
-     * @nullable
-     */
-  min_access_level?: number | null;
-  staff_only?: boolean;
-  /** @nullable */
-  price?: number | null;
+export interface WsToken {
+  /** The one-time token — pass to `WS /ws?token=...`. */
+  token: string;
+  /** When the token stops being valid. */
+  expires_at: string;
 }
