@@ -59,6 +59,33 @@ WHERE id = @id
   AND deleted_at IS NULL
 RETURNING *;
 
+-- name: UpdatePurchaseRiverJob :one
+-- Stores the expiry job's river id on the purchase (checkout, split 7): the
+-- job is enqueued with river.InsertTx inside the checkout tx, then this
+-- write links it so the webhook receiver can cancel it on approve.
+UPDATE purchases
+SET
+    river_job_id = @river_job_id,
+    updated_at   = now()
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- name: AttachIntentToPurchase :one
+-- Stores the Payssage intent on the purchase after the intent was created
+-- (checkout, split 7, post-commit Tx 2): seller, intent id (the D2
+-- correlation key), and the pix QR. Null for free orders.
+UPDATE purchases
+SET
+    payssage_seller_id = @payssage_seller_id,
+    payssage_intent_id = @payssage_intent_id,
+    qr_code            = @qr_code,
+    qr_code_base64     = @qr_code_base64,
+    updated_at         = now()
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
 -- name: ListPurchaseItemsByPurchase :many
 SELECT *
 FROM purchase_items
