@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { Check, CreditCard, LockKeyhole } from "lucide-react";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { activeEditionQueryOptions } from "@/features/editions/api";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
@@ -54,36 +54,57 @@ function CheckoutPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8 md:py-12">
-      <Link
-        to="/events/$slug/products"
-        params={{ slug: event.slug }}
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Voltar ao carrinho
-      </Link>
-
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Checkout</h1>
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-12">
+      <div className="mb-8 border-b border-border pb-6">
+        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-primary">
+          <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Check className="size-3.5" />
+          </span>
+          Pedido conferido
+          <span className="h-px w-8 bg-border" />
+          <span className="flex size-6 items-center justify-center rounded-full border border-primary">
+            2
+          </span>
+          <span className="text-muted-foreground">Pagamento</span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Finalizar compra</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Confira seu pedido para {event.full_name}.
         </p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <OrderSummary items={items} totalCents={totalCents} />
+        <section className="rounded-xl border border-border bg-card p-5 md:p-6">
+          <OrderSummary
+            items={items}
+            totalCents={totalCents}
+            title="Seu pedido"
+          />
+        </section>
 
-        <section className="flex flex-col justify-center border border-border bg-card p-6 text-center">
-          <LockKeyhole className="mx-auto mb-3 size-8 text-primary" />
-          <h2 className="font-semibold">Pagamento seguro</h2>
+        <section className="flex flex-col rounded-xl border border-primary/20 bg-primary/3 p-6">
+          <div className="mb-6 flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CreditCard className="size-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold">Forma de pagamento</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pix e cartão de crédito
+              </p>
+            </div>
+            <LockKeyhole className="ml-auto size-4 text-muted-foreground" />
+          </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            A seleção de Pix ou cartão será liberada aqui quando o endpoint de
-            checkout dos próximos splits estiver disponível.
+            O pagamento estará disponível assim que a integração financeira
+            deste evento for liberada.
           </p>
-          <Button className="mt-6" disabled>
-            Continuar para pagamento
+          <Button className="mt-6 w-full" disabled>
+            Continuar para o pagamento
           </Button>
+          <p className="mt-3 text-center text-[11px] text-muted-foreground">
+            Seus dados serão processados com segurança.
+          </p>
         </section>
       </div>
     </main>

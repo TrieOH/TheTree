@@ -72,7 +72,7 @@ export function ProductCardCompact({
   return (
     <div className="flex w-88 max-w-full flex-col overflow-hidden rounded-xl border border-border bg-card">
       {/* Image */}
-      <div className="group relative flex aspect-16/10 w-full shrink-0 items-center justify-center overflow-hidden bg-muted">
+      <div className="group relative flex aspect-16/8 w-full shrink-0 items-center justify-center overflow-hidden bg-muted">
         {selected.gallery_urls?.[currentImageIndex] ? (
           <>
             <img
@@ -136,19 +136,19 @@ export function ProductCardCompact({
       </div>
 
       {/* Content */}
-      <div className="flex flex-col px-4 pt-4">
-        <h3 className="text-[15px] font-semibold text-foreground leading-snug">
+      <div className="flex flex-col px-3 pt-3">
+        <h3 className="text-sm font-semibold text-foreground leading-snug">
           {product.name ?? product.vendor_code}: {selected.name}
         </h3>
-        <p className="mt-0.5 min-h-9 text-xs leading-4.5 text-muted-foreground line-clamp-2">
+        <p className="mt-0.5 min-h-8 text-[11px] leading-4 text-muted-foreground line-clamp-2">
           {selected.description}
         </p>
 
         {/* Price + Stock */}
-        <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+        <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
           <span
             className={cn(
-              "text-lg font-bold tabular-nums",
+              "text-base font-bold tabular-nums",
               selected.price === 0
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-foreground",
@@ -159,7 +159,7 @@ export function ProductCardCompact({
 
           <span
             className={cn(
-              "flex items-center gap-1 text-xs",
+              "flex items-center gap-1 text-[11px]",
               isOutOfStock
                 ? "text-destructive font-medium"
                 : isLowStock
@@ -180,8 +180,8 @@ export function ProductCardCompact({
       </div>
 
       {/* Variant chips */}
-      <div className="min-h-19 px-4 pt-3">
-        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="min-h-16 px-3 pt-2">
+        <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           Opções
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -213,7 +213,7 @@ export function ProductCardCompact({
 
       {/* Buy bar */}
       {editionId && !isOutOfStock && (
-        <div className="flex items-center gap-2 px-4 py-4 mt-auto">
+        <div className="flex items-center gap-2 px-3 py-3 mt-auto">
           <Button
             size="default"
             variant={inCart ? "secondary" : "default"}
@@ -251,7 +251,7 @@ export function ProductCardCompact({
       )}
 
       {isOutOfStock && (
-        <div className="px-4 py-4 mt-auto">
+        <div className="px-3 py-3 mt-auto">
           <Button
             size="default"
             variant="outline"

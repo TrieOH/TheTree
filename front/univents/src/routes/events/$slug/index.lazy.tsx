@@ -24,6 +24,7 @@ export const Route = createLazyFileRoute("/events/$slug/")({
 });
 
 function RouteComponent() {
+  const navigate = Route.useNavigate();
   const event = Route.useLoaderData();
   const { data: activeEdition } = useSuspenseQuery(
     activeEditionQueryOptions(event.id),
@@ -207,6 +208,12 @@ function RouteComponent() {
           eventId={event.id}
           editionId={activeEdition.id}
           onClose={() => setIsCartOpen(false)}
+          onCheckout={() =>
+            navigate({
+              to: "/events/$slug/checkout",
+              params: { slug: event.slug },
+            })
+          }
         />
       )}
       {activeEdition && (

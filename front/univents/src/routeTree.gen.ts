@@ -24,9 +24,11 @@ import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as ProfilePurchasesRouteImport } from './routes/profile/purchases'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileActorIdRouteImport } from './routes/profile/$actorId'
+import { Route as CheckoutsPurchaseIdRouteImport } from './routes/checkouts/$purchaseId'
 import { Route as AuthVerifyEmailRouteImport } from './routes/auth_/verify-email'
 import { Route as AuthVerifyRouteImport } from './routes/auth_/verify'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth_/reset-password'
@@ -139,6 +141,11 @@ const SignatureRequestsFulfillRoute =
     path: '/signature-requests/fulfill',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ProfilePurchasesRoute = ProfilePurchasesRouteImport.update({
+  id: '/purchases',
+  path: '/purchases',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const ProfileEditRoute = ProfileEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -153,6 +160,11 @@ const ProfileActorIdRoute = ProfileActorIdRouteImport.update({
   id: '/$actorId',
   path: '/$actorId',
   getParentRoute: () => ProfileRoute,
+} as any)
+const CheckoutsPurchaseIdRoute = CheckoutsPurchaseIdRouteImport.update({
+  id: '/checkouts/$purchaseId',
+  path: '/checkouts/$purchaseId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
   id: '/auth_/verify-email',
@@ -412,9 +424,11 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/purchases': typeof ProfilePurchasesRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -464,9 +478,11 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/purchases': typeof ProfilePurchasesRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -517,9 +533,11 @@ export interface FileRoutesById {
   '/auth_/reset-password': typeof AuthResetPasswordRoute
   '/auth_/verify': typeof AuthVerifyRoute
   '/auth_/verify-email': typeof AuthVerifyEmailRoute
+  '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/$actorId': typeof ProfileActorIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/purchases': typeof ProfilePurchasesRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -572,9 +590,11 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/verify'
     | '/auth/verify-email'
+    | '/checkouts/$purchaseId'
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
+    | '/profile/purchases'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
@@ -624,9 +644,11 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/verify'
     | '/auth/verify-email'
+    | '/checkouts/$purchaseId'
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
+    | '/profile/purchases'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
@@ -676,9 +698,11 @@ export interface FileRouteTypes {
     | '/auth_/reset-password'
     | '/auth_/verify'
     | '/auth_/verify-email'
+    | '/checkouts/$purchaseId'
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
+    | '/profile/purchases'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
@@ -729,6 +753,7 @@ export interface RootRouteChildren {
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
+  CheckoutsPurchaseIdRoute: typeof CheckoutsPurchaseIdRoute
   SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
   SignaturesRevokeRoute: typeof SignaturesRevokeRoute
   VerifyHashRoute: typeof VerifyHashRoute
@@ -837,6 +862,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/purchases': {
+      id: '/profile/purchases'
+      path: '/purchases'
+      fullPath: '/profile/purchases'
+      preLoaderRoute: typeof ProfilePurchasesRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/profile/edit': {
       id: '/profile/edit'
       path: '/edit'
@@ -857,6 +889,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/$actorId'
       preLoaderRoute: typeof ProfileActorIdRouteImport
       parentRoute: typeof ProfileRoute
+    }
+    '/checkouts/$purchaseId': {
+      id: '/checkouts/$purchaseId'
+      path: '/checkouts/$purchaseId'
+      fullPath: '/checkouts/$purchaseId'
+      preLoaderRoute: typeof CheckoutsPurchaseIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth_/verify-email': {
       id: '/auth_/verify-email'
@@ -1188,6 +1227,7 @@ interface ProfileRouteChildren {
   ProfileActorIdRoute: typeof ProfileActorIdRoute
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
+  ProfilePurchasesRoute: typeof ProfilePurchasesRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
@@ -1195,6 +1235,7 @@ const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileActorIdRoute: ProfileActorIdRoute,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
+  ProfilePurchasesRoute: ProfilePurchasesRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }
 
@@ -1215,6 +1256,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
+  CheckoutsPurchaseIdRoute: CheckoutsPurchaseIdRoute,
   SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
   SignaturesRevokeRoute: SignaturesRevokeRoute,
   VerifyHashRoute: VerifyHashRoute,

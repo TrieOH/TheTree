@@ -47,7 +47,7 @@ export function ProductsSection({
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-5 max-w-6xl mx-auto">
+        <div className="flex flex-wrap justify-start gap-5 max-w-6xl mx-auto">
           {productsWithVariants.slice(0, 3).map(({ product, variants }) => (
             <ProductCard
               key={product.id}

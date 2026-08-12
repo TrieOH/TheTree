@@ -121,6 +121,7 @@ import type {
   Certification,
   CertificationTemplate,
   CertificationTemplateProgram,
+  Checkout,
   CompleteEventPaymentsRequest,
   ConflictResponse,
   ConnectEventPaymentsRequest,
@@ -147,6 +148,7 @@ import type {
   GetHealth200,
   InternalServerErrorResponse,
   InvalidCertReason,
+  MyPurchases,
   NotFoundResponse,
   PatchEditionRequest,
   PatchEventRequest,
@@ -9435,3 +9437,216 @@ export const useReceivePayssageWebhook = <TError = ErrorType<BadRequestResponse 
       > => {
       return useMutation(getReceivePayssageWebhookMutationOptions(options));
     }
+
+export type getCheckoutResponse200 = {
+  data: Checkout
+  status: 200
+}
+
+export type getCheckoutResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getCheckoutResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getCheckoutResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getCheckoutResponseSuccess = (getCheckoutResponse200) & {
+  headers: Headers;
+};
+export type getCheckoutResponseError = (getCheckoutResponse401 | getCheckoutResponse404 | getCheckoutResponse500) & {
+  headers: Headers;
+};
+
+export type getCheckoutResponse = (getCheckoutResponseSuccess | getCheckoutResponseError)
+
+export const getGetCheckoutUrl = (purchaseId: Uuid,) => {
+
+
+
+
+  return `/checkouts/${purchaseId}`
+}
+
+/**
+ * The buyer's single source of truth for a purchase (issue #61: "fonte
+ * da verdade: tabela de purchases"): reads `purchases` + `purchase_items`
+ * and, when the purchase is still `pending` and carries a Payssage
+ * intent, the intent's current status — so a resume surfaces
+ * `intent.updated` without polling. Owner-only: the caller must be the
+ * purchase's `purchaser_id`; anything else is 404 (no existence leak).
+ * Strictly a read — the webhook receiver and the expiry worker own all
+ * status changes.
+ * @summary Resume a purchase
+ */
+export const getCheckout = async (purchaseId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<getCheckoutResponse> => {
+
+  return customInstance<getCheckoutResponse>(getGetCheckoutUrl(purchaseId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCheckoutQueryKey = (purchaseId: Uuid,) => {
+    return [
+    `/checkouts/${purchaseId}`
+    ] as const;
+    }
+
+
+export const getGetCheckoutQueryOptions = <TData = Awaited<ReturnType<typeof getCheckout>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(purchaseId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckout>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCheckoutQueryKey(purchaseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCheckout>>> = ({ signal }) => getCheckout(purchaseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: purchaseId !== null && purchaseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckout>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCheckoutQueryResult = NonNullable<Awaited<ReturnType<typeof getCheckout>>>
+export type GetCheckoutQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary Resume a purchase
+ */
+
+export function useGetCheckout<TData = Awaited<ReturnType<typeof getCheckout>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ purchaseId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckout>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCheckoutQueryOptions(purchaseId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listMyPurchasesResponse200 = {
+  data: MyPurchases
+  status: 200
+}
+
+export type listMyPurchasesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listMyPurchasesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listMyPurchasesResponseSuccess = (listMyPurchasesResponse200) & {
+  headers: Headers;
+};
+export type listMyPurchasesResponseError = (listMyPurchasesResponse401 | listMyPurchasesResponse500) & {
+  headers: Headers;
+};
+
+export type listMyPurchasesResponse = (listMyPurchasesResponseSuccess | listMyPurchasesResponseError)
+
+export const getListMyPurchasesUrl = () => {
+
+
+
+
+  return `/purchases`
+}
+
+/**
+ * Lists the authenticated user's purchases with their items, newest
+ * first. The purchases table is the record of truth (issue #61); items
+ * come from `purchase_items` — the availability ledger (D4). Read-only;
+ * no state transitions.
+ * @summary List my purchases
+ */
+export const listMyPurchases = async ( options?: Parameters<typeof customInstance>[1]): Promise<listMyPurchasesResponse> => {
+
+  return customInstance<listMyPurchasesResponse>(getListMyPurchasesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyPurchasesQueryKey = () => {
+    return [
+    `/purchases`
+    ] as const;
+    }
+
+
+export const getListMyPurchasesQueryOptions = <TData = Awaited<ReturnType<typeof listMyPurchases>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyPurchases>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyPurchasesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyPurchases>>> = ({ signal }) => listMyPurchases({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyPurchases>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyPurchasesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyPurchases>>>
+export type ListMyPurchasesQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary List my purchases
+ */
+
+export function useListMyPurchases<TData = Awaited<ReturnType<typeof listMyPurchases>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyPurchases>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyPurchasesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
