@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"lib/telemetry"
+	"univents/internal/services/notify"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -191,13 +192,13 @@ func fullyAvailable(items []models.PurchaseItem, availability []models.ItemAvail
 // DB and the WS hub routes on purchase_id, so a missed notification is a
 // stale snapshot, never data loss — errors are logged, not propagated.
 func (o *Operations) notify(ctx context.Context, purchase *models.Purchase, items []models.PurchaseItem, status models.PurchaseStatus) {
-	stock := stockNotification{Kind: kindStock, EditionID: purchase.EditionID}
+	stock := notify.StockNotification{Kind: notify.KindStock, EditionID: purchase.EditionID}
 	for _, item := range items {
 		stock.ItemIDs = append(stock.ItemIDs, item.ItemID)
 	}
 	o.publish(ctx, stock)
-	o.publish(ctx, purchaseNotification{
-		Kind:       kindPurchase,
+	o.publish(ctx, notify.PurchaseNotification{
+		Kind:       notify.KindPurchase,
 		EditionID:  purchase.EditionID,
 		PurchaseID: purchase.ID,
 		Status:     string(status),

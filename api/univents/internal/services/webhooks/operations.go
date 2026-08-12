@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"lib/database"
+	"univents/internal/services/notify"
 	"univents/models"
 	"univents/ports"
 
@@ -36,33 +37,10 @@ type River interface {
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes
-// on: the WS hub routes kind="purchase" events (D9) and the SSE relay
-// routes kind="stock" deltas (D10), both subscribed in split 6.
-const channelUniventsChanges = "univents_changes"
-
-const (
-	kindStock    = "stock"
-	kindPurchase = "purchase"
-)
-
-// stockNotification is the stock-delta payload (D10): item_ids only, never
-// stock numbers — the SSE relay re-queries availability from the DB, so a
-// missed notification is a stale snapshot, never data loss.
-type stockNotification struct {
-	Kind      string      `json:"kind"`
-	EditionID uuid.UUID   `json:"edition_id"`
-	ItemIDs   []uuid.UUID `json:"item_ids"`
-}
-
-// purchaseNotification is the purchase-event payload (D9). The WS hub maps
-// status to the frame type: approved → purchase.confirmed, expired →
-// purchase.expired, cancelled → purchase.cancelled.
-type purchaseNotification struct {
-	Kind       string    `json:"kind"`
-	EditionID  uuid.UUID `json:"edition_id"`
-	PurchaseID uuid.UUID `json:"purchase_id"`
-	Status     string    `json:"status"`
-}
+// on (contract in internal/services/notify): the WS hub routes
+// kind="purchase" events (D9) and the SSE relay routes kind="stock" deltas
+// (D10), both subscribed in split 6.
+const channelUniventsChanges = notify.Channel
 
 type Operations struct {
 	purchases        ports.PurchaseRepo

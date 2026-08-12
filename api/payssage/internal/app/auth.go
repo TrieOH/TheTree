@@ -9,6 +9,8 @@ import (
 
 	idx "sdk/identityx"
 
+	"github.com/MintzyG/fun"
+
 	fm "github.com/MintzyG/fun/middlewares"
 	"go.uber.org/zap"
 )
@@ -35,16 +37,27 @@ func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		var ident idx.Identity
-		_, err := app.httpClient.R().
+		// identityx returns the fun envelope ({code, data, ...}); the
+		// identity lives under `data` — SetResult(&ident) directly would
+		// leave it zeroed (owner_id 000 in wallets) because the envelope
+		// has no top-level `subject`.
+		var envelope struct {
+			Data idx.Identity `json:"data"`
+		}
+		resp, err := app.httpClient.R().
 			WithContext(ctx).
 			SetHeader("X-API-KEY", rawKey).
-			SetResult(&ident).
+			SetResult(&envelope).
 			Get("http://identityx:8080/auth/introspect")
 		if err != nil {
 			telemetry.Log().Error("error fetching identity", zap.Error(err))
 			return ctx, err
 		}
+		if resp.IsStatusFailure() {
+			telemetry.Log().Error("introspect failed", zap.Int("status", resp.StatusCode()))
+			return ctx, fun.ErrForbidden("invalid api key")
+		}
+		ident := envelope.Data
 		return idx.WithIdentity(ctx, &ident), nil
 	}
 
