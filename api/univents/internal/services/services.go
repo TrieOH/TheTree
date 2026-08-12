@@ -17,8 +17,10 @@ import (
 	"univents/internal/services/programs"
 	"univents/internal/services/purchases"
 	"univents/internal/services/signatures"
+	"univents/internal/services/store"
 	"univents/internal/services/ticket_types"
 	"univents/internal/services/webhooks"
+	"univents/internal/services/ws"
 
 	"lib/database"
 	"lib/email"
@@ -45,6 +47,8 @@ type (
 	Webhooks    = webhooks.Operations
 	Checkouts   = checkouts.Operations
 	Purchases   = purchases.Operations
+	WS          = ws.Operations
+	Store       = store.Operations
 )
 
 var (
@@ -60,6 +64,8 @@ var (
 	NewWebhooks    = webhooks.NewOperations
 	NewCheckouts   = checkouts.NewOperations
 	NewPurchases   = purchases.NewOperations
+	NewWS          = ws.NewOperations
+	NewStore       = store.NewOperations
 )
 
 // Operations is the aggregate of every feature's operations, constructed
@@ -77,6 +83,8 @@ type Operations struct {
 	Webhooks    *Webhooks
 	Checkouts   *Checkouts
 	Purchases   *Purchases
+	WS          *WS
+	Store       *Store
 }
 
 // NewOperations wires every feature's operations from the shared repos and
@@ -111,5 +119,7 @@ func NewOperations(
 		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
 		Checkouts:   NewCheckouts(r.Purchases, payssageClient),
 		Purchases:   NewPurchases(r.Purchases),
+		WS:          NewWS(r.WsTokens, r.Purchases, payssageClient, notifier),
+		Store:       NewStore(r.Purchases, r.Editions, notifier),
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"univents/internal/repos/registrations"
 	"univents/internal/repos/signatures"
 	"univents/internal/repos/ticket_types"
+	"univents/internal/repos/ws_tokens"
 )
 
 // Type and constructor aliases for each feature's repo package.
@@ -31,6 +32,7 @@ type (
 	Certs         = certifications.Repo
 	Registrations = registrations.Repo
 	Purchases     = purchases.Repo
+	WsTokens      = ws_tokens.Repo
 )
 
 var (
@@ -44,6 +46,7 @@ var (
 	NewCerts         = certifications.NewRepo
 	NewRegistrations = registrations.NewRepo
 	NewPurchases     = purchases.NewRepo
+	NewWsTokens      = ws_tokens.NewRepo
 )
 
 // Repos is the aggregate of every feature repo, constructed once at startup.
@@ -63,6 +66,7 @@ type Repos struct {
 	Certs             *Certs
 	Registrations     *Registrations
 	Purchases         *Purchases
+	WsTokens          *WsTokens
 }
 
 // New constructs every feature repo from the shared query handle.
@@ -80,5 +84,6 @@ func New(q *sqlc.Queries) *Repos {
 		Certs:             NewCerts(q),
 		Registrations:     NewRegistrations(q),
 		Purchases:         NewPurchases(q),
+		WsTokens:          NewWsTokens(q),
 	}
 }

@@ -6,6 +6,7 @@ require (
 	github.com/MintzyG/fun v0.10.6
 	github.com/MintzyG/fun/middlewares v0.1.3
 	github.com/caarlos0/env/v11 v11.4.1
+	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -13,6 +14,7 @@ require (
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/ovechkin-dm/mockio v1.0.2
 	github.com/riverqueue/river v0.43.0
+	github.com/riverqueue/river/rivertype v0.43.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	go.uber.org/zap v1.28.0
 	riverqueue.com/riverui v0.17.0
@@ -43,7 +45,6 @@ require (
 	github.com/riverqueue/apiframe v0.0.0-20260804142001-23a9d473e9f7 // indirect
 	github.com/riverqueue/river/riverdriver v0.43.0 // indirect
 	github.com/riverqueue/river/rivershared v0.43.0 // indirect
-	github.com/riverqueue/river/rivertype v0.43.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
