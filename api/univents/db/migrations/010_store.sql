@@ -47,9 +47,25 @@ CREATE TABLE purchase_items (
     -- materialization links (D4): the pending rows the purchase owns
     registration_id      UUID REFERENCES registrations(id),
     product_purchase_id  UUID REFERENCES product_purchases(id),
-    participation_id     UUID REFERENCES program_participations(id),
-    CONSTRAINT uniq_purchase_items_purchase_type_item UNIQUE (purchase_id, item_type, item_id)
+    participation_id     UUID REFERENCES program_participations(id)
 );
+
+-- Line uniqueness is per item type (checkout, split 7):
+--   * tickets are one row PER PERSON (gifting) — one line per attendee,
+--     each with its own registration_id, so the same ticket type may
+--     appear on multiple lines;
+--   * products are one line per item, quantity > 1 allowed;
+--   * program occurrences are one line per occurrence (quantity = 1),
+--     attached to the ticket's registration.
+CREATE UNIQUE INDEX uniq_purchase_items_ticket_unit
+    ON purchase_items (purchase_id, item_id, registration_id)
+    WHERE item_type = 'ticket';
+CREATE UNIQUE INDEX uniq_purchase_items_product_line
+    ON purchase_items (purchase_id, item_id)
+    WHERE item_type = 'product';
+CREATE UNIQUE INDEX uniq_purchase_items_program_line
+    ON purchase_items (purchase_id, item_id)
+    WHERE item_type = 'program_occurrence';
 
 CREATE INDEX idx_purchase_items_item ON purchase_items(item_type, item_id);
 

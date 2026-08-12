@@ -8,6 +8,15 @@ SELECT *
 FROM ticket_types
 WHERE id = @id;
 
+-- name: GetTicketTypeByIDForUpdate :one
+-- Row-lock variant for the checkout tx (split 7): serializes concurrent
+-- checkouts on the same ticket type before availability is checked — no
+-- oversell on the last unit.
+SELECT *
+FROM ticket_types
+WHERE id = @id
+FOR UPDATE;
+
 -- name: ListTicketTypesByEdition :many
 SELECT *
 FROM ticket_types

@@ -12,6 +12,7 @@ import (
 	"univents/internal/repos"
 	"univents/internal/services"
 	certsJobs "univents/internal/services/certifications/jobs"
+	checkoutsJobs "univents/internal/services/checkouts/jobs"
 	"univents/internal/sqlc"
 
 	"github.com/jackc/pgx/v5"
@@ -52,12 +53,13 @@ func (app *Univents) initMiddlewares() middlewares {
 	return mw
 }
 
-func (app *Univents) initRiver(ctx context.Context, r *repos.Repos) (*river.Client[pgx.Tx], *riverui.Handler) {
+func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], *riverui.Handler) {
 	libriver.Migrate(ctx, app.db)
 
 	client := libriver.NewClient(app.db, libriver.NewWorkers(
 		libriver.Register(certsJobs.NewGrantCertsWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(certsJobs.NewGrantCertsForOccurrenceWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
+		libriver.Register(checkoutsJobs.NewExpirePurchaseWorker(r.Purchases, r.Registrations, r.Products, r.Programs, notifier, tx)),
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
 

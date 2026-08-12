@@ -31,6 +31,13 @@ type PurchaseRepo interface {
 	// no-ops: approve pending→approved, late-approve expired→approved,
 	// failure pending→cancelled.
 	UpdateStatusIf(ctx context.Context, id uuid.UUID, from, to models.PurchaseStatus, reason *string) (*models.Purchase, error)
+	// UpdateRiverJobID links the expiry river job to the purchase (checkout,
+	// split 7) so the webhook receiver can cancel it on approve.
+	UpdateRiverJobID(ctx context.Context, id uuid.UUID, riverJobID int64) (*models.Purchase, error)
+	// AttachIntent stores the Payssage intent on the purchase after the
+	// intent was created (checkout, split 7): seller, intent id (the D2
+	// correlation key), and the pix QR.
+	AttachIntent(ctx context.Context, id uuid.UUID, sellerID, intentID uuid.UUID, qrCode, qrCodeBase64 *string) (*models.Purchase, error)
 	ListItemsByPurchase(ctx context.Context, purchaseID uuid.UUID) ([]models.PurchaseItem, error)
 
 	// Availability returns the stock position of every purchasable item in

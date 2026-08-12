@@ -47,3 +47,15 @@ func (repo *Repo) UpdateProductPurchaseStatus(ctx context.Context, id uuid.UUID,
 	}
 	return new(mapProductPurchase(result)), nil
 }
+
+// GetProductPurchaseByID reads one product purchase (expiry-worker tests and
+// future read surfaces).
+func (repo *Repo) GetProductPurchaseByID(ctx context.Context, id uuid.UUID) (*models.ProductPurchase, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ProductsRepo.GetProductPurchaseByID")
+	defer span.End()
+	result, err := database.Queries(ctx, repo.q).GetProductPurchaseByID(ctx, id)
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapProductPurchase(result)), nil
+}

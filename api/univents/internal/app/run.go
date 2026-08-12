@@ -23,7 +23,7 @@ func (app *Univents) run() {
 	// River must exist before the operations: the webhook receiver cancels
 	// the expiry job on approve via the client (best-effort; split 7
 	// checkout schedules the job).
-	riverClient, riverUIHandler := app.initRiver(ctx, repos)
+	riverClient, riverUIHandler := app.initRiver(ctx, repos, notifier, tx)
 	defer libriver.LogStop(ctx, riverClient)
 
 	ops := app.initOperations(repos, notifier, riverClient, tx)

@@ -115,21 +115,28 @@ func alwaysSucceed(_ uuid.UUID, _ int) (*payssage.Intent, error) {
 // newOps wires the real repos (disposable Postgres with the real
 // migrations) behind a faked IntentClient. The intent retry delay is zeroed
 // so retry tests stay instant.
-func newOps(t *testing.T, intents checkouts.IntentClient) (*repos.Repos, *sqlc.Queries, *checkouts.Operations) {
+func newResumeOps(t *testing.T, intents checkouts.IntentClient) (*repos.Repos, *sqlc.Queries, *checkouts.Operations) {
 	t.Helper()
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
+	tx := database.NewPGXTxRunner(pool)
+	database.SetDefaultRunner(tx)
 	r := repos.New(q)
 
-	ops := checkouts.NewOperations(r.Purchases, intents)
+	// The resume path only touches purchases + intents; the checkout-only
+	// seams stay nil (a nil interface panics only if called).
+	ops := checkouts.NewOperations(
+		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
+		r.Registrations, r.Products, r.Programs,
+		nil, nil, nil, tx, intents, nil, uuid.Nil, nil,
+	)
 	ops.SetIntentRetry(3, 0)
 	return r, q, ops
 }
 
 func TestGet_OwnerSeesFullState(t *testing.T) {
 	intents := &intentStub{fn: alwaysSucceed}
-	r, q, ops := newOps(t, intents)
+	r, q, ops := newResumeOps(t, intents)
 	editionID := seedEdition(t, q)
 	purchaserID := uuid.New()
 	intentID := uuid.New()
@@ -170,7 +177,7 @@ func TestGet_OwnerSeesFullState(t *testing.T) {
 }
 
 func TestGet_NonOwnerIsNotFound(t *testing.T) {
-	r, q, ops := newOps(t, &intentStub{fn: alwaysSucceed})
+	r, q, ops := newResumeOps(t, &intentStub{fn: alwaysSucceed})
 	editionID := seedEdition(t, q)
 	purchase, _ := seedPurchase(t, r, editionID, uuid.New(), models.PurchaseStatusPending, new(uuid.UUID))
 
@@ -186,7 +193,7 @@ func TestGet_NonOwnerIsNotFound(t *testing.T) {
 }
 
 func TestGet_UnknownPurchaseIsNotFound(t *testing.T) {
-	_, _, ops := newOps(t, &intentStub{fn: alwaysSucceed})
+	_, _, ops := newResumeOps(t, &intentStub{fn: alwaysSucceed})
 	_, err := ops.Get(context.Background(), uuid.New(), uuid.New())
 	if err == nil || !fun.Is(err, fun.CodeNotFound) {
 		t.Fatalf("Get: err = %v, want NOT_FOUND", err)
@@ -203,7 +210,7 @@ func TestGet_IntentFetchRetry(t *testing.T) {
 		}
 		return &payssage.Intent{Status: payssage.IntentStatusSucceeded}, nil
 	}}
-	r, q, ops := newOps(t, intents)
+	r, q, ops := newResumeOps(t, intents)
 	editionID := seedEdition(t, q)
 	purchaserID := uuid.New()
 	intentID := uuid.New()
@@ -228,7 +235,7 @@ func TestGet_IntentFetchDegrades(t *testing.T) {
 	intents := &intentStub{fn: func(_ uuid.UUID, _ int) (*payssage.Intent, error) {
 		return nil, errors.New("payssage unreachable")
 	}}
-	r, q, ops := newOps(t, intents)
+	r, q, ops := newResumeOps(t, intents)
 	editionID := seedEdition(t, q)
 	purchaserID := uuid.New()
 	intentID := uuid.New()
@@ -251,7 +258,7 @@ func TestGet_IntentFetchDegrades(t *testing.T) {
 // touches Payssage on resume.
 func TestGet_NoIntentFetchWhenNotPending(t *testing.T) {
 	intents := &intentStub{fn: alwaysSucceed}
-	r, q, ops := newOps(t, intents)
+	r, q, ops := newResumeOps(t, intents)
 	editionID := seedEdition(t, q)
 	purchaserID := uuid.New()
 	intentID := uuid.New()
@@ -274,7 +281,7 @@ func TestGet_NoIntentFetchWhenNotPending(t *testing.T) {
 // fetch.
 func TestGet_NoIntentFetchWithoutIntent(t *testing.T) {
 	intents := &intentStub{fn: alwaysSucceed}
-	r, q, ops := newOps(t, intents)
+	r, q, ops := newResumeOps(t, intents)
 	editionID := seedEdition(t, q)
 	purchaserID := uuid.New()
 	purchase, _ := seedPurchase(t, r, editionID, purchaserID, models.PurchaseStatusPending, nil)
