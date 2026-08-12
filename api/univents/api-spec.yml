@@ -87,6 +87,47 @@ info:
     Prices are integer cents (`price_cents`, `price`) — `int64`, never
     floats.
 
+    ## Raw realtime routes (not spec ops)
+
+    Two live surfaces are **raw routes** — deliberately NOT OpenAPI
+    operations: WebSocket handshakes cannot carry Authorization headers,
+    and streaming responses must bypass the fun/validate envelope machinery
+    (which buffers the body). They are documented here instead.
+
+    ### `WS /ws?token=...` — per-purchase socket (one-time token)
+
+    The only live-update channel for a buyer. Opens with the one-time token
+    from `GET /ws/token` (proves prior REST auth for this purchase);
+    missing/already-used/expired tokens are rejected (401). The socket
+    first receives the current state, then live frames until a terminal
+    event closes it:
+
+    ```json
+    {"type":"purchase.snapshot","payload":{"purchase_id":"…","edition_id":"…","status":"pending","intent_id":"…","intent_status":"pending","total_cents":1234,"items":[],"expires_at":"…"}}
+    {"type":"intent.updated","payload":{"purchase_id":"…","intent_id":"…","status":"succeeded"}}
+    {"type":"purchase.confirmed","payload":{"purchase_id":"…"}}
+    {"type":"purchase.expired","payload":{"purchase_id":"…"}}
+    {"type":"purchase.cancelled","payload":{"purchase_id":"…","status_detail":"insufficient_funds"}}
+    ```
+
+    The snapshot mirrors the `getCheckout` resume shape (front treats
+    resume == snapshot == checkout uniformly) and carries `intent_status`
+    best-effort when the purchase is pending. A reconnect always uses a
+    fresh token and restores context from the snapshot — no resume polling.
+    The socket closes on any terminal event (confirmed/expired/cancelled)
+    and on the cancelled frame the `status_detail` is the provider's
+    failure vocabulary fetched via `GetIntent` (best-effort).
+
+    ### `GET /editions/{edition_id}/store/stream` — storefront SSE (public)
+
+    One stream per edition: on connect it sends `event: snapshot` with a
+    JSON array of every purchasable item's stock position, then relays
+    `event: stock` deltas — `{"id": "…", "item_type": "ticket", "stock": 12}`
+    (`item_type` is one of `ticket | product | program_occurrence`; `stock`
+    is `null` when the item is unlimited). Numbers are always recomputed
+    from the DB by the relay — publishers never send stock values. A `: ping`
+    comment line keeps the stream alive every ~30s.
+
     ## Rate limits
 
     The harness applies a fixed rate limit of 400 requests/second with a
@@ -145,6 +186,10 @@ tags:
 
   - name: purchases
     description: The buyer's purchase history (read-only)
+
+  - name: realtime
+    description: Live surfaces — the WebSocket token endpoint (the sockets
+      themselves are raw routes, documented in the top-level description)
 
 externalDocs:
   description: Full TrieOH documentation
@@ -3274,6 +3319,48 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /ws/token:
+    get:
+      tags: [realtime]
+      operationId: getWsToken
+      summary: Issue a one-time WebSocket handshake token
+      description: |
+        Owner-only: the caller must be the purchase's `purchaser_id`
+        (anything else is 404 — no existence leak). Issues a fresh one-time
+        token for the raw `WS /ws?token=...` socket: a 32-byte random value
+        stored as its SHA-256 hash, valid 10 minutes, consumed by the first
+        handshake. The token is a handshake-auth shim — it proves prior REST
+        auth for this purchase and nothing more (no refresh dance, no
+        scopes). Reconnect = fresh token: the front re-requests before the
+        10-minute expiry and re-opens the socket.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: purchase_id
+          in: query
+          required: true
+          description: Purchase to bind the token to.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The one-time handshake token and its expiry
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WsToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -3696,6 +3783,24 @@ components:
           type: integer
           format: int64
           description: Server-computed unit price at checkout, in cents.
+
+    WsToken:
+      type: object
+      description: |
+        A one-time WebSocket handshake token for one purchase (split 6):
+        the raw value is returned exactly once here and stored only as its
+        SHA-256 hash, valid 10 minutes, consumed by the first
+        `WS /ws?token=...` handshake. The front re-requests before
+        `expires_at` when it needs to reconnect.
+      required: [token, expires_at]
+      properties:
+        token:
+          type: string
+          description: The one-time token — pass to `WS /ws?token=...`.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the token stops being valid.
 
     Purchase:
       type: object

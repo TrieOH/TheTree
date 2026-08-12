@@ -28,6 +28,14 @@ func (app *Univents) CreateRouter(middlewares middlewares, h *handlers.Server, r
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, chains)
 
+			// Raw realtime routes (split 6) — deliberately outside the strict
+			// handler: the WS handshake cannot carry Authorization headers (the
+			// one-time query token is the auth), and SSE must stream without the
+			// fun/validate envelope machinery buffering the body. Both are
+			// documented in the spec's description block, not as spec ops.
+			r.Get("/editions/{edition_id}/store/stream", h.ServeStoreStream)
+			r.Handle("/ws", http.HandlerFunc(h.ServeWS))
+
 			r.Group(func(r chi.Router) {
 				r.Mount("/riverui", riverUIHandler)
 			})

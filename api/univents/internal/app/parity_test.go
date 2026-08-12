@@ -276,6 +276,9 @@ func (stubStrict) GetCheckout(_ context.Context, _ openapi.GetCheckoutRequestObj
 func (stubStrict) ListMyPurchases(_ context.Context, _ openapi.ListMyPurchasesRequestObject) (openapi.ListMyPurchasesResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) GetWsToken(_ context.Context, _ openapi.GetWsTokenRequestObject) (openapi.GetWsTokenResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) VerifyCertification(_ context.Context, _ openapi.VerifyCertificationRequestObject) (openapi.VerifyCertificationResponseObject, error) {
 	return nil, errStub
 }

@@ -522,6 +522,7 @@ paths:
         as-is.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
       responses:
@@ -592,6 +593,7 @@ paths:
         sandbox intents. The authenticated actor must own the wallet.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
       requestBody:
@@ -1074,6 +1076,7 @@ paths:
         flow). Must be a wallet owner.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -1321,6 +1324,7 @@ paths:
         own the wallet.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
       requestBody:

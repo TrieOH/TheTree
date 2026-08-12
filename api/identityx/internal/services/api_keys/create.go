@@ -46,11 +46,6 @@ func (o *Operations) createInternal(ctx context.Context, project models.Project,
 		}
 	}
 
-	_, err = o.projects.GetMember(ctx, actorID, project.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	if len(payload.Capabilities) > 0 {
 		valid, err := o.capabilities.ValidateCapabilities(ctx, &project.ID, payload.Capabilities)
 		if err != nil {

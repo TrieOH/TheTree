@@ -17,8 +17,10 @@ import (
 	"univents/internal/handlers/programs"
 	"univents/internal/handlers/purchases"
 	"univents/internal/handlers/signatures"
+	"univents/internal/handlers/store"
 	"univents/internal/handlers/ticket_types"
 	"univents/internal/handlers/webhooks"
+	"univents/internal/handlers/ws"
 	"univents/internal/services"
 )
 
@@ -40,6 +42,8 @@ type (
 	WebhookHandlers       = webhooks.Handlers
 	CheckoutHandlers      = checkouts.Handlers
 	PurchaseHandlers      = purchases.Handlers
+	WSHandlers            = ws.Handlers
+	StoreHandlers         = store.Handlers
 )
 
 type Server struct {
@@ -55,6 +59,8 @@ type Server struct {
 	*WebhookHandlers
 	*CheckoutHandlers
 	*PurchaseHandlers
+	*WSHandlers
+	*StoreHandlers
 }
 
 // NewServer wires the per-feature handlers from the services aggregate.
@@ -72,5 +78,7 @@ func NewServer(ops *services.Operations) *Server {
 		WebhookHandlers:       webhooks.New(ops.Webhooks),
 		CheckoutHandlers:      checkouts.New(ops.Checkouts),
 		PurchaseHandlers:      purchases.New(ops.Purchases),
+		WSHandlers:            ws.New(ops.WS),
+		StoreHandlers:         store.New(ops.Store),
 	}
 }
