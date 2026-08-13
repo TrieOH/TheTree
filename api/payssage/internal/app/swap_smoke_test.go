@@ -32,10 +32,10 @@ func TestSwapSmokeAuthDispatch(t *testing.T) {
 	}
 
 	// public webhook receive still reaches the handler (rejectJWT not applied)
-	req = httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/webhooks/mercado_pago", nil)
+	req = httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/webhooks/mercadopago", nil)
 	rec = httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
-	t.Logf("POST /webhooks/mercado_pago -> %d", rec.Code)
+	t.Logf("POST /webhooks/mercadopago -> %d", rec.Code)
 
 	// unknown route -> 404
 	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/nope", nil)

@@ -129,6 +129,13 @@ type bodyCarrier struct {
 	Body *validatedBody
 }
 
+// mapBodyCarrier mirrors generated request objects whose body schema is
+// `type: object, additionalProperties: true` (e.g. provider webhook payloads)
+// — the body is a map, which has no `validate` tags to enforce.
+type mapBodyCarrier struct {
+	Body *map[string]interface{}
+}
+
 type validatedBody struct {
 	Name string `validate:"required"`
 }
@@ -153,6 +160,40 @@ func TestValidateMiddlewareValidatesBody(t *testing.T) {
 		bodyCarrier{Body: &validatedBody{}})
 	if err == nil {
 		t.Fatal("invalid body must fail validation")
+	}
+}
+
+func TestValidateMiddlewareSkipsNonStructBodies(t *testing.T) {
+	validator.SetupValidator()
+	validate := ValidateMiddleware()
+
+	for _, name := range []string{"map", "slice"} {
+		t.Run(name, func(t *testing.T) {
+			var called bool
+			handler := validate(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
+				called = true
+				return "ok", nil
+			}, "ReceiveWebhook")
+
+			_, err := handler(context.Background(), httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhooks/x", nil),
+				mapBodyCarrier{Body: &map[string]interface{}{}})
+			if err != nil {
+				t.Fatalf("%s body must pass through unvalidated: %v", name, err)
+			}
+			if !called {
+				t.Fatal("handler must run for non-struct bodies")
+			}
+		})
+	}
+
+	// struct bodies still validate
+	handler := validate(func(_ context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
+		return "ok", nil
+	}, "CreateThing")
+	_, err := handler(context.Background(), httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/", nil),
+		bodyCarrier{Body: &validatedBody{}}) // Name required but empty
+	if err == nil {
+		t.Fatal("struct body must still fail validation")
 	}
 }
 
