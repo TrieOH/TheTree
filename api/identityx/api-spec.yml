@@ -1437,7 +1437,8 @@ paths:
       summary: List project actors
       description: |
         Lists the actors registered in the project. The authenticated
-        actor must be a platform-level client.
+        actor must be a member of the project (project-scoped service
+        accounts included) or a platform-level client.
       security:
         - bearerAuth: []
         - apiKeyAuth: []
@@ -1519,7 +1520,8 @@ paths:
       summary: Get a project actor by ID
       description: |
         Fetches a single actor from the project by ID. The authenticated
-        actor must be a platform-level client.
+        actor must be a member of the project (project-scoped service
+        accounts included) or a platform-level client.
       security:
         - bearerAuth: []
         - apiKeyAuth: []
@@ -1555,7 +1557,8 @@ paths:
       description: |
         AIP custom method (`:verb` suffix per AIP-136). Fetches a single
         actor from the project by email address. The authenticated actor
-        must be a platform-level client.
+        must be a member of the project (project-scoped service accounts
+        included) or a platform-level client.
       security:
         - bearerAuth: []
         - apiKeyAuth: []

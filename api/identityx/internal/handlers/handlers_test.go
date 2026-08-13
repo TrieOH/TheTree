@@ -17,8 +17,12 @@ import (
 // identity in the context is rejected with 401 before any request handling.
 // This list is the regression net for that policy — a handler that drops
 // its guard fails this test (it no longer 401s).
+//
+// GetActorByEmail, GetActor and ListActors are deliberately NOT here: they
+// are project-scoped (the ops layer enforces project membership), so project
+// members and platform-level clients both use them.
 var clientOnlyMethods = []string{
-	"ListActors", "CreateActor", "GetActor", "GetActorByEmail",
+	"CreateActor",
 	"CreateAPIKey", "CreateCapability",
 	"ListOrganizations", "CreateOrganization", "ListOrganizationMembers",
 	"AddOrganizationMember", "RemoveOrganizationMember",
