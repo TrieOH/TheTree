@@ -30,6 +30,7 @@ function RouteComponent() {
   const queryClient = useQueryClient();
   const { auth } = useAuth();
   const projectId = auth.profile()?.project_id ?? undefined;
+  const subjectId = auth.profile()?.id ?? undefined;
   const [name, setName] = useState("");
   const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>(
     [],
@@ -47,10 +48,11 @@ function RouteComponent() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!projectId) throw new Error("Missing project id");
+      if (!projectId || !subjectId) throw new Error("Missing actor context");
       return createApiKey({
         data: {
           projectId,
+          subjectId,
           payload: {
             name,
             capabilities: selectedCapabilities,

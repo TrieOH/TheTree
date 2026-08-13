@@ -11,15 +11,19 @@ export const listCapabilitiesServerFn = createServerFn({ method: "GET" })
   });
 
 export const createApiKeyServerFn = createServerFn({ method: "POST" })
-  .validator((data: { projectId: string; payload: ApiKeyCreateI }) => data)
+  .validator(
+    (data: { projectId: string; subjectId?: string; payload: ApiKeyCreateI }) =>
+      data,
+  )
   .handler(async ({ data }) => {
     const response = await accessClient.apiKeys.create(data.projectId, {
       ...data.payload,
+      ...(data.subjectId ? { subject_id: data.subjectId } : {}),
       env: "production",
     });
 
     if (!response.success) {
-      throw new Error("Failed to create API key");
+      throw response;
     }
 
     return response.data;

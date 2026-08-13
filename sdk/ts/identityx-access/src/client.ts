@@ -31,7 +31,7 @@ export class IdentityXAccessClient {
   apiKeys = {
     // list: (projectId: string) =>
     //   this.client.get<ApiKeyI[]>(`/projects/${projectId}/api-keys`),
-    create: (projectId: string, payload: Omit<CreateApiKeyRequest, 'subject_id'>) =>
+    create: (projectId: string, payload: CreateApiKeyRequest) =>
       this.client.post<ApiKeyCreateResponseI>(`/projects/${projectId}/api_keys`, payload),
   };
 

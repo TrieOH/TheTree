@@ -29,6 +29,7 @@ import { Route as AdminWalletsWalletIDWebhooksRouteImport } from './routes/admin
 import { Route as AdminWalletsWalletIDTransactionsRouteImport } from './routes/admin/wallets/$walletID/transactions'
 import { Route as AdminWalletsWalletIDSellersRouteImport } from './routes/admin/wallets/$walletID/sellers'
 import { Route as AdminWalletsWalletIDConnectSellerRouteImport } from './routes/admin/wallets/$walletID/connect-seller'
+import { Route as AdminWalletsWalletIDApiKeysRouteImport } from './routes/admin/wallets/$walletID/api-keys'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -139,6 +140,12 @@ const AdminWalletsWalletIDConnectSellerRoute =
     path: '/connect-seller',
     getParentRoute: () => AdminWalletsWalletIDRoute,
   } as any)
+const AdminWalletsWalletIDApiKeysRoute =
+  AdminWalletsWalletIDApiKeysRouteImport.update({
+    id: '/api-keys',
+    path: '/api-keys',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/admin/wallets/$walletID': typeof AdminWalletsWalletIDRouteWithChildren
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider/': typeof CallbackProviderIndexRoute
+  '/admin/wallets/$walletID/api-keys': typeof AdminWalletsWalletIDApiKeysRoute
   '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
   '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
   '/admin/wallets/$walletID/transactions': typeof AdminWalletsWalletIDTransactionsRoute
@@ -175,6 +183,7 @@ export interface FileRoutesByTo {
   '/admin/$organizationID/transactions': typeof AdminOrganizationIDTransactionsRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider': typeof CallbackProviderIndexRoute
+  '/admin/wallets/$walletID/api-keys': typeof AdminWalletsWalletIDApiKeysRoute
   '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
   '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
   '/admin/wallets/$walletID/transactions': typeof AdminWalletsWalletIDTransactionsRoute
@@ -198,6 +207,7 @@ export interface FileRoutesById {
   '/admin/wallets/$walletID': typeof AdminWalletsWalletIDRouteWithChildren
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider/': typeof CallbackProviderIndexRoute
+  '/admin/wallets/$walletID/api-keys': typeof AdminWalletsWalletIDApiKeysRoute
   '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
   '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
   '/admin/wallets/$walletID/transactions': typeof AdminWalletsWalletIDTransactionsRoute
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/admin/wallets/$walletID'
     | '/admin/$organizationID/'
     | '/callback/$provider/'
+    | '/admin/wallets/$walletID/api-keys'
     | '/admin/wallets/$walletID/connect-seller'
     | '/admin/wallets/$walletID/sellers'
     | '/admin/wallets/$walletID/transactions'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/admin/$organizationID/transactions'
     | '/admin/$organizationID'
     | '/callback/$provider'
+    | '/admin/wallets/$walletID/api-keys'
     | '/admin/wallets/$walletID/connect-seller'
     | '/admin/wallets/$walletID/sellers'
     | '/admin/wallets/$walletID/transactions'
@@ -263,6 +275,7 @@ export interface FileRouteTypes {
     | '/admin/wallets/$walletID'
     | '/admin/$organizationID/'
     | '/callback/$provider/'
+    | '/admin/wallets/$walletID/api-keys'
     | '/admin/wallets/$walletID/connect-seller'
     | '/admin/wallets/$walletID/sellers'
     | '/admin/wallets/$walletID/transactions'
@@ -418,6 +431,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletsWalletIDConnectSellerRouteImport
       parentRoute: typeof AdminWalletsWalletIDRoute
     }
+    '/admin/wallets/$walletID/api-keys': {
+      id: '/admin/wallets/$walletID/api-keys'
+      path: '/api-keys'
+      fullPath: '/admin/wallets/$walletID/api-keys'
+      preLoaderRoute: typeof AdminWalletsWalletIDApiKeysRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
   }
 }
 
@@ -439,6 +459,7 @@ const AdminOrganizationIDRouteWithChildren =
   AdminOrganizationIDRoute._addFileChildren(AdminOrganizationIDRouteChildren)
 
 interface AdminWalletsWalletIDRouteChildren {
+  AdminWalletsWalletIDApiKeysRoute: typeof AdminWalletsWalletIDApiKeysRoute
   AdminWalletsWalletIDConnectSellerRoute: typeof AdminWalletsWalletIDConnectSellerRoute
   AdminWalletsWalletIDSellersRoute: typeof AdminWalletsWalletIDSellersRoute
   AdminWalletsWalletIDTransactionsRoute: typeof AdminWalletsWalletIDTransactionsRoute
@@ -447,6 +468,7 @@ interface AdminWalletsWalletIDRouteChildren {
 }
 
 const AdminWalletsWalletIDRouteChildren: AdminWalletsWalletIDRouteChildren = {
+  AdminWalletsWalletIDApiKeysRoute: AdminWalletsWalletIDApiKeysRoute,
   AdminWalletsWalletIDConnectSellerRoute:
     AdminWalletsWalletIDConnectSellerRoute,
   AdminWalletsWalletIDSellersRoute: AdminWalletsWalletIDSellersRoute,

@@ -1,7 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useLayoutHeader } from "@trieoh/ui-base";
-import { Link2, Receipt, Store, WalletCards, Webhook } from "lucide-react";
+import {
+  KeyRound,
+  Link2,
+  Receipt,
+  Store,
+  WalletCards,
+  Webhook,
+} from "lucide-react";
 import { useMemo } from "react";
 import { walletByIdQueryOptions } from "#/features/wallets/api";
 import { cn } from "#/shared/lib/utils";
@@ -55,6 +62,12 @@ function WalletLayout() {
       label: "Webhooks",
       to: "/admin/wallets/$walletID/webhooks",
       icon: Webhook,
+      exact: true,
+    },
+    {
+      label: "API keys",
+      to: "/admin/wallets/$walletID/api-keys",
+      icon: KeyRound,
       exact: true,
     },
   ] as const;
