@@ -67,7 +67,7 @@ Payssage delivers, per endpoint, a body that is NOT the raw provider payload:
 - `setWalletSandbox` is **PATCH** — POST returns 405.
 - The webhook URL must be reachable from payssage's container (docker network hostnames, not `localhost`).
 - The 000-owner bug: an API-key identity must come from **unwrapping the introspect envelope** (`data.subject`); reading the envelope itself zeroes the identity and every wallet created that way gets `owner_id = 00000000-…` (fixed in this repo's `internal/app/auth.go` — keep the unwrap).
-- Sellers only exist after a real provider OAuth (`/providers/mercado_pago/connect` → browser → callback). For local e2e you can seed the `sellers` table directly (wallet_id, provider, provider_user_id, credentials JSON with the MP test access token/public key).
+- Sellers only exist after a real provider OAuth (`/providers/mercadopago/connect` → browser → callback). For local e2e you can seed the `sellers` table directly (wallet_id, provider, provider_user_id, credentials JSON with the MP test access token/public key).
 - `listWalletSellers` verifies ownership; the seller used by univents must belong to the platform wallet or `completeEventPayments` 403s.
 - Dropping the payssage DB wipes wallets/webhooks/intents — recreate the wallet and re-point `PAYSSAGE_WALLET_ID`/`PAYSSAGE_WEBHOOK_SECRET`.
 

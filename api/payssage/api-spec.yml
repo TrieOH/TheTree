@@ -1092,7 +1092,7 @@ paths:
               amount_cents: 5000
               currency: BRL
               sandbox: true
-              provider: mercado_pago
+              provider: mercadopago
               status: succeeded
               provider_data: {}
       responses:
@@ -1125,7 +1125,7 @@ paths:
       summary: Start a payment-provider OAuth connection
       description: |
         Starts an OAuth connection to the given payment provider
-        (`mercado_pago`). Callers must pass the flow (`collector` or
+        (`mercadopago`). Callers must pass the flow (`collector` or
         `seller`) and the final redirect URL (where the user lands after
         the provider's consent screen). The provider redirect URI is
         Payssage's own callback (`/providers/{provider}/callback`),
@@ -1598,7 +1598,7 @@ components:
       name: provider
       in: path
       required: true
-      description: Payment provider slug (e.g. `mercado_pago`).
+      description: Payment provider slug (e.g. `mercadopago`).
       schema:
         type: string
 
@@ -1965,7 +1965,7 @@ components:
           $ref: '#/components/schemas/NullableUUID'
         provider:
           type: string
-          description: Provider slug (e.g. `mercado_pago`).
+          description: Provider slug (e.g. `mercadopago`).
         provider_user_id:
           type: string
           description: User ID of the account at the provider.
@@ -2052,7 +2052,7 @@ components:
           type: boolean
         provider:
           type: string
-          description: Provider slug (e.g. `mercado_pago`).
+          description: Provider slug (e.g. `mercadopago`).
         status:
           $ref: '#/components/schemas/IntentStatus'
         status_detail:

@@ -70,10 +70,18 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 // Body field is validated against its `validate` struct tags; operations
 // without a body pass through. Validation errors are returned and flow
 // through the strict server's ResponseErrorHandlerFunc.
+//
+// Non-struct bodies (maps, slices, json.RawMessage, scalars — generated
+// from `type: object` with additionalProperties, `type: array`, or
+// free-form schemas) carry no `validate` tags, so there is nothing to
+// enforce: they pass through unvalidated. go-playground's Struct rejects
+// non-struct values outright, so validating them would 400 every such
+// request (e.g. provider webhook payloads like payssage's ReceiveWebhook,
+// or informd's bulk-edit endpoints).
 func ValidateMiddleware() StrictMiddlewareFunc {
 	return func(f StrictHandlerFunc, _ string) StrictHandlerFunc {
 		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-			if body := bodyOf(request); body != nil {
+			if body := bodyOf(request); body != nil && isStructish(body) {
 				err := validator.Validate(body)
 				if err != nil {
 					return nil, err
@@ -82,6 +90,17 @@ func ValidateMiddleware() StrictMiddlewareFunc {
 			return f(ctx, w, r, request)
 		}
 	}
+}
+
+// isStructish reports whether v is a struct or a pointer to a struct — the
+// only shapes go-playground's Struct validator can validate. Maps, slices,
+// raw JSON and scalars have no fields with `validate` tags and are skipped.
+func isStructish(v any) bool {
+	t := reflect.TypeOf(v)
+	for t != nil && t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t != nil && t.Kind() == reflect.Struct
 }
 
 // bodyOf extracts the generated request object's Body field, if any.
