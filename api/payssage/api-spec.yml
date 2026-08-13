@@ -884,6 +884,7 @@ paths:
         Fetches a single payment intent (checkout attempt) by ID.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/IntentID'
       responses:
@@ -916,6 +917,7 @@ paths:
         cancelled.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/IntentID'
       responses:
@@ -986,6 +988,7 @@ paths:
         `checkout_provider_data`.
       security:
         - bearerAuth: []
+        - apiKeyAuth: []
       parameters:
         - $ref: '#/components/parameters/WalletID'
       requestBody:
