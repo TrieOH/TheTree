@@ -33,6 +33,20 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		return fun.Errf("seller %s is not a mercadopago seller (got %q)", seller.ID, seller.Provider).Conflict()
 	}
 
+	wallet, err := p.wallets.GetByID(ctx, intent.WalletID)
+	if err != nil {
+		return fun.Errf("resolve wallet: %v", err).Internal()
+	}
+
+	// The wallet's fee (bps) is the platform's marketplace fee — the
+	// authoritative source for application_fee. A caller-supplied
+	// marketplace_fee_bps is honored only when the wallet has no fee
+	// configured (0), so a caller cannot undercut platform policy.
+	feeBps := wallet.FeeBps
+	if feeBps == 0 {
+		feeBps = checkoutData.MarketplaceFeeBPS
+	}
+
 	var creds models.MercadoPagoCredentials
 	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
@@ -49,7 +63,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 
 	body := map[string]any{
 		"transaction_amount":   json.Number(formatAmount(intent.AmountCents)),
-		"application_fee":      json.Number(formatAmount(calcApplicationFee(intent.AmountCents, checkoutData.MarketplaceFeeBPS))),
+		"application_fee":      json.Number(formatAmount(calcApplicationFee(intent.AmountCents, feeBps))),
 		"payment_method_id":    checkoutData.PaymentMethodID,
 		"external_reference":   intent.ID.String(),
 		"statement_descriptor": cmp.Or(checkoutData.StatementDescriptor, "payssage"),
@@ -69,6 +83,9 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	} else {
 		body["installments"] = checkoutData.Installments
 		body["token"] = checkoutData.Token
+		if checkoutData.IssuerID != "" {
+			body["issuer_id"] = checkoutData.IssuerID
+		}
 	}
 
 	telemetry.Log().Info("MP Create Payment Request", zap.Any("body", body))

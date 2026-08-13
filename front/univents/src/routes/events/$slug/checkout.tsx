@@ -52,6 +52,7 @@ function CheckoutPage() {
     card_token?: string;
     payment_method_id: string;
     payment_method_type: string;
+    issuer_id?: string;
     installments?: number;
     payer_email: string;
     identification_type: string;
@@ -98,6 +99,7 @@ function CheckoutPage() {
         payment.payment_method_id === "pix"
           ? undefined
           : payment.payment_method_id,
+      issuer_id: payment.issuer_id,
       installments: payment.installments,
       payer: {
         email: payment.payer_email,

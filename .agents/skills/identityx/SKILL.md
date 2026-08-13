@@ -52,7 +52,7 @@ Then set the service's env: `IDENTITY_X_PROJECT_ID=<project>`, `IDENTITY_X_API_K
 - **Register/login a project user** (what frontends do): `POST /auth/register?project_id=…` then `POST /auth/login?project_id=…` → `data.access_token` (JWT) + refresh. The JWT carries `subject.id` (the actor id — used as the purchaser/owner id downstream).
 - **Introspect** (what backends do to resolve an API key): `GET /auth/introspect` with `Authorization: Bearer <jwt>` **or** `X-API-Key: <raw key>`. Response is the fun envelope: `data.subject.id`, `data.subject.project_id`, `data.cred.type` (`token`|`api_key`).
 - **Members**: `POST /projects/{id}/members` `{actor_email, role}` (owner/admin/member); `POST /organizations/{id}/members` for orgs.
-- **Actors**: `GET /projects/{id}/actors`, `GET /projects/{id}/actors/{email}:by_email` (platform-level clients only).
+- **Actors**: `GET /projects/{id}/actors`, `GET /projects/{id}/actors/{id}`, `GET /projects/{id}/actors/{email}:by_email` — open to project **users** (svc accounts included, no membership row needed) and project members; platform-level clients pass only as members, never by being platform-level. Not public. `createActor` stays platform-level only.
 - **Capabilities**: `GET/POST /projects/{id}/capabilities`; keys can be scoped by capability ids.
 - **OAuth providers** (Google, GitHub…): `GET/POST /projects/{id}/oauth-providers`; the browser flow is `/auth/{provider}/connect` → `/auth/{provider}/callback`.
 

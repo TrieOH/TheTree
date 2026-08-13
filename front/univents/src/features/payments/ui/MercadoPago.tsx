@@ -444,7 +444,7 @@ function CreditCardForm({
               onSubmitRef.current({
                 card_token: token,
                 payment_method_id: paymentMethodId,
-                installments: Number(installments),
+                installments: Number(installments) || 1,
                 issuer_id: issuerId,
                 payer: {
                   email,

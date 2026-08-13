@@ -5,15 +5,9 @@ import (
 	"time"
 
 	"IdentityX/internal/openapi"
-	"IdentityX/models"
 )
 
 func (h *Handlers) GetActor(ctx context.Context, req openapi.GetActorRequestObject) (openapi.GetActorResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	actor, err := h.ops.GetByID(ctx, req.ActorId, req.ProjectId)
 	if err != nil {
 		return nil, err

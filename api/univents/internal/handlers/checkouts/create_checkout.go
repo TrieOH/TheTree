@@ -60,6 +60,7 @@ func toCheckoutInput(body *openapi.CreateCheckoutRequest) checkouts.CheckoutInpu
 		CardToken:       body.CardToken,
 		PaymentMethodID: body.PaymentMethodId,
 		Installments:    body.Installments,
+		IssuerID:        body.IssuerId,
 		Payer: checkouts.Payer{
 			Email:                body.Payer.Email,
 			IdentificationType:   body.Payer.IdentificationType,

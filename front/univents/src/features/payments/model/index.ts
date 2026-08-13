@@ -23,6 +23,7 @@ export const submitPaymentPayload = z.object({
   card_token: z.string().optional(),
   payment_method_id: z.string(),
   payment_method_type: z.string(),
+  issuer_id: z.string().optional(),
   installments: z.int().nonnegative().optional(),
   payer_email: z.email(),
   identification_type: z.string(),

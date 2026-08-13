@@ -47,6 +47,7 @@ type CheckoutInput struct {
 	PaymentMethod   string
 	CardToken       *string
 	PaymentMethodID *string
+	IssuerID        *string // MP issuing bank id from the front's card tokenization; optional, cards only
 	Installments    *int
 	Payer           Payer
 	Items           []CheckoutLine
@@ -715,6 +716,9 @@ func (o *Operations) buildIntentRequest(purchase *models.Purchase, in CheckoutIn
 		providerData["payment_method_id"] = *in.PaymentMethodID
 		providerData["token"] = *in.CardToken
 		providerData["installments"] = installments
+		if in.IssuerID != nil && *in.IssuerID != "" {
+			providerData["issuer_id"] = *in.IssuerID
+		}
 	}
 
 	return payssage.CreateIntentRequest{

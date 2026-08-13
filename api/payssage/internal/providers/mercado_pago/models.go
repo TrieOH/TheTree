@@ -13,6 +13,7 @@ import (
 type CheckoutData struct {
 	Installments        int             `json:"installments"`
 	Token               string          `json:"token"`
+	IssuerID            string          `json:"issuer_id,omitempty"`
 	PaymentMethodID     string          `json:"payment_method_id"`
 	MarketplaceFeeBPS   int             `json:"marketplace_fee_bps"`
 	StatementDescriptor string          `json:"statement_descriptor,omitempty"`
