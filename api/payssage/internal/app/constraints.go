@@ -27,7 +27,7 @@ func SetupConstraintMessages() {
 		"uniq_webhook_deliveries_event_endpoint": "a delivery for this event and endpoint already exists",
 
 		// webhook_events.sql
-		"uniq_webhook_events_external_id": "a webhook event with this external id already exists for this provider",
+		"uniq_webhook_events_external_id_type": "a webhook event for this external id and type already exists for this provider",
 
 		// organizations
 		"uniq_organizations_slug": "an organization with this slug already exists",
