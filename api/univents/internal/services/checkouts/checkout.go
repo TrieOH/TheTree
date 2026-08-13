@@ -165,7 +165,7 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 	// 4. Create the Payssage intent (post-commit — no HTTP inside the DB
 	//    tx; if this fails the purchase is reverted so the buyer can retry
 	//    immediately).
-	intent, err := o.payssage.Checkout(ctx, o.walletID, o.buildIntentRequest(res.purchase, in, *event.PayssageSellerID))
+	intent, err := o.payssage.Checkout(ctx, o.walletID, o.buildIntentRequest(res.purchase, in, *event.PayssageSellerID, res.priced))
 	if err != nil {
 		o.revert(ctx, res.purchase, res.items)
 		return nil, mapPayssageError(err)
@@ -260,6 +260,7 @@ func (o *Operations) reserve(ctx context.Context, editionID, purchaserID uuid.UU
 		res.wsToken = raw
 		res.wsTokenExp = tokenExp
 		res.free = free
+		res.priced = priced
 		return nil
 	})
 	if err != nil {
@@ -294,7 +295,7 @@ func (o *Operations) lockAndPrice(ctx context.Context, editionID uuid.UUID, line
 			if tt.EditionID != editionID {
 				return nil, itemNotInEditionError(line)
 			}
-			out = append(out, pricedLine{Line: line, UnitPrice: tt.PriceCents, Base: tt.MaxQuantity})
+			out = append(out, pricedLine{Line: line, UnitPrice: tt.PriceCents, Base: tt.MaxQuantity, Name: tt.Name})
 
 		case models.PurchaseItemTypeProduct:
 			v, err := o.products.GetVariantByIDForUpdate(ctx, line.ItemID)
@@ -304,7 +305,7 @@ func (o *Operations) lockAndPrice(ctx context.Context, editionID uuid.UUID, line
 			if v.EditionID != editionID {
 				return nil, itemNotInEditionError(line)
 			}
-			out = append(out, pricedLine{Line: line, UnitPrice: v.Price, Base: v.Stock})
+			out = append(out, pricedLine{Line: line, UnitPrice: v.Price, Base: v.Stock, Name: v.Name})
 
 		case models.PurchaseItemTypeProgramOccurrence:
 			occ, err := o.occurrences.GetOccurrenceByIDForUpdate(ctx, line.ItemID)
@@ -325,7 +326,7 @@ func (o *Operations) lockAndPrice(ctx context.Context, editionID uuid.UUID, line
 			if prog.Price != nil {
 				price = *prog.Price
 			}
-			out = append(out, pricedLine{Line: line, UnitPrice: price, Base: occ.MaxCapacity})
+			out = append(out, pricedLine{Line: line, UnitPrice: price, Base: occ.MaxCapacity, Name: prog.Name})
 
 		default:
 			return nil, fun.Err("invalid item_type").WithFields(&fun.FieldError{
@@ -696,8 +697,12 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 // buildIntentRequest maps the purchase + checkout input to the Payssage
 // create-intent payload. For pix the server derives `payment_method_id` =
 // "pix" (no tokenization exists); for cards the front's tokenization
-// supplies it. Metadata carries purchase_id + edition_id for correlation.
-func (o *Operations) buildIntentRequest(purchase *models.Purchase, in CheckoutInput, sellerID uuid.UUID) payssage.CreateIntentRequest {
+// supplies it. `additional_info.items` carries the real product lines (name,
+// quantity, unit price) so the provider's payment screen and risk engine
+// see what the buyer is paying for — an intent without item data surfaces
+// as a nameless product and can be flagged high-risk. Metadata carries
+// purchase_id + edition_id for correlation.
+func (o *Operations) buildIntentRequest(purchase *models.Purchase, in CheckoutInput, sellerID uuid.UUID, priced []pricedLine) payssage.CreateIntentRequest {
 	providerData := map[string]any{
 		"payer": map[string]any{
 			"email":                 in.Payer.Email,
@@ -719,6 +724,18 @@ func (o *Operations) buildIntentRequest(purchase *models.Purchase, in CheckoutIn
 		if in.IssuerID != nil && *in.IssuerID != "" {
 			providerData["issuer_id"] = *in.IssuerID
 		}
+	}
+
+	if len(priced) > 0 {
+		items := make([]map[string]any, 0, len(priced))
+		for _, pl := range priced {
+			items = append(items, map[string]any{
+				"title":            pl.Name,
+				"quantity":         pl.Line.Quantity,
+				"unit_price_cents": pl.UnitPrice,
+			})
+		}
+		providerData["additional_info"] = map[string]any{"items": items}
 	}
 
 	return payssage.CreateIntentRequest{
@@ -866,6 +883,7 @@ func (o *Operations) result(res *reservation) *CheckoutResult {
 type reservation struct {
 	purchase   *models.Purchase
 	items      []models.PurchaseItem
+	priced     []pricedLine
 	wsToken    string
 	wsTokenExp time.Time
 	free       bool
@@ -874,5 +892,6 @@ type reservation struct {
 type pricedLine struct {
 	Line      CheckoutLine
 	UnitPrice int64
-	Base      *int // the item's base quantity (nil = unlimited), from the locked row
+	Base      *int   // the item's base quantity (nil = unlimited), from the locked row
+	Name      string // display name (ticket type / product variant / program) — sent to the provider as the item title
 }

@@ -302,6 +302,23 @@ func TestCheckout_CardStaysPending(t *testing.T) {
 		if req.CheckoutProviderData["installments"] != 1 {
 			t.Errorf("provider installments = %v, want default 1", req.CheckoutProviderData["installments"])
 		}
+		// The intent must carry the real product lines so the provider's
+		// payment screen/risk engine see what's being paid for — a nameless
+		// item ("Produto sem nome") reads as a high-risk payment.
+		additional, ok := req.CheckoutProviderData["additional_info"].(map[string]any)
+		if !ok {
+			t.Fatal("provider additional_info missing from checkout_provider_data")
+		}
+		items, ok := additional["items"].([]map[string]any)
+		if !ok || len(items) == 0 {
+			t.Fatalf("additional_info.items = %T %v, want at least one item", additional["items"], additional["items"])
+		}
+		if items[0]["title"] != "Standard" {
+			t.Errorf("additional_info.items[0].title = %v, want the ticket type name", items[0]["title"])
+		}
+		if items[0]["quantity"] != 1 {
+			t.Errorf("additional_info.items[0].quantity = %v, want 1", items[0]["quantity"])
+		}
 		return cardIntent(), nil
 	})
 	fx := seedStore(t, r)
