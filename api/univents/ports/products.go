@@ -14,6 +14,7 @@ type ProductRepo interface {
 	GetProductByVendorCode(ctx context.Context, editionID uuid.UUID, vendorCode string) (*models.Product, error)
 	ListProductsByEdition(ctx context.Context, editionID uuid.UUID) ([]models.Product, error)
 	GetVariantByID(ctx context.Context, id uuid.UUID) (*models.ProductVariant, error)
+	GetVariantByIDForUpdate(ctx context.Context, id uuid.UUID) (*models.ProductVariant, error)
 	GetVariantByVendorCode(ctx context.Context, editionID uuid.UUID, vendorCode string) (*models.ProductVariant, error)
 	ListVariantsByProduct(ctx context.Context, productID uuid.UUID) ([]models.ProductVariant, error)
 	PatchProduct(ctx context.Context, id uuid.UUID, product *models.Product) (*models.Product, error)

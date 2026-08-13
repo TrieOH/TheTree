@@ -3,6 +3,11 @@ INSERT INTO product_purchases (edition_id, variant_id, purchaser_id, registratio
 VALUES (@edition_id, @variant_id, @purchaser_id, @registration_id, @quantity, @status, @status_reason, @payssage_intent_id)
 RETURNING *;
 
+-- name: GetProductPurchaseByID :one
+SELECT *
+FROM product_purchases
+WHERE id = @id;
+
 -- name: UpdateProductPurchaseStatus :one
 UPDATE product_purchases
 SET
@@ -47,6 +52,15 @@ SELECT *
 FROM product_variants
 WHERE id = @id
   AND deleted_at IS NULL;
+
+-- name: GetProductVariantByIDForUpdate :one
+-- Row-lock variant for the checkout tx (split 7): serializes concurrent
+-- checkouts on the same variant before availability is checked.
+SELECT *
+FROM product_variants
+WHERE id = @id
+  AND deleted_at IS NULL
+FOR UPDATE;
 
 -- name: GetProductVariantByVendorCode :one
 SELECT *

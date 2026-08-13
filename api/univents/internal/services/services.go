@@ -106,6 +106,7 @@ func NewOperations(
 	webhookSecret string,
 ) *Operations {
 	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, emailClient, authzSvc)
+	wsOps := NewWS(r.WsTokens, r.Purchases, payssageClient, notifier)
 	return &Operations{
 		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps),
 		Editions:    NewEditions(r.Events, r.Editions, authzSvc, badgesOps),
@@ -117,9 +118,9 @@ func NewOperations(
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
 		Payments:    NewPayments(r.Events, payssageClient, authzSvc, platformWalletID),
 		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
-		Checkouts:   NewCheckouts(r.Purchases, payssageClient),
+		Checkouts:   NewCheckouts(r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, payssageClient, payssageClient, platformWalletID, wsOps),
 		Purchases:   NewPurchases(r.Purchases),
-		WS:          NewWS(r.WsTokens, r.Purchases, payssageClient, notifier),
+		WS:          wsOps,
 		Store:       NewStore(r.Purchases, r.Editions, notifier),
 	}
 }

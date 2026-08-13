@@ -60,9 +60,11 @@ func SetupConstraintMessages() {
 		"uniq_purchases_pending_per_purchaser_edition": "This person already has a pending purchase for this edition.",
 
 		// purchase_items
-		"chk_purchase_items_type_valid":          "Purchase item type must be one of: ticket, product, program_occurrence.",
-		"chk_purchase_items_quantity_positive":   "Purchase item quantity must be greater than zero.",
-		"uniq_purchase_items_purchase_type_item": "This item is already in this purchase.",
+		"chk_purchase_items_type_valid":        "Purchase item type must be one of: ticket, product, program_occurrence.",
+		"chk_purchase_items_quantity_positive": "Purchase item quantity must be greater than zero.",
+		"uniq_purchase_items_ticket_unit":      "This ticket is already in this purchase for this person.",
+		"uniq_purchase_items_product_line":     "This product is already in this purchase.",
+		"uniq_purchase_items_program_line":     "This program occurrence is already in this purchase.",
 
 		// ws_tokens
 		"uniq_ws_tokens_token_hash": "This webhook token has already been issued.",

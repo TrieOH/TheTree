@@ -50,3 +50,39 @@ func (repo *Repo) UpdateStatusIf(ctx context.Context, id uuid.UUID, from, to mod
 	}
 	return new(mapPurchase(result)), nil
 }
+
+// UpdateRiverJobID links the expiry river job to the purchase (checkout,
+// split 7): the job is enqueued with river.InsertTx inside the checkout tx
+// and this write stores its id so the webhook receiver can cancel it on
+// approve.
+func (repo *Repo) UpdateRiverJobID(ctx context.Context, id uuid.UUID, riverJobID int64) (*models.Purchase, error) {
+	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.UpdateRiverJobID")
+	defer span.End()
+	result, err := database.Queries(ctx, repo.q).UpdatePurchaseRiverJob(ctx, sqlc.UpdatePurchaseRiverJobParams{
+		ID:         id,
+		RiverJobID: &riverJobID,
+	})
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapPurchase(result)), nil
+}
+
+// AttachIntent stores the Payssage intent on the purchase after the intent
+// was created (checkout, split 7, post-commit): seller, intent id (the D2
+// correlation key), and the pix QR.
+func (repo *Repo) AttachIntent(ctx context.Context, id uuid.UUID, sellerID, intentID uuid.UUID, qrCode, qrCodeBase64 *string) (*models.Purchase, error) {
+	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.AttachIntent")
+	defer span.End()
+	result, err := database.Queries(ctx, repo.q).AttachIntentToPurchase(ctx, sqlc.AttachIntentToPurchaseParams{
+		ID:               id,
+		PayssageSellerID: &sellerID,
+		PayssageIntentID: &intentID,
+		QrCode:           qrCode,
+		QrCodeBase64:     qrCodeBase64,
+	})
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapPurchase(result)), nil
+}

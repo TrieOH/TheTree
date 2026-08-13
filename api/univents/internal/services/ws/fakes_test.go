@@ -140,6 +140,12 @@ func (f *fakePurchaseRepo) UpdateStatus(_ context.Context, id uuid.UUID, status 
 func (f *fakePurchaseRepo) UpdateStatusIf(context.Context, uuid.UUID, models.PurchaseStatus, models.PurchaseStatus, *string) (*models.Purchase, error) {
 	return nil, fun.ErrInternal("unused fake")
 }
+func (f *fakePurchaseRepo) UpdateRiverJobID(context.Context, uuid.UUID, int64) (*models.Purchase, error) {
+	return nil, fun.ErrInternal("unused fake")
+}
+func (f *fakePurchaseRepo) AttachIntent(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, *string, *string) (*models.Purchase, error) {
+	return nil, fun.ErrInternal("unused fake")
+}
 func (f *fakePurchaseRepo) ListItemsByPurchase(_ context.Context, purchaseID uuid.UUID) ([]models.PurchaseItem, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

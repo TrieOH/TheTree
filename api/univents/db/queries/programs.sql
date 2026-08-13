@@ -3,6 +3,11 @@ INSERT INTO program_participations (edition_id, occurrence_id, registration_id, 
 VALUES (@edition_id, @occurrence_id, @registration_id, @status)
 RETURNING *;
 
+-- name: GetProgramParticipationByID :one
+SELECT *
+FROM program_participations
+WHERE id = @id;
+
 -- name: UpdateProgramParticipationStatus :one
 UPDATE program_participations
 SET
@@ -21,6 +26,16 @@ SELECT *
 FROM programs
 WHERE id = @id
   AND deleted_at IS NULL;
+
+-- name: GetProgramByIDForUpdate :one
+-- Row-lock variant for the checkout tx (split 7): serializes concurrent
+-- checkouts on the same program (price read) before availability is
+-- checked.
+SELECT *
+FROM programs
+WHERE id = @id
+  AND deleted_at IS NULL
+FOR UPDATE;
 
 -- name: ListProgramsByEdition :many
 SELECT *
@@ -63,6 +78,16 @@ SELECT *
 FROM program_occurrences
 WHERE id = @id
   AND deleted_at IS NULL;
+
+-- name: GetProgramOccurrenceByIDForUpdate :one
+-- Row-lock variant for the checkout tx (split 7): serializes concurrent
+-- checkouts on the same occurrence (capacity) before availability is
+-- checked.
+SELECT *
+FROM program_occurrences
+WHERE id = @id
+  AND deleted_at IS NULL
+FOR UPDATE;
 
 -- name: ListProgramOccurrencesByProgram :many
 SELECT *

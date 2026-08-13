@@ -1024,6 +1024,104 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /editions/{edition_id}/checkout:
+    post:
+      tags: [checkouts]
+      operationId: createEditionCheckout
+      summary: Check out an edition cart (reserve + create payment intent)
+      description: |
+        The money path (issue #61, split 7): reserves the requested items
+        and creates the Payssage payment intent in one request. Prices are
+        always server-computed from the DB (never trusted from the client).
+        `purchase_items` is the availability ledger: the item rows are
+        locked `FOR UPDATE` inside the checkout transaction before
+        availability is checked, so two concurrent checkouts cannot oversell
+        the last unit (the loser gets 409 listing the unavailable items).
+
+        Flow: one transaction materializes the pending purchase (`purchases`
+        + `purchase_items` + `registrations` / `product_purchases` /
+        `program_participations`) and schedules the expiry job
+        (`purchases.expire`, +10:01); the Payssage intent is created after
+        commit; the intent id is stored back on the purchase in a second
+        transaction. Only the Payssage webhook confirms payment (D3) —
+        checkout never self-approves. Cards charge synchronously: the
+        intent comes back `succeeded` but the purchase stays `pending`
+        until the webhook confirms. Pix returns the QR (`qr_code` /
+        `qr_code_base64`) in the response.
+
+        Free orders (`total_cents == 0`) confirm immediately — no intent,
+        no expiry job: the purchase is `approved` and materialized rows are
+        created confirmed (badge emitted).
+
+        Gifting: ticket lines are one-per-person (`quantity: 1`, one
+        `attendee` each) — self-purchase sends the purchaser's own
+        user_id/email/name; a gifted ticket sends the recipient's, resolved
+        by the front from their email via IdentityX. `attendee.user_id` is
+        trusted as-is. Buying N tickets for the same ticket type sends N
+        lines. Program lines require ≥1 ticket line in the same cart (a
+        participation attaches to the ticket's registration); program
+        quantity is fixed at 1.
+
+        One active `pending` purchase per user+edition is enforced by a
+        partial unique index — a second checkout returns 409 with the
+        existing purchase's id (client-key idempotency is a follow-up).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCheckoutRequest'
+            example:
+              payment_method: pix
+              payer:
+                email: buyer@example.com
+                identification_type: CPF
+                identification_number: '12345678900'
+              items:
+                - item_type: ticket
+                  item_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  quantity: 1
+                  attendee:
+                    user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    email: buyer@example.com
+                    name: Jane Doe
+                - item_type: ticket
+                  item_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  quantity: 1
+                  attendee:
+                    user_id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                    email: friend@example.com
+                    name: John Doe
+                - item_type: product
+                  item_id: 5fa85f64-5717-4562-b3fc-2c963f66afa6
+                  quantity: 2
+      responses:
+        '201':
+          description: Purchase created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CheckoutResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /editions/{edition_id}/ticket-types:
     get:
       tags: [ticket_types]
@@ -3783,6 +3881,125 @@ components:
           type: integer
           format: int64
           description: Server-computed unit price at checkout, in cents.
+
+    CheckoutPaymentMethod:
+      type: string
+      description: How the buyer intends to pay. `pix` has no tokenization; `credit_card`/`debit_card` carry a MercadoPago card token from the front's SDK tokenization.
+      enum: [pix, credit_card, debit_card]
+
+    CheckoutPayer:
+      type: object
+      description: Payer identity passed through to the provider (MercadoPago requires email + CPF/CNPJ identification).
+      required: [email, identification_type, identification_number]
+      properties:
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        identification_type:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+          description: e.g. CPF, CNPJ.
+        identification_number:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    CheckoutAttendee:
+      type: object
+      description: |
+        One person a ticket unit is assigned to — the purchaser themselves or
+        a gifted recipient. The front resolves the recipient email to an
+        IdentityX user id; `user_id` is trusted as-is (the front rejects
+        unknown recipients).
+      required: [user_id, email, name]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        email:
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+          x-go-type: string
+          type: string
+          format: email
+        name:
+          x-oapi-codegen-extra-tags:
+            validate: "required"
+          type: string
+
+    CheckoutItem:
+      type: object
+      description: "One requested cart line. Ticket lines are one-per-person: `quantity` is fixed at 1 and `attendee` carries the assigned person (self or gifted). Product lines carry quantity and no attendee; program lines are quantity=1 (one session) with no attendee."
+      required: [item_type, item_id, quantity]
+      properties:
+        item_type:
+          $ref: '#/components/schemas/PurchaseItemType'
+        item_id:
+          $ref: '#/components/schemas/UUID'
+        quantity:
+          x-oapi-codegen-extra-tags:
+            validate: "min=1"
+          type: integer
+          minimum: 1
+          description: Product lines may exceed 1; ticket and program lines must be 1.
+        attendee:
+          allOf:
+            - $ref: '#/components/schemas/CheckoutAttendee'
+          description: Required on ticket lines (the person the ticket is assigned to).
+
+    CreateCheckoutRequest:
+      type: object
+      description: |
+        The cart + payment request (split 7). Prices are never trusted from
+        the client — the server recomputes them from the DB. For cards,
+        `payment_method_id` comes from the front's MercadoPago tokenization
+        (visa/master/...); for pix the server derives `pix` (no
+        tokenization). `card_token` is required for cards; `installments`
+        defaults to 1 when omitted.
+      required: [payment_method, payer, items]
+      properties:
+        payment_method:
+          $ref: '#/components/schemas/CheckoutPaymentMethod'
+        card_token:
+          type: [ string, "null" ]
+          description: MercadoPago card token from the front's SDK tokenization; required for cards.
+        payment_method_id:
+          type: [ string, "null" ]
+          description: From the front's MP tokenization (cards only); pix is derived server-side.
+        installments:
+          type: [ integer, "null" ]
+          minimum: 1
+          description: Card installments; defaults to 1 when omitted.
+        payer:
+          $ref: '#/components/schemas/CheckoutPayer'
+        items:
+          x-oapi-codegen-extra-tags:
+            validate: "required,min=1"
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CheckoutItem'
+
+    CheckoutResult:
+      allOf:
+        - $ref: '#/components/schemas/Purchase'
+        - type: object
+          description: |
+            The createEditionCheckout response — the created purchase plus
+            the one-time WS handshake token (split 6) so the front can open
+            the socket immediately.
+          required: [ws_token]
+          properties:
+            ws_token:
+              type: string
+              description: One-time WS handshake token; pass to `WS /ws?token=...`.
+            ws_token_expires_at:
+              type: string
+              format: date-time
+              description: When `ws_token` stops being valid.
 
     WsToken:
       type: object
