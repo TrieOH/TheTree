@@ -6,7 +6,7 @@ packages:
 catalog:
   # === @trieoh ===
   '@trieoh/identityx-sdk-ts': ^0.15.0
-  '@trieoh/identityx-access-sdk-ts': ^0.1.6
+  '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
   tsup: ^8.5.1

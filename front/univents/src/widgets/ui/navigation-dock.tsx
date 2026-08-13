@@ -2,7 +2,15 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuthActions } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import type { LucideIcon } from "lucide-react";
-import { Calendar, Home, LayoutGrid, LogIn, LogOut, User } from "lucide-react";
+import {
+  Calendar,
+  Home,
+  LayoutGrid,
+  LogIn,
+  LogOut,
+  ShoppingBag,
+  User,
+} from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { memo, useMemo, useRef } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -45,6 +53,13 @@ const getNavItems = (
       label: "Perfil",
       icon: User,
       href: "/profile",
+      authRequired: true,
+    },
+    {
+      id: "purchases",
+      label: "Compras",
+      icon: ShoppingBag,
+      href: "/profile/purchases",
       authRequired: true,
     },
     {

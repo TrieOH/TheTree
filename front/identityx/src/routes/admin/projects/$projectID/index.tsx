@@ -8,6 +8,7 @@ import {
 import { Copy, KeySquare, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { allActorsQueryOptions } from "@/features/actor/api";
 import {
   allApiKeysQueryOptions,
   revokeApiKeyFn,
@@ -45,6 +46,7 @@ function RouteComponent() {
   const { data: capabilities = [] } = useQuery(
     allCapabilitiesQueryOptions(projectID),
   );
+  const { data: actors = [] } = useQuery(allActorsQueryOptions(projectID));
 
   // const { data: apiKeys = [] } = useQuery(allApiKeysQueryOptions(projectID))
   const apiKeys: ApiKeyI[] = [];
@@ -194,9 +196,13 @@ function RouteComponent() {
           },
           {
             name: "subject_id",
-            label: "Subject ID",
-            type: "text",
-            placeholder: "Optional subject UUID",
+            label: "Subject",
+            type: "select",
+            placeholder: "Use current actor",
+            options: actors.map((actor) => ({
+              value: actor.id,
+              label: actor.email ? `${actor.email} (${actor.id})` : actor.id,
+            })),
           },
           {
             name: "env",

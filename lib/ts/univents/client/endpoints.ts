@@ -85,6 +85,47 @@
  * Prices are integer cents (`price_cents`, `price`) — `int64`, never
  * floats.
  *
+ * ## Raw realtime routes (not spec ops)
+ *
+ * Two live surfaces are **raw routes** — deliberately NOT OpenAPI
+ * operations: WebSocket handshakes cannot carry Authorization headers,
+ * and streaming responses must bypass the fun/validate envelope machinery
+ * (which buffers the body). They are documented here instead.
+ *
+ * ### `WS /ws?token=...` — per-purchase socket (one-time token)
+ *
+ * The only live-update channel for a buyer. Opens with the one-time token
+ * from `GET /ws/token` (proves prior REST auth for this purchase);
+ * missing/already-used/expired tokens are rejected (401). The socket
+ * first receives the current state, then live frames until a terminal
+ * event closes it:
+ *
+ * ```json
+ * {"type":"purchase.snapshot","payload":{"purchase_id":"…","edition_id":"…","status":"pending","intent_id":"…","intent_status":"pending","total_cents":1234,"items":[],"expires_at":"…"}}
+ * {"type":"intent.updated","payload":{"purchase_id":"…","intent_id":"…","status":"succeeded"}}
+ * {"type":"purchase.confirmed","payload":{"purchase_id":"…"}}
+ * {"type":"purchase.expired","payload":{"purchase_id":"…"}}
+ * {"type":"purchase.cancelled","payload":{"purchase_id":"…","status_detail":"insufficient_funds"}}
+ * ```
+ *
+ * The snapshot mirrors the `getCheckout` resume shape (front treats
+ * resume == snapshot == checkout uniformly) and carries `intent_status`
+ * best-effort when the purchase is pending. A reconnect always uses a
+ * fresh token and restores context from the snapshot — no resume polling.
+ * The socket closes on any terminal event (confirmed/expired/cancelled)
+ * and on the cancelled frame the `status_detail` is the provider's
+ * failure vocabulary fetched via `GetIntent` (best-effort).
+ *
+ * ### `GET /editions/{edition_id}/store/stream` — storefront SSE (public)
+ *
+ * One stream per edition: on connect it sends `event: snapshot` with a
+ * JSON array of every purchasable item's stock position, then relays
+ * `event: stock` deltas — `{"id": "…", "item_type": "ticket", "stock": 12}`
+ * (`item_type` is one of `ticket | product | program_occurrence`; `stock`
+ * is `null` when the item is unlimited). Numbers are always recomputed
+ * from the DB by the relay — publishers never send stock values. A `: ping`
+ * comment line keeps the stream alive every ~30s.
+ *
  * ## Rate limits
  *
  * The harness applies a fixed rate limit of 400 requests/second with a
@@ -121,12 +162,15 @@ import type {
   Certification,
   CertificationTemplate,
   CertificationTemplateProgram,
+  Checkout,
+  CheckoutResult,
   CompleteEventPaymentsRequest,
   ConflictResponse,
   ConnectEventPaymentsRequest,
   ConnectEventPaymentsResult,
   CreateBadgeTemplateRequest,
   CreateCertificationTemplateRequest,
+  CreateCheckoutRequest,
   CreateEditionRequest,
   CreateEventRequest,
   CreateInitialProductRequest,
@@ -145,8 +189,10 @@ import type {
   FulfillSignatureRequestParams,
   GetEditionBadgesPrintParams,
   GetHealth200,
+  GetWsTokenParams,
   InternalServerErrorResponse,
   InvalidCertReason,
+  MyPurchases,
   NotFoundResponse,
   PatchEditionRequest,
   PatchEventRequest,
@@ -159,6 +205,7 @@ import type {
   ProductVariant,
   Program,
   ProgramOccurrence,
+  ReceivePayssageWebhookRequest,
   RemoveEventMemberBody,
   RevokeSignatureParams,
   Signature,
@@ -168,7 +215,8 @@ import type {
   UpdateBadgeTemplateRequest,
   UpdateCertificationTemplateRequest,
   Uuid,
-  VerifyCertResponse
+  VerifyCertResponse,
+  WsToken
 } from './schemas';
 
 import { customInstance } from '../../api-client/src/orval-mutator';
@@ -2864,6 +2912,152 @@ export const usePublishEdition = <TError = ErrorType<UnauthorizedResponse | Forb
         TContext
       > => {
       return useMutation(getPublishEditionMutationOptions(options));
+    }
+
+export type createEditionCheckoutResponse201 = {
+  data: CheckoutResult
+  status: 201
+}
+
+export type createEditionCheckoutResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type createEditionCheckoutResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createEditionCheckoutResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type createEditionCheckoutResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createEditionCheckoutResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type createEditionCheckoutResponseSuccess = (createEditionCheckoutResponse201) & {
+  headers: Headers;
+};
+export type createEditionCheckoutResponseError = (createEditionCheckoutResponse400 | createEditionCheckoutResponse401 | createEditionCheckoutResponse404 | createEditionCheckoutResponse409 | createEditionCheckoutResponse500) & {
+  headers: Headers;
+};
+
+export type createEditionCheckoutResponse = (createEditionCheckoutResponseSuccess | createEditionCheckoutResponseError)
+
+export const getCreateEditionCheckoutUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/checkout`
+}
+
+/**
+ * The money path (issue #61, split 7): reserves the requested items
+ * and creates the Payssage payment intent in one request. Prices are
+ * always server-computed from the DB (never trusted from the client).
+ * `purchase_items` is the availability ledger: the item rows are
+ * locked `FOR UPDATE` inside the checkout transaction before
+ * availability is checked, so two concurrent checkouts cannot oversell
+ * the last unit (the loser gets 409 listing the unavailable items).
+ *
+ * Flow: one transaction materializes the pending purchase (`purchases`
+ * + `purchase_items` + `registrations` / `product_purchases` /
+ * `program_participations`) and schedules the expiry job
+ * (`purchases.expire`, +10:01); the Payssage intent is created after
+ * commit; the intent id is stored back on the purchase in a second
+ * transaction. Only the Payssage webhook confirms payment (D3) —
+ * checkout never self-approves. Cards charge synchronously: the
+ * intent comes back `succeeded` but the purchase stays `pending`
+ * until the webhook confirms. Pix returns the QR (`qr_code` /
+ * `qr_code_base64`) in the response.
+ *
+ * Free orders (`total_cents == 0`) confirm immediately — no intent,
+ * no expiry job: the purchase is `approved` and materialized rows are
+ * created confirmed (badge emitted).
+ *
+ * Gifting: ticket lines are one-per-person (`quantity: 1`, one
+ * `attendee` each) — self-purchase sends the purchaser's own
+ * user_id/email/name; a gifted ticket sends the recipient's, resolved
+ * by the front from their email via IdentityX. `attendee.user_id` is
+ * trusted as-is. Buying N tickets for the same ticket type sends N
+ * lines. Program lines require ≥1 ticket line in the same cart (a
+ * participation attaches to the ticket's registration); program
+ * quantity is fixed at 1.
+ *
+ * One active `pending` purchase per user+edition is enforced by a
+ * partial unique index — a second checkout returns 409 with the
+ * existing purchase's id (client-key idempotency is a follow-up).
+ * @summary Check out an edition cart (reserve + create payment intent)
+ */
+export const createEditionCheckout = async (editionId: string,
+    createCheckoutRequest: CreateCheckoutRequest, options?: Parameters<typeof customInstance>[1]): Promise<createEditionCheckoutResponse> => {
+
+  return customInstance<createEditionCheckoutResponse>(getCreateEditionCheckoutUrl(editionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createCheckoutRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateEditionCheckoutMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEditionCheckout>>, TError,{editionId: string;data: BodyType<CreateCheckoutRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEditionCheckout>>, TError,{editionId: string;data: BodyType<CreateCheckoutRequest>}, TContext> => {
+
+const mutationKey = ['createEditionCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEditionCheckout>>, {editionId: string;data: BodyType<CreateCheckoutRequest>}> = (props) => {
+          const {editionId,data} = props ?? {};
+
+          return  createEditionCheckout(editionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEditionCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createEditionCheckout>>>
+    export type CreateEditionCheckoutMutationBody = BodyType<CreateCheckoutRequest>
+    export type CreateEditionCheckoutMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Check out an edition cart (reserve + create payment intent)
+ */
+export const useCreateEditionCheckout = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEditionCheckout>>, TError,{editionId: string;data: BodyType<CreateCheckoutRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createEditionCheckout>>,
+        TError,
+        {editionId: string;data: BodyType<CreateCheckoutRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateEditionCheckoutMutationOptions(options));
     }
 
 export type listTicketTypesResponse200 = {
@@ -9307,6 +9501,462 @@ export function useListCertificationEmissionErrors<TData = Awaited<ReturnType<ty
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListCertificationEmissionErrorsQueryOptions(editionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type receivePayssageWebhookResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type receivePayssageWebhookResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type receivePayssageWebhookResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type receivePayssageWebhookResponseSuccess = (receivePayssageWebhookResponse200) & {
+  headers: Headers;
+};
+export type receivePayssageWebhookResponseError = (receivePayssageWebhookResponse400 | receivePayssageWebhookResponse500) & {
+  headers: Headers;
+};
+
+export type receivePayssageWebhookResponse = (receivePayssageWebhookResponseSuccess | receivePayssageWebhookResponseError)
+
+export const getReceivePayssageWebhookUrl = () => {
+
+
+
+
+  return `/webhooks/payssage`
+}
+
+/**
+ * Ingestion endpoint called by Payssage when a payment event occurs on
+ * an intent. The body is the Payssage delivery envelope (D2) — the
+ * correlation key is `intent_id`, never a provider-specific id:
+ *
+ * ```json
+ * {
+ *   "intent_id": "...", "wallet_id": "...", "provider": "mercadopago",
+ *   "external_id": "<provider_payment_id>",
+ *   "event_type": "payment.succeeded",
+ *   "payload": { "...": "raw provider payload" }
+ * }
+ * ```
+ *
+ * Authenticated by the `X-Payssage-Signature` header — hex
+ * (HMAC-SHA256(raw body, `PAYSSAGE_WEBHOOK_SECRET`)). A signature
+ * mismatch is rejected with 400 (Payssage does not retry). Returns 200
+ * after successful processing so Payssage stops retrying; returns
+ * non-2xx when the purchase cannot be correlated yet (card race, D3)
+ * so Payssage retries. This is the only component that confirms
+ * payment — checkout never self-approves (D3). Public: Payssage
+ * cannot send an Authorization header.
+ * @summary Receive a Payssage webhook delivery
+ */
+export const receivePayssageWebhook = async (receivePayssageWebhookRequest: ReceivePayssageWebhookRequest, options?: Parameters<typeof customInstance>[1]): Promise<receivePayssageWebhookResponse> => {
+
+  return customInstance<receivePayssageWebhookResponse>(getReceivePayssageWebhookUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(receivePayssageWebhookRequest)
+  }
+);}
+
+
+
+
+
+export const getReceivePayssageWebhookMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receivePayssageWebhook>>, TError,{data: BodyType<ReceivePayssageWebhookRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof receivePayssageWebhook>>, TError,{data: BodyType<ReceivePayssageWebhookRequest>}, TContext> => {
+
+const mutationKey = ['receivePayssageWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof receivePayssageWebhook>>, {data: BodyType<ReceivePayssageWebhookRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  receivePayssageWebhook(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReceivePayssageWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof receivePayssageWebhook>>>
+    export type ReceivePayssageWebhookMutationBody = BodyType<ReceivePayssageWebhookRequest>
+    export type ReceivePayssageWebhookMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Receive a Payssage webhook delivery
+ */
+export const useReceivePayssageWebhook = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receivePayssageWebhook>>, TError,{data: BodyType<ReceivePayssageWebhookRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof receivePayssageWebhook>>,
+        TError,
+        {data: BodyType<ReceivePayssageWebhookRequest>},
+        TContext
+      > => {
+      return useMutation(getReceivePayssageWebhookMutationOptions(options));
+    }
+
+export type getCheckoutResponse200 = {
+  data: Checkout
+  status: 200
+}
+
+export type getCheckoutResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getCheckoutResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getCheckoutResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getCheckoutResponseSuccess = (getCheckoutResponse200) & {
+  headers: Headers;
+};
+export type getCheckoutResponseError = (getCheckoutResponse401 | getCheckoutResponse404 | getCheckoutResponse500) & {
+  headers: Headers;
+};
+
+export type getCheckoutResponse = (getCheckoutResponseSuccess | getCheckoutResponseError)
+
+export const getGetCheckoutUrl = (purchaseId: Uuid,) => {
+
+
+
+
+  return `/checkouts/${purchaseId}`
+}
+
+/**
+ * The buyer's single source of truth for a purchase (issue #61: "fonte
+ * da verdade: tabela de purchases"): reads `purchases` + `purchase_items`
+ * and, when the purchase is still `pending` and carries a Payssage
+ * intent, the intent's current status — so a resume surfaces
+ * `intent.updated` without polling. Owner-only: the caller must be the
+ * purchase's `purchaser_id`; anything else is 404 (no existence leak).
+ * Strictly a read — the webhook receiver and the expiry worker own all
+ * status changes.
+ * @summary Resume a purchase
+ */
+export const getCheckout = async (purchaseId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<getCheckoutResponse> => {
+
+  return customInstance<getCheckoutResponse>(getGetCheckoutUrl(purchaseId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCheckoutQueryKey = (purchaseId: Uuid,) => {
+    return [
+    `/checkouts/${purchaseId}`
+    ] as const;
+    }
+
+
+export const getGetCheckoutQueryOptions = <TData = Awaited<ReturnType<typeof getCheckout>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(purchaseId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckout>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCheckoutQueryKey(purchaseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCheckout>>> = ({ signal }) => getCheckout(purchaseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: purchaseId !== null && purchaseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckout>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCheckoutQueryResult = NonNullable<Awaited<ReturnType<typeof getCheckout>>>
+export type GetCheckoutQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary Resume a purchase
+ */
+
+export function useGetCheckout<TData = Awaited<ReturnType<typeof getCheckout>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ purchaseId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckout>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCheckoutQueryOptions(purchaseId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listMyPurchasesResponse200 = {
+  data: MyPurchases
+  status: 200
+}
+
+export type listMyPurchasesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listMyPurchasesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listMyPurchasesResponseSuccess = (listMyPurchasesResponse200) & {
+  headers: Headers;
+};
+export type listMyPurchasesResponseError = (listMyPurchasesResponse401 | listMyPurchasesResponse500) & {
+  headers: Headers;
+};
+
+export type listMyPurchasesResponse = (listMyPurchasesResponseSuccess | listMyPurchasesResponseError)
+
+export const getListMyPurchasesUrl = () => {
+
+
+
+
+  return `/purchases`
+}
+
+/**
+ * Lists the authenticated user's purchases with their items, newest
+ * first. The purchases table is the record of truth (issue #61); items
+ * come from `purchase_items` — the availability ledger (D4). Read-only;
+ * no state transitions.
+ * @summary List my purchases
+ */
+export const listMyPurchases = async ( options?: Parameters<typeof customInstance>[1]): Promise<listMyPurchasesResponse> => {
+
+  return customInstance<listMyPurchasesResponse>(getListMyPurchasesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyPurchasesQueryKey = () => {
+    return [
+    `/purchases`
+    ] as const;
+    }
+
+
+export const getListMyPurchasesQueryOptions = <TData = Awaited<ReturnType<typeof listMyPurchases>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyPurchases>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyPurchasesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyPurchases>>> = ({ signal }) => listMyPurchases({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyPurchases>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyPurchasesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyPurchases>>>
+export type ListMyPurchasesQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary List my purchases
+ */
+
+export function useListMyPurchases<TData = Awaited<ReturnType<typeof listMyPurchases>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyPurchases>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyPurchasesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getWsTokenResponse200 = {
+  data: WsToken
+  status: 200
+}
+
+export type getWsTokenResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getWsTokenResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getWsTokenResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getWsTokenResponseSuccess = (getWsTokenResponse200) & {
+  headers: Headers;
+};
+export type getWsTokenResponseError = (getWsTokenResponse401 | getWsTokenResponse404 | getWsTokenResponse500) & {
+  headers: Headers;
+};
+
+export type getWsTokenResponse = (getWsTokenResponseSuccess | getWsTokenResponseError)
+
+export const getGetWsTokenUrl = (params: GetWsTokenParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/ws/token?${stringifiedParams}` : `/ws/token`
+}
+
+/**
+ * Owner-only: the caller must be the purchase's `purchaser_id`
+ * (anything else is 404 — no existence leak). Issues a fresh one-time
+ * token for the raw `WS /ws?token=...` socket: a 32-byte random value
+ * stored as its SHA-256 hash, valid 10 minutes, consumed by the first
+ * handshake. The token is a handshake-auth shim — it proves prior REST
+ * auth for this purchase and nothing more (no refresh dance, no
+ * scopes). Reconnect = fresh token: the front re-requests before the
+ * 10-minute expiry and re-opens the socket.
+ * @summary Issue a one-time WebSocket handshake token
+ */
+export const getWsToken = async (params: GetWsTokenParams, options?: Parameters<typeof customInstance>[1]): Promise<getWsTokenResponse> => {
+
+  return customInstance<getWsTokenResponse>(getGetWsTokenUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWsTokenQueryKey = (params?: GetWsTokenParams,) => {
+    return [
+    `/ws/token`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWsTokenQueryOptions = <TData = Awaited<ReturnType<typeof getWsToken>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(params: GetWsTokenParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWsToken>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWsTokenQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWsToken>>> = ({ signal }) => getWsToken(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWsToken>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWsTokenQueryResult = NonNullable<Awaited<ReturnType<typeof getWsToken>>>
+export type GetWsTokenQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary Issue a one-time WebSocket handshake token
+ */
+
+export function useGetWsToken<TData = Awaited<ReturnType<typeof getWsToken>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ params: GetWsTokenParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWsToken>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWsTokenQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

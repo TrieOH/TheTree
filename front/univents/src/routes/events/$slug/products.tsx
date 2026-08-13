@@ -9,6 +9,7 @@ import {
   productVariantsQueryOptions,
 } from "@/features/products/api";
 import { useCart } from "@/features/products/hooks/use-cart";
+import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { Cart } from "@/features/products/ui/Cart";
 import { ProductCardCompact } from "@/features/products/ui/ProductCardCompact";
 import { Logo } from "@/shared/ui/logo";
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/events/$slug/products")({
 });
 
 function ProductsPage() {
+  const navigate = Route.useNavigate();
   const event = Route.useLoaderData();
   const { data: activeEdition } = useSuspenseQuery(
     activeEditionQueryOptions(event.id),
@@ -46,6 +48,7 @@ function ProductsPage() {
     .filter(({ variants }) => variants.length > 0);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const cart = useCart(activeEdition?.id ?? "");
+  useInventoryStream(activeEdition?.id ?? "");
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -75,7 +78,7 @@ function ProductsPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-7xl flex-wrap items-stretch justify-center gap-6 px-4 py-8 md:gap-8 md:px-6 md:py-12 lg:px-8">
+      <main className="mx-auto flex max-w-7xl flex-wrap items-stretch justify-start gap-6 px-4 py-8 md:gap-8 md:px-6 md:py-12 lg:px-8">
         {productsWithVariants.map(({ product, variants }) => (
           <ProductCardCompact
             key={product.id}
@@ -92,6 +95,12 @@ function ProductsPage() {
           eventId={event.id}
           editionId={activeEdition.id}
           onClose={() => setIsCartOpen(false)}
+          onCheckout={() =>
+            navigate({
+              to: "/events/$slug/checkout",
+              params: { slug: event.slug },
+            })
+          }
         />
       )}
       {activeEdition && (

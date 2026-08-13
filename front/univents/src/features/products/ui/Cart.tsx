@@ -25,6 +25,7 @@ interface CartProps {
   eventId: string;
   editionId: string;
   onClose: () => void;
+  onCheckout?: () => void;
 }
 
 interface CartItemProps {
@@ -181,6 +182,7 @@ export function Cart({
   eventId: _eventId,
   editionId,
   onClose,
+  onCheckout,
 }: CartProps) {
   const {
     items,
@@ -281,6 +283,18 @@ export function Cart({
             </div>
 
             <div className="space-y-2">
+              {onCheckout && (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
+                    onClose();
+                    onCheckout();
+                  }}
+                >
+                  Finalizar compra
+                </Button>
+              )}
               <div className="flex gap-2">
                 <Button
                   variant="outline"

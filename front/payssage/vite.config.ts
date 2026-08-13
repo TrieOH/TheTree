@@ -8,6 +8,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import babel from '@rolldown/plugin-babel'
 
 const config = defineConfig({
+  resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),
     cloudflare({ viteEnvironment: { name: 'ssr' } }),

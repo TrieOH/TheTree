@@ -85,6 +85,47 @@
  * Prices are integer cents (`price_cents`, `price`) — `int64`, never
  * floats.
  *
+ * ## Raw realtime routes (not spec ops)
+ *
+ * Two live surfaces are **raw routes** — deliberately NOT OpenAPI
+ * operations: WebSocket handshakes cannot carry Authorization headers,
+ * and streaming responses must bypass the fun/validate envelope machinery
+ * (which buffers the body). They are documented here instead.
+ *
+ * ### `WS /ws?token=...` — per-purchase socket (one-time token)
+ *
+ * The only live-update channel for a buyer. Opens with the one-time token
+ * from `GET /ws/token` (proves prior REST auth for this purchase);
+ * missing/already-used/expired tokens are rejected (401). The socket
+ * first receives the current state, then live frames until a terminal
+ * event closes it:
+ *
+ * ```json
+ * {"type":"purchase.snapshot","payload":{"purchase_id":"…","edition_id":"…","status":"pending","intent_id":"…","intent_status":"pending","total_cents":1234,"items":[],"expires_at":"…"}}
+ * {"type":"intent.updated","payload":{"purchase_id":"…","intent_id":"…","status":"succeeded"}}
+ * {"type":"purchase.confirmed","payload":{"purchase_id":"…"}}
+ * {"type":"purchase.expired","payload":{"purchase_id":"…"}}
+ * {"type":"purchase.cancelled","payload":{"purchase_id":"…","status_detail":"insufficient_funds"}}
+ * ```
+ *
+ * The snapshot mirrors the `getCheckout` resume shape (front treats
+ * resume == snapshot == checkout uniformly) and carries `intent_status`
+ * best-effort when the purchase is pending. A reconnect always uses a
+ * fresh token and restores context from the snapshot — no resume polling.
+ * The socket closes on any terminal event (confirmed/expired/cancelled)
+ * and on the cancelled frame the `status_detail` is the provider's
+ * failure vocabulary fetched via `GetIntent` (best-effort).
+ *
+ * ### `GET /editions/{edition_id}/store/stream` — storefront SSE (public)
+ *
+ * One stream per edition: on connect it sends `event: snapshot` with a
+ * JSON array of every purchasable item's stock position, then relays
+ * `event: stock` deltas — `{"id": "…", "item_type": "ticket", "stock": 12}`
+ * (`item_type` is one of `ticket | product | program_occurrence`; `stock`
+ * is `null` when the item is unlimited). Numbers are always recomputed
+ * from the DB by the relay — publishers never send stock values. A `: ping`
+ * comment line keeps the stream alive every ~30s.
+ *
  * ## Rate limits
  *
  * The harness applies a fixed rate limit of 400 requests/second with a
@@ -117,7 +158,6 @@ export interface Event {
   style?: EventStyle;
   status: EventStatus;
   payssage_seller_id?: NullableUUID | null;
-  payssage_wallet_id?: NullableUUID | null;
   /** @nullable */
   payssage_public_key?: string | null;
   /** @nullable */

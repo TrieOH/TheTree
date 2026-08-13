@@ -10,6 +10,7 @@ import {
 import { OtherEditionsSection } from "@/features/editions/ui/OtherEditionsSection";
 import { ContactSection } from "@/features/events/ui/ContactSection";
 import { useCart } from "@/features/products/hooks/use-cart";
+import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { Cart } from "@/features/products/ui/Cart";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
 import { ProgramSection } from "@/features/programs/ui/ProgramSection";
@@ -24,6 +25,7 @@ export const Route = createLazyFileRoute("/events/$slug/")({
 });
 
 function RouteComponent() {
+  const navigate = Route.useNavigate();
   const event = Route.useLoaderData();
   const { data: activeEdition } = useSuspenseQuery(
     activeEditionQueryOptions(event.id),
@@ -44,6 +46,7 @@ function RouteComponent() {
   const initials = getInitials(event.full_name);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const cart = useCart(activeEdition?.id ?? "");
+  useInventoryStream(activeEdition?.id ?? "");
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -207,6 +210,12 @@ function RouteComponent() {
           eventId={event.id}
           editionId={activeEdition.id}
           onClose={() => setIsCartOpen(false)}
+          onCheckout={() =>
+            navigate({
+              to: "/events/$slug/checkout",
+              params: { slug: event.slug },
+            })
+          }
         />
       )}
       {activeEdition && (
