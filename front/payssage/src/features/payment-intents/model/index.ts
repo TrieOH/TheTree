@@ -5,7 +5,9 @@ export const intentStatuses = [
   "pending",
   "succeeded",
   "cancelled",
+  "rejected",
   "failed",
+  "refunded",
 ] as const;
 
 export type IntentStatus = (typeof intentStatuses)[number];
