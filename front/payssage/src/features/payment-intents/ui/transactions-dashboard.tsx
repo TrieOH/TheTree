@@ -56,6 +56,18 @@ const statusDetails: Record<
     className: "bg-destructive/10 text-destructive",
     dot: "bg-destructive",
   },
+  rejected: {
+    label: "Rejected",
+    icon: XCircle,
+    className: "bg-destructive/10 text-destructive",
+    dot: "bg-destructive",
+  },
+  refunded: {
+    label: "Refunded",
+    icon: ReceiptText,
+    className: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    dot: "bg-blue-500",
+  },
 };
 
 const formatAmount = (intent: Intent) =>
@@ -400,7 +412,9 @@ export function TransactionsDashboard({
                 key={intent.id}
                 intent={intent}
                 onCancel={cancelIntent}
-                isCancelling={isCancelling && cancellingIntent.id === intent.id}
+                isCancelling={
+                  isCancelling && cancellingIntent?.id === intent.id
+                }
               />
             ))
           }
