@@ -18,8 +18,7 @@ func (o *Operations) List(ctx context.Context, projectID uuid.UUID) ([]models.Ac
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
-	if err != nil {
+	if err := o.requireActorReadAccess(ctx, ident, projectID); err != nil {
 		return nil, err
 	}
 

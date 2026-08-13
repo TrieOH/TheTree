@@ -18,9 +18,10 @@ import (
 // This list is the regression net for that policy — a handler that drops
 // its guard fails this test (it no longer 401s).
 //
-// GetActorByEmail, GetActor and ListActors are deliberately NOT here: they
-// are project-scoped (the ops layer enforces project membership), so project
-// members and platform-level clients both use them.
+// GetActorByEmail, GetActor and ListActors are deliberately NOT here: the
+// ops layer gates them on being a user or member of the target project —
+// project-scoped service accounts may read their own project's actors — so
+// they don't 401 project-scoped identities.
 var clientOnlyMethods = []string{
 	"CreateActor",
 	"CreateAPIKey", "CreateCapability",
