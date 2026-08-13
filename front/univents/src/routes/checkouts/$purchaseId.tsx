@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Clock3 } from "lucide-react";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { checkoutQueryOptions } from "@/features/purchases/api";
+import { usePurchaseSocket } from "@/features/purchases/hooks/use-purchase-socket";
 import { PurchaseSummary } from "@/features/purchases/ui/purchase-summary";
 
 export const Route = createFileRoute("/checkouts/$purchaseId")({
@@ -17,6 +18,10 @@ export const Route = createFileRoute("/checkouts/$purchaseId")({
 function CheckoutStatusPage() {
   const { purchaseId } = Route.useParams();
   const { data: checkout } = useSuspenseQuery(checkoutQueryOptions(purchaseId));
+  const connected = usePurchaseSocket(
+    purchaseId,
+    checkout.status === "pending",
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10 pb-28">
@@ -34,8 +39,8 @@ function CheckoutStatusPage() {
         <div className="mb-4 flex items-center gap-3 border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-300">
           <Clock3 className="size-5 shrink-0" />
           <p>
-            Pagamento em processamento. Esta página será atualizada
-            automaticamente.
+            Pagamento em processamento. Atualização em tempo real
+            {connected ? " conectada." : " conectando…"}
           </p>
         </div>
       )}

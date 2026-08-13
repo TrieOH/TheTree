@@ -163,12 +163,14 @@ import type {
   CertificationTemplate,
   CertificationTemplateProgram,
   Checkout,
+  CheckoutResult,
   CompleteEventPaymentsRequest,
   ConflictResponse,
   ConnectEventPaymentsRequest,
   ConnectEventPaymentsResult,
   CreateBadgeTemplateRequest,
   CreateCertificationTemplateRequest,
+  CreateCheckoutRequest,
   CreateEditionRequest,
   CreateEventRequest,
   CreateInitialProductRequest,
@@ -2910,6 +2912,152 @@ export const usePublishEdition = <TError = ErrorType<UnauthorizedResponse | Forb
         TContext
       > => {
       return useMutation(getPublishEditionMutationOptions(options));
+    }
+
+export type createEditionCheckoutResponse201 = {
+  data: CheckoutResult
+  status: 201
+}
+
+export type createEditionCheckoutResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type createEditionCheckoutResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createEditionCheckoutResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type createEditionCheckoutResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createEditionCheckoutResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type createEditionCheckoutResponseSuccess = (createEditionCheckoutResponse201) & {
+  headers: Headers;
+};
+export type createEditionCheckoutResponseError = (createEditionCheckoutResponse400 | createEditionCheckoutResponse401 | createEditionCheckoutResponse404 | createEditionCheckoutResponse409 | createEditionCheckoutResponse500) & {
+  headers: Headers;
+};
+
+export type createEditionCheckoutResponse = (createEditionCheckoutResponseSuccess | createEditionCheckoutResponseError)
+
+export const getCreateEditionCheckoutUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/checkout`
+}
+
+/**
+ * The money path (issue #61, split 7): reserves the requested items
+ * and creates the Payssage payment intent in one request. Prices are
+ * always server-computed from the DB (never trusted from the client).
+ * `purchase_items` is the availability ledger: the item rows are
+ * locked `FOR UPDATE` inside the checkout transaction before
+ * availability is checked, so two concurrent checkouts cannot oversell
+ * the last unit (the loser gets 409 listing the unavailable items).
+ *
+ * Flow: one transaction materializes the pending purchase (`purchases`
+ * + `purchase_items` + `registrations` / `product_purchases` /
+ * `program_participations`) and schedules the expiry job
+ * (`purchases.expire`, +10:01); the Payssage intent is created after
+ * commit; the intent id is stored back on the purchase in a second
+ * transaction. Only the Payssage webhook confirms payment (D3) —
+ * checkout never self-approves. Cards charge synchronously: the
+ * intent comes back `succeeded` but the purchase stays `pending`
+ * until the webhook confirms. Pix returns the QR (`qr_code` /
+ * `qr_code_base64`) in the response.
+ *
+ * Free orders (`total_cents == 0`) confirm immediately — no intent,
+ * no expiry job: the purchase is `approved` and materialized rows are
+ * created confirmed (badge emitted).
+ *
+ * Gifting: ticket lines are one-per-person (`quantity: 1`, one
+ * `attendee` each) — self-purchase sends the purchaser's own
+ * user_id/email/name; a gifted ticket sends the recipient's, resolved
+ * by the front from their email via IdentityX. `attendee.user_id` is
+ * trusted as-is. Buying N tickets for the same ticket type sends N
+ * lines. Program lines require ≥1 ticket line in the same cart (a
+ * participation attaches to the ticket's registration); program
+ * quantity is fixed at 1.
+ *
+ * One active `pending` purchase per user+edition is enforced by a
+ * partial unique index — a second checkout returns 409 with the
+ * existing purchase's id (client-key idempotency is a follow-up).
+ * @summary Check out an edition cart (reserve + create payment intent)
+ */
+export const createEditionCheckout = async (editionId: string,
+    createCheckoutRequest: CreateCheckoutRequest, options?: Parameters<typeof customInstance>[1]): Promise<createEditionCheckoutResponse> => {
+
+  return customInstance<createEditionCheckoutResponse>(getCreateEditionCheckoutUrl(editionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createCheckoutRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateEditionCheckoutMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEditionCheckout>>, TError,{editionId: string;data: BodyType<CreateCheckoutRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEditionCheckout>>, TError,{editionId: string;data: BodyType<CreateCheckoutRequest>}, TContext> => {
+
+const mutationKey = ['createEditionCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEditionCheckout>>, {editionId: string;data: BodyType<CreateCheckoutRequest>}> = (props) => {
+          const {editionId,data} = props ?? {};
+
+          return  createEditionCheckout(editionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEditionCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createEditionCheckout>>>
+    export type CreateEditionCheckoutMutationBody = BodyType<CreateCheckoutRequest>
+    export type CreateEditionCheckoutMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Check out an edition cart (reserve + create payment intent)
+ */
+export const useCreateEditionCheckout = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEditionCheckout>>, TError,{editionId: string;data: BodyType<CreateCheckoutRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createEditionCheckout>>,
+        TError,
+        {editionId: string;data: BodyType<CreateCheckoutRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateEditionCheckoutMutationOptions(options));
     }
 
 export type listTicketTypesResponse200 = {

@@ -153,4 +153,25 @@ export const cartActions = {
       },
     }));
   },
+  updateStock: (editionId: string, id: string, stock: number | null) => {
+    cartStore.setState((prev) => ({
+      ...prev,
+      carts: {
+        ...prev.carts,
+        [editionId]: (prev.carts[editionId] ?? []).flatMap((item) => {
+          if (item.id !== id) return item;
+          if (stock === 0) return [];
+          return [
+            {
+              ...item,
+              has_inventory: stock !== null,
+              inventory_remaining: stock ?? GLOBAL_MAX_QUANTITY,
+              quantity:
+                stock === null ? item.quantity : Math.min(item.quantity, stock),
+            },
+          ];
+        }),
+      },
+    }));
+  },
 };

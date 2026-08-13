@@ -9,6 +9,7 @@ import {
   productVariantsQueryOptions,
 } from "@/features/products/api";
 import { useCart } from "@/features/products/hooks/use-cart";
+import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { Cart } from "@/features/products/ui/Cart";
 import { ProductCardCompact } from "@/features/products/ui/ProductCardCompact";
 import { Logo } from "@/shared/ui/logo";
@@ -47,6 +48,7 @@ function ProductsPage() {
     .filter(({ variants }) => variants.length > 0);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const cart = useCart(activeEdition?.id ?? "");
+  useInventoryStream(activeEdition?.id ?? "");
 
   return (
     <div className="min-h-screen bg-background pb-24">
