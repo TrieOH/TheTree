@@ -8,10 +8,6 @@ import { PurchaseSummary } from "@/features/purchases/ui/purchase-summary";
 
 export const Route = createFileRoute("/checkouts/$purchaseId")({
   beforeLoad: requireAuth,
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(
-      checkoutQueryOptions(params.purchaseId),
-    ),
   component: CheckoutStatusPage,
 });
 
