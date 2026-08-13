@@ -159,6 +159,11 @@ export interface CreateCheckoutRequest {
      */
   payment_method_id?: string | null;
   /**
+     * MP issuing bank id from the front's card tokenization (cardForm); optional, cards only.
+     * @nullable
+     */
+  issuer_id?: string | null;
+  /**
      * Card installments; defaults to 1 when omitted.
      * @minimum 1
      * @nullable

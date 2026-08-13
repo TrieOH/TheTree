@@ -3969,6 +3969,9 @@ components:
         payment_method_id:
           type: [ string, "null" ]
           description: From the front's MP tokenization (cards only); pix is derived server-side.
+        issuer_id:
+          type: [ string, "null" ]
+          description: MP issuing bank id from the front's card tokenization (cardForm); optional, cards only.
         installments:
           type: [ integer, "null" ]
           minimum: 1
