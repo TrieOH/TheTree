@@ -57,7 +57,12 @@ func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookI
 	created, err := o.events.Create(ctx, event)
 	if err != nil {
 		if fun.Is(err, fun.CodeConflict) {
-			// Duplicate delivery — already recorded, nothing further to do.
+			// Same (provider, external_id, event_type) already recorded and
+			// dispatched — an identical redelivery, nothing further to do.
+			// Note: DISTINCT event types for the same payment are NOT
+			// duplicates (payment.pending vs payment.succeeded) — the dedupe
+			// index keys on event_type too (migration 007), so the final
+			// status always dispatches.
 			return nil
 		}
 		return fun.Errf("persist webhook event: %v", err).Internal()
