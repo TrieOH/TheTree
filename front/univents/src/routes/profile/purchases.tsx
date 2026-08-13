@@ -7,8 +7,6 @@ import { PurchaseSummary } from "@/features/purchases/ui/purchase-summary";
 
 export const Route = createFileRoute("/profile/purchases")({
   beforeLoad: requireAuth,
-  loader: ({ context }) =>
-    context.queryClient.ensureQueryData(myPurchasesQueryOptions()),
   component: PurchasesPage,
 });
 
