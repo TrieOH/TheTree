@@ -90,8 +90,9 @@ func NewOperations(
 // receiver acts on: correlation key (intent_id), event type, and the raw
 // body + signature header for verification.
 type ReceiveInput struct {
-	IntentID  uuid.UUID
-	EventType string
-	RawBody   []byte
-	Signature string
+	IntentID     uuid.UUID
+	EventType    string
+	RawBody      []byte
+	Signature    string
+	StatusReason *string // normalized outcome detail from the payssage envelope (e.g. "high_risk")
 }

@@ -27,13 +27,14 @@ func mapWebhookEvent(src sqlc.WebhookEvent) models.WebhookEvent {
 		externalID = *src.ExternalID
 	}
 	return models.WebhookEvent{
-		ID:         src.ID,
-		WalletID:   src.WalletID,
-		IntentID:   src.IntentID,
-		Provider:   src.Provider,
-		ExternalID: externalID,
-		EventType:  src.EventType,
-		Payload:    src.Payload,
-		ReceivedAt: src.ReceivedAt,
+		ID:           src.ID,
+		WalletID:     src.WalletID,
+		IntentID:     src.IntentID,
+		Provider:     src.Provider,
+		ExternalID:   externalID,
+		EventType:    src.EventType,
+		StatusDetail: src.StatusDetail,
+		Payload:      src.Payload,
+		ReceivedAt:   src.ReceivedAt,
 	}
 }

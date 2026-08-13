@@ -246,6 +246,26 @@ func (h *Hub) framesFor(status string, purchaseID, intentID uuid.UUID, hasIntent
 			StatusDetail: h.statusDetail(intentID, hasIntent),
 		}))
 		return frames
+	case models.PurchaseStatusFailed:
+		frames := make([]outbound, 0, 2)
+		if hasIntent && statusChanged {
+			frames = append(frames, h.intentFrame(intentUpdatedPayload{purchaseID, intentID, intentFailed}))
+		}
+		frames = append(frames, h.terminalFrame(frameFailed, purchaseEventPayload{
+			PurchaseID:   purchaseID,
+			StatusDetail: h.statusDetail(intentID, hasIntent),
+		}))
+		return frames
+	case models.PurchaseStatusRejected:
+		frames := make([]outbound, 0, 2)
+		if hasIntent && statusChanged {
+			frames = append(frames, h.intentFrame(intentUpdatedPayload{purchaseID, intentID, intentRejected}))
+		}
+		frames = append(frames, h.terminalFrame(frameRejected, purchaseEventPayload{
+			PurchaseID:   purchaseID,
+			StatusDetail: h.statusDetail(intentID, hasIntent),
+		}))
+		return frames
 	case models.PurchaseStatusExpired:
 		return []outbound{h.terminalFrame(frameExpired, purchaseEventPayload{PurchaseID: purchaseID})}
 	default:

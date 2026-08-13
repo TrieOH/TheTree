@@ -12,12 +12,13 @@ func (r *Repo) Create(ctx context.Context, toCreate models.WebhookEvent) (*model
 	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 	row, err := database.Queries(ctx, r.q).CreateWebhookEvent(ctx, sqlc.CreateWebhookEventParams{
-		WalletID:   toCreate.WalletID,
-		IntentID:   toCreate.IntentID,
-		Provider:   toCreate.Provider,
-		ExternalID: &toCreate.ExternalID,
-		EventType:  toCreate.EventType,
-		Payload:    toCreate.Payload,
+		WalletID:     toCreate.WalletID,
+		IntentID:     toCreate.IntentID,
+		Provider:     toCreate.Provider,
+		ExternalID:   &toCreate.ExternalID,
+		EventType:    toCreate.EventType,
+		StatusDetail: toCreate.StatusDetail,
+		Payload:      toCreate.Payload,
 	})
 	if err != nil {
 		return nil, r.dbe(err)

@@ -13,6 +13,8 @@ const (
 	PurchaseStatusApproved  PurchaseStatus = "approved"
 	PurchaseStatusExpired   PurchaseStatus = "expired"
 	PurchaseStatusCancelled PurchaseStatus = "cancelled"
+	PurchaseStatusFailed    PurchaseStatus = "failed"
+	PurchaseStatusRejected  PurchaseStatus = "rejected"
 )
 
 type PurchaseItemType string

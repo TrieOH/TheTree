@@ -18,14 +18,15 @@ type WebhookEndpoint struct {
 }
 
 type WebhookEvent struct {
-	ID         uuid.UUID       `json:"id"`
-	WalletID   uuid.UUID       `json:"wallet_id"`
-	IntentID   uuid.UUID       `json:"intent_id"`
-	Provider   string          `json:"provider"`
-	ExternalID string          `json:"external_id"`
-	EventType  string          `json:"event_type"`
-	Payload    json.RawMessage `json:"payload"`
-	ReceivedAt time.Time       `json:"received_at"`
+	ID           uuid.UUID       `json:"id"`
+	WalletID     uuid.UUID       `json:"wallet_id"`
+	IntentID     uuid.UUID       `json:"intent_id"`
+	Provider     string          `json:"provider"`
+	ExternalID   string          `json:"external_id"`
+	EventType    string          `json:"event_type"`
+	StatusDetail *string         `json:"status_detail"`
+	Payload      json.RawMessage `json:"payload"`
+	ReceivedAt   time.Time       `json:"received_at"`
 }
 
 type WebhookDeliveryStatus string
@@ -50,10 +51,11 @@ type WebhookDelivery struct {
 }
 
 type WebhookParseResult struct {
-	WalletID   uuid.UUID
-	IntentID   uuid.UUID
-	EventType  string // normalized, e.g. "payment.succeeded" — not the provider's raw type string
-	ExternalID string // provider's own event/resource id, used for the webhook_events.sql dedupe index
+	WalletID     uuid.UUID
+	IntentID     uuid.UUID
+	EventType    string  // normalized, e.g. "payment.succeeded" — not the provider's raw type string
+	ExternalID   string  // provider's own event/resource id, used for the webhook_events.sql dedupe index
+	StatusDetail *string // normalized outcome detail (models.IntentStatusDetail), e.g. "high_risk"
 }
 
 type ReceiveWebhookInput struct {

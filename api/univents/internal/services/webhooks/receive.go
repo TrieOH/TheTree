@@ -51,8 +51,12 @@ func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 	switch input.EventType {
 	case eventSucceeded, eventApproved:
 		return o.approve(ctx, purchase)
-	case eventFailed, eventRejected, eventCancelled:
-		return o.cancel(ctx, purchase)
+	case eventFailed:
+		return o.cancel(ctx, purchase, models.PurchaseStatusFailed, input.StatusReason)
+	case eventRejected:
+		return o.cancel(ctx, purchase, models.PurchaseStatusRejected, input.StatusReason)
+	case eventCancelled:
+		return o.cancel(ctx, purchase, models.PurchaseStatusCancelled, input.StatusReason)
 	case eventPending:
 		// Non-terminal: pix's first delivery races the checkout commit (D3)
 		// — by the time it resolves the purchase is pending and nothing

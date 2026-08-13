@@ -530,4 +530,18 @@ func TestFramesForDedupesSameStatus(t *testing.T) {
 	if len(expired) != 1 || expired[0].Type != "purchase.expired" {
 		t.Fatalf("expired frames = %+v, want [purchase.expired]", expired)
 	}
+
+	// Failed/rejected are their own terminal frames, with intent.updated.
+	for status, frame := range map[models.PurchaseStatus]string{
+		models.PurchaseStatusFailed:   "purchase.failed",
+		models.PurchaseStatusRejected: "purchase.rejected",
+	} {
+		frames := ops.FramesForForTest(string(status), p.ID, intentID, true, true)
+		if len(frames) != 2 || frames[0].Type != "intent.updated" || frames[1].Type != frame {
+			t.Fatalf("%s frames = %+v, want [intent.updated, %s]", status, frames, frame)
+		}
+		if !frames[1].Terminal {
+			t.Fatalf("%s terminal frame must be terminal", frame)
+		}
+	}
 }

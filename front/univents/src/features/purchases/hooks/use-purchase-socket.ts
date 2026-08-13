@@ -38,6 +38,8 @@ export function usePurchaseSocket(purchaseId: string, pending: boolean) {
               frame.type === "purchase.confirmed" ||
               frame.type === "purchase.expired" ||
               frame.type === "purchase.cancelled" ||
+              frame.type === "purchase.failed" ||
+              frame.type === "purchase.rejected" ||
               (frame.type === "purchase.snapshot" &&
                 frame.payload?.status !== "pending");
           } catch {

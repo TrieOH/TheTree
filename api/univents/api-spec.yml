@@ -3315,6 +3315,7 @@ paths:
           "intent_id": "...", "wallet_id": "...", "provider": "mercadopago",
           "external_id": "<provider_payment_id>",
           "event_type": "payment.succeeded",
+          "status_detail": "high_risk",
           "payload": { "...": "raw provider payload" }
         }
         ```
@@ -3848,6 +3849,14 @@ components:
           x-oapi-codegen-extra-tags:
             validate: "required"
           type: string
+        status_detail:
+          type: string
+          nullable: true
+          description: |
+            Normalized failure/outcome detail from the payssage intent
+            (models.IntentStatusDetail, e.g. `high_risk`, `insufficient_funds`),
+            present when the payment failed/rejected. Persisted as the
+            purchase's `status_reason`.
         payload:
           type: object
           x-oapi-codegen-extra-tags:
@@ -3856,8 +3865,8 @@ components:
 
     PurchaseStatus:
       type: string
-      description: Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment cancels.
-      enum: [pending, approved, expired, cancelled]
+      description: Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment lands in `failed`/`rejected` — distinct from `cancelled`, which is reserved for the customer (or the seller) cancelling an order.
+      enum: [pending, approved, expired, cancelled, failed, rejected]
 
     PurchaseItemType:
       type: string

@@ -52,6 +52,11 @@ func TestBuildEnvelope(t *testing.T) {
 		t.Errorf("event_type = %v, want payment.succeeded", decoded["event_type"])
 	}
 
+	// status_detail is omitted when the event has no outcome detail.
+	if _, ok := decoded["status_detail"]; ok {
+		t.Errorf("status_detail present for success event, want omitted")
+	}
+
 	// payload must be embedded as an object, not a string (D2 envelope).
 	payload, ok := decoded["payload"].(map[string]any)
 	if !ok {
@@ -68,18 +73,28 @@ func TestBuildEnvelope(t *testing.T) {
 // get POSTed.
 func TestEnvelopeSignatureCoversEnvelopeBytes(t *testing.T) {
 	secret := "test-secret"
+	statusDetail := "high_risk"
 	event := &models.WebhookEvent{
-		IntentID:   uuid.New(),
-		WalletID:   uuid.New(),
-		Provider:   "mercado_pago",
-		ExternalID: "42",
-		EventType:  "payment.rejected",
-		Payload:    json.RawMessage(`{"id":42}`),
+		IntentID:     uuid.New(),
+		WalletID:     uuid.New(),
+		Provider:     "mercado_pago",
+		ExternalID:   "42",
+		EventType:    "payment.rejected",
+		StatusDetail: &statusDetail,
+		Payload:      json.RawMessage(`{"id":42}`),
 	}
 
 	envelope, err := buildEnvelope(event)
 	if err != nil {
 		t.Fatalf("buildEnvelope: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(envelope, &decoded); err != nil {
+		t.Fatalf("envelope not valid json: %v", err)
+	}
+	if decoded["status_detail"] != "high_risk" {
+		t.Errorf("status_detail = %v, want high_risk", decoded["status_detail"])
 	}
 
 	got := signPayload(secret, envelope)

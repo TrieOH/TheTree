@@ -1,6 +1,6 @@
 -- name: CreateWebhookEvent :one
-INSERT INTO webhook_events (wallet_id, intent_id, provider, external_id, event_type, payload)
-VALUES (@wallet_id, @intent_id, @provider, @external_id, @event_type, @payload)
+INSERT INTO webhook_events (wallet_id, intent_id, provider, external_id, event_type, status_detail, payload)
+VALUES (@wallet_id, @intent_id, @provider, @external_id, @event_type, @status_detail, @payload)
     RETURNING *;
 
 -- name: GetWebhookEventByID :one

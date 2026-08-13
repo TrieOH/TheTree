@@ -62,26 +62,30 @@ func NewDeliverWebhookWorker(
 // webhookEnvelope is the delivery body sent to tenant endpoints (D2): the
 // correlation key is the Payssage intent id — never a provider-specific id.
 // `payload` carries the raw provider event payload. The signature covers the
-// envelope bytes, not the inner payload.
+// envelope bytes, not the inner payload. `status_detail` is the normalized
+// outcome detail (models.IntentStatusDetail, e.g. "high_risk") when the
+// event failed/rejected — omitted otherwise.
 type webhookEnvelope struct {
-	IntentID   uuid.UUID       `json:"intent_id"`
-	WalletID   uuid.UUID       `json:"wallet_id"`
-	Provider   string          `json:"provider"`
-	ExternalID string          `json:"external_id"`
-	EventType  string          `json:"event_type"`
-	Payload    json.RawMessage `json:"payload"`
+	IntentID     uuid.UUID       `json:"intent_id"`
+	WalletID     uuid.UUID       `json:"wallet_id"`
+	Provider     string          `json:"provider"`
+	ExternalID   string          `json:"external_id"`
+	EventType    string          `json:"event_type"`
+	StatusDetail *string         `json:"status_detail,omitempty"`
+	Payload      json.RawMessage `json:"payload"`
 }
 
 // buildEnvelope wraps a webhook event's raw provider payload in the tenant
 // delivery envelope. The envelope is what gets signed and POSTed.
 func buildEnvelope(event *models.WebhookEvent) ([]byte, error) {
 	return json.Marshal(webhookEnvelope{
-		IntentID:   event.IntentID,
-		WalletID:   event.WalletID,
-		Provider:   event.Provider,
-		ExternalID: event.ExternalID,
-		EventType:  event.EventType,
-		Payload:    event.Payload,
+		IntentID:     event.IntentID,
+		WalletID:     event.WalletID,
+		Provider:     event.Provider,
+		ExternalID:   event.ExternalID,
+		EventType:    event.EventType,
+		StatusDetail: event.StatusDetail,
+		Payload:      event.Payload,
 	})
 }
 

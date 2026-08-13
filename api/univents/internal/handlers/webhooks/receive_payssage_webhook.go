@@ -22,10 +22,11 @@ func (h *Handlers) ReceivePayssageWebhook(ctx context.Context, req openapi.Recei
 		return nil, fun.ErrBadRequest("invalid request")
 	}
 	err := h.ops.Receive(ctx, wh.ReceiveInput{
-		IntentID:  req.Body.IntentId,
-		EventType: req.Body.EventType,
-		RawBody:   raw.Body,
-		Signature: raw.Req.Header.Get("X-Payssage-Signature"),
+		IntentID:     req.Body.IntentId,
+		EventType:    req.Body.EventType,
+		RawBody:      raw.Body,
+		Signature:    raw.Req.Header.Get("X-Payssage-Signature"),
+		StatusReason: req.Body.StatusDetail,
 	})
 	if err != nil {
 		return nil, err

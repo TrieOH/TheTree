@@ -93,9 +93,10 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	}
 
 	return &models.WebhookParseResult{
-		WalletID:   updatedIntent.WalletID,
-		IntentID:   updatedIntent.ID,
-		ExternalID: envelope.Data.ID,
-		EventType:  "payment." + string(updatedIntent.Status),
+		WalletID:     updatedIntent.WalletID,
+		IntentID:     updatedIntent.ID,
+		ExternalID:   envelope.Data.ID,
+		EventType:    "payment." + string(updatedIntent.Status),
+		StatusDetail: (*string)(updatedIntent.StatusDetail),
 	}, nil
 }

@@ -18,6 +18,8 @@ const (
 	frameConfirmed = "purchase.confirmed"
 	frameExpired   = "purchase.expired"
 	frameCancelled = "purchase.cancelled"
+	frameFailed    = "purchase.failed"
+	frameRejected  = "purchase.rejected"
 )
 
 // intent statuses the hub emits in intent.updated. Mirrors the payssage
@@ -26,6 +28,8 @@ const (
 const (
 	intentSucceeded = "succeeded"
 	intentCancelled = "cancelled"
+	intentFailed    = "failed"
+	intentRejected  = "rejected"
 )
 
 // frame is the wire envelope. Payload is pre-marshaled so the frame builder

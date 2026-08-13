@@ -44,13 +44,14 @@ func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookI
 		return err
 	}
 	event := models.WebhookEvent{
-		ID:         uuid.Must(uuid.NewV7()),
-		WalletID:   result.WalletID,
-		IntentID:   result.IntentID,
-		Provider:   payload.Provider,
-		ExternalID: result.ExternalID,
-		EventType:  result.EventType,
-		Payload:    payload.RawBody,
+		ID:           uuid.Must(uuid.NewV7()),
+		WalletID:     result.WalletID,
+		IntentID:     result.IntentID,
+		Provider:     payload.Provider,
+		ExternalID:   result.ExternalID,
+		EventType:    result.EventType,
+		StatusDetail: result.StatusDetail,
+		Payload:      payload.RawBody,
 	}
 
 	created, err := o.events.Create(ctx, event)

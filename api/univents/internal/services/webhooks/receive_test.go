@@ -49,6 +49,12 @@ func input(intentID uuid.UUID, eventType string, body []byte) webhooks.ReceiveIn
 	}
 }
 
+func inputWithReason(intentID uuid.UUID, eventType, reason string, body []byte) webhooks.ReceiveInput {
+	in := input(intentID, eventType, body)
+	in.StatusReason = &reason
+	return in
+}
+
 // noopTxRunner runs fn directly — the repo fakes ignore the tx context, so
 // the tx is simulated. The DB-backed test exercises the real pgx runner.
 type noopTxRunner struct{}
@@ -400,13 +406,14 @@ func TestReceive_FailureCancelsPendingPurchase(t *testing.T) {
 		productItem(purchaseID, ppID),
 		{ID: uuid.New(), PurchaseID: purchaseID, ItemType: models.PurchaseItemTypeProgramOccurrence, ItemID: uuid.New(), Quantity: 1, ParticipationID: &partID},
 	}
-	cancelled := *p
-	cancelled.Status = models.PurchaseStatusCancelled
+	rejected := *p
+	rejected.Status = models.PurchaseStatusRejected
+	reason := "high_risk"
 
 	mock.When(h.purchases.GetByIntentID(mock.AnyContext(), mock.Equal(intentID))).ThenReturn(p, nil)
 	mock.When(h.purchases.ListItemsByPurchase(mock.AnyContext(), mock.Equal(purchaseID))).ThenReturn(items, nil)
-	mock.When(h.purchases.UpdateStatusIf(mock.AnyContext(), mock.Equal(purchaseID), mock.Equal(models.PurchaseStatusPending), mock.Equal(models.PurchaseStatusCancelled), mock.Any[*string]())).
-		ThenReturn(&cancelled, nil)
+	mock.When(h.purchases.UpdateStatusIf(mock.AnyContext(), mock.Equal(purchaseID), mock.Equal(models.PurchaseStatusPending), mock.Equal(models.PurchaseStatusRejected), mock.Equal(&reason))).
+		ThenReturn(&rejected, nil)
 	mock.When(h.registrations.UpdateStatus(mock.AnyContext(), mock.Equal(regID), mock.Equal(models.RegistrationStatusCancelled), mock.Any[*string]())).
 		ThenReturn(&models.Registration{ID: regID, Status: models.RegistrationStatusCancelled}, nil)
 	mock.When(h.productPurchases.UpdateProductPurchaseStatus(mock.AnyContext(), mock.Equal(ppID), mock.Equal(models.ProductPurchaseStatusCancelled), mock.Any[*string]())).
@@ -414,7 +421,7 @@ func TestReceive_FailureCancelsPendingPurchase(t *testing.T) {
 	mock.When(h.participations.UpdateParticipationStatus(mock.AnyContext(), mock.Equal(partID), mock.Equal(models.ProgramParticipationStatusCancelled))).
 		ThenReturn(&models.ProgramParticipation{ID: partID, Status: models.ProgramParticipationStatusCancelled}, nil)
 
-	err := h.ops.Receive(context.Background(), input(intentID, "payment.rejected", []byte(`{}`)))
+	err := h.ops.Receive(context.Background(), inputWithReason(intentID, "payment.rejected", reason, []byte(`{}`)))
 	if err != nil {
 		t.Fatalf("Receive: %v", err)
 	}
@@ -423,6 +430,38 @@ func TestReceive_FailureCancelsPendingPurchase(t *testing.T) {
 	_, _ = mock.Verify(h.participations, mock.Once()).UpdateParticipationStatus(mock.AnyContext(), mock.Equal(partID), mock.Equal(models.ProgramParticipationStatusCancelled))
 	// No badge emit on failure.
 	_, _ = mock.Verify(h.badges, mock.Never()).EmitForConfirmedRegistration(mock.AnyContext(), mock.Any[uuid.UUID]())
+}
+
+func TestReceive_FailedDeliveryLandsFailedWithReason(t *testing.T) {
+	h := newHarness(t)
+	intentID := uuid.New()
+	purchaseID := uuid.New()
+	p := purchase(purchaseID, intentID, models.PurchaseStatusPending)
+	failed := *p
+	failed.Status = models.PurchaseStatusFailed
+	reason := "invalid_card"
+
+	mock.When(h.purchases.GetByIntentID(mock.AnyContext(), mock.Equal(intentID))).ThenReturn(p, nil)
+	mock.When(h.purchases.ListItemsByPurchase(mock.AnyContext(), mock.Equal(purchaseID))).ThenReturn(nil, nil)
+	mock.When(h.purchases.UpdateStatusIf(mock.AnyContext(), mock.Equal(purchaseID), mock.Equal(models.PurchaseStatusPending), mock.Equal(models.PurchaseStatusFailed), mock.Equal(&reason))).
+		ThenReturn(&failed, nil)
+
+	err := h.ops.Receive(context.Background(), inputWithReason(intentID, "payment.failed", reason, []byte(`{}`)))
+	if err != nil {
+		t.Fatalf("Receive: %v", err)
+	}
+	_, _ = mock.Verify(h.purchases, mock.Once()).UpdateStatusIf(mock.AnyContext(), mock.Equal(purchaseID), mock.Equal(models.PurchaseStatusPending), mock.Equal(models.PurchaseStatusFailed), mock.Equal(&reason))
+	// Notified with the failed purchase event, stock freed.
+	statuses := map[string]bool{}
+	for _, n := range h.notifier.decoded() {
+		statuses[n.Kind] = true
+		if n.Kind == "purchase" && n.Status != "failed" {
+			t.Fatalf("purchase notify status = %s, want failed", n.Status)
+		}
+	}
+	if !statuses["stock"] || !statuses["purchase"] {
+		t.Fatalf("want stock + purchase notifications, got %v", h.notifier.decoded())
+	}
 }
 
 func TestReceive_FailureForNonPendingPurchaseIgnored(t *testing.T) {
