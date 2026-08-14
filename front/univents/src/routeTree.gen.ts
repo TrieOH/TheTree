@@ -35,6 +35,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth_/reset-pass
 import { Route as AuthResetRouteImport } from './routes/auth_/reset'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth_/forgot-password'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
+import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
@@ -196,6 +197,11 @@ const AdminUploadsRoute = AdminUploadsRouteImport.update({
   id: '/uploads',
   path: '/uploads',
   getParentRoute: () => AdminRoute,
+} as any)
+const ProfileActorIdIndexRoute = ProfileActorIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileActorIdRoute,
 } as any)
 const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   id: '/events/$slug/',
@@ -448,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/profile/$actorId/': typeof ProfileActorIdIndexRoute
   '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
@@ -487,7 +494,6 @@ export interface FileRoutesByTo {
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
-  '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
@@ -503,6 +509,7 @@ export interface FileRoutesByTo {
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
+  '/profile/$actorId': typeof ProfileActorIdIndexRoute
   '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
@@ -559,6 +566,7 @@ export interface FileRoutesById {
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/profile/$actorId/': typeof ProfileActorIdIndexRoute
   '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
@@ -617,6 +625,7 @@ export interface FileRouteTypes {
     | '/events/$slug/tickets'
     | '/admin/events/'
     | '/events/$slug/'
+    | '/profile/$actorId/'
     | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
@@ -656,7 +665,6 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/auth/verify-email'
     | '/checkouts/$purchaseId'
-    | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
     | '/profile/purchases'
@@ -672,6 +680,7 @@ export interface FileRouteTypes {
     | '/events/$slug/tickets'
     | '/admin/events'
     | '/events/$slug'
+    | '/profile/$actorId'
     | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions'
     | '/admin/events/$eventId'
@@ -727,6 +736,7 @@ export interface FileRouteTypes {
     | '/events/$slug/tickets'
     | '/admin/events/'
     | '/events/$slug/'
+    | '/profile/$actorId/'
     | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
@@ -951,6 +961,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/uploads'
       preLoaderRoute: typeof AdminUploadsRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/profile/$actorId/': {
+      id: '/profile/$actorId/'
+      path: '/'
+      fullPath: '/profile/$actorId/'
+      preLoaderRoute: typeof ProfileActorIdIndexRouteImport
+      parentRoute: typeof ProfileActorIdRoute
     }
     '/events/$slug/': {
       id: '/events/$slug/'
@@ -1244,10 +1261,12 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface ProfileActorIdRouteChildren {
+  ProfileActorIdIndexRoute: typeof ProfileActorIdIndexRoute
   ProfileActorIdBadgesBadgeIdRoute: typeof ProfileActorIdBadgesBadgeIdRoute
 }
 
 const ProfileActorIdRouteChildren: ProfileActorIdRouteChildren = {
+  ProfileActorIdIndexRoute: ProfileActorIdIndexRoute,
   ProfileActorIdBadgesBadgeIdRoute: ProfileActorIdBadgesBadgeIdRoute,
 }
 
