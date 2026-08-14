@@ -1,4 +1,5 @@
 import type { Purchase } from "@trieoh/univents-api/schemas";
+import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 
 const statusLabel = {
@@ -111,9 +112,27 @@ export function PurchaseSummary({ purchase }: { purchase: Purchase }) {
             <p className="mb-1 text-xs text-muted-foreground">
               Código Pix copia e cola
             </p>
-            <code className="block truncate rounded-md border border-border bg-muted/40 px-3 py-2 text-left text-xs">
-              {purchase.qr_code}
-            </code>
+            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+              <code className="min-w-0 flex-1 truncate text-left text-xs">
+                {purchase.qr_code}
+              </code>
+              <button
+                type="button"
+                className="shrink-0 text-xs font-medium text-primary hover:underline"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void navigator.clipboard
+                    .writeText(purchase.qr_code ?? "")
+                    .then(() => toast.success("Código Pix copiado!"))
+                    .catch(() =>
+                      toast.error("Não foi possível copiar o código"),
+                    );
+                }}
+              >
+                Copiar
+              </button>
+            </div>
           </div>
         </section>
       )}
