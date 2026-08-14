@@ -15,6 +15,7 @@ import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderS
 import { useCart } from "@/features/products/hooks/use-cart";
 import { useCreateCheckoutMutation } from "@/features/purchases/api";
 import { getErrorMessage } from "@/shared/lib/errors";
+import { Button } from "@/shared/ui/shadcn/button";
 
 export const Route = createFileRoute("/events/$slug/checkout")({
   beforeLoad: requireAuth,
@@ -48,7 +49,7 @@ function CheckoutPage() {
   );
   const checkout = useCreateCheckoutMutation();
 
-  const submitPayment = async (payment: {
+  const submitPayment = async (payment?: {
     card_token?: string;
     payment_method_id: string;
     payment_method_type: string;
@@ -93,18 +94,18 @@ function CheckoutPage() {
 
     const data: CreateCheckoutRequest = {
       payment_method:
-        payment.payment_method_id === "pix" ? "pix" : "credit_card",
-      card_token: payment.card_token,
+        !payment || payment.payment_method_id === "pix" ? "pix" : "credit_card",
+      card_token: payment?.card_token,
       payment_method_id:
-        payment.payment_method_id === "pix"
+        !payment || payment.payment_method_id === "pix"
           ? undefined
           : payment.payment_method_id,
-      issuer_id: payment.issuer_id,
-      installments: payment.installments,
+      issuer_id: payment?.issuer_id,
+      installments: payment?.installments,
       payer: {
-        email: payment.payer_email,
-        identification_type: payment.identification_type,
-        identification_number: payment.identification_number,
+        email: payment?.payer_email ?? profile.email,
+        identification_type: payment?.identification_type ?? "",
+        identification_number: payment?.identification_number ?? "",
       },
       items: checkoutItems,
     };
@@ -160,7 +161,9 @@ function CheckoutPage() {
           <span className="flex size-6 items-center justify-center rounded-full border border-primary">
             2
           </span>
-          <span className="text-muted-foreground">Pagamento</span>
+          <span className="text-muted-foreground">
+            {totalCents === 0 ? "Confirmação" : "Pagamento"}
+          </span>
         </div>
         <h1 className="text-3xl font-bold tracking-tight">Finalizar compra</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -178,7 +181,19 @@ function CheckoutPage() {
         </section>
 
         <section className="flex flex-col rounded-xl border border-primary/20 bg-primary/3 p-6">
-          {event.payssage_public_key ? (
+          {totalCents === 0 ? (
+            <div className="flex flex-1 flex-col justify-center gap-3">
+              <p className="text-sm text-muted-foreground">
+                Este pedido é gratuito.
+              </p>
+              <Button
+                disabled={checkout.isPending}
+                onClick={() => void submitPayment()}
+              >
+                {checkout.isPending ? "Finalizando…" : "Finalizar compra"}
+              </Button>
+            </div>
+          ) : event.payssage_public_key ? (
             <PaymentProviderSelector
               amount={totalCents}
               sellerPublicKey={event.payssage_public_key}
