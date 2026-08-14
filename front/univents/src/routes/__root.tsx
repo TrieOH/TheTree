@@ -12,6 +12,7 @@ import { AuthProvider } from "@trieoh/identityx-sdk-ts/react";
 import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { ThemeProvider } from "next-themes";
 import { env } from "@/env";
+import { requireConfiguredProfile } from "@/features/auths/lib/route-guard";
 import { UploadQueueProvider } from "@/features/upload-queue/ui/upload-queue-provider";
 import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
@@ -29,6 +30,7 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: requireConfiguredProfile,
   head: () => ({
     meta: [
       { charSet: "utf-8" },

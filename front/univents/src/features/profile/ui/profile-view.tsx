@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
@@ -49,7 +48,6 @@ export function ProfileView({
   ownProfile = false,
   viewerActorId,
 }: ProfileViewProps) {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"about" | "badges">("about");
   const profileQuery = useQuery({
     queryKey: profileKeys.detail(actorId ?? ""),
@@ -72,18 +70,6 @@ export function ProfileView({
   const error = actorId
     ? profileQuery.error?.message
     : "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
-
-  useEffect(() => {
-    if (!error || !ownProfile) return;
-    toast.info("Seu perfil ainda não foi criado", {
-      id: "profile-not-created",
-      description: "Você pode criar seu perfil agora.",
-      action: {
-        label: "Editar perfil",
-        onClick: () => void navigate({ to: "/profile/edit" }),
-      },
-    });
-  }, [error, navigate, ownProfile]);
 
   if (profileQuery.isLoading) return <ProfileSkeleton />;
   if (error && !ownProfile) return <MissingPublicProfile />;
@@ -120,12 +106,13 @@ export function ProfileView({
 
       {activeTab === "badges" ? (
         <div className="mx-auto mt-5 max-w-7xl px-4">
-            <ProfileBadges
+          <ProfileBadges
             badges={
               badges?.attendant.current.concat(badges.staff.current) ?? []
             }
-              profileUrl={profileUrl}
-              profileIdentifier={publicIdentifier ?? ""}
+            profileUrl={profileUrl}
+            profileIdentifier={publicIdentifier ?? ""}
+            participantName={profile.legalName || profile.preferredName || ""}
           />
         </div>
       ) : (
@@ -232,10 +219,12 @@ function ProfileBadges({
   badges,
   profileUrl,
   profileIdentifier,
+  participantName,
 }: {
   badges: BadgeProfileBadge[];
   profileUrl: string;
   profileIdentifier: string;
+  participantName: string;
 }) {
   if (badges.length === 0) return null;
   return (
@@ -248,7 +237,12 @@ function ProfileBadges({
           className="flex items-start"
           aria-label={`Abrir badge ${badge.template_name ?? badge.edition_name}`}
         >
-          <BadgePreview badge={badge} framed={false} actionUrl={profileUrl} />
+          <BadgePreview
+            badge={badge}
+            framed={false}
+            actionUrl={profileUrl}
+            participantName={participantName}
+          />
         </Link>
       ))}
     </div>

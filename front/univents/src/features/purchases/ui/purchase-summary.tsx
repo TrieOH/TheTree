@@ -6,6 +6,8 @@ const statusLabel = {
   approved: "Aprovada",
   expired: "Expirada",
   cancelled: "Cancelada",
+  failed: "Falhou",
+  rejected: "Rejeitada",
 } satisfies Record<Purchase["status"], string>;
 
 const itemTypeLabel = {
@@ -48,7 +50,9 @@ export function PurchaseSummary({ purchase }: { purchase: Purchase }) {
             purchase.status === "pending" &&
               "bg-amber-500/10 text-amber-700 dark:text-amber-400",
             (purchase.status === "expired" ||
-              purchase.status === "cancelled") &&
+              purchase.status === "cancelled" ||
+              purchase.status === "failed" ||
+              purchase.status === "rejected") &&
               "bg-muted text-muted-foreground",
           )}
         >
