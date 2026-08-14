@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
@@ -120,11 +120,12 @@ export function ProfileView({
 
       {activeTab === "badges" ? (
         <div className="mx-auto mt-5 max-w-7xl px-4">
-          <ProfileBadges
+            <ProfileBadges
             badges={
               badges?.attendant.current.concat(badges.staff.current) ?? []
             }
-            profileUrl={profileUrl}
+              profileUrl={profileUrl}
+              profileIdentifier={publicIdentifier ?? ""}
           />
         </div>
       ) : (
@@ -230,17 +231,25 @@ export function ProfileView({
 function ProfileBadges({
   badges,
   profileUrl,
+  profileIdentifier,
 }: {
   badges: BadgeProfileBadge[];
   profileUrl: string;
+  profileIdentifier: string;
 }) {
   if (badges.length === 0) return null;
   return (
     <div className="flex flex-wrap items-start justify-center gap-2 sm:justify-start!">
       {badges.map((badge) => (
-        <div key={badge.emission_id} className="flex items-start">
+        <Link
+          key={badge.emission_id}
+          to="/profile/$actorId/badges/$badgeId"
+          params={{ actorId: profileIdentifier, badgeId: badge.emission_id }}
+          className="flex items-start"
+          aria-label={`Abrir badge ${badge.template_name ?? badge.edition_name}`}
+        >
           <BadgePreview badge={badge} framed={false} actionUrl={profileUrl} />
-        </div>
+        </Link>
       ))}
     </div>
   );
