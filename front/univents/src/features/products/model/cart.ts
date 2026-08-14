@@ -14,10 +14,7 @@ export interface CartItem {
 }
 
 export const getProductMaxQuantity = (
-  product: Pick<
-    CartItem,
-    "type" | "has_inventory" | "inventory_remaining"
-  >,
+  product: Pick<CartItem, "type" | "has_inventory" | "inventory_remaining">,
 ) => {
   if (product.type === "ticket") return 1;
   return product.has_inventory
@@ -26,10 +23,7 @@ export const getProductMaxQuantity = (
 };
 
 export const getValidQuantity = (
-  product: Pick<
-    CartItem,
-    "type" | "has_inventory" | "inventory_remaining"
-  >,
+  product: Pick<CartItem, "type" | "has_inventory" | "inventory_remaining">,
   quantity: number,
 ) => {
   const max = getProductMaxQuantity(product);
@@ -37,10 +31,7 @@ export const getValidQuantity = (
 };
 
 export const isLimitReached = (
-  product: Pick<
-    CartItem,
-    "type" | "has_inventory" | "inventory_remaining"
-  >,
+  product: Pick<CartItem, "type" | "has_inventory" | "inventory_remaining">,
   currentQuantity: number,
 ) => {
   return currentQuantity >= getProductMaxQuantity(product);
