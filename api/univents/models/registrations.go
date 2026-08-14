@@ -33,3 +33,13 @@ type Registration struct {
 	UpdatedAt        *time.Time         `json:"updated_at"`
 	DeletedAt        *time.Time         `json:"deleted_at"`
 }
+
+// MyTicket is the caller's held ticket for an edition: their own
+// registration (pending or confirmed) plus its ticket type. Powers the
+// "what do I hold" read the front uses to show upgrade options on the more
+// expensive ticket types.
+type MyTicket struct {
+	RegistrationID uuid.UUID
+	TicketType     TicketType
+	Status         RegistrationStatus
+}

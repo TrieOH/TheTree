@@ -1,4 +1,5 @@
-import { Check, ShoppingCart, Star } from "lucide-react";
+import type { MyTicket } from "@trieoh/univents-api/schemas";
+import { ArrowUp, Check, ShoppingCart, Star, TicketCheck } from "lucide-react";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -17,9 +18,15 @@ interface TicketCardProps {
   ticket: TicketI;
   isFeatured?: boolean;
   editionId?: string;
+  heldTicket?: MyTicket | null;
 }
 
-export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
+export function TicketCard({
+  ticket,
+  isFeatured,
+  editionId,
+  heldTicket = null,
+}: TicketCardProps) {
   const { addItem, items } = useCart(editionId ?? "");
   const inCart = items.find(
     (item) => item.id === ticket.id && item.type === "ticket",
@@ -28,6 +35,27 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
     (item) => item.type === "ticket" && item.id !== ticket.id,
   );
   const isFree = ticket.price_cents === 0;
+
+  const isHeld = heldTicket?.ticket_type.id === ticket.id;
+  const hasHeldTicket = !!heldTicket;
+  const isUpgrade =
+    hasHeldTicket &&
+    !isHeld &&
+    ticket.price_cents > (heldTicket?.ticket_type.price_cents ?? 0);
+  // The upgrade action ships later — the affordance is a disabled
+  // placeholder today. While holding a ticket, no other ticket is
+  // addable (one ticket per person; only an upgrade is allowed later).
+  const buttonLabel = isHeld
+    ? "Ingresso atual"
+    : isUpgrade
+      ? "Upgrade em breve"
+      : hasHeldTicket
+        ? "Você já possui um ingresso"
+        : anotherTicketInCart
+          ? "Limite de 1 ingresso"
+          : inCart
+            ? "Adicionado"
+            : "Adicionar ao carrinho";
 
   return (
     <div
@@ -40,7 +68,17 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
     >
       {/* Badge */}
       <div className="absolute top-0 right-0">
-        {isFree ? (
+        {isHeld ? (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-bl-xl rounded-tr-2xl bg-amber-500 text-white text-[10px] font-bold tracking-wide uppercase">
+            <TicketCheck className="w-3 h-3" />
+            Seu ingresso
+          </span>
+        ) : isUpgrade ? (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-bl-xl rounded-tr-2xl bg-primary text-primary-foreground text-[10px] font-bold tracking-wide uppercase">
+            <ArrowUp className="w-3 h-3" />
+            Upgrade
+          </span>
+        ) : isFree ? (
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-bl-xl rounded-tr-2xl bg-emerald-500 text-white text-[10px] font-bold tracking-wide uppercase">
             <Check className="w-3 h-3" />
             Gratuito
@@ -72,6 +110,14 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
         >
           {formatPrice(ticket.price_cents)}
         </span>
+        {isUpgrade && heldTicket && (
+          <span className="ml-2 text-xs text-muted-foreground">
+            +
+            {formatPrice(
+              ticket.price_cents - heldTicket.ticket_type.price_cents,
+            )}
+          </span>
+        )}
       </div>
 
       {/* Description */}
@@ -84,7 +130,7 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
         <Button
           size="sm"
           variant={inCart ? "secondary" : "default"}
-          disabled={anotherTicketInCart}
+          disabled={anotherTicketInCart || isHeld || hasHeldTicket}
           className="mt-5 h-9 w-full gap-2 text-xs font-semibold shadow-sm"
           onClick={() =>
             addItem(
@@ -100,16 +146,16 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
             )
           }
         >
-          {inCart ? (
+          {isHeld ? (
+            <TicketCheck className="h-4 w-4" />
+          ) : isUpgrade ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : inCart ? (
             <Check className="h-4 w-4" />
           ) : (
             <ShoppingCart className="h-4 w-4" />
           )}
-          {anotherTicketInCart
-            ? "Limite de 1 ingresso"
-            : inCart
-              ? "Adicionado"
-              : "Adicionar ao carrinho"}
+          {buttonLabel}
         </Button>
       )}
     </div>

@@ -193,6 +193,7 @@ import type {
   InternalServerErrorResponse,
   InvalidCertReason,
   MyPurchases,
+  MyTicket,
   NotFoundResponse,
   PatchEditionRequest,
   PatchEventRequest,
@@ -2990,7 +2991,11 @@ export const getCreateEditionCheckoutUrl = (editionId: string,) => {
  * user_id/email/name; a gifted ticket sends the recipient's, resolved
  * by the front from their email via IdentityX. `attendee.user_id` is
  * trusted as-is. Buying N tickets for the same ticket type sends N
- * lines. Program lines require ≥1 ticket line in the same cart (a
+ * lines. One active ticket per person per edition is enforced — the
+ * same attendee cannot appear twice in the cart (400), and any
+ * attendee who already holds a pending/confirmed registration for the
+ * edition is rejected (409); cancelled/expired registrations free the
+ * slot. Program lines require ≥1 ticket line in the same cart (a
  * participation attaches to the ticket's registration); program
  * quantity is fixed at 1.
  *
@@ -9837,6 +9842,119 @@ export function useListMyPurchases<TData = Awaited<ReturnType<typeof listMyPurch
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListMyPurchasesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getEditionMyTicketResponse200 = {
+  data: MyTicket | null
+  status: 200
+}
+
+export type getEditionMyTicketResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getEditionMyTicketResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getEditionMyTicketResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getEditionMyTicketResponseSuccess = (getEditionMyTicketResponse200) & {
+  headers: Headers;
+};
+export type getEditionMyTicketResponseError = (getEditionMyTicketResponse401 | getEditionMyTicketResponse404 | getEditionMyTicketResponse500) & {
+  headers: Headers;
+};
+
+export type getEditionMyTicketResponse = (getEditionMyTicketResponseSuccess | getEditionMyTicketResponseError)
+
+export const getGetEditionMyTicketUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/my-ticket`
+}
+
+/**
+ * The authenticated user's active ticket for the edition — their own
+ * registration (`attendee_user_id` = caller) in `pending` (reserved,
+ * unpaid) or `confirmed` (paid) state — with its ticket type, so the
+ * front can show upgrade options on the more expensive ticket types.
+ * `data` is `null` when the caller holds no ticket (normal flow: they
+ * buy fresh). Read-only; never transitions state. The upgrade itself
+ * is a follow-up — this is only the "what do I hold" read.
+ * @summary The caller's current ticket for an edition
+ */
+export const getEditionMyTicket = async (editionId: string, options?: Parameters<typeof customInstance>[1]): Promise<getEditionMyTicketResponse> => {
+
+  return customInstance<getEditionMyTicketResponse>(getGetEditionMyTicketUrl(editionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEditionMyTicketQueryKey = (editionId: string,) => {
+    return [
+    `/editions/${editionId}/my-ticket`
+    ] as const;
+    }
+
+
+export const getGetEditionMyTicketQueryOptions = <TData = Awaited<ReturnType<typeof getEditionMyTicket>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEditionMyTicket>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEditionMyTicketQueryKey(editionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEditionMyTicket>>> = ({ signal }) => getEditionMyTicket(editionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEditionMyTicket>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEditionMyTicketQueryResult = NonNullable<Awaited<ReturnType<typeof getEditionMyTicket>>>
+export type GetEditionMyTicketQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary The caller's current ticket for an edition
+ */
+
+export function useGetEditionMyTicket<TData = Awaited<ReturnType<typeof getEditionMyTicket>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEditionMyTicket>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEditionMyTicketQueryOptions(editionId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

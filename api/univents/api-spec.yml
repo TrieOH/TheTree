@@ -1058,7 +1058,11 @@ paths:
         user_id/email/name; a gifted ticket sends the recipient's, resolved
         by the front from their email via IdentityX. `attendee.user_id` is
         trusted as-is. Buying N tickets for the same ticket type sends N
-        lines. Program lines require ≥1 ticket line in the same cart (a
+        lines. One active ticket per person per edition is enforced — the
+        same attendee cannot appear twice in the cart (400), and any
+        attendee who already holds a pending/confirmed registration for the
+        edition is rejected (409); cancelled/expired registrations free the
+        slot. Program lines require ≥1 ticket line in the same cart (a
         participation attaches to the ticket's registration); program
         quantity is fixed at 1.
 
@@ -3418,6 +3422,44 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /editions/{edition_id}/my-ticket:
+    get:
+      tags: [checkouts]
+      operationId: getEditionMyTicket
+      summary: The caller's current ticket for an edition
+      description: |
+        The authenticated user's active ticket for the edition — their own
+        registration (`attendee_user_id` = caller) in `pending` (reserved,
+        unpaid) or `confirmed` (paid) state — with its ticket type, so the
+        front can show upgrade options on the more expensive ticket types.
+        `data` is `null` when the caller holds no ticket (normal flow: they
+        buy fresh). Read-only; never transitions state. The upgrade itself
+        is a follow-up — this is only the "what do I hold" read.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: The caller's ticket, or null when they hold none
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/MyTicket'
+                        nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /ws/token:
     get:
       tags: [realtime]
@@ -4098,6 +4140,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Purchase'
+
+    MyTicket:
+      type: object
+      description: The caller's held ticket for an edition (their own registration).
+      required: [registration_id, ticket_type, status]
+      properties:
+        registration_id:
+          $ref: '#/components/schemas/UUID'
+        ticket_type:
+          $ref: '#/components/schemas/TicketType'
+        status:
+          type: string
+          enum: [pending, confirmed]
+          description: |
+            `pending` = reserved but unpaid; `confirmed` = paid (or a free
+            order). Cancelled/expired registrations are never returned —
+            those do not count as holding a ticket.
 
     EventMemberRole:
       x-go-type: models.EventMemberRole

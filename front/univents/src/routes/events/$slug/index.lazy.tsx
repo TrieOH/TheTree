@@ -1,5 +1,6 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
+import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { Calendar, MapPin, Share2, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import {
@@ -14,7 +15,10 @@ import { useInventoryStream } from "@/features/products/hooks/use-inventory-stre
 import { Cart } from "@/features/products/ui/Cart";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
 import { ProgramSection } from "@/features/programs/ui/ProgramSection";
-import { allTicketsQueryOptions } from "@/features/tickets/api";
+import {
+  allTicketsQueryOptions,
+  myTicketQueryOptions,
+} from "@/features/tickets/api";
 import { TicketsSection } from "@/features/tickets/ui/TicketsSection";
 import { formatDateRange } from "@/shared/lib/date";
 import { getInitials, handleShare } from "@/shared/lib/share";
@@ -27,6 +31,7 @@ export const Route = createLazyFileRoute("/events/$slug/")({
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const event = Route.useLoaderData();
+  const { isAuthenticated } = useAuth();
   const { data: activeEdition } = useSuspenseQuery(
     activeEditionQueryOptions(event.id),
   );
@@ -41,6 +46,13 @@ function RouteComponent() {
 
   const { data: tickets = [] } = useQuery(
     allTicketsQueryOptions(activeEdition?.id ?? ""),
+  );
+
+  // What the caller already holds (logged-in visitors only) — the front
+  // shows upgrade options on the more expensive ticket types. The upgrade
+  // action itself is a follow-up.
+  const { data: heldTicket = null } = useQuery(
+    myTicketQueryOptions(activeEdition?.id ?? "", isAuthenticated),
   );
 
   const initials = getInitials(event.full_name);
@@ -186,6 +198,7 @@ function RouteComponent() {
             tickets={tickets}
             eventSlug={event.slug}
             editionId={activeEdition?.id}
+            heldTicket={heldTicket}
           />
           <ProgramSection
             editionId={activeEdition?.id}

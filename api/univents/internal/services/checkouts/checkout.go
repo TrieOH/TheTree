@@ -209,6 +209,16 @@ func (o *Operations) reserve(ctx context.Context, editionID, purchaserID uuid.UU
 			return outOfStockError(unavailable)
 		}
 
+		// One active ticket per person per edition: reject the cart when any
+		// ticket line's attendee already holds a pending/confirmed
+		// registration here. The partial unique index
+		// (uniq_registrations_active_per_edition_attendee) is the backstop
+		// for concurrent checkouts on the same attendee.
+		err = o.checkOneTicketPerPerson(ctx, editionID, priced)
+		if err != nil {
+			return err
+		}
+
 		total := int64(0)
 		for _, pl := range priced {
 			total += int64(pl.Line.Quantity) * pl.UnitPrice
@@ -490,6 +500,49 @@ func (o *Operations) materialize(ctx context.Context, purchase *models.Purchase,
 	return items, nil
 }
 
+// activeRegistrationFor returns the attendee's active registration in the
+// edition, or nil when they hold none. The repo surfaces an absent row as
+// NOT_FOUND; here, "no ticket" is a normal state — the one-ticket check
+// and the my-ticket read both fall back to it.
+func (o *Operations) activeRegistrationFor(ctx context.Context, editionID, attendeeID uuid.UUID) (*models.Registration, error) {
+	reg, err := o.registrations.GetActiveByEditionAndAttendee(ctx, editionID, attendeeID)
+	if err != nil {
+		if fun.Is(err, fun.CodeNotFound) {
+			//nolint:nilnil // holds no ticket is a normal state, not an error
+			return nil, nil
+		}
+		return nil, err
+	}
+	return reg, nil
+}
+
+// checkOneTicketPerPerson enforces the one-ticket-per-person rule inside
+// the checkout tx: every ticket line's attendee must not already hold an
+// active (pending or confirmed) registration in the edition — for
+// themselves or as a gifted recipient. Cancelled/expired registrations
+// free the slot. The clean 409 comes from this pre-check; the partial
+// unique index (uniq_registrations_active_per_edition_attendee) is the
+// backstop that catches two concurrent checkouts racing on the same
+// attendee atomically.
+func (o *Operations) checkOneTicketPerPerson(ctx context.Context, editionID uuid.UUID, priced []pricedLine) error {
+	for _, pl := range priced {
+		if pl.Line.ItemType != models.PurchaseItemTypeTicket {
+			continue
+		}
+		existing, err := o.activeRegistrationFor(ctx, editionID, pl.Line.Attendee.UserID)
+		if err != nil {
+			return err
+		}
+		if existing != nil {
+			return fun.Err("this person already has a ticket for this edition").WithFields(&fun.FieldError{
+				Field:   "items[].ticket.attendee.user_id",
+				Message: pl.Line.Attendee.UserID.String(),
+			}).Conflict()
+		}
+	}
+	return nil
+}
+
 // insertExpiryJob enqueues the purchases.expire job inside the checkout tx
 // (river.InsertTx against the tx from context — the payssage
 // dispatchDeliveries pattern), so the job + purchase commit atomically.
@@ -636,6 +689,7 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 
 	seenProduct := make(map[uuid.UUID]bool, len(items))
 	seenProgram := make(map[uuid.UUID]bool, len(items))
+	seenAttendee := make(map[uuid.UUID]bool, len(items))
 	hasTicket := false
 
 	for i, line := range items {
@@ -657,6 +711,16 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 					Field: field + ".attendee", Message: "required",
 				}).BadRequest()
 			}
+			// One ticket per person per edition — two lines for the same
+			// attendee (e.g. two tickets for yourself) are rejected here;
+			// a ticket the attendee already holds is caught in the tx
+			// (checkOneTicketPerPerson).
+			if seenAttendee[line.Attendee.UserID] {
+				return nil, fun.Err("only one ticket per person").WithFields(&fun.FieldError{
+					Field: field + ".attendee.user_id", Message: "this person already has a ticket in the cart",
+				}).BadRequest()
+			}
+			seenAttendee[line.Attendee.UserID] = true
 			hasTicket = true
 		case models.PurchaseItemTypeProduct:
 			if seenProduct[line.ItemID] {

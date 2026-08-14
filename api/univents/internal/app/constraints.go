@@ -17,7 +17,8 @@ func SetupConstraintMessages() {
 		"excl_editions_no_overlap":               "This edition's dates overlap with another edition of the same event.",
 
 		// registrations
-		"chk_registrations_status_valid": "Registration status must be one of: pending, confirmed, cancelled, expired.",
+		"chk_registrations_status_valid":                 "Registration status must be one of: pending, confirmed, cancelled, expired.",
+		"uniq_registrations_active_per_edition_attendee": "This person already has a ticket for this edition.",
 
 		// products
 		"uniq_products_edition_vendor_code":         "A product with this vendor code already exists in this edition.",

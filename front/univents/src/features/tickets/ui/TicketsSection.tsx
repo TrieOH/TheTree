@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { MyTicket } from "@trieoh/univents-api/schemas";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import type { TicketI } from "../model";
@@ -8,12 +9,14 @@ interface TicketsSectionProps {
   tickets: TicketI[];
   eventSlug: string;
   editionId?: string;
+  heldTicket?: MyTicket | null;
 }
 
 export function TicketsSection({
   tickets,
   eventSlug,
   editionId,
+  heldTicket = null,
 }: TicketsSectionProps) {
   if (tickets.length === 0) return null;
 
@@ -46,6 +49,7 @@ export function TicketsSection({
                 ticket={ticket}
                 isFeatured={index === 1}
                 editionId={editionId}
+                heldTicket={heldTicket}
               />
             </div>
           ))}

@@ -6,6 +6,9 @@ export const ticketKeys = {
   listByEdition: (editionId: string) =>
     [...ticketKeys.lists(), editionId] as const,
 
+  myTicket: (editionId: string) =>
+    [...ticketKeys.all, "my-ticket", editionId] as const,
+
   detail: {
     byId: (id: string) => [...ticketKeys.all, "detail", "id", id] as const,
   },

@@ -3,11 +3,15 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
 import {
   createTicketType,
+  getEditionMyTicket,
   getTicketType,
   listTicketTypes,
   patchTicketType,
 } from "@trieoh/univents-api";
-import type { PatchTicketTypeRequest } from "@trieoh/univents-api/schemas";
+import type {
+  MyTicket,
+  PatchTicketTypeRequest,
+} from "@trieoh/univents-api/schemas";
 import type { TicketCreateOutputI, TicketI } from "../model";
 import { ticketKeys } from "./query-keys";
 
@@ -81,5 +85,31 @@ export const ticketByIdQueryOptions = (ticketId: string) => {
   return queryOptions({
     queryKey: ticketKeys.detail.byId(ticketId),
     queryFn: () => getTicketByIdFn(ticketId),
+  });
+};
+
+/**
+ * Fetches the authenticated user's held ticket for an edition. (Needs
+ * Auth) Returns `null` when the caller holds no ticket — the front falls
+ * back to the normal buy flow. Powers the upgrade options shown on the
+ * more expensive ticket types (the upgrade action itself is a follow-up).
+ */
+const getMyTicketFn = async (editionId: string) => {
+  const response = await getEditionMyTicket(editionId);
+  return (orvalData<MyTicket | null>(response) ?? null) as MyTicket | null;
+};
+
+/**
+ * Query options for the caller's held ticket for an edition, using
+ * TanStack Query. Disable when unauthenticated (a public visitor has no
+ * ticket to check).
+ * @param editionId - The edition id
+ * @param enabled - Whether the query may run (e.g. only when logged in)
+ */
+export const myTicketQueryOptions = (editionId: string, enabled = true) => {
+  return queryOptions({
+    queryKey: ticketKeys.myTicket(editionId),
+    queryFn: () => getMyTicketFn(editionId),
+    enabled: Boolean(editionId) && enabled,
   });
 };

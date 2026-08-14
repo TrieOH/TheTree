@@ -600,6 +600,103 @@ func TestCheckout_AttachFailureCancelsIntent(t *testing.T) {
 	}
 }
 
+// TestCheckout_TwoTicketsForSelf400 pins the one-ticket-per-person cart
+// rule: two ticket lines for the same attendee (e.g. two tickets for
+// yourself) are rejected with 400 before anything is reserved.
+func TestCheckout_TwoTicketsForSelf400(t *testing.T) {
+	r, ops, _, _ := newOps(t, nil)
+	fx := seedStore(t, r)
+	buyerID := uuid.New()
+
+	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID, pixInput(
+		ticketLine(fx.ticketID, selfAttendee(buyerID)),
+		ticketLine(fx.ticketID, selfAttendee(buyerID)),
+	))
+	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+		t.Fatalf("err = %v, want BAD_REQUEST (one ticket per person)", err)
+	}
+
+	// Nothing was reserved.
+	list, err := r.Purchases.ListByPurchaser(context.Background(), buyerID)
+	if err != nil || len(list) != 0 {
+		t.Fatalf("purchases for %s = %d (err %v), want 0", buyerID, len(list), err)
+	}
+}
+
+// TestCheckout_AlreadyHoldsTicket409 pins the one-ticket-per-person rule
+// across purchases: an attendee who already holds a confirmed registration
+// cannot be ticketed again — neither for themselves nor as a gifted
+// recipient.
+func TestCheckout_AlreadyHoldsTicket409(t *testing.T) {
+	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+		return pixIntent(), nil
+	})
+	fx := seedStore(t, r)
+	buyerID := uuid.New()
+
+	// Free order: approved + confirmed registration for the buyer.
+	freeTicket, err := r.TicketTypes.Create(context.Background(), &models.TicketType{
+		EditionID:   fx.editionID,
+		Name:        "Free",
+		AccessLevel: 0,
+		PriceCents:  0,
+		MaxQuantity: new(int(1)),
+	})
+	if err != nil {
+		t.Fatalf("seed free ticket: %v", err)
+	}
+	_, err = ops.Checkout(context.Background(), fx.editionID, buyerID,
+		pixInput(ticketLine(freeTicket.ID, selfAttendee(buyerID))))
+	if err != nil {
+		t.Fatalf("free checkout: %v", err)
+	}
+
+	// Buying a paid ticket for themselves → 409 (they already hold one).
+	_, err = ops.Checkout(context.Background(), fx.editionID, buyerID,
+		pixInput(ticketLine(fx.ticketID, selfAttendee(buyerID))))
+	if err == nil || !fun.Is(err, fun.CodeConflict) {
+		t.Fatalf("self re-buy: err = %v, want CONFLICT", err)
+	}
+
+	// Gifting a ticket to someone who already holds one → 409 too (one
+	// ticket per person, regardless of who pays).
+	gifterID := uuid.New()
+	_, err = ops.Checkout(context.Background(), fx.editionID, gifterID, pixInput(
+		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: buyerID, Email: "buyer@example.com", Name: "Jane Doe"}),
+	))
+	if err == nil || !fun.Is(err, fun.CodeConflict) {
+		t.Fatalf("gift to holder: err = %v, want CONFLICT", err)
+	}
+}
+
+// TestCheckout_PendingReservationBlocks409 pins that a pending (unpaid)
+// reservation also holds the slot: another purchaser gifting a ticket to an
+// attendee whose registration is still pending gets 409 until it expires or
+// cancels.
+func TestCheckout_PendingReservationBlocks409(t *testing.T) {
+	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+		return pixIntent(), nil
+	})
+	fx := seedStore(t, r)
+	holderID := uuid.New()
+
+	// The holder reserves a paid ticket (pending registration).
+	_, err := ops.Checkout(context.Background(), fx.editionID, holderID,
+		pixInput(ticketLine(fx.ticketID, selfAttendee(holderID))))
+	if err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+
+	// Another purchaser cannot gift the holder a second ticket.
+	gifterID := uuid.New()
+	_, err = ops.Checkout(context.Background(), fx.editionID, gifterID, pixInput(
+		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: holderID, Email: "holder@example.com", Name: "Holder"}),
+	))
+	if err == nil || !fun.Is(err, fun.CodeConflict) {
+		t.Fatalf("gift to pending holder: err = %v, want CONFLICT", err)
+	}
+}
+
 // TestCheckout_Gifting_TwoTicketsSameType pins the one-line-per-person
 // model: two ticket lines for the same ticket type create two registrations
 // (one per attendee), each linked from its own purchase_items row.

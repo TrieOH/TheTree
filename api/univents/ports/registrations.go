@@ -12,6 +12,11 @@ import (
 type RegistrationRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Registration, error)
 
+	// GetActiveByEditionAndAttendee returns the attendee's active (pending or
+	// confirmed) registration in an edition, or nil when they hold none — the
+	// one-ticket-per-person check (checkout) and the my-ticket read.
+	GetActiveByEditionAndAttendee(ctx context.Context, editionID, attendeeID uuid.UUID) (*models.Registration, error)
+
 	// Create + UpdateStatus are the checkout (split 7) / webhook receiver
 	// (split 4) write side: pending rows are materialized at checkout and
 	// flipped on approve/cancel/expire.
