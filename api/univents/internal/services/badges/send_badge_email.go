@@ -2,7 +2,6 @@ package badges
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"lib/email"
 	"lib/telemetry"
@@ -17,7 +16,8 @@ import (
 )
 
 // sendBadgeEmail emails the participant their badge exactly once: the QR
-// (profile URL, base64 data-URI) as an offline copy plus a link to the badge.
+// (profile URL) as an inline image (cid: — email clients render these,
+// unlike data: URIs) plus a link to the badge.
 func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registration, emission *models.BadgeEmission) {
 	edition, err := o.editions.GetByID(ctx, reg.EditionID)
 	if err != nil {
@@ -39,25 +39,27 @@ func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registratio
 		telemetry.Log().Error("failed to render badge QR for email", zap.Error(err))
 		return
 	}
-	qrDataURI := "data:image/png;base64," + base64.StdEncoding.EncodeToString(qrPNG)
 
 	body, err := assets.RenderBadgeEmittedEmail(assets.BadgeEmittedEmailData{
 		AttendeeName: reg.AttendeeName,
 		EventName:    event.FullName,
 		EditionName:  edition.Name,
 		BadgeLink:    badgeLink,
-		QRDataURI:    qrDataURI,
 	})
 	if err != nil {
 		telemetry.Log().Error("failed to render badge email", zap.Error(err))
 		return
 	}
 
-	err = o.email.Send(email.Message{
+	err = o.email.SendWithInlineImage(email.Message{
 		To:      []string{reg.AttendeeEmail},
 		Subject: fmt.Sprintf("Your badge for %s — %s", event.FullName, edition.Name),
 		Body:    body,
 		HTML:    true,
+	}, email.InlineImage{
+		ContentID: "badge-qr",
+		MIMEType:  "image/png",
+		Data:      qrPNG,
 	})
 	if err != nil {
 		telemetry.Log().Error("failed to send badge email", zap.Error(err))
