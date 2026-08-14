@@ -230,13 +230,13 @@ export function TransactionsDashboard({
 
   const stats = [
     {
-      label: "Captured volume",
+      label: "Total volume",
       value: formatBRL(volume),
       detail: "All succeeded payments",
       icon: TrendingUp,
     },
     {
-      label: "Production volume",
+      label: "Captured volume",
       value: formatBRL(productionVolume),
       detail: "Live succeeded payments",
       icon: CheckCircle2,
