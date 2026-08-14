@@ -25,6 +25,7 @@ func mapActorProfile(src sqlc.ActorProfile) models.ActorProfile {
 	return models.ActorProfile{
 		ActorID:       src.ActorID,
 		Handle:        src.Handle,
+		PfpURL:        src.PfpUrl,
 		Profile:       src.Profile,
 		SchemaVersion: src.SchemaVersion,
 		Outdated:      src.Outdated,

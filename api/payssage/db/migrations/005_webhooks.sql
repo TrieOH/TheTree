@@ -16,6 +16,7 @@ CREATE TABLE webhook_events (
     provider    TEXT NOT NULL,
     external_id TEXT,
     event_type  TEXT NOT NULL,
+    status_detail TEXT,
     payload     JSONB NOT NULL,
     received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -36,8 +37,8 @@ CREATE TABLE webhook_deliveries (
     CONSTRAINT chk_webhook_deliveries_status CHECK (status IN ('pending', 'delivered', 'failed'))
 );
 
-CREATE UNIQUE INDEX uniq_webhook_events_external_id
-    ON webhook_events (provider, external_id)
+CREATE UNIQUE INDEX uniq_webhook_events_external_id_type
+    ON webhook_events (provider, external_id, event_type)
     WHERE external_id IS NOT NULL;
 
 CREATE INDEX idx_webhook_endpoints_wallet_id ON webhook_endpoints (wallet_id);
@@ -51,7 +52,7 @@ DROP INDEX IF EXISTS idx_webhook_deliveries_status;
 DROP INDEX IF EXISTS idx_webhook_deliveries_event_id;
 DROP INDEX IF EXISTS idx_webhook_deliveries_endpoint_id;
 DROP INDEX IF EXISTS idx_webhook_events_intent_id;
-DROP INDEX IF EXISTS uniq_webhook_events_external_id;
+DROP INDEX IF EXISTS uniq_webhook_events_external_id_type;
 DROP INDEX IF EXISTS idx_webhook_endpoints_wallet_id;
 DROP TABLE IF EXISTS webhook_deliveries;
 DROP TABLE IF EXISTS webhook_events;

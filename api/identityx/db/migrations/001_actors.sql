@@ -42,8 +42,14 @@ CREATE TABLE actor_profiles(
     schema_version INTEGER NOT NULL DEFAULT 1,
     outdated BOOLEAN NOT NULL DEFAULT false,
 
+    handle TEXT, -- unique when present: NULLs (no handle set) never collide
+    pfp_url TEXT, -- profile picture URL, first-class column
+
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX uniq_actor_profiles_handle
+    ON actor_profiles (handle) WHERE handle IS NOT NULL;
 
 CREATE INDEX idx_actor_profiles_profile_gin ON actor_profiles USING GIN (profile);
 
@@ -78,6 +84,7 @@ CREATE INDEX idx_actor_external_identities_actor_id
 DROP INDEX IF EXISTS idx_actor_external_identities_actor_id;
 DROP TABLE IF EXISTS actor_external_identities;
 DROP INDEX IF EXISTS idx_actor_profiles_profile_gin;
+DROP INDEX IF EXISTS uniq_actor_profiles_handle;
 DROP TABLE IF EXISTS actor_profiles;
 DROP INDEX IF EXISTS idx_actors_metadata_gin;
 DROP INDEX IF EXISTS idx_actors_created_at;

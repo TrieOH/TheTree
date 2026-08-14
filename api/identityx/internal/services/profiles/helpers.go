@@ -108,6 +108,7 @@ func (o *Operations) migrateOnDemand(ctx context.Context, profile *models.ActorP
 			return o.profiles.Upsert(ctx, models.ActorProfile{
 				ActorID:       profile.ActorID,
 				Handle:        profile.Handle,
+				PfpURL:        profile.PfpURL,
 				Profile:       pruned,
 				SchemaVersion: schema.Version,
 				Outdated:      false,

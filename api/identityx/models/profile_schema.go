@@ -32,5 +32,6 @@ type UpsertProfileSchemaInput struct {
 type UpsertProfileInput struct {
 	ActorID uuid.UUID
 	Handle  *string
+	PfpURL  *string
 	Profile json.RawMessage
 }

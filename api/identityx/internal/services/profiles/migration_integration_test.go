@@ -188,3 +188,62 @@ func TestGetPlatformProfileFlagsWhenV2AddsRequiredFieldRealDB(t *testing.T) {
 		t.Fatalf("flagged profile document must stay untouched, got %s", got.Profile)
 	}
 }
+
+// TestUpsertProfilePfpUrlRoundTrips pins pfp_url as a first-class column:
+// the upsert writes it and the read returns it, independent of the profile
+// JSONB blob (which is untouched — no schema involvement).
+func TestUpsertProfilePfpUrlRoundTrips(t *testing.T) {
+	pool := testdb.Postgres(t, "../../../db/migrations")
+
+	ctx := context.Background()
+	q := sqlc.New(pool)
+	r := repos.New(q)
+	ops := testOps(r.Profiles, r.ProfileSchemas, r.Actors, r.Projects)
+
+	email := "jane@trieoh.com"
+	actor, err := q.RegisterActor(ctx, sqlc.RegisterActorParams{
+		ProjectID:  nil,
+		AuthMethod: "password",
+		Email:      &email,
+		Type:       string(models.HumanActorType),
+	})
+	if err != nil {
+		t.Fatalf("RegisterActor: %v", err)
+	}
+
+	pfp := "https://cdn.univents.com.br/jane/pfp.png"
+	handle := "jane"
+	upserted, err := ops.UpsertPlatformProfile(testIdentityFor(actor.ID), models.UpsertProfileInput{
+		ActorID: actor.ID,
+		Handle:  &handle,
+		PfpURL:  &pfp,
+		// no active schema: the blob is stored unvalidated, untouched by pfp_url
+		Profile: json.RawMessage(`{"preferredName":"Jane"}`),
+	})
+	if err != nil {
+		t.Fatalf("UpsertPlatformProfile: %v", err)
+	}
+	if upserted.PfpURL == nil || *upserted.PfpURL != pfp {
+		t.Fatalf("upserted pfp_url = %v, want %s", upserted.PfpURL, pfp)
+	}
+
+	got, err := ops.GetPlatformProfile(ctx, actor.ID)
+	if err != nil {
+		t.Fatalf("GetPlatformProfile: %v", err)
+	}
+	if got.PfpURL == nil || *got.PfpURL != pfp {
+		t.Fatalf("read pfp_url = %v, want %s", got.PfpURL, pfp)
+	}
+	if got.Handle == nil || *got.Handle != handle {
+		t.Fatalf("read handle = %v, want %s", got.Handle, handle)
+	}
+	// the JSONB blob is untouched — no pfp_url mirrored into it
+	var doc map[string]any
+	err = json.Unmarshal(got.Profile, &doc)
+	if err != nil {
+		t.Fatalf("unmarshal profile blob: %v", err)
+	}
+	if _, ok := doc["pfp_url"]; ok {
+		t.Fatal("pfp_url must not leak into the profile JSONB blob")
+	}
+}

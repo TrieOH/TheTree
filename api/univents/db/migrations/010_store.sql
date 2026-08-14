@@ -7,7 +7,7 @@ CREATE TABLE purchases (
     purchaser_id       UUID NOT NULL,
     status             TEXT NOT NULL DEFAULT 'pending',
     CONSTRAINT chk_purchases_status_valid CHECK (
-        status IN ('pending', 'approved', 'expired', 'cancelled')
+        status IN ('pending', 'approved', 'expired', 'cancelled', 'failed', 'rejected')
     ),
     status_reason      TEXT,
     total_cents        BIGINT NOT NULL DEFAULT 0,

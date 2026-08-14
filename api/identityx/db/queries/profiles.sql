@@ -9,13 +9,14 @@ FROM actor_profiles
 WHERE handle = @handle;
 
 -- name: UpsertActorProfile :one
-INSERT INTO actor_profiles (actor_id, profile, schema_version, outdated, handle, updated_at)
-VALUES (@actor_id, @profile, @schema_version, @outdated, @handle, NOW())
+INSERT INTO actor_profiles (actor_id, profile, schema_version, outdated, handle, pfp_url, updated_at)
+VALUES (@actor_id, @profile, @schema_version, @outdated, @handle, @pfp_url, NOW())
 ON CONFLICT (actor_id) DO UPDATE SET
     profile        = EXCLUDED.profile,
     schema_version = EXCLUDED.schema_version,
     outdated       = EXCLUDED.outdated,
     handle         = EXCLUDED.handle,
+    pfp_url        = EXCLUDED.pfp_url,
     updated_at     = NOW()
 RETURNING *;
 
