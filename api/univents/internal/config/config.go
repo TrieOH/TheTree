@@ -23,6 +23,11 @@ type Config struct {
 	// Security
 	// WsJwtSecret string `env:"WS_JWT_SECRET,required"`
 
+	// When true, every JWT-authenticated route requires the actor's email to
+	// be verified (identityx subject.verified_at set). Unverified actors get
+	// 403. Public routes (webhooks, health, ws) are unaffected.
+	RequireVerifiedEmail bool `env:"REQUIRE_VERIFIED_EMAIL" envDefault:"false"`
+
 	// IdentityX
 	IdxURL       string    `env:"IDENTITY_X_URL,required"`
 	IdxAPIKey    string    `env:"IDENTITY_X_API_KEY,required"`

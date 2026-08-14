@@ -17,12 +17,16 @@ func SetupAuthMiddlewares() *mws.Middleware[*idx.AccessClaims] {
 	}
 
 	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
+		if app.cfg.RequireVerifiedEmail && claims.Sub.VerifiedAt == nil {
+			return ctx, fun.ErrForbidden("verified email required")
+		}
 		return idx.WithIdentity(ctx, &idx.Identity{
 			Sub: idx.Subject{
 				ID:           claims.Sub.ID,
 				ProjectID:    claims.Sub.ProjectID,
 				Email:        claims.Sub.Email,
 				Type:         claims.Sub.Type,
+				VerifiedAt:   claims.Sub.VerifiedAt,
 				Capabilities: claims.Sub.Capabilities,
 				Metadata:     claims.Sub.Metadata,
 			},

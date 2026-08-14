@@ -3,6 +3,7 @@ package idx
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -21,12 +22,21 @@ type Subject struct {
 	ProjectID    *uuid.UUID      `json:"project_id"`
 	Email        *string         `json:"email"`
 	Type         ActorType       `json:"type"`
+	VerifiedAt   *time.Time      `json:"verified_at"`
 	Capabilities json.RawMessage `json:"capabilities"`
 	Metadata     json.RawMessage `json:"metadata"`
 }
 
 func SubjectFromAccessSub(sub AccessSub) Subject {
-	return Subject(sub)
+	return Subject{
+		ID:           sub.ID,
+		ProjectID:    sub.ProjectID,
+		Email:        sub.Email,
+		Type:         sub.Type,
+		VerifiedAt:   sub.VerifiedAt,
+		Capabilities: sub.Capabilities,
+		Metadata:     sub.Metadata,
+	}
 }
 
 type Credential struct {
