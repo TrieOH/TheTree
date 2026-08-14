@@ -9555,6 +9555,7 @@ export const getReceivePayssageWebhookUrl = () => {
  *   "intent_id": "...", "wallet_id": "...", "provider": "mercadopago",
  *   "external_id": "<provider_payment_id>",
  *   "event_type": "payment.succeeded",
+ *   "status_detail": "high_risk",
  *   "payload": { "...": "raw provider payload" }
  * }
  * ```

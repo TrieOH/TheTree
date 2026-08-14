@@ -3261,7 +3261,7 @@ export const getConnectProviderUrl = (provider: string,) => {
 
 /**
  * Starts an OAuth connection to the given payment provider
- * (`mercado_pago`). Callers must pass the flow (`collector` or
+ * (`mercadopago`). Callers must pass the flow (`collector` or
  * `seller`) and the final redirect URL (where the user lands after
  * the provider's consent screen). The provider redirect URI is
  * Payssage's own callback (`/providers/{provider}/callback`),

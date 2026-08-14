@@ -4185,7 +4185,8 @@ export const getListActorsUrl = (projectId: string,) => {
 
 /**
  * Lists the actors registered in the project. The authenticated
- * actor must be a platform-level client.
+ * actor must be a user or member of the project (project-scoped
+ * service accounts included). Never public.
  * @summary List project actors
  */
 export const listActors = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<listActorsResponse> => {
@@ -4414,7 +4415,8 @@ export const getGetActorUrl = (projectId: string,
 
 /**
  * Fetches a single actor from the project by ID. The authenticated
- * actor must be a platform-level client.
+ * actor must be a user or member of the project (project-scoped
+ * service accounts included). Never public.
  * @summary Get a project actor by ID
  */
 export const getActor = async (projectId: string,
@@ -4533,7 +4535,8 @@ export const getGetActorByEmailUrl = (projectId: string,
 /**
  * AIP custom method (`:verb` suffix per AIP-136). Fetches a single
  * actor from the project by email address. The authenticated actor
- * must be a platform-level client.
+ * must be a user or member of the project (project-scoped service
+ * accounts included). Never public.
  * @summary Get a project actor by email
  */
 export const getActorByEmail = async (projectId: string,
