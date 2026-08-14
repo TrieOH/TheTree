@@ -37,13 +37,13 @@ export function useCart(editionId: string) {
       cartActions.clearCart(editionId);
     },
     isLimitReached: (
-      product: Pick<CartItem, "has_inventory" | "inventory_remaining">,
+      product: Pick<CartItem, "type" | "has_inventory" | "inventory_remaining">,
       currentQuantity: number,
     ) => {
       return isLimitReached(product, currentQuantity);
     },
     getMaxQuantity: (
-      product: Pick<CartItem, "has_inventory" | "inventory_remaining">,
+      product: Pick<CartItem, "type" | "has_inventory" | "inventory_remaining">,
     ) => {
       return getProductMaxQuantity(product);
     },

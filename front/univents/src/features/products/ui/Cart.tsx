@@ -53,7 +53,7 @@ function CartItem({
   getMaxQuantity,
 }: CartItemProps & {
   getMaxQuantity: (
-    p: Pick<CartItemType, "has_inventory" | "inventory_remaining">,
+    p: Pick<CartItemType, "type" | "has_inventory" | "inventory_remaining">,
   ) => number;
 }) {
   const max = getMaxQuantity(item);

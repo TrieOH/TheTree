@@ -71,8 +71,8 @@ export function humanize(value: string): string {
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  preferredName: "Nome de exibição",
-  legalName: "Nome completo",
+  preferredName: "Nome Social",
+  legalName: "Nome Civil",
   pronouns: "Pronomes",
   aboutMe: "Sobre mim",
   role: "Função",
@@ -87,13 +87,13 @@ const FIELD_LABELS: Record<string, string> = {
   languages: "Idiomas",
   specializations: "Idiomas",
   timezone: "Fuso horário",
-  hideLegalName: "Ocultar nome completo",
+  hideLegalName: "Ocultar Nome Civil",
   hideContactEmail: "Ocultar e-mail de contato",
 };
 
 const FIELD_PLACEHOLDERS: Record<string, string> = {
-  preferredName: "Como você quer ser chamado",
-  legalName: "Digite seu nome completo",
+  preferredName: "Digite seu Nome Social",
+  legalName: "Digite seu Nome Civil",
   pronouns: "Ex.: ela/dela",
   tagline: "Uma frase curta sobre você",
   aboutMe: "Conte um pouco sobre você, sua experiência e seus interesses…",

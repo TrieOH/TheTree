@@ -24,6 +24,9 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
   const inCart = items.find(
     (item) => item.id === ticket.id && item.type === "ticket",
   );
+  const anotherTicketInCart = items.some(
+    (item) => item.type === "ticket" && item.id !== ticket.id,
+  );
   const isFree = ticket.price_cents === 0;
 
   return (
@@ -81,6 +84,7 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
         <Button
           size="sm"
           variant={inCart ? "secondary" : "default"}
+          disabled={anotherTicketInCart}
           className="mt-5 h-9 w-full gap-2 text-xs font-semibold shadow-sm"
           onClick={() =>
             addItem(
@@ -101,7 +105,11 @@ export function TicketCard({ ticket, isFeatured, editionId }: TicketCardProps) {
           ) : (
             <ShoppingCart className="h-4 w-4" />
           )}
-          {inCart ? `Adicionado (${inCart.quantity})` : "Adicionar ao carrinho"}
+          {anotherTicketInCart
+            ? "Limite de 1 ingresso"
+            : inCart
+              ? "Adicionado"
+              : "Adicionar ao carrinho"}
         </Button>
       )}
     </div>
