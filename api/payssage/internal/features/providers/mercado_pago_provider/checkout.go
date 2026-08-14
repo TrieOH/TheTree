@@ -67,6 +67,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		"payment_method_id":    checkoutData.PaymentMethodID,
 		"external_reference":   intent.ID.String(),
 		"statement_descriptor": cmp.Or(checkoutData.StatementDescriptor, "payssage"),
+		"description":          paymentDescription(checkoutData.AdditionalInfo),
 		"payer": map[string]any{
 			"email": checkoutData.Payer.Email,
 			"identification": map[string]any{

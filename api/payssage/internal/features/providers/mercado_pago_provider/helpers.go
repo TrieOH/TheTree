@@ -5,10 +5,75 @@ import (
 	"fmt"
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
+	"sort"
+	"strings"
+	"unicode/utf8"
 )
 
 func formatAmount(centavos int64) string {
 	return fmt.Sprintf("%d.%02d", centavos/100, centavos%100)
+}
+
+// paymentDescription builds the MP top-level `description` from the item
+// titles — the field MP shows on the buyer's payment receipt/email
+// (`additional_info.items[].title` only feeds the checkout screen; without
+// a description MP renders "Produto sem nome" on the receipt). Items are
+// grouped by title with their total quantity ("2x Ticket Legal"). Falls
+// back to a generic label when there are no usable titles so the receipt
+// never shows a nameless product. Bounded length: MP truncates long
+// descriptions.
+func paymentDescription(ai *mercado_pago.AdditionalInfo) string {
+	const fallback = "Payssage purchase"
+	if ai == nil || len(ai.Items) == 0 {
+		return fallback
+	}
+
+	counts := make(map[string]int)
+	for _, item := range ai.Items {
+		title := strings.TrimSpace(item.Title)
+		if title == "" {
+			continue
+		}
+		qty := item.Quantity
+		if qty < 1 {
+			qty = 1
+		}
+		counts[title] += qty
+	}
+	if len(counts) == 0 {
+		return fallback
+	}
+
+	titles := make([]string, 0, len(counts))
+	for title, count := range counts {
+		if count > 1 {
+			titles = append(titles, fmt.Sprintf("%dx %s", count, title))
+		} else {
+			titles = append(titles, title)
+		}
+	}
+	sort.Strings(titles) // map iteration is unordered — stable output for receipts/tests
+
+	desc := strings.Join(titles, ", ")
+	return truncateDescription(desc, 250)
+}
+
+// truncateDescription caps a description at max bytes without splitting a
+// UTF-8 character or cutting a name in half: it backs off to the last ", "
+// separator inside the limit (dropping whole trailing items), and only when
+// there is no separator — a single over-long item — cuts at a rune boundary.
+func truncateDescription(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	cut := s[:max]
+	for len(cut) > 0 && !utf8.ValidString(cut) {
+		cut = cut[:len(cut)-1] // back off to a rune boundary (don't split ç, ã, …)
+	}
+	if i := strings.LastIndex(cut, ", "); i > 0 {
+		return cut[:i] // whole-item boundary — drop the tail items, keep them intact
+	}
+	return cut
 }
 
 func calcApplicationFee(amountCents int64, feeBps int) int64 {

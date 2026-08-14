@@ -71,7 +71,6 @@ type BadgeEmittedEmailData struct {
 	EventName    string
 	EditionName  string
 	BadgeLink    string
-	QRDataURI    string
 }
 
 func RenderBadgeEmittedEmail(data BadgeEmittedEmailData) (string, error) {

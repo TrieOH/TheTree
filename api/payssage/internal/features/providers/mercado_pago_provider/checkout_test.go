@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"payssage/internal/config"
+	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
 	"payssage/ports"
 
@@ -220,6 +223,12 @@ func TestCheckout_PixPinsShape(t *testing.T) {
 	if got := body["application_fee"]; got != json.Number("50.00") {
 		t.Errorf("application_fee = %v, want 50.00", got)
 	}
+	// The receipt/email title comes from the top-level `description`, not
+	// additional_info — MP renders "Produto sem nome" without it. This pix
+	// checkout carries no items, so the generic fallback applies.
+	if got := body["description"]; got != "Payssage purchase" {
+		t.Errorf("description = %v, want fallback (Payssage purchase)", got)
+	}
 	for _, key := range []string{"issuer_id", "installments", "token"} {
 		if _, ok := body[key]; ok {
 			t.Errorf("pix request must not carry %q", key)
@@ -227,5 +236,89 @@ func TestCheckout_PixPinsShape(t *testing.T) {
 	}
 	if _, ok := body["date_of_expiration"]; !ok {
 		t.Error("pix request missing date_of_expiration")
+	}
+}
+
+func TestPaymentDescription(t *testing.T) {
+	cases := []struct {
+		name string
+		ai   *mercado_pago.AdditionalInfo
+		want string
+	}{
+		{"nil items", nil, "Payssage purchase"},
+		{"empty items", &mercado_pago.AdditionalInfo{}, "Payssage purchase"},
+		{"single title no multiplier", &mercado_pago.AdditionalInfo{Items: []mercado_pago.Item{{Title: "Ticket Legal", Quantity: 1}}}, "Ticket Legal"},
+		{"groups repeated titles with qty", &mercado_pago.AdditionalInfo{Items: []mercado_pago.Item{
+			{Title: "Ticket Legal", Quantity: 1},
+			{Title: "Ticket Legal", Quantity: 1},
+			{Title: "Camiseta", Quantity: 2},
+		}}, "2x Camiseta, 2x Ticket Legal"},
+		{"single item with qty 2", &mercado_pago.AdditionalInfo{Items: []mercado_pago.Item{
+			{Title: "Camiseta", Quantity: 2},
+		}}, "2x Camiseta"},
+		{"skips blank titles", &mercado_pago.AdditionalInfo{Items: []mercado_pago.Item{
+			{Title: "  ", Quantity: 1},
+			{Title: "Oficina", Quantity: 1},
+		}}, "Oficina"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := paymentDescription(tc.ai); got != tc.want {
+				t.Fatalf("paymentDescription = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPaymentDescriptionTruncatesAtBoundary(t *testing.T) {
+	longTitle := strings.Repeat("Ingresso Esgotado ", 30) // long single item
+	desc := paymentDescription(&mercado_pago.AdditionalInfo{Items: []mercado_pago.Item{{Title: longTitle, Quantity: 1}}})
+	if len(desc) > 250 {
+		t.Fatalf("description over 250 bytes: %d", len(desc))
+	}
+	if !utf8.ValidString(desc) {
+		t.Fatalf("description split a UTF-8 character: %q", desc)
+	}
+
+	// Multiple long items: truncation must end at a whole-item boundary (a
+	// complete "Nx Title"), never mid-name and never with a dangling ", ".
+	many := paymentDescription(&mercado_pago.AdditionalInfo{Items: []mercado_pago.Item{
+		{Title: "Camiseta Oficial do Evento Edição 2026", Quantity: 3},
+		{Title: "Ingresso Pista Premium com Acesso ao Backstage", Quantity: 2},
+		{Title: "Programa de Mentoria Exclusiva para Participantes", Quantity: 1},
+	}})
+	if len(many) > 250 {
+		t.Fatalf("description over 250 bytes: %d", len(many))
+	}
+	if strings.HasSuffix(many, ", ") || strings.HasSuffix(many, ",") {
+		t.Fatalf("description ends with a dangling separator: %q", many)
+	}
+	// Each "Nx Title" segment must appear complete or not at all.
+	for _, seg := range []string{"3x Camiseta Oficial do Evento Edição 2026", "2x Ingresso Pista Premium com Acesso ao Backstage"} {
+		if strings.Contains(many, strings.TrimPrefix(seg, "3x ")) || strings.Contains(many, strings.TrimPrefix(seg, "2x ")) {
+			if !strings.Contains(many, seg) {
+				t.Fatalf("segment cut in half — found %q without its full %q: %q", strings.TrimPrefix(seg, "3x "), seg, many)
+			}
+		}
+	}
+}
+
+func TestTruncateDescription(t *testing.T) {
+	if got := truncateDescription("short", 10); got != "short" {
+		t.Fatalf("short string must pass through: %q", got)
+	}
+	// Cuts at the last ", " boundary, dropping the tail item entirely.
+	got := truncateDescription("2x Camiseta, 2x Ticket Legal, 2x Oficina", 22)
+	if got != "2x Camiseta, 2x Ticket" && got != "2x Camiseta, 2x Ticket Legal" && got != "2x Camiseta" {
+		// must be a prefix ending at a complete item (no mid-name cut)
+		if strings.Contains(got, "Ticket Lega") && !strings.HasSuffix(got, "Legal") {
+			t.Fatalf("mid-name cut: %q", got)
+		}
+	}
+	// Rune safety: a multi-byte char on the boundary must not be split.
+	acc := strings.Repeat("Ação ", 100)
+	tr := truncateDescription(acc, 10)
+	if !utf8.ValidString(tr) {
+		t.Fatalf("split a UTF-8 character: %q", tr)
 	}
 }
