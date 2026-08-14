@@ -1,15 +1,19 @@
 import {
+  MutationCache,
+  QueryCache,
   QueryClient,
   QueryClientProvider,
-} from "@tanstack/react-query"
-import { ApiError } from "@trieoh/identityx-sdk-ts"
-import type { ReactNode } from "react"
+} from "@tanstack/react-query";
+import { ApiError } from "@trieoh/identityx-sdk-ts";
+import type { ReactNode } from "react";
 
 export interface QueryClientConfig {
   /** Stale time in milliseconds (default: 5 minutes). */
-  staleTime?: number
+  staleTime?: number;
   /** Maximum retry count (default: 3). */
-  maxRetries?: number
+  maxRetries?: number;
+  /** Called when a query or mutation finishes with an error. */
+  onError?: (error: unknown) => void;
 }
 
 export class QueryError extends Error {
@@ -33,10 +37,9 @@ function getErrorStatus(error: unknown): number | undefined {
     status?: unknown;
     response?: { status?: unknown };
   };
-  const status = [
-    candidate.status,
-    candidate.response?.status,
-  ].find((value): value is number => typeof value === "number");
+  const status = [candidate.status, candidate.response?.status].find(
+    (value): value is number => typeof value === "number",
+  );
 
   return status;
 }
@@ -54,15 +57,17 @@ export function createQueryClient(config?: QueryClientConfig) {
   const {
     staleTime = 1000 * 60 * 5, // 5 minutes
     maxRetries = 3,
-  } = config ?? {}
+  } = config ?? {};
 
   return new QueryClient({
+    queryCache: new QueryCache({ onError: config?.onError }),
+    mutationCache: new MutationCache({ onError: config?.onError }),
     defaultOptions: {
       queries: {
         retry: (failureCount, error) => {
-          const status = getErrorStatus(error)
-          if (status && status >= 400 && status < 500) return false
-          return failureCount < maxRetries
+          const status = getErrorStatus(error);
+          if (status && status >= 400 && status < 500) return false;
+          return failureCount < maxRetries;
         },
         staleTime,
         refetchOnMount: true,
@@ -70,7 +75,7 @@ export function createQueryClient(config?: QueryClientConfig) {
         refetchOnReconnect: true,
       },
     },
-  })
+  });
 }
 
 /**
@@ -87,10 +92,10 @@ export function TanStackQueryProvider({
   children,
   queryClient,
 }: {
-  children: ReactNode
-  queryClient: QueryClient
+  children: ReactNode;
+  queryClient: QueryClient;
 }) {
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
+  );
 }
