@@ -24,6 +24,7 @@ import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
 import { Route as ProfilePurchasesRouteImport } from './routes/profile/purchases'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
@@ -143,6 +144,11 @@ const SignatureRequestsFulfillRoute =
     path: '/signature-requests/fulfill',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ProfileSetupRoute = ProfileSetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const ProfilePurchasesRoute = ProfilePurchasesRouteImport.update({
   id: '/purchases',
   path: '/purchases',
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
+  '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByTo {
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
+  '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -554,6 +562,7 @@ export interface FileRoutesById {
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
+  '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
@@ -613,6 +622,7 @@ export interface FileRouteTypes {
     | '/profile/config'
     | '/profile/edit'
     | '/profile/purchases'
+    | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | '/profile/config'
     | '/profile/edit'
     | '/profile/purchases'
+    | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
@@ -724,6 +735,7 @@ export interface FileRouteTypes {
     | '/profile/config'
     | '/profile/edit'
     | '/profile/purchases'
+    | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
     | '/verify/$hash'
@@ -884,6 +896,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/signature-requests/fulfill'
       preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/profile/setup': {
+      id: '/profile/setup'
+      path: '/setup'
+      fullPath: '/profile/setup'
+      preLoaderRoute: typeof ProfileSetupRouteImport
+      parentRoute: typeof ProfileRoute
     }
     '/profile/purchases': {
       id: '/profile/purchases'
@@ -1279,6 +1298,7 @@ interface ProfileRouteChildren {
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
   ProfilePurchasesRoute: typeof ProfilePurchasesRoute
+  ProfileSetupRoute: typeof ProfileSetupRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
@@ -1287,6 +1307,7 @@ const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
   ProfilePurchasesRoute: ProfilePurchasesRoute,
+  ProfileSetupRoute: ProfileSetupRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }
 
