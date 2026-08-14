@@ -1,8 +1,11 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { redirect } from "@tanstack/react-router";
 import {
   requireAuth as requireAuthCore,
   requireGuest as requireGuestCore,
 } from "@trieoh/front-core";
+import type { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { profileKeys } from "@/features/profile/api/query-keys";
 
 type AuthGuardArgs = Parameters<typeof requireAuthCore>[0];
 type AuthGuardOptions = Parameters<typeof requireAuthCore>[1];
@@ -38,4 +41,37 @@ export function requireGuest(
         throw redirect({ to: "/profile" });
       }),
   });
+}
+
+export async function requireConfiguredProfile({
+  context,
+  location,
+}: {
+  context: {
+    auth?: ReturnType<typeof useAuth>;
+    queryClient: QueryClient;
+  };
+  location: { pathname: string };
+}) {
+  if (
+    context.auth?.isAuthenticated !== true ||
+    location.pathname === "/profile/edit"
+  ) {
+    return;
+  }
+
+  const actorId = context.auth.auth.profile()?.id;
+  if (!actorId) return;
+
+  const profile = await context.queryClient.ensureQueryData({
+    queryKey: profileKeys.detail(actorId),
+    queryFn: async () => {
+      const response = await context.auth?.auth.getActorProfile(actorId);
+      return response?.success ? (response.data ?? null) : null;
+    },
+  });
+
+  if (!profile) {
+    throw redirect({ to: "/profile/edit" });
+  }
 }

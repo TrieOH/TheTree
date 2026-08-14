@@ -136,7 +136,7 @@
  */
 
 /**
- * Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment cancels.
+ * Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment lands in `failed`/`rejected` — distinct from `cancelled`, which is reserved for the customer (or the seller) cancelling an order.
  */
 export type PurchaseStatus = typeof PurchaseStatus[keyof typeof PurchaseStatus];
 
@@ -146,4 +146,6 @@ export const PurchaseStatus = {
   approved: 'approved',
   expired: 'expired',
   cancelled: 'cancelled',
+  failed: 'failed',
+  rejected: 'rejected',
 } as const;

@@ -148,6 +148,13 @@ export interface ReceivePayssageWebhookRequest {
   provider: string;
   external_id: string;
   event_type: string;
+  /**
+     * Normalized failure/outcome detail from the payssage intent
+     * (models.IntentStatusDetail, e.g. `high_risk`, `insufficient_funds`),
+     * present when the payment failed/rejected. Persisted as the
+     * purchase's `status_reason`.
+     */
+  status_detail?: string | null;
   /** Raw provider event payload. */
   payload: ReceivePayssageWebhookRequestPayload;
 }

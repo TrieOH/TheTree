@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ProfileData } from "@trieoh/identityx-sdk-ts";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useCallback } from "react";
+import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { profileKeys } from "@/features/profile/api/query-keys";
 import type { ProfileSchemaNode } from "@/features/profile/model/profile-data";
@@ -28,6 +29,12 @@ function EditProfilePage() {
             message: "Usuário não autenticado",
           }),
     ]);
+    if (!profile.success) {
+      toast.info("Configure seu perfil para continuar", {
+        id: "profile-not-created",
+        description: "Preencha e salve seus dados para acessar o Univents.",
+      });
+    }
     return {
       schema: schema as typeof schema & {
         data?: { schema: ProfileSchemaNode };

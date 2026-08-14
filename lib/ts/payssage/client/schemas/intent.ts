@@ -124,7 +124,7 @@ export interface Intent {
   /** ISO 4217 currency code (e.g. `BRL`). */
   currency: string;
   sandbox: boolean;
-  /** Provider slug (e.g. `mercado_pago`). */
+  /** Provider slug (e.g. `mercadopago`). */
   provider: string;
   status: IntentStatus;
   /** Provider-reported failure/outcome detail, when present. */

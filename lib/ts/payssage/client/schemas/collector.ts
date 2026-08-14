@@ -111,7 +111,7 @@ export interface Collector {
   id: Uuid;
   owner_id: Uuid;
   organization_id?: NullableUUID | null;
-  /** Provider slug (e.g. `mercado_pago`). */
+  /** Provider slug (e.g. `mercadopago`). */
   provider: string;
   /** User ID of the account at the provider. */
   provider_user_id: string;

@@ -43,6 +43,7 @@ import { Route as EventsSlugProductsRouteImport } from './routes/events/$slug/pr
 import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
+import { Route as ProfileActorIdBadgesBadgeIdRouteImport } from './routes/profile/$actorId/badges/$badgeId'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as EventsEventIdPayssageOauthCallbackRouteImport } from './routes/events/$eventId/payssage/oauth/callback'
@@ -248,6 +249,12 @@ const EventsSlugEditionsIndexRoute = EventsSlugEditionsIndexRouteImport.update({
   path: '/events/$slug/editions/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileActorIdBadgesBadgeIdRoute =
+  ProfileActorIdBadgesBadgeIdRouteImport.update({
+    id: '/badges/$badgeId',
+    path: '/badges/$badgeId',
+    getParentRoute: () => ProfileActorIdRoute,
+  } as any)
 const AdminEventsEventIdMembersIndexRoute =
   AdminEventsEventIdMembersIndexRouteImport.update({
     id: '/events/$eventId/members/',
@@ -425,7 +432,7 @@ export interface FileRoutesByFullPath {
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
-  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
@@ -441,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -479,7 +487,7 @@ export interface FileRoutesByTo {
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
-  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
@@ -495,6 +503,7 @@ export interface FileRoutesByTo {
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
+  '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -534,7 +543,7 @@ export interface FileRoutesById {
   '/auth_/verify': typeof AuthVerifyRoute
   '/auth_/verify-email': typeof AuthVerifyEmailRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
-  '/profile/$actorId': typeof ProfileActorIdRoute
+  '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/purchases': typeof ProfilePurchasesRoute
@@ -550,6 +559,7 @@ export interface FileRoutesById {
   '/events/$slug/tickets': typeof EventsSlugTicketsRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -607,6 +617,7 @@ export interface FileRouteTypes {
     | '/events/$slug/tickets'
     | '/admin/events/'
     | '/events/$slug/'
+    | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
@@ -661,6 +672,7 @@ export interface FileRouteTypes {
     | '/events/$slug/tickets'
     | '/admin/events'
     | '/events/$slug'
+    | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions'
     | '/admin/events/$eventId'
     | '/events/$eventId/editions/$editionId/products'
@@ -715,6 +727,7 @@ export interface FileRouteTypes {
     | '/events/$slug/tickets'
     | '/admin/events/'
     | '/events/$slug/'
+    | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/products'
@@ -1002,6 +1015,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugEditionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/$actorId/badges/$badgeId': {
+      id: '/profile/$actorId/badges/$badgeId'
+      path: '/badges/$badgeId'
+      fullPath: '/profile/$actorId/badges/$badgeId'
+      preLoaderRoute: typeof ProfileActorIdBadgesBadgeIdRouteImport
+      parentRoute: typeof ProfileActorIdRoute
+    }
     '/admin/events/$eventId/members/': {
       id: '/admin/events/$eventId/members/'
       path: '/events/$eventId/members'
@@ -1223,8 +1243,20 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ProfileActorIdRouteChildren {
+  ProfileActorIdBadgesBadgeIdRoute: typeof ProfileActorIdBadgesBadgeIdRoute
+}
+
+const ProfileActorIdRouteChildren: ProfileActorIdRouteChildren = {
+  ProfileActorIdBadgesBadgeIdRoute: ProfileActorIdBadgesBadgeIdRoute,
+}
+
+const ProfileActorIdRouteWithChildren = ProfileActorIdRoute._addFileChildren(
+  ProfileActorIdRouteChildren,
+)
+
 interface ProfileRouteChildren {
-  ProfileActorIdRoute: typeof ProfileActorIdRoute
+  ProfileActorIdRoute: typeof ProfileActorIdRouteWithChildren
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
   ProfilePurchasesRoute: typeof ProfilePurchasesRoute
@@ -1232,7 +1264,7 @@ interface ProfileRouteChildren {
 }
 
 const ProfileRouteChildren: ProfileRouteChildren = {
-  ProfileActorIdRoute: ProfileActorIdRoute,
+  ProfileActorIdRoute: ProfileActorIdRouteWithChildren,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
   ProfilePurchasesRoute: ProfilePurchasesRoute,
