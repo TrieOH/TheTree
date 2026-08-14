@@ -53,10 +53,7 @@ export async function requireConfiguredProfile({
   };
   location: { pathname: string };
 }) {
-  if (
-    context.auth?.isAuthenticated !== true ||
-    location.pathname === "/profile/edit"
-  ) {
+  if (context.auth?.isAuthenticated !== true) {
     return;
   }
 
@@ -71,7 +68,10 @@ export async function requireConfiguredProfile({
     },
   });
 
-  if (!profile) {
-    throw redirect({ to: "/profile/edit" });
+  if (!profile && location.pathname !== "/profile/setup") {
+    throw redirect({ to: "/profile/setup" });
+  }
+  if (profile && location.pathname === "/profile/setup") {
+    throw redirect({ to: "/profile" });
   }
 }

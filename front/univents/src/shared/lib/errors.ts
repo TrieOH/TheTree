@@ -1,4 +1,5 @@
 type ErrorEnvelope = {
+  code?: unknown;
   message?: unknown;
   error?: { message?: unknown } | unknown;
 };
@@ -28,4 +29,19 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+export function isVerifiedEmailRequiredError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as {
+    message?: unknown;
+    envelope?: ErrorEnvelope;
+  };
+  const message = getErrorMessage(error, "").toLowerCase();
+
+  return (
+    (candidate.envelope?.code === 401 || candidate.envelope?.code === 403) &&
+    message.includes("verified email required")
+  );
 }

@@ -235,6 +235,7 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const locked = location.pathname === "/profile/setup";
 
   const isAdmin = useMemo(
     () => location.pathname.startsWith("/admin"),
@@ -259,6 +260,7 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
   }, [location.pathname, navItems]);
 
   const handleNavigate = (item: NavItemType) => {
+    if (locked && !item.onClick) return;
     if (item.onClick) {
       void item.onClick();
       return;

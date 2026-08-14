@@ -39,7 +39,10 @@ function AuthPage() {
     const destination = search.redirect || "/profile";
     await navigate({ to: destination, replace: true });
     toast.success(message ?? "Login realizado com sucesso");
-    if (!sessionAuth.profile()?.verified_at) {
+    if (
+      !sessionAuth.profile()?.verified_at &&
+      router.state.location.pathname !== "/profile/setup"
+    ) {
       toast.warning("Seu e-mail ainda não foi verificado", {
         description: "Verifique sua conta para liberar todos os recursos.",
         action: {

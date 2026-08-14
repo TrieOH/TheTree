@@ -46,6 +46,16 @@ export function profileDisplayName(profile: UniventsProfile): string {
   return profile.preferredName || profile.legalName || "Univents member";
 }
 
+export function isInitialProfileComplete({
+  handle,
+  legalName,
+}: {
+  handle: string;
+  legalName: string;
+}): boolean {
+  return Boolean(handle.trim()) && Boolean(legalName.trim());
+}
+
 export function profileCompleteness(profile: UniventsProfile): number {
   const hasSocial = Object.values(profile.socials ?? {}).some(Boolean);
   const checks = [

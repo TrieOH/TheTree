@@ -75,9 +75,9 @@ export function InlineProfileEditor({
                   <Input
                     id="profile-handle"
                     value={handle}
-                    placeholder="seu nickname"
+                    placeholder="seu username"
                     pattern={"[^\\s/]+"}
-                    title="Use um nickname sem espaços ou barras"
+                    title="Use um username sem espaços ou barras"
                     autoCapitalize="none"
                     autoComplete="username"
                     spellCheck={false}
