@@ -1,0 +1,5 @@
+interface:
+  display_name: "Improve User Experience"
+  short_description: "Find friction in how the product is actually used"
+policy:
+  allow_implicit_invocation: false
