@@ -97,7 +97,7 @@ func ValidateMiddleware() StrictMiddlewareFunc {
 // raw JSON and scalars have no fields with `validate` tags and are skipped.
 func isStructish(v any) bool {
 	t := reflect.TypeOf(v)
-	for t != nil && t.Kind() == reflect.Ptr {
+	for t != nil && t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t != nil && t.Kind() == reflect.Struct

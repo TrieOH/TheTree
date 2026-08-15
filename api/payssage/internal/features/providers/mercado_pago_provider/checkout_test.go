@@ -50,6 +50,7 @@ func (s *stubRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 
 type fakeSellers struct {
 	ports.SellerRepo
+
 	seller *models.Seller
 }
 
@@ -62,6 +63,7 @@ func (f *fakeSellers) GetByID(_ context.Context, _ uuid.UUID) (*models.Seller, e
 
 type fakeWallets struct {
 	ports.WalletRepo
+
 	wallet *models.Wallet
 }
 
@@ -91,6 +93,7 @@ func newCheckoutTestProvider(wallet *models.Wallet, seller *models.Seller) (*Pro
 }
 
 func testSeller(walletID uuid.UUID) *models.Seller {
+	//nolint:gosec // test fixture, not a real credential
 	creds, _ := json.Marshal(models.MercadoPagoCredentials{
 		PublicKey:   "TEST_PUBLIC_KEY",
 		AccessToken: "TEST_SELLER_AT",
@@ -138,7 +141,8 @@ func TestCheckout_AppliesWalletFee(t *testing.T) {
 		testSeller(walletID),
 	)
 
-	if err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(cardCheckoutData)); err != nil {
+	err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(cardCheckoutData))
+	if err != nil {
 		t.Fatalf("Checkout: %v", err)
 	}
 
@@ -170,7 +174,8 @@ func TestCheckout_WalletFeeWinsOverRequestFee(t *testing.T) {
 		testSeller(walletID),
 	)
 
-	if err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(data)); err != nil {
+	err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(data))
+	if err != nil {
 		t.Fatalf("Checkout: %v", err)
 	}
 
@@ -196,7 +201,8 @@ func TestCheckout_RequestFeeWhenWalletHasNone(t *testing.T) {
 		testSeller(walletID),
 	)
 
-	if err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(data)); err != nil {
+	err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(data))
+	if err != nil {
 		t.Fatalf("Checkout: %v", err)
 	}
 
@@ -215,7 +221,8 @@ func TestCheckout_PixPinsShape(t *testing.T) {
 		testSeller(walletID),
 	)
 
-	if err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(pixCheckoutData)); err != nil {
+	err := p.Checkout(context.Background(), testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222")), json.RawMessage(pixCheckoutData))
+	if err != nil {
 		t.Fatalf("Checkout: %v", err)
 	}
 

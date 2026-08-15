@@ -352,15 +352,18 @@ func TestRequirePlatformClient(t *testing.T) {
 		t.Fatal("platform-only checker missing from registry")
 	}
 
-	if err := checker(models.WithIdentity(context.Background(), &models.Identity{
+	err := checker(models.WithIdentity(context.Background(), &models.Identity{
 		Sub: models.Subject{ID: uuid.New(), ProjectID: nil},
-	})); err != nil {
+	}))
+	if err != nil {
 		t.Fatalf("platform-level identity must pass the scope, got %v", err)
 	}
-	if err := checker(ctxScoped(uuid.New(), uuid.New())); !fun.Is(err, fun.CodeUnauthorized) {
+	err = checker(ctxScoped(uuid.New(), uuid.New()))
+	if !fun.Is(err, fun.CodeUnauthorized) {
 		t.Fatalf("project-scoped identity must be rejected with 401, got %v", err)
 	}
-	if err := checker(context.Background()); !fun.Is(err, fun.CodeUnauthorized) {
+	err = checker(context.Background())
+	if !fun.Is(err, fun.CodeUnauthorized) {
 		t.Fatalf("unauthenticated context must be rejected with 401, got %v", err)
 	}
 }

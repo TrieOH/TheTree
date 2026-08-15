@@ -39,7 +39,7 @@ type Primitives struct {
 	JWT    func(http.Handler) http.Handler // enforces scheme "bearerAuth"
 	APIKey func(http.Handler) http.Handler // enforces scheme "apiKeyAuth"
 	Any    func(http.Handler) http.Handler // enforces any combination of the two (OR)
-	Scopes map[string]ScopeChecker          // enforces per-operation x-scope
+	Scopes map[string]ScopeChecker         // enforces per-operation x-scope
 }
 
 // Options carries per-backend decorations the spec cannot express.
@@ -197,7 +197,8 @@ func scopeOf(s *string) string {
 func scopeMiddleware(checker ScopeChecker) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if err := checker(r.Context()); err != nil {
+			err := checker(r.Context())
+			if err != nil {
 				fun.Error(err).Send(w)
 				return
 			}

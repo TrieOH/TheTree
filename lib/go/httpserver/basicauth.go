@@ -8,7 +8,7 @@ import (
 
 const (
 	basicAuthUserEnv = "SIMPLE_AUTH_USER"
-	basicAuthPassEnv = "SIMPLE_AUTH_PASS"
+	basicAuthPassEnv = "SIMPLE_AUTH_PASS" //nolint:gosec // env var name, not a credential
 )
 
 // BasicAuth protects an HTTP subtree with HTTP Basic auth backed by the

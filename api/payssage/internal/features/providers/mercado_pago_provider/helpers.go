@@ -34,10 +34,7 @@ func paymentDescription(ai *mercado_pago.AdditionalInfo) string {
 		if title == "" {
 			continue
 		}
-		qty := item.Quantity
-		if qty < 1 {
-			qty = 1
-		}
+		qty := max(item.Quantity, 1)
 		counts[title] += qty
 	}
 	if len(counts) == 0 {
@@ -58,15 +55,15 @@ func paymentDescription(ai *mercado_pago.AdditionalInfo) string {
 	return truncateDescription(desc, 250)
 }
 
-// truncateDescription caps a description at max bytes without splitting a
+// truncateDescription caps a description at limit bytes without splitting a
 // UTF-8 character or cutting a name in half: it backs off to the last ", "
 // separator inside the limit (dropping whole trailing items), and only when
 // there is no separator — a single over-long item — cuts at a rune boundary.
-func truncateDescription(s string, max int) string {
-	if len(s) <= max {
+func truncateDescription(s string, limit int) string {
+	if len(s) <= limit {
 		return s
 	}
-	cut := s[:max]
+	cut := s[:limit]
 	for len(cut) > 0 && !utf8.ValidString(cut) {
 		cut = cut[:len(cut)-1] // back off to a rune boundary (don't split ç, ã, …)
 	}

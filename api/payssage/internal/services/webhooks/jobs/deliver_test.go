@@ -90,7 +90,8 @@ func TestEnvelopeSignatureCoversEnvelopeBytes(t *testing.T) {
 	}
 
 	var decoded map[string]any
-	if err := json.Unmarshal(envelope, &decoded); err != nil {
+	err = json.Unmarshal(envelope, &decoded)
+	if err != nil {
 		t.Fatalf("envelope not valid json: %v", err)
 	}
 	if decoded["status_detail"] != "high_risk" {

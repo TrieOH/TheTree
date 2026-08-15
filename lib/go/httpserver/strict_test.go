@@ -133,7 +133,7 @@ type bodyCarrier struct {
 // `type: object, additionalProperties: true` (e.g. provider webhook payloads)
 // — the body is a map, which has no `validate` tags to enforce.
 type mapBodyCarrier struct {
-	Body *map[string]interface{}
+	Body *map[string]any
 }
 
 type validatedBody struct {
@@ -176,7 +176,7 @@ func TestValidateMiddlewareSkipsNonStructBodies(t *testing.T) {
 			}, "ReceiveWebhook")
 
 			_, err := handler(context.Background(), httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhooks/x", nil),
-				mapBodyCarrier{Body: &map[string]interface{}{}})
+				mapBodyCarrier{Body: &map[string]any{}})
 			if err != nil {
 				t.Fatalf("%s body must pass through unvalidated: %v", name, err)
 			}

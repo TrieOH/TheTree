@@ -28,15 +28,7 @@ type Subject struct {
 }
 
 func SubjectFromAccessSub(sub AccessSub) Subject {
-	return Subject{
-		ID:           sub.ID,
-		ProjectID:    sub.ProjectID,
-		Email:        sub.Email,
-		Type:         sub.Type,
-		VerifiedAt:   sub.VerifiedAt,
-		Capabilities: sub.Capabilities,
-		Metadata:     sub.Metadata,
-	}
+	return Subject(sub)
 }
 
 type Credential struct {

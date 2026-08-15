@@ -145,9 +145,9 @@ var testPrimitives = Primitives{
 
 // scopeNamed records its invocation into the shared invocations slice, so
 // chain-ordering tests can see the scope middleware run in place.
-func scopeNamed(name string) ScopeChecker {
+func scopeNamed() ScopeChecker {
 	return func(context.Context) error {
-		invocations = append(invocations, name)
+		invocations = append(invocations, "scope")
 		return nil
 	}
 }
@@ -260,7 +260,7 @@ func TestResolverUnknownOperationListFails(t *testing.T) {
 func TestResolverScopeRunsAfterAuthn(t *testing.T) {
 	r := mustResolver(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
-		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed("scope")},
+		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
 	}, Options{})
 
 	if got := run(r.Chains()["GetScoped"]); len(got) != 2 || got[0] != "JWT" || got[1] != "scope" {
@@ -275,7 +275,7 @@ func TestResolverScopeRunsAfterAuthn(t *testing.T) {
 func TestResolverScopeAfterSetupGuard(t *testing.T) {
 	r := mustResolver(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
-		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed("scope")},
+		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
 	}, Options{SetupGuard: named("setupGuard")})
 
 	got := run(r.Chains()["GetScoped"])
@@ -298,7 +298,7 @@ func TestResolverScopeRejectionShortCircuits(t *testing.T) {
 
 	invocations = nil
 	rec := httptest.NewRecorder()
-	var next http.Handler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	var next http.Handler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Error("scope rejection must stop the chain before the handler")
 	})
 	chain := r.Chains()["GetScoped"]
@@ -315,7 +315,7 @@ func TestResolverScopeRejectionShortCircuits(t *testing.T) {
 func TestResolverScopeOnPublicOperationFails(t *testing.T) {
 	_, err := NewResolver([]byte(specScopePublic), Primitives{
 		JWT:    named("JWT"),
-		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed("scope")},
+		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
 	}, Options{})
 	if err == nil || !strings.Contains(err.Error(), "no security schemes") {
 		t.Fatalf("want error for x-scope on a public operation, got %v", err)
@@ -327,7 +327,7 @@ func TestResolverUnknownScopeFails(t *testing.T) {
 	_, err := NewResolver([]byte(specScopeUnknown), Primitives{
 		JWT: named("JWT"),
 		Scopes: map[string]ScopeChecker{
-			"platform-only": scopeNamed("scope"),
+			"platform-only": scopeNamed(),
 		},
 	}, Options{})
 	if err == nil || !strings.Contains(err.Error(), "getScopedUnknown") {
