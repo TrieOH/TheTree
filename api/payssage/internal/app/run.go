@@ -38,10 +38,11 @@ func (app *Payssage) run() {
 	defer libriver.LogStop(ctx, riverClient)
 
 	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		DevMode:   false,
-		Endpoints: riverui.NewEndpoints[pgx.Tx](riverClient, nil),
-		Logger:    slog.Default(),
-		Prefix:    "/riverui",
+		DevMode:                  false,
+		Endpoints:                riverui.NewEndpoints[pgx.Tx](riverClient, nil),
+		Logger:                   slog.Default(),
+		Prefix:                   "/riverui",
+		JobListHideArgsByDefault: true,
 	})
 	if err != nil {
 		loggr.Fatal("failed to create river ui handler", zap.Error(err))

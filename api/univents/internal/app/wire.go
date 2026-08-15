@@ -69,10 +69,11 @@ func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *da
 	}
 
 	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		DevMode:   false,
-		Endpoints: riverui.NewEndpoints[pgx.Tx](client, nil),
-		Logger:    slog.Default(),
-		Prefix:    "/riverui",
+		DevMode:                  false,
+		Endpoints:                riverui.NewEndpoints[pgx.Tx](client, nil),
+		Logger:                   slog.Default(),
+		Prefix:                   "/riverui",
+		JobListHideArgsByDefault: true,
 	})
 	if err != nil {
 		errx.Exit(err, "failed to create river ui handler")

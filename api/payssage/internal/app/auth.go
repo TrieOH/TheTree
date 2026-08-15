@@ -2,10 +2,7 @@ package app
 
 import (
 	"context"
-	"crypto/subtle"
 	"lib/telemetry"
-	"net/http"
-	"os"
 
 	idx "sdk/identityx"
 
@@ -62,27 +59,4 @@ func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 	}
 
 	return fm.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
-}
-
-func basicAuth(next http.Handler) http.Handler {
-	user := os.Getenv("SIMPLE_AUTH_USER")
-	pass := os.Getenv("SIMPLE_AUTH_PASS")
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if user == "" || pass == "" {
-			http.Error(w, "basic auth not configured", http.StatusServiceUnavailable)
-			return
-		}
-
-		reqUser, reqPass, ok := r.BasicAuth()
-		if !ok ||
-			subtle.ConstantTimeCompare([]byte(reqUser), []byte(user)) != 1 ||
-			subtle.ConstantTimeCompare([]byte(reqPass), []byte(pass)) != 1 {
-			w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }

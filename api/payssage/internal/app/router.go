@@ -28,7 +28,7 @@ func (app *Payssage) CreateRouter(middlewares middlewares, h *handlers.Server, r
 			mountStrict(r, h, chains)
 
 			r.Group(func(r chi.Router) {
-				r.Use(basicAuth)
+				r.Use(httpserver.BasicAuth)
 				r.Mount("/riverui", riverUIHandler)
 			})
 		},

@@ -37,6 +37,10 @@ func (app *Univents) CreateRouter(middlewares middlewares, h *handlers.Server, r
 			r.Handle("/ws", http.HandlerFunc(h.ServeWS))
 
 			r.Group(func(r chi.Router) {
+				// River's job dashboard is an ops surface, not a spec
+				// operation: the auth chains do not cover it, so it is
+				// gated with the shared basic auth (SIMPLE_AUTH_* env).
+				r.Use(httpserver.BasicAuth)
 				r.Mount("/riverui", riverUIHandler)
 			})
 		},

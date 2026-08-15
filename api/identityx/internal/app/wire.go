@@ -101,10 +101,11 @@ func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries) (*river.Cl
 	}
 
 	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		DevMode:   false,
-		Endpoints: riverui.NewEndpoints[pgx.Tx](client, nil),
-		Logger:    slog.Default(),
-		Prefix:    "/riverui",
+		DevMode:                  false,
+		Endpoints:                riverui.NewEndpoints[pgx.Tx](client, nil),
+		Logger:                   slog.Default(),
+		Prefix:                   "/riverui",
+		JobListHideArgsByDefault: true,
 	})
 	if err != nil {
 		errx.Exit(err, "failed to create river ui handler")

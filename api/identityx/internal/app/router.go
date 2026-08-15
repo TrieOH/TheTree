@@ -29,6 +29,10 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, h *handlers.Server, 
 			// nil in tests; wired in run via initRiver
 			if riverUIHandler != nil {
 				r.Group(func(r chi.Router) {
+					// River's job dashboard is an ops surface, not a spec
+					// operation: the auth chains do not cover it, so it is
+					// gated with the shared basic auth (SIMPLE_AUTH_* env).
+					r.Use(httpserver.BasicAuth)
 					r.Mount("/riverui", riverUIHandler)
 				})
 			}
