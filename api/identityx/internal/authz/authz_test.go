@@ -155,6 +155,14 @@ func newService(projects ports.ProjectRepo, orgs ports.OrganizationRepo, platfor
 	return New(orgs, projects, platform)
 }
 
+// ctxAs seeds the context identity the auth middleware would have written,
+// so a check under test resolves the caller the way production does.
+func ctxAs(actorID uuid.UUID) context.Context {
+	return models.WithIdentity(context.Background(), &models.Identity{
+		Sub: models.Subject{ID: actorID},
+	})
+}
+
 func forbidden(err error) bool {
 	return err != nil && fun.Is(err, fun.CodeForbidden)
 }
@@ -163,7 +171,7 @@ func forbidden(err error) bool {
 
 func TestCheckProjectDirectMemberPasses(t *testing.T) {
 	s := newService(newFakeProjects().add(&models.Project{ID: proj1}).role(user1, proj1, models.ProjectRoleAdmin), newFakeOrgs(), newFakePlatformRoles())
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleAdmin)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleAdmin)
 	if err != nil {
 		t.Fatalf("expected admin to pass, got %v", err)
 	}
@@ -171,7 +179,7 @@ func TestCheckProjectDirectMemberPasses(t *testing.T) {
 
 func TestCheckProjectDirectMemberInsufficientRole(t *testing.T) {
 	s := newService(newFakeProjects().add(&models.Project{ID: proj1}).role(user1, proj1, models.ProjectRoleMember), newFakeOrgs(), newFakePlatformRoles())
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleAdmin)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleAdmin)
 	if !forbidden(err) {
 		t.Fatalf("expected forbidden, got %v", err)
 	}
@@ -187,7 +195,7 @@ func TestCheckProjectOrgMemberFallsBack(t *testing.T) {
 		newFakeOrgs().role(user1, org1, models.OrganizationRoleMember),
 		newFakePlatformRoles(),
 	)
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleMember)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleMember)
 	if err != nil {
 		t.Fatalf("expected org member to fall back, got %v", err)
 	}
@@ -201,7 +209,7 @@ func TestCheckProjectOrgOwnerFallsBackToOwner(t *testing.T) {
 		newFakeOrgs().role(user1, org1, models.OrganizationRoleOwner),
 		newFakePlatformRoles(),
 	)
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleAdmin)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleAdmin)
 	if err != nil {
 		t.Fatalf("expected org owner to pass admin check via fallback, got %v", err)
 	}
@@ -214,7 +222,7 @@ func TestCheckProjectOrgMemberInsufficientCastRole(t *testing.T) {
 		newFakeOrgs().role(user1, org1, models.OrganizationRoleMember),
 		newFakePlatformRoles(),
 	)
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleAdmin)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleAdmin)
 	if !forbidden(err) {
 		t.Fatalf("expected forbidden, got %v", err)
 	}
@@ -228,7 +236,7 @@ func TestCheckProjectDirectRoleBeatsOrgRole(t *testing.T) {
 		newFakeOrgs().role(user1, org1, models.OrganizationRoleMember),
 		newFakePlatformRoles(),
 	)
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleMember)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleMember)
 	if err != nil {
 		t.Fatalf("expected pass, got %v", err)
 	}
@@ -242,7 +250,7 @@ func TestCheckProjectNonMemberInOrgProjectForbidden(t *testing.T) {
 		newFakeOrgs(), // user2 has no org role
 		newFakePlatformRoles(),
 	)
-	err := s.CheckProject(context.Background(), user2, proj1, models.ProjectRoleMember)
+	err := s.CheckProject(ctxAs(user2), proj1, models.ProjectRoleMember)
 	if !forbidden(err) {
 		t.Fatalf("expected forbidden, got %v", err)
 	}
@@ -255,7 +263,7 @@ func TestCheckProjectNonMemberOrglessProjectForbidden(t *testing.T) {
 		newFakeOrgs(),
 		newFakePlatformRoles(),
 	)
-	err := s.CheckProject(context.Background(), user2, proj2, models.ProjectRoleMember)
+	err := s.CheckProject(ctxAs(user2), proj2, models.ProjectRoleMember)
 	if !forbidden(err) {
 		t.Fatalf("expected forbidden, got %v", err)
 	}
@@ -263,7 +271,7 @@ func TestCheckProjectNonMemberOrglessProjectForbidden(t *testing.T) {
 
 func TestCheckProjectUnknownProjectNotFound(t *testing.T) {
 	s := newService(newFakeProjects(), newFakeOrgs(), newFakePlatformRoles())
-	err := s.CheckProject(context.Background(), user1, proj1, models.ProjectRoleMember)
+	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleMember)
 	if err == nil || !fun.Is(err, fun.CodeNotFound) {
 		t.Fatalf("expected NotFound, got %v", err)
 	}
@@ -273,11 +281,11 @@ func TestCheckProjectUnknownProjectNotFound(t *testing.T) {
 
 func TestCheckOrgPassesAndRejects(t *testing.T) {
 	s := newService(newFakeProjects(), newFakeOrgs().role(user1, org1, models.OrganizationRoleAdmin), newFakePlatformRoles())
-	err := s.CheckOrg(context.Background(), user1, org1, models.OrganizationRoleAdmin)
+	err := s.CheckOrg(ctxAs(user1), org1, models.OrganizationRoleAdmin)
 	if err != nil {
 		t.Fatalf("expected admin to pass, got %v", err)
 	}
-	err = s.CheckOrg(context.Background(), user2, org1, models.OrganizationRoleMember)
+	err = s.CheckOrg(ctxAs(user2), org1, models.OrganizationRoleMember)
 	if !forbidden(err) {
 		t.Fatalf("expected forbidden for non-member, got %v", err)
 	}
@@ -293,15 +301,15 @@ func TestCheckPlatformTiers(t *testing.T) {
 			role(user1, models.PlatformRoleSuperAdmin).
 			role(user2, models.PlatformRoleSupport),
 	)
-	err := s.CheckPlatform(context.Background(), user1, models.PlatformRoleAdmin)
+	err := s.CheckPlatform(ctxAs(user1), models.PlatformRoleAdmin)
 	if err != nil {
 		t.Fatalf("expected super_admin to pass admin check, got %v", err)
 	}
-	err = s.CheckPlatform(context.Background(), user2, models.PlatformRoleAdmin)
+	err = s.CheckPlatform(ctxAs(user2), models.PlatformRoleAdmin)
 	if !forbidden(err) {
 		t.Fatalf("expected support to be forbidden for admin check, got %v", err)
 	}
-	err = s.CheckPlatform(context.Background(), uuid.New(), models.PlatformRoleSupport)
+	err = s.CheckPlatform(ctxAs(uuid.New()), models.PlatformRoleSupport)
 	if !forbidden(err) {
 		t.Fatalf("expected unknown actor to be forbidden, got %v", err)
 	}

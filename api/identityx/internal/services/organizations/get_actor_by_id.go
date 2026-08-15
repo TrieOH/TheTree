@@ -12,12 +12,7 @@ import (
 func (o *Operations) GetActorByID(ctx context.Context, id, projectID uuid.UUID) (*models.Actor, error) {
 	ctx, span := telemetry.StartSpan(ctx, "GetActorByID")
 	defer span.End()
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleMember)
+	err := o.authz.CheckProject(ctx, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}

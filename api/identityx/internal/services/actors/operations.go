@@ -38,5 +38,5 @@ func (o *Operations) requireActorReadAccess(ctx context.Context, ident *models.I
 	if ident.Sub.ProjectID != nil && *ident.Sub.ProjectID == projectID {
 		return nil
 	}
-	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleMember)
+	return o.authz.CheckProject(ctx, projectID, models.ProjectRoleMember)
 }

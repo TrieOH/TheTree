@@ -8,11 +8,8 @@ import (
 )
 
 // requireProjectAdmin gates a write on the authenticated actor holding an
-// admin or owner role in the provider's project.
+// admin or owner role in the provider's project. The caller is resolved
+// by the Access-check module from the context identity.
 func (o *Operations) requireProjectAdmin(ctx context.Context, projectID uuid.UUID) error {
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleAdmin)
+	return o.authz.CheckProject(ctx, projectID, models.ProjectRoleAdmin)
 }

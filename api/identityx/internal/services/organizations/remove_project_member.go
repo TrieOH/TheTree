@@ -34,7 +34,7 @@ func (o *Operations) RemoveProjectMember(ctx context.Context, payload models.Rem
 		return fun.ErrBadRequest("cannot remove the owner of the organization from the project")
 	}
 
-	err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckOrg(ctx, org.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

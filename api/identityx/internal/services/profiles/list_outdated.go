@@ -16,13 +16,8 @@ func (o *Operations) ListOutdatedProfiles(ctx context.Context, projectID *uuid.U
 	ctx, span := telemetry.StartSpan(ctx, "ListOutdatedProfiles")
 	defer span.End()
 
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if projectID != nil {
-		err = o.authz.CheckProject(ctx, ident.Sub.ID, *projectID, models.ProjectRoleAdmin)
+		err := o.authz.CheckProject(ctx, *projectID, models.ProjectRoleAdmin)
 		if err != nil {
 			return nil, err
 		}

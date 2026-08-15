@@ -21,17 +21,35 @@ func New(orgs ports.OrganizationRepo, projects ports.ProjectRepo, platformRoles 
 	return &Service{orgs: orgs, projects: projects, platformRoles: platformRoles}
 }
 
-// CheckProject gates a project-scoped operation. An actor passes when they
-// hold at least minRole on the project, either directly through a
-// project_members row or by org membership: a project's organization is its
-// enclosing scope, so an org role casts onto the project (org member →
-// project member, org admin → project admin, org owner → project owner).
-// The fallback is what makes org management work — the org owner who
-// created a project holds no project_members row, only the org role.
+// callerID resolves the authenticated actor from the context identity the
+// auth middleware wrote. Every check resolves the caller itself, so the
+// interface carries no caller parameter — there is nothing to pass wrong,
+// and a caller cannot be checked against a subject other than itself.
+func callerID(ctx context.Context) (uuid.UUID, error) {
+	ident, err := models.RequireIdentity(ctx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return ident.Sub.ID, nil
+}
+
+// CheckProject gates a project-scoped operation. The caller is resolved
+// from the context identity; they pass when they hold at least minRole on
+// the project, either directly through a project_members row or by org
+// membership: a project's organization is its enclosing scope, so an org
+// role casts onto the project (org member → project member, org admin →
+// project admin, org owner → project owner). The fallback is what makes
+// org management work — the org owner who created a project holds no
+// project_members row, only the org role.
 //
 // A missing project surfaces as NotFound (the resource does not exist); a
 // missing role surfaces as Forbidden.
-func (s *Service) CheckProject(ctx context.Context, userID, projectID uuid.UUID, minRole models.ProjectRole) error {
+func (s *Service) CheckProject(ctx context.Context, projectID uuid.UUID, minRole models.ProjectRole) error {
+	userID, err := callerID(ctx)
+	if err != nil {
+		return err
+	}
+
 	project, err := s.projects.GetByID(ctx, projectID)
 	if err != nil {
 		return err
@@ -56,7 +74,14 @@ func (s *Service) CheckProject(ctx context.Context, userID, projectID uuid.UUID,
 	return libauthz.ForbiddenIfNotFound(err)
 }
 
-func (s *Service) CheckOrg(ctx context.Context, userID, orgID uuid.UUID, minRole models.OrganizationRole) error {
+// CheckOrg gates an organization-scoped operation; the caller is resolved
+// from the context identity.
+func (s *Service) CheckOrg(ctx context.Context, orgID uuid.UUID, minRole models.OrganizationRole) error {
+	userID, err := callerID(ctx)
+	if err != nil {
+		return err
+	}
+
 	role, err := s.orgs.GetRole(ctx, userID, orgID)
 	if err != nil {
 		return libauthz.ForbiddenIfNotFound(err)
@@ -64,9 +89,15 @@ func (s *Service) CheckOrg(ctx context.Context, userID, orgID uuid.UUID, minRole
 	return libauthz.Min(role, minRole)
 }
 
-// CheckPlatform gates a platform-scoped operation: the caller must hold at
-// least minRole on the platform. Actors with no platform role are Forbidden.
-func (s *Service) CheckPlatform(ctx context.Context, userID uuid.UUID, minRole models.PlatformRole) error {
+// CheckPlatform gates a platform-scoped operation: the caller (resolved
+// from the context identity) must hold at least minRole on the platform.
+// Actors with no platform role are Forbidden.
+func (s *Service) CheckPlatform(ctx context.Context, minRole models.PlatformRole) error {
+	userID, err := callerID(ctx)
+	if err != nil {
+		return err
+	}
+
 	role, err := s.platformRoles.GetRole(ctx, userID)
 	if err != nil {
 		return libauthz.ForbiddenIfNotFound(err)

@@ -34,7 +34,7 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 		return fun.ErrBadRequest("owner of the organization is already a member of the project")
 	}
 
-	err = o.authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckOrg(ctx, org.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

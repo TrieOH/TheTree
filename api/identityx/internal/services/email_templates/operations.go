@@ -22,15 +22,11 @@ func NewOperations(templates ports.EmailTemplateRepo, authz *authz.Service) *Ope
 	}
 }
 
-// authorizeAdmin resolves the caller and checks it holds at least the
-// admin role on the project; unknown projects surface as 404 (CheckProject
-// passes the project lookup through).
+// authorizeAdmin gates a write on the authenticated actor holding an
+// admin or owner role on the project; unknown projects surface as 404
+// (CheckProject passes the project lookup through).
 func (o *Operations) authorizeAdmin(ctx context.Context, projectID uuid.UUID) error {
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleAdmin)
+	return o.authz.CheckProject(ctx, projectID, models.ProjectRoleAdmin)
 }
 
 func validKind(kind models.EmailTemplateKind) bool {

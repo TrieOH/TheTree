@@ -37,13 +37,18 @@ func (o *Operations) createInternal(ctx context.Context, project models.Project,
 		return nil, nil, err
 	}
 
+	// Every mint crosses the Access-check seam, self-bound or not: minting
+	// a key for a project demands the caller hold at least admin on it.
+	// CheckProject's org fallback already admits org owners with no
+	// project_members row, so no legitimate path is lost.
+	err = o.authz.CheckProject(ctx, project.ID, models.ProjectRoleAdmin)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	actorID := ident.Sub.ID
 	if payload.SubjectID != nil {
 		actorID = *payload.SubjectID
-		err = o.authz.CheckProject(ctx, ident.Sub.ID, project.ID, models.ProjectRoleAdmin)
-		if err != nil {
-			return nil, nil, err
-		}
 	}
 
 	if len(payload.Capabilities) > 0 {

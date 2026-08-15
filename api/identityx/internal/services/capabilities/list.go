@@ -13,12 +13,7 @@ func (o *Operations) List(ctx context.Context, projectID uuid.UUID) ([]models.Ca
 	ctx, span := telemetry.StartSpan(ctx, "List")
 	defer span.End()
 
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleMember)
+	err := o.authz.CheckProject(ctx, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}

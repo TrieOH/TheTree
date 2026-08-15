@@ -22,7 +22,7 @@ func (o *Operations) UpsertProfile(ctx context.Context, payload models.UpsertPro
 
 	// self or project admin
 	if ident.Sub.ID != payload.ActorID {
-		err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleAdmin)
+		err = o.authz.CheckProject(ctx, projectID, models.ProjectRoleAdmin)
 		if err != nil {
 			return nil, err
 		}

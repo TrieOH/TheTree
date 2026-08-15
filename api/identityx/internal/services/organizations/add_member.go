@@ -34,7 +34,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizati
 		return fun.ErrBadRequest("owners can't be added to organizations they own")
 	}
 
-	err = o.authz.CheckOrg(ctx, ident.Sub.ID, payload.OrganizationID, models.OrganizationRoleAdmin)
+	err = o.authz.CheckOrg(ctx, payload.OrganizationID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return err
 	}

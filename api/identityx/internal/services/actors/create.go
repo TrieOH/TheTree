@@ -14,12 +14,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateActorInput
 	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
-	ident, err := models.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, models.ProjectRoleAdmin)
+	err := o.authz.CheckProject(ctx, *payload.ProjectID, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

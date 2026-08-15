@@ -36,7 +36,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMem
 		return fun.ErrBadRequest("owners can't be added to projects they own")
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, payload.ProjectID, models.ProjectRoleAdmin)
+	err = o.authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleAdmin)
 	if err != nil {
 		return err
 	}
