@@ -76,7 +76,7 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, verifier *tokens.Ver
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
 		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, verifier, r.ExternalIdentities, oauthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
-		EmailTemplates: NewEmailTemplates(r.EmailTemplates, r.Projects, authzSvc),
+		EmailTemplates: NewEmailTemplates(r.EmailTemplates, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),
 		OAuthProviders: oauthProviders,
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),

@@ -41,7 +41,7 @@ func (app *IdentityX) initVerifier(r *repos.Repos) *tokens.Verifier {
 }
 
 func (app *IdentityX) initOperations(r *repos.Repos, verifier *tokens.Verifier, riverClient *river.Client[pgx.Tx]) *services.Operations {
-	authzSvc := authz.New(r.Organizations, r.Projects)
+	authzSvc := authz.New(r.Organizations, r.Projects, r.PlatformRoles)
 	sender := emails.NewSender(
 		r.ActionTokens,
 		[]byte(app.cfg.HmacSecret),

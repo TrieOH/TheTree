@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/MintzyG/fun"
-	"github.com/google/uuid"
 )
 
-func (o *Operations) CreateProjectActor(ctx context.Context, orgID uuid.UUID, payload models.CreateActorInput) (*models.Actor, error) {
+func (o *Operations) CreateProjectActor(ctx context.Context, payload models.CreateActorInput) (*models.Actor, error) {
 	ctx, span := telemetry.StartSpan(ctx, "CreateProjectActor")
 	defer span.End()
 	ident, err := models.RequireIdentity(ctx)
@@ -18,7 +17,7 @@ func (o *Operations) CreateProjectActor(ctx context.Context, orgID uuid.UUID, pa
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, &orgID, models.ProjectRoleMember)
+	err = o.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}

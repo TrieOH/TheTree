@@ -16,7 +16,7 @@ func (o *Operations) ListOrgProjectMembers(ctx context.Context, orgID, projectID
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, &orgID, models.ProjectRoleMember)
+	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}

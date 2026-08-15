@@ -17,7 +17,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateOAuthProvi
 	if err != nil {
 		return nil, err
 	}
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, payload.ProjectID, nil, models.ProjectRoleAdmin)
+	err = o.authz.CheckProject(ctx, ident.Sub.ID, payload.ProjectID, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

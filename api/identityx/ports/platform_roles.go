@@ -10,4 +10,5 @@ import (
 
 type PlatformRolesRepo interface {
 	Give(ctx context.Context, actorID uuid.UUID, role models.PlatformRole, metadata *json.RawMessage) (*models.PlatformRoleRelation, error)
+	GetRole(ctx context.Context, actorID uuid.UUID) (models.PlatformRole, error)
 }

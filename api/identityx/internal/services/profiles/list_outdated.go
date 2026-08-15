@@ -22,7 +22,7 @@ func (o *Operations) ListOutdatedProfiles(ctx context.Context, projectID *uuid.U
 	}
 
 	if projectID != nil {
-		err = o.authz.CheckProject(ctx, ident.Sub.ID, *projectID, nil, models.ProjectRoleAdmin)
+		err = o.authz.CheckProject(ctx, ident.Sub.ID, *projectID, models.ProjectRoleAdmin)
 		if err != nil {
 			return nil, err
 		}

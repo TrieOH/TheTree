@@ -12,30 +12,25 @@ import (
 
 type Operations struct {
 	templates ports.EmailTemplateRepo
-	projects  ports.ProjectRepo
 	authz     *authz.Service
 }
 
-func NewOperations(templates ports.EmailTemplateRepo, projects ports.ProjectRepo, authz *authz.Service) *Operations {
+func NewOperations(templates ports.EmailTemplateRepo, authz *authz.Service) *Operations {
 	return &Operations{
 		templates: templates,
-		projects:  projects,
 		authz:     authz,
 	}
 }
 
 // authorizeAdmin resolves the caller and checks it holds at least the
-// admin role on the project; unknown projects surface as 404.
+// admin role on the project; unknown projects surface as 404 (CheckProject
+// passes the project lookup through).
 func (o *Operations) authorizeAdmin(ctx context.Context, projectID uuid.UUID) error {
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = o.projects.GetByID(ctx, projectID)
-	if err != nil {
-		return err
-	}
-	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleAdmin)
+	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleAdmin)
 }
 
 func validKind(kind models.EmailTemplateKind) bool {

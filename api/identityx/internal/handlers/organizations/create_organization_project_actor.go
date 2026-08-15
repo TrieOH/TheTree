@@ -14,7 +14,7 @@ func (h *Handlers) CreateOrganizationProjectActor(ctx context.Context, req opena
 		return nil, err
 	}
 
-	actor, err := h.ops.CreateProjectActor(ctx, req.OrgId, models.CreateActorInput{
+	actor, err := h.ops.CreateProjectActor(ctx, models.CreateActorInput{
 		ProjectID:  &req.ProjectId,
 		AuthMethod: req.Body.AuthMethod,
 		Type:       req.Body.Type,

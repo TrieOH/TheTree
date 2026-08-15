@@ -14,7 +14,7 @@ func (h *Handlers) ListOrganizationProjectActors(ctx context.Context, req openap
 		return nil, err
 	}
 
-	actors, err := h.ops.ListProjectActors(ctx, req.OrgId, req.ProjectId)
+	actors, err := h.ops.ListProjectActors(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ const schemaV2New = `{"$id":"https://api.univents.com.br/schemas/profile.schema.
 const fullyFilledV1Profile = `{"role":"Backend Engineer","pfpUrl":"https://cdn.univents.com.br/jane/pfp.png","aboutMe":"Backend engineer building events platforms.","socials":{"x":"https://x.com/janedoe","github":"https://github.com/janedoe","twitch":null,"bluesky":null,"discord":null,"youtube":null,"linkedin":"https://linkedin.com/in/janedoe","instagram":null},"tagline":"Building the future of events.","website":"https://janedoe.dev","location":{"city":"São Paulo","region":"SP","country":"Brazil","countryCode":"BR"},"pronouns":"she/her","timezone":"America/Sao_Paulo","bannerUrl":"https://cdn.univents.com.br/jane/banner.png","createdAt":"2024-01-01T00:00:00Z","languages":["pt-BR","en"],"legalName":"Jane Doe","updatedAt":"2024-01-02T00:00:00Z","visibility":{"hideSocials":false,"hideLocation":false,"hideLegalName":true,"hideContactEmail":true,"hideOrganization":false},"contactEmail":"jane@univents.com.br","organization":"Univents","preferredName":"Jane","profileCompleteness":100}`
 
 func testOps(profiles ports.ProfileRepo, schemas ports.ProfileSchemaRepo, actors ports.ActorRepo, projects ports.ProjectRepo) *Operations {
-	return NewOperations(profiles, schemas, actors, authz.New(nil, projects))
+	return NewOperations(profiles, schemas, actors, authz.New(nil, projects, nil))
 }
 
 func mockProjectActor(actors ports.ActorRepo, actorID, projectID uuid.UUID) {

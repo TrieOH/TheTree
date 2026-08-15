@@ -5,3 +5,7 @@ VALUES (
     @role,
     @metadata
 ) RETURNING *;
+
+-- name: GetPlatformRoleByActor :one
+SELECT role FROM platform_roles
+WHERE actor_id = @actor_id;

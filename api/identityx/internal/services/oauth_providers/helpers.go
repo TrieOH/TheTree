@@ -14,5 +14,5 @@ func (o *Operations) requireProjectAdmin(ctx context.Context, projectID uuid.UUI
 	if err != nil {
 		return err
 	}
-	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleAdmin)
+	return o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleAdmin)
 }

@@ -25,7 +25,7 @@ func mockOAuthProviderOps(t *testing.T) *oauth_providers.Operations {
 	return oauth_providers.NewOperations(
 		mock.Mock[ports.ProjectOAuthProvidersRepo](),
 		projects,
-		authz.New(mock.Mock[ports.OrganizationRepo](), projects),
+		authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
 	)
 }
 

@@ -32,7 +32,7 @@ func stubAdminOps(t *testing.T, templates ports.EmailTemplateRepo) *Operations {
 	_ = mock.When(projects.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(models.ProjectRoleAdmin, nil)
 
-	ops := NewOperations(templates, projects, authz.New(mock.Mock[ports.OrganizationRepo](), projects))
+	ops := NewOperations(templates, authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()))
 	return ops
 }
 

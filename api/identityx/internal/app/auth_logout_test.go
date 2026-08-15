@@ -45,7 +45,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		oauth_providers.NewOperations(
 			mock.Mock[ports.ProjectOAuthProvidersRepo](),
 			projects,
-			authz.New(mock.Mock[ports.OrganizationRepo](), projects),
+			authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
 		),
 		mock.Mock[ports.OAuthLoginStatesRepo](),
 		mock.Mock[ports.ActionTokenRepo](),

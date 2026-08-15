@@ -40,7 +40,7 @@ func (o *Operations) createInternal(ctx context.Context, project models.Project,
 	actorID := ident.Sub.ID
 	if payload.SubjectID != nil {
 		actorID = *payload.SubjectID
-		err = o.authz.CheckProject(ctx, ident.Sub.ID, project.ID, nil, models.ProjectRoleAdmin)
+		err = o.authz.CheckProject(ctx, ident.Sub.ID, project.ID, models.ProjectRoleAdmin)
 		if err != nil {
 			return nil, nil, err
 		}

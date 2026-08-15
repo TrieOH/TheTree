@@ -36,7 +36,7 @@ func newTestOps(t *testing.T, role models.ProjectRole) *testOps {
 	}
 	mock.When(o.projects.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(role, nil)
-	o.ops = NewOperations(o.providers, o.projects, authz.New(o.orgs, o.projects))
+	o.ops = NewOperations(o.providers, o.projects, authz.New(o.orgs, o.projects, mock.Mock[ports.PlatformRolesRepo]()))
 	return o
 }
 

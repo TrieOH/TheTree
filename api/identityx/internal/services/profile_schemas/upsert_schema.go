@@ -11,10 +11,14 @@ func (o *Operations) UpsertSchema(ctx context.Context, payload models.UpsertProf
 	ctx, span := telemetry.StartSpan(ctx, "UpsertSchema")
 	defer span.End()
 
-	// fixme: platform schema: any authenticated actor can set it for now
-	// (in the future, restrict to platform admins)
+	// Platform schema: a platform-scoped write, so it is gated on the
+	// caller's platform role rather than a project membership.
 	if payload.ProjectID == nil {
-		_, err := models.RequireIdentity(ctx)
+		ident, err := models.RequireIdentity(ctx)
+		if err != nil {
+			return nil, err
+		}
+		err = o.authz.CheckPlatform(ctx, ident.Sub.ID, models.PlatformRoleAdmin)
 		if err != nil {
 			return nil, err
 		}
@@ -30,7 +34,7 @@ func (o *Operations) UpsertSchema(ctx context.Context, payload models.UpsertProf
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, nil, models.ProjectRoleAdmin)
+	err = o.authz.CheckProject(ctx, ident.Sub.ID, *payload.ProjectID, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

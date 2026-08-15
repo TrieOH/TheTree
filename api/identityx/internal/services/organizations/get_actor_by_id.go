@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (o *Operations) GetActorByID(ctx context.Context, id, orgID, projectID uuid.UUID) (*models.Actor, error) {
+func (o *Operations) GetActorByID(ctx context.Context, id, projectID uuid.UUID) (*models.Actor, error) {
 	ctx, span := telemetry.StartSpan(ctx, "GetActorByID")
 	defer span.End()
 	ident, err := models.RequireIdentity(ctx)
@@ -17,7 +17,7 @@ func (o *Operations) GetActorByID(ctx context.Context, id, orgID, projectID uuid
 		return nil, err
 	}
 
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, &orgID, models.ProjectRoleMember)
+	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}

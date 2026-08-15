@@ -14,7 +14,7 @@ func (h *Handlers) GetOrganizationProjectActor(ctx context.Context, req openapi.
 		return nil, err
 	}
 
-	actor, err := h.ops.GetActorByID(ctx, req.ActorId, req.OrganizationId, req.ProjectId)
+	actor, err := h.ops.GetActorByID(ctx, req.ActorId, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}

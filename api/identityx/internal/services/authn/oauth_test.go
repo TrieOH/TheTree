@@ -99,7 +99,7 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 		r.keys, r.blacklist,
 		tokens.NewVerifier(r.keys, r.blacklist),
 		r.external,
-		oauth_providers.NewOperations(r.providers, r.projects, authz.New(mock.Mock[ports.OrganizationRepo](), r.projects)),
+		oauth_providers.NewOperations(r.providers, r.projects, authz.New(mock.Mock[ports.OrganizationRepo](), r.projects, mock.Mock[ports.PlatformRolesRepo]())),
 		r.states,
 		mock.Mock[ports.ActionTokenRepo](),
 		mock.Mock[ports.EmailSender](),

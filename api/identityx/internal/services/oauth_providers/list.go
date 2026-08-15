@@ -16,7 +16,7 @@ func (o *Operations) ListByProject(ctx context.Context, projectID uuid.UUID) ([]
 	if err != nil {
 		return nil, err
 	}
-	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, nil, models.ProjectRoleMember)
+	err = o.authz.CheckProject(ctx, ident.Sub.ID, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err
 	}
