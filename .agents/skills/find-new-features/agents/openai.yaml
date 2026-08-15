@@ -1,0 +1,5 @@
+interface:
+  display_name: "Find New Features"
+  short_description: "Brainstorm and rank feature ideas for users"
+policy:
+  allow_implicit_invocation: false
