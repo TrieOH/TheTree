@@ -6,6 +6,8 @@
 package services
 
 import (
+	"time"
+
 	"IdentityX/internal/repos"
 	"IdentityX/internal/services/actors"
 	"IdentityX/internal/services/api_keys"
@@ -21,6 +23,9 @@ import (
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
+	"lib/oauth"
+
+	"resty.dev/v3"
 )
 
 // Type and constructor aliases for each feature's operations package.
@@ -71,11 +76,16 @@ type Operations struct {
 // emails minted by authn. tokensMgr owns the token lifecycle; authn crosses
 // it instead of touching keys or the blacklist directly.
 func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, hmacSecret string, sender *emails.Sender) *Operations {
-	oauthProviders := NewOAuthProviders(r.OAuthProviders, r.Projects, authzSvc)
+	oauthProviders := NewOAuthProviders(
+		r.OAuthProviders, r.OAuthProviders, r.Projects, r.ExternalIdentities, r.Actors,
+		authzSvc, tokensMgr,
+		resty.New().SetTimeout(15*time.Second),
+		oauth.Registry,
+	)
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, r.ExternalIdentities, oauthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, r.ActionTokens, sender, []byte(hmacSecret)),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		EmailTemplates: NewEmailTemplates(r.EmailTemplates, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),

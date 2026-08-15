@@ -6,13 +6,16 @@ import (
 	"time"
 
 	"IdentityX/internal/authz"
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/oauth"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
+	"resty.dev/v3"
 )
 
 // testOps bundles the per-test mockio mocks backing the operations.
@@ -36,7 +39,17 @@ func newTestOps(t *testing.T, role models.ProjectRole) *testOps {
 	}
 	mock.When(o.projects.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(role, nil)
-	o.ops = NewOperations(o.providers, o.projects, authz.New(o.orgs, o.projects, mock.Mock[ports.PlatformRolesRepo]()))
+	o.ops = NewOperations(
+		o.providers,
+		mock.Mock[ports.OAuthLoginStatesRepo](),
+		o.projects,
+		mock.Mock[ports.ExternalIdentitiesRepo](),
+		mock.Mock[ports.ActorRepo](),
+		authz.New(o.orgs, o.projects, mock.Mock[ports.PlatformRolesRepo]()),
+		tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo](), mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
+		resty.New(),
+		oauth.Registry,
+	)
 	return o
 }
 
@@ -326,9 +339,9 @@ func TestResolveLoginProviderPlatformUsesEnvCredentials(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
 	o := newTestOps(t, models.ProjectRoleMember)
 
-	out, err := o.ops.ResolveLoginProvider(context.Background(), "google", nil)
+	out, err := o.ops.resolveLoginProvider(context.Background(), "google", nil)
 	if err != nil {
-		t.Fatalf("ResolveLoginProvider: %v", err)
+		t.Fatalf("resolveLoginProvider: %v", err)
 	}
 	if out.Creds.ClientID != "platform-id" || out.Creds.ClientSecret != "platform-secret" {
 		t.Fatalf("unexpected credentials: %+v", out.Creds)
@@ -344,7 +357,7 @@ func TestResolveLoginProviderPlatformUsesEnvCredentials(t *testing.T) {
 func TestResolveLoginProviderPlatformNotConfigured(t *testing.T) {
 	o := newTestOps(t, models.ProjectRoleMember)
 
-	_, err := o.ops.ResolveLoginProvider(context.Background(), "google", nil)
+	_, err := o.ops.resolveLoginProvider(context.Background(), "google", nil)
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request for missing env credentials, got %v", err)
 	}
@@ -361,9 +374,9 @@ func TestResolveLoginProviderProjectRow(t *testing.T) {
 	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(&row, nil)
 
-	out, err := o.ops.ResolveLoginProvider(context.Background(), "google", &projectID)
+	out, err := o.ops.resolveLoginProvider(context.Background(), "google", &projectID)
 	if err != nil {
-		t.Fatalf("ResolveLoginProvider: %v", err)
+		t.Fatalf("resolveLoginProvider: %v", err)
 	}
 	if out.Creds.ClientID != "proj-client-id" || out.Creds.ClientSecret != "proj-secret" {
 		t.Fatalf("unexpected credentials: %+v", out.Creds)
@@ -386,9 +399,9 @@ func TestResolveLoginProviderProjectDisabled(t *testing.T) {
 	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(&row, nil)
 
-	out, err := o.ops.ResolveLoginProvider(context.Background(), "google", &projectID)
+	out, err := o.ops.resolveLoginProvider(context.Background(), "google", &projectID)
 	if err != nil {
-		t.Fatalf("ResolveLoginProvider: %v", err)
+		t.Fatalf("resolveLoginProvider: %v", err)
 	}
 	if !out.Disabled {
 		t.Fatal("disabled row must resolve as disabled")
@@ -401,7 +414,7 @@ func TestResolveLoginProviderMissingRow(t *testing.T) {
 	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(nil, fun.ErrNotFound("not configured"))
 
-	_, err := o.ops.ResolveLoginProvider(context.Background(), "google", &projectID)
+	_, err := o.ops.resolveLoginProvider(context.Background(), "google", &projectID)
 	if !fun.Is(err, fun.CodeNotFound) {
 		t.Fatalf("want not found for missing row, got %v", err)
 	}

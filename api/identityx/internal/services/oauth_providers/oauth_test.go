@@ -1,4 +1,4 @@
-package authn
+package oauth_providers
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"IdentityX/internal/authz"
-	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -19,18 +18,19 @@ import (
 	"lib/oauth"
 
 	"github.com/MintzyG/fun"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 	"golang.org/x/oauth2"
+	"resty.dev/v3"
 )
 
-// stubOAuthFlow points the google registry entry at a local provider
+// testProviderMeta points the google provider metadata at a local server
 // serving the token exchange and userinfo calls, so tests never touch the
-// network. The original entry is restored after the test.
-func stubOAuthFlow(t *testing.T) {
+// network and never mutate the package-level registry: the map is injected
+// into the operations constructor alongside a plain resty client.
+func testProviderMeta(t *testing.T) map[string]oauth.Provider {
 	t.Helper()
-	orig := oauth.Registry["google"]
-	t.Cleanup(func() { oauth.Registry["google"] = orig })
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
@@ -58,17 +58,19 @@ func stubOAuthFlow(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	oauth.Registry["google"] = oauth.Provider{
-		Endpoint:    oauth2.Endpoint{TokenURL: srv.URL + "/token", AuthURL: srv.URL + "/auth"},
-		Scopes:      []string{"email"},
-		Userinfo:    srv.URL + "/userinfo",
-		RedirectURL: "http://localhost/callback",
+	return map[string]oauth.Provider{
+		"google": {
+			Endpoint:    oauth2.Endpoint{TokenURL: srv.URL + "/token", AuthURL: srv.URL + "/auth"},
+			Scopes:      []string{"email"},
+			Userinfo:    srv.URL + "/userinfo",
+			RedirectURL: "http://localhost/callback",
+		},
 	}
 }
 
-// oauthRepos bundles the per-test mockio mocks backing the authn
-// operations for the OAuth flow. Each test creates its own via newOAuthOps
-// and stubs them inline.
+// oauthRepos bundles the per-test mockio mocks backing the operations for
+// the OAuth flow. Each test creates its own via newOAuthOps and stubs them
+// inline.
 type oauthRepos struct {
 	actors    ports.ActorRepo
 	projects  ports.ProjectRepo
@@ -79,8 +81,9 @@ type oauthRepos struct {
 	states    ports.OAuthLoginStatesRepo
 }
 
-// newOAuthOps creates a fresh set of per-test mocks and wires the authn
-// operations over them.
+// newOAuthOps creates a fresh set of per-test mocks and wires the
+// operations over them, with the provider metadata and HTTP client
+// pointed at a local test server.
 func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 	t.Helper()
 	mock.SetUp(t)
@@ -94,15 +97,15 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 		states:    mock.Mock[ports.OAuthLoginStatesRepo](),
 	}
 	ops := NewOperations(
-		r.actors, r.projects,
-		mock.Mock[ports.PlatformRolesRepo](),
-		tokens.NewManager(r.keys, r.blacklist, r.actors, mock.Mock[ports.ProjectRepo](), tokens.Config{}),
-		r.external,
-		oauth_providers.NewOperations(r.providers, r.projects, authz.New(mock.Mock[ports.OrganizationRepo](), r.projects, mock.Mock[ports.PlatformRolesRepo]())),
+		r.providers,
 		r.states,
-		mock.Mock[ports.ActionTokenRepo](),
-		mock.Mock[ports.EmailSender](),
-		[]byte("test-hmac"),
+		r.projects,
+		r.external,
+		r.actors,
+		authz.New(mock.Mock[ports.OrganizationRepo](), r.projects, mock.Mock[ports.PlatformRolesRepo]()),
+		tokens.NewManager(r.keys, r.blacklist, r.actors, mock.Mock[ports.ProjectRepo](), tokens.Config{}),
+		resty.New(),
+		testProviderMeta(t),
 	)
 	return ops, r
 }
@@ -132,13 +135,86 @@ func encryptedProjectSecret(t *testing.T) string {
 	return enc
 }
 
+// ── mint helpers (pure crypto, no mocks) ─────────────────────────────────
+
+func testActor() models.Actor {
+	email := "actor@trieoh.com"
+	return models.Actor{ID: uuid.New(), Email: &email, Type: models.HumanActorType}
+}
+
+// mintPayload builds the signing string (header.payload) of a token, the
+// same way the service's newAccessToken/newRefreshToken do.
+func mintPayload(t *testing.T, claims jwt.Claims, kid uuid.UUID) []byte {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = kid
+	payload, err := token.SigningString()
+	if err != nil {
+		t.Fatalf("SigningString: %v", err)
+	}
+	return []byte(payload)
+}
+
+// testPair is a freshly signed access/refresh pair plus the key and actor
+// they were minted for. Pure crypto — no mocks involved.
+type testPair struct {
+	accessToken, refreshToken string
+	accessJTI, refreshJTI     uuid.UUID
+	key                       models.CryptoKey
+	kp                        *crypto.KeyPair
+	actor                     models.Actor
+}
+
+func mintPair(t *testing.T) *testPair {
+	t.Helper()
+	testEnv(t)
+	kp, err := crypto.GenerateKeyPair("signing")
+	if err != nil {
+		t.Fatalf("GenerateKeyPair: %v", err)
+	}
+	keyID := uuid.New()
+	actor := testActor()
+	key := models.CryptoKey{
+		ID: keyID, Type: models.SigningCryptoKeyType, Status: models.CryptoKeyStatusActive,
+		PublicKey: kp.Public, EncryptedPrivateKey: kp.EncryptedPrivate, Algorithm: kp.Algorithm,
+	}
+
+	accessJTI, refreshJTI := uuid.New(), uuid.New()
+	accessPayload := mintPayload(t, models.AccessClaims{
+		Sub: models.AccessSub{ID: actor.ID, ProjectID: actor.ProjectID, Email: actor.Email, Type: actor.Type},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			Issuer:    "test-issuer", ID: accessJTI.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
+		},
+	}, keyID)
+	refreshPayload := mintPayload(t, models.RefreshClaims{
+		Sub: models.RefreshSub{ID: actor.ID, ProjectID: actor.ProjectID, AccessJTI: accessJTI},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			Issuer:    "test-issuer", ID: refreshJTI.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
+		},
+	}, keyID)
+	accessToken, err := crypto.SignToken(accessPayload, kp)
+	if err != nil {
+		t.Fatalf("SignToken access: %v", err)
+	}
+	refreshToken, err := crypto.SignToken(refreshPayload, kp)
+	if err != nil {
+		t.Fatalf("SignToken refresh: %v", err)
+	}
+	return &testPair{
+		accessToken: accessToken, refreshToken: refreshToken,
+		accessJTI: accessJTI, refreshJTI: refreshJTI,
+		key: key, kp: kp, actor: actor,
+	}
+}
+
 // ── Connect ──────────────────────────────────────────────────────────────
 
-func TestOAuthConnectPlatformUsesEnvCredentials(t *testing.T) {
+func TestConnectPlatformUsesEnvCredentials(t *testing.T) {
 	testEnv(t)
 	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
 	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
-	stubOAuthFlow(t)
 	ops, r := newOAuthOps(t)
 	var created []models.OAuthLoginState
 	mock.When(r.states.CreateState(mock.AnyContext(), mock.Any[models.OAuthLoginState]())).
@@ -148,9 +224,9 @@ func TestOAuthConnectPlatformUsesEnvCredentials(t *testing.T) {
 			return []any{&s, nil}
 		})
 
-	connectURL, err := ops.OAuthConnect(context.Background(), "google", nil)
+	connectURL, err := ops.Connect(context.Background(), "google", nil)
 	if err != nil {
-		t.Fatalf("OAuthConnect: %v", err)
+		t.Fatalf("Connect: %v", err)
 	}
 	parsed, err := url.Parse(connectURL)
 	if err != nil {
@@ -174,9 +250,8 @@ func TestOAuthConnectPlatformUsesEnvCredentials(t *testing.T) {
 	}
 }
 
-func TestOAuthConnectProjectUsesProjectCredentials(t *testing.T) {
+func TestConnectProjectUsesProjectCredentials(t *testing.T) {
 	testEnv(t)
-	stubOAuthFlow(t)
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
 	mock.When(r.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
@@ -196,9 +271,9 @@ func TestOAuthConnectProjectUsesProjectCredentials(t *testing.T) {
 			return []any{&s, nil}
 		})
 
-	connectURL, err := ops.OAuthConnect(context.Background(), "google", &projectID)
+	connectURL, err := ops.Connect(context.Background(), "google", &projectID)
 	if err != nil {
-		t.Fatalf("OAuthConnect: %v", err)
+		t.Fatalf("Connect: %v", err)
 	}
 	parsed, err := url.Parse(connectURL)
 	if err != nil {
@@ -215,9 +290,8 @@ func TestOAuthConnectProjectUsesProjectCredentials(t *testing.T) {
 	}
 }
 
-func TestOAuthConnectDisabledProviderStillReturnsURL(t *testing.T) {
+func TestConnectDisabledProviderStillReturnsURL(t *testing.T) {
 	testEnv(t)
-	stubOAuthFlow(t)
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
 	mock.When(r.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
@@ -234,13 +308,13 @@ func TestOAuthConnectDisabledProviderStillReturnsURL(t *testing.T) {
 			return []any{&s, nil}
 		})
 
-	_, err := ops.OAuthConnect(context.Background(), "google", &projectID)
+	_, err := ops.Connect(context.Background(), "google", &projectID)
 	if err != nil {
 		t.Fatalf("disabled provider must still issue a connect URL, got %v", err)
 	}
 }
 
-func TestOAuthConnectProviderNotConfigured(t *testing.T) {
+func TestConnectProviderNotConfigured(t *testing.T) {
 	testEnv(t)
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
@@ -249,30 +323,30 @@ func TestOAuthConnectProviderNotConfigured(t *testing.T) {
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(nil, fun.ErrNotFound("not configured"))
 
-	_, err := ops.OAuthConnect(context.Background(), "google", &projectID)
+	_, err := ops.Connect(context.Background(), "google", &projectID)
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
 
-func TestOAuthConnectUnknownProject(t *testing.T) {
+func TestConnectUnknownProject(t *testing.T) {
 	testEnv(t)
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
 	mock.When(r.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
 		ThenReturn(nil, fun.ErrNotFound("project not found"))
 
-	_, err := ops.OAuthConnect(context.Background(), "google", &projectID)
+	_, err := ops.Connect(context.Background(), "google", &projectID)
 	if !fun.Is(err, fun.CodeNotFound) {
 		t.Fatalf("want not found, got %v", err)
 	}
 }
 
-func TestOAuthConnectUnsupportedProvider(t *testing.T) {
+func TestConnectUnsupportedProvider(t *testing.T) {
 	testEnv(t)
 	ops, _ := newOAuthOps(t)
 
-	_, err := ops.OAuthConnect(context.Background(), "x", nil)
+	_, err := ops.Connect(context.Background(), "x", nil)
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
@@ -280,11 +354,10 @@ func TestOAuthConnectUnsupportedProvider(t *testing.T) {
 
 // ── Callback ─────────────────────────────────────────────────────────────
 
-func TestOAuthCallbackSignupNewIdentity(t *testing.T) {
+func TestCallbackSignupNewIdentity(t *testing.T) {
 	testEnv(t)
 	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
 	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
-	stubOAuthFlow(t)
 	pair := mintPair(t)
 	ops, r := newOAuthOps(t)
 	state := envState()
@@ -307,9 +380,9 @@ func TestOAuthCallbackSignupNewIdentity(t *testing.T) {
 	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
 		ThenReturn(&pair.key, nil)
 
-	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	out, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if err != nil {
-		t.Fatalf("OAuthCallback: %v", err)
+		t.Fatalf("Callback: %v", err)
 	}
 	if out.AccessToken == "" || out.RefreshToken == "" {
 		t.Fatal("want a token pair")
@@ -322,9 +395,8 @@ func TestOAuthCallbackSignupNewIdentity(t *testing.T) {
 	_ = mock.Verify(r.states, mock.Times(1)).DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())
 }
 
-func TestOAuthCallbackProjectSignupScopesActorToProject(t *testing.T) {
+func TestCallbackProjectSignupScopesActorToProject(t *testing.T) {
 	testEnv(t)
-	stubOAuthFlow(t)
 	projectID := uuid.New()
 	pair := mintPair(t)
 	ops, r := newOAuthOps(t)
@@ -353,9 +425,9 @@ func TestOAuthCallbackProjectSignupScopesActorToProject(t *testing.T) {
 	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
 		ThenReturn(&pair.key, nil)
 
-	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	out, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if err != nil {
-		t.Fatalf("OAuthCallback: %v", err)
+		t.Fatalf("Callback: %v", err)
 	}
 	if out.AccessToken == "" || out.RefreshToken == "" {
 		t.Fatal("want a token pair")
@@ -366,11 +438,10 @@ func TestOAuthCallbackProjectSignupScopesActorToProject(t *testing.T) {
 	}
 }
 
-func TestOAuthCallbackExistingIdentityLogsIn(t *testing.T) {
+func TestCallbackExistingIdentityLogsIn(t *testing.T) {
 	testEnv(t)
 	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
 	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
-	stubOAuthFlow(t)
 	pair := mintPair(t)
 	ops, r := newOAuthOps(t)
 	state := envState()
@@ -387,9 +458,9 @@ func TestOAuthCallbackExistingIdentityLogsIn(t *testing.T) {
 	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
 		ThenReturn(&pair.key, nil)
 
-	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	out, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if err != nil {
-		t.Fatalf("OAuthCallback: %v", err)
+		t.Fatalf("Callback: %v", err)
 	}
 	if out.AccessToken == "" || out.RefreshToken == "" {
 		t.Fatal("want a token pair")
@@ -398,19 +469,19 @@ func TestOAuthCallbackExistingIdentityLogsIn(t *testing.T) {
 	_, _ = mock.Verify(r.actors, mock.Times(0)).Register(mock.AnyContext(), mock.Any[models.Actor]())
 }
 
-func TestOAuthCallbackInvalidState(t *testing.T) {
+func TestCallbackInvalidState(t *testing.T) {
 	testEnv(t)
 	ops, r := newOAuthOps(t)
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Any[string]())).
 		ThenReturn(nil, fun.ErrNotFound("no state"))
 
-	_, err := ops.OAuthCallback(context.Background(), "google", "code", "nope")
+	_, err := ops.Callback(context.Background(), "google", "code", "nope")
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
 
-func TestOAuthCallbackProviderMismatch(t *testing.T) {
+func TestCallbackProviderMismatch(t *testing.T) {
 	testEnv(t)
 	ops, r := newOAuthOps(t)
 	state := models.OAuthLoginState{
@@ -420,13 +491,13 @@ func TestOAuthCallbackProviderMismatch(t *testing.T) {
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 
-	_, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
 
-func TestOAuthCallbackExpiredState(t *testing.T) {
+func TestCallbackExpiredState(t *testing.T) {
 	testEnv(t)
 	ops, r := newOAuthOps(t)
 	state := models.OAuthLoginState{
@@ -436,13 +507,13 @@ func TestOAuthCallbackExpiredState(t *testing.T) {
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 
-	_, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
 
-func TestOAuthCallbackProviderRowDeletedMidFlight(t *testing.T) {
+func TestCallbackProviderRowDeletedMidFlight(t *testing.T) {
 	testEnv(t)
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
@@ -452,7 +523,7 @@ func TestOAuthCallbackProviderRowDeletedMidFlight(t *testing.T) {
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(nil, fun.ErrNotFound("deleted"))
 
-	_, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
@@ -461,9 +532,8 @@ func TestOAuthCallbackProviderRowDeletedMidFlight(t *testing.T) {
 	}
 }
 
-func TestOAuthCallbackDisabledBlocksNewSignup(t *testing.T) {
+func TestCallbackDisabledBlocksNewSignup(t *testing.T) {
 	testEnv(t)
-	stubOAuthFlow(t)
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
 	state := projectState(projectID)
@@ -478,16 +548,15 @@ func TestOAuthCallbackDisabledBlocksNewSignup(t *testing.T) {
 	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
 		ThenReturn(nil, fun.ErrNotFound("no identity"))
 
-	_, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if !fun.Is(err, fun.CodeForbidden) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 	_, _ = mock.Verify(r.actors, mock.Times(0)).Register(mock.AnyContext(), mock.Any[models.Actor]())
 }
 
-func TestOAuthCallbackDisabledAllowsExistingLogin(t *testing.T) {
+func TestCallbackDisabledAllowsExistingLogin(t *testing.T) {
 	testEnv(t)
-	stubOAuthFlow(t)
 	projectID := uuid.New()
 	pair := mintPair(t)
 	ops, r := newOAuthOps(t)
@@ -511,7 +580,7 @@ func TestOAuthCallbackDisabledAllowsExistingLogin(t *testing.T) {
 	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
 		ThenReturn(&pair.key, nil)
 
-	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	out, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if err != nil {
 		t.Fatalf("existing identity must be able to log in on a disabled provider, got %v", err)
 	}
@@ -521,15 +590,14 @@ func TestOAuthCallbackDisabledAllowsExistingLogin(t *testing.T) {
 	_, _ = mock.Verify(r.actors, mock.Times(0)).Register(mock.AnyContext(), mock.Any[models.Actor]())
 }
 
-// TestOAuthCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists
+// TestCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists
 // pins the scope bug: a Google account that only exists as a platform-level
 // identity must NOT be reused by a project login. The scoped lookup misses
 // (the platform row belongs to the NULL scope), so the callback registers a
 // brand-new actor scoped to the project instead of hijacking the platform
 // actor.
-func TestOAuthCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists(t *testing.T) {
+func TestCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists(t *testing.T) {
 	testEnv(t)
-	stubOAuthFlow(t)
 	projectID := uuid.New()
 	pair := mintPair(t)
 	ops, r := newOAuthOps(t)
@@ -561,9 +629,9 @@ func TestOAuthCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists(
 	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
 		ThenReturn(&pair.key, nil)
 
-	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	out, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if err != nil {
-		t.Fatalf("OAuthCallback: %v", err)
+		t.Fatalf("Callback: %v", err)
 	}
 	if out.AccessToken == "" || out.RefreshToken == "" {
 		t.Fatal("want a token pair")
@@ -576,14 +644,13 @@ func TestOAuthCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists(
 	_, _ = mock.Verify(r.external, mock.Times(1)).Create(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())
 }
 
-// TestOAuthCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists
+// TestCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists
 // is the mirror case: a platform login must never reuse an identity that
 // belongs to a project.
-func TestOAuthCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists(t *testing.T) {
+func TestCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists(t *testing.T) {
 	testEnv(t)
 	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
 	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
-	stubOAuthFlow(t)
 	pair := mintPair(t)
 	ops, r := newOAuthOps(t)
 	state := envState()
@@ -606,9 +673,9 @@ func TestOAuthCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists
 	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
 		ThenReturn(&pair.key, nil)
 
-	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	out, err := ops.Callback(context.Background(), "google", "code", "state-token")
 	if err != nil {
-		t.Fatalf("OAuthCallback: %v", err)
+		t.Fatalf("Callback: %v", err)
 	}
 	if out.AccessToken == "" || out.RefreshToken == "" {
 		t.Fatal("want a token pair")

@@ -20,16 +20,16 @@ type LoginProvider struct {
 	Disabled bool
 }
 
-// ResolveLoginProvider returns the credentials and enablement for one
+// resolveLoginProvider returns the credentials and enablement for one
 // provider in a scope — the platform (projectID nil, env-configured) or a
-// project's configured provider row. It is the single place login flows
-// learn whether a provider is configured and enabled: connect and callback
-// consult this module instead of reaching into the repo, so discovery
+// project's configured provider row. It is the single place the login flow
+// learns whether a provider is configured and enabled: connect and callback
+// consult it instead of reaching into the repo, so discovery
 // (ListEnabledProviders) and the flow can never drift on enablement.
 //
 // A missing project row surfaces as NotFound — callers decide how to phrase
 // it. Project existence itself is the caller's concern.
-func (o *Operations) ResolveLoginProvider(ctx context.Context, provider string, projectID *uuid.UUID) (LoginProvider, error) {
+func (o *Operations) resolveLoginProvider(ctx context.Context, provider string, projectID *uuid.UUID) (LoginProvider, error) {
 	if projectID == nil {
 		creds, ok := oauth.EnvCredentials(provider)
 		if !ok {

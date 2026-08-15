@@ -1,4 +1,4 @@
-package authn
+package oauth_providers
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func (h *Handlers) GetOAuthCallback(ctx context.Context, req openapi.GetOAuthCal
 	if req.Params.State == "" {
 		return nil, fun.ErrBadRequest("missing state")
 	}
-	tokens, err := h.ops.OAuthCallback(ctx, string(req.Provider), req.Params.Code, req.Params.State)
+	tokens, err := h.ops.Callback(ctx, string(req.Provider), req.Params.Code, req.Params.State)
 	if err != nil {
 		return nil, err
 	}

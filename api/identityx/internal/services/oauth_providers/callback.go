@@ -1,8 +1,9 @@
-package authn
+package oauth_providers
 
 import (
-	"IdentityX/models"
 	"context"
+
+	"IdentityX/models"
 	"lib/crypto"
 	"lib/telemetry"
 	"time"
@@ -11,11 +12,16 @@ import (
 	"go.uber.org/zap"
 )
 
-func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state string) (*models.UserTokensOutput, error) {
-	ctx, span := telemetry.StartSpan(ctx, "OAuthCallback")
+// Callback completes an OAuth login: it validates the one-time state,
+// exchanges the code for provider tokens, resolves or links the identity,
+// and mints the session pair through the Token-lifecycle module. The whole
+// flow — state lifecycle, provider resolution, userinfo fetch, identity
+// linking — lives behind this interface.
+func (o *Operations) Callback(ctx context.Context, provider, code, state string) (*models.UserTokensOutput, error) {
+	ctx, span := telemetry.StartSpan(ctx, "Callback")
 	defer span.End()
 
-	loginState, err := o.oauthLoginStates.GetByState(ctx, state)
+	loginState, err := o.loginStates.GetByState(ctx, state)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {
 			return nil, fun.ErrBadRequest("invalid or expired OAuth state; start a new login")
@@ -24,7 +30,7 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 	}
 	// The state is one-time-use: consume it regardless of the outcome so it
 	// can never be replayed.
-	err = o.oauthLoginStates.DeleteState(ctx, loginState.ID)
+	err = o.loginStates.DeleteState(ctx, loginState.ID)
 	if err != nil {
 		telemetry.Log().Warn("failed to delete oauth login state", zap.String("state_id", loginState.ID.String()))
 	}
@@ -35,7 +41,7 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 		return nil, fun.ErrBadRequest("OAuth state expired; start a new login")
 	}
 
-	resolved, err := o.oauthProviders.ResolveLoginProvider(ctx, string(loginState.Provider), loginState.ProjectID)
+	resolved, err := o.resolveLoginProvider(ctx, string(loginState.Provider), loginState.ProjectID)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {
 			return nil, fun.ErrBadRequest(
@@ -67,7 +73,7 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 		tokenExpiresAt = &providerToken.Expiry
 	}
 
-	identity, err := o.externalIdentities.GetByProviderAndSubject(ctx, provider, info.SubString(), loginState.ProjectID)
+	identity, err := o.external.GetByProviderAndSubject(ctx, provider, info.SubString(), loginState.ProjectID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return nil, err
 	}

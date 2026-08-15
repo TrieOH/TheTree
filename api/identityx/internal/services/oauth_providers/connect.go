@@ -1,19 +1,24 @@
-package authn
+package oauth_providers
 
 import (
 	"context"
-	"lib/oauth"
+
 	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
-func (o *Operations) OAuthConnect(ctx context.Context, provider string, projectID *uuid.UUID) (string, error) {
-	ctx, span := telemetry.StartSpan(ctx, "OAuthConnect")
+// Connect starts an OAuth login: it resolves the scope's provider
+// credentials, records a one-time login state, and returns the provider's
+// authorization URL for the caller to redirect to. Provider policy lives
+// in this module, so this is the flow's only contact with "is this
+// provider configured/enabled".
+func (o *Operations) Connect(ctx context.Context, provider string, projectID *uuid.UUID) (string, error) {
+	ctx, span := telemetry.StartSpan(ctx, "Connect")
 	defer span.End()
 
-	p, ok := oauth.Registry[provider]
+	p, ok := o.meta[provider]
 	if !ok {
 		return "", fun.ErrBadRequest("unsupported provider: " + provider)
 	}
@@ -27,9 +32,7 @@ func (o *Operations) OAuthConnect(ctx context.Context, provider string, projectI
 		}
 	}
 
-	// Provider policy lives in the oauth_providers module: this is the
-	// flow's only contact with "is this provider configured/enabled".
-	resolved, err := o.oauthProviders.ResolveLoginProvider(ctx, provider, projectID)
+	resolved, err := o.resolveLoginProvider(ctx, provider, projectID)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {
 			return "", fun.ErrBadRequest("provider not configured for this project: " + provider)

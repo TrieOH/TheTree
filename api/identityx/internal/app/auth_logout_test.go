@@ -7,11 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"IdentityX/internal/authz"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
-	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -40,13 +38,6 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		projects,
 		mock.Mock[ports.PlatformRolesRepo](),
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), projects, tokens.Config{}),
-		mock.Mock[ports.ExternalIdentitiesRepo](),
-		oauth_providers.NewOperations(
-			mock.Mock[ports.ProjectOAuthProvidersRepo](),
-			projects,
-			authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
-		),
-		mock.Mock[ports.OAuthLoginStatesRepo](),
 		mock.Mock[ports.ActionTokenRepo](),
 		mock.Mock[ports.EmailSender](),
 		[]byte("test-hmac"),
