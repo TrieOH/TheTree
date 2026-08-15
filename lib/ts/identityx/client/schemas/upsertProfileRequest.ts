@@ -82,6 +82,8 @@ import type { UpsertProfileRequestProfile } from './upsertProfileRequestProfile'
 export interface UpsertProfileRequest {
   /** Optional unique handle for the profile. Setting a handle that is already in use fails; sending null or omitting the field leaves the handle unchanged. */
   handle?: string | null;
+  /** Profile picture URL, first-class column. Sending null or omitting the field leaves it unchanged. */
+  pfp_url?: string | null;
   /** Profile data to store, validated against the active schema. */
   profile: UpsertProfileRequestProfile;
 }
