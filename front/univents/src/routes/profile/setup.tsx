@@ -63,7 +63,10 @@ function InitialProfileSetup() {
       } as ProfileData);
       const response = await auth.upsertActorProfile(actorId, {
         handle: submittedHandle,
-        profile,
+        pfp_url: pfpUrl ?? null,
+        profile: Object.fromEntries(
+          Object.entries(profile).filter(([key]) => key !== "pfpUrl"),
+        ),
       });
       if (!response.success) {
         throw new Error(

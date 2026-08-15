@@ -43,13 +43,19 @@ function EditProfilePage() {
     };
   }, [actorId, auth]);
   const save = useCallback(
-    (profile: ProfileData, handle?: string) =>
-      actorId
-        ? auth.upsertActorProfile(actorId, { handle, profile })
+    (profile: ProfileData, handle?: string) => {
+      const { pfpUrl, ...profileData } = profile;
+      return actorId
+        ? auth.upsertActorProfile(actorId, {
+            handle,
+            pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
+            profile: profileData,
+          })
         : Promise.resolve({
             success: false as const,
             message: "Usuário não autenticado",
-          }),
+          });
+    },
     [actorId, auth],
   );
   return (

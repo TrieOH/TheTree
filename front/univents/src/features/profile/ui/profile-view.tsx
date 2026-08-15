@@ -74,7 +74,10 @@ export function ProfileView({
   if (profileQuery.isLoading) return <ProfileSkeleton />;
   if (error && !ownProfile) return <MissingPublicProfile />;
 
-  const profile = asUniventsProfile(result?.profile ?? {});
+  const profile = asUniventsProfile({
+    ...(result?.profile ?? {}),
+    ...(result?.pfp_url !== undefined ? { pfpUrl: result.pfp_url } : {}),
+  });
   const isOwnProfile = ownProfile || result?.actor_id === viewerActorId;
   const publicIdentifier = result?.handle || actorId;
   const profileUrl = new URL(
