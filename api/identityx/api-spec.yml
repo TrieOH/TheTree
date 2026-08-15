@@ -742,6 +742,7 @@ paths:
     get:
       tags: [organizations]
       operationId: listOrganizations
+      x-scope: platform-only
       summary: List your organizations
       description: |
         Lists the organizations the authenticated platform-level actor
@@ -772,6 +773,7 @@ paths:
     post:
       tags: [organizations]
       operationId: createOrganization
+      x-scope: platform-only
       summary: Create an organization
       description: |
         Creates an organization owned by the authenticated platform-level
@@ -812,6 +814,7 @@ paths:
     get:
       tags: [organizations]
       operationId: listOrganizationMembers
+      x-scope: platform-only
       summary: List organization members
       description: |
         Lists the members of an organization. Requires a platform-level
@@ -847,6 +850,7 @@ paths:
     post:
       tags: [organizations]
       operationId: addOrganizationMember
+      x-scope: platform-only
       summary: Add an organization member
       description: |
         Adds an existing actor (by email) to the organization with the
@@ -885,6 +889,7 @@ paths:
     delete:
       tags: [organizations]
       operationId: removeOrganizationMember
+      x-scope: platform-only
       summary: Remove an organization member
       description: |
         Removes an actor (by email) from the organization. The
@@ -926,6 +931,7 @@ paths:
     get:
       tags: [organizations]
       operationId: listOrganizationProjects
+      x-scope: platform-only
       summary: List organization projects
       description: |
         Lists the projects scoped to an organization. Requires a
@@ -961,6 +967,7 @@ paths:
     post:
       tags: [organizations]
       operationId: createOrganizationProject
+      x-scope: platform-only
       summary: Create an organization project
       description: |
         Creates a project inside an organization. Requires an
@@ -1008,6 +1015,7 @@ paths:
     get:
       tags: [organizations]
       operationId: listOrganizationProjectActors
+      x-scope: platform-only
       summary: List project actors
       description: |
         Lists the actors scoped to an organization-owned project. The
@@ -1044,6 +1052,7 @@ paths:
     post:
       tags: [organizations]
       operationId: createOrganizationProjectActor
+      x-scope: platform-only
       summary: Create a project actor
       description: |
         Creates an actor scoped to an organization-owned project. The
@@ -1092,6 +1101,7 @@ paths:
     get:
       tags: [organizations]
       operationId: listOrganizationProjectMembers
+      x-scope: platform-only
       summary: List project members
       description: |
         Lists the members of an organization-owned project. The actor
@@ -1128,6 +1138,7 @@ paths:
     post:
       tags: [organizations]
       operationId: addOrganizationProjectMember
+      x-scope: platform-only
       summary: Add a project member
       description: |
         Adds an existing actor (by email) to an organization-owned
@@ -1167,6 +1178,7 @@ paths:
     delete:
       tags: [organizations]
       operationId: removeOrganizationProjectMember
+      x-scope: platform-only
       summary: Remove a project member
       description: |
         Removes an actor (by email) from an organization-owned project.
@@ -1208,6 +1220,7 @@ paths:
     get:
       tags: [organizations]
       operationId: getOrganizationProjectActor
+      x-scope: platform-only
       summary: Get a project actor by ID
       description: |
         Fetches a single actor scoped to an organization-owned project.
@@ -1245,6 +1258,7 @@ paths:
     get:
       tags: [projects]
       operationId: listProjects
+      x-scope: platform-only
       summary: List your projects
       description: |
         Lists the projects the authenticated actor is a member of.
@@ -1275,6 +1289,7 @@ paths:
     post:
       tags: [projects]
       operationId: createProject
+      x-scope: platform-only
       summary: Create a project
       description: |
         Creates a project owned by the authenticated platform-level
@@ -1318,6 +1333,7 @@ paths:
     get:
       tags: [projects]
       operationId: listProjectMembers
+      x-scope: platform-only
       summary: List project members
       description: |
         Lists the members of a project. The authenticated actor must be a
@@ -1354,6 +1370,7 @@ paths:
     post:
       tags: [projects]
       operationId: addProjectMember
+      x-scope: platform-only
       summary: Add a project member
       description: |
         Adds an existing actor (by email) to the project with the given
@@ -1393,6 +1410,7 @@ paths:
     delete:
       tags: [projects]
       operationId: removeProjectMember
+      x-scope: platform-only
       summary: Remove a project member
       description: |
         Removes an actor (by email) from the project. The authenticated
@@ -1469,6 +1487,7 @@ paths:
     post:
       tags: [actors]
       operationId: createActor
+      x-scope: platform-only
       summary: Create a project actor
       description: |
         Creates an actor in the project (used by services that provision
@@ -1764,6 +1783,7 @@ paths:
     post:
       tags: [apikeys]
       operationId: createAPIKey
+      x-scope: platform-only
       summary: Create an API key
       description: |
         Creates an API key bound to a subject (actor) in the project,
@@ -2090,6 +2110,7 @@ paths:
     post:
       tags: [capabilities]
       operationId: createCapability
+      x-scope: platform-only
       summary: Create a capability
       description: |
         Defines a new capability grant (`resource:action`) for the
@@ -2163,6 +2184,7 @@ paths:
     put:
       tags: [profile_schemas]
       operationId: upsertPlatformProfileSchema
+      x-scope: platform-only
       summary: Upsert the platform-wide profile schema
       description: |
         Sets (or replaces) the platform-wide JSON Schema for actor
@@ -2237,6 +2259,7 @@ paths:
     put:
       tags: [profile_schemas]
       operationId: upsertProjectProfileSchema
+      x-scope: platform-only
       summary: Upsert the project profile schema
       description: |
         Sets (or replaces) the JSON Schema for actor profiles within the
@@ -2278,11 +2301,13 @@ paths:
     get:
       tags: [profiles]
       operationId: getPlatformProfile
+      x-scope: platform-only
       summary: Get a platform actor's profile
       description: |
         Fetches the platform-scoped profile (actor with no project) of
         the given actor. Public read.
-      security: []
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ActorID'
       responses:
@@ -2308,6 +2333,7 @@ paths:
     put:
       tags: [profiles]
       operationId: upsertPlatformProfile
+      x-scope: platform-only
       summary: Upsert a platform actor's profile
       description: |
         Sets (or replaces) the platform-scoped profile of the given
@@ -2462,6 +2488,7 @@ paths:
     get:
       tags: [profiles]
       operationId: listOutdatedPlatformProfiles
+      x-scope: platform-only
       summary: List outdated platform actor profiles
       description: |
         Lists platform-scoped actor profiles that failed to migrate to the

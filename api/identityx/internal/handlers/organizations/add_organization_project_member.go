@@ -8,12 +8,7 @@ import (
 )
 
 func (h *Handlers) AddOrganizationProjectMember(ctx context.Context, req openapi.AddOrganizationProjectMemberRequestObject) (openapi.AddOrganizationProjectMemberResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.ops.AddProjectMember(ctx, models.AddOrgProjectMemberInput{
+	err := h.ops.AddProjectMember(ctx, models.AddOrgProjectMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		Role:           req.Body.Role,
 		OrganizationID: req.OrganizationId,

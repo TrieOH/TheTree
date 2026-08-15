@@ -2,12 +2,12 @@
 // aggregating one subpackage per feature. Each feature package owns the
 // methods of its feature; this package only wires them together.
 //
-// Auth, validation, and error mapping run in the strict middleware stack
-// (see internal/app/auth_dispatch.go); the handlers here are pure domain
-// logic + fun envelope construction. Identity scope is enforced per
-// handler: platform-only operations call models.RequireClientOnly as their
-// first statement (models.RequireProjectClientOnly is defined for future
-// project-scoped operations).
+// Auth, validation, scope, and error mapping run in the strict middleware
+// stack (see internal/app/auth_dispatch.go); the handlers here are pure
+// domain logic + fun envelope construction. Platform-vs-project scope is a
+// chain concern derived from each operation's x-scope annotation in the
+// spec — the Access-check module registers the checker, the resolver
+// validates and enforces it, and the parity test pins the surface.
 package handlers
 
 import (

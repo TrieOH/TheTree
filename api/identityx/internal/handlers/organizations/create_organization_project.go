@@ -9,11 +9,6 @@ import (
 )
 
 func (h *Handlers) CreateOrganizationProject(ctx context.Context, req openapi.CreateOrganizationProjectRequestObject) (openapi.CreateOrganizationProjectResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	project, err := h.ops.CreateProject(ctx, models.CreateOrgProjectInput{
 		OrganizationID: req.OrganizationId,
 		Name:           req.Body.Name,

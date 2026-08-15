@@ -66,6 +66,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		jwtAuth:    jwtStub,
 		apiKeyAuth: mwJWT,
 		anyAuth:    mwAnyAuth,
+		scopes:     testScopeCheckers(),
 	})
 }
 

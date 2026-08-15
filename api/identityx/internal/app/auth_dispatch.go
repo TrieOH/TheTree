@@ -28,15 +28,17 @@ func setupGuard() func(http.Handler) http.Handler {
 // authResolver derives every operation's chain from the spec's security
 // blocks, keyed by generated-form operationId. The setup guard and its op
 // list are validated against the spec at construction; a mismatch fails
-// boot, never production. Platform-vs-project scope is not a chain concern:
-// it is enforced per handler via handlers.RequireClientOnly (platform-only
-// operations) and handlers.RequireProjectClientOnly (project-scoped
-// operations, not used yet).
+// boot, never production. Platform-vs-project scope is also a chain
+// concern, derived from each operation's x-scope annotation: the resolver
+// validates every declared scope against the registered checkers (a miss
+// fails boot) and runs the scope middleware after authn, so a forgotten
+// annotation cannot silently widen the surface.
 func authResolver(mw middlewares, guard func(http.Handler) http.Handler) (*authz.Resolver, error) {
 	return authz.NewResolver(spec.OpenAPISpec, authz.Primitives{
 		JWT:    mw.jwtAuth,
 		APIKey: mw.apiKeyAuth,
 		Any:    mw.anyAuth,
+		Scopes: mw.scopes,
 	}, authz.Options{
 		SetupGuard:     guard,
 		SkipSetupGuard: []string{"getSetup", "postSetup"},

@@ -1,14 +1,23 @@
 package authz
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
 
+	"github.com/MintzyG/fun"
 	"gopkg.in/yaml.v3"
 )
+
+// ScopeChecker is a predicate answering "is the caller allowed by this
+// scope". It reads the identity the auth middleware wrote to the context
+// and returns an error to reject; nil passes. Scope checkers are plain
+// predicates — they never write to the context — so they are testable
+// directly without HTTP, and the resolver wraps them into middleware.
+type ScopeChecker func(context.Context) error
 
 // Primitives holds the auth middlewares a backend provides. The resolver
 // derives each operation's chain from the spec's security blocks: the union
@@ -20,10 +29,17 @@ import (
 // operation whose combination has no primitive is an error at construction:
 // the spec and the backend's auth stack disagree, and that must fail
 // startup, not production.
+//
+// Scopes is the registry of scope checkers, keyed by the x-scope value the
+// spec declares per operation. A nil map disables scope support entirely —
+// backends that declare no x-scope never need one. Every x-scope an
+// operation declares must name a registered checker; a miss fails startup
+// alongside the scheme checks, never production.
 type Primitives struct {
 	JWT    func(http.Handler) http.Handler // enforces scheme "bearerAuth"
 	APIKey func(http.Handler) http.Handler // enforces scheme "apiKeyAuth"
 	Any    func(http.Handler) http.Handler // enforces any combination of the two (OR)
+	Scopes map[string]ScopeChecker          // enforces per-operation x-scope
 }
 
 // Options carries per-backend decorations the spec cannot express.
@@ -39,13 +55,15 @@ type Options struct {
 // Blocks are the operation's security blocks (the spec default applied
 // where the operation declares none): a list of blocks, each a list of
 // scheme names. Schemes is their flattened sorted union; empty means
-// public.
+// public. Scope is the operation's x-scope value, empty when it declares
+// none (no scope restriction).
 type ResolvedOperation struct {
 	Method      string
 	Path        string
 	OperationID string
 	Blocks      [][]string
 	Schemes     []string
+	Scope       string
 }
 
 type openAPISpec struct {
@@ -66,12 +84,14 @@ type pathItem struct {
 type operation struct {
 	OperationID string                `yaml:"operationId"`
 	Security    []map[string][]string `yaml:"security"`
+	Scope       *string               `yaml:"x-scope"`
 }
 
 // SpecOperations parses the spec and returns every operation with its
 // effective security (the spec default applied where the operation declares
-// none) and its route (method + path). Both the resolver and the per-backend
-// parity tests derive their expectations from this one reading of the spec.
+// none), its x-scope (empty when undeclared), and its route (method + path).
+// Both the resolver and the per-backend parity tests derive their
+// expectations from this one reading of the spec.
 func SpecOperations(spec []byte) ([]ResolvedOperation, error) {
 	var doc openAPISpec
 	err := yaml.Unmarshal(spec, &doc)
@@ -115,6 +135,7 @@ func SpecOperations(spec []byte) ([]ResolvedOperation, error) {
 				OperationID: m.op.OperationID,
 				Blocks:      names,
 				Schemes:     union,
+				Scope:       scopeOf(m.op.Scope),
 			})
 		}
 	}
@@ -160,6 +181,31 @@ func (p Primitives) forCombination(combination string) (func(http.Handler) http.
 	}
 }
 
+// scopeOf converts the declared x-scope to its string form: absent (nil)
+// is the empty scope, so operations without x-scope carry no restriction.
+func scopeOf(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// scopeMiddleware wraps a scope checker into an HTTP middleware that sends
+// the checker's error on rejection and otherwise continues the chain. It is
+// the only place a scope predicate meets HTTP; the predicate itself stays
+// context-only and testable.
+func scopeMiddleware(checker ScopeChecker) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := checker(r.Context()); err != nil {
+				fun.Error(err).Send(w)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // Resolver derives every operation's middleware chain from the spec's
 // security blocks: the spec is the single source of truth for who may call
 // what, and with which scheme. Chains are keyed by generated-form
@@ -173,9 +219,12 @@ type Resolver struct {
 // It errors when an operation's security combination has no primitive (or a
 // nil one), when a single security block lists multiple schemes (AND
 // semantics — the resolver composes OR across blocks; write the spec's
-// alternatives as separate blocks), when the spec is not valid YAML, or when
-// a named operation in SkipSetupGuard does not exist in the spec — all fail
-// startup, not production.
+// alternatives as separate blocks), when an operation declares an x-scope
+// with no registered checker in primitives.Scopes, when an operation
+// declares an x-scope but no security schemes (a scope reads the identity
+// authn wrote — it implies authentication), when the spec is not valid YAML,
+// or when a named operation in SkipSetupGuard does not exist in the spec —
+// all fail startup, not production.
 func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, error) {
 	ops, err := SpecOperations(spec)
 	if err != nil {
@@ -188,6 +237,14 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 		for _, block := range op.Blocks {
 			if len(block) > 1 {
 				return nil, fmt.Errorf("authz resolver: %s %s: security block lists multiple schemes %v (AND) — express OR as separate blocks", op.Method, op.OperationID, block)
+			}
+		}
+		if op.Scope != "" {
+			if len(op.Schemes) == 0 {
+				return nil, fmt.Errorf("authz resolver: %s %s: x-scope %q on an operation with no security schemes (a scope implies authentication)", op.Method, op.OperationID, op.Scope)
+			}
+			if primitives.Scopes == nil || primitives.Scopes[op.Scope] == nil {
+				return nil, fmt.Errorf("authz resolver: %s %s: no scope checker registered for x-scope %q", op.Method, op.OperationID, op.Scope)
 			}
 		}
 	}
@@ -209,6 +266,11 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 				return nil, fmt.Errorf("authz resolver: %s %s: %w", op.Method, op.OperationID, err)
 			}
 			chain = []func(http.Handler) http.Handler{mw}
+		}
+		if op.Scope != "" {
+			// A scope reads the identity authn wrote, so it runs after the
+			// authn primitive; the setup guard stays outermost.
+			chain = append(chain, scopeMiddleware(primitives.Scopes[op.Scope]))
 		}
 		if opts.SetupGuard != nil && !skipSetup[op.OperationID] {
 			chain = append([]func(http.Handler) http.Handler{opts.SetupGuard}, chain...)

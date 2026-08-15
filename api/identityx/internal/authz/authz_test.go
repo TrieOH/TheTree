@@ -316,3 +316,51 @@ func TestCheckPlatformTiers(t *testing.T) {
 }
 
 var _ libauthz.Role = models.PlatformRoleAdmin // PlatformRole satisfies the shared Role interface
+
+// ── Scope checkers ───────────────────────────────────────────────────────
+
+// ctxScoped seeds a context identity carrying a project id, the shape a
+// project-scoped actor (or a project-scoped service key) would have.
+func ctxScoped(actorID, projectID uuid.UUID) context.Context {
+	return models.WithIdentity(context.Background(), &models.Identity{
+		Sub: models.Subject{ID: actorID, ProjectID: &projectID},
+	})
+}
+
+// TestScopeCheckersRegistry asserts the registry carries the platform-only
+// scope the spec's x-scope annotations name — resolver fail-fast would not
+// boot if it did not, but the registry is the extensibility point and the
+// test pins its shape.
+func TestScopeCheckersRegistry(t *testing.T) {
+	s := newService(newFakeProjects(), newFakeOrgs(), newFakePlatformRoles())
+	checkers := s.ScopeCheckers()
+	if len(checkers) != 1 {
+		t.Fatalf("expected exactly the platform-only checker, got %d entries", len(checkers))
+	}
+	if _, ok := checkers["platform-only"]; !ok {
+		t.Fatal("registry must expose the platform-only scope")
+	}
+}
+
+// TestRequirePlatformClient asserts the platform-only checker's unit
+// behavior: it passes a platform-level identity, rejects a project-scoped
+// one, and rejects an unauthenticated context.
+func TestRequirePlatformClient(t *testing.T) {
+	s := newService(newFakeProjects(), newFakeOrgs(), newFakePlatformRoles())
+	checker := s.ScopeCheckers()["platform-only"]
+	if checker == nil {
+		t.Fatal("platform-only checker missing from registry")
+	}
+
+	if err := checker(models.WithIdentity(context.Background(), &models.Identity{
+		Sub: models.Subject{ID: uuid.New(), ProjectID: nil},
+	})); err != nil {
+		t.Fatalf("platform-level identity must pass the scope, got %v", err)
+	}
+	if err := checker(ctxScoped(uuid.New(), uuid.New())); !fun.Is(err, fun.CodeUnauthorized) {
+		t.Fatalf("project-scoped identity must be rejected with 401, got %v", err)
+	}
+	if err := checker(context.Background()); !fun.Is(err, fun.CodeUnauthorized) {
+		t.Fatalf("unauthenticated context must be rejected with 401, got %v", err)
+	}
+}

@@ -220,6 +220,16 @@ func labelMW(name string) func(http.Handler) http.Handler {
 	}
 }
 
+// labelScope records its name like labelMW, in the checker's own shape —
+// the scope middleware runs the checker inside the chain, so a scoped
+// operation's run records both the authn primitive and the scope name.
+func labelScope(name string) authz.ScopeChecker {
+	return func(context.Context) error {
+		parityInvocations = append(parityInvocations, name)
+		return nil
+	}
+}
+
 // runChain executes a chain and returns the middleware names that ran.
 func runChain(chain []func(http.Handler) http.Handler) []string {
 	parityInvocations = nil
@@ -280,16 +290,21 @@ func TestRouterRoutesMatchSpec(t *testing.T) {
 }
 
 // TestAuthMatrixMatchesSpec asserts every operation's chain, composed from
-// the spec's security blocks, runs the middlewares the spec declares: the
-// setup guard (except the two setup routes) and the scheme combination's
-// derived primitive. Chains are keyed by generated-form operationID; the
-// spec is the single source of the expectations, so the resolver cannot
-// drift from it without failing startup or this test.
+// the spec's security blocks and x-scope annotations, runs the middlewares
+// the spec declares: the setup guard (except the two setup routes), the
+// scheme combination's derived primitive, and — for operations declaring an
+// x-scope — the scope checker registered for it, after authn. Chains are
+// keyed by generated-form operationID; the spec is the single source of the
+// expectations, so the resolver cannot drift from it without failing
+// startup or this test.
 func TestAuthMatrixMatchesSpec(t *testing.T) {
 	mw := middlewares{
 		jwtAuth:    labelMW("JWT"),
 		apiKeyAuth: labelMW("APIKey"),
 		anyAuth:    labelMW("AnyAuth"),
+		scopes: map[string]authz.ScopeChecker{
+			"platform-only": labelScope("scope:platform-only"),
+		},
 	}
 	resolver, err := authResolver(mw, labelMW("setupGuard"))
 	if err != nil {
@@ -320,6 +335,11 @@ func TestAuthMatrixMatchesSpec(t *testing.T) {
 				mismatches = append(mismatches, op.OperationID+": unexpected scheme combination "+strings.Join(op.Schemes, "+"))
 				continue
 			}
+		}
+		if op.Scope != "" {
+			// the scope middleware runs after authn — it reads the identity
+			// authn wrote — and before the response returns
+			want = append(want, "scope:"+op.Scope)
 		}
 		if got := runChain(chains[authz.GeneratedOperationID(op.OperationID)]); !slices.Equal(got, want) {
 			mismatches = append(mismatches, op.OperationID+": want "+strings.Join(want, "+")+", got "+strings.Join(got, "+"))

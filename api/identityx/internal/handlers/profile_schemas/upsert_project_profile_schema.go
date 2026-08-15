@@ -9,11 +9,6 @@ import (
 )
 
 func (h *Handlers) UpsertProjectProfileSchema(ctx context.Context, req openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	schema, err := h.ops.UpsertSchema(ctx, models.UpsertProfileSchemaInput{
 		ProjectID: &req.ProjectId,
 		Schema:    req.Body.Schema,

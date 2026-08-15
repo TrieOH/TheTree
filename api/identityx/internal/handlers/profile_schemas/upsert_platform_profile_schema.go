@@ -9,11 +9,6 @@ import (
 )
 
 func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req openapi.UpsertPlatformProfileSchemaRequestObject) (openapi.UpsertPlatformProfileSchemaResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	schema, err := h.ops.UpsertSchema(ctx, models.UpsertProfileSchemaInput{
 		Schema: req.Body.Schema,
 		Active: req.Body.Active,

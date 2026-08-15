@@ -1,9 +1,10 @@
 package authz
 
 import (
+	"context"
+
 	"IdentityX/models"
 	"IdentityX/ports"
-	"context"
 
 	libauthz "lib/authz"
 
@@ -31,6 +32,35 @@ func callerID(ctx context.Context) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 	return ident.Sub.ID, nil
+}
+
+// ── Scope checkers ───────────────────────────────────────────────────────
+
+// requirePlatformClient is the "platform-only" scope checker: the caller
+// must be an authenticated platform-level client — human, service, or
+// machine with no project scoping. Project-scoped actors and unauthenticated
+// contexts are rejected. It is the scope half of the Access-check module,
+// enforced by the spec-derived chain, and directly testable as a predicate.
+func (s *Service) requirePlatformClient(ctx context.Context) error {
+	ident, err := models.RequireIdentity(ctx)
+	if err != nil {
+		return err
+	}
+	if ident.Sub.ProjectID != nil {
+		return fun.ErrUnauthorized("platform-level authentication required")
+	}
+	return nil
+}
+
+// ScopeCheckers returns the registered scope checkers, keyed by the x-scope
+// value the spec declares per operation. The resolver validates every
+// x-scope an operation declares against this registry and fails boot on a
+// miss. Adding a scope is one spec line plus one entry here — the generic
+// mechanism in lib/authz needs no further wiring.
+func (s *Service) ScopeCheckers() map[string]libauthz.ScopeChecker {
+	return map[string]libauthz.ScopeChecker{
+		"platform-only": s.requirePlatformClient,
+	}
 }
 
 // CheckProject gates a project-scoped operation. The caller is resolved

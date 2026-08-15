@@ -14,6 +14,7 @@ import (
 	"IdentityX/internal/services"
 	"IdentityX/internal/sqlc"
 	"IdentityX/internal/tokens"
+	libauthz "lib/authz"
 	"lib/errx"
 	libriver "lib/river"
 
@@ -28,6 +29,9 @@ type middlewares struct {
 	jwtAuth    func(http.Handler) http.Handler
 	apiKeyAuth func(http.Handler) http.Handler
 	anyAuth    func(http.Handler) http.Handler
+	// scopes is the scope-checker registry the spec's x-scope annotations
+	// resolve against; nil disables scope support (no x-scope in the spec).
+	scopes map[string]libauthz.ScopeChecker
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -44,7 +48,7 @@ func (app *IdentityX) initTokens(r *repos.Repos) *tokens.Manager {
 	})
 }
 
-func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, riverClient *river.Client[pgx.Tx]) *services.Operations {
+func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, riverClient *river.Client[pgx.Tx]) (*services.Operations, *authz.Service) {
 	authzSvc := authz.New(r.Organizations, r.Projects, r.PlatformRoles)
 	sender := emails.NewSender(
 		r.ActionTokens,
@@ -55,15 +59,18 @@ func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, 
 		app.cfg.AppName,
 		riverClient,
 	)
-	return services.NewOperations(r, authzSvc, tokensMgr, app.cfg.HmacSecret, sender)
+	return services.NewOperations(r, authzSvc, tokensMgr, app.cfg.HmacSecret, sender), authzSvc
 }
 
-func (app *IdentityX) initMiddlewares(r *repos.Repos, tokensMgr *tokens.Manager) middlewares {
+func (app *IdentityX) initMiddlewares(r *repos.Repos, tokensMgr *tokens.Manager, authzSvc *authz.Service) middlewares {
 	var mw middlewares
 	authMW := app.SetupAuthMiddlewares(tokensMgr, r.APIKeys, r.Actors, r.Capabilities)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
+	// The scope checkers come from the Access-check module: adding a scope
+	// is one spec x-scope line plus one entry in authz.ScopeCheckers.
+	mw.scopes = authzSvc.ScopeCheckers()
 	return mw
 }
 

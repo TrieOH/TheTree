@@ -9,12 +9,7 @@ import (
 )
 
 func (h *Handlers) RemoveOrganizationMember(ctx context.Context, req openapi.RemoveOrganizationMemberRequestObject) (openapi.RemoveOrganizationMemberResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.ops.RemoveMember(ctx, models.RemoveOrganizationMemberInput{
+	err := h.ops.RemoveMember(ctx, models.RemoveOrganizationMemberInput{
 		ActorEmail:     req.Body.ActorEmail,
 		OrganizationID: req.OrganizationId,
 	})

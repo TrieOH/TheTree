@@ -5,15 +5,9 @@ import (
 	"time"
 
 	"IdentityX/internal/openapi"
-	"IdentityX/models"
 )
 
 func (h *Handlers) ListOrganizationProjects(ctx context.Context, req openapi.ListOrganizationProjectsRequestObject) (openapi.ListOrganizationProjectsResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	projects, err := h.ops.ListOrgProjects(ctx, req.OrganizationId)
 	if err != nil {
 		return nil, err

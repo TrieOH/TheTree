@@ -5,17 +5,11 @@ import (
 	"time"
 
 	"IdentityX/internal/openapi"
-	"IdentityX/models"
 )
 
 // ListOutdatedPlatformProfiles lists platform-scoped actor profiles that
 // failed to migrate to the active platform schema version.
 func (h *Handlers) ListOutdatedPlatformProfiles(ctx context.Context, _ openapi.ListOutdatedPlatformProfilesRequestObject) (openapi.ListOutdatedPlatformProfilesResponseObject, error) {
-	err := models.RequireClientOnly(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	profiles, err := h.ops.ListOutdatedProfiles(ctx, nil)
 	if err != nil {
 		return nil, err
