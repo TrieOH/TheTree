@@ -1,0 +1,5 @@
+interface:
+  display_name: "Audit Codebase"
+  short_description: "Find bugs, security holes, and footguns"
+policy:
+  allow_implicit_invocation: false
