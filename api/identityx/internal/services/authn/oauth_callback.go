@@ -62,14 +62,14 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 		tokenExpiresAt = &providerToken.Expiry
 	}
 
-	identity, err := o.externalIdentities.GetByProviderAndSubject(ctx, provider, info.SubString())
+	identity, err := o.externalIdentities.GetByProviderAndSubject(ctx, provider, info.SubString(), loginState.ProjectID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return nil, err
 	}
 
 	var actor *models.Actor
 	if identity != nil {
-		actor, err = o.updateExistingIdentity(ctx, provider, info, identity, encryptedAccess, encryptedRefresh, tokenExpiresAt)
+		actor, err = o.updateExistingIdentity(ctx, provider, info, identity, encryptedAccess, encryptedRefresh, tokenExpiresAt, loginState.ProjectID)
 	} else {
 		// A disabled provider allows existing identities to log back in,
 		// but never new sign-ups.

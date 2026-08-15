@@ -12,7 +12,7 @@ func SetupConstraintMessages() {
 
 		// actor_external_identities
 		"chk_actor_external_identities_provider": "external identity provider must be one of: google, github",
-		"uniq_external_identity":                 "this external identity is already linked to another account",
+		"uniq_external_identity_per_actor":       "this external identity is already linked to this account",
 
 		// organizations
 		"uniq_organizations_slug": "an organization with this slug already exists",

@@ -42,9 +42,17 @@ WHERE id = @actor_id;
 SELECT EXISTS (SELECT 1 FROM actors LIMIT 1) AS exists;
 
 -- name: GetExternalIdentityByProviderAndSubject :one
-SELECT * FROM actor_external_identities
-WHERE provider = @provider
-  AND subject = @subject;
+-- Scoped by the identity's actor project: a platform login (NULL project)
+-- only sees platform identities, a project login only sees identities whose
+-- actor lives in that project. Mirrors GetActorByEmail's scope check.
+SELECT e.*
+FROM actor_external_identities e
+JOIN actors a ON a.id = e.actor_id
+WHERE e.provider = @provider
+  AND e.subject = @subject
+  AND a.project_id IS NOT DISTINCT FROM @project_id
+ORDER BY e.created_at
+LIMIT 1;
 
 -- name: CreateExternalIdentity :one
 INSERT INTO actor_external_identities (actor_id, provider, subject, email, encrypted_access_token, encrypted_refresh_token, token_expires_at)
@@ -52,14 +60,25 @@ VALUES (@actor_id, @provider, @subject, @email, @encrypted_access_token, @encryp
     RETURNING *;
 
 -- name: UpdateExternalIdentityTokens :one
+-- Same scope rule as the read: only the row whose actor lives in the given
+-- project scope is refreshed, so a platform login can never touch a
+-- project's identity (and vice versa).
 UPDATE actor_external_identities
 SET encrypted_access_token = @encrypted_access_token,
     encrypted_refresh_token = @encrypted_refresh_token,
     token_expires_at = @token_expires_at,
     updated_at = NOW()
-WHERE provider = @provider
-  AND subject = @subject
-    RETURNING *;
+WHERE id = (
+    SELECT e.id
+    FROM actor_external_identities e
+    JOIN actors a ON a.id = e.actor_id
+    WHERE e.provider = @provider
+      AND e.subject = @subject
+      AND a.project_id IS NOT DISTINCT FROM @project_id
+    ORDER BY e.created_at
+    LIMIT 1
+)
+RETURNING *;
 
 -- name: ListActorsFromProject :many
 SELECT *

@@ -6,9 +6,11 @@ import (
 	"context"
 	"lib/database"
 	"lib/telemetry"
+
+	"github.com/google/uuid"
 )
 
-func (repo *Repo) UpdateTokens(ctx context.Context, identity models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
+func (repo *Repo) UpdateTokens(ctx context.Context, identity models.ActorExternalIdentities, projectID *uuid.UUID) (*models.ActorExternalIdentities, error) {
 	ctx, span := telemetry.StartSpan(ctx, "UpdateTokens")
 	defer span.End()
 
@@ -18,6 +20,7 @@ func (repo *Repo) UpdateTokens(ctx context.Context, identity models.ActorExterna
 		EncryptedAccessToken:  identity.EncryptedAccessToken,
 		EncryptedRefreshToken: identity.EncryptedRefreshToken,
 		TokenExpiresAt:        identity.TokenExpiresAt,
+		ProjectID:             projectID,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)

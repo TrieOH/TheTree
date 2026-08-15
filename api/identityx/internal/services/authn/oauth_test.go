@@ -284,7 +284,7 @@ func TestOAuthCallbackSignupNewIdentity(t *testing.T) {
 	state := envState()
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
-	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"))).
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
 		ThenReturn(nil, fun.ErrNotFound("no identity"))
 	captor := mock.Captor[models.Actor]()
 	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
@@ -330,7 +330,7 @@ func TestOAuthCallbackProjectSignupScopesActorToProject(t *testing.T) {
 			ID: uuid.New(), ProjectID: projectID, Provider: models.GoogleIdentityProvider,
 			ClientID: "proj-client-id", EncryptedClientSecret: encryptedProjectSecret(t), Enabled: true,
 		}, nil)
-	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"))).
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
 		ThenReturn(nil, fun.ErrNotFound("no identity"))
 	captor := mock.Captor[models.Actor]()
 	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
@@ -370,9 +370,9 @@ func TestOAuthCallbackExistingIdentityLogsIn(t *testing.T) {
 	state := envState()
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
-	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"))).
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
 		ThenReturn(&models.ActorExternalIdentities{ID: uuid.New(), ActorID: pair.actor.ID}, nil)
-	mock.When(r.external.UpdateTokens(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())).
+	mock.When(r.external.UpdateTokens(mock.AnyContext(), mock.Any[models.ActorExternalIdentities](), mock.Equal(state.ProjectID))).
 		ThenAnswer(func(args []any) []any {
 			e := args[1].(models.ActorExternalIdentities)
 			return []any{&e, nil}
@@ -388,7 +388,7 @@ func TestOAuthCallbackExistingIdentityLogsIn(t *testing.T) {
 	if out.AccessToken == "" || out.RefreshToken == "" {
 		t.Fatal("want a token pair")
 	}
-	_, _ = mock.Verify(r.external, mock.Times(1)).UpdateTokens(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())
+	_, _ = mock.Verify(r.external, mock.Times(1)).UpdateTokens(mock.AnyContext(), mock.Any[models.ActorExternalIdentities](), mock.Equal(state.ProjectID))
 	_, _ = mock.Verify(r.actors, mock.Times(0)).Register(mock.AnyContext(), mock.Any[models.Actor]())
 }
 
@@ -469,7 +469,7 @@ func TestOAuthCallbackDisabledBlocksNewSignup(t *testing.T) {
 	}
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(&row, nil)
-	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"))).
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
 		ThenReturn(nil, fun.ErrNotFound("no identity"))
 
 	_, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
@@ -494,9 +494,9 @@ func TestOAuthCallbackDisabledAllowsExistingLogin(t *testing.T) {
 	}
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(&row, nil)
-	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"))).
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
 		ThenReturn(&models.ActorExternalIdentities{ID: uuid.New(), ActorID: pair.actor.ID}, nil)
-	mock.When(r.external.UpdateTokens(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())).
+	mock.When(r.external.UpdateTokens(mock.AnyContext(), mock.Any[models.ActorExternalIdentities](), mock.Equal(state.ProjectID))).
 		ThenAnswer(func(args []any) []any {
 			e := args[1].(models.ActorExternalIdentities)
 			return []any{&e, nil}
@@ -513,4 +513,103 @@ func TestOAuthCallbackDisabledAllowsExistingLogin(t *testing.T) {
 		t.Fatal("want a token pair")
 	}
 	_, _ = mock.Verify(r.actors, mock.Times(0)).Register(mock.AnyContext(), mock.Any[models.Actor]())
+}
+
+// TestOAuthCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists
+// pins the scope bug: a Google account that only exists as a platform-level
+// identity must NOT be reused by a project login. The scoped lookup misses
+// (the platform row belongs to the NULL scope), so the callback registers a
+// brand-new actor scoped to the project instead of hijacking the platform
+// actor.
+func TestOAuthCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists(t *testing.T) {
+	testEnv(t)
+	stubOAuthFlow(t)
+	projectID := uuid.New()
+	pair := mintPair(t)
+	ops, r := newOAuthOps(t)
+	state := projectState(projectID)
+	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
+	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
+	row := models.ProjectOAuthProviders{
+		ID: uuid.New(), ProjectID: projectID, Provider: models.GoogleIdentityProvider,
+		ClientID: "proj-client-id", EncryptedClientSecret: encryptedProjectSecret(t), Enabled: true,
+	}
+	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
+		ThenReturn(&row, nil)
+	// The platform-scoped identity exists in the DB, but the project-scoped
+	// lookup must not see it.
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
+		ThenReturn(nil, fun.ErrNotFound("no identity in this scope"))
+	captor := mock.Captor[models.Actor]()
+	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
+		ThenAnswer(func(args []any) []any {
+			a := args[1].(models.Actor)
+			a.ID = uuid.New()
+			return []any{&a, nil}
+		})
+	mock.When(r.external.Create(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())).
+		ThenAnswer(func(args []any) []any {
+			e := args[1].(models.ActorExternalIdentities)
+			return []any{&e, nil}
+		})
+	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
+		ThenReturn(&pair.key, nil)
+
+	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	if err != nil {
+		t.Fatalf("OAuthCallback: %v", err)
+	}
+	if out.AccessToken == "" || out.RefreshToken == "" {
+		t.Fatal("want a token pair")
+	}
+	actor := captor.Last()
+	if actor.ProjectID == nil || *actor.ProjectID != projectID {
+		t.Fatalf("project login must create a project-scoped actor, got %v", actor.ProjectID)
+	}
+	_, _ = mock.Verify(r.actors, mock.Times(1)).Register(mock.AnyContext(), mock.Any[models.Actor]())
+	_, _ = mock.Verify(r.external, mock.Times(1)).Create(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())
+}
+
+// TestOAuthCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists
+// is the mirror case: a platform login must never reuse an identity that
+// belongs to a project.
+func TestOAuthCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists(t *testing.T) {
+	testEnv(t)
+	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
+	stubOAuthFlow(t)
+	pair := mintPair(t)
+	ops, r := newOAuthOps(t)
+	state := envState()
+	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
+	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
+	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
+		ThenReturn(nil, fun.ErrNotFound("no identity in this scope"))
+	captor := mock.Captor[models.Actor]()
+	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
+		ThenAnswer(func(args []any) []any {
+			a := args[1].(models.Actor)
+			a.ID = uuid.New()
+			return []any{&a, nil}
+		})
+	mock.When(r.external.Create(mock.AnyContext(), mock.Any[models.ActorExternalIdentities]())).
+		ThenAnswer(func(args []any) []any {
+			e := args[1].(models.ActorExternalIdentities)
+			return []any{&e, nil}
+		})
+	mock.When(r.keys.GetActive(mock.AnyContext(), mock.Equal(models.SigningCryptoKeyType), mock.Any[*uuid.UUID]())).
+		ThenReturn(&pair.key, nil)
+
+	out, err := ops.OAuthCallback(context.Background(), "google", "code", "state-token")
+	if err != nil {
+		t.Fatalf("OAuthCallback: %v", err)
+	}
+	if out.AccessToken == "" || out.RefreshToken == "" {
+		t.Fatal("want a token pair")
+	}
+	actor := captor.Last()
+	if actor.ProjectID != nil {
+		t.Fatalf("platform login must create a platform-scoped actor, got %v", actor.ProjectID)
+	}
+	_, _ = mock.Verify(r.actors, mock.Times(1)).Register(mock.AnyContext(), mock.Any[models.Actor]())
 }

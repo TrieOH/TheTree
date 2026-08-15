@@ -235,7 +235,8 @@ func newStateToken() (string, error) {
 
 // updateExistingIdentity refreshes the stored provider tokens of an already
 // linked identity and returns its actor. Allowed even when the provider is
-// disabled — the user already has an account.
+// disabled — the user already has an account. The project keeps the update
+// scoped: only the identity row whose actor lives in that project is touched.
 func (o *Operations) updateExistingIdentity(
 	ctx context.Context,
 	provider string,
@@ -244,6 +245,7 @@ func (o *Operations) updateExistingIdentity(
 	encryptedAccess string,
 	encryptedRefresh *string,
 	tokenExpiresAt *time.Time,
+	projectID *uuid.UUID,
 ) (*models.Actor, error) {
 	_, err := o.externalIdentities.UpdateTokens(ctx, models.ActorExternalIdentities{
 		Provider:              models.OAuthProvider(provider),
@@ -251,7 +253,7 @@ func (o *Operations) updateExistingIdentity(
 		EncryptedAccessToken:  &encryptedAccess,
 		EncryptedRefreshToken: encryptedRefresh,
 		TokenExpiresAt:        tokenExpiresAt,
-	})
+	}, projectID)
 	if err != nil {
 		return nil, err
 	}
