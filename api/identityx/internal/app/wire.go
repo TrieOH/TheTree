@@ -40,6 +40,13 @@ func (app *IdentityX) initRepos(q *sqlc.Queries) *repos.Repos {
 	return repos.New(q)
 }
 
+func (app *IdentityX) initActionTokens(r *repos.Repos) *tokens.ActionTokenManager {
+	return tokens.NewActionTokenManager(r.ActionTokens, []byte(app.cfg.HmacSecret), tokens.ActionTokenConfig{
+		VerifyTTL: app.cfg.EmailVerifyTokenTTL,
+		ResetTTL:  app.cfg.EmailResetTokenTTL,
+	})
+}
+
 func (app *IdentityX) initTokens(r *repos.Repos) *tokens.Manager {
 	return tokens.NewManager(r.CryptoKeys, r.Blacklist, r.Actors, r.Projects, tokens.Config{
 		Issuer:     app.cfg.Issuer,
@@ -48,18 +55,10 @@ func (app *IdentityX) initTokens(r *repos.Repos) *tokens.Manager {
 	})
 }
 
-func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, riverClient *river.Client[pgx.Tx]) (*services.Operations, *authz.Service) {
+func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, riverClient *river.Client[pgx.Tx]) (*services.Operations, *authz.Service) {
 	authzSvc := authz.New(r.Organizations, r.Projects, r.PlatformRoles)
-	sender := emails.NewSender(
-		r.ActionTokens,
-		[]byte(app.cfg.HmacSecret),
-		app.cfg.EmailVerifyTokenTTL,
-		app.cfg.EmailResetTokenTTL,
-		app.cfg.AppURL,
-		app.cfg.AppName,
-		riverClient,
-	)
-	return services.NewOperations(r, authzSvc, tokensMgr, app.cfg.HmacSecret, sender), authzSvc
+	sender := emails.NewSender(actionTokenMgr, app.cfg.AppURL, app.cfg.AppName, riverClient)
+	return services.NewOperations(r, authzSvc, tokensMgr, actionTokenMgr, app.cfg.HmacSecret, sender), authzSvc
 }
 
 func (app *IdentityX) initMiddlewares(ops *services.Operations, tokensMgr *tokens.Manager, authzSvc *authz.Service) middlewares {
@@ -81,13 +80,13 @@ func (app *IdentityX) initHandlers(ops *services.Operations) *handlers.Server {
 // initRiver migrates, starts the river client with the service's workers and
 // periodic jobs, and brings up the riverui dashboard. Returns both so callers
 // can enqueue work and mount the UI handler.
-func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries) (*river.Client[pgx.Tx], *riverui.Handler) {
+func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionTokenMgr *tokens.ActionTokenManager) (*river.Client[pgx.Tx], *riverui.Handler) {
 	libriver.Migrate(ctx, app.db)
 
 	client := libriver.NewClient(app.db, libriver.NewWorkers(
 		libriver.Register[jobs.CreateCryptoKeyArgs](jobs.NewCreateCryptoKeyWorker(q)),
 		libriver.Register[jobs.CleanupBlacklistArgs](jobs.NewCleanupBlacklistWorker(q)),
-		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(q)),
+		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(actionTokenMgr)),
 		libriver.Register[emails.SendAuthEmailArgs](jobs.NewSendAuthEmailWorker(app.emailClient, repos.NewEmailTemplates(q))),
 	), nil, []*river.PeriodicJob{
 		river.NewPeriodicJob(

@@ -1,66 +1,40 @@
 package authn
 
 import (
-	"IdentityX/models"
 	"context"
-	"lib/crypto"
-	"lib/telemetry"
+	"errors"
 	"strings"
 	"time"
 
+	"IdentityX/internal/tokens"
+	"IdentityX/models"
+	"lib/telemetry"
+
 	"github.com/MintzyG/fun"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-// VerifyEmail redeems a single-use verify link: validates the HMAC JWT
-// (signature, purpose, expiry), consumes the jti anti-replay record, and
-// stamps the actor verified. Re-clicking an already-consumed link on an
-// already-verified account succeeds (idempotent) — the anti-replay table
-// still blocks replaying a token against an unverified account.
+// VerifyEmail redeems a single-use verify link through the token module:
+// validates the HMAC JWT (signature, purpose, expiry), consumes the jti
+// anti-replay record, and stamps the actor verified. A consumed link on an
+// already-verified account succeeds (idempotent) — that fall-through is
+// actor-state policy, so it lives here: the anti-replay table still blocks
+// replaying a token against an unverified account.
 func (o *Operations) VerifyEmail(ctx context.Context, in models.VerifyEmailInput) error {
 	ctx, span := telemetry.StartSpan(ctx, "VerifyEmail")
 	defer span.End()
 
-	actorID, jti, err := o.parseActionToken(ctx, in.Token, models.EmailVerifyActionTokenPurpose)
+	actorID, err := o.actionTokens.Redeem(ctx, models.EmailVerifyActionTokenPurpose, in.Token)
 	if err != nil {
-		return err
-	}
-
-	record, err := o.actionTokens.GetByJTI(ctx, jti)
-	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return fun.ErrBadRequest("invalid or expired token")
+		if !errors.Is(err, tokens.ErrActionTokenUsed) {
+			return err
 		}
-		return err
-	}
-
-	if record.UsedAt != nil {
 		actor, aerr := o.actors.GetByID(ctx, actorID)
 		if aerr != nil {
 			return aerr
 		}
 		if actor.VerifiedAt != nil {
 			return nil
-		}
-		return fun.ErrBadRequest("token already used")
-	}
-	if time.Now().After(record.ExpiresAt) {
-		return fun.ErrBadRequest("token expired")
-	}
-
-	_, err = o.actionTokens.Consume(ctx, jti)
-	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			// consumed concurrently; fall through to the used-token path
-			actor, aerr := o.actors.GetByID(ctx, actorID)
-			if aerr != nil {
-				return aerr
-			}
-			if actor.VerifiedAt != nil {
-				return nil
-			}
-			return fun.ErrBadRequest("token already used")
 		}
 		return err
 	}
@@ -102,30 +76,4 @@ func (o *Operations) ResendVerification(ctx context.Context, in models.ResendVer
 		)
 	}
 	return nil
-}
-
-// parseActionToken verifies the HMAC signature and expiry, scopes the
-// purpose, and extracts the actor id + jti. Every failure collapses to the
-// same generic message so the endpoint never leaks token internals.
-func (o *Operations) parseActionToken(ctx context.Context, tokenStr string, purpose models.ActionTokenPurpose) (uuid.UUID, uuid.UUID, error) {
-	_, span := telemetry.StartSpan(ctx, "parseActionToken")
-	defer span.End()
-
-	claims := &models.ActionTokenClaims{}
-	_, err := crypto.ParseHMACJWT(tokenStr, claims, o.hmacSecret)
-	if err != nil {
-		return uuid.Nil, uuid.Nil, fun.ErrBadRequest("invalid or expired token")
-	}
-	if claims.Purpose != string(purpose) {
-		return uuid.Nil, uuid.Nil, fun.ErrBadRequest("invalid or expired token")
-	}
-	actorID, err := uuid.Parse(claims.Subject)
-	if err != nil {
-		return uuid.Nil, uuid.Nil, fun.ErrBadRequest("invalid or expired token")
-	}
-	jti, err := uuid.Parse(claims.ID)
-	if err != nil {
-		return uuid.Nil, uuid.Nil, fun.ErrBadRequest("invalid or expired token")
-	}
-	return actorID, jti, nil
 }

@@ -1,8 +1,9 @@
 package jobs
 
 import (
-	"IdentityX/internal/sqlc"
 	"context"
+
+	"IdentityX/internal/tokens"
 
 	"github.com/riverqueue/river"
 )
@@ -17,13 +18,13 @@ func (CleanupActionTokensArgs) Kind() string { return "cleanup_action_tokens" }
 type CleanupActionTokensWorker struct {
 	river.WorkerDefaults[CleanupActionTokensArgs]
 
-	q *sqlc.Queries
+	actionTokens *tokens.ActionTokenManager
 }
 
-func NewCleanupActionTokensWorker(q *sqlc.Queries) *CleanupActionTokensWorker {
-	return &CleanupActionTokensWorker{q: q}
+func NewCleanupActionTokensWorker(actionTokens *tokens.ActionTokenManager) *CleanupActionTokensWorker {
+	return &CleanupActionTokensWorker{actionTokens: actionTokens}
 }
 
 func (w *CleanupActionTokensWorker) Work(ctx context.Context, _ *river.Job[CleanupActionTokensArgs]) error {
-	return w.q.DeleteExpiredActionTokens(ctx)
+	return w.actionTokens.DeleteExpired(ctx)
 }

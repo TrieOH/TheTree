@@ -16,13 +16,15 @@ func (app *IdentityX) run() {
 	tx := database.NewPGXTxRunner(app.db)
 	database.SetDefaultRunner(tx)
 
-	riverClient, riverUIHandler := app.initRiver(ctx, q)
+	repos := app.initRepos(q)
+	actionTokenMgr := app.initActionTokens(repos)
+
+	riverClient, riverUIHandler := app.initRiver(ctx, q, actionTokenMgr)
 	defer libriver.LogStop(ctx, riverClient)
 	EnsureKeysExist(ctx, app.db, riverClient)
 
-	repos := app.initRepos(q)
 	tokensMgr := app.initTokens(repos)
-	ops, authzSvc := app.initOperations(repos, tokensMgr, riverClient)
+	ops, authzSvc := app.initOperations(repos, tokensMgr, actionTokenMgr, riverClient)
 	handlers := app.initHandlers(ops)
 	middlewares := app.initMiddlewares(ops, tokensMgr, authzSvc)
 

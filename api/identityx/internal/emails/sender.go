@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
-	"IdentityX/ports"
-	"lib/crypto"
 
 	"github.com/MintzyG/fun"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
@@ -23,31 +20,21 @@ type Enqueuer interface {
 	Insert(ctx context.Context, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
 }
 
-// Sender mints single-use action tokens, persists them for anti-replay,
-// and enqueues the async email job. Construction happens once at startup;
-// the TTLs, app URL, and HMAC secret come from app config.
+// Sender dispatches verify/reset emails: it mints the single-use action
+// token through the ActionTokenManager and enqueues the async email job
+// carrying it. Construction happens once at startup; the TTLs and HMAC
+// secret live in the ActionTokenManager, so the Sender only knows where
+// links point and how to enqueue.
 type Sender struct {
-	actionTokens ports.ActionTokenRepo
-	hmacSecret   []byte
-	verifyTTL    time.Duration
-	resetTTL     time.Duration
+	actionTokens *tokens.ActionTokenManager
 	appURL       string
 	appName      string
 	enqueuer     Enqueuer
 }
 
-func NewSender(
-	actionTokens ports.ActionTokenRepo,
-	hmacSecret []byte,
-	verifyTTL, resetTTL time.Duration,
-	appURL, appName string,
-	enqueuer Enqueuer,
-) *Sender {
+func NewSender(actionTokens *tokens.ActionTokenManager, appURL, appName string, enqueuer Enqueuer) *Sender {
 	return &Sender{
 		actionTokens: actionTokens,
-		hmacSecret:   hmacSecret,
-		verifyTTL:    verifyTTL,
-		resetTTL:     resetTTL,
 		appURL:       appURL,
 		appName:      appName,
 		enqueuer:     enqueuer,
@@ -57,19 +44,18 @@ func NewSender(
 // SendVerify enqueues a verification email for the actor. project nil means
 // a platform-level account (links point at APP_URL).
 func (s *Sender) SendVerify(ctx context.Context, actor *models.Actor, project *models.Project) error {
-	return s.send(ctx, models.VerifyEmailTemplateKind, models.EmailVerifyActionTokenPurpose, s.verifyTTL, actor, project)
+	return s.send(ctx, models.VerifyEmailTemplateKind, models.EmailVerifyActionTokenPurpose, actor, project)
 }
 
 // SendReset enqueues a password-reset email for the actor.
 func (s *Sender) SendReset(ctx context.Context, actor *models.Actor, project *models.Project) error {
-	return s.send(ctx, models.ResetEmailTemplateKind, models.PasswordResetActionTokenPurpose, s.resetTTL, actor, project)
+	return s.send(ctx, models.ResetEmailTemplateKind, models.PasswordResetActionTokenPurpose, actor, project)
 }
 
 func (s *Sender) send(
 	ctx context.Context,
 	kind models.EmailTemplateKind,
 	purpose models.ActionTokenPurpose,
-	ttl time.Duration,
 	actor *models.Actor,
 	project *models.Project,
 ) error {
@@ -82,29 +68,8 @@ func (s *Sender) send(
 		return err
 	}
 
-	jti := uuid.New()
-	expiresAt := time.Now().Add(ttl)
-	jobProjectID := s.jobProjectID(actor, project)
-	token, err := crypto.SignHMACJWT(models.ActionTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   actor.ID.String(),
-			ID:        jti.String(),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		Purpose:   string(purpose),
-		ProjectID: jobProjectID,
-	}, s.hmacSecret)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.actionTokens.Insert(ctx, models.ActionToken{
-		JTI:       jti,
-		Purpose:   purpose,
-		ActorID:   actor.ID,
-		ExpiresAt: expiresAt,
-	})
+	projectID := s.jobProjectID(actor, project)
+	token, ttl, err := s.actionTokens.Mint(ctx, purpose, actor.ID, projectID)
 	if err != nil {
 		return err
 	}
@@ -113,7 +78,7 @@ func (s *Sender) send(
 		TemplateKind: string(kind),
 		Token:        token,
 		ToEmail:      *actor.Email,
-		ProjectID:    jobProjectID,
+		ProjectID:    projectID,
 		ProjectName:  projectName,
 		BaseDomain:   baseDomain,
 		Expiry:       int(ttl.Minutes()),

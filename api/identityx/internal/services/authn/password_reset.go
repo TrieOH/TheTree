@@ -1,12 +1,12 @@
 package authn
 
 import (
-	"IdentityX/models"
 	"context"
+	"strings"
+
+	"IdentityX/models"
 	"lib/crypto"
 	"lib/telemetry"
-	"strings"
-	"time"
 
 	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
@@ -50,39 +50,17 @@ func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswor
 	return nil
 }
 
-// ResetPassword redeems a single-use reset link: validates the HMAC JWT
-// (signature, purpose, expiry), consumes the jti anti-replay record, and
-// replaces the actor's password hash. Unlike verification, reset is never
-// idempotent — a consumed token is dead, and the user requests a new link
-// if they need another reset.
+// ResetPassword redeems a single-use reset link through the token module:
+// validates the HMAC JWT (signature, purpose, expiry), consumes the jti
+// anti-replay record, and replaces the actor's password hash. Unlike
+// verification, reset is never idempotent — a consumed token is dead, and
+// the user requests a new link if they need another reset.
 func (o *Operations) ResetPassword(ctx context.Context, in models.ResetPasswordInput) error {
 	ctx, span := telemetry.StartSpan(ctx, "ResetPassword")
 	defer span.End()
 
-	actorID, jti, err := o.parseActionToken(ctx, in.Token, models.PasswordResetActionTokenPurpose)
+	actorID, err := o.actionTokens.Redeem(ctx, models.PasswordResetActionTokenPurpose, in.Token)
 	if err != nil {
-		return err
-	}
-
-	record, err := o.actionTokens.GetByJTI(ctx, jti)
-	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return fun.ErrBadRequest("invalid or expired token")
-		}
-		return err
-	}
-	if record.UsedAt != nil {
-		return fun.ErrBadRequest("token already used")
-	}
-	if time.Now().After(record.ExpiresAt) {
-		return fun.ErrBadRequest("token expired")
-	}
-
-	_, err = o.actionTokens.Consume(ctx, jti)
-	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return fun.ErrBadRequest("token already used")
-		}
 		return err
 	}
 

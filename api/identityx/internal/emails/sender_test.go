@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
@@ -15,7 +16,9 @@ import (
 	"github.com/riverqueue/river"
 )
 
-func stubSender(t *testing.T, tokens ports.ActionTokenRepo) (*Sender, *[]SendAuthEmailArgs) {
+const testHMAC = "test-hmac"
+
+func stubSender(t *testing.T, actionTokens ports.ActionTokenRepo) (*Sender, *[]SendAuthEmailArgs) {
 	t.Helper()
 	var enqueued []SendAuthEmailArgs
 	enqueuer := mock.Mock[Enqueuer]()
@@ -24,8 +27,11 @@ func stubSender(t *testing.T, tokens ports.ActionTokenRepo) (*Sender, *[]SendAut
 			enqueued = append(enqueued, args[1].(SendAuthEmailArgs))
 			return []any{nil, nil}
 		})
-	return NewSender(tokens, []byte("test-hmac"), 10*time.Minute, 10*time.Minute,
-		"https://identityx.example.com", "IdentityX", enqueuer), &enqueued
+	mgr := tokens.NewActionTokenManager(actionTokens, []byte(testHMAC), tokens.ActionTokenConfig{
+		VerifyTTL: 10 * time.Minute,
+		ResetTTL:  10 * time.Minute,
+	})
+	return NewSender(mgr, "https://identityx.example.com", "IdentityX", enqueuer), &enqueued
 }
 
 func actorWithEmail() *models.Actor {
@@ -37,14 +43,14 @@ func TestSenderSendVerifyPlatformActor(t *testing.T) {
 	mock.SetUp(t)
 	actor := actorWithEmail()
 
-	tokens := mock.Mock[ports.ActionTokenRepo]()
-	_ = mock.When(tokens.Insert(mock.AnyContext(), mock.Any[models.ActionToken]())).
+	actionTokens := mock.Mock[ports.ActionTokenRepo]()
+	_ = mock.When(actionTokens.Insert(mock.AnyContext(), mock.Any[models.ActionToken]())).
 		ThenAnswer(func(args []any) []any {
 			token := args[1].(models.ActionToken)
 			return []any{&token, nil}
 		})
 
-	sender, enqueued := stubSender(t, tokens)
+	sender, enqueued := stubSender(t, actionTokens)
 	err := sender.SendVerify(context.Background(), actor, nil)
 	if err != nil {
 		t.Fatalf("SendVerify: %v", err)
@@ -69,7 +75,7 @@ func TestSenderSendVerifyPlatformActor(t *testing.T) {
 
 	// the token must be a verifiable HMAC JWT with the right claims
 	claims := &models.ActionTokenClaims{}
-	_, err = crypto.ParseHMACJWT(job.Token, claims, []byte("test-hmac"))
+	_, err = crypto.ParseHMACJWT(job.Token, claims, []byte(testHMAC))
 	if err != nil {
 		t.Fatalf("token does not parse: %v", err)
 	}
@@ -99,14 +105,14 @@ func TestSenderSendVerifyProjectActorUsesDomain(t *testing.T) {
 	domain := "acme.example.com"
 	project := &models.Project{ID: uuid.New(), Name: "Acme", Domain: &domain}
 
-	tokens := mock.Mock[ports.ActionTokenRepo]()
-	_ = mock.When(tokens.Insert(mock.AnyContext(), mock.Any[models.ActionToken]())).
+	actionTokens := mock.Mock[ports.ActionTokenRepo]()
+	_ = mock.When(actionTokens.Insert(mock.AnyContext(), mock.Any[models.ActionToken]())).
 		ThenAnswer(func(args []any) []any {
 			token := args[1].(models.ActionToken)
 			return []any{&token, nil}
 		})
 
-	sender, enqueued := stubSender(t, tokens)
+	sender, enqueued := stubSender(t, actionTokens)
 	err := sender.SendVerify(context.Background(), actor, project)
 	if err != nil {
 		t.Fatalf("SendVerify: %v", err)

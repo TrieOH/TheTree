@@ -72,10 +72,11 @@ type Operations struct {
 
 // NewOperations wires every feature's operations from the shared repos.
 // hmacSecret is the API-key signing secret (app config), passed through to
-// the api_keys and authn services. sender dispatches the async verify/reset
-// emails minted by authn. tokensMgr owns the token lifecycle; authn crosses
-// it instead of touching keys or the blacklist directly.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, hmacSecret string, sender *emails.Sender) *Operations {
+// the api_keys service. actionTokenMgr owns the single-use action-token
+// lifecycle: the sender mints through it, authn redeems through it.
+// tokensMgr owns the session-token lifecycle; authn crosses it instead of
+// touching keys or the blacklist directly.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, hmacSecret string, sender *emails.Sender) *Operations {
 	oauthProviders := NewOAuthProviders(
 		r.OAuthProviders, r.OAuthProviders, r.Projects, r.ExternalIdentities, r.Actors,
 		authzSvc, tokensMgr,
@@ -85,7 +86,7 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Ma
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, r.ActionTokens, sender, []byte(hmacSecret)),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, actionTokenMgr, sender),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		EmailTemplates: NewEmailTemplates(r.EmailTemplates, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),

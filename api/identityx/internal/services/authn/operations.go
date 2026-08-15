@@ -17,10 +17,12 @@ type Operations struct {
 	// tokens owns the token lifecycle (verify/mint/rotate/revoke); login,
 	// refresh, logout cross it instead of touching keys, blacklist, or
 	// token claims directly.
-	tokens       *tokens.Manager
-	actionTokens ports.ActionTokenRepo
+	tokens *tokens.Manager
+	// actionTokens owns the single-use action-token lifecycle; verify and
+	// reset links are redeemed through it instead of touching the HMAC
+	// secret or the anti-replay repo directly.
+	actionTokens *tokens.ActionTokenManager
 	emailSender  ports.EmailSender
-	hmacSecret   []byte
 }
 
 func NewOperations(
@@ -28,9 +30,8 @@ func NewOperations(
 	projects ports.ProjectRepo,
 	platformRoles ports.PlatformRolesRepo,
 	tokensMgr *tokens.Manager,
-	actionTokens ports.ActionTokenRepo,
+	actionTokens *tokens.ActionTokenManager,
 	emailSender ports.EmailSender,
-	hmacSecret []byte,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		actors:        actors,
@@ -39,6 +40,5 @@ func NewOperations(
 		tokens:        tokensMgr,
 		actionTokens:  actionTokens,
 		emailSender:   emailSender,
-		hmacSecret:    hmacSecret,
 	})
 }
