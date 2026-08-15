@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 
@@ -119,6 +120,7 @@ func TestLogout(t *testing.T) {
 				mock.Mock[ports.ProjectRepo](),
 				mock.Mock[ports.PlatformRolesRepo](),
 				keys, bl,
+				tokens.NewVerifier(keys, bl),
 				mock.Mock[ports.ExternalIdentitiesRepo](),
 				mockOAuthProviderOps(t),
 				mock.Mock[ports.OAuthLoginStatesRepo](),
@@ -158,6 +160,7 @@ func TestLogoutErrorIsUnauthorized(t *testing.T) {
 		mock.Mock[ports.ProjectRepo](),
 		mock.Mock[ports.PlatformRolesRepo](),
 		keys, bl,
+		tokens.NewVerifier(keys, bl),
 		mock.Mock[ports.ExternalIdentitiesRepo](),
 		mockOAuthProviderOps(t),
 		mock.Mock[ports.OAuthLoginStatesRepo](),
@@ -223,6 +226,7 @@ func TestRefresh(t *testing.T) {
 				mock.Mock[ports.ProjectRepo](),
 				mock.Mock[ports.PlatformRolesRepo](),
 				keys, bl,
+				tokens.NewVerifier(keys, bl),
 				mock.Mock[ports.ExternalIdentitiesRepo](),
 				mockOAuthProviderOps(t),
 				mock.Mock[ports.OAuthLoginStatesRepo](),

@@ -20,7 +20,10 @@ func (o *Operations) Logout(ctx context.Context, in models.LogoutInput) error {
 		telemetry.Log().Error("access token verification failed", zap.Error(err))
 		return fun.ErrUnauthorized("invalid access token")
 	}
-	cryptoKey, err := o.cryptoKeyFromToken(ctx, token)
+	// the signing key resolves even though the access token is deliberately
+	// left unverified: a dead token must not fail logout, but its key is
+	// needed to verify the refresh token below.
+	key, err := o.verifier.KeyForToken(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -48,7 +51,7 @@ func (o *Operations) Logout(ctx context.Context, in models.LogoutInput) error {
 	// logout: the access token is already blacklisted, so the session is
 	// over either way. Only a verified refresh token gets blacklisted.
 	refreshClaims := &models.RefreshClaims{}
-	_, err = crypto.VerifyToken(in.RefreshToken, cryptoKey.PublicKey, refreshClaims)
+	_, err = crypto.VerifyToken(in.RefreshToken, key.PublicKey, refreshClaims)
 	if err != nil {
 		telemetry.Log().Warn("refresh token not blacklisted at logout (unverifiable)", zap.Error(err))
 		return nil

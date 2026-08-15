@@ -22,31 +22,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (o *Operations) cryptoKeyFromToken(ctx context.Context, token *jwt.Token) (*models.CryptoKey, error) {
-	ctx, span := telemetry.StartSpan(ctx, "cryptoKeyFromToken")
-	defer span.End()
-
-	kid, ok := token.Header["kid"].(string)
-	if !ok || kid == "" {
-		return nil, fun.ErrUnauthorized("missing kid")
-	}
-	keyID, err := uuid.Parse(kid)
-	if err != nil {
-		return nil, fun.ErrUnauthorized("invalid kid")
-	}
-	cryptoKey, err := o.cryptoKeys.GetByID(ctx, keyID)
-	if err != nil && fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrUnauthorized("outdated token")
-	}
-	if err != nil {
-		return nil, err
-	}
-	if cryptoKey.Status == "revoked" {
-		return nil, fun.ErrUnauthorized("token signing key revoked")
-	}
-	return cryptoKey, nil
-}
-
 func (o *Operations) issueTokens(ctx context.Context, actor *models.Actor) (*models.UserTokensOutput, error) {
 	ctx, span := telemetry.StartSpan(ctx, "issueTokens")
 	defer span.End()

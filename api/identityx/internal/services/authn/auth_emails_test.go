@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
@@ -17,7 +18,7 @@ import (
 
 const testHMAC = "test-hmac-secret"
 
-func emailOps(t *testing.T, actors ports.ActorRepo, tokens ports.ActionTokenRepo) *Operations {
+func emailOps(t *testing.T, actors ports.ActorRepo, actionTokens ports.ActionTokenRepo) *Operations {
 	t.Helper()
 	return NewOperations(
 		actors,
@@ -25,10 +26,11 @@ func emailOps(t *testing.T, actors ports.ActorRepo, tokens ports.ActionTokenRepo
 		mock.Mock[ports.PlatformRolesRepo](),
 		mock.Mock[ports.CryptoKeysRepo](),
 		mock.Mock[ports.BlacklistRepo](),
+		tokens.NewVerifier(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo]()),
 		mock.Mock[ports.ExternalIdentitiesRepo](),
 		mockOAuthProviderOps(t),
 		mock.Mock[ports.OAuthLoginStatesRepo](),
-		tokens,
+		actionTokens,
 		mock.Mock[ports.EmailSender](),
 		[]byte(testHMAC),
 	)
@@ -309,6 +311,7 @@ func newOpsWithSender(t *testing.T, actors ports.ActorRepo, sender ports.EmailSe
 		mock.Mock[ports.PlatformRolesRepo](),
 		mock.Mock[ports.CryptoKeysRepo](),
 		mock.Mock[ports.BlacklistRepo](),
+		tokens.NewVerifier(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo]()),
 		mock.Mock[ports.ExternalIdentitiesRepo](),
 		mockOAuthProviderOps(t),
 		mock.Mock[ports.OAuthLoginStatesRepo](),

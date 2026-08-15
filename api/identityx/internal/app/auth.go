@@ -5,60 +5,27 @@ import (
 	"encoding/json"
 	"time"
 
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/api_keys"
-	"lib/crypto"
 	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	mws "github.com/MintzyG/fun/middlewares"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 func (app *IdentityX) SetupAuthMiddlewares(
-	cryptoKeysRepo ports.CryptoKeysRepo,
+	verifier *tokens.Verifier,
 	apiKeysRepo ports.APIKeysRepo,
 	actorsRepo ports.ActorRepo,
 	capabilitiesRepo ports.CapabilityRepo,
-	blacklistRepo ports.BlacklistRepo,
 ) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
-		token, err := crypto.OpenUnverified(tokenStr, claims)
+		_, _, err := verifier.Verify(ctx, tokenStr, claims)
 		if err != nil {
-			return nil, err
-		}
-		kid, ok := token.Header["kid"].(string)
-		if !ok || kid == "" {
-			return nil, fun.ErrUnauthorized("missing kid")
-		}
-		keyID, err := uuid.Parse(kid)
-		if err != nil {
-			return nil, fun.ErrUnauthorized("invalid kid")
-		}
-		cryptoKey, err := cryptoKeysRepo.GetByID(ctx, keyID)
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.ErrUnauthorized("outdated token")
-		}
-		if err != nil {
-			return nil, err
-		}
-		if cryptoKey.Status == "revoked" {
-			return nil, fun.ErrUnauthorized("token signing key revoked")
-		}
-		_, err = crypto.VerifyToken(tokenStr, cryptoKey.PublicKey, claims)
-		if err != nil {
-			return nil, fun.ErrUnauthorized("invalid access token")
-		}
-		// a token blacklisted at logout (or by refresh rotation) must not
-		// authenticate anymore
-		_, err = blacklistRepo.GetByTargetAndType(ctx, claims.ID, models.BlacklistEntryTypeToken)
-		if err == nil {
-			return nil, fun.ErrUnauthorized("token has been revoked")
-		}
-		if !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
 		return claims, nil

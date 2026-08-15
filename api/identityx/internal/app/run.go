@@ -21,9 +21,10 @@ func (app *IdentityX) run() {
 	EnsureKeysExist(ctx, app.db, riverClient)
 
 	repos := app.initRepos(q)
-	ops := app.initOperations(repos, riverClient)
+	verifier := app.initVerifier(repos)
+	ops := app.initOperations(repos, verifier, riverClient)
 	handlers := app.initHandlers(ops)
-	middlewares := app.initMiddlewares(repos)
+	middlewares := app.initMiddlewares(repos, verifier)
 
 	mux := app.CreateRouter(middlewares, handlers, riverUIHandler)
 	httpserver.Start(mux, httpserver.Config{

@@ -12,6 +12,7 @@ import (
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/services/oauth_providers"
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
@@ -95,7 +96,9 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 	ops := NewOperations(
 		r.actors, r.projects,
 		mock.Mock[ports.PlatformRolesRepo](),
-		r.keys, r.blacklist, r.external,
+		r.keys, r.blacklist,
+		tokens.NewVerifier(r.keys, r.blacklist),
+		r.external,
 		oauth_providers.NewOperations(r.providers, r.projects, authz.New(mock.Mock[ports.OrganizationRepo](), r.projects)),
 		r.states,
 		mock.Mock[ports.ActionTokenRepo](),

@@ -13,6 +13,7 @@ import (
 	"IdentityX/internal/repos"
 	"IdentityX/internal/services"
 	"IdentityX/internal/sqlc"
+	"IdentityX/internal/tokens"
 	"lib/errx"
 	libriver "lib/river"
 
@@ -35,7 +36,11 @@ func (app *IdentityX) initRepos(q *sqlc.Queries) *repos.Repos {
 	return repos.New(q)
 }
 
-func (app *IdentityX) initOperations(r *repos.Repos, riverClient *river.Client[pgx.Tx]) *services.Operations {
+func (app *IdentityX) initVerifier(r *repos.Repos) *tokens.Verifier {
+	return tokens.NewVerifier(r.CryptoKeys, r.Blacklist)
+}
+
+func (app *IdentityX) initOperations(r *repos.Repos, verifier *tokens.Verifier, riverClient *river.Client[pgx.Tx]) *services.Operations {
 	authzSvc := authz.New(r.Organizations, r.Projects)
 	sender := emails.NewSender(
 		r.ActionTokens,
@@ -46,12 +51,12 @@ func (app *IdentityX) initOperations(r *repos.Repos, riverClient *river.Client[p
 		app.cfg.AppName,
 		riverClient,
 	)
-	return services.NewOperations(r, authzSvc, app.cfg.HmacSecret, sender)
+	return services.NewOperations(r, authzSvc, verifier, app.cfg.HmacSecret, sender)
 }
 
-func (app *IdentityX) initMiddlewares(r *repos.Repos) middlewares {
+func (app *IdentityX) initMiddlewares(r *repos.Repos, verifier *tokens.Verifier) middlewares {
 	var mw middlewares
-	authMW := app.SetupAuthMiddlewares(r.CryptoKeys, r.APIKeys, r.Actors, r.Capabilities, r.Blacklist)
+	authMW := app.SetupAuthMiddlewares(verifier, r.APIKeys, r.Actors, r.Capabilities)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()

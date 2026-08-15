@@ -12,6 +12,7 @@ import (
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
 	"IdentityX/internal/services/oauth_providers"
+	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/globals"
@@ -39,6 +40,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		projects,
 		mock.Mock[ports.PlatformRolesRepo](),
 		cryptoKeys, bl,
+		tokens.NewVerifier(cryptoKeys, bl),
 		mock.Mock[ports.ExternalIdentitiesRepo](),
 		oauth_providers.NewOperations(
 			mock.Mock[ports.ProjectOAuthProvidersRepo](),
