@@ -34,5 +34,5 @@ func (o *Operations) Login(ctx context.Context, in models.IDXLoginInput) (tokens
 	if err != nil {
 		return nil, err
 	}
-	return o.issueTokens(ctx, actor)
+	return o.tokens.Mint(ctx, actor)
 }

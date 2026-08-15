@@ -7,114 +7,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"lib/crypto"
-	"lib/env"
 	"lib/oauth"
 	"lib/telemetry"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/MintzyG/fun"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
-
-func (o *Operations) issueTokens(ctx context.Context, actor *models.Actor) (*models.UserTokensOutput, error) {
-	ctx, span := telemetry.StartSpan(ctx, "issueTokens")
-	defer span.End()
-
-	activeKeyPair, err := o.cryptoKeys.GetActive(ctx, models.SigningCryptoKeyType, actor.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	accessJTI := uuid.New()
-	refreshJTI := uuid.New()
-	accessExpiresAt := time.Now().Add(env.Get[time.Duration]("ACCESS_TOKEN_LIFETIME", time.ParseDuration, 15*time.Minute))
-	refreshExpiresAt := time.Now().Add(env.Get[time.Duration]("REFRESH_TOKEN_LIFETIME", time.ParseDuration, 7*24*time.Hour))
-	accessPayload, err := o.newAccessToken(*actor, accessJTI, activeKeyPair.ID, accessExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-	refreshPayload, err := o.newIDXRefreshToken(actor, refreshJTI, accessJTI, activeKeyPair.ID, refreshExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-	kp := activeKeyPair.ToKeyPair()
-	accessToken, err := crypto.SignToken(accessPayload, kp)
-	if err != nil {
-		return nil, err
-	}
-	refreshToken, err := crypto.SignToken(refreshPayload, kp)
-	if err != nil {
-		return nil, err
-	}
-	return &models.UserTokensOutput{
-		AccessToken:      accessToken,
-		RefreshToken:     refreshToken,
-		AccessExpiresAt:  accessExpiresAt,
-		RefreshExpiresAt: refreshExpiresAt,
-		Domain:           os.Getenv("ISSUER"),
-	}, nil
-}
-
-func (o *Operations) newAccessToken(actor models.Actor, jti, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
-	claims := models.AccessClaims{
-		Sub: models.AccessSub{
-			ID:           actor.ID,
-			ProjectID:    actor.ProjectID,
-			Email:        actor.Email,
-			Type:         actor.Type,
-			VerifiedAt:   actor.VerifiedAt,
-			Capabilities: nil,
-			Metadata:     nil,
-		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    os.Getenv("ISSUER"),
-			ID:        jti.String(),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	token.Header["kid"] = kid
-
-	payload, err := token.SigningString()
-	if err != nil {
-		return nil, err
-	}
-
-	return []byte(payload), nil
-}
-
-func (o *Operations) newIDXRefreshToken(actor *models.Actor, jti, accessJTI, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
-	claims := models.RefreshClaims{
-		Sub: models.RefreshSub{
-			ID:        actor.ID,
-			ProjectID: actor.ProjectID,
-			AccessJTI: accessJTI,
-		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    os.Getenv("ISSUER"),
-			ID:        jti.String(),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	token.Header["kid"] = kid
-
-	payload, err := token.SigningString()
-	if err != nil {
-		return nil, err
-	}
-
-	return []byte(payload), nil
-}
 
 // ── OAuth helpers ────────────────────────────────────────────────────────
 

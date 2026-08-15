@@ -11,11 +11,10 @@ type Operations struct {
 	actors        ports.ActorRepo
 	projects      ports.ProjectRepo
 	platformRoles ports.PlatformRolesRepo
-	cryptoKeys    ports.CryptoKeysRepo
-	blacklist     ports.BlacklistRepo
-	// verifier owns token open/key/verify/blacklist reasoning; refresh and
-	// logout cross the same seam as the auth middleware.
-	verifier           *tokens.Verifier
+	// tokens owns the token lifecycle (verify/mint/rotate/revoke); login,
+	// refresh, logout, and the OAuth callback cross it instead of touching
+	// keys, blacklist, or token claims directly.
+	tokens             *tokens.Manager
 	externalIdentities ports.ExternalIdentitiesRepo
 	// oauthProviders owns provider policy (configured/enabled); the OAuth
 	// flow consults it instead of the repo.
@@ -30,9 +29,7 @@ func NewOperations(
 	actors ports.ActorRepo,
 	projects ports.ProjectRepo,
 	platformRoles ports.PlatformRolesRepo,
-	cryptoKeys ports.CryptoKeysRepo,
-	blacklist ports.BlacklistRepo,
-	verifier *tokens.Verifier,
+	tokensMgr *tokens.Manager,
 	externalIdentities ports.ExternalIdentitiesRepo,
 	oauthProviders *oauth_providers.Operations,
 	oauthLoginStates ports.OAuthLoginStatesRepo,
@@ -44,9 +41,7 @@ func NewOperations(
 		actors:             actors,
 		projects:           projects,
 		platformRoles:      platformRoles,
-		cryptoKeys:         cryptoKeys,
-		blacklist:          blacklist,
-		verifier:           verifier,
+		tokens:             tokensMgr,
 		externalIdentities: externalIdentities,
 		oauthProviders:     oauthProviders,
 		oauthLoginStates:   oauthLoginStates,

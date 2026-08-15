@@ -17,14 +17,14 @@ import (
 )
 
 func (app *IdentityX) SetupAuthMiddlewares(
-	verifier *tokens.Verifier,
+	tokensMgr *tokens.Manager,
 	apiKeysRepo ports.APIKeysRepo,
 	actorsRepo ports.ActorRepo,
 	capabilitiesRepo ports.CapabilityRepo,
 ) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
-		_, _, err := verifier.Verify(ctx, tokenStr, claims)
+		err := tokensMgr.Verify(ctx, tokenStr, claims)
 		if err != nil {
 			return nil, err
 		}

@@ -1,7 +1,7 @@
 // Package services aggregates every feature's operations layer. Import this
 // package instead of the per-feature subpackages:
 //
-//	ops := services.NewOperations(r, authzSvc, hmacSecret)
+//	ops := services.NewOperations(r, authzSvc, tokensMgr, hmacSecret, sender)
 //	actor, err := ops.Actors.GetByID(ctx, id)
 package services
 
@@ -68,13 +68,14 @@ type Operations struct {
 // NewOperations wires every feature's operations from the shared repos.
 // hmacSecret is the API-key signing secret (app config), passed through to
 // the api_keys and authn services. sender dispatches the async verify/reset
-// emails minted by authn.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, verifier *tokens.Verifier, hmacSecret string, sender *emails.Sender) *Operations {
+// emails minted by authn. tokensMgr owns the token lifecycle; authn crosses
+// it instead of touching keys or the blacklist directly.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, hmacSecret string, sender *emails.Sender) *Operations {
 	oauthProviders := NewOAuthProviders(r.OAuthProviders, r.Projects, authzSvc)
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, verifier, r.ExternalIdentities, oauthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, r.ExternalIdentities, oauthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		EmailTemplates: NewEmailTemplates(r.EmailTemplates, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),

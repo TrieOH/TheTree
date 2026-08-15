@@ -61,27 +61,3 @@ func (r *UserTokensOutput) ToResponse() UserTokensResponse {
 		Domain:             r.Domain,
 	}
 }
-
-func (r *RefreshClaims) ToRefreshBlacklistEntry() BlacklistEntry {
-	return BlacklistEntry{
-		CreatedByActorID: &r.Sub.ID,
-		ProjectID:        r.Sub.ProjectID,
-		Type:             BlacklistEntryTypeToken,
-		Target:           r.ID,
-		Reason:           new("refresh"),
-		Metadata:         nil,
-		ExpiresAt:        &r.ExpiresAt.Time,
-	}
-}
-
-func (r *RefreshClaims) ToAccessBlacklistEntry() BlacklistEntry {
-	return BlacklistEntry{
-		CreatedByActorID: &r.Sub.ID,
-		ProjectID:        r.Sub.ProjectID,
-		Type:             BlacklistEntryTypeToken,
-		Target:           r.Sub.AccessJTI.String(),
-		Reason:           new("refresh"),
-		Metadata:         nil,
-		ExpiresAt:        &r.ExpiresAt.Time,
-	}
-}

@@ -1,7 +1,6 @@
 package authn
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -104,30 +103,4 @@ func mintPair(t *testing.T) *testPair {
 		accessJTI: accessJTI, refreshJTI: refreshJTI,
 		key: key, kp: kp, actor: actor,
 	}
-}
-
-// mintExpiredRefresh builds a refresh token signed with the pair's key
-// that is already expired.
-func mintExpiredRefresh(t *testing.T, pair *testPair) string {
-	t.Helper()
-	payload := mintPayload(t, models.RefreshClaims{
-		Sub: models.RefreshSub{ID: pair.actor.ID, ProjectID: nil, AccessJTI: pair.accessJTI},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-			Issuer:    "test-issuer", ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
-		},
-	}, pair.key.ID)
-	token, err := crypto.SignToken(payload, pair.kp)
-	if err != nil {
-		t.Fatalf("SignToken: %v", err)
-	}
-	return token
-}
-
-func ctxWithIdentity() context.Context {
-	actor := testActor()
-	return models.WithIdentity(context.Background(), &models.Identity{
-		Sub:  models.Subject{ID: actor.ID, ProjectID: nil, Email: actor.Email, Type: actor.Type},
-		Cred: models.Credential{Type: models.TokenCredentialType},
-	})
 }

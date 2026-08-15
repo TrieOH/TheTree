@@ -89,5 +89,5 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 		return nil, err
 	}
 
-	return o.issueTokens(ctx, actor)
+	return o.tokens.Mint(ctx, actor)
 }

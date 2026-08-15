@@ -32,7 +32,7 @@ func newAuthMW(t *testing.T, key models.CryptoKey, blacklisted func(jti string) 
 		})
 
 	mw := (&IdentityX{}).SetupAuthMiddlewares(
-		tokens.NewVerifier(cryptoKeys, bl),
+		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
 		mock.Mock[ports.APIKeysRepo](),
 		mock.Mock[ports.ActorRepo](),
 		mock.Mock[ports.CapabilityRepo](),

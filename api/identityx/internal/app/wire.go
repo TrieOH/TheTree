@@ -36,11 +36,15 @@ func (app *IdentityX) initRepos(q *sqlc.Queries) *repos.Repos {
 	return repos.New(q)
 }
 
-func (app *IdentityX) initVerifier(r *repos.Repos) *tokens.Verifier {
-	return tokens.NewVerifier(r.CryptoKeys, r.Blacklist)
+func (app *IdentityX) initTokens(r *repos.Repos) *tokens.Manager {
+	return tokens.NewManager(r.CryptoKeys, r.Blacklist, r.Actors, r.Projects, tokens.Config{
+		Issuer:     app.cfg.Issuer,
+		AccessTTL:  app.cfg.AccessTokenLifetime,
+		RefreshTTL: app.cfg.RefreshTokenLifetime,
+	})
 }
 
-func (app *IdentityX) initOperations(r *repos.Repos, verifier *tokens.Verifier, riverClient *river.Client[pgx.Tx]) *services.Operations {
+func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, riverClient *river.Client[pgx.Tx]) *services.Operations {
 	authzSvc := authz.New(r.Organizations, r.Projects, r.PlatformRoles)
 	sender := emails.NewSender(
 		r.ActionTokens,
@@ -51,12 +55,12 @@ func (app *IdentityX) initOperations(r *repos.Repos, verifier *tokens.Verifier, 
 		app.cfg.AppName,
 		riverClient,
 	)
-	return services.NewOperations(r, authzSvc, verifier, app.cfg.HmacSecret, sender)
+	return services.NewOperations(r, authzSvc, tokensMgr, app.cfg.HmacSecret, sender)
 }
 
-func (app *IdentityX) initMiddlewares(r *repos.Repos, verifier *tokens.Verifier) middlewares {
+func (app *IdentityX) initMiddlewares(r *repos.Repos, tokensMgr *tokens.Manager) middlewares {
 	var mw middlewares
-	authMW := app.SetupAuthMiddlewares(verifier, r.APIKeys, r.Actors, r.Capabilities)
+	authMW := app.SetupAuthMiddlewares(tokensMgr, r.APIKeys, r.Actors, r.Capabilities)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
