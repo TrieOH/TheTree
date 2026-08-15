@@ -24,7 +24,7 @@ func (app *IdentityX) run() {
 	tokensMgr := app.initTokens(repos)
 	ops, authzSvc := app.initOperations(repos, tokensMgr, riverClient)
 	handlers := app.initHandlers(ops)
-	middlewares := app.initMiddlewares(repos, tokensMgr, authzSvc)
+	middlewares := app.initMiddlewares(ops, tokensMgr, authzSvc)
 
 	mux := app.CreateRouter(middlewares, handlers, riverUIHandler)
 	httpserver.Start(mux, httpserver.Config{

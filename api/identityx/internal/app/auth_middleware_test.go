@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"IdentityX/internal/services"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -33,9 +34,7 @@ func newAuthMW(t *testing.T, key models.CryptoKey, blacklisted func(jti string) 
 
 	mw := (&IdentityX{}).SetupAuthMiddlewares(
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
-		mock.Mock[ports.APIKeysRepo](),
-		mock.Mock[ports.ActorRepo](),
-		mock.Mock[ports.CapabilityRepo](),
+		&services.Operations{},
 	)
 	return mw.JWT()
 }

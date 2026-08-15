@@ -62,9 +62,9 @@ func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, 
 	return services.NewOperations(r, authzSvc, tokensMgr, app.cfg.HmacSecret, sender), authzSvc
 }
 
-func (app *IdentityX) initMiddlewares(r *repos.Repos, tokensMgr *tokens.Manager, authzSvc *authz.Service) middlewares {
+func (app *IdentityX) initMiddlewares(ops *services.Operations, tokensMgr *tokens.Manager, authzSvc *authz.Service) middlewares {
 	var mw middlewares
-	authMW := app.SetupAuthMiddlewares(tokensMgr, r.APIKeys, r.Actors, r.Capabilities)
+	authMW := app.SetupAuthMiddlewares(tokensMgr, ops)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
