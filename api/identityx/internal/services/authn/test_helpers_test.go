@@ -6,12 +6,28 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/internal/authz"
+	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/models"
+	"IdentityX/ports"
 	"lib/crypto"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/ovechkin-dm/mockio/mock"
 )
+
+// mockOAuthProviderOps wires the oauth_providers operations over fresh
+// per-test mocks, for authn tests that never touch the provider repo.
+func mockOAuthProviderOps(t *testing.T) *oauth_providers.Operations {
+	t.Helper()
+	projects := mock.Mock[ports.ProjectRepo]()
+	return oauth_providers.NewOperations(
+		mock.Mock[ports.ProjectOAuthProvidersRepo](),
+		projects,
+		authz.New(mock.Mock[ports.OrganizationRepo](), projects),
+	)
+}
 
 func testEnv(t *testing.T) {
 	t.Helper()

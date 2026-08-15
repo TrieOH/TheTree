@@ -18,7 +18,8 @@ func (o *Operations) List(ctx context.Context, projectID uuid.UUID) ([]models.Ac
 		return nil, err
 	}
 
-	if err := o.requireActorReadAccess(ctx, ident, projectID); err != nil {
+	err = o.requireActorReadAccess(ctx, ident, projectID)
+	if err != nil {
 		return nil, err
 	}
 

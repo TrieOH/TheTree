@@ -18,7 +18,8 @@ func (o *Operations) GetByEmail(ctx context.Context, email string, projectID uui
 		return nil, err
 	}
 
-	if err := o.requireActorReadAccess(ctx, ident, projectID); err != nil {
+	err = o.requireActorReadAccess(ctx, ident, projectID)
+	if err != nil {
 		return nil, err
 	}
 

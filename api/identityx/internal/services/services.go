@@ -69,14 +69,15 @@ type Operations struct {
 // the api_keys and authn services. sender dispatches the async verify/reset
 // emails minted by authn.
 func NewOperations(r *repos.Repos, authzSvc *authz.Service, hmacSecret string, sender *emails.Sender) *Operations {
+	oauthProviders := NewOAuthProviders(r.OAuthProviders, r.Projects, authzSvc)
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, r.ExternalIdentities, r.OAuthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, r.CryptoKeys, r.Blacklist, r.ExternalIdentities, oauthProviders, r.OAuthProviders, r.ActionTokens, sender, []byte(hmacSecret)),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		EmailTemplates: NewEmailTemplates(r.EmailTemplates, r.Projects, authzSvc),
 		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),
-		OAuthProviders: NewOAuthProviders(r.OAuthProviders, r.Projects, authzSvc),
+		OAuthProviders: oauthProviders,
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),
 		Profiles:       NewProfiles(r.Profiles, r.ProfileSchemas, r.Actors, authzSvc),
 		Projects:       NewProjects(r.CryptoKeys, r.Projects, r.Actors, authzSvc),

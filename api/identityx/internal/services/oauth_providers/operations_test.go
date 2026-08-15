@@ -309,3 +309,100 @@ func TestListEnabledProvidersPlatform(t *testing.T) {
 		t.Fatalf("want [google] (only env-configured), got %v", out)
 	}
 }
+
+// ── Login resolution ─────────────────────────────────────────────────────
+
+func encryptedSecret(t *testing.T) string {
+	t.Helper()
+	enc, err := crypto.EncryptPrivateKey([]byte("proj-secret"))
+	if err != nil {
+		t.Fatalf("encrypt: %v", err)
+	}
+	return enc
+}
+
+func TestResolveLoginProviderPlatformUsesEnvCredentials(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", "platform-id")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "platform-secret")
+	o := newTestOps(t, models.ProjectRoleMember)
+
+	out, err := o.ops.ResolveLoginProvider(context.Background(), "google", nil)
+	if err != nil {
+		t.Fatalf("ResolveLoginProvider: %v", err)
+	}
+	if out.Creds.ClientID != "platform-id" || out.Creds.ClientSecret != "platform-secret" {
+		t.Fatalf("unexpected credentials: %+v", out.Creds)
+	}
+	if out.Disabled {
+		t.Fatal("platform credentials are never disabled")
+	}
+	if out.Provider != models.GoogleIdentityProvider {
+		t.Fatalf("provider = %v, want google", out.Provider)
+	}
+}
+
+func TestResolveLoginProviderPlatformNotConfigured(t *testing.T) {
+	o := newTestOps(t, models.ProjectRoleMember)
+
+	_, err := o.ops.ResolveLoginProvider(context.Background(), "google", nil)
+	if !fun.Is(err, fun.CodeBadRequest) {
+		t.Fatalf("want bad request for missing env credentials, got %v", err)
+	}
+}
+
+func TestResolveLoginProviderProjectRow(t *testing.T) {
+	projectID := uuid.New()
+	o := newTestOps(t, models.ProjectRoleMember)
+	row := models.ProjectOAuthProviders{
+		ID: uuid.New(), ProjectID: projectID, Provider: models.GoogleIdentityProvider,
+		ClientID: "proj-client-id", EncryptedClientSecret: encryptedSecret(t), Enabled: true,
+		CallbackURL: "https://app.example.com/callback",
+	}
+	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
+		ThenReturn(&row, nil)
+
+	out, err := o.ops.ResolveLoginProvider(context.Background(), "google", &projectID)
+	if err != nil {
+		t.Fatalf("ResolveLoginProvider: %v", err)
+	}
+	if out.Creds.ClientID != "proj-client-id" || out.Creds.ClientSecret != "proj-secret" {
+		t.Fatalf("unexpected credentials: %+v", out.Creds)
+	}
+	if out.Creds.RedirectURL != "https://app.example.com/callback" {
+		t.Fatalf("redirect = %q, want the project callback_url", out.Creds.RedirectURL)
+	}
+	if out.Disabled {
+		t.Fatal("enabled row must resolve as enabled")
+	}
+}
+
+func TestResolveLoginProviderProjectDisabled(t *testing.T) {
+	projectID := uuid.New()
+	o := newTestOps(t, models.ProjectRoleMember)
+	row := models.ProjectOAuthProviders{
+		ID: uuid.New(), ProjectID: projectID, Provider: models.GoogleIdentityProvider,
+		ClientID: "proj-client-id", EncryptedClientSecret: encryptedSecret(t), Enabled: false,
+	}
+	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
+		ThenReturn(&row, nil)
+
+	out, err := o.ops.ResolveLoginProvider(context.Background(), "google", &projectID)
+	if err != nil {
+		t.Fatalf("ResolveLoginProvider: %v", err)
+	}
+	if !out.Disabled {
+		t.Fatal("disabled row must resolve as disabled")
+	}
+}
+
+func TestResolveLoginProviderMissingRow(t *testing.T) {
+	projectID := uuid.New()
+	o := newTestOps(t, models.ProjectRoleMember)
+	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
+		ThenReturn(nil, fun.ErrNotFound("not configured"))
+
+	_, err := o.ops.ResolveLoginProvider(context.Background(), "google", &projectID)
+	if !fun.Is(err, fun.CodeNotFound) {
+		t.Fatalf("want not found for missing row, got %v", err)
+	}
+}

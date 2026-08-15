@@ -35,12 +35,17 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 		return nil, fun.ErrBadRequest("OAuth state expired; start a new login")
 	}
 
-	creds, err := o.resolveCallbackCredentials(ctx, *loginState)
+	resolved, err := o.oauthProviders.ResolveLoginProvider(ctx, string(loginState.Provider), loginState.ProjectID)
 	if err != nil {
+		if fun.Is(err, fun.CodeNotFound) {
+			return nil, fun.ErrBadRequest(
+				"this project has disabled " + string(loginState.Provider) + " login; contact the project to enable it",
+			)
+		}
 		return nil, err
 	}
 
-	info, providerToken, err := o.fetchUserInfo(ctx, provider, creds.creds, code)
+	info, providerToken, err := o.fetchUserInfo(ctx, provider, resolved.Creds, code)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +78,7 @@ func (o *Operations) OAuthCallback(ctx context.Context, provider, code, state st
 	} else {
 		// A disabled provider allows existing identities to log back in,
 		// but never new sign-ups.
-		if creds.disabled {
+		if resolved.Disabled {
 			return nil, fun.ErrForbidden(
 				"this project has disabled " + provider + " login; contact the project to enable it",
 			)

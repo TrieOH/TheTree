@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/internal/authz"
+	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
@@ -93,7 +95,9 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 	ops := NewOperations(
 		r.actors, r.projects,
 		mock.Mock[ports.PlatformRolesRepo](),
-		r.keys, r.blacklist, r.external, r.providers, r.states,
+		r.keys, r.blacklist, r.external,
+		oauth_providers.NewOperations(r.providers, r.projects, authz.New(mock.Mock[ports.OrganizationRepo](), r.projects)),
+		r.states,
 		mock.Mock[ports.ActionTokenRepo](),
 		mock.Mock[ports.EmailSender](),
 		[]byte("test-hmac"),

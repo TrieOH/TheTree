@@ -147,64 +147,6 @@ func (o *Operations) newIDXRefreshToken(actor *models.Actor, jti, accessJTI, kid
 // outlive the provider consent round trip; it is deliberately short.
 const oauthStateTTL = 10 * time.Minute
 
-// resolvedCredentials is the credential scope for one OAuth flow plus
-// whether the provider is disabled for that scope. Connect proceeds either
-// way (existing identities may re-login); the callback enforces the rule.
-type resolvedCredentials struct {
-	creds    oauth.Credentials
-	disabled bool
-}
-
-// platformCredentials returns the env-configured credentials for
-// IdentityX itself (no project scope).
-func platformCredentials(provider string) (resolvedCredentials, error) {
-	creds, ok := oauth.EnvCredentials(provider)
-	if !ok {
-		return resolvedCredentials{}, fun.ErrBadRequest("provider not configured: " + provider)
-	}
-	return resolvedCredentials{creds: creds}, nil
-}
-
-// projectCredentials resolves a project's configured provider row and
-// decrypts its client secret. A missing row surfaces as NotFound — callers
-// decide how to phrase it.
-func (o *Operations) projectCredentials(ctx context.Context, provider string, projectID uuid.UUID) (resolvedCredentials, error) {
-	row, err := o.oauthProviders.GetByProjectAndProvider(ctx, projectID, models.OAuthProvider(provider))
-	if err != nil {
-		return resolvedCredentials{}, err
-	}
-	secret, err := crypto.DecryptPrivateKey(row.EncryptedClientSecret)
-	if err != nil {
-		return resolvedCredentials{}, err
-	}
-	return resolvedCredentials{
-		creds: oauth.Credentials{
-			ClientID:     row.ClientID,
-			ClientSecret: string(secret),
-			RedirectURL:  row.CallbackURL,
-		},
-		disabled: !row.Enabled,
-	}, nil
-}
-
-// resolveCredentials picks the scope's credentials: the project's
-// configured provider row, or the platform env credentials when the flow
-// targets IdentityX itself.
-func (o *Operations) resolveCredentials(ctx context.Context, provider string, projectID *uuid.UUID) (resolvedCredentials, error) {
-	if projectID == nil {
-		return platformCredentials(provider)
-	}
-	_, err := o.projects.GetByID(ctx, *projectID)
-	if err != nil {
-		return resolvedCredentials{}, err
-	}
-	creds, err := o.projectCredentials(ctx, provider, *projectID)
-	if err != nil && fun.Is(err, fun.CodeNotFound) {
-		return resolvedCredentials{}, fun.ErrBadRequest("provider not configured for this project: " + provider)
-	}
-	return creds, err
-}
-
 // createLoginState records the connect attempt and returns the opaque state
 // token the provider will hand back on the callback. Deleted there.
 func (o *Operations) createLoginState(ctx context.Context, provider string, projectID *uuid.UUID) (string, error) {
@@ -297,23 +239,6 @@ func (o *Operations) registerNewIdentity(
 		return nil, err
 	}
 	return actor, nil
-}
-
-// resolveCallbackCredentials resolves the credentials the state was created
-// for. When the project's provider row is gone (deleted between connect and
-// callback) the flow cannot proceed at all: there are no keys to exchange
-// the code with, so the user is told the project disabled the auth.
-func (o *Operations) resolveCallbackCredentials(ctx context.Context, state models.OAuthLoginState) (resolvedCredentials, error) {
-	if state.ProjectID == nil {
-		return platformCredentials(string(state.Provider))
-	}
-	creds, err := o.projectCredentials(ctx, string(state.Provider), *state.ProjectID)
-	if err != nil && fun.Is(err, fun.CodeNotFound) {
-		return resolvedCredentials{}, fun.ErrBadRequest(
-			"this project has disabled " + string(state.Provider) + " login; contact the project to enable it",
-		)
-	}
-	return creds, err
 }
 
 // fetchUserInfo exchanges the authorization code with the scope's

@@ -19,7 +19,8 @@ func (o *Operations) GetByID(ctx context.Context, id, projectID uuid.UUID) (*mod
 		return nil, err
 	}
 
-	if err := o.requireActorReadAccess(ctx, ident, projectID); err != nil {
+	err = o.requireActorReadAccess(ctx, ident, projectID)
+	if err != nil {
 		return nil, err
 	}
 

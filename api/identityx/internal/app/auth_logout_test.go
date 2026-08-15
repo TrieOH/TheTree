@@ -7,9 +7,11 @@ import (
 	"strings"
 	"testing"
 
+	"IdentityX/internal/authz"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
+	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/globals"
@@ -31,13 +33,18 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 	cryptoKeys := mock.Mock[ports.CryptoKeysRepo]()
 	mock.When(cryptoKeys.GetByID(mock.AnyContext(), mock.Equal(key.ID))).ThenReturn(&key, nil)
 
+	projects := mock.Mock[ports.ProjectRepo]()
 	ops := authn.NewOperations(
 		mock.Mock[ports.ActorRepo](),
-		mock.Mock[ports.ProjectRepo](),
+		projects,
 		mock.Mock[ports.PlatformRolesRepo](),
 		cryptoKeys, bl,
 		mock.Mock[ports.ExternalIdentitiesRepo](),
-		mock.Mock[ports.ProjectOAuthProvidersRepo](),
+		oauth_providers.NewOperations(
+			mock.Mock[ports.ProjectOAuthProvidersRepo](),
+			projects,
+			authz.New(mock.Mock[ports.OrganizationRepo](), projects),
+		),
 		mock.Mock[ports.OAuthLoginStatesRepo](),
 		mock.Mock[ports.ActionTokenRepo](),
 		mock.Mock[ports.EmailSender](),

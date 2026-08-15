@@ -1,6 +1,7 @@
 package authn
 
 import (
+	"IdentityX/internal/services/oauth_providers"
 	"IdentityX/ports"
 	"lib/errx"
 )
@@ -12,11 +13,13 @@ type Operations struct {
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
 	externalIdentities ports.ExternalIdentitiesRepo
-	oauthProviders     ports.ProjectOAuthProvidersRepo
-	oauthLoginStates   ports.OAuthLoginStatesRepo
-	actionTokens       ports.ActionTokenRepo
-	emailSender        ports.EmailSender
-	hmacSecret         []byte
+	// oauthProviders owns provider policy (configured/enabled); the OAuth
+	// flow consults it instead of the repo.
+	oauthProviders   *oauth_providers.Operations
+	oauthLoginStates ports.OAuthLoginStatesRepo
+	actionTokens     ports.ActionTokenRepo
+	emailSender      ports.EmailSender
+	hmacSecret       []byte
 }
 
 func NewOperations(
@@ -26,7 +29,7 @@ func NewOperations(
 	cryptoKeys ports.CryptoKeysRepo,
 	blacklist ports.BlacklistRepo,
 	externalIdentities ports.ExternalIdentitiesRepo,
-	oauthProviders ports.ProjectOAuthProvidersRepo,
+	oauthProviders *oauth_providers.Operations,
 	oauthLoginStates ports.OAuthLoginStatesRepo,
 	actionTokens ports.ActionTokenRepo,
 	emailSender ports.EmailSender,
