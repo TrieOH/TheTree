@@ -48,6 +48,9 @@ func (f *fakeProjects) GetByID(_ context.Context, id uuid.UUID) (*models.Project
 func (f *fakeProjects) ListByOrganization(_ context.Context, _ uuid.UUID) ([]models.Project, error) {
 	return nil, errors.New("stub")
 }
+func (f *fakeProjects) ListAll(_ context.Context) ([]models.Project, error) {
+	return nil, errors.New("stub")
+}
 func (f *fakeProjects) ListJoined(_ context.Context, _ uuid.UUID) ([]models.Project, error) {
 	return nil, errors.New("stub")
 }

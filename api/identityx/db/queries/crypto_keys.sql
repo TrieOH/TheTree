@@ -36,3 +36,18 @@ FROM crypto_keys
 WHERE (project_id = @project_id OR @project_id IS NULL)
   AND type = 'signing'
   AND status IN ('active', 'retiring');
+
+-- name: RetireCryptoKey :one
+UPDATE crypto_keys
+SET status = 'retiring', rotated_at = @rotated_at
+WHERE id = @id
+  AND status = 'active'
+RETURNING *;
+
+-- name: SweepRetiringCryptoKeys :exec
+UPDATE crypto_keys
+SET status = 'retired'
+WHERE status = 'retiring'
+  AND rotated_at IS NOT NULL
+  AND rotated_at < @before
+  AND (project_id = @project_id OR (project_id IS NULL AND @project_id IS NULL));

@@ -278,6 +278,30 @@ func TestVerifyRejectsRevokedSigningKey(t *testing.T) {
 	}
 }
 
+func TestVerifyRejectsRetiredSigningKey(t *testing.T) {
+	f := newFixture(t)
+	retired := f.key
+	retired.Status = models.CryptoKeyStatusRetired
+	f.stubKey(&retired)
+
+	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
+	if !fun.Is(err, fun.CodeUnauthorized) {
+		t.Fatalf("want unauthorized for a retired signing key, got %v", err)
+	}
+}
+
+func TestVerifyAcceptsRetiringSigningKey(t *testing.T) {
+	f := newFixture(t)
+	retiring := f.key
+	retiring.Status = models.CryptoKeyStatusRetiring
+	f.stubKey(&retiring)
+
+	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
+	if err != nil {
+		t.Fatalf("want a retiring signing key to still verify (tokens in flight), got %v", err)
+	}
+}
+
 func TestVerifyOutdatedKey(t *testing.T) {
 	f := newFixture(t)
 	f.stubKeyNotFound()

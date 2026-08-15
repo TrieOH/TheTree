@@ -8,6 +8,9 @@ package services
 import (
 	"time"
 
+	"IdentityX/internal/authz"
+	"IdentityX/internal/emails"
+	"IdentityX/internal/keys"
 	"IdentityX/internal/repos"
 	"IdentityX/internal/services/actors"
 	"IdentityX/internal/services/api_keys"
@@ -21,8 +24,6 @@ import (
 	"IdentityX/internal/services/projects"
 	"IdentityX/internal/tokens"
 
-	"IdentityX/internal/authz"
-	"IdentityX/internal/emails"
 	"lib/oauth"
 
 	"resty.dev/v3"
@@ -75,8 +76,10 @@ type Operations struct {
 // the api_keys service. actionTokenMgr owns the single-use action-token
 // lifecycle: the sender mints through it, authn redeems through it.
 // tokensMgr owns the session-token lifecycle; authn crosses it instead of
-// touching keys or the blacklist directly.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, hmacSecret string, sender *emails.Sender) *Operations {
+// touching keys or the blacklist directly. keysMgr owns the Key-lifecycle;
+// project creation (projects and organizations) crosses its Ensure seam
+// instead of reaching into the crypto-key repo.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager, hmacSecret string, sender *emails.Sender) *Operations {
 	oauthProviders := NewOAuthProviders(
 		r.OAuthProviders, r.OAuthProviders, r.Projects, r.ExternalIdentities, r.Actors,
 		authzSvc, tokensMgr,
@@ -89,10 +92,10 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Ma
 		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, actionTokenMgr, sender),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		EmailTemplates: NewEmailTemplates(r.EmailTemplates, authzSvc),
-		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, authzSvc),
+		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, keysMgr, authzSvc),
 		OAuthProviders: oauthProviders,
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),
 		Profiles:       NewProfiles(r.Profiles, r.ProfileSchemas, r.Actors, authzSvc),
-		Projects:       NewProjects(r.CryptoKeys, r.Projects, r.Actors, authzSvc),
+		Projects:       NewProjects(r.Projects, r.Actors, keysMgr, authzSvc),
 	}
 }

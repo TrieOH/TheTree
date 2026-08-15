@@ -10,6 +10,7 @@ import (
 	"IdentityX/internal/emails"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/jobs"
+	"IdentityX/internal/keys"
 	"IdentityX/internal/repos"
 	"IdentityX/internal/services"
 	"IdentityX/internal/sqlc"
@@ -55,10 +56,23 @@ func (app *IdentityX) initTokens(r *repos.Repos) *tokens.Manager {
 	})
 }
 
-func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, riverClient *river.Client[pgx.Tx]) (*services.Operations, *authz.Service) {
+// initKeys constructs the Key-lifecycle module: the single owner of
+// provisioning, rotation, and retirement for every scope's signing and
+// encryption keys. The policy knobs are resolved here — KeyLifetime for
+// the stamped expiry, RefreshTokenLifetime as the retiring grace period,
+// RotateKeysJobDuration as the proactive lead window and worker interval.
+func (app *IdentityX) initKeys(r *repos.Repos) *keys.Manager {
+	return keys.NewManager(r.CryptoKeys, r.Projects, keys.Config{
+		KeyLifetime:    app.cfg.KeyLifetime,
+		RefreshTTL:     app.cfg.RefreshTokenLifetime,
+		RotateInterval: app.cfg.RotateKeysJobDuration,
+	})
+}
+
+func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager, riverClient *river.Client[pgx.Tx]) (*services.Operations, *authz.Service) {
 	authzSvc := authz.New(r.Organizations, r.Projects, r.PlatformRoles)
 	sender := emails.NewSender(actionTokenMgr, app.cfg.AppURL, app.cfg.AppName, riverClient)
-	return services.NewOperations(r, authzSvc, tokensMgr, actionTokenMgr, app.cfg.HmacSecret, sender), authzSvc
+	return services.NewOperations(r, authzSvc, tokensMgr, actionTokenMgr, keysMgr, app.cfg.HmacSecret, sender), authzSvc
 }
 
 func (app *IdentityX) initMiddlewares(ops *services.Operations, tokensMgr *tokens.Manager, authzSvc *authz.Service) middlewares {
@@ -80,13 +94,13 @@ func (app *IdentityX) initHandlers(ops *services.Operations) *handlers.Server {
 // initRiver migrates, starts the river client with the service's workers and
 // periodic jobs, and brings up the riverui dashboard. Returns both so callers
 // can enqueue work and mount the UI handler.
-func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionTokenMgr *tokens.ActionTokenManager) (*river.Client[pgx.Tx], *riverui.Handler) {
+func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager) (*river.Client[pgx.Tx], *riverui.Handler) {
 	libriver.Migrate(ctx, app.db)
 
 	client := libriver.NewClient(app.db, libriver.NewWorkers(
-		libriver.Register[jobs.CreateCryptoKeyArgs](jobs.NewCreateCryptoKeyWorker(q)),
 		libriver.Register[jobs.CleanupBlacklistArgs](jobs.NewCleanupBlacklistWorker(q)),
 		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(actionTokenMgr)),
+		libriver.Register[jobs.RotateKeysArgs](jobs.NewRotateKeysWorker(keysMgr)),
 		libriver.Register[emails.SendAuthEmailArgs](jobs.NewSendAuthEmailWorker(app.emailClient, repos.NewEmailTemplates(q))),
 	), nil, []*river.PeriodicJob{
 		river.NewPeriodicJob(
@@ -102,6 +116,16 @@ func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionToke
 				return jobs.CleanupActionTokensArgs{}, nil
 			},
 			&river.PeriodicJobOpts{RunOnStart: true},
+		),
+		// Boot provisions every scope inline (run.go), so this worker does
+		// not need RunOnStart: it is the ongoing heartbeat that rotates and
+		// sweeps keys while the service stays up.
+		river.NewPeriodicJob(
+			river.PeriodicInterval(app.cfg.RotateKeysJobDuration),
+			func() (river.JobArgs, *river.InsertOpts) {
+				return jobs.RotateKeysArgs{}, nil
+			},
+			&river.PeriodicJobOpts{RunOnStart: false},
 		),
 	})
 

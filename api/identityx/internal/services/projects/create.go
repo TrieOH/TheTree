@@ -3,7 +3,6 @@ package projects
 import (
 	"IdentityX/models"
 	"context"
-	"lib/crypto"
 	"lib/database"
 
 	"lib/telemetry"
@@ -30,30 +29,16 @@ func (o *Operations) Create(ctx context.Context, in models.CreateProjectInput) (
 			return err
 		}
 
-		var signKey *crypto.KeyPair
-		signKey, err = crypto.GenerateKeyPair("signing")
+		// The Key-lifecycle module provisions the project's signing and
+		// encryption keys inside the same tx; an org-created project (the
+		// organizations feature) crosses the same seam, so every project
+		// ships with keys regardless of which path created it.
+		err = o.keys.Ensure(ctx, &created.ID)
 		if err != nil {
 			return err
 		}
 
-		_, err = o.keys.Create(ctx, &created.ID, signKey, "signing")
-		if err != nil {
-			return err
-		}
-
-		var encKey *crypto.KeyPair
-		encKey, err = crypto.GenerateKeyPair("encryption")
-		if err != nil {
-			return err
-		}
-
-		_, err = o.keys.Create(ctx, &created.ID, encKey, "encryption")
-		if err != nil {
-			return err
-		}
-
-		var member *models.ProjectMember
-		member, err = models.NewProjectMember(created.ID, ident.Sub.ID, models.ProjectRoleOwner)
+		member, err := models.NewProjectMember(created.ID, ident.Sub.ID, models.ProjectRoleOwner)
 		if err != nil {
 			return err
 		}

@@ -6,13 +6,14 @@ import (
 	"context"
 	"lib/crypto"
 	"lib/database"
+	"time"
 
 	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
-func (repo *Repo) Create(ctx context.Context, projectID *uuid.UUID, pair *crypto.KeyPair, keyType string) (*models.CryptoKey, error) {
+func (repo *Repo) Create(ctx context.Context, projectID *uuid.UUID, pair *crypto.KeyPair, keyType string, expiresAt *time.Time) (*models.CryptoKey, error) {
 	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
@@ -22,7 +23,7 @@ func (repo *Repo) Create(ctx context.Context, projectID *uuid.UUID, pair *crypto
 		PublicKey:           pair.Public,
 		EncryptedPrivateKey: pair.EncryptedPrivate,
 		Algorithm:           pair.Algorithm,
-		ExpiresAt:           nil,
+		ExpiresAt:           expiresAt,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)

@@ -5,6 +5,7 @@ import (
 
 	"IdentityX/internal/sqlc"
 	"lib/database"
+	"lib/errx"
 	"lib/httpserver"
 	libriver "lib/river"
 )
@@ -18,13 +19,22 @@ func (app *IdentityX) run() {
 
 	repos := app.initRepos(q)
 	actionTokenMgr := app.initActionTokens(repos)
+	keysMgr := app.initKeys(repos)
 
-	riverClient, riverUIHandler := app.initRiver(ctx, q, actionTokenMgr)
+	// Provision every scope's keys before the router accepts traffic: the
+	// Key-lifecycle module creates what is missing, rotates expired or
+	// legacy no-expiry keys, and sweeps retiring keys. The periodic
+	// RotateKeysWorker keeps them fresh afterwards.
+	err := keysMgr.EnsureAll(ctx)
+	if err != nil {
+		errx.Exit(err, "failed to ensure crypto keys")
+	}
+
+	riverClient, riverUIHandler := app.initRiver(ctx, q, actionTokenMgr, keysMgr)
 	defer libriver.LogStop(ctx, riverClient)
-	EnsureKeysExist(ctx, app.db, riverClient)
 
 	tokensMgr := app.initTokens(repos)
-	ops, authzSvc := app.initOperations(repos, tokensMgr, actionTokenMgr, riverClient)
+	ops, authzSvc := app.initOperations(repos, tokensMgr, actionTokenMgr, keysMgr, riverClient)
 	handlers := app.initHandlers(ops)
 	middlewares := app.initMiddlewares(ops, tokensMgr, authzSvc)
 

@@ -280,8 +280,15 @@ func (m *Manager) keyForToken(ctx context.Context, token *jwt.Token) (*models.Cr
 	if err != nil {
 		return nil, err
 	}
-	if key.Status == "revoked" {
+	// Retired keys no longer verify: one RefreshTTL after rotation every
+	// valid token signed by them has expired, so accepting them would only
+	// widen the surface. Retiring keys still verify — tokens minted under
+	// them are in flight until the grace period ends.
+	switch key.Status {
+	case "revoked":
 		return nil, fun.ErrUnauthorized("token signing key revoked")
+	case "retired":
+		return nil, fun.ErrUnauthorized("token signing key retired")
 	}
 	return key, nil
 }

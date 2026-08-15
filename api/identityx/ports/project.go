@@ -10,6 +10,9 @@ import (
 type ProjectRepo interface {
 	Create(ctx context.Context, project models.Project) (*models.Project, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Project, error)
+	// ListAll returns every project, platform or tenant — the Key-lifecycle
+	// module's EnsureAll crosses it to provision every scope.
+	ListAll(ctx context.Context) ([]models.Project, error)
 	ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Project, error)
 	ListJoined(ctx context.Context, userID uuid.UUID) ([]models.Project, error)
 	ListOwned(ctx context.Context, userID uuid.UUID) ([]models.Project, error)
