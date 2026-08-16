@@ -48,3 +48,9 @@ export interface EventColor {
   border: string;
   text: string;
 }
+
+export const FALLBACK_EVENT_COLOR: EventColor = {
+  bg: "oklch(0.85 0.08 264.05 / 0.25)",
+  border: "oklch(0.55 0.15 264.05)",
+  text: "var(--foreground)",
+};
