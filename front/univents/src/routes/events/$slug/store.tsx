@@ -112,7 +112,9 @@ function StorePage() {
               Nenhum ingresso disponível.
             </p>
           )
-        ) : (
+        ) : products.some(
+            (_, index) => (variants[index]?.data ?? []).length > 0,
+          ) ? (
           <div className="mt-8 flex flex-wrap gap-6">
             {products.map((product, index) => {
               const productVariants = variants[index]?.data ?? [];
@@ -125,6 +127,20 @@ function StorePage() {
                 />
               ) : null;
             })}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-xl border border-dashed p-10 text-center">
+            <h2 className="text-lg font-semibold">Nenhum produto disponível</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ainda não há produtos publicados para esta edição.
+            </p>
+            <Link
+              to="/events/$slug"
+              params={{ slug: event.slug }}
+              className="mt-6 inline-flex text-sm font-medium text-primary hover:underline"
+            >
+              Voltar ao evento
+            </Link>
           </div>
         )}
       </div>
