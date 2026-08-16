@@ -22,10 +22,10 @@ import type { CartItem as CartItemType } from "../model/cart";
 
 interface CartProps {
   isOpen: boolean;
-  eventId: string;
   editionId: string;
   onClose: () => void;
   onCheckout?: () => void;
+  onExplore?: () => void;
 }
 
 interface CartItemProps {
@@ -179,10 +179,10 @@ function CartItem({
 
 export function Cart({
   isOpen,
-  eventId: _eventId,
   editionId,
   onClose,
   onCheckout,
+  onExplore,
 }: CartProps) {
   const {
     items,
@@ -241,7 +241,10 @@ export function Cart({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleClose}
+                onClick={() => {
+                  handleClose();
+                  onExplore?.();
+                }}
                 className="px-6 border-2 hover:bg-accent hover:text-accent-foreground hover:border-accent"
               >
                 Explorar Produtos

@@ -145,7 +145,6 @@ function StorePage() {
         )}
       </div>
       <EventCart
-        eventId={event.id}
         editionId={edition.id}
         onCheckout={() =>
           navigate({
@@ -153,6 +152,7 @@ function StorePage() {
             params: { slug: event.slug },
           })
         }
+        onExplore={() => setTab("products")}
       />
     </main>
   );

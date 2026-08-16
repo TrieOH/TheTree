@@ -34,7 +34,7 @@ export function ProfileConfigPage() {
   useEffect(() => setInplaceEditEnabled(readInplaceEditPreference()), []);
 
   return (
-    <main className="min-h-dvh min-w-0 overflow-x-clip bg-background pb-28 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden lg:pb-0">
+    <main className="min-h-dvh min-w-0 overflow-x-clip bg-background pb-16 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden">
       <header className="sticky top-0 z-40 shrink-0 overflow-hidden border-b border-border bg-card/95 shadow-sm backdrop-blur">
         <div className="relative mx-auto flex min-w-0 max-w-7xl items-center gap-3 px-3 py-4 sm:gap-4 sm:px-4 md:px-6 md:py-5">
           <Link
@@ -59,7 +59,7 @@ export function ProfileConfigPage() {
         </div>
       </header>
       <div className="mx-auto grid w-full min-w-0 max-w-7xl gap-4 px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:py-4">
-        <aside className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:self-start">
+        <aside className="min-w-0 rounded-sm border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:self-start">
           <SectionHeading
             icon={UserRound}
             title="Conta"
@@ -78,7 +78,7 @@ export function ProfileConfigPage() {
             </ProfileOption>
           </Accordion>
         </aside>
-        <section className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:h-full lg:overflow-y-auto">
+        <section className="profile-preferences-scroll min-w-0 rounded-sm border border-border bg-card p-4 shadow-md shadow-foreground/5 lg:h-full lg:overflow-y-auto pb-14">
           <SectionHeading
             icon={SlidersHorizontal}
             title="Preferências"
@@ -100,18 +100,18 @@ export function ProfileConfigPage() {
               <AppearancePreferencesContent />
             </ProfileOption>
             <ProfileOption value="editing" icon={Pencil} title="Modo de edição">
-              <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 flex-col gap-3 rounded-sm border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">Edição rápida</p>
-                  <p className="text-xs text-muted-foreground">
-                    Ativa os atalhos de edição disponíveis nas áreas do sistema.
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Ativa os atalhos de edição disponíveis diretamente nas
+                    páginas compatíveis
                   </p>
                 </div>
                 <Button
                   type="button"
                   variant={inplaceEditEnabled ? "default" : "outline"}
                   size="sm"
-                  className="w-full shrink-0 sm:w-auto"
+                  className="w-full shrink-0 h-9 sm:w-auto"
                   onClick={() =>
                     setInplaceEditEnabled((enabled) => {
                       const next = !enabled;
@@ -120,7 +120,7 @@ export function ProfileConfigPage() {
                     })
                   }
                 >
-                  {inplaceEditEnabled ? "Ativado" : "Ativar"}
+                  {inplaceEditEnabled ? "Desativar" : "Ativar"}
                 </Button>
               </div>
             </ProfileOption>
@@ -145,7 +145,7 @@ function ProfileOption({
   return (
     <AccordionItem
       value={value}
-      className="mb-2 min-w-0 rounded-lg border border-border bg-background px-3 last:mb-0"
+      className="mb-2 min-w-0 rounded-sm border border-border bg-background px-3 last:mb-0"
     >
       <AccordionTrigger className="py-3 hover:no-underline">
         <span className="flex min-w-0 items-center gap-2 text-left">
@@ -171,7 +171,7 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-4 flex min-w-0 items-center gap-3 border-b border-border pb-4">
-      <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="flex size-9 items-center justify-center rounded-sm bg-primary/10 text-primary">
         <Icon className="size-4" />
       </div>
       <div className="min-w-0">

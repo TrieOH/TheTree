@@ -45,9 +45,6 @@ function RouteComponent() {
     allTicketsQueryOptions(activeEdition?.id ?? ""),
   );
 
-  // What the caller already holds (logged-in visitors only) — the front
-  // shows upgrade options on the more expensive ticket types. The upgrade
-  // action itself is a follow-up.
   const { data: heldTicket = null } = useQuery(
     myTicketQueryOptions(activeEdition?.id ?? "", isAuthenticated),
   );
@@ -214,12 +211,18 @@ function RouteComponent() {
       </main>
       {activeEdition && (
         <EventCart
-          eventId={event.id}
           editionId={activeEdition.id}
           onCheckout={() =>
             navigate({
               to: "/events/$slug/checkout",
               params: { slug: event.slug },
+            })
+          }
+          onExplore={() =>
+            navigate({
+              to: "/events/$slug/store",
+              params: { slug: event.slug },
+              search: { tab: "products" },
             })
           }
         />

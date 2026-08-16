@@ -5,12 +5,16 @@ import { useCart } from "../hooks/use-cart";
 import { Cart } from "./Cart";
 
 interface EventCartProps {
-  eventId: string;
   editionId: string;
   onCheckout: () => void;
+  onExplore?: () => void;
 }
 
-export function EventCart({ eventId, editionId, onCheckout }: EventCartProps) {
+export function EventCart({
+  editionId,
+  onCheckout,
+  onExplore,
+}: EventCartProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { itemCount } = useCart(editionId);
 
@@ -18,10 +22,10 @@ export function EventCart({ eventId, editionId, onCheckout }: EventCartProps) {
     <>
       <Cart
         isOpen={isOpen}
-        eventId={eventId}
         editionId={editionId}
         onClose={() => setIsOpen(false)}
         onCheckout={onCheckout}
+        onExplore={onExplore}
       />
       <Button
         type="button"

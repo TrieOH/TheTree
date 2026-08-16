@@ -18,6 +18,7 @@ import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
 import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
+import { OverlayScrollbar } from "@/widgets/ui/overlay-scrollbar";
 import { identityXAuthAdapter } from "../integrations/auth/adapter";
 import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -61,10 +62,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <script
-          crossOrigin="anonymous"
-          src="//unpkg.com/react-scan/dist/auto.global.js"
-        />
         <HeadContent />
       </head>
       <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
@@ -84,6 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <UploadQueueProvider>
                     {children}
                     <NavigationDock className="print:hidden" />
+                    <OverlayScrollbar />
                   </UploadQueueProvider>
                   <TanStackDevtools
                     config={{

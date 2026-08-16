@@ -41,30 +41,30 @@ export function AccountSessionContent() {
   return (
     <div className="space-y-1 pt-1 pb-0">
       <div className="rounded-lg border border-border/40 bg-card p-3 shadow-sm">
-        <div className="mb-2 flex items-center gap-3">
+        <div className="mb-2 flex flex-nowrap items-center gap-3 max-[424px]:flex-wrap">
           <div className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Fingerprint className="size-4" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="font-medium m-0!">Sua conta</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Perfil autenticado
             </p>
           </div>
           {verifiedAt ? (
-            <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+            <span className="ml-auto inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-emerald-600 max-[424px]:ml-0 max-[424px]:basis-full">
               <CheckCircle2 className="size-4" />
               Verificado
             </span>
           ) : (
-            <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+            <span className="ml-auto inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-amber-600 max-[424px]:ml-0 max-[424px]:basis-full">
               <MailWarning className="size-4" />
               Não verificado
             </span>
           )}
         </div>
         <div className="space-y-1.5 border-t border-border/30 pt-2">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Mail className="size-5 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium m-0!">Email</p>
@@ -78,6 +78,7 @@ export function AccountSessionContent() {
                 variant="outline"
                 size="sm"
                 disabled={resending}
+                className="w-full shrink-0 sm:w-auto"
                 onClick={async () => {
                   setResending(true);
                   try {
