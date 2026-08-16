@@ -2,10 +2,12 @@ package idx
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/MintzyG/sdkkit"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Config struct {
@@ -35,6 +37,13 @@ func NewClient(cfg Config) (*Client, error) {
 		BaseURL: cfg.BaseURL,
 		APIKey:  cfg.APIKey,
 		Debug:   cfg.Debug,
+		// otelhttp.NewTransport injects traceparent from the request context,
+		// so calls made under an active span join the caller's distributed
+		// trace instead of starting a fresh root trace on the receiving API.
+		HTTPClient: &http.Client{
+			Timeout:   30 * time.Second,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		},
 	})
 	if err != nil {
 		return nil, err
