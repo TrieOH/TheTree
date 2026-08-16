@@ -57,7 +57,8 @@ export function TicketsSection({
 
         <div className="mt-6 text-center">
           <Link
-            to="/events/$slug/tickets"
+            to="/events/$slug/store"
+            search={{ tab: "tickets" }}
             params={{ slug: eventSlug }}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:gap-2.5 transition-all duration-200"
           >

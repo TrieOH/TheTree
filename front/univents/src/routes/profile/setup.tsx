@@ -19,6 +19,9 @@ import { Label } from "@/shared/ui/shadcn/label";
 
 export const Route = createFileRoute("/profile/setup")({
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    returnTo: typeof search.returnTo === "string" ? search.returnTo : undefined,
+  }),
   component: InitialProfileSetup,
 });
 
@@ -26,6 +29,7 @@ function InitialProfileSetup() {
   const { auth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { returnTo } = Route.useSearch();
   const [photo, setPhoto] = useState<File>();
   const [handle, setHandle] = useState("");
   const [legalName, setLegalName] = useState("");
@@ -78,7 +82,11 @@ function InitialProfileSetup() {
         refetchType: "all",
       });
       toast.success("Perfil criado");
-      await navigate({ to: personalizeMore ? "/profile/edit" : "/profile" });
+      if (returnTo && !personalizeMore) {
+        window.location.assign(returnTo);
+      } else {
+        await navigate({ to: personalizeMore ? "/profile/edit" : "/profile" });
+      }
     } catch (error) {
       toast.error(
         error instanceof Error

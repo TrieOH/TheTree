@@ -1,8 +1,7 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { Calendar, MapPin, Share2, ShoppingCart } from "lucide-react";
-import { useState } from "react";
+import { Calendar, MapPin, Share2 } from "lucide-react";
 import {
   activeEditionQueryOptions,
   pastEditionsQueryOptions,
@@ -10,9 +9,8 @@ import {
 } from "@/features/editions/api";
 import { OtherEditionsSection } from "@/features/editions/ui/OtherEditionsSection";
 import { ContactSection } from "@/features/events/ui/ContactSection";
-import { useCart } from "@/features/products/hooks/use-cart";
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
-import { Cart } from "@/features/products/ui/Cart";
+import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
 import { ProgramSection } from "@/features/programs/ui/ProgramSection";
 import {
@@ -22,7 +20,6 @@ import {
 import { TicketsSection } from "@/features/tickets/ui/TicketsSection";
 import { formatDateRange } from "@/shared/lib/date";
 import { getInitials, handleShare } from "@/shared/lib/share";
-import { Button } from "@/shared/ui/shadcn/button";
 
 export const Route = createLazyFileRoute("/events/$slug/")({
   component: RouteComponent,
@@ -56,8 +53,6 @@ function RouteComponent() {
   );
 
   const initials = getInitials(event.full_name);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const cart = useCart(activeEdition?.id ?? "");
   useInventoryStream(activeEdition?.id ?? "");
 
   return (
@@ -218,11 +213,9 @@ function RouteComponent() {
         </div>
       </main>
       {activeEdition && (
-        <Cart
-          isOpen={isCartOpen}
+        <EventCart
           eventId={event.id}
           editionId={activeEdition.id}
-          onClose={() => setIsCartOpen(false)}
           onCheckout={() =>
             navigate({
               to: "/events/$slug/checkout",
@@ -230,22 +223,6 @@ function RouteComponent() {
             })
           }
         />
-      )}
-      {activeEdition && (
-        <Button
-          type="button"
-          onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-24 right-4 z-40 h-13 rounded-full px-5 shadow-md shadow-primary/10 transition-transform hover:scale-105 md:bottom-24 md:right-8"
-          aria-label="Abrir carrinho"
-        >
-          <ShoppingCart className="mr-2 h-5 w-5" />
-          <span className="hidden sm:inline">Carrinho</span>
-          {cart.itemCount > 0 && (
-            <span className="ml-2 rounded-full bg-background px-2 py-0.5 text-xs font-bold text-foreground">
-              {cart.itemCount}
-            </span>
-          )}
-        </Button>
       )}
     </div>
   );

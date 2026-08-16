@@ -61,7 +61,8 @@ export function ProductsSection({
 
         <div className="mt-6 text-center">
           <Link
-            to="/events/$slug/products"
+            to="/events/$slug/store"
+            search={{ tab: "products" }}
             params={{ slug: eventSlug }}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
           >

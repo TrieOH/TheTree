@@ -13,12 +13,30 @@ import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import { OrderSummary } from "@/features/payments/ui/checkout/OrderSummary";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
 import { useCart } from "@/features/products/hooks/use-cart";
+import { profileKeys } from "@/features/profile/api/query-keys";
 import { useCreateCheckoutMutation } from "@/features/purchases/api";
 import { getErrorMessage } from "@/shared/lib/errors";
 import { Button } from "@/shared/ui/shadcn/button";
 
 export const Route = createFileRoute("/events/$slug/checkout")({
-  beforeLoad: requireAuth,
+  beforeLoad: async (args) => {
+    requireAuth(args);
+    const actorId = args.context.auth?.auth.profile()?.id;
+    if (!actorId) return;
+    const profile = await args.context.queryClient.ensureQueryData({
+      queryKey: profileKeys.detail(actorId),
+      queryFn: async () => {
+        const response = await args.context.auth?.auth.getActorProfile(actorId);
+        return response?.success ? (response.data ?? null) : null;
+      },
+    });
+    if (!profile) {
+      throw redirect({
+        to: "/profile/setup",
+        search: { returnTo: args.location.href },
+      });
+    }
+  },
   loader: async ({ context, params }) => {
     const event = await context.queryClient.ensureQueryData(
       publicEventBySlugQueryOptions(params.slug),
@@ -139,7 +157,8 @@ function CheckoutPage() {
           Adicione ao menos um item antes de iniciar o pagamento.
         </p>
         <Link
-          to="/events/$slug/products"
+          to="/events/$slug/store"
+          search={{ tab: "products" }}
           params={{ slug: event.slug }}
           className="inline-flex h-9 items-center justify-center bg-primary px-4 text-sm font-medium text-primary-foreground"
         >

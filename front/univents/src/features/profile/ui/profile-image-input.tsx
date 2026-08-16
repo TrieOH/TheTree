@@ -89,8 +89,7 @@ export function ProfileImageInput({
           className={cn(
             "relative z-10 flex items-center gap-2 rounded-lg bg-background/90",
             "px-3 py-2 text-xs font-medium shadow-md backdrop-blur-sm",
-            isAvatar &&
-              "size-9 justify-center rounded-full p-0 opacity-90 md:opacity-0 md:group-hover:opacity-100",
+            isAvatar && "size-9 justify-center rounded-full p-0 opacity-90",
           )}
         >
           {isAvatar ? (
