@@ -25,7 +25,6 @@ import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
 import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
-import { Route as ProfilePurchasesRouteImport } from './routes/profile/purchases'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileActorIdRouteImport } from './routes/profile/$actorId'
@@ -146,11 +145,6 @@ const SignatureRequestsFulfillRoute =
 const ProfileSetupRoute = ProfileSetupRouteImport.update({
   id: '/setup',
   path: '/setup',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const ProfilePurchasesRoute = ProfilePurchasesRouteImport.update({
-  id: '/purchases',
-  path: '/purchases',
   getParentRoute: () => ProfileRoute,
 } as any)
 const ProfileEditRoute = ProfileEditRouteImport.update({
@@ -441,7 +435,6 @@ export interface FileRoutesByFullPath {
   '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
-  '/profile/purchases': typeof ProfilePurchasesRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
@@ -496,7 +489,6 @@ export interface FileRoutesByTo {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
-  '/profile/purchases': typeof ProfilePurchasesRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
@@ -553,7 +545,6 @@ export interface FileRoutesById {
   '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
-  '/profile/purchases': typeof ProfilePurchasesRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
@@ -612,7 +603,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
-    | '/profile/purchases'
     | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
@@ -667,7 +657,6 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
-    | '/profile/purchases'
     | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
@@ -723,7 +712,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
-    | '/profile/purchases'
     | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
@@ -889,13 +877,6 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/profile/setup'
       preLoaderRoute: typeof ProfileSetupRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/profile/purchases': {
-      id: '/profile/purchases'
-      path: '/purchases'
-      fullPath: '/profile/purchases'
-      preLoaderRoute: typeof ProfilePurchasesRouteImport
       parentRoute: typeof ProfileRoute
     }
     '/profile/edit': {
@@ -1277,7 +1258,6 @@ interface ProfileRouteChildren {
   ProfileActorIdRoute: typeof ProfileActorIdRouteWithChildren
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
-  ProfilePurchasesRoute: typeof ProfilePurchasesRoute
   ProfileSetupRoute: typeof ProfileSetupRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
@@ -1286,7 +1266,6 @@ const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileActorIdRoute: ProfileActorIdRouteWithChildren,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
-  ProfilePurchasesRoute: ProfilePurchasesRoute,
   ProfileSetupRoute: ProfileSetupRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }

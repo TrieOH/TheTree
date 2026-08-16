@@ -7,6 +7,7 @@ import { useState } from "react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import { PurchasesContent } from "@/features/purchases/ui/purchases-content";
 import { cn } from "@/shared/lib/utils";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
 import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
@@ -48,7 +49,9 @@ export function ProfileView({
   ownProfile = false,
   viewerActorId,
 }: ProfileViewProps) {
-  const [activeTab, setActiveTab] = useState<"about" | "badges">("about");
+  const [activeTab, setActiveTab] = useState<"about" | "badges" | "purchases">(
+    "about",
+  );
   const profileQuery = useQuery({
     queryKey: profileKeys.detail(actorId ?? ""),
     enabled: Boolean(actorId),
@@ -117,6 +120,10 @@ export function ProfileView({
             profileIdentifier={publicIdentifier ?? ""}
             participantName={profile.legalName || profile.preferredName || ""}
           />
+        </div>
+      ) : activeTab === "purchases" ? (
+        <div className="mx-auto mt-4 max-w-7xl px-4">
+          <PurchasesContent />
         </div>
       ) : (
         <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
