@@ -141,6 +141,7 @@ function CheckoutPage() {
       await navigate({
         to: "/checkouts/$purchaseId",
         params: { purchaseId: result.purchase_id },
+        search: { state: "pending" },
       });
     } catch (error) {
       toast.error(
