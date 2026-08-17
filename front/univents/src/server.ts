@@ -1,4 +1,6 @@
 import handler from "@tanstack/react-start/server-entry";
+import { TRACES_INGEST_PATH } from "@trieoh/front-core/tracing/constants";
+import { handleTracesIngest } from "@trieoh/front-core/tracing/ingest";
 import {
   handleStorageImagePreprocess,
   handleStorageUpload,
@@ -17,6 +19,10 @@ export default {
 
     if (url.pathname === "/storage/upload" && request.method === "POST") {
       return handleStorageUpload(request, env);
+    }
+
+    if (url.pathname === TRACES_INGEST_PATH && request.method === "POST") {
+      return handleTracesIngest(request, env);
     }
 
     return handler.fetch(request);

@@ -4,8 +4,6 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
-    TRIEOH_PAY_SECRET_KEY: z.string(),
-    TRIEOH_PAY_BASE_URL: z.url().optional(),
     IDENTITYX_ACCESS_API_KEY: z.string(),
     AUTH_SESSION_PASSWORD: z.string().min(32),
 
@@ -14,6 +12,10 @@ export const env = createEnv({
     STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS: z.string().optional(),
     STORAGE_IMAGE_MODERATION_MODEL: z.string().optional(),
     STORAGE_IMAGE_MODERATION_PROMPT: z.string().optional(),
+    TRACES_OTLP_USER: z.string().optional(),
+    TRACES_OTLP_PASSWORD: z.string().optional(),
+    TRACES_OTLP_URL: z.string().optional(),
+    TRACES_ENABLED: z.string().optional(),
   },
 
   /**
@@ -32,8 +34,6 @@ export const env = createEnv({
     VITE_AUTH_TRANSPORT: z.enum(["bff", "direct"]).default("bff"),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
 
-    VITE_MERCADO_PAGO_PUBLIC_KEY: z.string(),
-
     VITE_UPLOAD_MAX_RETRIES: z.coerce.number().int().min(0).default(5),
     VITE_UPLOAD_RETRY_BASE_DELAY_MS: z.coerce
       .number()
@@ -50,8 +50,6 @@ export const env = createEnv({
   runtimeEnv: {
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
-    TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
-    TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL,
     IDENTITYX_ACCESS_API_KEY: process.env.IDENTITYX_ACCESS_API_KEY,
     AUTH_SESSION_PASSWORD: process.env.AUTH_SESSION_PASSWORD,
     STORAGE_IMAGE_ALLOWED_TYPES: process.env.STORAGE_IMAGE_ALLOWED_TYPES,
@@ -61,6 +59,10 @@ export const env = createEnv({
     STORAGE_IMAGE_MODERATION_MODEL: process.env.STORAGE_IMAGE_MODERATION_MODEL,
     STORAGE_IMAGE_MODERATION_PROMPT:
       process.env.STORAGE_IMAGE_MODERATION_PROMPT,
+    TRACES_OTLP_USER: process.env.TRACES_OTLP_USER,
+    TRACES_OTLP_PASSWORD: process.env.TRACES_OTLP_PASSWORD,
+    TRACES_OTLP_URL: process.env.TRACES_OTLP_URL,
+    TRACES_ENABLED: process.env.TRACES_ENABLED,
   },
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:");

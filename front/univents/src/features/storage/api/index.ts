@@ -6,6 +6,7 @@ import type {
 
 const MODERATION_MAX_EDGE = 448;
 const MODERATION_WEBP_QUALITY = 0.82;
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export class StorageImageError extends Error {
   constructor(
@@ -80,6 +81,14 @@ export async function preprocessImageUpload(
   path?: string,
   idempotencyKey?: string,
 ): Promise<string> {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new StorageImageError(
+      "Formato de imagem não suportado. Use PNG, JPG ou WebP.",
+      "UNSUPPORTED_IMAGE_TYPE",
+      400,
+    );
+  }
+
   const moderationFile = await resizeImageForModeration(file);
   const formData = new FormData();
   formData.append("file", file);

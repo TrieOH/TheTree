@@ -63,6 +63,18 @@ catalog:
   '@t3-oss/env-core': ^0.13.11
   '@base-ui/react': ^1.6.0
 
+  # === Tracing ===
+  "@opentelemetry/api": ^1.9.1
+  "@opentelemetry/resources": ^2.10.0
+  "@opentelemetry/sdk-trace-base": ^2.10.0
+  "@opentelemetry/sdk-trace-web": ^2.10.0
+  "@opentelemetry/context-zone": ^2.10.0
+  "@opentelemetry/semantic-conventions": ^1.43.0
+  "@opentelemetry/instrumentation": ^0.221.0
+  "@opentelemetry/instrumentation-fetch": ^0.221.0
+  "@opentelemetry/exporter-trace-otlp-http": ^0.221.0
+  "@opentelemetry/otlp-transformer": ^0.221.0
+
 overrides:
   dompurify: 3.4.13
   js-yaml: 4.3.1

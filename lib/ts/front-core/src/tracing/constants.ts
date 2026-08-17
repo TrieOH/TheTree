@@ -1,0 +1,1 @@
+export const TRACES_INGEST_PATH = "/api/traces/ingest";
