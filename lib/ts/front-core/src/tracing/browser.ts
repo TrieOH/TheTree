@@ -16,6 +16,10 @@ const tracer = trace.getTracer("trieoh-front")
 let sessionSpan: Span | undefined
 let provider: WebTracerProvider | undefined
 
+export function browserTracingResource(serviceName: string) {
+  return resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName })
+}
+
 /** Falls back to the session span as the active span whenever nothing more
  *  specific is active — guarantees every fetch, no matter where it's
  *  triggered from, is parented to the same page-session trace. */
@@ -59,7 +63,7 @@ export function initBrowserTracing(serviceName = "univents-web"): void {
   })
 
   provider = new WebTracerProvider({
-    resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName }),
+    resource: browserTracingResource(serviceName),
     spanProcessors: [processor],
   })
 
