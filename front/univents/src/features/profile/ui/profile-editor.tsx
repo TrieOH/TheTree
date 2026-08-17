@@ -29,7 +29,11 @@ export interface ProfileEditorProps {
     };
     profile: {
       success: boolean;
-      data?: { handle?: string | null; profile: ProfileData };
+      data?: {
+        handle?: string | null;
+        pfp_url?: string | null;
+        profile: ProfileData;
+      };
       message?: string;
     };
   }>;
@@ -75,15 +79,23 @@ export function ProfileEditor({
           setSchema(schemaResult.data.schema);
         }
         if (profile.success && profile.data) {
+          const { pfpUrl: _ignoredPfpUrl, ...profileData } =
+            profile.data.profile;
+          const profileValues = {
+            ...profileData,
+            ...(profile.data.pfp_url !== undefined
+              ? { pfpUrl: profile.data.pfp_url }
+              : {}),
+          };
           setHandle(profile.data.handle ?? "");
-          setOriginal(profile.data.profile);
+          setOriginal(profileValues);
           setValues(
             schemaResult.data
               ? applyProfileSchemaDefaults(
                   schemaResult.data.schema,
-                  profile.data.profile,
+                  profileValues,
                 )
-              : profile.data.profile,
+              : profileValues,
           );
         } else if (schemaResult.data) {
           setValues(applyProfileSchemaDefaults(schemaResult.data.schema, {}));

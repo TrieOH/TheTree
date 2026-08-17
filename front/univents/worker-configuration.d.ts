@@ -8,9 +8,6 @@ interface __BaseEnv_Env {
     VITE_API_URL: string;
     VITE_AUTH_API_URL: string;
     VITE_TRIEOH_AUTH_PROJECT_ID: string;
-    VITE_MERCADO_PAGO_PUBLIC_KEY: string;
-    TRIEOH_PAY_SECRET_KEY: string;
-    TRIEOH_PAY_BASE_URL: string;
     MINIO_ENDPOINT: string;
     BUCKET_NAME: string;
     MINIO_ACCESS_KEY: string;
@@ -32,7 +29,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
     [Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-    interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "VITE_POSTHOG_KEY" | "VITE_APP_TITLE" | "VITE_API_URL" | "VITE_AUTH_API_URL" | "VITE_TRIEOH_AUTH_PROJECT_ID" | "VITE_MERCADO_PAGO_PUBLIC_KEY" | "TRIEOH_PAY_SECRET_KEY" | "TRIEOH_PAY_BASE_URL" | "MINIO_ENDPOINT" | "BUCKET_NAME" | "MINIO_ACCESS_KEY" | "MINIO_SECRET_KEY" | "STORAGE_IMAGE_ALLOWED_TYPES" | "STORAGE_IMAGE_MAX_SIZE_BYTES" | "STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS" | "STORAGE_IMAGE_MODERATION_MODEL" | "STORAGE_IMAGE_MODERATION_PROMPT">> { }
+    interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "VITE_POSTHOG_KEY" | "VITE_APP_TITLE" | "VITE_API_URL" | "VITE_AUTH_API_URL" | "VITE_TRIEOH_AUTH_PROJECT_ID" | "MINIO_ENDPOINT" | "BUCKET_NAME" | "MINIO_ACCESS_KEY" | "MINIO_SECRET_KEY" | "STORAGE_IMAGE_ALLOWED_TYPES" | "STORAGE_IMAGE_MAX_SIZE_BYTES" | "STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS" | "STORAGE_IMAGE_MODERATION_MODEL" | "STORAGE_IMAGE_MODERATION_PROMPT">> { }
 }
 
 // Begin runtime types
