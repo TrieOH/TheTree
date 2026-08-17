@@ -60,7 +60,14 @@ const getActiveEditionPublic = async (eventId: string) => {
     );
     return normalizeEdition(edition);
   } catch {
-    return null;
+    const upcoming = await getPublicEditions(eventId, "upcoming");
+    return (
+      upcoming.sort(
+        (left, right) =>
+          new Date(right.starts_at).getTime() -
+          new Date(left.starts_at).getTime(),
+      )[0] ?? null
+    );
   }
 };
 
