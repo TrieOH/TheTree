@@ -7,7 +7,12 @@ import {
   shortDayName,
   toISODate,
 } from "../lib/date";
-import type { EventColor, OccurrenceI, ProgramI } from "../model";
+import {
+  type EventColor,
+  FALLBACK_EVENT_COLOR,
+  type OccurrenceI,
+  type ProgramI,
+} from "../model";
 import { DraggableEvent } from "./DraggableEvent";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -161,7 +166,9 @@ export function WeekView({
                         key={oc.id}
                         occurrence={oc}
                         program={programs.find((p) => p.id === oc.program_id)}
-                        color={programColors[oc.program_id]}
+                        color={
+                          programColors[oc.program_id] ?? FALLBACK_EVENT_COLOR
+                        }
                         onClick={onCardClick}
                         onDelete={onDelete}
                         overlapIndex={slotOccs.indexOf(oc)}

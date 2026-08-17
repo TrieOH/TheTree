@@ -35,7 +35,11 @@ export interface OccurrenceI {
 export const occurrenceSchema = z.object({
   starts_at: z.string().min(1, "Início é obrigatório"),
   ends_at: z.string().min(1, "Término é obrigatório"),
-  max_capacity: z.coerce.number().int().positive().optional(),
+  max_capacity: z.preprocess(
+    (val) =>
+      val === "" || val === null || val === undefined ? undefined : Number(val),
+    z.number().int().positive().optional(),
+  ),
 });
 
 export type OccurrenceCreateInput = z.input<typeof occurrenceSchema>;
@@ -48,3 +52,9 @@ export interface EventColor {
   border: string;
   text: string;
 }
+
+export const FALLBACK_EVENT_COLOR: EventColor = {
+  bg: "oklch(0.85 0.08 264.05 / 0.25)",
+  border: "oklch(0.55 0.15 264.05)",
+  text: "var(--foreground)",
+};

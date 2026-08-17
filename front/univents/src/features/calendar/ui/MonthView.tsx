@@ -1,6 +1,11 @@
 import { useMemo } from "react";
 import { formatTime, getMonthGrid, isSameDay, isToday } from "../lib/date";
-import type { EventColor, OccurrenceI, ProgramI } from "../model";
+import {
+  type EventColor,
+  FALLBACK_EVENT_COLOR,
+  type OccurrenceI,
+  type ProgramI,
+} from "../model";
 
 interface MonthViewProps {
   currentDate: Date;
@@ -75,7 +80,8 @@ export function MonthView({
               <div className="mt-1 flex flex-col gap-0.5">
                 {dayOccs.slice(0, 3).map((oc) => {
                   const prog = programs.find((p) => p.id === oc.program_id);
-                  const color = programColors[oc.program_id];
+                  const color =
+                    programColors[oc.program_id] ?? FALLBACK_EVENT_COLOR;
                   return (
                     <div
                       key={oc.id}

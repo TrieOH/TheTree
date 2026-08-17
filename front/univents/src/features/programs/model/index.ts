@@ -33,7 +33,11 @@ export interface OccurrenceI {
 export const occurrenceSchema = z.object({
   starts_at: z.string().min(1, "Início é obrigatório"),
   ends_at: z.string().min(1, "Término é obrigatório"),
-  max_capacity: z.coerce.number().int().positive().optional(),
+  max_capacity: z.preprocess(
+    (val) =>
+      val === "" || val === null || val === undefined ? undefined : Number(val),
+    z.number().int().positive().optional(),
+  ),
 });
 export type OccurrenceCreateInput = z.input<typeof occurrenceSchema>;
 export type OccurrenceCreateOutput = z.output<typeof occurrenceSchema>;

@@ -53,6 +53,7 @@ export function MissingPublicProfile() {
           </p>
           <Link
             to="/profile"
+            search={{ tab: "about" }}
             className={buttonVariants({ className: "mt-5 w-full" })}
           >
             Ir para o meu perfil

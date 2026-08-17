@@ -25,7 +25,6 @@ import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
 import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
-import { Route as ProfilePurchasesRouteImport } from './routes/profile/purchases'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileActorIdRouteImport } from './routes/profile/$actorId'
@@ -39,9 +38,8 @@ import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
-import { Route as EventsSlugTicketsRouteImport } from './routes/events/$slug/tickets'
+import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
-import { Route as EventsSlugProductsRouteImport } from './routes/events/$slug/products'
 import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugEditionsIndexRouteImport } from './routes/events/$slug/editions/index'
@@ -149,11 +147,6 @@ const ProfileSetupRoute = ProfileSetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => ProfileRoute,
 } as any)
-const ProfilePurchasesRoute = ProfilePurchasesRouteImport.update({
-  id: '/purchases',
-  path: '/purchases',
-  getParentRoute: () => ProfileRoute,
-} as any)
 const ProfileEditRoute = ProfileEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -223,19 +216,14 @@ const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
 } as any).lazy(() =>
   import('./routes/admin/events/index.lazy').then((d) => d.Route),
 )
-const EventsSlugTicketsRoute = EventsSlugTicketsRouteImport.update({
-  id: '/events/$slug/tickets',
-  path: '/events/$slug/tickets',
+const EventsSlugStoreRoute = EventsSlugStoreRouteImport.update({
+  id: '/events/$slug/store',
+  path: '/events/$slug/store',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
   id: '/events/$slug/programs',
   path: '/events/$slug/programs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsSlugProductsRoute = EventsSlugProductsRouteImport.update({
-  id: '/events/$slug/products',
-  path: '/events/$slug/products',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsSlugCheckoutRoute = EventsSlugCheckoutRouteImport.update({
@@ -447,7 +435,6 @@ export interface FileRoutesByFullPath {
   '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
-  '/profile/purchases': typeof ProfilePurchasesRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
@@ -456,9 +443,8 @@ export interface FileRoutesByFullPath {
   '/profile/': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
-  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
-  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
+  '/events/$slug/store': typeof EventsSlugStoreRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/profile/$actorId/': typeof ProfileActorIdIndexRoute
@@ -503,7 +489,6 @@ export interface FileRoutesByTo {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
-  '/profile/purchases': typeof ProfilePurchasesRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
@@ -512,9 +497,8 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileIndexRoute
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
-  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
-  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
+  '/events/$slug/store': typeof EventsSlugStoreRoute
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/profile/$actorId': typeof ProfileActorIdIndexRoute
@@ -561,7 +545,6 @@ export interface FileRoutesById {
   '/profile/$actorId': typeof ProfileActorIdRouteWithChildren
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
-  '/profile/purchases': typeof ProfilePurchasesRoute
   '/profile/setup': typeof ProfileSetupRoute
   '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
   '/signatures/revoke': typeof SignaturesRevokeRoute
@@ -570,9 +553,8 @@ export interface FileRoutesById {
   '/profile/': typeof ProfileIndexRoute
   '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
-  '/events/$slug/products': typeof EventsSlugProductsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
-  '/events/$slug/tickets': typeof EventsSlugTicketsRoute
+  '/events/$slug/store': typeof EventsSlugStoreRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/profile/$actorId/': typeof ProfileActorIdIndexRoute
@@ -621,7 +603,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
-    | '/profile/purchases'
     | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
@@ -630,9 +611,8 @@ export interface FileRouteTypes {
     | '/profile/'
     | '/auth/$provider/callback'
     | '/events/$slug/checkout'
-    | '/events/$slug/products'
     | '/events/$slug/programs'
-    | '/events/$slug/tickets'
+    | '/events/$slug/store'
     | '/admin/events/'
     | '/events/$slug/'
     | '/profile/$actorId/'
@@ -677,7 +657,6 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
-    | '/profile/purchases'
     | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
@@ -686,9 +665,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/auth/$provider/callback'
     | '/events/$slug/checkout'
-    | '/events/$slug/products'
     | '/events/$slug/programs'
-    | '/events/$slug/tickets'
+    | '/events/$slug/store'
     | '/admin/events'
     | '/events/$slug'
     | '/profile/$actorId'
@@ -734,7 +712,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId'
     | '/profile/config'
     | '/profile/edit'
-    | '/profile/purchases'
     | '/profile/setup'
     | '/signature-requests/fulfill'
     | '/signatures/revoke'
@@ -743,9 +720,8 @@ export interface FileRouteTypes {
     | '/profile/'
     | '/auth_/$provider/callback'
     | '/events/$slug/checkout'
-    | '/events/$slug/products'
     | '/events/$slug/programs'
-    | '/events/$slug/tickets'
+    | '/events/$slug/store'
     | '/admin/events/'
     | '/events/$slug/'
     | '/profile/$actorId/'
@@ -795,9 +771,8 @@ export interface RootRouteChildren {
   EventsIndexRoute: typeof EventsIndexRoute
   AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
   EventsSlugCheckoutRoute: typeof EventsSlugCheckoutRoute
-  EventsSlugProductsRoute: typeof EventsSlugProductsRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
-  EventsSlugTicketsRoute: typeof EventsSlugTicketsRoute
+  EventsSlugStoreRoute: typeof EventsSlugStoreRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
   EventsSlugEditionsIndexRoute: typeof EventsSlugEditionsIndexRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -904,13 +879,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileSetupRouteImport
       parentRoute: typeof ProfileRoute
     }
-    '/profile/purchases': {
-      id: '/profile/purchases'
-      path: '/purchases'
-      fullPath: '/profile/purchases'
-      preLoaderRoute: typeof ProfilePurchasesRouteImport
-      parentRoute: typeof ProfileRoute
-    }
     '/profile/edit': {
       id: '/profile/edit'
       path: '/edit'
@@ -1002,11 +970,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/events/$slug/tickets': {
-      id: '/events/$slug/tickets'
-      path: '/events/$slug/tickets'
-      fullPath: '/events/$slug/tickets'
-      preLoaderRoute: typeof EventsSlugTicketsRouteImport
+    '/events/$slug/store': {
+      id: '/events/$slug/store'
+      path: '/events/$slug/store'
+      fullPath: '/events/$slug/store'
+      preLoaderRoute: typeof EventsSlugStoreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/$slug/programs': {
@@ -1014,13 +982,6 @@ declare module '@tanstack/react-router' {
       path: '/events/$slug/programs'
       fullPath: '/events/$slug/programs'
       preLoaderRoute: typeof EventsSlugProgramsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$slug/products': {
-      id: '/events/$slug/products'
-      path: '/events/$slug/products'
-      fullPath: '/events/$slug/products'
-      preLoaderRoute: typeof EventsSlugProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/$slug/checkout': {
@@ -1297,7 +1258,6 @@ interface ProfileRouteChildren {
   ProfileActorIdRoute: typeof ProfileActorIdRouteWithChildren
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
-  ProfilePurchasesRoute: typeof ProfilePurchasesRoute
   ProfileSetupRoute: typeof ProfileSetupRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
@@ -1306,7 +1266,6 @@ const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileActorIdRoute: ProfileActorIdRouteWithChildren,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
-  ProfilePurchasesRoute: ProfilePurchasesRoute,
   ProfileSetupRoute: ProfileSetupRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }
@@ -1335,9 +1294,8 @@ const rootRouteChildren: RootRouteChildren = {
   EventsIndexRoute: EventsIndexRoute,
   AuthProviderCallbackRoute: AuthProviderCallbackRoute,
   EventsSlugCheckoutRoute: EventsSlugCheckoutRoute,
-  EventsSlugProductsRoute: EventsSlugProductsRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
-  EventsSlugTicketsRoute: EventsSlugTicketsRoute,
+  EventsSlugStoreRoute: EventsSlugStoreRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
   EventsSlugEditionsIndexRoute: EventsSlugEditionsIndexRoute,
   EventsEventIdEditionsEditionIdProductsRoute:

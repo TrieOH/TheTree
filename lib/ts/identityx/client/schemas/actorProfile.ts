@@ -84,6 +84,8 @@ export interface ActorProfile {
   actor_id: Uuid;
   /** Unique handle for the profile. Null when not set. */
   handle?: string | null;
+  /** Profile picture URL, first-class column. */
+  pfp_url?: string | null;
   /** The profile data, validated against the active profile schema. */
   profile: ActorProfileProfile;
   /** Profile schema version the profile was validated against. */

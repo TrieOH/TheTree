@@ -2,17 +2,9 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuthActions } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import type { LucideIcon } from "lucide-react";
-import {
-  Calendar,
-  Home,
-  LayoutGrid,
-  LogIn,
-  LogOut,
-  ShoppingBag,
-  User,
-} from "lucide-react";
+import { Calendar, Home, LayoutGrid, LogIn, LogOut, User } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
-import { memo, useMemo, useRef } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import {
   Tooltip,
@@ -56,13 +48,6 @@ const getNavItems = (
       authRequired: true,
     },
     {
-      id: "purchases",
-      label: "Compras",
-      icon: ShoppingBag,
-      href: "/profile/purchases",
-      authRequired: true,
-    },
-    {
       id: "logout",
       label: "Logout",
       icon: LogOut,
@@ -88,17 +73,20 @@ const DesktopNavItem = ({
   isAdmin,
   onClick,
   mouseX,
+  isDockHovered,
 }: {
   item: NavItemType;
   isActive: boolean;
   isAdmin: boolean;
   onClick: () => void;
   mouseX: ReturnType<typeof useMotionValue<number>>;
+  isDockHovered: boolean;
 }) => {
   const ref = useRef<HTMLButtonElement>(null);
   const Icon = item.icon;
 
   const distance = useTransform(mouseX, (val) => {
+    if (!isDockHovered) return -1000;
     const b = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
     return val - (b.x + b.width / 2);
   });
@@ -273,13 +261,14 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
   };
 
   const mouseX = useMotionValue(0);
-
-  if (
+  const [isDockHovered, setIsDockHovered] = useState(false);
+  const hidden =
     location.pathname.endsWith("/certifications/editor") ||
-    location.pathname.endsWith("/badges/editor")
-  )
-    return null;
-  if (location.pathname === "/profile/edit") return null;
+    location.pathname.endsWith("/badges/editor") ||
+    location.pathname.includes("/badges/") ||
+    location.pathname === "/profile/edit";
+
+  if (hidden) return null;
   if (navItems.length === 0) return null;
 
   return (
@@ -290,11 +279,14 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
           "fixed bottom-8 left-1/2 -translate-x-1/2 z-50 hidden md:flex",
           className,
         )}
+        onMouseEnter={() => {
+          setIsDockHovered(true);
+        }}
         onMouseMove={(e) => {
           mouseX.set(e.clientX);
         }}
         onMouseLeave={() => {
-          mouseX.set(0);
+          setIsDockHovered(false);
         }}
       >
         <motion.div
@@ -321,6 +313,7 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
                 handleNavigate(item);
               }}
               mouseX={mouseX}
+              isDockHovered={isDockHovered}
             />
           ))}
         </motion.div>

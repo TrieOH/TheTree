@@ -1,10 +1,11 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Clock3 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { checkoutQueryOptions } from "@/features/purchases/api";
 import { usePurchaseSocket } from "@/features/purchases/hooks/use-purchase-socket";
-import { PurchaseSummary } from "@/features/purchases/ui/purchase-summary";
+import CheckoutPage from "@/features/purchases/ui/checkout-page";
 
 export const Route = createFileRoute("/checkouts/$purchaseId")({
   beforeLoad: requireAuth,
@@ -13,46 +14,26 @@ export const Route = createFileRoute("/checkouts/$purchaseId")({
 
 function CheckoutStatusPage() {
   const { purchaseId } = Route.useParams();
-  const { data: checkout } = useSuspenseQuery(checkoutQueryOptions(purchaseId));
-  const connected = usePurchaseSocket(
-    purchaseId,
-    checkout.status === "pending",
-  );
+  const navigate = useNavigate();
+  const checkoutQuery = useQuery(checkoutQueryOptions(purchaseId));
+  const checkout = checkoutQuery.data;
+  usePurchaseSocket(purchaseId, checkout?.status === "pending");
 
-  return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10 pb-28">
-      <Link
-        to="/profile/purchases"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Minhas compras
-      </Link>
+  useEffect(() => {
+    if (checkoutQuery.isPending || (!checkoutQuery.isError && checkout)) return;
+    toast.error("Não foi possível encontrar este checkout.");
+    void navigate({ to: "/profile", search: { tab: "purchases" } });
+  }, [checkout, checkoutQuery.isError, checkoutQuery.isPending, navigate]);
 
-      <h1 className="mb-6 text-2xl font-bold">Status da compra</h1>
+  if (checkoutQuery.isPending) {
+    return (
+      <main className="grid min-h-screen place-items-center text-sm text-muted-foreground">
+        Carregando checkout…
+      </main>
+    );
+  }
 
-      {checkout.status === "pending" && (
-        <div className="mb-4 flex items-center gap-3 border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-300">
-          <Clock3 className="size-5 shrink-0" />
-          <p>
-            Pagamento em processamento. Atualização em tempo real
-            {connected ? " conectada." : " conectando…"}
-          </p>
-        </div>
-      )}
+  if (checkoutQuery.isError || !checkout) return null;
 
-      <PurchaseSummary purchase={checkout} />
-
-      {checkout.intent_status && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Estado do pagamento: {checkout.intent_status}
-        </p>
-      )}
-      {checkout.status_reason && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          Motivo: {checkout.status_reason}
-        </p>
-      )}
-    </main>
-  );
+  return <CheckoutPage purchase={checkout} />;
 }

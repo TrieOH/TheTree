@@ -1,14 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useCallback } from "react";
+import { z } from "zod";
 import { ProfileView } from "@/features/profile/ui/profile-view";
 
 export const Route = createFileRoute("/profile/$actorId/")({
+  validateSearch: z.object({
+    tab: z.enum(["about", "badges", "purchases"]).catch("about"),
+  }),
   component: PublicProfilePage,
 });
 
 function PublicProfilePage() {
   const { actorId } = Route.useParams();
+  const { tab } = Route.useSearch();
   const { auth } = useAuth();
   const viewerActorId = auth.profile()?.id;
   const navigate = useNavigate();
@@ -27,6 +32,7 @@ function PublicProfilePage() {
         await navigate({
           to: "/profile/$actorId",
           params: { actorId: handle },
+          search: { tab },
           replace: true,
         });
       }
@@ -41,6 +47,14 @@ function PublicProfilePage() {
       loadProfile={loadProfile}
       ownProfile={actorId === viewerActorId}
       viewerActorId={viewerActorId}
+      activeTab={tab}
+      onTabChange={(nextTab) => {
+        void navigate({
+          to: "/profile/$actorId",
+          params: { actorId },
+          search: { tab: nextTab },
+        });
+      }}
     />
   );
 }

@@ -43,24 +43,30 @@ function EditProfilePage() {
     };
   }, [actorId, auth]);
   const save = useCallback(
-    (profile: ProfileData, handle?: string) =>
-      actorId
-        ? auth.upsertActorProfile(actorId, { handle, profile })
+    (profile: ProfileData, handle?: string) => {
+      const { pfpUrl, ...profileData } = profile;
+      return actorId
+        ? auth.upsertActorProfile(actorId, {
+            handle,
+            pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
+            profile: profileData,
+          })
         : Promise.resolve({
             success: false as const,
             message: "Usuário não autenticado",
-          }),
+          });
+    },
     [actorId, auth],
   );
   return (
     <ProfileEditor
       load={load}
       save={save}
-      onCancel={() => navigate({ to: "/profile" })}
+      onCancel={() => navigate({ to: "/profile", search: { tab: "about" } })}
       onSaved={() => {
         void queryClient
           .invalidateQueries({ queryKey: profileKeys.all, refetchType: "all" })
-          .then(() => navigate({ to: "/profile" }));
+          .then(() => navigate({ to: "/profile", search: { tab: "about" } }));
       }}
     />
   );

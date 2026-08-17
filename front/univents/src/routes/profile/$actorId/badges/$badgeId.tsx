@@ -45,35 +45,69 @@ function ProfileBadgePage() {
 
   if (profile.isLoading || badges.isLoading) {
     return (
-      <main className="grid min-h-dvh place-items-center">Carregando…</main>
+      <main className="grid min-h-dvh place-items-center bg-background p-6">
+        <p className="text-sm text-muted-foreground">Carregando badge…</p>
+      </main>
+    );
+  }
+  if (profile.error || badges.error) {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-background p-6 text-center">
+        <div>
+          <p className="font-medium">Não foi possível carregar este badge.</p>
+          <Link
+            to="/profile/$actorId"
+            params={{ actorId }}
+            search={{ tab: "about" }}
+            className="mt-3 inline-flex text-sm text-primary hover:underline"
+          >
+            Voltar ao perfil
+          </Link>
+        </div>
+      </main>
     );
   }
   if (!badge) {
     return (
-      <main className="grid min-h-dvh place-items-center">
-        Badge não encontrada.
+      <main className="grid min-h-dvh place-items-center bg-background p-6 text-center">
+        <div>
+          <p className="font-medium">Badge não encontrada.</p>
+          <Link
+            to="/profile/$actorId"
+            params={{ actorId }}
+            search={{ tab: "about" }}
+            className="mt-3 inline-flex text-sm text-primary hover:underline"
+          >
+            Voltar ao perfil
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background p-4">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background">
       <Link
         to="/profile/$actorId"
         params={{ actorId }}
-        className="self-start inline-flex items-center gap-2 text-sm text-muted-foreground"
+        search={{ tab: "about" }}
+        className="absolute top-4 left-4 z-10 inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-2 text-sm text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground sm:top-6 sm:left-6"
       >
-        <ArrowLeft className="size-4" /> Voltar ao perfil
+        <ArrowLeft className="size-4" />
+        <span className="hidden sm:inline">Voltar ao perfil</span>
+        <span className="sm:hidden">Voltar</span>
       </Link>
-      <BadgePreview
-        badge={badge as BadgeProfileBadge}
-        className="relative w-full max-w-5xl"
-        contain
-        framed={false}
-        participantName={
-          profileData.legalName || profileData.preferredName || ""
-        }
-      />
+      <div className="flex h-dvh w-dvw max-h-full max-w-full items-center justify-center">
+        <BadgePreview
+          badge={badge as BadgeProfileBadge}
+          className="relative h-full w-full max-h-full max-w-full"
+          contain
+          framed={false}
+          participantName={
+            profileData.legalName || profileData.preferredName || ""
+          }
+        />
+      </div>
     </main>
   );
 }

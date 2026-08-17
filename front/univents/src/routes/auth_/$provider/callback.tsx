@@ -53,7 +53,11 @@ function OAuthCallbackPage() {
 
         router.options.context.queryClient.invalidateQueries();
         toast.success("Login realizado com sucesso");
-        await navigate({ to: "/profile", replace: true });
+        await navigate({
+          to: "/profile",
+          search: { tab: "about" },
+          replace: true,
+        });
       } catch (error) {
         const message =
           error instanceof Error
@@ -82,7 +86,13 @@ function OAuthCallbackPage() {
         {result && (
           <button
             type="button"
-            onClick={() => navigate({ to: "/profile", replace: true })}
+            onClick={() =>
+              navigate({
+                to: "/profile",
+                search: { tab: "about" },
+                replace: true,
+              })
+            }
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
             Continuar

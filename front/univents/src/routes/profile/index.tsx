@@ -1,7 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { z } from "zod";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 
+const profileSearchSchema = z.object({
+  tab: z.enum(["about", "badges", "purchases"]).catch("about"),
+});
+
 export const Route = createFileRoute("/profile/")({
+  validateSearch: profileSearchSchema,
   beforeLoad: async (args) => {
     requireAuth(args);
     const sessionAuth = args.context.auth?.auth;
@@ -17,6 +23,7 @@ export const Route = createFileRoute("/profile/")({
       throw redirect({
         to: "/profile/$actorId",
         params: { actorId: profileId },
+        search: args.search,
       });
     }
   },
