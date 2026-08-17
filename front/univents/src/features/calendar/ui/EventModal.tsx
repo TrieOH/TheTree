@@ -2,6 +2,7 @@ import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toISODateTimeLocal } from "../lib/date";
 import type { OccurrenceI, ProgramI } from "../model";
+import { occurrenceSchema } from "../model";
 import { CalendarCombobox } from "./CalendarCombobox";
 
 interface EventModalProps {
@@ -39,6 +40,7 @@ export function EventModal({
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [cap, setCap] = useState<string>("");
+  const [capError, setCapError] = useState<string | null>(null);
 
   useEffect(() => {
     if (mode === "edit" && occurrence) {
@@ -46,6 +48,7 @@ export function EventModal({
       setStart(toISODateTimeLocal(new Date(occurrence.starts_at)));
       setEnd(toISODateTimeLocal(new Date(occurrence.ends_at)));
       setCap(occurrence.max_capacity?.toString() || "");
+      setCapError(null);
     } else if (mode === "create") {
       // YYYY-MM-DD is a calendar date, not an UTC timestamp. Parsing it with
       // new Date(string) shifts it to the previous day in São Paulo.
@@ -61,6 +64,7 @@ export function EventModal({
       setStart(`${dateStr}T${p(h)}:00`);
       setEnd(`${dateStr}T${p(h + 1)}:00`);
       setCap("");
+      setCapError(null);
     }
   }, [mode, occurrence, initialDate, initialHour]);
 
@@ -68,6 +72,21 @@ export function EventModal({
 
   const handleSave = () => {
     if (!start || !end) return;
+
+    const parsed = occurrenceSchema.safeParse({
+      starts_at: start,
+      ends_at: end,
+      max_capacity: cap || undefined,
+    });
+
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      if (fieldErrors.max_capacity) {
+        setCapError("Capacidade deve ser um número inteiro maior que zero.");
+        return;
+      }
+    }
+
     const startDate = new Date(start);
     const endDate = new Date(end);
     if (endDate <= startDate) endDate.setDate(endDate.getDate() + 1);
@@ -148,10 +167,18 @@ export function EventModal({
                 min={1}
                 placeholder="Ex.: 100"
                 value={cap}
-                onChange={(e) => setCap(e.target.value)}
+                onChange={(e) => {
+                  setCap(e.target.value);
+                  setCapError(null);
+                }}
                 className="w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
               />
             </label>
+            {capError && (
+              <span className="text-xs text-destructive mt-1.5 block">
+                {capError}
+              </span>
+            )}
           </div>
 
           {/* Description */}
