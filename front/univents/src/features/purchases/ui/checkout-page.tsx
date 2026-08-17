@@ -71,12 +71,15 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
   });
   const [copied, setCopied] = useState(false);
   const [qrImage, setQrImage] = useState<string>();
-  const [heading, body, StatusIcon] = statusCopy[purchase.status];
+  const [statusHeading, statusBody, StatusIcon] = statusCopy[purchase.status];
   const subtotal = purchase.items.reduce(
     (sum, item) => sum + item.unit_price_cents * item.quantity,
     0,
   );
   const isPending = purchase.status === "pending";
+  const isPixPending = isPending && purchase.payment_method === "pix";
+  const heading = isPixPending ? statusHeading : isPending ? "Pagamento em processamento" : statusHeading;
+  const body = isPixPending ? statusBody : isPending ? "Aguarde a confirmação do pagamento. Você será atualizado automaticamente." : statusBody;
   const tone =
     purchase.status === "approved"
       ? "text-emerald-600 bg-emerald-500/15"
@@ -85,14 +88,14 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
         : "text-muted-foreground bg-muted";
 
   useEffect(() => {
-    if (!isPending || !purchase.qr_code || purchase.qr_code_base64) {
+    if (!isPixPending || !purchase.qr_code || purchase.qr_code_base64) {
       setQrImage(undefined);
       return;
     }
     void QRCode.toDataURL(purchase.qr_code, { margin: 0, width: 220 })
       .then(setQrImage)
       .catch(() => setQrImage(undefined));
-  }, [isPending, purchase.qr_code, purchase.qr_code_base64]);
+  }, [isPixPending, purchase.qr_code, purchase.qr_code_base64]);
 
   return (
     <main className="min-h-screen bg-background px-2 py-6 text-foreground sm:px-8 sm:py-14 min-[360px]:px-4">
@@ -193,8 +196,8 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
           <div
             className={`relative flex size-28 items-center justify-center rounded-full ${tone}`}
           >
-            <span className="absolute -inset-5 z-0 animate-pulse rounded-full bg-current opacity-10 blur-xl" />
-            <StatusIcon className="relative z-10 size-12 animate-[pulse_2.5s_ease-in-out_infinite]" />
+            <span className="absolute -inset-4 z-0 rounded-full bg-current opacity-10 blur-xl" />
+            <StatusIcon className="relative z-10 size-12" />
           </div>
           <h1 className="mt-5 min-h-16 max-w-65 text-xl font-extrabold leading-tight tracking-tight min-[360px]:text-[22px]">
             {heading}
@@ -208,7 +211,7 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
             </p>
           </div>
           <div className="mt-4 flex w-full max-w-xs items-center justify-center">
-            {isPending ? (
+            {isPixPending ? (
               <div className="w-full space-y-3">
                 <div className="mx-auto flex size-36 items-center justify-center rounded-2xl border border-border p-3 min-[360px]:size-44">
                   {purchase.qr_code_base64 ? (
@@ -255,7 +258,7 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                 )}
               </div>
             ) : (
-              <div className="min-h-10" />
+              isPending ? <p className="text-sm text-muted-foreground">Pagamento em processamento.</p> : <div className="min-h-10" />
             )}
           </div>
           <div className="mt-2 w-full max-w-xs rounded-xl border border-border bg-muted/50 p-4 text-left text-xs">
