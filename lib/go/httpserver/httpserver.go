@@ -25,6 +25,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -83,12 +85,30 @@ func (l *simpleLogger) InterceptSimple(rs *fun.Response, statusCode int) {
 	}
 }
 
+// spanRouteNameMiddleware renames the root span to "METHOD /route-template"
+// once chi finishes routing, and records the matched route. otelhttp only
+// renames a span when r.Pattern is set, which net/http's ServeMux fills in
+// but chi never does — without this every trace is just named "GET"/"PATCH".
+// Registered outermost so it runs even when a deeper middleware short-circuits.
+func spanRouteNameMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		if span := trace.SpanFromContext(r.Context()); span.IsRecording() {
+			if pattern := chi.RouteContext(r.Context()).RoutePattern(); pattern != "" {
+				span.SetName(r.Method + " " + pattern)
+				span.SetAttributes(semconv.HTTPRoute(pattern))
+			}
+		}
+	})
+}
+
 // NewRouter builds the standard router skeleton: chi with the standard
 // middleware stack, /metrics, the backend's routes, /health, wrapped in
-// OpenTelemetry instrumentation that skips /metrics and /health.
+// OpenTelemetry instrumentation that skips /metrics, /health and OPTIONS.
 func NewRouter(cfg Config) http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(spanRouteNameMiddleware)
 	for _, mw := range stack(cfg) {
 		r.Use(mw)
 	}
@@ -110,11 +130,21 @@ func NewRouter(cfg Config) http.Handler {
 	}
 
 	return otelhttp.NewHandler(r, "http.server",
+		// Name spans from the start (method + path) so even 404s/unmatched
+		// routes are distinguishable; spanRouteNameMiddleware upgrades the
+		// name to the route template once chi has matched it.
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+			return r.Method + " " + r.URL.Path
+		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/health" && r.URL.Path != "/docs/openapi.yml"
 		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/metrics"
+		}),
+		// CORS preflights are noise: don't trace OPTIONS at all.
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.Method != http.MethodOptions
 		}),
 	)
 }

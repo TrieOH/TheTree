@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Config struct {
@@ -24,10 +26,15 @@ type Client struct {
 }
 
 func New(cfg Config) *Client {
+	// otelhttp.NewTransport injects traceparent from the request context, so
+	// calls made under an active span join the caller's distributed trace.
 	return &Client{
-		baseURL:    strings.TrimRight(cfg.BaseURL, "/"),
-		apiKey:     cfg.APIKey,
-		httpClient: &http.Client{Timeout: 15 * time.Second},
+		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
+		apiKey:  cfg.APIKey,
+		httpClient: &http.Client{
+			Timeout:   15 * time.Second,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		},
 	}
 }
 
