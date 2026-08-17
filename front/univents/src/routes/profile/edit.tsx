@@ -62,11 +62,11 @@ function EditProfilePage() {
     <ProfileEditor
       load={load}
       save={save}
-      onCancel={() => navigate({ to: "/profile" })}
+      onCancel={() => navigate({ to: "/profile", search: { tab: "about" } })}
       onSaved={() => {
         void queryClient
           .invalidateQueries({ queryKey: profileKeys.all, refetchType: "all" })
-          .then(() => navigate({ to: "/profile" }));
+          .then(() => navigate({ to: "/profile", search: { tab: "about" } }));
       }}
     />
   );

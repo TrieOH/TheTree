@@ -39,6 +39,7 @@ export function ProfileConfigPage() {
         <div className="relative mx-auto flex min-w-0 max-w-7xl items-center gap-3 px-3 py-4 sm:gap-4 sm:px-4 md:px-6 md:py-5">
           <Link
             to="/profile"
+            search={{ tab: "about" }}
             className={buttonVariants({
               variant: "outline",
               size: "icon",

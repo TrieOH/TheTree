@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
@@ -23,7 +22,7 @@ function CheckoutStatusPage() {
   useEffect(() => {
     if (checkoutQuery.isPending || (!checkoutQuery.isError && checkout)) return;
     toast.error("Não foi possível encontrar este checkout.");
-    void navigate({ to: "/profile" });
+    void navigate({ to: "/profile", search: { tab: "purchases" } });
   }, [checkout, checkoutQuery.isError, checkoutQuery.isPending, navigate]);
 
   if (checkoutQuery.isPending) {

@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
-import { useState } from "react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
@@ -41,6 +40,8 @@ export interface ProfileViewProps {
   }>;
   ownProfile?: boolean;
   viewerActorId?: string;
+  activeTab: "about" | "badges" | "purchases";
+  onTabChange: (tab: "about" | "badges" | "purchases") => void;
 }
 
 export function ProfileView({
@@ -48,10 +49,9 @@ export function ProfileView({
   loadProfile,
   ownProfile = false,
   viewerActorId,
+  activeTab,
+  onTabChange,
 }: ProfileViewProps) {
-  const [activeTab, setActiveTab] = useState<"about" | "badges" | "purchases">(
-    "about",
-  );
   const profileQuery = useQuery({
     queryKey: profileKeys.detail(actorId ?? ""),
     enabled: Boolean(actorId),
@@ -107,7 +107,7 @@ export function ProfileView({
         ownProfile={isOwnProfile}
         profileUrl={profileUrl}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={onTabChange}
       />
 
       {activeTab === "badges" ? (

@@ -4,6 +4,7 @@ import { cn } from "@/shared/lib/utils";
 
 export type OrderStatus = "approved" | "pending" | "cancelled";
 export type Order = {
+  purchaseId: string;
   status: OrderStatus;
   paymentIcon: LucideIcon;
   paymentText: string;

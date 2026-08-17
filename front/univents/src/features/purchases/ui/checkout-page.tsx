@@ -3,21 +3,18 @@ import { Link } from "@tanstack/react-router";
 import type { Purchase } from "@trieoh/univents-api/schemas";
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
   Clock3,
   Copy,
   FileText,
-  MapPin,
   QrCode,
   ShieldCheck,
   ShoppingBag,
   Ticket,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
-import { useEffect } from "react";
 import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 import { resolvePurchaseCatalog } from "../api/purchase-catalog";
 
 const money = (cents: number, currency: string) =>
@@ -78,8 +75,16 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
   );
   const isPending = purchase.status === "pending";
   const isPixPending = isPending && purchase.payment_method === "pix";
-  const heading = isPixPending ? statusHeading : isPending ? "Pagamento em processamento" : statusHeading;
-  const body = isPixPending ? statusBody : isPending ? "Aguarde a confirmação do pagamento. Você será atualizado automaticamente." : statusBody;
+  const heading = isPixPending
+    ? statusHeading
+    : isPending
+      ? "Pagamento em processamento"
+      : statusHeading;
+  const body = isPixPending
+    ? statusBody
+    : isPending
+      ? "Aguarde a confirmação do pagamento. Você será atualizado automaticamente."
+      : statusBody;
   const tone =
     purchase.status === "approved"
       ? "text-emerald-600 bg-emerald-500/15"
@@ -98,22 +103,12 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
   }, [isPixPending, purchase.qr_code, purchase.qr_code_base64]);
 
   return (
-    <main className="min-h-screen bg-background px-2 py-6 text-foreground sm:px-8 sm:py-14 min-[360px]:px-4">
-      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-3xl border-2 border-dashed border-border bg-card shadow-xl md:grid-cols-[360px_1fr]">
-        <section className="flex flex-col bg-muted p-4 sm:p-8 min-[360px]:p-6">
+    <main className="min-h-screen min-w-0 overflow-x-hidden bg-background px-2 py-6 text-foreground sm:px-8 sm:py-14 min-[360px]:px-4 pb-28!">
+      <div className="relative mx-auto grid min-w-0 w-full max-w-4xl overflow-visible rounded-xl border border-dashed border-border bg-card shadow-xl md:grid-cols-[360px_1fr]">
+        <section className="flex min-w-0 flex-col overflow-hidden rounded-t-[calc(0.75rem-2px)] bg-muted p-4 sm:p-8 min-[360px]:p-6 md:rounded-l-[calc(0.75rem-2px)] md:rounded-tr-none md:rounded-br-none">
           <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
             Resumo do pedido
           </p>
-          <h2 className="mt-3 text-[15px] font-bold">Seu evento</h2>
-          <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays className="size-3" /> Evento
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="size-3" /> Local
-            </span>
-          </div>
-
           <div className="mt-6 space-y-4">
             {purchase.items.map((item) => (
               <div
@@ -191,8 +186,8 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
           </div>
         </section>
 
-        <section className="relative flex flex-col items-center justify-center border-t-2 border-dashed border-border px-4 py-8 text-center sm:px-10 sm:py-10 md:border-t-0 md:border-l-2 min-[360px]:px-8">
-          <span className="pointer-events-none absolute -top-3.5 left-1/2 size-7 -translate-x-1/2 rounded-full bg-background md:-left-3.5 md:top-1/2 md:-translate-y-1/2 md:translate-x-0" />
+        <section className="relative flex min-w-0 flex-col items-center justify-center overflow-visible rounded-b-[calc(0.75rem-2px)] border-t border-dashed border-border px-4 py-8 text-center sm:px-10 sm:py-10 md:rounded-r-[calc(0.75rem-2px)] md:rounded-bl-none md:rounded-tl-none md:border-t-0 md:border-l min-[360px]:px-8">
+          <span className="pointer-events-none z-50 absolute -top-3.5 left-1/2 size-7 -translate-x-1/2 rounded-full bg-background md:-left-3.5 md:top-1/2 md:-translate-y-1/2 md:translate-x-0" />
           <div
             className={`relative flex size-28 items-center justify-center rounded-full ${tone}`}
           >
@@ -237,7 +232,7 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                 {purchase.qr_code && (
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-xs text-muted-foreground hover:bg-muted"
+                    className="flex min-w-0 w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-xs text-muted-foreground hover:bg-muted"
                     onClick={() => {
                       navigator.clipboard?.writeText(purchase.qr_code ?? "");
                       setCopied(true);
@@ -257,30 +252,38 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                   </button>
                 )}
               </div>
+            ) : isPending ? (
+              <p className="text-sm text-muted-foreground">
+                Pagamento em processamento.
+              </p>
             ) : (
-              isPending ? <p className="text-sm text-muted-foreground">Pagamento em processamento.</p> : <div className="min-h-10" />
+              <div className="min-h-10" />
             )}
           </div>
           <div className="mt-2 w-full max-w-xs rounded-xl border border-border bg-muted/50 p-4 text-left text-xs">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Forma de pagamento</span>
-              <span className="font-semibold">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <span className="min-w-0 text-muted-foreground">
+                Forma de pagamento
+              </span>
+              <span className="shrink-0 text-right font-semibold">
                 {purchase.payment_method === "pix"
                   ? "Pix"
                   : (purchase.payment_method ?? "Não informado")}
               </span>
             </div>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Pedido realizado em</span>
-              <span className="font-semibold">
+            <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+              <span className="min-w-0 text-muted-foreground">
+                Pedido realizado em
+              </span>
+              <span className="shrink-0 text-right font-semibold">
                 {new Date(
                   purchase.created_at ?? purchase.expires_at,
                 ).toLocaleDateString("pt-BR")}
               </span>
             </div>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Pedido</span>
-              <span className="font-mono font-semibold">
+            <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+              <span className="min-w-0 text-muted-foreground">Pedido</span>
+              <span className="shrink-0 font-mono font-semibold">
                 #{purchase.purchase_id.slice(0, 8)}
               </span>
             </div>
@@ -288,6 +291,7 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
           {!isPending && (
             <Link
               to="/profile"
+              search={{ tab: "purchases" }}
               className="mt-6 inline-flex min-h-12 w-full max-w-xs items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
               Voltar para minhas compras

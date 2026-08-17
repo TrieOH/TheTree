@@ -28,6 +28,7 @@ export function PurchasesContent() {
     enabled: catalogItems.some((item) => item.item_id.includes("-")),
   });
   const orders: Order[] = purchases.map((purchase) => ({
+    purchaseId: purchase.purchase_id,
     status:
       purchase.status === "approved" || purchase.status === "pending"
         ? purchase.status
@@ -86,11 +87,11 @@ export function PurchasesContent() {
   }
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {orders.map((order, index) => (
+      {orders.map((order) => (
         <Link
-          key={`${order.eventName}-${order.date}-${order.total}`}
+          key={order.purchaseId}
           to="/checkouts/$purchaseId"
-          params={{ purchaseId: purchases[index].purchase_id }}
+          params={{ purchaseId: order.purchaseId }}
           className="block h-full"
         >
           <OrderCard order={order} />

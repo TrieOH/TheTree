@@ -38,7 +38,7 @@ export function requireGuest(
     onRedirect:
       options.onRedirect ??
       (() => {
-        throw redirect({ to: "/profile" });
+        throw redirect({ to: "/profile", search: { tab: "about" } });
       }),
   });
 }
@@ -72,6 +72,6 @@ export async function requireConfiguredProfile({
     throw redirect({ to: "/profile/setup", search: { returnTo: undefined } });
   }
   if (profile && location.pathname === "/profile/setup") {
-    throw redirect({ to: "/profile" });
+    throw redirect({ to: "/profile", search: { tab: "about" } });
   }
 }

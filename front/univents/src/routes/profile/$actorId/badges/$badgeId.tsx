@@ -58,6 +58,7 @@ function ProfileBadgePage() {
           <Link
             to="/profile/$actorId"
             params={{ actorId }}
+            search={{ tab: "about" }}
             className="mt-3 inline-flex text-sm text-primary hover:underline"
           >
             Voltar ao perfil
@@ -74,6 +75,7 @@ function ProfileBadgePage() {
           <Link
             to="/profile/$actorId"
             params={{ actorId }}
+            search={{ tab: "about" }}
             className="mt-3 inline-flex text-sm text-primary hover:underline"
           >
             Voltar ao perfil
@@ -88,6 +90,7 @@ function ProfileBadgePage() {
       <Link
         to="/profile/$actorId"
         params={{ actorId }}
+        search={{ tab: "about" }}
         className="absolute top-4 left-4 z-10 inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-2 text-sm text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground sm:top-6 sm:left-6"
       >
         <ArrowLeft className="size-4" />
