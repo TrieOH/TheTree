@@ -48,6 +48,7 @@ func tryConnect(ctx context.Context, dsn string, maxAttempts int) (*pgxpool.Pool
 	if err != nil {
 		return nil, fmt.Errorf("unable to create connection pool: %w", err)
 	}
+	RegisterPoolMetrics(pool)
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		log.Printf("waiting for database... attempt %d/%d\n", attempt, maxAttempts)

@@ -176,6 +176,10 @@ client-only or server-only when needed.
 Prometheus-based panels (requests/sec, latency, status codes, error rate)
 are **unaffected** — the front sends no metrics; only the trace panels mix.
 
+A **"TrieOH — Front (Web)"** dashboard is provisioned in `../infra`
+(`dashboards/front.json`) that filters the shared service's traces to
+`component=web` — it stays empty until phase 2 exports front spans.
+
 | Front app | `service.name` (same as backend) | Ingest target |
 |---|---|---|
 | univents | `univents` | victoria-traces (dev `127.0.0.1:10428` / prod `traces.trieoh.com`) |
