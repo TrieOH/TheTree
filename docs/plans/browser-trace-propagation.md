@@ -142,7 +142,7 @@ consumed by both browser init and the ingest server fn:
 // front-core: tracing config (per-app, env-driven)
 export interface TraceConfig {
   enabled: boolean          // master switch — when off, no spans, no ingest calls
-  serviceName: string       // "univents-web" etc. (resource service.name)
+  serviceName: string       // = backend app name, e.g. "univents" (see Service naming)
   ingestURL: string         // dev: http://127.0.0.1:10428/insert/opentelemetry/v1/traces
                             // prod: https://traces.trieoh.com/insert/opentelemetry/v1/traces
   ingestAuth?: { user: string; password: string }  // prod basic-auth creds, Worker secrets only
@@ -157,6 +157,31 @@ export interface TraceConfig {
   localhost, prod at `traces.trieoh.com` via `wrangler secret`.
 - The ingest server fn **no-ops when disabled or misconfigured** so dev can run
   without the observability stack.
+
+## Service naming — front traces share the backend's services
+
+Front span resources use the **same `service.name` as the backend app**
+(`univents`, `identityx`, `informd`, `payssage` — matching the Go services'
+`semconv.ServiceName(appName)`), **not** `-web` variants. Both write to the
+same Victoria Traces store, so front traces land in the same Jaeger service
+and the existing per-service "Recent Traces" panels with **zero dashboard
+changes**.
+
+Accepted trade-off: trace panels mix client and server spans under one
+service name (a little crowding). Mitigate it with a distinguishing
+attribute — the web SDK already sets `telemetry.sdk.language=webjs`
+automatically; add `component: "web"` on front spans so you can filter to
+client-only or server-only when needed.
+
+Prometheus-based panels (requests/sec, latency, status codes, error rate)
+are **unaffected** — the front sends no metrics; only the trace panels mix.
+
+| Front app | `service.name` (same as backend) | Ingest target |
+|---|---|---|
+| univents | `univents` | victoria-traces (dev `127.0.0.1:10428` / prod `traces.trieoh.com`) |
+| identityx | `identityx` | same |
+| informd | `informd` | same |
+| payssage | `payssage` | same |
 
 ## Phase 1 — action tracing + BFF propagation (no export yet)
 
