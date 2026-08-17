@@ -12,6 +12,10 @@ export const env = createEnv({
     STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS: z.string().optional(),
     STORAGE_IMAGE_MODERATION_MODEL: z.string().optional(),
     STORAGE_IMAGE_MODERATION_PROMPT: z.string().optional(),
+    TRACES_OTLP_USER: z.string().optional(),
+    TRACES_OTLP_PASSWORD: z.string().optional(),
+    TRACES_OTLP_URL: z.string().optional(),
+    TRACES_ENABLED: z.string().optional(),
   },
 
   /**
@@ -55,6 +59,10 @@ export const env = createEnv({
     STORAGE_IMAGE_MODERATION_MODEL: process.env.STORAGE_IMAGE_MODERATION_MODEL,
     STORAGE_IMAGE_MODERATION_PROMPT:
       process.env.STORAGE_IMAGE_MODERATION_PROMPT,
+    TRACES_OTLP_USER: process.env.TRACES_OTLP_USER,
+    TRACES_OTLP_PASSWORD: process.env.TRACES_OTLP_PASSWORD,
+    TRACES_OTLP_URL: process.env.TRACES_OTLP_URL,
+    TRACES_ENABLED: process.env.TRACES_ENABLED,
   },
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:");

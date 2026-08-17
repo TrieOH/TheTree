@@ -1,8 +1,9 @@
 import type { UploadTask } from "../model/types";
 
 const DATABASE_NAME = "univents-upload-queue";
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 const TASK_STORE = "tasks";
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -24,6 +25,21 @@ function openDatabase(): Promise<IDBDatabase> {
             if (String(cursor.primaryKey).startsWith("upload-demo-")) {
               cursor.delete();
             }
+            cursor.continue();
+          };
+        }
+      }
+
+      if (event.oldVersion < 3) {
+        const store = request.transaction?.objectStore(TASK_STORE);
+        const cursorRequest = store?.openCursor();
+        if (cursorRequest) {
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (!cursor) return;
+
+            const task = cursor.value as UploadTask;
+            if (!ALLOWED_IMAGE_TYPES.has(task.contentType)) cursor.delete();
             cursor.continue();
           };
         }

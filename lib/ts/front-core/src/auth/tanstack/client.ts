@@ -15,6 +15,8 @@ import type {
   ServerSessionSnapshot,
 } from "./types";
 
+import { getTraceparent } from "../../tracing/browser";
+
 function isSerializable(value: unknown): value is SerializableValue {
   if (value === null) return true;
   if (["string", "number", "boolean"].includes(typeof value)) return true;
@@ -98,12 +100,14 @@ export function createTanStackIdentityXAuthProviderAdapter(
           throw new Error(`IdentityX BFF request transport is not configured for ${operation}`);
         }
         const started = performance.now();
+        const traceparent = getTraceparent();
         const result = await functions.request({
           data: {
             path,
             target: "identityx",
             method,
             ...(body === undefined ? {} : { body }),
+            ...(traceparent ? { headers: { traceparent } } : {}),
           },
         });
         const event: IdentityXTransportLogEvent = {
@@ -307,11 +311,11 @@ function proxyResultToApiResponse<T>(result: ServerProxyResult): ApiResponse<T> 
   return result.success
     ? { ...base, success: true, data: result.data as T }
     : {
-        ...base,
-        success: false,
-        error_id: result.error_id ?? "IDENTITYX_BFF_ERROR",
-        ...(result.trace ? { trace: result.trace } : {}),
-      };
+      ...base,
+      success: false,
+      error_id: result.error_id ?? "IDENTITYX_BFF_ERROR",
+      ...(result.trace ? { trace: result.trace } : {}),
+    };
 }
 
 function defaultTransportLogger(event: IdentityXTransportLogEvent): void {
@@ -326,6 +330,8 @@ export function createTanStackServerProxyFetchers(
   const adapter = async (url: string, init?: RequestInit): Promise<Response> => {
     const started = performance.now();
     const headers = Object.fromEntries(new Headers(init?.headers).entries());
+    const traceparent = getTraceparent();
+    if (traceparent) headers["traceparent"] = traceparent;
     let body: SerializableValue | undefined;
     if (typeof init?.body === "string" && init.body.length > 0) {
       try {

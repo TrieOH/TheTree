@@ -13,6 +13,10 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "TRACES_ENABLED": "true",
+    "TRACES_OTLP_URL": "https://traces.trieoh.com/insert/opentelemetry/v1/traces"
+  },
   "ai": {
     "binding": "AI"
   },

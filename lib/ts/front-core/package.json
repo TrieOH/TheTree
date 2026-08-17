@@ -7,7 +7,22 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth/tanstack/client": "./src/auth/tanstack/client.ts",
-    "./auth/tanstack/server": "./src/auth/tanstack/server.ts"
+    "./auth/tanstack/server": "./src/auth/tanstack/server.ts",
+    "./tracing/browser": "./src/tracing/browser.ts",
+    "./tracing/constants": "./src/tracing/constants.ts",
+    "./tracing/ingest": "./src/tracing/ingest.ts"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/resources": "catalog:",
+    "@opentelemetry/sdk-trace-base": "catalog:",
+    "@opentelemetry/sdk-trace-web": "catalog:",
+    "@opentelemetry/context-zone": "catalog:",
+    "@opentelemetry/semantic-conventions": "catalog:",
+    "@opentelemetry/instrumentation": "catalog:",
+    "@opentelemetry/instrumentation-fetch": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
+    "@opentelemetry/otlp-transformer": "catalog:"
   },
   "peerDependencies": {
     "@tanstack/react-query": "catalog:",
