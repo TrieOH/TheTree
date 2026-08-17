@@ -40,6 +40,41 @@ action:add-to-cart                             ← separate trace, separate id
   (action → sub-action) are natural parent/child within it.
 - Client-only actions (no API involved) export as standalone root traces.
 
+## How traces reach the dashboard (data flow)
+
+Two egress paths, one sink — both write into the **same Victoria Traces
+instance**, joined by the shared trace ID:
+
+```
+browser span (withSpan)          Go API spans (otelhttp + Go SDK transport)
+        │                                       │
+        │ (1) BFF egress                        │ (2) server-side egress
+        ▼                                       ▼
+ingestTracesServerFn (Worker)        Go OTLP exporter (container, obs-net)
+  dev:  127.0.0.1:10428                       victoria-traces:10428
+  prod: traces.trieoh.com (basic auth)
+        └───────────────┬───────────────────────┘
+                        ▼
+              Victoria Traces  ←  the sink
+                        ▲
+                        │ (read-only)
+        ┌───────────────┴───────────────┐
+        ▼                               ▼
+  Grafana (grafana.trieoh.com)   Victoria Traces UI (traces.trieoh.com)
+  provisioned datasource         basic-auth admin access
+```
+
+- The **BFF is the egress for browser-generated span data** (no other
+  auth-protected path exists — `traces.trieoh.com` is basic-auth + CORS-less).
+- **Go spans always exit server-side** via the container's OTLP exporter, for
+  BFF-traced and public-traced calls alike.
+- **Dashboards only read**: Grafana and the Victoria Traces UI query the store;
+  they never see the ingestion path. The trace assembles because the API's root
+  span carries the action span's trace ID.
+- **Timing nuance**: API spans export immediately; the browser span lands when
+  the batch flushes (time/size-based or `pagehide`) — for a few seconds the
+  trace shows only the API part.
+
 ## Current request flows (the three edges)
 
 1. **Public/direct**: browser → Go API directly (`publicFetcher`). **Untraced.**
@@ -71,6 +106,32 @@ is exactly why export goes through the BFF.
   server-side); dev = `http://127.0.0.1:10428` (**published on localhost** in
   the infra compose) — reachable from the local vite dev server, no creds.
   This is what makes the dev toggle trivial.
+
+## Tracing public/direct actions
+
+Public actions (`publicFetcher` → Go API directly) are traceable the same way:
+wrap the action with `withSpan`, and attach the resulting `traceparent` to the
+direct fetch. Two facts make this cheap:
+
+- **Preflight is amortized, not per-request.** `traceparent`/`tracestate` are
+  not CORS-safelisted, so a direct cross-origin call carrying them preflights.
+  The fun CORS middleware already defaults `Access-Control-Max-Age` to
+  **10 minutes** (`lib/go/httpserver`, `mws.CORS`), so the preflight happens
+  once per (origin, method, headers) combo and is cached.
+- **Attachment is opt-in per action.** The fetcher only adds `traceparent` when
+  the action was wrapped; untraced public calls stay simple requests (no
+  preflight, no header).
+
+Required change (the **one** place CORS config reappears in the whole plan):
+add `traceparent,tracestate` to `CORS_ALLOWED_HEADERS` in
+`api/{univents,identityx,informd,payssage}/.env` (and deployed envs). Without
+this, a traced public call's preflight fails and the request is blocked — so
+this is a hard dependency of tracing public actions. `traceparent` carries no
+credentials — it's an opaque ID — so allowing it cross-origin is safe.
+
+Note: SSE (`EventSource`) and WS cannot carry headers at all, so their public
+streams still need the opt-in query-param touchpoint if traced (see
+Non-goals).
 
 ## Config & dev toggle (first-class)
 
@@ -148,10 +209,11 @@ already has the `headers` passthrough).
 | Publish / edit event | `action:event-publish` | |
 | Auth (login/register/refresh) | `action:auth` | via BFF |
 | Image/variant upload | `action:upload` | presign (BFF) traced; link by object key |
+| Public event/product listing | `action:view-event` | **direct** — needs CORS allowlist |
 | WS purchase socket | `ws purchase:<id>` | opt-in; needs backend traceparent query param |
 | SSE inventory stream | `sse inventory:<id>` | opt-in; needs backend traceparent query param |
 
-Start with the first five; add deliberately.
+Start with the first six; add deliberately.
 
 ## Phase 2 — export the curated spans through the BFF
 
@@ -201,6 +263,9 @@ tracing.
    identityx/payssage.
 4. Prod: same with `traces.trieoh.com`; confirm spans survive navigation.
 5. Toggle test: tracing off → no ingest calls on the wire.
+6. Public action test: wrapped `action:view-event` produces one trace
+   (`action:view-event` → univents GET) across origins; untraced public calls
+   show no `traceparent` and no preflight.
 
 ## Files touched
 
@@ -213,10 +278,11 @@ tracing.
 | `lib/ts/front-core/src/auth/tanstack/server.ts` | 1 | forward `traceparent` on outbound fetches |
 | `front/univents/src/env.ts` + app init | 1 | `VITE_TRACING_ENABLED`, wire `initTracing` |
 | traced seams (`features/...`) | 1 | wrap chosen actions with `withSpan` |
+| `api/{univents,identityx,informd,payssage}/.env` | 1 | `CORS_ALLOWED_HEADERS` += `traceparent,tracestate` (public actions only) |
 | `lib/ts/front-core/package.json` | 2 | add `sdk-trace-web`, `otlp-transformer` |
 | `lib/ts/front-core/src/tracing/exporter.ts` (new) | 2 | custom exporter → ingest server fn |
 | `lib/ts/front-core/src/tracing/ingest.ts` (new) | 2 | `ingestTracesServerFn` (validation, dev/prod URL) |
 | `front/*/wrangler.jsonc` + secrets | 2 | `TRACES_INGEST_URL`, `TRACES_OTLP_USER/PASSWORD` |
 | `../infra/caddy/Caddyfile` | — | **no change** |
 
-No CORS changes, no Go changes, no zone.js.
+One config change: `CORS_ALLOWED_HEADERS` += `traceparent,tracestate` on the four APIs (only needed to trace public/direct actions). No Go code changes, no zone.js.
