@@ -14,8 +14,6 @@ TheTree is the monorepo for **TrieOH**, a SaaS platform built as a suite of doma
 | `lib/ts/` | TypeScript       | TypeScript type bindings (tygo-generated from Go models)                            |
 | `sdk/go/` | Go               | Public SDKs for IdentityX and Payssage                                              |
 | `sdk/ts/` | TypeScript       | Public TypeScript SDKs for IdentityX and Payssage                                   |
-| `infra/`  | Config           | Grafana dashboards, VictoriaMetrics scrape configs, Vector pipeline, Docker tooling |
-| `bruno/`  | JSON             | API client collections (Bruno — Postman alternative)                                |
 
 ## Backend Services (Go 1.26)
 
@@ -72,18 +70,10 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 
 ## Infrastructure (Docker Compose)
 
-Compose files are layered — never run alone:
+Production runtime lives in the **`TrieOH/deploy`** repo (checked out at `~/deploy/thetree` on the server): the prod stack, per-service env templates, and deploy operations. This repo is source + CI only; dev orchestration stays in `compose.yml`.
 
-| File                 | Role                                                                           |
-|----------------------|--------------------------------------------------------------------------------|
-| `compose.base.yml`   | Foundation: Postgres 18, Caddy, RustFS (S3-compatible storage)                 |
-| `compose.app.yml`    | Application services with health-check dependency chains                       |
-| `compose.obs.yml`    | Full observability stack: Beszel, VictoriaMetrics/Logs/Traces, Vector, Grafana |
-| `compose.prod.yml`   | Production: versioned GHCR images, TLS, port exposure                          |
-| `compose.server.yml` | Server infra: Mox (SMTP/IMAP), Forgejo (git forge + CI runners)                |
-| `compose.dev.yml`    | Dev: hot-reload, dev Caddyfile, Mailpit for email testing                      |
-
-**Startup dependency chain:** Postgres → Caddy → RustFS → IdentityX → (Payssage, Informd, Univents). Univents also depends on Payssage.
+- Prod stack (postgres, rustfs, identityx, univents, payssage, informd): `TrieOH/deploy` → `thetree/compose.yml`
+- Infra stacks (caddy, forgejo, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
 
 ## Shared Go Library (`lib/go/`)
 
@@ -123,7 +113,6 @@ The whole Go workspace is on Go 1.26 (`go 1.26.x` in every `go.mod`). Code uses 
 - `just front <svc>` — run specific front-ends via `pnpm dev`
 - `just generate` — run tygo across services to regenerate TypeScript types
 - `just test <svc>` — run Go tests per service
-- `just prod` — deploy production stack with versioned images
 - `pnpm -F <pkg> <script>` — run workspace scripts for a specific front-end package
 
 ## Agent skills
