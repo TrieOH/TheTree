@@ -37,7 +37,7 @@ describe("handleTracesIngest", () => {
     expect(await new Response(init?.body).text()).toBe(body);
   });
 
-  it("does not call the upstream when credentials are missing", async () => {
+  it("reports unavailable when credentials are missing", async () => {
     const upstreamFetch = vi.fn<typeof fetch>();
     vi.stubGlobal("fetch", upstreamFetch);
 
@@ -49,7 +49,7 @@ describe("handleTracesIngest", () => {
       {},
     );
 
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(503);
     expect(upstreamFetch).not.toHaveBeenCalled();
   });
 

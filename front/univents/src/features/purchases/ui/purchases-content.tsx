@@ -39,7 +39,6 @@ export function PurchasesContent() {
         : orderIcons.CreditCard,
     paymentText:
       purchase.payment_method === "pix" ? "Pix" : "Cartão de crédito",
-    eventName: "Evento Legal",
     date: new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
       new Date(purchase.created_at ?? purchase.expires_at),
     ),

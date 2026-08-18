@@ -15,7 +15,12 @@ import type {
   ServerSessionSnapshot,
 } from "./types";
 
-import { getTraceparent } from "../../tracing/browser";
+import {
+  addActiveSpanEvent,
+  getTraceparent,
+  setActiveSpanAttributes,
+  withSpan,
+} from "../../tracing/browser";
 
 function isSerializable(value: unknown): value is SerializableValue {
   if (value === null) return true;
@@ -26,6 +31,9 @@ function isSerializable(value: unknown): value is SerializableValue {
 }
 
 type ServerFunction<TInput, TResult> = (options: { data: TInput }) => Promise<TResult>;
+
+const traceServerFunction = <T>(name: string, call: () => Promise<T>) =>
+  withSpan(`bff:${name}`, call);
 
 export interface IdentityXServerFunctions {
   isSetupDone?: ServerFunction<void, ServerAuthResult>;
@@ -82,7 +90,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
   options: TanStackIdentityXClientOptions = {},
 ): AuthProviderAdapter {
   return {
-    restoreSession: () => functions.restore({ data: undefined }),
+    restoreSession: () => traceServerFunction("restoreSession", () => functions.restore({ data: undefined })),
     createAuth({
       callbacks,
       defaultAuth,
@@ -100,15 +108,33 @@ export function createTanStackIdentityXAuthProviderAdapter(
           throw new Error(`IdentityX BFF request transport is not configured for ${operation}`);
         }
         const started = performance.now();
-        const traceparent = getTraceparent();
-        const result = await functions.request({
-          data: {
-            path,
-            target: "identityx",
-            method,
-            ...(body === undefined ? {} : { body }),
-            ...(traceparent ? { headers: { traceparent } } : {}),
-          },
+        const result = await withSpan(`bff:${operation}`, async () => {
+          setActiveSpanAttributes({
+            "bff.operation": operation,
+            "bff.target": "identityx",
+            "bff.path": path.split("?", 1)[0] ?? path,
+            "bff.method": method,
+          });
+          addActiveSpanEvent("bff.request.started");
+          const traceparent = getTraceparent();
+          const response = await functions.request!({
+            data: {
+              path,
+              target: "identityx",
+              method,
+              ...(body === undefined ? {} : { body }),
+              ...(traceparent ? { headers: { traceparent } } : {}),
+            },
+          });
+          setActiveSpanAttributes({
+            "bff.success": response.success,
+            "bff.status": response.code,
+            ...(response.error_id ? { "bff.error_id": response.error_id } : {}),
+          });
+          addActiveSpanEvent(
+            response.success ? "bff.request.completed" : "bff.request.failed",
+          );
+          return response;
         });
         const event: IdentityXTransportLogEvent = {
           layer: "bff-client",
@@ -138,7 +164,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
           : defaultAuth.isSetupDone,
         setup: functions.setup
           ? async (email, password) => {
-            const result = await functions.setup!({ data: { email, password } });
+            const result = await traceServerFunction("setup", () => functions.setup!({ data: { email, password } }));
             const response = authResponse<AuthTokens>(result);
             if (result.success) {
               setProfile(result.profile ?? null);
@@ -150,7 +176,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
           : defaultAuth.setup,
         profile: getProfile,
         login: async (email, password) => {
-          const result = await functions.login({ data: { email, password } });
+          const result = await traceServerFunction("login", () => functions.login({ data: { email, password } }));
           const response = authResponse<AuthTokens>(result);
           if (result.success) {
             setProfile(result.profile ?? null);
@@ -161,7 +187,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
         },
         register: functions.register
           ? async (email, password) => {
-            const result = await functions.register!({ data: { email, password } });
+            const result = await traceServerFunction("register", () => functions.register!({ data: { email, password } }));
             const response = authResponse<void>(result);
             if (result.success) callbacks.onRegister?.(response);
             return response;
@@ -169,7 +195,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
           : defaultAuth.register,
         loginWithProvider: functions.loginWithProvider
           ? async (provider) => {
-            const result = await functions.loginWithProvider!({ data: { provider } });
+            const result = await traceServerFunction("loginWithProvider", () => functions.loginWithProvider!({ data: { provider } }));
             const base = authResponse<{ url: string }>(result);
             return result.success
               ? { ...base, success: true, data: result.data! }
@@ -178,7 +204,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
           : defaultAuth.loginWithProvider,
         completeProviderLogin: functions.completeProviderLogin
           ? async (provider, code, state) => {
-            const result = await functions.completeProviderLogin!({ data: { provider, code, state } });
+            const result = await traceServerFunction("completeProviderLogin", () => functions.completeProviderLogin!({ data: { provider, code, state } }));
             const response = authResponse<AuthTokens>(result);
             if (result.success) {
               setProfile(result.profile ?? null);
@@ -189,14 +215,14 @@ export function createTanStackIdentityXAuthProviderAdapter(
           }
           : defaultAuth.completeProviderLogin,
         logout: async () => {
-          const result = await functions.logout({ data: undefined });
+          const result = await traceServerFunction("logout", () => functions.logout({ data: undefined }));
           const response = authResponse<void>(result);
           setProfile(null);
           setAuthenticated(false);
           return response;
         },
         refresh: async () => {
-          const result = await functions.refresh({ data: undefined });
+          const result = await traceServerFunction("refresh", () => functions.refresh({ data: undefined }));
           const response = authResponse<AuthTokens>(result);
           if (result.success) {
             setProfile(result.profile ?? getProfile());
@@ -212,7 +238,7 @@ export function createTanStackIdentityXAuthProviderAdapter(
           ? async (apiKey?: string) => {
             if (apiKey) return defaultAuth.introspect(apiKey);
 
-            const result = await functions.introspect!({ data: apiKey ? { apiKey } : undefined });
+            const result = await traceServerFunction("introspect", () => functions.introspect!({ data: apiKey ? { apiKey } : undefined }));
             const base = {
               module: "identityx-bff",
               message: result.message ?? (result.success ? "OK" : "Introspect failed"),
@@ -238,8 +264,21 @@ export function createTanStackIdentityXAuthProviderAdapter(
             }),
           resetPassword: (token: string, password: string) =>
             proxyResponse<void>("resetPassword", "/auth/reset-password", "POST", { token, password }),
-          verifyEmail: (token: string) =>
-            proxyResponse<void>("verifyEmail", "/auth/verify-email", "POST", { token }),
+          verifyEmail: async (token: string) => {
+            const response = await proxyResponse<void>(
+              "verifyEmail",
+              "/auth/verify-email",
+              "POST",
+              { token },
+            );
+            return response.success
+              ? response
+              : {
+                  ...response,
+                  message:
+                    "Este link de verificação expirou ou não é válido. Solicite um novo link para confirmar seu e-mail.",
+                };
+          },
           resendVerifyEmail: (email: string) =>
             proxyResponse<void>("resendVerifyEmail", "/auth/resend-verification", "POST", {
               email,
@@ -330,8 +369,6 @@ export function createTanStackServerProxyFetchers(
   const adapter = async (url: string, init?: RequestInit): Promise<Response> => {
     const started = performance.now();
     const headers = Object.fromEntries(new Headers(init?.headers).entries());
-    const traceparent = getTraceparent();
-    if (traceparent) headers["traceparent"] = traceparent;
     let body: SerializableValue | undefined;
     if (typeof init?.body === "string" && init.body.length > 0) {
       try {
@@ -348,13 +385,33 @@ export function createTanStackServerProxyFetchers(
       throw new Error(`Unsupported proxy method: ${method}`);
     }
 
-    const result = await proxy({
-      data: {
-        path: url,
-        method: method as ProxyHttpMethod,
-        ...(body === undefined ? {} : { body }),
-        ...(Object.keys(headers).length === 0 ? {} : { headers }),
-      },
+    const result = await withSpan("bff:apiRequest", async () => {
+      setActiveSpanAttributes({
+        "bff.operation": "apiRequest",
+        "bff.target": "identityx",
+        "bff.path": url.split("?", 1)[0] ?? url,
+        "bff.method": method,
+      });
+      addActiveSpanEvent("bff.request.started");
+      const traceparent = getTraceparent();
+      if (traceparent) headers["traceparent"] = traceparent;
+      const response = await proxy({
+        data: {
+          path: url,
+          method: method as ProxyHttpMethod,
+          ...(body === undefined ? {} : { body }),
+          ...(Object.keys(headers).length === 0 ? {} : { headers }),
+        },
+      });
+      setActiveSpanAttributes({
+        "bff.success": response.success,
+        "bff.status": response.code,
+        ...(response.error_id ? { "bff.error_id": response.error_id } : {}),
+      });
+      addActiveSpanEvent(
+        response.success ? "bff.request.completed" : "bff.request.failed",
+      );
+      return response;
     });
     const event: IdentityXTransportLogEvent = {
       layer: "bff-client",

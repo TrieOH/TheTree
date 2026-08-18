@@ -8,7 +8,6 @@ export type Order = {
   status: OrderStatus;
   paymentIcon: LucideIcon;
   paymentText: string;
-  eventName: string;
   date: string;
   total: string;
   items: Array<{
@@ -97,10 +96,7 @@ export function OrderCard({
           >
             {config.label}
           </span>
-          <p className="mt-2 truncate text-sm font-semibold text-foreground">
-            {order.eventName}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
             <span>{order.date}</span>
             <span aria-hidden="true">·</span>
             <span className="flex items-center gap-1.5">
