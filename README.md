@@ -77,7 +77,7 @@ Dev ports: postgres `5432` · rustfs `9000/9001` · backends `8080`–`8083`
 | Run all frontends | `pnpm dev` |
 | Run one frontend | `pnpm <svc> dev` (e.g. `pnpm univents dev`) |
 | Frontend build | `pnpm -r build` |
-| Go tests (all) | `just test` |
+| Go tests | `just test` (all) · `just test <svc>` · `just <svc> test` |
 | Lint (Go) | `just lint` or `just lint <svc>` |
 | Frontend typecheck | `pnpm -r tsc` |
 | Frontend lint/format | `pnpm -r lint` / `pnpm -r format` |
