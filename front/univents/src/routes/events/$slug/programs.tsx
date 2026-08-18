@@ -51,9 +51,6 @@ function Programs({
     occurrencesQueryOptions(editionId),
   );
   const days = groupByDay(programs, occurrences);
-  const carouselItems = days.flatMap((day) =>
-    day.items.map((item) => ({ date: day.date, ...item })),
-  );
 
   return (
     <main className="min-h-screen bg-background px-4 pt-4 pb-24 md:pt-6">
@@ -79,15 +76,19 @@ function Programs({
           </div>
         </header>
 
-        {carouselItems.length > 0 ? (
-          <section className="mt-10" aria-label="Ocorrências da programação">
+        {days.length > 0 ? (
+          <section
+            className="mx-auto mt-10 max-w-screen-2xl"
+            aria-label="Ocorrências da programação"
+          >
             <Carousel
-              items={carouselItems}
-              renderItem={({ date, program, occurrence }) => (
+              items={days}
+              renderItem={(day) => (
                 <ProgramDayCard
-                  date={date}
-                  items={[{ program, occurrence }]}
-                  maxItems={1}
+                  date={day.date}
+                  items={day.items}
+                  maxItems={day.items.length}
+                  showFullDescription
                 />
               )}
               itemMinWidth={320}
@@ -95,7 +96,7 @@ function Programs({
               gap={24}
               loop
               scrollBy={1}
-              arrowPosition="below"
+              arrowPosition="top"
             />
           </section>
         ) : (

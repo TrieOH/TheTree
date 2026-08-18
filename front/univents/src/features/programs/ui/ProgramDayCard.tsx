@@ -38,6 +38,7 @@ interface ProgramDayCardProps {
   items: { program: ProgramI; occurrence: OccurrenceI }[];
   maxItems?: number;
   certificateProgramIds?: ReadonlySet<string>;
+  showFullDescription?: boolean;
 }
 
 export function ProgramDayCard({
@@ -45,6 +46,7 @@ export function ProgramDayCard({
   items,
   maxItems = 3,
   certificateProgramIds,
+  showFullDescription = false,
 }: ProgramDayCardProps) {
   const visible = items.slice(0, maxItems);
   const remaining = items.length - maxItems;
@@ -104,7 +106,12 @@ export function ProgramDayCard({
 
                 {/* Description */}
                 {program.description && (
-                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                  <p
+                    className={cn(
+                      "mt-1 text-xs leading-relaxed text-muted-foreground",
+                      !showFullDescription && "line-clamp-2",
+                    )}
+                  >
                     {program.description}
                   </p>
                 )}

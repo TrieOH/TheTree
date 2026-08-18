@@ -9,6 +9,7 @@ import {
 } from "@/features/editions/api";
 import { OtherEditionsSection } from "@/features/editions/ui/OtherEditionsSection";
 import { ContactSection } from "@/features/events/ui/ContactSection";
+import { storeStockQueryOptions } from "@/features/products/api";
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
@@ -45,11 +46,16 @@ function RouteComponent() {
     allTicketsQueryOptions(activeEdition?.id ?? ""),
   );
 
+  const { data: stock = [] } = useQuery(
+    storeStockQueryOptions(activeEdition?.id ?? ""),
+  );
+
   const { data: heldTicket = null } = useQuery(
     myTicketQueryOptions(activeEdition?.id ?? "", isAuthenticated),
   );
 
   const initials = getInitials(event.full_name);
+  const stockById = new Map(stock.map((item) => [item.id, item.stock]));
   useInventoryStream(activeEdition?.id ?? "");
 
   return (
@@ -190,6 +196,7 @@ function RouteComponent() {
             tickets={tickets}
             eventSlug={event.slug}
             editionId={activeEdition?.id}
+            stockById={stockById}
             heldTicket={heldTicket}
           />
           <ProgramSection

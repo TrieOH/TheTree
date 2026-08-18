@@ -211,6 +211,7 @@ import type {
   RevokeSignatureParams,
   Signature,
   SignatureRequest,
+  StoreStockItem,
   TicketType,
   UnauthorizedResponse,
   UpdateBadgeTemplateRequest,
@@ -2914,6 +2915,112 @@ export const usePublishEdition = <TError = ErrorType<UnauthorizedResponse | Forb
       > => {
       return useMutation(getPublishEditionMutationOptions(options));
     }
+
+export type listEditionStoreStockResponse200 = {
+  data: StoreStockItem[]
+  status: 200
+}
+
+export type listEditionStoreStockResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listEditionStoreStockResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listEditionStoreStockResponseSuccess = (listEditionStoreStockResponse200) & {
+  headers: Headers;
+};
+export type listEditionStoreStockResponseError = (listEditionStoreStockResponse404 | listEditionStoreStockResponse500) & {
+  headers: Headers;
+};
+
+export type listEditionStoreStockResponse = (listEditionStoreStockResponseSuccess | listEditionStoreStockResponseError)
+
+export const getListEditionStoreStockUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/store/stock`
+}
+
+/**
+ * REST twin of the storefront SSE snapshot: every purchasable item
+ * (ticket types, product variants, program occurrences) and its
+ * current stock position, recomputed from the availability ledger
+ * (base − reserved across pending/approved purchases). `stock` is
+ * `null` when the item is unlimited. Public, like the ticket list.
+ * @summary Current stock position for every purchasable item
+ */
+export const listEditionStoreStock = async (editionId: string, options?: Parameters<typeof customInstance>[1]): Promise<listEditionStoreStockResponse> => {
+
+  return customInstance<listEditionStoreStockResponse>(getListEditionStoreStockUrl(editionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEditionStoreStockQueryKey = (editionId: string,) => {
+    return [
+    `/editions/${editionId}/store/stock`
+    ] as const;
+    }
+
+
+export const getListEditionStoreStockQueryOptions = <TData = Awaited<ReturnType<typeof listEditionStoreStock>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse>>(editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditionStoreStock>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEditionStoreStockQueryKey(editionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEditionStoreStock>>> = ({ signal }) => listEditionStoreStock(editionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEditionStoreStock>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEditionStoreStockQueryResult = NonNullable<Awaited<ReturnType<typeof listEditionStoreStock>>>
+export type ListEditionStoreStockQueryError = ErrorType<NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary Current stock position for every purchasable item
+ */
+
+export function useListEditionStoreStock<TData = Awaited<ReturnType<typeof listEditionStoreStock>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditionStoreStock>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEditionStoreStockQueryOptions(editionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type createEditionCheckoutResponse201 = {
   data: CheckoutResult

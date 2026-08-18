@@ -52,7 +52,7 @@ function useReducedMotion(): boolean {
 /* ------------------------------------------------------------------ */
 /*  Tipos do Carousel                                                 */
 /* ------------------------------------------------------------------ */
-type ArrowPosition = "overlay" | "outside" | "below";
+type ArrowPosition = "overlay" | "outside" | "top" | "below";
 
 interface CarouselProps<T> {
   items: T[];
@@ -435,6 +435,21 @@ export function Carousel<T>({
             {showArrows && canSlide && <NextButton variant="below" />}
           </div>
         ) : null}
+      </div>
+    );
+  }
+
+  if (arrowPosition === "top") {
+    return (
+      <div {...wrapperProps}>
+        {(showArrows && canSlide) || dots ? (
+          <div className="mb-4 flex items-center justify-center gap-4">
+            {showArrows && canSlide && <PrevButton variant="below" />}
+            {dots}
+            {showArrows && canSlide && <NextButton variant="below" />}
+          </div>
+        ) : null}
+        {track}
       </div>
     );
   }
