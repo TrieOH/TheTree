@@ -17,6 +17,7 @@ identityx +CMD="":
     case "{{CMD}}" in
       "")   docker compose up --build identityx ;;
       lint) golangci-lint run ./api/identityx/... ;;
+      test) cd api/identityx && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
@@ -27,6 +28,7 @@ univents +CMD="":
             docker compose up --build payssage -d
             docker compose up --build univents ;;
       lint) golangci-lint run ./api/univents/... ;;
+      test) cd api/univents && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
@@ -36,6 +38,7 @@ payssage +CMD="":
       "")   docker compose up --build identityx -d
             docker compose up --build payssage ;;
       lint) golangci-lint run ./api/payssage/... ;;
+      test) cd api/payssage && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
@@ -45,14 +48,21 @@ informd +CMD="":
       "")   docker compose up --build identityx -d
             docker compose up --build informd ;;
       lint) golangci-lint run ./api/informd/... ;;
+      test) cd api/informd && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
-test:
-    cd api/identityx && just test
-    cd api/informd && just test
-    cd api/payssage && just test
-    cd api/univents && just test
+test +NAME="":
+    #!/usr/bin/env bash
+    case "{{NAME}}" in
+      identityx) (cd api/identityx && just test) ;;
+      informd)   (cd api/informd && just test) ;;
+      payssage)  (cd api/payssage && just test) ;;
+      univents)  (cd api/univents && just test) ;;
+      lib)       gotestsum --format testdox --format-hide-empty-pkg ./lib/go/... ;;
+      sdk)       gotestsum --format testdox --format-hide-empty-pkg ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;
+      *)         gotestsum --format testdox --format-hide-empty-pkg ./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;
+    esac
 
 # Update every Go module in the workspace to the latest dependency versions,
 # then sync go.work.sum.
@@ -67,10 +77,6 @@ goup:
     go work sync
 
 generate +SERVICES="identityx informd payssage univents":
-    #!/usr/bin/env bash
-    for svc in {{SERVICES}}; do
-      (cd api/$svc && tygo generate)
-    done
     just generate-oapi {{SERVICES}}
     just generate-orval
 

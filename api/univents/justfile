@@ -1,8 +1,4 @@
 set shell := ["bash", "-cu"]
 
-# Generate all
-gen:
-    sqlc generate
-
 test:
     gotestsum --format testdox --format-hide-empty-pkg

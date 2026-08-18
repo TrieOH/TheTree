@@ -1,6 +1,0 @@
-packages:
-  - path: "payssage/models"
-    output_path: "../../lib/ts/payssage/models/generated.ts"
-    type_mappings:
-      uuid.UUID: "string"
-      time.Time: "string"
