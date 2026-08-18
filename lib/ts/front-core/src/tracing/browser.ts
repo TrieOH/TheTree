@@ -3,13 +3,15 @@ import { resourceFromAttributes } from "@opentelemetry/resources"
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions"
 import {
   BatchSpanProcessor,
+  type ReadableSpan,
+  type SpanExporter,
   type SpanProcessor,
 } from "@opentelemetry/sdk-trace-base"
 import { WebTracerProvider } from "@opentelemetry/sdk-trace-web"
 import { ZoneContextManager } from "@opentelemetry/context-zone"
 import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch"
 import { registerInstrumentations } from "@opentelemetry/instrumentation"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http"
+import { JsonTraceSerializer } from "@opentelemetry/otlp-transformer/build/src/trace/json/trace"
 
 import { TRACES_INGEST_PATH } from "./constants"
 
@@ -18,6 +20,7 @@ const tracer = trace.getTracer("trieoh-front")
 // One root span per page session; its context is reused for every request.
 let sessionSpan: Span | undefined
 let provider: WebTracerProvider | undefined
+let sessionEnded = false
 
 class ComponentSpanProcessor implements SpanProcessor {
   constructor(private readonly delegate: SpanProcessor) {}
@@ -43,6 +46,49 @@ class ComponentSpanProcessor implements SpanProcessor {
   }
 }
 
+class KeepaliveSpanExporter implements SpanExporter {
+  constructor(private readonly url: string) {}
+
+  export(
+    spans: ReadableSpan[],
+    resultCallback: Parameters<SpanExporter["export"]>[1],
+  ): void {
+    let payload: Uint8Array | undefined
+    try {
+      payload = JsonTraceSerializer.serializeRequest(spans)
+    } catch (error) {
+      const normalized = error instanceof Error ? error : new Error(String(error))
+      console.error("[tracing] failed to serialize spans", normalized)
+      resultCallback({ code: 1, error: normalized })
+      return
+    }
+
+    void fetch(this.url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload ? new TextDecoder().decode(payload) : undefined,
+      keepalive: true,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Trace ingest failed: ${response.status}`)
+        }
+        resultCallback({ code: 0 })
+      })
+      .catch((error: unknown) => {
+        console.error("[tracing] failed to export spans", error)
+        resultCallback({
+          code: 1,
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
+      })
+  }
+
+  shutdown(): Promise<void> {
+    return Promise.resolve()
+  }
+}
+
 export function browserTracingResource(serviceName: string) {
   return resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName })
 }
@@ -60,7 +106,7 @@ class SessionContextManager extends ZoneContextManager {
 
 export function initSessionTrace(): void {
   if (typeof window === "undefined" || sessionSpan) return
-  sessionSpan = tracer.startSpan("page-session")
+  sessionSpan = tracer.startSpan("web-session")
 }
 
 /** Returns the session's traceparent header value. Used by the BFF client
@@ -77,12 +123,16 @@ export function getTraceparent(): string {
 
 /** Phase 2: real browser spans (fetch, document load) exported through the
  *  BFF's ingestTracesServerFn — the only escape hatch to Victoria Traces. */
-export function initBrowserTracing(serviceName = "univents-web"): void {
-  if (typeof window === "undefined" || provider) return
+export function initBrowserTracing(
+  serviceName = "univents",
+  enabled = true,
+  ignoredUrls: string[] = [],
+): void {
+  if (typeof window === "undefined" || !enabled || provider) return
 
-  const exporter = new OTLPTraceExporter({
-    url: `${window.location.origin}${TRACES_INGEST_PATH}`,
-  })
+  const exporter = new KeepaliveSpanExporter(
+    `${window.location.origin}${TRACES_INGEST_PATH}`,
+  )
 
   const processor = new BatchSpanProcessor(exporter, {
     maxExportBatchSize: 30,
@@ -96,25 +146,47 @@ export function initBrowserTracing(serviceName = "univents-web"): void {
 
   provider.register({ contextManager: new SessionContextManager() })
 
+  initSessionTrace()
+  traceClicks()
   registerInstrumentations({
     instrumentations: [
       new FetchInstrumentation({
-        ignoreUrls: [new RegExp(escapeRegExp(TRACES_INGEST_PATH))],
+        ignoreUrls: [
+          new RegExp(escapeRegExp(TRACES_INGEST_PATH)),
+          ...ignoredUrls.map((url) => new RegExp(escapeRegExp(url))),
+        ],
         propagateTraceHeaderCorsUrls: [],
       }),
     ],
   })
-
-  initSessionTrace()
   flushOnPageHide(processor)
 }
 
 function flushOnPageHide(processor: BatchSpanProcessor): void {
-  const flush = () => void processor.forceFlush()
+  const flush = () => {
+    if (!sessionEnded && sessionSpan) {
+      sessionEnded = true
+      sessionSpan.end()
+    }
+    void processor.forceFlush()
+  }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flush()
+    if (document.visibilityState === "hidden") void processor.forceFlush()
   })
   window.addEventListener("pagehide", flush)
+}
+
+function traceClicks(): void {
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : undefined
+    const span = tracer.startSpan("click")
+    if (target) {
+      span.setAttribute("click.element", target.tagName.toLowerCase())
+      const label = target.getAttribute("aria-label") ?? target.textContent?.trim()
+      if (label) span.setAttribute("click.label", label.slice(0, 100))
+    }
+    span.end()
+  })
 }
 
 function escapeRegExp(value: string): string {

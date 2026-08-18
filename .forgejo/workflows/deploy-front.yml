@@ -127,6 +127,7 @@ jobs:
           VITE_AUTH_API_URL: ${{ vars.UNIVENTS_AUTH_API_URL }}
           VITE_POSTHOG_KEY: ${{ secrets.UNIVENTS_POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ vars.UNIVENTS_POSTHOG_HOST }}
+          VITE_TRACING_ENABLED: ${{ vars.UNIVENTS_TRACING_ENABLED }}
           VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.UNIVENTS_AUTH_PROJECT_ID }}
 
       - name: Deploy Univents
