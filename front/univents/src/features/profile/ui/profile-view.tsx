@@ -118,7 +118,7 @@ export function ProfileView({
             }
             profileUrl={profileUrl}
             profileIdentifier={publicIdentifier ?? ""}
-            participantName={profile.legalName || profile.preferredName || ""}
+            participantName={profile.preferredName || profile.legalName || ""}
           />
         </div>
       ) : activeTab === "purchases" ? (
