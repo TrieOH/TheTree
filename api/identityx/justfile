@@ -4,7 +4,6 @@ set shell := ["bash", "-cu"]
 gen:
     just gen-sqlc
     just gen-swag
-    just gen-mocks
 
 gen-sqlc:
     sqlc generate
@@ -12,14 +11,10 @@ gen-sqlc:
 gen-swag:
     swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList -ot json
 
-gen-mocks:
-    mockery
-
 test:
     @echo "no tests for identityx"
 
 #testf:
-#    mockery
 #    mkdir -p generated/coverage
 #    gotestsum --format testdox --format-icons nerdfonts \
 #        -- -coverprofile=generated/coverage/coverage.out ./...
