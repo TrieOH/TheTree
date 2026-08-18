@@ -36,6 +36,7 @@ docs/            # CONTEXT.md (domain glossary), adr/, agents/
 - Docker + Docker Compose
 - `just` — all dev recipes live in the `justfile`
 - `golangci-lint` (for `just lint`)
+- `gotestsum` (for `just test`) — `go install gotest.tools/gotestsum@latest`
 
 ## Quickstart
 
