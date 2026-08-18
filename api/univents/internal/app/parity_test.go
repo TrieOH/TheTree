@@ -120,6 +120,9 @@ func (stubStrict) CreateSignature(_ context.Context, _ openapi.CreateSignatureRe
 func (stubStrict) ListTicketTypes(_ context.Context, _ openapi.ListTicketTypesRequestObject) (openapi.ListTicketTypesResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) ListEditionStoreStock(_ context.Context, _ openapi.ListEditionStoreStockRequestObject) (openapi.ListEditionStoreStockResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) CreateTicketType(_ context.Context, _ openapi.CreateTicketTypeRequestObject) (openapi.CreateTicketTypeResponseObject, error) {
 	return nil, errStub
 }

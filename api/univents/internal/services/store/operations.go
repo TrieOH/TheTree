@@ -53,6 +53,33 @@ func NewOperations(avail AvailabilityReader, editions EditionRepo, notifier Noti
 	return o
 }
 
+// Stock is the REST twin of the SSE snapshot — every purchasable item's
+// current stock position, recomputed from the availability ledger (base −
+// reserved across pending/approved purchases; null = unlimited). Public:
+// the storefront needs the counts before/without subscribing to the stream.
+// Unknown editions are NOT_FOUND (the endpoint exists, the edition does not).
+func (o *Operations) Stock(ctx context.Context, editionID uuid.UUID) ([]stockItem, error) {
+	ctx, span := telemetry.StartSpan(ctx, "StoreService.Stock")
+	defer span.End()
+
+	if _, err := o.editions.GetByID(ctx, editionID); err != nil {
+		return nil, err
+	}
+	avail, err := o.avail.Availability(ctx, editionID)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]stockItem, 0, len(avail))
+	for _, a := range avail {
+		items = append(items, stockItem{
+			ID:       a.ItemID,
+			ItemType: string(a.ItemType),
+			Stock:    available(a),
+		})
+	}
+	return items, nil
+}
+
 // ServeStream is the raw SSE route — `GET /editions/{edition_id}/store/stream`
 // (public). Raw on purpose: a streaming response bypasses the
 // fun/validate-envelope machinery (which would buffer the body), and the

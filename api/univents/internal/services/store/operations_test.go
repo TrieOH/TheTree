@@ -162,6 +162,47 @@ func newStore(t *testing.T, editionID uuid.UUID) (*store.Operations, *fakeAvaila
 	return ops, avail, notifier
 }
 
+func TestStock(t *testing.T) {
+	editionID := uuid.New()
+	ops, avail, _ := newStore(t, editionID)
+	ticketID, variantID := uuid.New(), uuid.New()
+	avail.set([]models.ItemAvailability{
+		{ItemType: models.PurchaseItemTypeTicket, ItemID: ticketID, BaseQuantity: new(int(10)), ReservedQuantity: 3},
+		{ItemType: models.PurchaseItemTypeProduct, ItemID: variantID, BaseQuantity: nil, ReservedQuantity: 0}, // unlimited
+	})
+
+	items, err := ops.Stock(context.Background(), editionID)
+	if err != nil {
+		t.Fatalf("Stock: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("items = %d, want 2", len(items))
+	}
+	byID := map[uuid.UUID]struct {
+		ItemType string
+		Stock    *int
+	}{}
+	for _, it := range items {
+		byID[it.ID] = struct {
+			ItemType string
+			Stock    *int
+		}{it.ItemType, it.Stock}
+	}
+	if s := byID[ticketID]; s.ItemType != "ticket" || s.Stock == nil || *s.Stock != 7 {
+		t.Fatalf("ticket = %+v, want ticket stock 7 (10-3)", s)
+	}
+	if s := byID[variantID]; s.ItemType != "product" || s.Stock != nil {
+		t.Fatalf("unlimited variant = %+v, want product stock null", s)
+	}
+}
+
+func TestStockUnknownEdition(t *testing.T) {
+	ops, _, _ := newStore(t, uuid.New())
+	if _, err := ops.Stock(context.Background(), uuid.New()); err == nil {
+		t.Fatal("Stock on unknown edition: want error, got nil")
+	}
+}
+
 func TestSSESnapshotShape(t *testing.T) {
 	editionID := uuid.New()
 	ops, avail, _ := newStore(t, editionID)

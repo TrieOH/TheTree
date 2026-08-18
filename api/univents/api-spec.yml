@@ -191,6 +191,10 @@ tags:
     description: Live surfaces — the WebSocket token endpoint (the sockets
       themselves are raw routes, documented in the top-level description)
 
+  - name: store
+    description: Storefront stock — snapshot availability reads (the live
+      SSE stream itself is a raw route, documented in the top-level description)
+
 externalDocs:
   description: Full TrieOH documentation
   url: https://docs.trieoh.com
@@ -1019,6 +1023,39 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/store/stock:
+    get:
+      tags: [store]
+      operationId: listEditionStoreStock
+      summary: Current stock position for every purchasable item
+      description: |
+        REST twin of the storefront SSE snapshot: every purchasable item
+        (ticket types, product variants, program occurrences) and its
+        current stock position, recomputed from the availability ledger
+        (base − reserved across pending/approved purchases). `stock` is
+        `null` when the item is unlimited. Public, like the ticket list.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: Current stock per purchasable item
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/StoreStockItem'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3932,6 +3969,19 @@ components:
           type: integer
           format: int64
           description: Server-computed unit price at checkout, in cents.
+
+    StoreStockItem:
+      type: object
+      description: One purchasable item's stock position — the REST twin of the SSE `snapshot`/`stock` payload. `stock` null = unlimited.
+      required: [id, item_type, stock]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        item_type:
+          $ref: '#/components/schemas/PurchaseItemType'
+        stock:
+          type: [ integer, "null" ]
+          description: Available units (base − reserved); null = unlimited.
 
     CheckoutPaymentMethod:
       type: string
