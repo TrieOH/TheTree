@@ -134,118 +134,18 @@
  *
  * OpenAPI spec version: 0.1.0
  */
+import type { PurchaseItemType } from './purchaseItemType';
+import type { Uuid } from './uuid';
 
-export * from './addEventMemberRequest';
-export * from './addSignatureRequest';
-export * from './badgeEditionEmission';
-export * from './badgeEditionEmissionOrigin';
-export * from './badgeEditionEmissionStatus';
-export * from './badgeEmission';
-export * from './badgeEmissionOrigin';
-export * from './badgeEmissionStatus';
-export * from './badgeOriginGroup';
-export * from './badgePrintItem';
-export * from './badgePrintItemDesignData';
-export * from './badgePrintItemOrigin';
-export * from './badgeProfileBadge';
-export * from './badgeProfileBadgeDesignData';
-export * from './badgeProfileBadgeOrigin';
-export * from './badgeProfileGroups';
-export * from './badgeTemplate';
-export * from './badgeTemplateDesignData';
-export * from './badgeTemplateOrigin';
-export * from './badRequestResponse';
-export * from './cancelSignatureRequestBody';
-export * from './certEmissionError';
-export * from './certification';
-export * from './certificationTemplate';
-export * from './certificationTemplateDesignData';
-export * from './certificationTemplateKind';
-export * from './certificationTemplateProgram';
-export * from './certTemplateProgramRequest';
-export * from './checkout';
-export * from './checkoutAttendee';
-export * from './checkoutItem';
-export * from './checkoutPayer';
-export * from './checkoutPaymentMethod';
-export * from './checkoutResult';
-export * from './completeEventPaymentsRequest';
-export * from './conflictResponse';
-export * from './connectEventPaymentsRequest';
-export * from './connectEventPaymentsResult';
-export * from './createBadgeTemplateRequest';
-export * from './createBadgeTemplateRequestDesignData';
-export * from './createCertificationTemplateRequest';
-export * from './createCertificationTemplateRequestDesignData';
-export * from './createCheckoutRequest';
-export * from './createEditionRequest';
-export * from './createEventRequest';
-export * from './createInitialProductRequest';
-export * from './createProductVariantRequest';
-export * from './createProgramOccurrenceRequest';
-export * from './createProgramRequest';
-export * from './createSignatureRequestRequest';
-export * from './createTicketTypeRequest';
-export * from './denySignatureRequestBody';
-export * from './denySignatureRequestParams';
-export * from './edition';
-export * from './error';
-export * from './errorCode';
-export * from './errorDebug';
-export * from './errorFieldsItem';
-export * from './errorMeta';
-export * from './errorResponse';
-export * from './event';
-export * from './eventMember';
-export * from './eventMemberRole';
-export * from './eventStatus';
-export * from './eventStyle';
-export * from './forbiddenResponse';
-export * from './fulfillSignatureRequestBody';
-export * from './fulfillSignatureRequestParams';
-export * from './getEditionBadgesPrintParams';
-export * from './getHealth200';
-export * from './getWsTokenParams';
-export * from './internalServerErrorResponse';
-export * from './invalidCertReason';
-export * from './myPurchases';
-export * from './myTicket';
-export * from './myTicketStatus';
-export * from './notFoundResponse';
-export * from './nullableUUID';
-export * from './paginationMeta';
-export * from './patchEditionRequest';
-export * from './patchEventRequest';
-export * from './patchProductRequest';
-export * from './patchProductVariantRequest';
-export * from './patchProgramOccurrenceRequest';
-export * from './patchProgramRequest';
-export * from './patchTicketTypeRequest';
-export * from './product';
-export * from './productVariant';
-export * from './program';
-export * from './programKind';
-export * from './programOccurrence';
-export * from './purchase';
-export * from './purchaseItem';
-export * from './purchaseItemType';
-export * from './purchaseStatus';
-export * from './receivePayssageWebhookRequest';
-export * from './receivePayssageWebhookRequestPayload';
-export * from './removeEventMemberBody';
-export * from './response';
-export * from './responseData';
-export * from './revokeSignatureParams';
-export * from './signature';
-export * from './signatureRequest';
-export * from './signatureRequestStatus';
-export * from './storeStockItem';
-export * from './ticketType';
-export * from './unauthorizedResponse';
-export * from './updateBadgeTemplateRequest';
-export * from './updateBadgeTemplateRequestDesignData';
-export * from './updateCertificationTemplateRequest';
-export * from './updateCertificationTemplateRequestDesignData';
-export * from './uuid';
-export * from './verifyCertResponse';
-export * from './wsToken';
+/**
+ * One purchasable item's stock position — the REST twin of the SSE `snapshot`/`stock` payload. `stock` null = unlimited.
+ */
+export interface StoreStockItem {
+  id: Uuid;
+  item_type: PurchaseItemType;
+  /**
+     * Available units (base − reserved); null = unlimited.
+     * @nullable
+     */
+  stock: number | null;
+}

@@ -19,6 +19,7 @@ interface TicketCardProps {
   isFeatured?: boolean;
   editionId?: string;
   heldTicket?: MyTicket | null;
+  stock?: number | null;
 }
 
 export function TicketCard({
@@ -26,6 +27,7 @@ export function TicketCard({
   isFeatured,
   editionId,
   heldTicket = null,
+  stock,
 }: TicketCardProps) {
   const { addItem, items } = useCart(editionId ?? "");
   const inCart = items.find(
@@ -35,16 +37,18 @@ export function TicketCard({
     (item) => item.type === "ticket" && item.id !== ticket.id,
   );
   const isFree = ticket.price_cents === 0;
+  const isOutOfStock =
+    stock !== undefined
+      ? stock === 0
+      : ticket.max_quantity != null && ticket.max_quantity <= 0;
 
   const isHeld = heldTicket?.ticket_type.id === ticket.id;
   const hasHeldTicket = !!heldTicket;
   const isUpgrade =
     hasHeldTicket &&
     !isHeld &&
+    ticket.access_level > (heldTicket?.ticket_type.access_level ?? -1) &&
     ticket.price_cents > (heldTicket?.ticket_type.price_cents ?? 0);
-  // The upgrade action ships later — the affordance is a disabled
-  // placeholder today. While holding a ticket, no other ticket is
-  // addable (one ticket per person; only an upgrade is allowed later).
   const buttonLabel = isHeld
     ? "Ingresso atual"
     : isUpgrade
@@ -53,9 +57,11 @@ export function TicketCard({
         ? "Você já possui um ingresso"
         : anotherTicketInCart
           ? "Limite de 1 ingresso"
-          : inCart
-            ? "Adicionado"
-            : "Adicionar ao carrinho";
+          : isOutOfStock
+            ? "Esgotado"
+            : inCart
+              ? "Adicionado"
+              : "Adicionar ao carrinho";
 
   return (
     <div
@@ -119,6 +125,15 @@ export function TicketCard({
           </span>
         )}
       </div>
+      {stock !== undefined && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {stock === null
+            ? "Estoque ilimitado"
+            : isOutOfStock
+              ? "Esgotado"
+              : `${stock} disponível${stock === 1 ? "" : "is"}`}
+        </p>
+      )}
 
       {/* Description */}
       {ticket.description && (
@@ -130,7 +145,9 @@ export function TicketCard({
         <Button
           size="sm"
           variant={inCart ? "secondary" : "default"}
-          disabled={anotherTicketInCart || isHeld || hasHeldTicket}
+          disabled={
+            isOutOfStock || anotherTicketInCart || isHeld || hasHeldTicket
+          }
           className="mt-auto h-9 w-full gap-2 text-xs font-semibold shadow-sm"
           onClick={() =>
             addItem(
@@ -146,7 +163,9 @@ export function TicketCard({
             )
           }
         >
-          {isHeld ? (
+          {isOutOfStock ? (
+            <TicketCheck className="h-4 w-4" />
+          ) : isHeld ? (
             <TicketCheck className="h-4 w-4" />
           ) : isUpgrade ? (
             <ArrowUp className="h-4 w-4" />

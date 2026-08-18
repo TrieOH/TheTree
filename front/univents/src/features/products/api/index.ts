@@ -11,6 +11,7 @@ import {
   getProductByVendorCode,
   getVariantByVendorCode,
   listEditionProducts,
+  listEditionStoreStock,
   listProductVariants,
   patchProduct,
   patchProductVariant,
@@ -20,6 +21,7 @@ import type {
   CreateProductVariantRequest,
   PatchProductRequest,
   PatchProductVariantRequest,
+  StoreStockItem,
 } from "@trieoh/univents-api/schemas";
 // import { authFetcher } from "@/shared/lib/api/fetch";
 import type {
@@ -30,6 +32,16 @@ import type {
   VariantI,
 } from "../model";
 import { productKeys } from "./query-keys";
+
+export const storeStockQueryOptions = (editionId: string) =>
+  queryOptions({
+    queryKey: productKeys.storeStock(editionId),
+    queryFn: () =>
+      listEditionStoreStock(editionId, { public: true }).then(
+        orvalData<StoreStockItem[]>,
+      ),
+    enabled: Boolean(editionId),
+  });
 
 // ──────────── Products ────────────
 

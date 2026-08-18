@@ -4,6 +4,8 @@ export const productKeys = {
   lists: () => [...productKeys.all, "list"] as const,
   editionList: (editionId: string) =>
     [...productKeys.lists(), "edition", editionId] as const,
+  storeStock: (editionId: string) =>
+    [...productKeys.lists(), "stock", editionId] as const,
   detail: (productId: string) => [...productKeys.all, productId] as const,
   byVendorCode: (editionId: string, vendorCode: string) =>
     [...productKeys.all, "vendor-code", editionId, vendorCode] as const,

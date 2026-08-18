@@ -8,6 +8,7 @@ import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import {
   productsByEditionQueryOptions,
   productVariantsQueryOptions,
+  storeStockQueryOptions,
 } from "@/features/products/api";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductCardCompact } from "@/features/products/ui/ProductCardCompact";
@@ -50,6 +51,10 @@ function StorePage() {
   const { data: products = [] } = useSuspenseQuery(
     productsByEditionQueryOptions(edition?.id ?? ""),
   );
+  const { data: stock = [] } = useSuspenseQuery(
+    storeStockQueryOptions(edition?.id ?? ""),
+  );
+  const stockById = new Map(stock.map((item) => [item.id, item]));
   const variants = useQueries({
     queries: products.map((product) => productVariantsQueryOptions(product.id)),
   });
@@ -108,13 +113,13 @@ function StorePage() {
         {activeTab === "tickets" ? (
           tickets.length ? (
             <div className="mt-8 flex flex-wrap gap-6">
-              {tickets.map((ticket, index) => (
+              {tickets.map((ticket) => (
                 <TicketCard
                   key={ticket.id}
                   ticket={ticket}
                   editionId={edition.id}
                   heldTicket={heldTicket}
-                  isFeatured={index === 0}
+                  stock={stockById.get(ticket.id)?.stock}
                 />
               ))}
             </div>
@@ -133,7 +138,13 @@ function StorePage() {
                 <ProductCardCompact
                   key={product.id}
                   product={product}
-                  variants={productVariants}
+                  variants={productVariants.map((variant) => {
+                    const currentStock = stockById.get(variant.id);
+                    return {
+                      ...variant,
+                      stock: currentStock ? currentStock.stock : variant.stock,
+                    };
+                  })}
                   editionId={edition.id}
                 />
               ) : null;
