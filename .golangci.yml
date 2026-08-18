@@ -144,7 +144,7 @@ linters:
       max: 25                   # max methods before warning
 
   exclusions:
-    # Generated code — sqlc, swag output.
+    # Generated code — sqlc output.
     generated: strict
     paths:
       - api/.*/generated/
