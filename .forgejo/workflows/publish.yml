@@ -5,6 +5,13 @@ on:
     tags:
       - '*/v*'
 
+# One publish at a time: tag pushes queue instead of building in parallel
+# (a shared dagger engine on the runner would otherwise run them concurrently
+# and saturate the DinD). New runs wait; they never cancel an in-flight push.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 defaults:
   run:
     shell: bash
