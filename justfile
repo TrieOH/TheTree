@@ -67,10 +67,6 @@ goup:
     go work sync
 
 generate +SERVICES="identityx informd payssage univents":
-    #!/usr/bin/env bash
-    for svc in {{SERVICES}}; do
-      (cd api/$svc && tygo generate)
-    done
     just generate-oapi {{SERVICES}}
     just generate-orval
 
