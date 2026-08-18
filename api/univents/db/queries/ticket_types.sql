@@ -6,7 +6,8 @@ RETURNING *;
 -- name: GetTicketTypeByID :one
 SELECT *
 FROM ticket_types
-WHERE id = @id;
+WHERE id = @id
+  AND deleted_at IS NULL;
 
 -- name: GetTicketTypeByIDForUpdate :one
 -- Row-lock variant for the checkout tx (split 7): serializes concurrent
@@ -15,12 +16,14 @@ WHERE id = @id;
 SELECT *
 FROM ticket_types
 WHERE id = @id
+  AND deleted_at IS NULL
 FOR UPDATE;
 
 -- name: ListTicketTypesByEdition :many
 SELECT *
 FROM ticket_types
 WHERE edition_id = @edition_id
+  AND deleted_at IS NULL
 ORDER BY created_at;
 
 -- name: PatchTicketType :one
@@ -33,4 +36,5 @@ SET
     max_quantity = @max_quantity,
     updated_at   = now()
 WHERE id = @id
+  AND deleted_at IS NULL
 RETURNING *;
