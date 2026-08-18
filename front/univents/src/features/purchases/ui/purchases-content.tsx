@@ -53,13 +53,7 @@ export function PurchasesContent() {
               ? orderIcons.Wallet
               : orderIcons.FileText,
         image: details?.image ?? undefined,
-        title:
-          details?.name ??
-          (item.item_type === "ticket"
-            ? "Ingresso de entrada"
-            : item.item_type === "product"
-              ? "Produto do evento"
-              : "Atividade do evento"),
+        title: details?.name ?? "Item não identificado",
         description:
           details?.description ??
           `${item.quantity} unidade${item.quantity > 1 ? "s" : ""}`,
