@@ -29,7 +29,6 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/shadcn/dropdown-menu";
 import type { EditionI } from "../model";
-import { EditionImageActions } from "./EditionImageActions";
 
 interface EditionCardProps {
   edition: EditionI;
@@ -135,26 +134,6 @@ function MenuItems({
         <ShieldCheck className="size-4" />
         <span>Checkpoints</span>
       </Item>
-      <Separator />
-      <div className="flex items-center justify-center gap-2 px-2 py-1.5">
-        <div
-          className="flex items-center gap-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <EditionImageActions
-            edition={edition}
-            eventId={eventId}
-            field="logo_url"
-            compact
-          />
-          <EditionImageActions
-            edition={edition}
-            eventId={eventId}
-            field="banner_url"
-            compact
-          />
-        </div>
-      </div>
       {onPublish ? (
         <>
           <Separator />
@@ -251,7 +230,7 @@ export function AdminEditionCard({
                 </span>
               </div>
 
-              <div className="absolute right-3 top-3">
+              <div className="absolute right-3 top-3 z-20">
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={

@@ -12,7 +12,6 @@ import { motion } from "motion/react";
 import type React from "react";
 import { toast } from "sonner";
 import type { EventI, EventStatusI } from "@/features/events/model";
-import { EventImageActions } from "@/features/events/ui/EventImageActions";
 import { cn } from "@/shared/lib/utils";
 import {
   ContextMenu,
@@ -114,17 +113,6 @@ function MenuItems({
           <span>Editar</span>
         </Item>
       ) : null}
-      <Separator />
-      <div className="flex items-center justify-center gap-2 px-2 py-1.5">
-        <div
-          className="flex items-center gap-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <EventImageActions event={event} field="logo_url" compact />
-          <EventImageActions event={event} field="banner_url" compact />
-        </div>
-      </div>
-      <Separator />
       {event.status === "draft" && (
         <Item onClick={stop(onPublish)}>
           <Eye className="size-4" />
@@ -229,7 +217,7 @@ export default function AdminEventCard({
                 </span>
               </div>
 
-              <div className="absolute right-4 top-4">
+              <div className="absolute right-4 top-4 z-20">
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -266,7 +254,7 @@ export default function AdminEventCard({
                     {event.full_name}
                   </h3>
                   {event.description && (
-                    <p className="line-clamp-2 max-w-2xl text-xs text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                    <p className="line-clamp-1 max-w-[min(65%,32rem)] truncate text-xs text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                       {event.description}
                     </p>
                   )}

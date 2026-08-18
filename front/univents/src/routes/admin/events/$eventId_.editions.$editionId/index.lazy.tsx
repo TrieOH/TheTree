@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { usePublishEditionMutation } from "@/features/editions/api/mutations";
 import type { EditionI } from "@/features/editions/model";
+import { EditionImageActions } from "@/features/editions/ui/EditionImageActions";
 import { formatDateRange } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
@@ -248,6 +249,22 @@ function AdminEditionDetailRoute() {
                 <LayoutGrid className="size-3.5" />
                 Overview
               </Badge>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Imagens da edição
+              </span>
+              <EditionImageActions
+                edition={edition}
+                eventId={eventId}
+                field="logo_url"
+              />
+              <EditionImageActions
+                edition={edition}
+                eventId={eventId}
+                field="banner_url"
+              />
             </div>
 
             <div className="space-y-3">

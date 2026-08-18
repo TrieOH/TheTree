@@ -24,6 +24,7 @@ import {
   useDiscontinueEventMutation,
   usePublishEventMutation,
 } from "@/features/events/api/mutations";
+import { EventImageActions } from "@/features/events/ui/EventImageActions";
 import {
   useConnectEventSellerMutation,
   useDisconnectEventSellerMutation,
@@ -225,6 +226,16 @@ function EventOverviewRoute() {
                   Overview
                 </Badge>
               </div>
+
+              {event ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Imagens do evento
+                  </span>
+                  <EventImageActions event={event} field="logo_url" />
+                  <EventImageActions event={event} field="banner_url" />
+                </div>
+              ) : null}
 
               <div className="space-y-3">
                 <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
