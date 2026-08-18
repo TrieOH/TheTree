@@ -66,6 +66,7 @@ export function BadgePreview({
       className={`${className} shrink-0 overflow-hidden rounded-md${framed ? " border shadow-sm" : ""}`}
       style={{
         aspectRatio: `${design.canvas.width} / ${design.canvas.height}`,
+        containerType: "inline-size",
         backgroundColor: design.backgroundColor,
         backgroundImage: design.background
           ? `url(${design.background})`
@@ -142,10 +143,8 @@ function BadgeElementPreview({
         ...style,
         color: element.paragraphs[0]?.runs[0]?.color,
         fontWeight: element.paragraphs[0]?.runs[0]?.bold ? "bold" : "normal",
-        fontSize: Math.max(
-          10,
-          (element.paragraphs[0]?.runs[0]?.fontSize ?? 20) * 0.5,
-        ),
+        fontSize: `${((element.paragraphs[0]?.runs[0]?.fontSize ?? 20) / design.canvas.width) * 100}cqw`,
+        lineHeight: element.paragraphs[0]?.lineHeight,
         textAlign: element.paragraphs[0]?.align,
       }}
     >
