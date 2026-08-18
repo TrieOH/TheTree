@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createProgram,
   createProgramOccurrence,
@@ -36,32 +37,44 @@ export const listOccurrencesFn = createClientOnlyFn((editionId: string) =>
 
 export const createProgramFn = createClientOnlyFn(
   (editionId: string, data: ProgramCreateInput | ProgramCreateOutput) =>
-    createProgram(editionId, data as CreateProgramRequest).then(
-      orvalData<ProgramI>,
+    withSpan("action:program-create", () =>
+      createProgram(editionId, data as CreateProgramRequest).then(
+        orvalData<ProgramI>,
+      ),
     ),
 );
 
 export const patchProgramFn = createClientOnlyFn(
   (id: string, data: ProgramCreateInput | ProgramCreateOutput) =>
-    patchProgram(id, data as PatchProgramRequest).then(orvalData<ProgramI>),
+    withSpan("action:program-patch", () =>
+      patchProgram(id, data as PatchProgramRequest).then(orvalData<ProgramI>),
+    ),
 );
 
 export const deleteProgramFn = createClientOnlyFn((id: string) =>
-  deleteProgram(id).then(orvalData<ProgramI>),
+  withSpan("action:program-delete", () =>
+    deleteProgram(id).then(orvalData<ProgramI>),
+  ),
 );
 
 export const createOccurrenceFn = createClientOnlyFn(
   (programId: string, data: OccurrenceCreateOutput) =>
-    createProgramOccurrence(programId, data).then(orvalData<OccurrenceI>),
+    withSpan("action:occurrence-create", () =>
+      createProgramOccurrence(programId, data).then(orvalData<OccurrenceI>),
+    ),
 );
 
 export const patchOccurrenceFn = createClientOnlyFn(
   (id: string, data: OccurrenceCreateOutput) =>
-    patchOccurrence(id, data).then(orvalData<OccurrenceI>),
+    withSpan("action:occurrence-patch", () =>
+      patchOccurrence(id, data).then(orvalData<OccurrenceI>),
+    ),
 );
 
 export const deleteOccurrenceFn = createClientOnlyFn((id: string) =>
-  deleteOccurrence(id).then(orvalData<OccurrenceI>),
+  withSpan("action:occurrence-delete", () =>
+    deleteOccurrence(id).then(orvalData<OccurrenceI>),
+  ),
 );
 
 export const programsQueryOptions = (editionId: string) =>

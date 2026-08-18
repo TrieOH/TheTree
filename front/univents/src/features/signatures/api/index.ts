@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   cancelSignatureRequest,
   createSignature,
@@ -31,8 +32,10 @@ import { signatureKeys } from "./query-keys";
 
 export const createSignatureFn = createClientOnlyFn(
   (editionId: string, payload: SignatureCreateOutputI) => {
-    return createSignature(editionId, payload as AddSignatureRequest).then(
-      orvalData<SignatureI>,
+    return withSpan("action:signature-create", () =>
+      createSignature(editionId, payload as AddSignatureRequest).then(
+        orvalData<SignatureI>,
+      ),
     );
   },
 );
@@ -66,7 +69,9 @@ export const signatureQueryOptions = (
   });
 
 export const removeSignatureFn = createClientOnlyFn((sigId: string) => {
-  return deleteSignature(sigId).then(orvalData<null>);
+  return withSpan("action:signature-delete", () =>
+    deleteSignature(sigId).then(orvalData<null>),
+  );
 });
 
 export const getAllSignatureRequestsFn = createClientOnlyFn(
@@ -84,7 +89,11 @@ export const allSignatureRequestsQueryOptions = (editionId: string) =>
 
 export const createSignatureRequestFn = createClientOnlyFn(
   (editionId: string, data: SignatureRequestCreateI) =>
-    createSignatureRequest(editionId, data).then(orvalData<SignatureRequestI>),
+    withSpan("action:signature-request-create", () =>
+      createSignatureRequest(editionId, data).then(
+        orvalData<SignatureRequestI>,
+      ),
+    ),
 );
 
 export const getSignatureRequestFn = createClientOnlyFn((requestId: string) =>
@@ -101,31 +110,39 @@ export const signatureRequestQueryOptions = (requestId: string) =>
 
 export const cancelSignatureRequestFn = createClientOnlyFn(
   (requestId: string, reason?: string) =>
-    cancelSignatureRequest(requestId, {
-      reason: reason ?? "",
-    } satisfies CancelSignatureRequestBody).then(orvalData<null>),
+    withSpan("action:signature-request-cancel", () =>
+      cancelSignatureRequest(requestId, {
+        reason: reason ?? "",
+      } satisfies CancelSignatureRequestBody).then(orvalData<null>),
+    ),
 );
 
 export const fulfillSignatureRequestFn = createClientOnlyFn(
   (token: string, imageUrl: string) =>
-    fulfillSignatureRequest(
-      { image_url: imageUrl } satisfies FulfillSignatureRequestBody,
-      { token },
-      { public: true },
-    ).then(orvalData<SignatureI>),
+    withSpan("action:signature-request-fulfill", () =>
+      fulfillSignatureRequest(
+        { image_url: imageUrl } satisfies FulfillSignatureRequestBody,
+        { token },
+        { public: true },
+      ).then(orvalData<SignatureI>),
+    ),
 );
 
 export const denySignatureRequestFn = createClientOnlyFn(
   (token: string, reason?: string) =>
-    denySignatureRequest(
-      { reason: reason ?? "" } satisfies DenySignatureRequestBody,
-      { token },
-      { public: true },
-    ).then(orvalData<null>),
+    withSpan("action:signature-request-deny", () =>
+      denySignatureRequest(
+        { reason: reason ?? "" } satisfies DenySignatureRequestBody,
+        { token },
+        { public: true },
+      ).then(orvalData<null>),
+    ),
 );
 
 export const revokeSignatureFn = createClientOnlyFn((token: string) =>
-  revokeSignature({ token } satisfies RevokeSignatureParams, {
-    public: true,
-  }).then(orvalData<null>),
+  withSpan("action:signature-revoke", () =>
+    revokeSignature({ token } satisfies RevokeSignatureParams, {
+      public: true,
+    }).then(orvalData<null>),
+  ),
 );

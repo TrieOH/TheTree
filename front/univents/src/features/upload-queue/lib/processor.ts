@@ -1,3 +1,4 @@
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import { preprocessImageUpload } from "@/features/storage/api";
 import type { UploadTask } from "../model/types";
 import {
@@ -219,7 +220,9 @@ class UploadQueueProcessor {
       if (!associatingTask) return;
       current = associatingTask;
 
-      await handler(current, current.uploadedUrl as string);
+      await withSpan("action:upload-association", () =>
+        handler(current, current.uploadedUrl as string),
+      );
       await this.complete(current.id);
     } catch (error) {
       await this.handleFailure(task.id, error);

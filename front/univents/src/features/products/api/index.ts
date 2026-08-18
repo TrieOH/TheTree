@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createInitialProduct,
   createProductVariant,
@@ -100,25 +101,30 @@ export const productVariantsQueryOptions = (productId: string) => {
 /** POST /editions/{edition_id}/products — Create product + first variant */
 export const createInitialProductFn = createClientOnlyFn(
   (data: CreateInitialProductOutputI, editionId: string) => {
-    return createInitialProduct(
-      editionId,
-      data as CreateInitialProductRequest,
-    ).then(orvalData<ProductI>);
+    return withSpan("action:product-create", () =>
+      createInitialProduct(editionId, data as CreateInitialProductRequest).then(
+        orvalData<ProductI>,
+      ),
+    );
   },
 );
 
 /** PATCH /products/{product_id} */
 export const patchProductFn = createClientOnlyFn(
   (productId: string, data: ProductPatchOutputI) => {
-    return patchProduct(productId, data as PatchProductRequest).then(
-      orvalData<ProductI>,
+    return withSpan("action:product-patch", () =>
+      patchProduct(productId, data as PatchProductRequest).then(
+        orvalData<ProductI>,
+      ),
     );
   },
 );
 
 /** DELETE /products/{product_id} */
 export const deleteProductFn = createClientOnlyFn((productId: string) => {
-  return deleteProduct(productId).then(orvalData<null>);
+  return withSpan("action:product-delete", () =>
+    deleteProduct(productId).then(orvalData<null>),
+  );
 });
 
 // ──────────── Variants ────────────
@@ -145,26 +151,30 @@ export const variantByVendorCodeQueryOptions = (
 /** POST /products/{product_id}/variants */
 export const createVariantFn = createClientOnlyFn(
   (productId: string, data: VariantCreateOutputI) => {
-    return createProductVariant(
-      productId,
-      data as CreateProductVariantRequest,
-    ).then(orvalData<VariantI>);
+    return withSpan("action:variant-create", () =>
+      createProductVariant(productId, data as CreateProductVariantRequest).then(
+        orvalData<VariantI>,
+      ),
+    );
   },
 );
 
 /** PATCH /variants/{variant_id} */
 export const patchVariantFn = createClientOnlyFn(
   (variantId: string, data: VariantCreateOutputI) => {
-    return patchProductVariant(
-      variantId,
-      data as PatchProductVariantRequest,
-    ).then(orvalData<VariantI>);
+    return withSpan("action:variant-patch", () =>
+      patchProductVariant(variantId, data as PatchProductVariantRequest).then(
+        orvalData<VariantI>,
+      ),
+    );
   },
 );
 
 /** DELETE /variants/{variant_id} */
 export const deleteVariantFn = createClientOnlyFn((variantId: string) => {
-  return deleteProductVariant(variantId).then(orvalData<null>);
+  return withSpan("action:variant-delete", () =>
+    deleteProductVariant(variantId).then(orvalData<null>),
+  );
 });
 
 // ──────────── WebSocket ────────────
