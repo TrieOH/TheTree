@@ -25,6 +25,7 @@ export const env = createEnv({
   clientPrefix: "VITE_",
 
   client: {
+    VITE_TRACING_ENABLED: z.coerce.boolean().default(false),
     VITE_POSTHOG_KEY: z.string(),
     VITE_POSTHOG_HOST: z.url().optional(),
 
@@ -49,6 +50,7 @@ export const env = createEnv({
 
   runtimeEnv: {
     ...import.meta.env,
+    VITE_TRACING_ENABLED: import.meta.env.VITE_TRACING_ENABLED,
     SERVER_URL: process.env.SERVER_URL,
     IDENTITYX_ACCESS_API_KEY: process.env.IDENTITYX_ACCESS_API_KEY,
     AUTH_SESSION_PASSWORD: process.env.AUTH_SESSION_PASSWORD,

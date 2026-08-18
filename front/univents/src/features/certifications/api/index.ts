@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createCertificationTemplate,
   deleteCertificationTemplate,
@@ -29,23 +30,29 @@ import { certificationKeys } from "./query-keys";
 
 export const createCertificationTemplateFn = createClientOnlyFn(
   async (editionId: string, templateData: CertificationTemplateCreateI) => {
-    return createCertificationTemplate(editionId, templateData).then(
-      orvalData<CertificationTemplateI>,
+    return withSpan("action:certification-template-create", () =>
+      createCertificationTemplate(editionId, templateData).then(
+        orvalData<CertificationTemplateI>,
+      ),
     );
   },
 );
 
 export const updateCertificationTemplateFn = createClientOnlyFn(
   (templateId: string, data: CertificationTemplateCreateI) =>
-    updateCertificationTemplate(templateId, {
-      ...data,
-      design_data: data.design_data,
-    }).then(orvalData<CertificationTemplateI>),
+    withSpan("action:certification-template-update", () =>
+      updateCertificationTemplate(templateId, {
+        ...data,
+        design_data: data.design_data,
+      }).then(orvalData<CertificationTemplateI>),
+    ),
 );
 
 export const deleteCertificationTemplateFn = createClientOnlyFn(
   (templateId: string) =>
-    deleteCertificationTemplate(templateId).then(orvalData<null>),
+    withSpan("action:certification-template-delete", () =>
+      deleteCertificationTemplate(templateId).then(orvalData<null>),
+    ),
 );
 
 export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
@@ -99,15 +106,19 @@ export const certificationTemplateLinksQueryOptions = (templateId: string) =>
 
 export const linkCertificationTemplateFn = createClientOnlyFn(
   (templateId: string, programId: string) =>
-    linkCertificationTemplate(templateId, { program_id: programId }).then(
-      orvalData<null>,
+    withSpan("action:certification-template-link", () =>
+      linkCertificationTemplate(templateId, { program_id: programId }).then(
+        orvalData<null>,
+      ),
     ),
 );
 
 export const unlinkCertificationTemplateFn = createClientOnlyFn(
   (templateId: string, programId: string) =>
-    unlinkCertificationTemplate(templateId, { program_id: programId }).then(
-      orvalData<null>,
+    withSpan("action:certification-template-unlink", () =>
+      unlinkCertificationTemplate(templateId, { program_id: programId }).then(
+        orvalData<null>,
+      ),
     ),
 );
 
@@ -140,8 +151,10 @@ export const getCertificationsByEditionFn = createClientOnlyFn(
 
 export const invalidateCertificationFn = createClientOnlyFn(
   ({ certificationId, reason }: { certificationId: string; reason?: string }) =>
-    invalidateCertification(certificationId, { reason: reason ?? "" }).then(
-      orvalData<null>,
+    withSpan("action:certification-invalidate", () =>
+      invalidateCertification(certificationId, { reason: reason ?? "" }).then(
+        orvalData<null>,
+      ),
     ),
 );
 

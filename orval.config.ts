@@ -10,7 +10,7 @@ export default defineConfig(
         input: {
           target: `api/${svc}/api-spec.yml`,
           override: {
-            transformer: "./tools/orval/transformers/unwrap-envelope.ts",
+            transformer: "./lib/ts/orval/transformers/unwrap-envelope.ts",
           },
         },
         output: {

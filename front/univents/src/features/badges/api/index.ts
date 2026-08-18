@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createBadgeTemplate,
   deleteBadgeTemplate,
@@ -38,20 +39,26 @@ export const badgeTemplateQueryOptions = (templateId: string) =>
   });
 export const createBadgeTemplateFn = createClientOnlyFn(
   (editionId: string, data: BadgeTemplateCreate) =>
-    createBadgeTemplate(editionId, {
-      ...data,
-      origin: data.origin ?? null,
-    }).then(orvalData<BadgeTemplate>),
+    withSpan("action:badge-template-create", () =>
+      createBadgeTemplate(editionId, {
+        ...data,
+        origin: data.origin ?? null,
+      }).then(orvalData<BadgeTemplate>),
+    ),
 );
 export const updateBadgeTemplateFn = createClientOnlyFn(
   (templateId: string, data: BadgeTemplateCreate) =>
-    updateBadgeTemplate(templateId, {
-      name: data.name,
-      design_data: data.design_data,
-    }).then(orvalData<BadgeTemplate>),
+    withSpan("action:badge-template-update", () =>
+      updateBadgeTemplate(templateId, {
+        name: data.name,
+        design_data: data.design_data,
+      }).then(orvalData<BadgeTemplate>),
+    ),
 );
 export const deleteBadgeTemplateFn = createClientOnlyFn((templateId: string) =>
-  deleteBadgeTemplate(templateId).then(orvalData<null>),
+  withSpan("action:badge-template-delete", () =>
+    deleteBadgeTemplate(templateId).then(orvalData<null>),
+  ),
 );
 
 export const userBadgesQueryOptions = (userId: string) =>

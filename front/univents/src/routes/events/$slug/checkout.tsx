@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import type {
   CheckoutItem,
@@ -129,10 +130,9 @@ function CheckoutPage() {
     };
 
     try {
-      const result = await checkout.mutateAsync({
-        editionId: edition.id,
-        data,
-      });
+      const result = await withSpan("action:checkout", () =>
+        checkout.mutateAsync({ editionId: edition.id, data }),
+      );
       sessionStorage.setItem(
         `purchase-ws:${result.purchase_id}`,
         result.ws_token,

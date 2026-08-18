@@ -70,7 +70,12 @@ jobs:
       - name: build project list
         id: projects
         run: |
-          list=$(echo '${{ needs.detect-changes.outputs.projects }}' | jq -r 'join(",")')
+          # changes is a compact JSON array like ["api/identityx","lib/go"].
+          # Convert to a comma list.
+          list='${{ needs.detect-changes.outputs.projects }}'
+          list="${list#[}"
+          list="${list%]}"
+          list="${list//\"/}"
           echo "list=${list}" >> "$GITHUB_OUTPUT"
       - name: Set up Docker
         run: curl -fsSL https://get.docker.com | sh
