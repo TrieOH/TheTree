@@ -1,14 +1,5 @@
-import {
-  Activity,
-  Award,
-  Check,
-  ChevronRight,
-  LogIn,
-  ShoppingCart,
-} from "lucide-react";
-import { useCart } from "@/features/products/hooks/use-cart";
+import { Activity, Award, ChevronRight, LogIn } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/shadcn/button";
 import type { OccurrenceI, ProgramI } from "../model";
 
 function formatTimeRange(start: string, end: string): string {
@@ -46,7 +37,6 @@ interface ProgramDayCardProps {
   date: string;
   items: { program: ProgramI; occurrence: OccurrenceI }[];
   maxItems?: number;
-  editionId?: string;
   certificateProgramIds?: ReadonlySet<string>;
 }
 
@@ -54,15 +44,13 @@ export function ProgramDayCard({
   date,
   items,
   maxItems = 3,
-  editionId,
   certificateProgramIds,
 }: ProgramDayCardProps) {
-  const { addItem, items: cartItems } = useCart(editionId ?? "");
   const visible = items.slice(0, maxItems);
   const remaining = items.length - maxItems;
 
   return (
-    <div className="flex flex-col w-80 rounded-2xl p-6">
+    <div className="flex w-80 max-w-full flex-col rounded-2xl p-6">
       {/* Day header */}
       <h3 className="w-full rounded-xl bg-primary/10 px-4 py-2 text-center text-sm font-bold tracking-wide text-primary capitalize mb-6">
         {formatDayLabel(date)}
@@ -120,42 +108,6 @@ export function ProgramDayCard({
                     {program.description}
                   </p>
                 )}
-                {editionId &&
-                  (() => {
-                    const inCart = cartItems.find(
-                      (item) =>
-                        item.id === occurrence.id && item.type === "activity",
-                    );
-                    return (
-                      <Button
-                        size="sm"
-                        variant={inCart ? "secondary" : "default"}
-                        className="mt-4 h-9 w-full gap-2 text-xs font-semibold shadow-sm"
-                        onClick={() =>
-                          addItem(
-                            {
-                              id: occurrence.id,
-                              type: "activity",
-                              name: program.name,
-                              price_cents: 0,
-                              inventory_remaining: 999,
-                              has_inventory: false,
-                            },
-                            1,
-                          )
-                        }
-                      >
-                        {inCart ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                        )}
-                        {inCart
-                          ? `Adicionado (${inCart.quantity})`
-                          : "Adicionar ao carrinho"}
-                      </Button>
-                    );
-                  })()}
               </div>
             </div>
           );

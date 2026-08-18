@@ -11,7 +11,7 @@ interface ProgramSectionProps {
   eventSlug: string;
 }
 
-function groupByDay(programs: ProgramI[], occurrences: OccurrenceI[]) {
+export function groupByDay(programs: ProgramI[], occurrences: OccurrenceI[]) {
   const programById = new Map(programs.map((p) => [p.id, p]));
 
   const groups = new Map<
@@ -81,12 +81,7 @@ export function ProgramSection({ editionId, eventSlug }: ProgramSectionProps) {
               key={day.date.slice(0, 10)}
               className={cn("items-start gap-5", visibilityClasses[index])}
             >
-              <ProgramDayCard
-                date={day.date}
-                items={day.items}
-                maxItems={3}
-                editionId={editionId}
-              />
+              <ProgramDayCard date={day.date} items={day.items} maxItems={3} />
               {index < visibleDays.length - 1 && (
                 <div
                   className={cn(

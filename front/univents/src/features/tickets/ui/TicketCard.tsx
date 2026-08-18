@@ -122,7 +122,7 @@ export function TicketCard({
 
       {/* Description */}
       {ticket.description && (
-        <p className="mt-3 text-sm text-muted-foreground leading-relaxed whitespace-pre-line line-clamp-4">
+        <p className="mt-3 line-clamp-3 text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
           {ticket.description}
         </p>
       )}
@@ -131,7 +131,7 @@ export function TicketCard({
           size="sm"
           variant={inCart ? "secondary" : "default"}
           disabled={anotherTicketInCart || isHeld || hasHeldTicket}
-          className="mt-5 h-9 w-full gap-2 text-xs font-semibold shadow-sm"
+          className="mt-auto h-9 w-full gap-2 text-xs font-semibold shadow-sm"
           onClick={() =>
             addItem(
               {

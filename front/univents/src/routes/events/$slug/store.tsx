@@ -1,5 +1,6 @@
-import { useQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { activeEditionQueryOptions } from "@/features/editions/api";
@@ -34,6 +35,7 @@ function StorePage() {
   const event = Route.useLoaderData();
   const { tab } = Route.useSearch();
   const navigate = Route.useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState(tab);
 
   if (!event)
@@ -51,8 +53,8 @@ function StorePage() {
   const variants = useQueries({
     queries: products.map((product) => productVariantsQueryOptions(product.id)),
   });
-  const { data: heldTicket = null } = useSuspenseQuery(
-    myTicketQueryOptions(edition?.id ?? "", false),
+  const { data: heldTicket = null } = useQuery(
+    myTicketQueryOptions(edition?.id ?? "", isAuthenticated),
   );
 
   if (!edition) {
@@ -69,20 +71,29 @@ function StorePage() {
   };
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 pb-24 md:py-12">
+    <main className="min-h-screen bg-background px-4 pt-4 pb-24 md:pt-6">
       <div className="mx-auto max-w-6xl">
-        <Link
-          to="/events/$slug"
-          params={{ slug: event.slug }}
-          className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Voltar ao evento
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Loja</h1>
-        <p className="mt-2 text-muted-foreground">
-          Ingressos e produtos para {event.full_name}.
-        </p>
-        <div className="mt-8 flex gap-2 border-b">
+        <header className="mx-auto max-w-3xl">
+          <Link
+            to="/events/$slug"
+            params={{ slug: event.slug }}
+            className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" /> Evento
+          </Link>
+          <div className="mt-5 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              Loja do evento
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Ingressos e produtos
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+              Encontre ingressos e produtos para {event.full_name}.
+            </p>
+          </div>
+        </header>
+        <div className="mt-10 flex gap-2 border-b border-border/60">
           {(["tickets", "products"] as const).map((item) => (
             <button
               key={item}
