@@ -1,7 +1,10 @@
 import { context, propagation, trace, type Context, type Span } from "@opentelemetry/api"
 import { resourceFromAttributes } from "@opentelemetry/resources"
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions"
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base"
+import {
+  BatchSpanProcessor,
+  type SpanProcessor,
+} from "@opentelemetry/sdk-trace-base"
 import { WebTracerProvider } from "@opentelemetry/sdk-trace-web"
 import { ZoneContextManager } from "@opentelemetry/context-zone"
 import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch"
@@ -15,6 +18,30 @@ const tracer = trace.getTracer("trieoh-front")
 // One root span per page session; its context is reused for every request.
 let sessionSpan: Span | undefined
 let provider: WebTracerProvider | undefined
+
+class ComponentSpanProcessor implements SpanProcessor {
+  constructor(private readonly delegate: SpanProcessor) {}
+
+  onStart(
+    span: Parameters<SpanProcessor["onStart"]>[0],
+    parentContext: Context,
+  ): void {
+    span.setAttribute("component", "web")
+    this.delegate.onStart(span, parentContext)
+  }
+
+  onEnd(span: Parameters<SpanProcessor["onEnd"]>[0]): void {
+    this.delegate.onEnd(span)
+  }
+
+  forceFlush(): Promise<void> {
+    return this.delegate.forceFlush()
+  }
+
+  shutdown(): Promise<void> {
+    return this.delegate.shutdown()
+  }
+}
 
 export function browserTracingResource(serviceName: string) {
   return resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName })
@@ -64,7 +91,7 @@ export function initBrowserTracing(serviceName = "univents-web"): void {
 
   provider = new WebTracerProvider({
     resource: browserTracingResource(serviceName),
-    spanProcessors: [processor],
+    spanProcessors: [new ComponentSpanProcessor(processor)],
   })
 
   provider.register({ contextManager: new SessionContextManager() })
