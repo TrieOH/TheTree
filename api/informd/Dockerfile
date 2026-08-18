@@ -31,11 +31,15 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
     CGO_ENABLED=0 GOOS=linux go build -o informd ./cmd/informd
 
+# Static health probe for the distroless runtime (no shell/wget/curl there).
+RUN CGO_ENABLED=0 GOOS=linux go build -o /healthcheck lib/cmd/healthcheck
+
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /app/api/informd/informd .
-COPY --from=tools /go/bin/goose /usr/local/bin/goose
+COPY --from=builder /healthcheck /usr/local/bin/healthcheck
 COPY --from=builder /app/api/informd/db/migrations ./db/migrations
 USER nonroot:nonroot
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/healthcheck"]
 CMD ["./informd"]
