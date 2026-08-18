@@ -1,3 +1,4 @@
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import type {
   StoragePreprocessResponse,
   StorageUploadRequest,
@@ -81,92 +82,92 @@ export async function preprocessImageUpload(
   path?: string,
   idempotencyKey?: string,
 ): Promise<string> {
-  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    throw new StorageImageError(
-      "Formato de imagem não suportado. Use PNG, JPG ou WebP.",
-      "UNSUPPORTED_IMAGE_TYPE",
-      400,
-    );
-  }
+  return withSpan("action:image-preprocess", async () => {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      throw new StorageImageError(
+        "Formato de imagem não suportado. Use PNG, JPG ou WebP.",
+        "UNSUPPORTED_IMAGE_TYPE",
+        400,
+      );
+    }
 
-  const moderationFile = await resizeImageForModeration(file);
-  const formData = new FormData();
-  formData.append("file", file);
-  if (moderationFile !== file) {
-    formData.append("moderationFile", moderationFile);
-  }
-  if (path) formData.append("path", path);
-  if (idempotencyKey) formData.append("idempotencyKey", idempotencyKey);
+    const moderationFile = await resizeImageForModeration(file);
+    const formData = new FormData();
+    formData.append("file", file);
+    if (moderationFile !== file) {
+      formData.append("moderationFile", moderationFile);
+    }
+    if (path) formData.append("path", path);
+    if (idempotencyKey) formData.append("idempotencyKey", idempotencyKey);
 
-  let res: Response;
-  try {
-    res = await fetch("/storage/image/preprocess", {
-      method: "POST",
-      body: formData,
-    });
-  } catch {
-    throw new StorageImageError(
-      "Não foi possível conectar ao servidor.",
-      "NETWORK_ERROR",
-    );
-  }
+    let res: Response;
+    try {
+      res = await fetch("/storage/image/preprocess", {
+        method: "POST",
+        body: formData,
+      });
+    } catch {
+      throw new StorageImageError(
+        "Não foi possível conectar ao servidor.",
+        "NETWORK_ERROR",
+      );
+    }
 
-  if (!res.ok) {
-    const errorData = (await res.json().catch(() => ({}))) as {
-      error?: string;
-    };
-    throw new StorageImageError(
-      errorData.error ?? "Não foi possível processar a imagem.",
-      `STORAGE_HTTP_${res.status}`,
-      res.status,
-    );
-  }
+    if (!res.ok) {
+      const errorData = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      throw new StorageImageError(
+        errorData.error ?? "Não foi possível processar a imagem.",
+        `STORAGE_HTTP_${res.status}`,
+        res.status,
+      );
+    }
 
-  const data: StoragePreprocessResponse = await res.json();
-  if (!data.approved || !data.publicUrl) {
-    throw new StorageImageError(
-      "A imagem não foi aprovada pela moderação.",
-      "MODERATION_REJECTED",
-      422,
-    );
-  }
+    const data: StoragePreprocessResponse = await res.json();
+    if (!data.approved || !data.publicUrl) {
+      throw new StorageImageError(
+        "A imagem não foi aprovada pela moderação.",
+        "MODERATION_REJECTED",
+        422,
+      );
+    }
 
-  return data.publicUrl;
+    return data.publicUrl;
+  });
 }
 
-export const uploadFile = async (
-  file: File,
-  path?: string,
-): Promise<string> => {
-  const filename = path
-    ? `${path}/${Date.now()}-${file.name}`
-    : `${Date.now()}-${file.name}`;
+export const uploadFile = async (file: File, path?: string): Promise<string> =>
+  withSpan("action:file-upload", async () => {
+    const filename = path
+      ? `${path}/${Date.now()}-${file.name}`
+      : `${Date.now()}-${file.name}`;
 
-  const uploadPayload: StorageUploadRequest = {
-    filename,
-    contentType: file.type,
-    size: file.size,
-  };
+    const uploadPayload: StorageUploadRequest = {
+      filename,
+      contentType: file.type,
+      size: file.size,
+    };
 
-  const uploadRes = await fetch("/storage/upload", {
-    method: "POST",
-    body: JSON.stringify(uploadPayload),
+    const uploadRes = await fetch("/storage/upload", {
+      method: "POST",
+      body: JSON.stringify(uploadPayload),
+    });
+
+    if (!uploadRes.ok) {
+      const errorData: { error?: string } = await uploadRes.json();
+      throw new Error(errorData.error ?? "Failed to get upload URL");
+    }
+    const { uploadUrl, publicUrl }: StorageUploadResponse =
+      await uploadRes.json();
+
+    const putRes = await fetch(uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+
+    if (!putRes.ok) throw new Error("Failed to upload file");
+
+    return publicUrl;
   });
-
-  if (!uploadRes.ok) {
-    const errorData: { error?: string } = await uploadRes.json();
-    throw new Error(errorData.error ?? "Failed to get upload URL");
-  }
-  const { uploadUrl, publicUrl }: StorageUploadResponse =
-    await uploadRes.json();
-
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type },
-  });
-
-  if (!putRes.ok) throw new Error("Failed to upload file");
-
-  return publicUrl;
-};

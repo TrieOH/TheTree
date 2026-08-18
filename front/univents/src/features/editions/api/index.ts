@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createEdition,
   getActiveEdition,
@@ -21,8 +22,8 @@ import { editionKeys } from "./query-keys";
 
 export const createEditionFn = createClientOnlyFn(
   async (editionData: EditionCreateOutputI, eventId: string) => {
-    const edition = await createEdition(eventId, editionData).then(
-      orvalData<EditionApiI>,
+    const edition = await withSpan("action:edition-create", () =>
+      createEdition(eventId, editionData).then(orvalData<EditionApiI>),
     );
     return normalizeEdition(edition);
   },
@@ -34,8 +35,10 @@ export const patchEditionFn = createClientOnlyFn(
     editionId: string,
     editionData: EditionPatchOutputI,
   ) => {
-    const edition = await patchEdition(eventId, editionId, editionData).then(
-      orvalData<EditionApiI>,
+    const edition = await withSpan("action:edition-patch", () =>
+      patchEdition(eventId, editionId, editionData).then(
+        orvalData<EditionApiI>,
+      ),
     );
     return normalizeEdition(edition);
   },
@@ -43,7 +46,9 @@ export const patchEditionFn = createClientOnlyFn(
 
 export const publishEditionFn = createClientOnlyFn(
   (eventId: string, editionId: string) =>
-    publishEdition(eventId, editionId).then(orvalData<null>),
+    withSpan("action:edition-publish", () =>
+      publishEdition(eventId, editionId).then(orvalData<null>),
+    ),
 );
 
 export const getAllPublicEditionsFn = async (eventId: string) => {

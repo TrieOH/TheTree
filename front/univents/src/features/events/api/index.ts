@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
+import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createEvent,
   discontinueEvent,
@@ -20,14 +21,17 @@ import { eventKeys } from "./query-keys";
  * @returns A promise that resolves to the API response containing the newly created event.
  */
 export const createEventFn = createClientOnlyFn(
-  (eventData: EventCreateOutputI) => {
-    return createEvent(eventData).then(orvalData<EventI>);
-  },
+  (eventData: EventCreateOutputI) =>
+    withSpan("action:event-create", () =>
+      createEvent(eventData).then(orvalData<EventI>),
+    ),
 );
 
 export const patchEventFn = createClientOnlyFn(
   (eventId: string, eventData: EventCreateOutputI) =>
-    patchEvent(eventId, eventData).then(orvalData<EventI>),
+    withSpan("action:event-patch", () =>
+      patchEvent(eventId, eventData).then(orvalData<EventI>),
+    ),
 );
 
 /**
@@ -36,11 +40,15 @@ export const patchEventFn = createClientOnlyFn(
  * @returns A promise that resolves to the API null response.
  */
 export const publishEventFn = createClientOnlyFn((eventId: string) => {
-  return publishEvent(eventId).then(orvalData<null>);
+  return withSpan("action:event-publish", () =>
+    publishEvent(eventId).then(orvalData<null>),
+  );
 });
 
 export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
-  return discontinueEvent(eventId).then(orvalData<null>);
+  return withSpan("action:event-discontinue", () =>
+    discontinueEvent(eventId).then(orvalData<null>),
+  );
 });
 
 /**

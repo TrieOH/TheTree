@@ -121,6 +121,23 @@ export function getTraceparent(): string {
   return headers["traceparent"] ?? ""
 }
 
+export async function withSpan<T>(
+  name: string,
+  fn: () => Promise<T> | T,
+): Promise<T> {
+  const span = tracer.startSpan(name)
+  const spanContext = trace.setSpan(context.active(), span)
+  try {
+    return await context.with(spanContext, fn)
+  } catch (error) {
+    span.recordException(error instanceof Error ? error : new Error(String(error)))
+    span.setStatus({ code: 2 })
+    throw error
+  } finally {
+    span.end()
+  }
+}
+
 /** Phase 2: real browser spans (fetch, document load) exported through the
  *  BFF's ingestTracesServerFn — the only escape hatch to Victoria Traces. */
 export function initBrowserTracing(
@@ -147,12 +164,12 @@ export function initBrowserTracing(
   provider.register({ contextManager: new SessionContextManager() })
 
   initSessionTrace()
-  traceClicks()
   registerInstrumentations({
     instrumentations: [
       new FetchInstrumentation({
         ignoreUrls: [
           new RegExp(escapeRegExp(TRACES_INGEST_PATH)),
+          /\/__tsd\//,
           ...ignoredUrls.map((url) => new RegExp(escapeRegExp(url))),
         ],
         propagateTraceHeaderCorsUrls: [],
@@ -174,19 +191,6 @@ function flushOnPageHide(processor: BatchSpanProcessor): void {
     if (document.visibilityState === "hidden") void processor.forceFlush()
   })
   window.addEventListener("pagehide", flush)
-}
-
-function traceClicks(): void {
-  document.addEventListener("click", (event) => {
-    const target = event.target instanceof Element ? event.target : undefined
-    const span = tracer.startSpan("click")
-    if (target) {
-      span.setAttribute("click.element", target.tagName.toLowerCase())
-      const label = target.getAttribute("aria-label") ?? target.textContent?.trim()
-      if (label) span.setAttribute("click.label", label.slice(0, 100))
-    }
-    span.end()
-  })
 }
 
 function escapeRegExp(value: string): string {
