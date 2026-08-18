@@ -18,6 +18,8 @@ const (
 	sqlcVersion         = "1.31.1"
 	gotestsumVersion    = "1.13.0"
 	golangciLintVersion = "2.12.2"
+	trivyVersion        = "0.71.2" // keep in sync with trivy-scan.yml filter paths
+
 	// oapiCodegenVersion must stay in sync with the binary baked into the
 	// go-tools image (git.trieoh.com/trieoh/go-tools:3), which the service
 	// Dockerfiles copy for their builds.
@@ -265,6 +267,39 @@ func (m *Thetree) FrontendLintTsc(
 	return c.Stdout(ctx)
 }
 
+// Trivy scans the given project paths (comma-separated, or "all"/empty for
+// the whole repo root) with trivy fs: HIGH/CRITICAL vulnerabilities, secrets,
+// and misconfigurations. It fails on any finding (exit code 1), matching the
+// old shell-based trivy-scan.yml. The vulnerability DB is cached in a volume,
+// so it is downloaded once per runner and reused across runs.
+func (m *Thetree) Trivy(ctx context.Context, source *dagger.Directory, projects string) (string, error) {
+	c := dag.Container().
+		From(fmt.Sprintf("aquasec/trivy:%s", trivyVersion)).
+		WithUser("root").
+		WithEnvVariable("TRIVY_CACHE_DIR", "/root/.cache/trivy").
+		WithMountedCache("/root/.cache/trivy", dag.CacheVolume("trivy-db")).
+		WithDirectory("/workspace", source).
+		WithWorkdir("/workspace")
+
+	list := []string{"."}
+	if projects != "" && projects != "all" {
+		list = parseServices(projects) // generic comma-split, see below
+	}
+	for _, p := range list {
+		c = c.WithExec([]string{
+			"trivy", "fs",
+			"--severity", "HIGH,CRITICAL",
+			"--scanners", "vuln,secret,misconfig",
+			"--exit-code", "1",
+			p,
+		})
+	}
+	return c.Stdout(ctx)
+}
+
+// parseServices splits a comma-separated list; empty or "all" means every
+// service. Despite the name it is a generic comma-splitter (also used for
+// trivy project paths).
 func parseServices(services string) []string {
 	if services == "" || services == "all" {
 		return append([]string{}, servicesConst()...)
