@@ -62,7 +62,7 @@ export function PaymentFormSheet({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={handleClose}
-            className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm"
+            className="fixed inset-0 z-60 bg-background/60 backdrop-blur-sm"
           />
 
           {/* Single Sheet - Condicional para evitar IDs duplicados no DOM */}
@@ -74,7 +74,7 @@ export function PaymentFormSheet({
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className={cn(
-                "fixed inset-x-0 bottom-0 z-50",
+                "fixed inset-x-0 bottom-0 z-70",
                 "bg-background border-t border-border rounded-t-2xl shadow-2xl",
                 "max-h-[90dvh] flex flex-col",
               )}
@@ -114,7 +114,7 @@ export function PaymentFormSheet({
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 32, stiffness: 280 }}
               className={cn(
-                "fixed top-0 right-0 bottom-0 z-50",
+                "fixed top-0 right-0 bottom-0 z-70",
                 "w-105 flex flex-col",
                 "bg-background border-l border-border shadow-2xl",
               )}

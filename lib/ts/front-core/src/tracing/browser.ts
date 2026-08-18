@@ -1,4 +1,4 @@
-import { context, propagation, trace, type Context, type Span } from "@opentelemetry/api"
+import { context, propagation, SpanStatusCode, trace, type Context, type Span } from "@opentelemetry/api"
 import { resourceFromAttributes } from "@opentelemetry/resources"
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions"
 import {
@@ -17,13 +17,13 @@ import { TRACES_INGEST_PATH } from "./constants"
 
 const tracer = trace.getTracer("trieoh-front")
 
-// One root span per page session; its context is reused for every request.
-let sessionSpan: Span | undefined
 let provider: WebTracerProvider | undefined
-let sessionEnded = false
+let pageSpan: Span | undefined
+let pagePath: string | undefined
+let pageSpanEnded = false
 
 class ComponentSpanProcessor implements SpanProcessor {
-  constructor(private readonly delegate: SpanProcessor) {}
+  constructor(private readonly delegate: SpanProcessor) { }
 
   onStart(
     span: Parameters<SpanProcessor["onStart"]>[0],
@@ -47,7 +47,7 @@ class ComponentSpanProcessor implements SpanProcessor {
 }
 
 class KeepaliveSpanExporter implements SpanExporter {
-  constructor(private readonly url: string) {}
+  constructor(private readonly url: string) { }
 
   export(
     spans: ReadableSpan[],
@@ -93,32 +93,56 @@ export function browserTracingResource(serviceName: string) {
   return resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName })
 }
 
-/** Falls back to the session span as the active span whenever nothing more
- *  specific is active — guarantees every fetch, no matter where it's
- *  triggered from, is parented to the same page-session trace. */
-class SessionContextManager extends ZoneContextManager {
+export function initSessionTrace(): void {
+  // Kept for backwards compatibility; page-session spans are disabled.
+}
+
+function startPageTrace(pathname = window.location.pathname): void {
+  if (pageSpan) {
+    pageSpan.addEvent("page.unloaded")
+    if (!pageSpanEnded) pageSpan.end()
+  }
+
+  pagePath = pathname
+  pageSpan = tracer.startSpan(`page: ${pathname}`)
+  pageSpanEnded = false
+  pageSpan.addEvent("page.loaded")
+  setTimeout(() => {
+    if (!pageSpan || pageSpanEnded || pagePath !== window.location.pathname) return
+    pageSpan.addEvent("page.ready")
+    pageSpan.end()
+    pageSpanEnded = true
+  }, 0)
+}
+
+class PageContextManager extends ZoneContextManager {
   active(): Context {
     const current = super.active()
-    if (trace.getSpan(current) || !sessionSpan) return current
-    return trace.setSpan(current, sessionSpan)
+    if (trace.getSpan(current) || !pageSpan) return current
+    return trace.setSpan(current, pageSpan)
   }
 }
 
-export function initSessionTrace(): void {
-  if (typeof window === "undefined" || sessionSpan) return
-  sessionSpan = tracer.startSpan("web-session")
-}
-
-/** Returns the session's traceparent header value. Used by the BFF client
- *  (auth/tanstack/client.ts) to attach traceparent onto the proxy request. */
+/** Propagates only the currently active operation; no page-session span is used. */
 export function getTraceparent(): string {
-  if (!sessionSpan) initSessionTrace()
-  if (!sessionSpan) return ""
+  if (!trace.getSpan(context.active())) return ""
 
   const headers: Record<string, string> = {}
-  const ctx = trace.setSpan(context.active(), sessionSpan)
-  propagation.inject(ctx, headers)
-  return headers["traceparent"] ?? ""
+  propagation.inject(context.active(), headers)
+  return headers.traceparent ?? ""
+}
+
+export function setActiveSpanAttributes(
+  attributes: Record<string, string | number | boolean>,
+): void {
+  trace.getSpan(context.active())?.setAttributes(attributes)
+}
+
+export function addActiveSpanEvent(
+  name: string,
+  attributes?: Record<string, string | number | boolean>,
+): void {
+  trace.getSpan(context.active())?.addEvent(name, attributes)
 }
 
 export async function withSpan<T>(
@@ -127,11 +151,21 @@ export async function withSpan<T>(
 ): Promise<T> {
   const span = tracer.startSpan(name)
   const spanContext = trace.setSpan(context.active(), span)
+  const startedAt = performance.now()
+  span.addEvent("operation.started")
   try {
-    return await context.with(spanContext, fn)
+    const result = await context.with(spanContext, fn)
+    span.setAttribute("operation.duration_ms", performance.now() - startedAt)
+    span.setAttribute("operation.outcome", "success")
+    span.addEvent("operation.completed")
+    return result
   } catch (error) {
-    span.recordException(error instanceof Error ? error : new Error(String(error)))
-    span.setStatus({ code: 2 })
+    const normalized = error instanceof Error ? error : new Error(String(error))
+    span.recordException(normalized)
+    span.setAttribute("operation.duration_ms", performance.now() - startedAt)
+    span.setAttribute("operation.outcome", "failure")
+    span.addEvent("operation.failed", { message: normalized.message })
+    span.setStatus({ code: SpanStatusCode.ERROR, message: normalized.message })
     throw error
   } finally {
     span.end()
@@ -161,9 +195,10 @@ export function initBrowserTracing(
     spanProcessors: [new ComponentSpanProcessor(processor)],
   })
 
-  provider.register({ contextManager: new SessionContextManager() })
+  provider.register({ contextManager: new PageContextManager() })
 
   initSessionTrace()
+  startPageTrace()
   registerInstrumentations({
     instrumentations: [
       new FetchInstrumentation({
@@ -173,6 +208,23 @@ export function initBrowserTracing(
           ...ignoredUrls.map((url) => new RegExp(escapeRegExp(url))),
         ],
         propagateTraceHeaderCorsUrls: [],
+        applyCustomAttributesOnSpan: (span, request, result) => {
+          const method = request.method ?? "GET"
+          const rawUrl = result instanceof Response
+            ? result.url
+            : request instanceof Request
+              ? request.url
+              : undefined
+          const path = rawUrl
+            ? new URL(rawUrl, window.location.origin).pathname
+            : undefined
+          const serverFunction = path ? getServerFunctionName(path) : undefined
+          span.updateName(
+            serverFunction
+              ? `BFF ${serverFunction}`
+              : `HTTP ${method}${path ? ` ${path}` : ""}`,
+          )
+        },
       }),
     ],
   })
@@ -180,10 +232,29 @@ export function initBrowserTracing(
 }
 
 function flushOnPageHide(processor: BatchSpanProcessor): void {
+  const navigate = () => {
+    if (window.location.pathname !== pagePath) startPageTrace()
+  }
+
+  window.addEventListener("popstate", navigate)
+  window.addEventListener("hashchange", navigate)
+  const pushState = history.pushState
+  const replaceState = history.replaceState
+  history.pushState = function (...args) {
+    pushState.apply(history, args)
+    navigate()
+  }
+  history.replaceState = function (...args) {
+    replaceState.apply(history, args)
+    navigate()
+  }
+
   const flush = () => {
-    if (!sessionEnded && sessionSpan) {
-      sessionEnded = true
-      sessionSpan.end()
+    if (pageSpan) {
+      pageSpan.addEvent("page.hidden")
+      if (!pageSpanEnded) pageSpan.end()
+      pageSpanEnded = true
+      pageSpan = undefined
     }
     void processor.forceFlush()
   }
@@ -195,4 +266,20 @@ function flushOnPageHide(processor: BatchSpanProcessor): void {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function getServerFunctionName(path: string): string | undefined {
+  const encoded = path.match(/^\/_serverFn\/([^/]+)$/)?.[1]
+  if (!encoded) return undefined
+
+  try {
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/")
+    const decoded = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="))
+    const payload = JSON.parse(decoded) as { export?: unknown }
+    return typeof payload.export === "string"
+      ? payload.export.replace(/_createServerFn_handler$/, "")
+      : "server-function"
+  } catch {
+    return "server-function"
+  }
 }

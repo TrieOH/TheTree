@@ -21,14 +21,19 @@ export async function handleTracesIngest(
 
   const body = await request.arrayBuffer();
   if (body.byteLength === 0) {
+    console.warn(
+      "[tracing] empty body received for ingest; returning 204",
+    );
     return new Response(null, { status: 204 });
   }
 
   const user = env.TRACES_OTLP_USER;
   const password = env.TRACES_OTLP_PASSWORD;
   if (!user || !password) {
-    console.error("[tracing] TRACES_OTLP_USER/PASSWORD not configured");
-    return new Response(null, { status: 204 });
+    console.error(
+      `[tracing] TRACES_OTLP_USER/PASSWORD not configured (TRACES_ENABLED=${env.TRACES_ENABLED})`,
+    );
+    return new Response(null, { status: 503 });
   }
 
   const auth = btoa(`${user}:${password}`);
@@ -45,11 +50,18 @@ export async function handleTracesIngest(
       body,
     });
     if (!upstream.ok) {
-      console.error("[tracing] upstream rejected", upstream.status, await upstream.text());
+      console.error("[tracing] upstream rejected", {
+        status: upstream.status,
+        contentType,
+        bodyBytes: body.byteLength,
+      });
     }
     return new Response(null, { status: upstream.ok ? 204 : 502 });
   } catch (error) {
-    console.error("[tracing] ingest failed", error instanceof Error ? error.message : error);
+    console.error("[tracing] ingest failed", {
+      error: error instanceof Error ? error.message : String(error),
+      bodyBytes: body.byteLength,
+    });
     return new Response(null, { status: 502 });
   }
 }

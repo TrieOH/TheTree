@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@trieoh/front-core/tracing/browser", () => ({
+  addActiveSpanEvent: () => undefined,
   getTraceparent: () =>
     "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+  setActiveSpanAttributes: () => undefined,
+  withSpan: async <T>(_name: string, fn: () => Promise<T> | T) => fn(),
 }));
 
 import { createTanStackServerProxyFetchers } from "@trieoh/front-core/auth/tanstack/client";
