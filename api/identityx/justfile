@@ -2,9 +2,6 @@ set shell := ["bash", "-cu"]
 
 # Generate all
 gen:
-    just gen-sqlc
-
-gen-sqlc:
     sqlc generate
 
 test:
