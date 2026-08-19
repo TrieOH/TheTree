@@ -123,4 +123,14 @@ export interface HardCreateIntentRequest {
   provider_data?: HardCreateIntentRequestProviderData;
   /** @nullable */
   metadata?: HardCreateIntentRequestMetadata;
+  /**
+     * Caller's order id (e.g. the univents purchase id).
+     * @nullable
+     */
+  external_id?: string | null;
+  /**
+     * Caller's grouping key (e.g. the univents edition id).
+     * @nullable
+     */
+  external_group?: string | null;
 }

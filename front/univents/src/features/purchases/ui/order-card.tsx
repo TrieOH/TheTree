@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { CreditCard, FileText, Ticket, Wallet, Zap } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
-export type OrderStatus = "approved" | "pending" | "cancelled";
+export type OrderStatus = "approved" | "pending" | "refunded" | "cancelled";
 export type Order = {
   purchaseId: string;
   status: OrderStatus;
@@ -32,6 +32,10 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> =
     cancelled: {
       label: "Cancelado",
       className: "bg-muted text-muted-foreground",
+    },
+    refunded: {
+      label: "Reembolsado",
+      className: "bg-violet-500/10 text-violet-700",
     },
   };
 
@@ -112,7 +116,7 @@ export function OrderCard({
           <p
             className={cn(
               "text-lg font-bold tabular-nums sm:text-xl",
-              order.status === "cancelled"
+              order.status === "cancelled" || order.status === "refunded"
                 ? "text-muted-foreground line-through"
                 : "text-primary",
             )}

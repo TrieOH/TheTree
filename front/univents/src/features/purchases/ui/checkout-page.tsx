@@ -53,6 +53,11 @@ const statusCopy = {
     "Não conseguimos processar o seu pagamento no momento.",
     XCircle,
   ],
+  refunded: [
+    "Pedido reembolsado",
+    "O pagamento foi devolvido e os itens desta compra foram cancelados.",
+    CheckCircle2,
+  ],
 } as const;
 
 export default function CheckoutPage({ purchase }: { purchase: Purchase }) {

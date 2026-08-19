@@ -32,7 +32,9 @@ export function PurchasesContent() {
     status:
       purchase.status === "approved" || purchase.status === "pending"
         ? purchase.status
-        : "cancelled",
+        : purchase.status === "refunded"
+          ? "refunded"
+          : "cancelled",
     paymentIcon:
       purchase.payment_method === "pix"
         ? orderIcons.Zap

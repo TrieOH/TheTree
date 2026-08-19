@@ -255,7 +255,7 @@ class UploadQueueProcessor {
       }
 
       const retryCount = task.retryCount + 1;
-      if (retryCount > uploadQueueConfig.maxRetries) {
+      if (retryCount >= uploadQueueConfig.maxRetries) {
         return {
           ...task,
           status: "failed",

@@ -2764,6 +2764,118 @@ export const useCancelIntent = <TError = ErrorType<UnauthorizedResponse | NotFou
       return useMutation(getCancelIntentMutationOptions(options));
     }
 
+export type refundIntentResponse200 = {
+  data: Intent
+  status: 200
+}
+
+export type refundIntentResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type refundIntentResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type refundIntentResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type refundIntentResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type refundIntentResponseSuccess = (refundIntentResponse200) & {
+  headers: Headers;
+};
+export type refundIntentResponseError = (refundIntentResponse401 | refundIntentResponse404 | refundIntentResponse409 | refundIntentResponse500) & {
+  headers: Headers;
+};
+
+export type refundIntentResponse = (refundIntentResponseSuccess | refundIntentResponseError)
+
+export const getRefundIntentUrl = (intentId: string,) => {
+
+
+
+
+  return `/intents/${intentId}/refund`
+}
+
+/**
+ * Fully refunds a `succeeded` payment intent and returns its updated
+ * state. The intent status stays `succeeded` until the provider's
+ * `payment.refunded` webhook confirms the refund (webhook-only
+ * confirmation, mirroring approval). Only `succeeded` intents are
+ * refundable; an already-`refunded` intent returns as-is (idempotent).
+ * Full refund only in v1 — no amount parameter (partials are a later
+ * additive change).
+ * @summary Refund a succeeded payment intent (full refund)
+ */
+export const refundIntent = async (intentId: string, options?: Parameters<typeof customInstance>[1]): Promise<refundIntentResponse> => {
+
+  return customInstance<refundIntentResponse>(getRefundIntentUrl(intentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefundIntentMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundIntent>>, TError,{intentId: string}, TContext> => {
+
+const mutationKey = ['refundIntent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundIntent>>, {intentId: string}> = (props) => {
+          const {intentId} = props ?? {};
+
+          return  refundIntent(intentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundIntentMutationResult = NonNullable<Awaited<ReturnType<typeof refundIntent>>>
+
+    export type RefundIntentMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Refund a succeeded payment intent (full refund)
+ */
+export const useRefundIntent = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refundIntent>>,
+        TError,
+        {intentId: string},
+        TContext
+      > => {
+      return useMutation(getRefundIntentMutationOptions(options));
+    }
+
 export type listWalletIntentsResponse200 = {
   data: Intent[]
   status: 200
@@ -3220,6 +3332,120 @@ export const useHardCreateIntent = <TError = ErrorType<BadRequestResponse | Unau
         TContext
       > => {
       return useMutation(getHardCreateIntentMutationOptions(options));
+    }
+
+export type testmodeRefundIntentResponse200 = {
+  data: Intent
+  status: 200
+}
+
+export type testmodeRefundIntentResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type testmodeRefundIntentResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type testmodeRefundIntentResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type testmodeRefundIntentResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type testmodeRefundIntentResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type testmodeRefundIntentResponseSuccess = (testmodeRefundIntentResponse200) & {
+  headers: Headers;
+};
+export type testmodeRefundIntentResponseError = (testmodeRefundIntentResponse400 | testmodeRefundIntentResponse401 | testmodeRefundIntentResponse403 | testmodeRefundIntentResponse404 | testmodeRefundIntentResponse500) & {
+  headers: Headers;
+};
+
+export type testmodeRefundIntentResponse = (testmodeRefundIntentResponseSuccess | testmodeRefundIntentResponseError)
+
+export const getTestmodeRefundIntentUrl = (intentId: string,) => {
+
+
+
+
+  return `/testmode/intents/${intentId}/refund`
+}
+
+/**
+ * Test-mode helper: flips a `succeeded` intent to `refunded` and
+ * stamps a fake refund marker in provider_data — no payment provider
+ * is contacted. Use to simulate the provider's `payment.refunded`
+ * outcome for downstream testing without a real refund.
+ * @summary Refund an intent directly (test mode)
+ */
+export const testmodeRefundIntent = async (intentId: string, options?: Parameters<typeof customInstance>[1]): Promise<testmodeRefundIntentResponse> => {
+
+  return customInstance<testmodeRefundIntentResponse>(getTestmodeRefundIntentUrl(intentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getTestmodeRefundIntentMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testmodeRefundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof testmodeRefundIntent>>, TError,{intentId: string}, TContext> => {
+
+const mutationKey = ['testmodeRefundIntent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testmodeRefundIntent>>, {intentId: string}> = (props) => {
+          const {intentId} = props ?? {};
+
+          return  testmodeRefundIntent(intentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestmodeRefundIntentMutationResult = NonNullable<Awaited<ReturnType<typeof testmodeRefundIntent>>>
+
+    export type TestmodeRefundIntentMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Refund an intent directly (test mode)
+ */
+export const useTestmodeRefundIntent = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testmodeRefundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testmodeRefundIntent>>,
+        TError,
+        {intentId: string},
+        TContext
+      > => {
+      return useMutation(getTestmodeRefundIntentMutationOptions(options));
     }
 
 export type connectProviderResponse200 = {

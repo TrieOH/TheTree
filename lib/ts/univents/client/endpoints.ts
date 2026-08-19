@@ -182,6 +182,7 @@ import type {
   DenySignatureRequestBody,
   DenySignatureRequestParams,
   Edition,
+  EditionPurchase,
   Event,
   EventMember,
   ForbiddenResponse,
@@ -206,6 +207,7 @@ import type {
   ProductVariant,
   Program,
   ProgramOccurrence,
+  Purchase,
   ReceivePayssageWebhookRequest,
   RemoveEventMemberBody,
   RevokeSignatureParams,
@@ -9949,6 +9951,244 @@ export function useListMyPurchases<TData = Awaited<ReturnType<typeof listMyPurch
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListMyPurchasesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type refundPurchaseResponse200 = {
+  data: Purchase
+  status: 200
+}
+
+export type refundPurchaseResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type refundPurchaseResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type refundPurchaseResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type refundPurchaseResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type refundPurchaseResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type refundPurchaseResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type refundPurchaseResponseSuccess = (refundPurchaseResponse200) & {
+  headers: Headers;
+};
+export type refundPurchaseResponseError = (refundPurchaseResponse400 | refundPurchaseResponse401 | refundPurchaseResponse403 | refundPurchaseResponse404 | refundPurchaseResponse409 | refundPurchaseResponse500) & {
+  headers: Headers;
+};
+
+export type refundPurchaseResponse = (refundPurchaseResponseSuccess | refundPurchaseResponseError)
+
+export const getRefundPurchaseUrl = (purchaseId: string,) => {
+
+
+
+
+  return `/purchases/${purchaseId}/refund`
+}
+
+/**
+ * Initiates a full refund of an `approved` purchase. Event owner/admin
+ * only (non-members 404, staff 403). Calls Payssage's refund for the
+ * purchase's intent and returns the purchase — which stays `approved`
+ * until the `payment.refunded` webhook flips it to `refunded`
+ * (webhook-confirmed, single writer). Full refund only in v1 (no
+ * amount).
+ * @summary Refund an approved purchase (organizer, full refund)
+ */
+export const refundPurchase = async (purchaseId: string, options?: Parameters<typeof customInstance>[1]): Promise<refundPurchaseResponse> => {
+
+  return customInstance<refundPurchaseResponse>(getRefundPurchaseUrl(purchaseId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefundPurchaseMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundPurchase>>, TError,{purchaseId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundPurchase>>, TError,{purchaseId: string}, TContext> => {
+
+const mutationKey = ['refundPurchase'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundPurchase>>, {purchaseId: string}> = (props) => {
+          const {purchaseId} = props ?? {};
+
+          return  refundPurchase(purchaseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundPurchaseMutationResult = NonNullable<Awaited<ReturnType<typeof refundPurchase>>>
+
+    export type RefundPurchaseMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Refund an approved purchase (organizer, full refund)
+ */
+export const useRefundPurchase = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundPurchase>>, TError,{purchaseId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refundPurchase>>,
+        TError,
+        {purchaseId: string},
+        TContext
+      > => {
+      return useMutation(getRefundPurchaseMutationOptions(options));
+    }
+
+export type listEditionPurchasesResponse200 = {
+  data: EditionPurchase[]
+  status: 200
+}
+
+export type listEditionPurchasesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listEditionPurchasesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listEditionPurchasesResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listEditionPurchasesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listEditionPurchasesResponseSuccess = (listEditionPurchasesResponse200) & {
+  headers: Headers;
+};
+export type listEditionPurchasesResponseError = (listEditionPurchasesResponse401 | listEditionPurchasesResponse403 | listEditionPurchasesResponse404 | listEditionPurchasesResponse500) & {
+  headers: Headers;
+};
+
+export type listEditionPurchasesResponse = (listEditionPurchasesResponseSuccess | listEditionPurchasesResponseError)
+
+export const getListEditionPurchasesUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/purchases`
+}
+
+/**
+ * Lists every purchase of an edition with its items and ticket
+ * attendees, newest first — the organizer orders page (refund plan
+ * B3). Event owner/admin only (non-members 404, staff 403).
+ * `payer_email` identifies who the payment provider will refund;
+ * attendees are the people the tickets were assigned to (gifted
+ * tickets show the recipient).
+ * @summary List an edition's purchases (organizer orders read)
+ */
+export const listEditionPurchases = async (editionId: string, options?: Parameters<typeof customInstance>[1]): Promise<listEditionPurchasesResponse> => {
+
+  return customInstance<listEditionPurchasesResponse>(getListEditionPurchasesUrl(editionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEditionPurchasesQueryKey = (editionId: string,) => {
+    return [
+    `/editions/${editionId}/purchases`
+    ] as const;
+    }
+
+
+export const getListEditionPurchasesQueryOptions = <TData = Awaited<ReturnType<typeof listEditionPurchases>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditionPurchases>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEditionPurchasesQueryKey(editionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEditionPurchases>>> = ({ signal }) => listEditionPurchases(editionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEditionPurchases>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEditionPurchasesQueryResult = NonNullable<Awaited<ReturnType<typeof listEditionPurchases>>>
+export type ListEditionPurchasesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary List an edition's purchases (organizer orders read)
+ */
+
+export function useListEditionPurchases<TData = Awaited<ReturnType<typeof listEditionPurchases>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditionPurchases>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEditionPurchasesQueryOptions(editionId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
