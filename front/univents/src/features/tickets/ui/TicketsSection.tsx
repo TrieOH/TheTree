@@ -22,30 +22,29 @@ export function TicketsSection({
 }: TicketsSectionProps) {
   if (tickets.length === 0) return null;
 
-  const sortedTickets = [...tickets]
-    .sort((a, b) => {
-      const aStock = stockById?.get(a.id);
-      const bStock = stockById?.get(b.id);
-      const aAvailable =
-        aStock === undefined ? a.max_quantity !== 0 : aStock !== 0;
-      const bAvailable =
-        bStock === undefined ? b.max_quantity !== 0 : bStock !== 0;
+  const rankedTickets = [...tickets].sort((a, b) => {
+    const aStock = stockById?.get(a.id);
+    const bStock = stockById?.get(b.id);
+    const aAvailable =
+      aStock === undefined ? a.max_quantity !== 0 : aStock !== 0;
+    const bAvailable =
+      bStock === undefined ? b.max_quantity !== 0 : bStock !== 0;
 
-      return (
-        Number(bAvailable) - Number(aAvailable) ||
-        b.access_level - a.access_level
-      );
-    })
+    return (
+      Number(bAvailable) - Number(aAvailable) || b.access_level - a.access_level
+    );
+  });
+
+  const heldTicketItem = heldTicket
+    ? rankedTickets.find((ticket) => ticket.id === heldTicket.ticket_type.id)
+    : undefined;
+  const sortedTickets = rankedTickets
+    .filter((ticket) => ticket.id !== heldTicketItem?.id)
     .slice(0, 3);
 
-  const heldIndex = heldTicket
-    ? sortedTickets.findIndex(
-        (ticket) => ticket.id === heldTicket.ticket_type.id,
-      )
-    : -1;
-  if (heldIndex >= 0 && sortedTickets.length > 1) {
-    const [currentTicket] = sortedTickets.splice(heldIndex, 1);
-    sortedTickets.splice(1, 0, currentTicket);
+  if (heldTicketItem) {
+    sortedTickets.splice(Math.min(1, sortedTickets.length), 0, heldTicketItem);
+    sortedTickets.splice(3);
   }
 
   const visibilityClasses = ["", "hidden sm:block", "hidden lg:block"];

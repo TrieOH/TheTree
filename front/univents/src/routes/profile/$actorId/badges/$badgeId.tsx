@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
@@ -6,6 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import { allPublicEditionsQueryOptions } from "@/features/editions/api";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { profileKeys } from "@/features/profile/api/query-keys";
 import { asUniventsProfile } from "@/features/profile/model/profile-data";
 
@@ -38,10 +40,17 @@ function ProfileBadgePage() {
     ...userBadgesQueryOptions(actorProfileId ?? ""),
     enabled: Boolean(actorProfileId),
   });
+  const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
+  const editionQueries = useQueries({
+    queries: events.map((event) => allPublicEditionsQueryOptions(event.id)),
+  });
   const badge = [
     ...(badges.data?.attendant.current ?? []),
     ...(badges.data?.staff.current ?? []),
   ].find((item) => item.emission_id === badgeId);
+  const edition = editionQueries
+    .flatMap((query) => query.data ?? [])
+    .find((item) => item.id === badge?.edition_id);
 
   if (profile.isLoading || badges.isLoading) {
     return (
@@ -58,7 +67,7 @@ function ProfileBadgePage() {
           <Link
             to="/profile/$actorId"
             params={{ actorId }}
-            search={{ tab: "about" }}
+            search={{ tab: "badges" }}
             className="mt-3 inline-flex text-sm text-primary hover:underline"
           >
             Voltar ao perfil
@@ -75,7 +84,7 @@ function ProfileBadgePage() {
           <Link
             to="/profile/$actorId"
             params={{ actorId }}
-            search={{ tab: "about" }}
+            search={{ tab: "badges" }}
             className="mt-3 inline-flex text-sm text-primary hover:underline"
           >
             Voltar ao perfil
@@ -90,7 +99,7 @@ function ProfileBadgePage() {
       <Link
         to="/profile/$actorId"
         params={{ actorId }}
-        search={{ tab: "about" }}
+        search={{ tab: "badges" }}
         className="absolute top-4 left-4 z-10 inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-2 text-sm text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground sm:top-6 sm:left-6"
       >
         <ArrowLeft className="size-4" />
@@ -104,8 +113,9 @@ function ProfileBadgePage() {
           contain
           framed={false}
           participantName={
-            profileData.legalName || profileData.preferredName || ""
+            profileData.preferredName || profileData.legalName || ""
           }
+          location={edition?.location_name ?? ""}
         />
       </div>
     </main>

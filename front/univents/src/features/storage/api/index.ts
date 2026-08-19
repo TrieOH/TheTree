@@ -7,6 +7,7 @@ import type {
 
 const MODERATION_MAX_EDGE = 448;
 const MODERATION_WEBP_QUALITY = 0.82;
+const IMAGE_PREPROCESS_TIMEOUT_MS = 30_000;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export class StorageImageError extends Error {
@@ -101,16 +102,24 @@ export async function preprocessImageUpload(
     if (idempotencyKey) formData.append("idempotencyKey", idempotencyKey);
 
     let res: Response;
+    const controller = new AbortController();
+    const timeout = globalThis.setTimeout(
+      () => controller.abort(),
+      IMAGE_PREPROCESS_TIMEOUT_MS,
+    );
     try {
       res = await fetch("/storage/image/preprocess", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
     } catch {
       throw new StorageImageError(
         "Não foi possível conectar ao servidor.",
         "NETWORK_ERROR",
       );
+    } finally {
+      globalThis.clearTimeout(timeout);
     }
 
     if (!res.ok) {

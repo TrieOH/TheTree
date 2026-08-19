@@ -1,5 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import type { SortState } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import type { EditionPurchase } from "@trieoh/univents-api/schemas";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -7,11 +10,11 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleAlert,
-  FileText,
   Globe,
   LayoutGrid,
-  Store,
+  ShoppingBag,
   Ticket,
+  Users,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
@@ -19,6 +22,12 @@ import { toast } from "sonner";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { usePublishEditionMutation } from "@/features/editions/api/mutations";
 import type { EditionI } from "@/features/editions/model";
+import { EditionImageActions } from "@/features/editions/ui/EditionImageActions";
+import {
+  editionPurchasesQueryOptions,
+  useRefundPurchaseMutation,
+} from "@/features/purchases/api";
+import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
 import { formatDateRange } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
@@ -69,13 +78,48 @@ function AdminEditionDetailRoute() {
   const { data: editions = [], isPending } = useQuery(
     allAdminEditionsQueryOptions(eventId),
   );
+  const queryClient = useQueryClient();
+  const { data: purchases = [] } = useQuery(
+    editionPurchasesQueryOptions(editionId),
+  );
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [refundPurchaseId, setRefundPurchaseId] = useState<string | null>(null);
+  const [purchaseFilter, setPurchaseFilter] = useState("");
+  const [purchaseSort, setPurchaseSort] = useState<SortState<EditionPurchase>>({
+    field: "created_at",
+    direction: "desc",
+  });
   const edition = useMemo(
     () => editions.find((item) => item.id === editionId) ?? null,
     [editionId, editions],
   );
 
   const publishEditionMutation = usePublishEditionMutation();
+  const refundMutation = useRefundPurchaseMutation();
+  const filteredPurchases = useMemo(() => {
+    const search = purchaseFilter.trim().toLowerCase();
+    return purchases
+      .filter((purchase) => {
+        if (!search) return true;
+        return [
+          purchase.payer_email ?? "",
+          purchase.status,
+          purchase.purchase_id,
+          ...purchase.attendees.map((attendee) => attendee.email),
+        ].some((value) => value.toLowerCase().includes(search));
+      })
+      .sort((a, b) => {
+        const direction = purchaseSort.direction === "asc" ? 1 : -1;
+        if (purchaseSort.field === "total_cents") {
+          return (a.total_cents - b.total_cents) * direction;
+        }
+        return (
+          (new Date(a.created_at ?? 0).getTime() -
+            new Date(b.created_at ?? 0).getTime()) *
+          direction
+        );
+      });
+  }, [purchaseFilter, purchaseSort, purchases]);
 
   const copyLink = () => {
     if (!edition) return;
@@ -88,6 +132,20 @@ function AdminEditionDetailRoute() {
   const handlePublishEdition = () => {
     if (!edition) return;
     publishEditionMutation.mutate({ eventId, editionId });
+  };
+
+  const handleRefund = async () => {
+    if (!refundPurchaseId) return;
+    try {
+      await refundMutation.mutateAsync(refundPurchaseId);
+      toast.success("Reembolso solicitado");
+      await queryClient.invalidateQueries({
+        queryKey: purchaseQueryKeys.edition(editionId),
+      });
+      setRefundPurchaseId(null);
+    } catch {
+      toast.error("Não foi possível solicitar o reembolso.");
+    }
   };
 
   if (isPending) {
@@ -162,34 +220,6 @@ function AdminEditionDetailRoute() {
     },
   ];
 
-  const sections = [
-    {
-      label: "Programação",
-      to: "/admin/events/$eventId/editions/$editionId/programs",
-      icon: CalendarDays,
-    },
-    {
-      label: "Produtos",
-      to: "/admin/events/$eventId/editions/$editionId/products",
-      icon: Store,
-    },
-    {
-      label: "Certificações",
-      to: "/admin/events/$eventId/editions/$editionId/certifications",
-      icon: FileText,
-    },
-    {
-      label: "Assinaturas",
-      to: "/admin/events/$eventId/editions/$editionId/signatures",
-      icon: Ticket,
-    },
-    {
-      label: "Tickets",
-      to: "/admin/events/$eventId/editions/$editionId/tickets",
-      icon: Ticket,
-    },
-  ];
-
   const actions = [
     ...(isDraft
       ? [
@@ -219,6 +249,15 @@ function AdminEditionDetailRoute() {
       variant: "default" as const,
     },
   ];
+  const approvedPurchases = purchases.filter(
+    (purchase) => purchase.status === "approved",
+  ).length;
+  const refundedPurchases = purchases.filter(
+    (purchase) => purchase.status === "refunded",
+  ).length;
+  const revenue = purchases
+    .filter((purchase) => purchase.status === "approved")
+    .reduce((total, purchase) => total + purchase.total_cents, 0);
 
   return (
     <div className="relative space-y-6 p-6 pb-28!">
@@ -248,6 +287,22 @@ function AdminEditionDetailRoute() {
                 <LayoutGrid className="size-3.5" />
                 Overview
               </Badge>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Imagens da edição
+              </span>
+              <EditionImageActions
+                edition={edition}
+                eventId={eventId}
+                field="logo_url"
+              />
+              <EditionImageActions
+                edition={edition}
+                eventId={eventId}
+                field="banner_url"
+              />
             </div>
 
             <div className="space-y-3">
@@ -304,6 +359,162 @@ function AdminEditionDetailRoute() {
         ))}
       </section>
 
+      <section className="grid gap-3 sm:grid-cols-3">
+        {[
+          {
+            label: "Compras",
+            value: purchases.length,
+            hint: "Pedidos registrados",
+            Icon: Users,
+          },
+          {
+            label: "Aprovadas",
+            value: approvedPurchases,
+            hint: "Prontas para uso",
+            Icon: CheckCircle2,
+          },
+          {
+            label: "Receita aprovada",
+            value: new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }).format(revenue / 100),
+            hint: `${refundedPurchases} reembolsada(s)`,
+            Icon: Ticket,
+          },
+        ].map(({ label, value, hint, Icon }) => (
+          <Card
+            key={String(label)}
+            className="border-border/60 bg-card/95 shadow-sm"
+          >
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Icon className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="truncate text-xl font-semibold tracking-tight">
+                  {value}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{hint}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      <PaginatedContainer<EditionPurchase>
+        items={filteredPurchases}
+        layout="list"
+        pageSize={6}
+        gap="3"
+        sort={purchaseSort}
+        onSortChange={setPurchaseSort}
+        sortFields={[
+          { key: "created_at", label: "Data" },
+          {
+            key: "total_cents",
+            label: "Valor",
+            comparator: (a, b) => a.total_cents - b.total_cents,
+          },
+        ]}
+        filterValue={purchaseFilter}
+        onFilterChange={setPurchaseFilter}
+        filterPlaceholder="Buscar por e-mail, status ou participante..."
+        itemLabel="compras"
+        emptyState={
+          <EmptyState
+            icon={ShoppingBag}
+            eyebrow="Compras"
+            title="Nenhuma compra encontrada"
+            description="Os pedidos desta edição aparecerão aqui."
+            className="border-0 bg-transparent px-0 py-4 shadow-none"
+          />
+        }
+        renderItems={(slice) =>
+          slice.map((purchase) => {
+            const itemQuantity = purchase.items.reduce(
+              (total, item) => total + item.quantity,
+              0,
+            );
+            const contactEmail =
+              purchase.payer_email ?? purchase.attendees[0]?.email ?? null;
+            const contactLabel = purchase.payer_email
+              ? "Pagador"
+              : purchase.attendees[0]?.email
+                ? "Contato do participante"
+                : "Pagador";
+            const displayEmail = contactEmail ?? "E-mail não informado";
+
+            return (
+              <Card
+                key={purchase.purchase_id}
+                className="border-border/60 bg-card/95 shadow-sm"
+              >
+                <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+                      {displayEmail[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {contactLabel}
+                      </p>
+                      <p className="truncate text-sm font-semibold">
+                        {displayEmail}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {itemQuantity} {itemQuantity === 1 ? "item" : "itens"}
+                        {" · "}
+                        {purchase.attendees.length}{" "}
+                        {purchase.attendees.length === 1
+                          ? "participante atribuído"
+                          : "participantes atribuídos"}
+                      </p>
+                      {purchase.attendees.length > 0 ? (
+                        <p className="max-w-xl truncate text-xs text-foreground/70">
+                          {purchase.attendees
+                            .map((attendee) => attendee.name)
+                            .join(", ")}
+                        </p>
+                      ) : (
+                        <p className="text-xs italic text-muted-foreground">
+                          Participantes ainda não atribuídos
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm font-semibold tabular-nums">
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: purchase.currency,
+                        }).format(purchase.total_cents / 100)}
+                      </p>
+                      <p className="text-xs capitalize text-muted-foreground">
+                        {purchase.status}
+                      </p>
+                    </div>
+                    {purchase.status === "approved" ? (
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-destructive hover:underline"
+                        onClick={() =>
+                          setRefundPurchaseId(purchase.purchase_id)
+                        }
+                      >
+                        Reembolsar
+                      </button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        }
+      />
+
       <Card className="border-border/60 bg-card/95 shadow-sm">
         <CardHeader className="border-b border-border/60">
           <CardTitle>Checklist da edição</CardTitle>
@@ -333,36 +544,6 @@ function AdminEditionDetailRoute() {
               )}
             </div>
           ))}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60 bg-card/95 shadow-sm">
-        <CardHeader className="border-b border-border/60">
-          <CardTitle>Seções da edição</CardTitle>
-          <CardDescription>
-            Gerencie as seções e recursos vinculados a esta edição.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            return (
-              <Link
-                key={section.to}
-                to={section.to}
-                params={{ eventId, editionId }}
-                className="flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-muted/15 px-4 py-4 text-left transition-colors hover:border-border hover:bg-muted/30"
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="size-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">
-                    {section.label}
-                  </span>
-                </div>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </Link>
-            );
-          })}
         </CardContent>
       </Card>
 
@@ -402,6 +583,18 @@ function AdminEditionDetailRoute() {
           handlePublishEdition();
           setPublishConfirmOpen(false);
         }}
+      />
+      <AlertModal
+        open={refundPurchaseId !== null}
+        onOpenChange={(open) => {
+          if (!open && !refundMutation.isPending) setRefundPurchaseId(null);
+        }}
+        title="Solicitar reembolso?"
+        description="O pagamento será encaminhado para reembolso. A compra ficará como reembolsada após a confirmação do webhook."
+        confirmLabel="Solicitar reembolso"
+        variant="destructive"
+        loading={refundMutation.isPending}
+        onConfirm={handleRefund}
       />
     </div>
   );

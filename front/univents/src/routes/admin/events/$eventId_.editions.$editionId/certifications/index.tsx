@@ -90,7 +90,7 @@ function RouteComponent() {
             <Link
               to="/admin/events/$eventId/editions/$editionId/certifications/editor"
               params={{ eventId, editionId }}
-              search={{ templateId: "" }}
+              search={{ templateId: "", duplicate: false }}
               className={cn(
                 "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
                 "bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
@@ -121,11 +121,18 @@ function RouteComponent() {
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/certifications/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     });
                   }}
                   onView={() => setViewingTemplate(template)}
                   onDelete={() => setDeletingTemplate(template)}
+                  onDuplicate={() => {
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/certifications/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id, duplicate: true },
+                    });
+                  }}
                 />
               );
             })

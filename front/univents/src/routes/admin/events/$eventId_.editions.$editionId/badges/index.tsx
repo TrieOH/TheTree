@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import { BadgeCheck, FileText, Plus, Printer } from "lucide-react";
-import { useMemo, useState } from "react";
+import { BadgeCheck, FileText, Plus, Printer, QrCode } from "lucide-react";
+import QRCode from "qrcode";
+import { useEffect, useMemo, useState } from "react";
 import {
   badgePrintQueryOptions,
   badgeTemplatesQueryOptions,
@@ -12,18 +13,35 @@ import type { BadgePrintItem, BadgeTemplate } from "@/features/badges/model";
 import { badgeDesignSchema } from "@/features/badges/model";
 import AdminBadgeCard from "@/features/badges/ui/AdminBadgeCard";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import { ToolbarCombobox } from "@/features/certifications/editor/ui/toolbar-combobox";
+import { allAdminEditionsQueryOptions } from "@/features/editions/api";
+import { useActorDisplayNames } from "@/features/profile/api/actor-display-names";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
-// Using AdminBadgeCard component for card rendering.
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/shared/ui/shadcn/dialog";
+import { Input } from "@/shared/ui/shadcn/input";
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/",
 )({ component: RouteComponent });
 
-/* BadgeMiniature extracted to `AdminBadgeCard` */
-
-function PrintableBadge({ badge }: { badge: BadgePrintItem }) {
+function PrintableBadge({
+  badge,
+  participantName,
+  location,
+}: {
+  badge: BadgePrintItem;
+  participantName: string;
+  location: string;
+}) {
   const design = badgeDesignSchema.safeParse(badge.design_data).success
     ? badgeDesignSchema.parse(badge.design_data)
     : null;
@@ -37,8 +55,54 @@ function PrintableBadge({ badge }: { badge: BadgePrintItem }) {
     >
       <BadgePreview
         badge={badge}
+        participantName={participantName}
+        location={location}
         className="relative h-full w-full rounded-none border-0 shadow-none"
       />
+    </article>
+  );
+}
+
+function PrintableQr({
+  badge,
+  size,
+  participant,
+}: {
+  badge: BadgePrintItem;
+  size: number;
+  participant: string;
+}) {
+  const matrix = QRCode.create(badge.action_url).modules;
+  const margin = 2;
+  const viewSize = matrix.size + margin * 2;
+  return (
+    <article
+      className="flex break-inside-avoid flex-col items-center gap-2 text-center text-black"
+      style={{ width: size }}
+    >
+      <svg
+        role="img"
+        aria-label={`QR Code de ${participant}`}
+        viewBox={`0 0 ${viewSize} ${viewSize}`}
+        style={{ width: size, height: size }}
+        shapeRendering="crispEdges"
+      >
+        <rect width="100%" height="100%" fill="white" />
+        {Array.from({ length: matrix.size * matrix.size }, (_, index) => {
+          const row = Math.floor(index / matrix.size);
+          const column = index % matrix.size;
+          return matrix.get(row, column) ? (
+            <rect
+              key={`${row}-${column}`}
+              x={column + margin}
+              y={row + margin}
+              width="1"
+              height="1"
+            />
+          ) : null;
+        })}
+      </svg>
+      <strong className="max-w-full truncate text-sm">{participant}</strong>
     </article>
   );
 }
@@ -52,10 +116,23 @@ function RouteComponent() {
   const [activeSection, setActiveSection] = useState<"templates" | "emissions">(
     "templates",
   );
+  const [printMode, setPrintMode] = useState<"badges" | "qrs">("badges");
+  const [printPending, setPrintPending] = useState(false);
+  const [qrSizeMm, setQrSizeMm] = useState(48);
+  const [printQrSizeMm, setPrintQrSizeMm] = useState(48);
+  const [customQrSize, setCustomQrSize] = useState("48");
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const presetQrSizes = [30, 48, 60, 210];
+  const selectedPreset = presetQrSizes.includes(Number(customQrSize))
+    ? customQrSize
+    : "";
   const { data: templates = [] } = useQuery(
     badgeTemplatesQueryOptions(editionId),
   );
   const printQuery = useQuery(badgePrintQueryOptions(editionId));
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  );
   const { data: tickets = [] } = useQuery(allTicketsQueryOptions(editionId));
   const filtered = useMemo(
     () =>
@@ -68,6 +145,10 @@ function RouteComponent() {
     tickets.map((ticket) => [ticket.id, ticket.name]),
   );
   const printItems = printQuery.data ?? [];
+  const printActorIds = [...new Set(printItems.map((item) => item.user_id))];
+  const { data: participantNames = {} } = useActorDisplayNames(printActorIds);
+  const location =
+    editions.find((edition) => edition.id === editionId)?.location_name ?? "";
   const filteredPrintItems = useMemo(() => {
     const search = emissionFilter.trim().toLowerCase();
     if (!search) return printItems;
@@ -77,13 +158,49 @@ function RouteComponent() {
         .some((value) => value?.toLowerCase().includes(search)),
     );
   }, [emissionFilter, printItems]);
+
+  async function printQrs() {
+    const sizeMm = customQrSize ? Number(customQrSize) : qrSizeMm;
+    if (!Number.isFinite(sizeMm) || sizeMm < 20 || sizeMm > 210) return;
+    setPrintQrSizeMm(sizeMm);
+    const result = await printQuery.refetch();
+    if (result.data) {
+      setQrDialogOpen(false);
+      setPrintMode("qrs");
+      setPrintPending(true);
+    }
+  }
+
+  useEffect(() => {
+    if (!printPending || qrDialogOpen || !printQuery.data) return;
+
+    const frame = requestAnimationFrame(() => {
+      window.print();
+      setPrintPending(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [printPending, printQuery.data, qrDialogOpen]);
   return (
     <>
       <div className="hidden print:block">
         <div className="flex flex-wrap content-start gap-[4mm] p-[10mm]">
-          {printItems?.map((badge) => (
-            <PrintableBadge key={badge.emission_id} badge={badge} />
-          ))}
+          {printMode === "badges"
+            ? printItems.map((badge) => (
+                <PrintableBadge
+                  key={badge.emission_id}
+                  badge={badge}
+                  participantName={participantNames[badge.user_id]}
+                  location={location}
+                />
+              ))
+            : printItems.map((badge) => (
+                <PrintableQr
+                  key={badge.emission_id}
+                  badge={badge}
+                  size={(printQrSizeMm / 25.4) * 96}
+                  participant={participantNames[badge.user_id]}
+                />
+              ))}
         </div>
       </div>
       <div className="p-6 pb-28 print:hidden">
@@ -127,7 +244,7 @@ function RouteComponent() {
               <Link
                 to="/admin/events/$eventId/editions/$editionId/badges/editor"
                 params={{ eventId, editionId }}
-                search={{ templateId: "" }}
+                search={{ templateId: "", duplicate: false }}
                 className={cn(
                   "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
                 )}
@@ -158,18 +275,26 @@ function RouteComponent() {
                         "Ingresso associado")
                       : "Padrão da edição"
                   }
+                  location={location}
                   onView={() =>
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     })
                   }
                   onEdit={() =>
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
+                    })
+                  }
+                  onDuplicate={() =>
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id, duplicate: true },
                     })
                   }
                   onDelete={() => remove.mutate({ templateId: template.id })}
@@ -189,22 +314,116 @@ function RouteComponent() {
             filterPlaceholder="Buscar crachá..."
             itemLabel="crachás"
             headerActions={
-              <Button
-                variant="default"
-                disabled={printQuery.isFetching}
-                onClick={async () => {
-                  const result = await printQuery.refetch();
-                  if (result.data) {
-                    requestAnimationFrame(() => window.print());
-                  }
-                }}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center gap-2 rounded-lg",
-                )}
-              >
-                <Printer className="size-4" />
-                {printQuery.isFetching ? "Preparando…" : "Imprimir crachás"}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="default"
+                  disabled={printQuery.isFetching}
+                  onClick={async () => {
+                    const result = await printQuery.refetch();
+                    if (result.data) {
+                      setPrintMode("badges");
+                      requestAnimationFrame(() => window.print());
+                    }
+                  }}
+                  className={cn(
+                    "inline-flex h-9 items-center justify-center gap-2 rounded-lg",
+                  )}
+                >
+                  <Printer className="size-4" />
+                  {printQuery.isFetching ? "Preparando…" : "Imprimir crachás"}
+                </Button>
+                <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+                  <DialogTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        className="h-9"
+                        disabled={printQuery.isFetching}
+                      >
+                        <QrCode className="size-4" />
+                        Imprimir QR codes
+                      </Button>
+                    }
+                  />
+                  {qrDialogOpen && (
+                    <DialogContent className="print:hidden sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Configurar impressão dos QR codes
+                        </DialogTitle>
+                        <DialogDescription>
+                          Escolha o tamanho exato de cada QR code na impressão.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium">
+                          Tamanho do QR code
+                        </span>
+                        <ToolbarCombobox
+                          value={selectedPreset}
+                          options={[
+                            { value: "30", label: "Pequeno - 30 × 30 mm" },
+                            { value: "48", label: "Médio - 48 × 48 mm" },
+                            { value: "60", label: "Grande - 60 × 60 mm" },
+                            {
+                              value: "210",
+                              label: "Largura A4 - 210 × 210 mm",
+                            },
+                          ]}
+                          placeholder="Selecione o tamanho"
+                          searchPlaceholder="Buscar tamanho..."
+                          onChange={(value) => {
+                            setQrSizeMm(Number(value));
+                            setCustomQrSize(value);
+                          }}
+                          className="w-full"
+                          triggerClassName="h-10"
+                        />
+                        <p className="pt-2 text-xs text-muted-foreground">
+                          Ou informe um tamanho personalizado entre 20 e 210 mm.
+                        </p>
+                        <Input
+                          type="number"
+                          min={20}
+                          max={210}
+                          step={1}
+                          value={customQrSize}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setCustomQrSize(value);
+                            if (value !== "") setQrSizeMm(Number(value));
+                          }}
+                          placeholder="Ex.: 200"
+                          className="h-10"
+                        />
+                      </div>
+                      <Button
+                        className="h-10 w-full"
+                        disabled={
+                          printQuery.isFetching ||
+                          (customQrSize !== "" &&
+                            (!Number.isFinite(Number(customQrSize)) ||
+                              Number(customQrSize) < 20 ||
+                              Number(customQrSize) > 210))
+                        }
+                        onClick={() => void printQrs()}
+                      >
+                        {printQuery.isFetching
+                          ? "Preparando impressão…"
+                          : "Confirmar e imprimir"}
+                      </Button>
+                      {customQrSize !== "" &&
+                      Number(customQrSize) >= 20 &&
+                      Number(customQrSize) < 30 ? (
+                        <p className="text-xs text-amber-600">
+                          QR codes menores que 30 mm podem não ser lidos por
+                          alguns scanners.
+                        </p>
+                      ) : null}
+                    </DialogContent>
+                  )}
+                </Dialog>
+              </div>
             }
             emptyState={
               <EmptyState
@@ -219,6 +438,8 @@ function RouteComponent() {
                   item={badge}
                   kind="emission"
                   index={i}
+                  participantName={participantNames[badge.user_id]}
+                  location={location}
                   onView={() => undefined}
                 />
               ))
@@ -240,7 +461,7 @@ function RouteComponent() {
               <Link
                 to="/admin/events/$eventId/editions/$editionId/badges/editor"
                 params={{ eventId, editionId }}
-                search={{ templateId: "" }}
+                search={{ templateId: "", duplicate: false }}
                 className={cn(
                   "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
                 )}
@@ -275,14 +496,14 @@ function RouteComponent() {
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     })
                   }
                   onEdit={() =>
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     })
                   }
                   onDelete={() => remove.mutate({ templateId: template.id })}

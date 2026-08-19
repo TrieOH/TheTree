@@ -53,6 +53,11 @@ const statusCopy = {
     "Não conseguimos processar o seu pagamento no momento.",
     XCircle,
   ],
+  refunded: [
+    "Pedido reembolsado",
+    "O pagamento foi devolvido e os itens desta compra foram cancelados.",
+    CheckCircle2,
+  ],
 } as const;
 
 export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
@@ -150,9 +155,7 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">
                     {catalog[`${item.item_type}:${item.item_id}`]?.name ??
-                      (item.item_type === "ticket"
-                        ? "Ingresso"
-                        : "Produto do evento")}
+                      "Item não identificado"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {catalog[`${item.item_type}:${item.item_id}`]

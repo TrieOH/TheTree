@@ -243,7 +243,7 @@ export function UploadTaskCard({
             <div className="text-xs text-muted-foreground">
               {task.retryCount > 0 ? (
                 <span>
-                  {task.retryCount > uploadQueueConfig.maxRetries
+                  {task.retryCount >= uploadQueueConfig.maxRetries
                     ? `Limite de ${uploadQueueConfig.maxRetries} retries atingido`
                     : `${task.retryCount} de ${uploadQueueConfig.maxRetries} retries utilizados`}
                   {nextAttempt ? ` · próxima tentativa às ${nextAttempt}` : ""}
@@ -268,17 +268,15 @@ export function UploadTaskCard({
                 </Button>
               ) : null}
 
-              {!isProcessing ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onRemove}
-                  aria-label="Remover tarefa"
-                >
-                  <Trash2 />
-                  Remover
-                </Button>
-              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onRemove}
+                aria-label={isProcessing ? "Cancelar upload" : "Remover tarefa"}
+              >
+                <Trash2 />
+                {isProcessing ? "Cancelar" : "Remover"}
+              </Button>
             </div>
           </div>
         </div>

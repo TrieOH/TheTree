@@ -120,4 +120,14 @@ export interface CreateIntentRequest {
   checkout_provider_data?: CreateIntentRequestCheckoutProviderData;
   /** @nullable */
   metadata?: CreateIntentRequestMetadata;
+  /**
+     * Caller's order id (e.g. the univents purchase id). Counterparty id — never payssage's own.
+     * @nullable
+     */
+  external_id?: string | null;
+  /**
+     * Caller's grouping key (e.g. the univents edition id). Counterparty id — never payssage's own.
+     * @nullable
+     */
+  external_group?: string | null;
 }

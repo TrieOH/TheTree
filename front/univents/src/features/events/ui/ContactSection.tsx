@@ -10,25 +10,22 @@ export function ContactSection({ event }: ContactSectionProps) {
 
   return (
     <section className="w-full py-10 sm:py-14 md:py-16">
-      <div className="max-w-xl mx-auto px-4 sm:px-6 text-center">
-        {/* Title */}
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
-          Tem alguma dúvida?
+      <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+          Ficou com alguma dúvida?
         </h2>
 
-        {/* Description */}
-        <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed">
-          Nossa equipe organizadora está à disposição para ajudar com dúvidas
-          sobre inscrições, palestras ou patrocínios.
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:mt-4 sm:text-base">
+          A organização do evento pode ajudar com informações sobre inscrições,
+          programação, local e outras dúvidas.
         </p>
 
-        {/* Email button */}
         <a
           href={`mailto:${event.contact_email}`}
-          className="mt-6 sm:mt-8 inline-flex items-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-muted/80 hover:bg-muted transition-colors duration-200"
+          className="mx-auto mt-3 inline-flex max-w-full items-center gap-3 rounded-md border border-border bg-card px-5 py-3 text-left shadow-sm transition-colors hover:bg-muted"
         >
-          <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
-          <span className="text-sm sm:text-base font-medium text-foreground">
+          <Mail className="h-5 w-5 shrink-0 text-primary" />
+          <span className="truncate text-sm font-medium text-foreground sm:text-base">
             {event.contact_email}
           </span>
         </a>

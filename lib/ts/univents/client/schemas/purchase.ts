@@ -160,6 +160,11 @@ export interface Purchase {
   payment_method?: string | null;
   /** The Payssage intent correlation key (D2). Null for free orders and pre-checkout seeds. */
   payssage_intent_id?: NullableUUID | null;
+  /**
+     * The checkout payer's email — the person the payment provider will refund (refund plan B3). Surfaced on the organizer orders read. Null for free orders.
+     * @nullable
+     */
+  payer_email?: string | null;
   /** @nullable */
   qr_code?: string | null;
   /** @nullable */

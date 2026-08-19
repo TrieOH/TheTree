@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { ApiError } from "@trieoh/identityx-sdk-ts";
 import type { ReactNode } from "react";
+import { recordCompletedSpan } from "../tracing/browser";
 
 export interface QueryClientConfig {
   /** Stale time in milliseconds (default: 5 minutes). */
@@ -59,8 +60,46 @@ export function createQueryClient(config?: QueryClientConfig) {
     maxRetries = 3,
   } = config ?? {};
 
+  const queryStartedAt = new WeakMap<object, number>();
+  const queryCache = new QueryCache({
+    onSuccess: (_data, query) => {
+      const startedAt = queryStartedAt.get(query);
+      if (startedAt === undefined) return;
+      queryStartedAt.delete(query);
+      recordCompletedSpan(queryOperationName(query.queryKey), startedAt, {
+        "operation.type": "query",
+        "query.outcome": "success",
+        "query.failure_count": query.state.fetchFailureCount,
+      });
+    },
+    onError: (error, query) => {
+      config?.onError?.(error);
+      const startedAt = queryStartedAt.get(query);
+      if (startedAt === undefined) return;
+      queryStartedAt.delete(query);
+      recordCompletedSpan(
+        queryOperationName(query.queryKey),
+        startedAt,
+        {
+          "operation.type": "query",
+          "query.outcome": "failure",
+          "query.failure_count": query.state.fetchFailureCount,
+          ...(getErrorStatus(error) === undefined
+            ? {}
+            : { "query.status_code": getErrorStatus(error) as number }),
+        },
+        error,
+      );
+    },
+  });
+  queryCache.subscribe((event) => {
+    if (event.type === "updated" && event.action.type === "fetch") {
+      queryStartedAt.set(event.query, Date.now());
+    }
+  });
+
   return new QueryClient({
-    queryCache: new QueryCache({ onError: config?.onError }),
+    queryCache,
     mutationCache: new MutationCache({ onError: config?.onError }),
     defaultOptions: {
       queries: {
@@ -76,6 +115,18 @@ export function createQueryClient(config?: QueryClientConfig) {
       },
     },
   });
+}
+
+function queryOperationName(queryKey: readonly unknown[]): string {
+  const parts = queryKey
+    .filter((part): part is string => typeof part === "string")
+    .filter(
+      (part) =>
+        !part.includes("/") &&
+        !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(part),
+    )
+    .slice(0, 2);
+  return `query:${parts.join(".") || "anonymous"}`;
 }
 
 /**

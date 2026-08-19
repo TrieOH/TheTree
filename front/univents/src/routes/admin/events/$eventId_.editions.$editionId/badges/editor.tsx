@@ -6,18 +6,20 @@ export const Route = createFileRoute(
 )({
   validateSearch: (search: Record<string, unknown>) => ({
     templateId: typeof search.templateId === "string" ? search.templateId : "",
+    duplicate: search.duplicate === true || search.duplicate === "true",
   }),
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams();
-  const { templateId } = Route.useSearch();
+  const { templateId, duplicate } = Route.useSearch();
   return (
     <BadgeEditor
       eventId={eventId}
       editionId={editionId}
       templateId={templateId || undefined}
+      duplicate={duplicate}
     />
   );
 }

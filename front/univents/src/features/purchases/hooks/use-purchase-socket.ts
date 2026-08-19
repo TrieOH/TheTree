@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { env } from "@/env";
 import { checkoutQueryOptions, getWsTokenFn } from "../api";
+import { purchaseQueryKeys } from "../api/query-keys";
 
 export function usePurchaseSocket(purchaseId: string, pending: boolean) {
   const queryClient = useQueryClient();
@@ -48,7 +49,9 @@ export function usePurchaseSocket(purchaseId: string, pending: boolean) {
           void queryClient.invalidateQueries({
             queryKey: checkoutQueryOptions(purchaseId).queryKey,
           });
-          void queryClient.invalidateQueries({ queryKey: ["purchases"] });
+          void queryClient.invalidateQueries({
+            queryKey: purchaseQueryKeys.all,
+          });
         };
         socket.onclose = () => {
           setConnected(false);

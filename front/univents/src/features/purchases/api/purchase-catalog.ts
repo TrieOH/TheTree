@@ -1,13 +1,12 @@
 import { orvalData } from "@trieoh/api-client";
 import {
   getOccurrence,
-  getProduct,
-  getTicketType,
+  listEditionProducts,
   listEditionPrograms,
   listProductVariants,
+  listTicketTypes,
 } from "@trieoh/univents-api";
 import type {
-  Product,
   Program,
   ProgramOccurrence,
   TicketType,
@@ -22,22 +21,68 @@ export type PurchaseCatalogItem = {
 };
 
 const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
 
 export const resolvePurchaseCatalog = async (
   items: Array<{ item_type: string; item_id: string; edition_id: string }>,
 ) => {
+  const ticketsByEdition = new Map<string, Promise<TicketType[]>>();
+  const variantsByEdition = new Map<string, Promise<VariantI[]>>();
+  const programsByEdition = new Map<string, Promise<Program[]>>();
+
+  const getTickets = (editionId: string) => {
+    let promise = ticketsByEdition.get(editionId);
+    if (!promise) {
+      promise = listTicketTypes(editionId, { public: true }).then(
+        orvalData<TicketType[]>,
+      );
+      ticketsByEdition.set(editionId, promise);
+    }
+    return promise;
+  };
+
+  const getVariants = (editionId: string) => {
+    let promise = variantsByEdition.get(editionId);
+    if (!promise) {
+      promise = listEditionProducts(editionId, { public: true })
+        .then(orvalData<Array<{ id: string }>>)
+        .then((products) =>
+          Promise.all(
+            products.map((product) =>
+              listProductVariants(product.id, { public: true }).then(
+                orvalData<VariantI[]>,
+              ),
+            ),
+          ),
+        )
+        .then((variants) => variants.flat());
+      variantsByEdition.set(editionId, promise);
+    }
+    return promise;
+  };
+
+  const getPrograms = (editionId: string) => {
+    let promise = programsByEdition.get(editionId);
+    if (!promise) {
+      promise = listEditionPrograms(editionId, { public: true }).then(
+        orvalData<Program[]>,
+      );
+      programsByEdition.set(editionId, promise);
+    }
+    return promise;
+  };
+
   const entries = await Promise.all(
     items
       .filter((item) => isUuid(item.item_id))
       .map(async (item) => {
         try {
           if (item.item_type === "ticket") {
-            const ticket = orvalData<TicketType>(
-              await getTicketType(item.item_id as Uuid, { public: true }),
-            );
+            const tickets = await getTickets(item.edition_id);
+            const ticket = tickets.find(({ id }) => id === item.item_id);
+            if (!ticket) return null;
             return [
               `${item.item_type}:${item.item_id}`,
               { name: ticket.name, description: ticket.description },
@@ -45,13 +90,10 @@ export const resolvePurchaseCatalog = async (
           }
 
           if (item.item_type === "product") {
-            const product = orvalData<Product>(
-              await getProduct(item.item_id as Uuid, { public: true }),
+            const variant = (await getVariants(item.edition_id)).find(
+              ({ id }) => id === item.item_id,
             );
-            const variants = orvalData<VariantI[]>(
-              await listProductVariants(product.id, { public: true }),
-            );
-            const variant = variants[0];
+            if (!variant) return null;
             return [
               `${item.item_type}:${item.item_id}`,
               {
@@ -66,9 +108,7 @@ export const resolvePurchaseCatalog = async (
             const occurrence = orvalData<ProgramOccurrence>(
               await getOccurrence(item.item_id as Uuid, { public: true }),
             );
-            const programs = orvalData<Program[]>(
-              await listEditionPrograms(item.edition_id, { public: true }),
-            );
+            const programs = await getPrograms(item.edition_id);
             const program = programs.find(
               (candidate) => candidate.id === occurrence.program_id,
             );

@@ -38,11 +38,12 @@ interface CacheEntry {
 
 function getCached(query: string): GeoResult | null {
   try {
-    const raw = localStorage.getItem(CACHE_KEY_PREFIX + btoa(query));
+    const key = CACHE_KEY_PREFIX + encodeURIComponent(query);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const entry = JSON.parse(raw) as CacheEntry;
     if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
-      localStorage.removeItem(CACHE_KEY_PREFIX + btoa(query));
+      localStorage.removeItem(key);
       return null;
     }
     return entry.result;
@@ -52,8 +53,15 @@ function getCached(query: string): GeoResult | null {
 }
 
 function setCache(query: string, result: GeoResult): void {
-  const entry: CacheEntry = { result, timestamp: Date.now() };
-  localStorage.setItem(CACHE_KEY_PREFIX + btoa(query), JSON.stringify(entry));
+  try {
+    const entry: CacheEntry = { result, timestamp: Date.now() };
+    localStorage.setItem(
+      CACHE_KEY_PREFIX + encodeURIComponent(query),
+      JSON.stringify(entry),
+    );
+  } catch {
+    // Cache is optional; storage restrictions must not break the map.
+  }
 }
 
 const geoQueue: Array<() => void> = [];
@@ -134,27 +142,25 @@ export function LocationMap({
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
   const [status, setStatus] = useState<Status>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
 
   const initMap = useCallback(async () => {
     if (!mapContainerRef.current) return;
 
     setStatus("loading");
-    setErrorMsg("");
-
-    const L = (await import("leaflet")).default;
-
-    // @ts-expect-error _getIconUrl is not in the official type
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl:
-        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-      shadowUrl:
-        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    });
 
     try {
+      const L = (await import("leaflet")).default;
+
+      // @ts-expect-error _getIconUrl is not in the official type
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+
       const geo = await geocode(location);
 
       if (mapRef.current) {
@@ -163,7 +169,9 @@ export function LocationMap({
           markerRef.current.setLatLng([geo.lat, geo.lon]);
           markerRef.current
             .getPopup()
-            ?.setContent(popupContent(location.name, location.address));
+            ?.setContent(
+              popupContent(location.name, location.address, geo.displayName),
+            );
         }
         setStatus("success");
         return;
@@ -184,15 +192,16 @@ export function LocationMap({
 
       const marker = L.marker([geo.lat, geo.lon])
         .addTo(map)
-        .bindPopup(popupContent(location.name, location.address))
+        .bindPopup(
+          popupContent(location.name, location.address, geo.displayName),
+        )
         .openPopup();
 
       mapRef.current = map;
       markerRef.current = marker;
       setStatus("success");
-    } catch (err) {
+    } catch {
       setStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido");
     }
   }, [location, zoom]);
 
@@ -207,6 +216,8 @@ export function LocationMap({
       }
     };
   }, [initMap]);
+
+  if (status === "error") return null;
 
   return (
     <div
@@ -232,46 +243,36 @@ export function LocationMap({
           </span>
         </div>
       )}
-
-      {status === "error" && (
-        <div style={overlayStyle}>
-          <span style={{ fontSize: 32 }}>📍</span>
-          <p style={{ margin: "8px 0 4px", fontWeight: 600, color: "#333" }}>
-            {location.name}
-          </p>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 13,
-              color: "#666",
-              textAlign: "center",
-            }}
-          >
-            {location.address}
-          </p>
-          <p style={{ margin: "12px 0 0", fontSize: 12, color: "#e55" }}>
-            {errorMsg}
-          </p>
-          <button
-            type="button"
-            onClick={() => void initMap()}
-            style={retryButtonStyle}
-          >
-            Tentar novamente
-          </button>
-        </div>
-      )}
     </div>
   );
 }
 
-function popupContent(name: string, address: string) {
+function popupContent(name: string, address: string, displayName?: string) {
+  const googleQuery = encodeURIComponent(displayName || `${name}, ${address}`);
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleQuery}`;
+
   return `
-    <div style="min-width:160px; font-family: sans-serif;">
-      <strong style="display:block; margin-bottom:4px;">${name}</strong>
-      <span style="font-size:12px; color:#555;">${address}</span>
+    <div style="min-width:200px; max-width:280px; font-family:sans-serif;">
+      <strong style="display:block; margin-bottom:6px;">${escapeHtml(name)}</strong>
+      ${address ? `<span style="display:block; font-size:12px; color:#555;">${escapeHtml(address)}</span>` : ""}
+      ${displayName ? `<span style="display:block; margin-top:6px; font-size:11px; line-height:1.35; color:#777;">${escapeHtml(displayName)}</span>` : ""}
+      <a href="${escapeHtml(googleMapsUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin-top:10px; font-size:12px; color:#2563eb; text-decoration:underline;">Abrir no Google Maps</a>
     </div>
   `;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>'"]/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;",
+      })[character] ?? character,
+  );
 }
 
 const overlayStyle: React.CSSProperties = {
@@ -296,16 +297,6 @@ const spinnerStyle: React.CSSProperties = {
   animation: "spin 0.8s linear infinite",
 };
 
-const retryButtonStyle: React.CSSProperties = {
-  marginTop: 12,
-  padding: "6px 16px",
-  border: "1px solid #ccc",
-  borderRadius: 6,
-  background: "#fff",
-  cursor: "pointer",
-  fontSize: 13,
-};
-
 interface MultiLocationMapProps {
   locations: LocationInfo[];
   height?: string;
@@ -320,7 +311,6 @@ export function MultiLocationMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const [status, setStatus] = useState<Status>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
   const cancelledRef = useRef(false);
 
   useEffect(() => {
@@ -330,19 +320,20 @@ export function MultiLocationMap({
     setStatus("loading");
 
     void (async () => {
-      const L = (await import("leaflet")).default;
-
-      // @ts-expect-error _getIconUrl is not in the official type
-      delete L.Icon.Default.prototype._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-      });
-
       try {
+        const L = (await import("leaflet")).default;
+
+        // @ts-expect-error _getIconUrl is not in the official type
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+          iconUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+          shadowUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        });
+
         const results = await Promise.all(locations.map(geocode));
         if (cancelledRef.current) return;
 
@@ -367,16 +358,21 @@ export function MultiLocationMap({
         results.forEach((geo, i) => {
           L.marker([geo.lat, geo.lon])
             .addTo(map)
-            .bindPopup(popupContent(locations[i].name, locations[i].address));
+            .bindPopup(
+              popupContent(
+                locations[i].name,
+                locations[i].address,
+                geo.displayName,
+              ),
+            );
         });
 
         map.fitBounds(bounds, { padding: [40, 40] });
         mapRef.current = map;
         setStatus("success");
-      } catch (err) {
+      } catch {
         if (!cancelledRef.current) {
           setStatus("error");
-          setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido");
         }
       }
     })();
@@ -389,6 +385,8 @@ export function MultiLocationMap({
       }
     };
   }, [locations]);
+
+  if (status === "error") return null;
 
   return (
     <div
@@ -411,11 +409,6 @@ export function MultiLocationMap({
             Geocodificando {locations.length} endereço
             {locations.length > 1 ? "s" : ""}…
           </span>
-        </div>
-      )}
-      {status === "error" && (
-        <div style={overlayStyle}>
-          <span style={{ color: "#e55", fontSize: 13 }}>{errorMsg}</span>
         </div>
       )}
     </div>

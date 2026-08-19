@@ -11,7 +11,7 @@ export function AuthActionPage({
   children: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-4 pb-28 pt-12">
       <section className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
         <Link
           to="/auth"

@@ -86,7 +86,6 @@ export const badgePrintQueryOptions = (
 ) =>
   queryOptions({
     queryKey: badgeKeys.print(editionId, emissionIds),
-    enabled: false,
     queryFn: () =>
       getEditionBadgesPrint(editionId, { emission_ids: emissionIds }).then(
         orvalData<BadgePrintItem[]>,

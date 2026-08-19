@@ -3,4 +3,6 @@ export const profileKeys = {
   detail: (actorId: string) => [...profileKeys.all, "detail", actorId] as const,
   certificateName: (actorId: string) =>
     [...profileKeys.all, "certificate-name", actorId] as const,
+  displayNames: (actorIds: string[]) =>
+    [...profileKeys.all, "display-names", actorIds] as const,
 };

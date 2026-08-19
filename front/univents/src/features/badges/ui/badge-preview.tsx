@@ -17,7 +17,9 @@ export function BadgePreview({
   editionName,
   ticketName,
   participantName,
+  location,
   actionUrl: actionUrlOverride,
+  showVariables = false,
 }: {
   badge: BadgeProfileBadge | BadgePrintItem | BadgeTemplate;
   className?: string;
@@ -27,7 +29,9 @@ export function BadgePreview({
   editionName?: string;
   ticketName?: string;
   participantName?: string;
+  location?: string;
   actionUrl?: string;
+  showVariables?: boolean;
 }) {
   const design = badgeDesignSchema.safeParse(badge.design_data).success
     ? badgeDesignSchema.parse(badge.design_data)
@@ -51,6 +55,7 @@ export function BadgePreview({
     ticket_name:
       ticketName ?? ("ticket_name" in badge ? (badge.ticket_name ?? "") : ""),
     participant_name: participantName ?? "",
+    location: location ?? "",
     checkin_url: actionUrl,
   };
 
@@ -58,7 +63,20 @@ export function BadgePreview({
     return element.paragraphs
       .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
       .join("\n")
-      .replace(/\{\{([^}]+)\}\}/g, (_, key: string) => values[key] ?? "");
+      .replace(/\{\{([^}]+)\}\}/g, (_, key: string) => {
+        if (values[key]) return values[key];
+        if (!showVariables) return "";
+        return (
+          {
+            event_name: "Nome do evento",
+            edition_name: "Nome da edição",
+            ticket_name: "Nome do ingresso",
+            participant_name: "Nome do participante",
+            location: "Local da edição",
+            checkin_url: "Link de check-in",
+          }[key] ?? key
+        );
+      });
   }
 
   return (
@@ -66,6 +84,7 @@ export function BadgePreview({
       className={`${className} shrink-0 overflow-hidden rounded-md${framed ? " border shadow-sm" : ""}`}
       style={{
         aspectRatio: `${design.canvas.width} / ${design.canvas.height}`,
+        containerType: "inline-size",
         backgroundColor: design.backgroundColor,
         backgroundImage: design.background
           ? `url(${design.background})`
@@ -140,12 +159,11 @@ function BadgeElementPreview({
       className="absolute overflow-hidden whitespace-pre-wrap"
       style={{
         ...style,
+        height: `calc(${(element.height / design.canvas.height) * 100}% + ${(6 / design.canvas.width) * 100}cqw)`,
         color: element.paragraphs[0]?.runs[0]?.color,
         fontWeight: element.paragraphs[0]?.runs[0]?.bold ? "bold" : "normal",
-        fontSize: Math.max(
-          10,
-          (element.paragraphs[0]?.runs[0]?.fontSize ?? 20) * 0.5,
-        ),
+        fontSize: `${((element.paragraphs[0]?.runs[0]?.fontSize ?? 20) / design.canvas.width) * 100}cqw`,
+        lineHeight: element.paragraphs[0]?.lineHeight,
         textAlign: element.paragraphs[0]?.align,
       }}
     >

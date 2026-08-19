@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -33,8 +33,11 @@ interface AdminBadgeCardProps {
   kind: "template" | "emission";
   index?: number;
   ticketName?: string;
+  participantName?: string;
+  location?: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  onDuplicate?: () => void;
   onView?: () => void;
 }
 
@@ -43,8 +46,11 @@ export default function AdminBadgeCard({
   kind,
   index = 0,
   ticketName,
+  participantName,
+  location,
   onEdit,
   onDelete,
+  onDuplicate,
   onView,
 }: AdminBadgeCardProps) {
   const title =
@@ -82,6 +88,9 @@ export default function AdminBadgeCard({
           badge={item}
           className="h-full w-full object-cover"
           contain
+          showVariables={kind === "template"}
+          participantName={participantName}
+          location={location}
         />
 
         {kind === "template" && (
@@ -113,6 +122,17 @@ export default function AdminBadgeCard({
                   >
                     <Pencil className="size-4" />
                     <span>Editar</span>
+                  </DropdownMenuItem>
+                ) : null}
+                {onDuplicate ? (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate();
+                    }}
+                  >
+                    <Copy className="size-4" />
+                    <span>Duplicar</span>
                   </DropdownMenuItem>
                 ) : null}
                 {onDelete ? (
