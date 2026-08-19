@@ -141,6 +141,7 @@ function BadgeElementPreview({
       className="absolute overflow-hidden whitespace-pre-wrap"
       style={{
         ...style,
+        height: `calc(${(element.height / design.canvas.height) * 100}% + ${(6 / design.canvas.width) * 100}cqw)`,
         color: element.paragraphs[0]?.runs[0]?.color,
         fontWeight: element.paragraphs[0]?.runs[0]?.bold ? "bold" : "normal",
         fontSize: `${((element.paragraphs[0]?.runs[0]?.fontSize ?? 20) / design.canvas.width) * 100}cqw`,
