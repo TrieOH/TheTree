@@ -12,10 +12,12 @@ export function EventImageActions({
   event,
   field,
   compact = false,
+  inputId,
 }: {
   event: EventI;
   field: ImageField;
   compact?: boolean;
+  inputId?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { enqueue, tasks } = useUploadQueue();
@@ -92,6 +94,7 @@ export function EventImageActions({
       className={compact ? "flex items-center gap-1" : "flex flex-wrap gap-2"}
     >
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         accept="image/*"

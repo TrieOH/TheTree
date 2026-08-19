@@ -4,14 +4,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   CalendarDays,
-  CalendarPlus,
-  CheckCircle2,
   ChevronRight,
-  CircleAlert,
   CreditCard,
   Eye,
   LayoutGrid,
-  Users,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -22,9 +18,11 @@ import {
 } from "@/features/events/api";
 import {
   useDiscontinueEventMutation,
+  usePatchEventMutation,
   usePublishEventMutation,
 } from "@/features/events/api/mutations";
 import { EventImageActions } from "@/features/events/ui/EventImageActions";
+import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import {
   useConnectEventSellerMutation,
   useDisconnectEventSellerMutation,
@@ -42,6 +40,7 @@ import {
 } from "@/shared/ui/shadcn/card";
 import { AlertModal } from "@/widgets/ui/alert-modal";
 import { QuickAction } from "@/widgets/ui/quick-action";
+import { StepChecklist } from "@/widgets/ui/step-checklist";
 
 const statusConfig = {
   draft: {
@@ -90,6 +89,7 @@ function EventOverviewRoute() {
   const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false);
   const [disconnectSellerConfirmOpen, setDisconnectSellerConfirmOpen] =
     useState(false);
+  const [editEventOpen, setEditEventOpen] = useState(false);
   const event =
     [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
     null;
@@ -98,6 +98,7 @@ function EventOverviewRoute() {
 
   const publishEventMutation = usePublishEventMutation();
   const discontinueEventMutation = useDiscontinueEventMutation();
+  const patchEventMutation = usePatchEventMutation();
   const connectSellerMutation = useConnectEventSellerMutation();
   const disconnectSellerMutation = useDisconnectEventSellerMutation();
 
@@ -145,33 +146,47 @@ function EventOverviewRoute() {
 
   const checklist = [
     {
-      label: "Banner e logo cadastrados",
-      done: Boolean(event?.banner_url || event?.logo_url),
+      label: "Logo cadastrado",
+      description: "Identifica o evento nos cards e páginas públicas.",
+      done: Boolean(event?.logo_url),
+      action: event?.logo_url
+        ? undefined
+        : {
+            label: "Adicionar",
+            onClick: () =>
+              document.getElementById("event-logo-upload")?.click(),
+          },
+    },
+    {
+      label: "Banner cadastrado",
+      description: "Imagem principal exibida no topo do evento.",
+      done: Boolean(event?.banner_url),
+      action: event?.banner_url
+        ? undefined
+        : {
+            label: "Adicionar",
+            onClick: () =>
+              document.getElementById("event-banner-upload")?.click(),
+          },
     },
     {
       label: "Descrição preenchida",
+      description: "Apresente o evento para quem ainda não o conhece.",
       done: Boolean(event?.description),
-    },
-    {
-      label: "Slug público disponível",
-      done: Boolean(event?.slug),
-    },
-  ];
-
-  const sections = [
-    {
-      label: "Edições",
-      to: "/admin/events/$eventId/editions",
-      icon: CalendarPlus,
-    },
-    {
-      label: "Membros",
-      to: "/admin/events/$eventId/members",
-      icon: Users,
+      action: {
+        label: "Editar",
+        onClick: () => setEditEventOpen(true),
+      },
     },
   ];
 
   const actions = [
+    {
+      label: "Editar evento",
+      onClick: () => setEditEventOpen(true),
+      disabled: !event,
+      variant: "default" as const,
+    },
     ...(event?.status === "draft"
       ? [
           {
@@ -232,8 +247,16 @@ function EventOverviewRoute() {
                   <span className="text-xs text-muted-foreground">
                     Imagens do evento
                   </span>
-                  <EventImageActions event={event} field="logo_url" />
-                  <EventImageActions event={event} field="banner_url" />
+                  <EventImageActions
+                    event={event}
+                    field="logo_url"
+                    inputId="event-logo-upload"
+                  />
+                  <EventImageActions
+                    event={event}
+                    field="banner_url"
+                    inputId="event-banner-upload"
+                  />
                 </div>
               ) : null}
 
@@ -349,66 +372,17 @@ function EventOverviewRoute() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-card/95 shadow-sm">
-          <CardHeader className="border-b border-border/60">
-            <CardTitle>Checklist do evento</CardTitle>
-            <CardDescription>
-              Itens derivados dos dados já cadastrados no evento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 py-5">
-            {checklist.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/15 px-4 py-3.5"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "size-2 rounded-full",
-                      item.done ? "bg-emerald-500" : "bg-amber-500",
-                    )}
-                  />
-                  <span className="text-sm text-foreground">{item.label}</span>
-                </div>
-                {item.done ? (
-                  <CheckCircle2 className="size-4 text-emerald-500/70" />
-                ) : (
-                  <CircleAlert className="size-4 text-amber-500/70" />
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60 bg-card/95 shadow-sm">
-          <CardHeader className="border-b border-border/60">
-            <CardTitle>Seções do evento</CardTitle>
-            <CardDescription>
-              Gerencie os recursos vinculados a este evento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <QuickAction
-                  key={section.to}
-                  to={section.to}
-                  params={{ eventId }}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="size-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {section.label}
-                    </span>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </QuickAction>
-              );
-            })}
-          </CardContent>
-        </Card>
+        <StepChecklist
+          title="Event checklist"
+          items={checklist.map((item) => ({
+            id: item.label,
+            title: item.label,
+            description: item.description,
+            completed: item.done,
+            action: item.action,
+          }))}
+          className="fixed right-4 top-24 z-40 sm:right-6"
+        />
 
         <Card className="border-border/60 bg-card/95 shadow-sm">
           <CardHeader className="border-b border-border/60">
@@ -453,6 +427,18 @@ function EventOverviewRoute() {
           </CardContent>
         </Card>
       </div>
+
+      <ManageEventModal
+        key={event?.id ?? "event"}
+        open={editEventOpen}
+        onOpenChange={setEditEventOpen}
+        event={event}
+        onCreate={(values) =>
+          event
+            ? patchEventMutation.mutateAsync({ eventId, data: values })
+            : false
+        }
+      />
 
       <AlertModal
         open={disconnectSellerConfirmOpen}

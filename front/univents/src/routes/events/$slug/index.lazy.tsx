@@ -2,6 +2,7 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { Calendar, MapPin, Share2 } from "lucide-react";
+import { useMemo } from "react";
 import {
   activeEditionQueryOptions,
   pastEditionsQueryOptions,
@@ -21,6 +22,7 @@ import {
 import { TicketsSection } from "@/features/tickets/ui/TicketsSection";
 import { formatDateRange } from "@/shared/lib/date";
 import { getInitials, handleShare } from "@/shared/lib/share";
+import { LocationMap } from "@/widgets/ui/map-embed";
 
 export const Route = createLazyFileRoute("/events/$slug/")({
   component: RouteComponent,
@@ -56,6 +58,16 @@ function RouteComponent() {
 
   const initials = getInitials(event.full_name);
   const stockById = new Map(stock.map((item) => [item.id, item.stock]));
+  const mapLocation = useMemo(
+    () =>
+      activeEdition?.location_name
+        ? {
+            name: activeEdition.location_name,
+            address: activeEdition.location_description ?? "",
+          }
+        : null,
+    [activeEdition?.location_description, activeEdition?.location_name],
+  );
   useInventoryStream(activeEdition?.id ?? "");
 
   return (
@@ -190,6 +202,15 @@ function RouteComponent() {
           )}
         </div>
       </div>
+      {mapLocation && (
+        <section className="relative z-0 isolate mx-auto mt-6 w-full max-w-6xl px-4 sm:px-8!">
+          <LocationMap
+            location={mapLocation}
+            height="320px"
+            className="overflow-hidden rounded-2xl border border-border shadow-sm"
+          />
+        </section>
+      )}
       <main className="flex flex-col justify-center items-center w-full mt-6 px-4 sm:px-8!">
         <div className="max-w-6xl w-full">
           <TicketsSection
