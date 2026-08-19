@@ -7,6 +7,7 @@ import {
   CircleGauge,
   Clock3,
   FlaskConical,
+  Percent,
   ReceiptText,
   TrendingUp,
   XCircle,
@@ -166,16 +167,18 @@ export function TransactionsDashboard({
   title = "Transactions",
   description = "Payment activity across your wallets.",
   intents,
+  feeBps = 0,
 }: {
   title?: string;
   description?: string;
   intents: Intent[];
+  feeBps?: number;
 }) {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<IntentStatus | "all">("all");
   const [environmentFilter, setEnvironmentFilter] = useState<
-    "all" | "production" | "test"
-  >("all");
+    "production" | "test"
+  >("production");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState<Intent>>({
     field: "created_at",
@@ -197,25 +200,33 @@ export function TransactionsDashboard({
     },
     onError: () => toast.error("Failed to cancel intent"),
   });
-  const succeeded = intents.filter((intent) => intent.status === "succeeded");
-  const volume = succeeded.reduce(
+  const environmentIntents = intents.filter((intent) =>
+    environmentFilter === "production" ? !intent.sandbox : intent.sandbox,
+  );
+  const captured = environmentIntents.filter(
+    (intent) => intent.status === "succeeded" || intent.status === "refunded",
+  );
+  const refunded = environmentIntents.filter(
+    (intent) => intent.status === "refunded",
+  );
+  const volume = environmentIntents.reduce(
     (total, intent) => total + intent.amount_cents,
     0,
   );
-  const productionVolume = succeeded
-    .filter((intent) => !intent.sandbox)
+  const capturedVolume = environmentIntents
+    .filter((intent) => intent.status === "succeeded")
     .reduce((total, intent) => total + intent.amount_cents, 0);
-  const testVolume = succeeded
-    .filter((intent) => intent.sandbox)
-    .reduce((total, intent) => total + intent.amount_cents, 0);
-  const successRate = intents.length
-    ? Math.round((succeeded.length / intents.length) * 100)
+  const revenueVolume = captured.reduce(
+    (total, intent) => total + intent.amount_cents,
+    0,
+  );
+  const revenue = Math.round((revenueVolume * feeBps) / 10_000);
+  const successRate = environmentIntents.length
+    ? Math.round((captured.length / environmentIntents.length) * 100)
     : 0;
-  const environmentIntents = intents.filter((intent) => {
-    if (environmentFilter === "production") return !intent.sandbox;
-    if (environmentFilter === "test") return intent.sandbox;
-    return true;
-  });
+  const refundedRate = captured.length
+    ? Math.round((refunded.length / captured.length) * 100)
+    : 0;
   const filtered = environmentIntents.filter((intent) => {
     const matchesStatus =
       statusFilter === "all" || intent.status === statusFilter;
@@ -232,26 +243,32 @@ export function TransactionsDashboard({
     {
       label: "Total volume",
       value: formatBRL(volume),
-      detail: "All succeeded payments",
+      detail: "All payment intents",
       icon: TrendingUp,
     },
     {
       label: "Captured volume",
-      value: formatBRL(productionVolume),
-      detail: "Live succeeded payments",
+      value: formatBRL(capturedVolume),
+      detail: "Succeeded payments",
       icon: CheckCircle2,
     },
     {
-      label: "Test volume",
-      value: formatBRL(testVolume),
-      detail: "Sandbox succeeded payments",
-      icon: FlaskConical,
+      label: "Revenue",
+      value: formatBRL(revenue),
+      detail: `${(feeBps / 100).toFixed(2)}% wallet fee`,
+      icon: TrendingUp,
     },
     {
       label: "Success rate",
       value: `${successRate}%`,
-      detail: `${succeeded.length} of ${intents.length} intents`,
+      detail: `${captured.length} of ${environmentIntents.length} intents`,
       icon: CircleGauge,
+    },
+    {
+      label: "Refunded",
+      value: `${refundedRate}%`,
+      detail: `${refunded.length} of ${captured.length} captured intents`,
+      icon: Percent,
     },
   ];
 
@@ -272,7 +289,7 @@ export function TransactionsDashboard({
           role="radiogroup"
           aria-label="Transaction environment"
         >
-          {(["all", "production", "test"] as const).map((environment) => (
+          {(["production", "test"] as const).map((environment) => (
             <Button
               key={environment}
               size="sm"
@@ -284,17 +301,13 @@ export function TransactionsDashboard({
               )}
               onClick={() => setEnvironmentFilter(environment)}
             >
-              {environment === "all"
-                ? "All"
-                : environment === "production"
-                  ? "Production"
-                  : "Test"}
+              {environment === "production" ? "Production" : "Test"}
             </Button>
           ))}
         </div>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
           <div
             key={stat.label}
