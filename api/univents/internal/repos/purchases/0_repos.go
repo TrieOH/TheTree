@@ -34,6 +34,7 @@ func mapPurchase(src sqlc.Purchase) models.Purchase {
 		PaymentMethod:    src.PaymentMethod,
 		PayssageSellerID: src.PayssageSellerID,
 		PayssageIntentID: src.PayssageIntentID,
+		PayerEmail:       src.PayerEmail,
 		QRCode:           src.QrCode,
 		QRCodeBase64:     src.QrCodeBase64,
 		ExpiresAt:        src.ExpiresAt,

@@ -2,6 +2,7 @@ package webhooks_test
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -18,12 +19,14 @@ import (
 	"univents/models"
 )
 
-// recordingBadges records EmitForConfirmedRegistration calls (the real
-// badge emit needs the full badge_emissions machinery; here we assert it
-// was called with the right registration).
+// recordingBadges records EmitForConfirmedRegistration and
+// RevokeForRegistration calls (the real badge machinery needs the full
+// badge_emissions DB; here we assert the calls happened with the right
+// registration ids).
 type recordingBadges struct {
 	mu      sync.Mutex
 	emitted []uuid.UUID
+	revoked []uuid.UUID
 }
 
 func (b *recordingBadges) EmitForConfirmedRegistration(_ context.Context, id uuid.UUID) (*models.BadgeEmission, error) {
@@ -33,10 +36,23 @@ func (b *recordingBadges) EmitForConfirmedRegistration(_ context.Context, id uui
 	return &models.BadgeEmission{ID: uuid.New()}, nil
 }
 
+func (b *recordingBadges) RevokeForRegistration(_ context.Context, id uuid.UUID, _ string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.revoked = append(b.revoked, id)
+	return nil
+}
+
 func (b *recordingBadges) ids() []uuid.UUID {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return append([]uuid.UUID{}, b.emitted...)
+}
+
+func (b *recordingBadges) revokedIDs() []uuid.UUID {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return append([]uuid.UUID{}, b.revoked...)
 }
 
 // recordingRiver records JobCancel calls.
@@ -360,5 +376,91 @@ func TestReceiveDB_DuplicateDeliveryIsNoOp(t *testing.T) {
 	// delivery already published stock + purchase).
 	if got := notifier.payloads(); len(got) != 2 {
 		t.Fatalf("notifications = %d, want 2 (first delivery only)", len(got))
+	}
+}
+
+// TestReceiveDB_RefundEndToEnd drives the full refund path (refund plan
+// slice 3): approve via payment.succeeded, then flip via payment.refunded —
+// purchase → refunded, materialized rows → cancelled, badge revoked, stock
+// NOTIFYed (no purchase event).
+func TestReceiveDB_RefundEndToEnd(t *testing.T) {
+	pool := testdb.Postgres(t, "../../../db/migrations")
+	q := sqlc.New(pool)
+	runner := database.NewPGXTxRunner(pool)
+	database.SetDefaultRunner(runner)
+	r := repos.New(q)
+
+	fx := seedDBFixture(t, q)
+	seed := seedPendingPurchase(t, r, fx)
+
+	badges := &recordingBadges{}
+	river := &recordingRiver{}
+	notifier := &recordingNotifier{}
+	ops := webhooks.NewOperations(
+		r.Purchases, r.Registrations, r.Products, r.Programs,
+		badges, notifier, river, runner, testSecret,
+	)
+	ops.SetCardRaceWait(0)
+
+	ctx := context.Background()
+
+	err := ops.Receive(ctx, input(seed.intentID, "payment.succeeded", []byte(`{"event":"ok"}`)))
+	if err != nil {
+		t.Fatalf("approve Receive: %v", err)
+	}
+	err = ops.Receive(ctx, input(seed.intentID, "payment.refunded", []byte(`{"event":"refund"}`)))
+	if err != nil {
+		t.Fatalf("refund Receive: %v", err)
+	}
+
+	got, err := r.Purchases.GetByID(ctx, seed.purchaseID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.Status != models.PurchaseStatusRefunded {
+		t.Fatalf("purchase status = %s, want refunded", got.Status)
+	}
+
+	reg, err := r.Registrations.GetByID(ctx, seed.regID)
+	if err != nil {
+		t.Fatalf("registration GetByID: %v", err)
+	}
+	if reg.Status != models.RegistrationStatusCancelled {
+		t.Fatalf("registration status = %s, want cancelled", reg.Status)
+	}
+
+	var ppStatus string
+	err = pool.QueryRow(ctx, "SELECT status FROM product_purchases WHERE id = $1", seed.ppID).Scan(&ppStatus)
+	if err != nil {
+		t.Fatalf("product_purchases read: %v", err)
+	}
+	if ppStatus != "cancelled" {
+		t.Fatalf("product_purchase status = %s, want cancelled", ppStatus)
+	}
+
+	var partStatus string
+	err = pool.QueryRow(ctx, "SELECT status FROM program_participations WHERE id = $1", seed.partID).Scan(&partStatus)
+	if err != nil {
+		t.Fatalf("program_participations read: %v", err)
+	}
+	if partStatus != "cancelled" {
+		t.Fatalf("participation status = %s, want cancelled", partStatus)
+	}
+
+	// Badge emitted on approve, revoked on refund.
+	if ids := badges.ids(); len(ids) != 1 || ids[0] != seed.regID {
+		t.Fatalf("badge emits = %v, want [%s]", ids, seed.regID)
+	}
+	if ids := badges.revokedIDs(); len(ids) != 1 || ids[0] != seed.regID {
+		t.Fatalf("badge revokes = %v, want [%s]", ids, seed.regID)
+	}
+
+	// Approve published stock + purchase (2); refund publishes stock only (1).
+	if got := notifier.payloads(); len(got) != 3 {
+		t.Fatalf("notifications = %d, want 3 (approve stock+purchase, refund stock)", len(got))
+	}
+	last := notifier.payloads()[2]
+	if !strings.Contains(last, `"kind":"stock"`) {
+		t.Fatalf("refund notification = %s, want stock-only (no purchase event)", last)
 	}
 }

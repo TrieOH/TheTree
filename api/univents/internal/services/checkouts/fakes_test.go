@@ -25,6 +25,7 @@ type fakePayssage struct {
 	mu         sync.Mutex
 	checkoutFn func(walletID uuid.UUID, req payssage.CreateIntentRequest) (*payssage.Intent, error)
 	cancelled  []uuid.UUID
+	refunded   []uuid.UUID
 	intentSeq  int
 }
 
@@ -50,6 +51,19 @@ func (f *fakePayssage) cancelCount() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return len(f.cancelled)
+}
+
+func (f *fakePayssage) RefundIntent(_ context.Context, intentID uuid.UUID) (*payssage.Intent, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.refunded = append(f.refunded, intentID)
+	return &payssage.Intent{ID: intentID, Status: payssage.IntentStatusSucceeded}, nil
+}
+
+func (f *fakePayssage) refundCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.refunded)
 }
 
 // fakeBadges records EmitForConfirmedRegistration calls (free-order badge

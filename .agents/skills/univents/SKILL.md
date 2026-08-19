@@ -58,9 +58,22 @@ Checkout `POST /editions/{id}/checkout` is **split 7 — not landed**. Until the
 
 **Realtime contract**: WS frames are `purchase.snapshot` / `intent.updated` / `purchase.confirmed` / `purchase.expired` / `purchase.cancelled` (`{"type","payload"}`); tokens are 32-byte random, SHA-256 at rest, 10-min TTL, one-time. SSE items are `{"id","item_type","stock"}` with `stock: null` = unlimited; numbers always recomputed from the DB (publishers send only item ids).
 
+## The refund flow (checkout landed + refund plan slices 2–4)
+
+Refunds are **webhook-confirmed**: the organizer endpoint calls payssage, the `payment.refunded` webhook flips the purchase `approved → refunded` (single writer, like approval). Full refund only (no amount). E2E recipe (needs payssage `TEST_MODE=true`):
+
+1. Checkout `POST /editions/{id}/checkout` (or seed as above) → purchase `pending` + intent.
+2. Fire `payment.succeeded` → purchase `approved`.
+3. Organizer refund: `POST /purchases/{purchase_id}/refund` (event owner/admin JWT) → 200, purchase still `approved`.
+4. Testmode refund: `POST /testmode/intents/{intent_id}/refund` (payssage service key, TEST_MODE) → intent `refunded`, fake refund marker in `provider_data`.
+5. Fire `payment.refunded` (D2 envelope, signed) → 200 → purchase `refunded`, registrations/product_purchases/participations `cancelled`, badge emission `revoked`, `NOTIFY univents_changes` (stock-only; no WS frame — the socket closed on approval).
+6. Verify: `GET /checkouts/{id}` shows `refunded`; organizer read `GET /editions/{id}/purchases` (owner/admin) lists the order with `payer_email` + attendees.
+
+Organizer endpoints: `GET /editions/{edition_id}/purchases` (owner/admin; orders + `payer_email` + ticket attendees), `POST /purchases/{purchase_id}/refund` (owner/admin; guard `approved`; 409 already-refunded/non-refundable). Intent tagging: univents sends `external_id` (purchase) + `external_group` (edition) at checkout; existing intents are backfilled by hand (`UPDATE intents SET external_id = metadata->>'purchase_id', external_group = metadata->>'edition_id'`).
+
 ## Gotchas (learned the hard way)
 
-- Checkout isn't merged — don't try `POST /editions/{id}/checkout` yet; the buy e2e is seed + signed webhook.
+- Checkout is landed (`POST /editions/{id}/checkout`); the seed path above is for the pre-checkout splits. Refunds are webhook-confirmed — the refund endpoint never flips the purchase itself.
 - `completeEventPayments` verifies the seller belongs to the platform wallet (split 2); a seeded seller must match `PAYSSAGE_WALLET_ID`'s wallet.
 - **`patchProductVariant` does not merge**: omitting `stock` sets it NULL. Include every field you intend to keep when patching (open issue).
 - SSE is a **raw hijacked route** — the harness has a 60s WriteTimeout and no Flush through its middleware; the stream hijacks the connection. Don't "fix" it by buffering.

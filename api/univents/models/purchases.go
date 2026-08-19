@@ -15,6 +15,9 @@ const (
 	PurchaseStatusCancelled PurchaseStatus = "cancelled"
 	PurchaseStatusFailed    PurchaseStatus = "failed"
 	PurchaseStatusRejected  PurchaseStatus = "rejected"
+	// PurchaseStatusRefunded: an approved order whose payment was reversed
+	// (webhook-confirmed via payment.refunded, refund plan slice 3).
+	PurchaseStatusRefunded PurchaseStatus = "refunded"
 )
 
 type PurchaseItemType string
@@ -42,13 +45,17 @@ type Purchase struct {
 	PaymentMethod    *string        `json:"payment_method"`
 	PayssageSellerID *uuid.UUID     `json:"payssage_seller_id"`
 	PayssageIntentID *uuid.UUID     `json:"payssage_intent_id"`
-	QRCode           *string        `json:"qr_code"`
-	QRCodeBase64     *string        `json:"qr_code_base64"`
-	ExpiresAt        time.Time      `json:"expires_at"`
-	RiverJobID       *int64         `json:"river_job_id"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        *time.Time     `json:"updated_at"`
-	DeletedAt        *time.Time     `json:"deleted_at"`
+	// PayerEmail is the person the payment provider will refund — the
+	// checkout's payer email (refund plan B3), surfaced by the organizer
+	// orders read. Null for free orders.
+	PayerEmail   *string    `json:"payer_email,omitempty"`
+	QRCode       *string    `json:"qr_code"`
+	QRCodeBase64 *string    `json:"qr_code_base64"`
+	ExpiresAt    time.Time  `json:"expires_at"`
+	RiverJobID   *int64     `json:"river_job_id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    *time.Time `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at"`
 }
 
 type PurchaseItem struct {

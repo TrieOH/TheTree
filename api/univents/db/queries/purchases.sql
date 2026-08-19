@@ -1,6 +1,6 @@
 -- name: CreatePurchase :one
-INSERT INTO purchases (edition_id, purchaser_id, status, status_reason, total_cents, currency, payment_method, payssage_seller_id, payssage_intent_id, qr_code, qr_code_base64, expires_at, river_job_id)
-VALUES (@edition_id, @purchaser_id, @status, @status_reason, @total_cents, @currency, @payment_method, @payssage_seller_id, @payssage_intent_id, @qr_code, @qr_code_base64, @expires_at, @river_job_id)
+INSERT INTO purchases (edition_id, purchaser_id, status, status_reason, total_cents, currency, payment_method, payssage_seller_id, payssage_intent_id, payer_email, qr_code, qr_code_base64, expires_at, river_job_id)
+VALUES (@edition_id, @purchaser_id, @status, @status_reason, @total_cents, @currency, @payment_method, @payssage_seller_id, @payssage_intent_id, @payer_email, @qr_code, @qr_code_base64, @expires_at, @river_job_id)
 RETURNING *;
 
 -- name: CreatePurchaseItem :one
@@ -31,6 +31,13 @@ WHERE payssage_intent_id = @intent_id
 SELECT *
 FROM purchases
 WHERE purchaser_id = @purchaser_id
+  AND deleted_at IS NULL
+ORDER BY created_at DESC;
+
+-- name: ListPurchasesByEdition :many
+SELECT *
+FROM purchases
+WHERE edition_id = @edition_id
   AND deleted_at IS NULL
 ORDER BY created_at DESC;
 
