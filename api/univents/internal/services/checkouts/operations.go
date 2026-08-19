@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"lib/database"
+	"univents/internal/authz"
 	"univents/internal/services/notify"
 	"univents/models"
 	"univents/ports"
@@ -37,11 +38,13 @@ type IntentClient interface {
 }
 
 // PayssageClient is the checkout's Payssage write seam: create the intent
-// (post-commit) and best-effort cancel it when storing the intent id back
-// fails. Satisfied by *payssage.Client and faked in tests.
+// (post-commit), best-effort cancel it when storing the intent id back
+// fails, and refund it on the organizer refund path. Satisfied by
+// *payssage.Client and faked in tests.
 type PayssageClient interface {
 	Checkout(ctx context.Context, walletID uuid.UUID, req payssage.CreateIntentRequest) (*payssage.Intent, error)
 	CancelIntent(ctx context.Context, intentID uuid.UUID) (*payssage.Intent, error)
+	RefundIntent(ctx context.Context, intentID uuid.UUID) (*payssage.Intent, error)
 }
 
 // TokenIssuer is the one-time WS handshake token seam (split 6). Satisfied
@@ -95,6 +98,7 @@ type Operations struct {
 	payssage         PayssageClient
 	walletID         uuid.UUID // the single platform wallet (D6)
 	tokens           TokenIssuer
+	authz            *authz.Service // organizer orders/refund (refund plan B3)
 
 	// intentAttempts / intentRetryDelay are the resume's GetIntent budget.
 	// Overridable in tests.
@@ -121,6 +125,7 @@ func NewOperations(
 	payssage PayssageClient,
 	walletID uuid.UUID,
 	tokens TokenIssuer,
+	authz *authz.Service,
 ) *Operations {
 	return &Operations{
 		purchases:        purchases,
@@ -141,6 +146,7 @@ func NewOperations(
 		payssage:         payssage,
 		walletID:         walletID,
 		tokens:           tokens,
+		authz:            authz,
 		intentAttempts:   defaultIntentAttempts,
 		intentRetryDelay: defaultIntentRetryDelay,
 	}

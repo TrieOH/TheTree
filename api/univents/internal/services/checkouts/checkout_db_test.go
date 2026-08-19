@@ -13,6 +13,7 @@ import (
 	"lib/database"
 	"lib/testdb"
 
+	"univents/internal/authz"
 	"univents/internal/repos"
 	"univents/internal/services/checkouts"
 	"univents/internal/sqlc"
@@ -28,6 +29,7 @@ var walletID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
 // published edition → ticket type + product/variant + program/occurrence.
 type fixture struct {
 	eventID      uuid.UUID
+	ownerID      uuid.UUID
 	editionID    uuid.UUID
 	ticketID     uuid.UUID
 	variantID    uuid.UUID
@@ -141,6 +143,7 @@ func seedStoreOpts(t *testing.T, r *repos.Repos, o storeOpts) fixture {
 
 	return fixture{
 		eventID:      event.ID,
+		ownerID:      event.OwnerID,
 		editionID:    edition.ID,
 		ticketID:     ticket.ID,
 		variantID:    variant.ID,
@@ -181,7 +184,7 @@ func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentReques
 		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
 		r.Registrations, r.Products, r.Programs,
 		fs.badges, fs.notifier, fs.river, tx,
-		nil, ps, walletID, fs.tokens,
+		nil, ps, walletID, fs.tokens, authz.New(r.Events),
 	)
 	return r, ops, fs, q
 }

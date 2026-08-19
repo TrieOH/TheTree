@@ -121,6 +121,11 @@ func (p *Provider) NormalizeStatus(status string) models.IntentStatus {
 		return models.IntentStatusCancelled
 	case "refunded", "charged_back":
 		return models.IntentStatusRefunded
+	case "partially_refunded":
+		// A partial refund (e.g. initiated from the MP panel) still means the
+		// order is being reversed — treat it as refunded rather than falling
+		// through to pending (which would re-trigger pending-race logic).
+		return models.IntentStatusRefunded
 	default:
 		return models.IntentStatusPending
 	}

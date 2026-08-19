@@ -25,6 +25,7 @@ import (
 type stubRoundTripper struct {
 	body string
 	req  chan map[string]any
+	url  chan string
 }
 
 func (s *stubRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -38,6 +39,9 @@ func (s *stubRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	_ = dec.Decode(&payload)
 	if s.req != nil {
 		s.req <- payload
+	}
+	if s.url != nil {
+		s.url <- r.URL.Path
 	}
 	return &http.Response{
 		StatusCode: http.StatusCreated,
@@ -214,6 +218,59 @@ func TestCheckout_RequestFeeWhenWalletHasNone(t *testing.T) {
 
 // TestCheckout_PixPinsShape: pix carries no card-only fields and the wallet
 // fee still applies.
+// TestCheckout_CapturesFeeAndSettlement pins Slice 1 observability: the MP
+// payment response's fee_details, net_received_amount, and money-release
+// fields are captured into the intent's provider_data (so "was my cut
+// applied" and "where's my money" are answerable in-app).
+func TestCheckout_CapturesFeeAndSettlement(t *testing.T) {
+	walletID := uuid.New()
+	body := `{
+  "id": 123456789,
+  "status": "approved",
+  "status_detail": "accredited",
+  "fee_details": [
+    {"type": "mercadopago_fee", "amount": 0.45, "fee_payer": "collector"},
+    {"type": "application_fee", "amount": 2.25, "fee_payer": "collector"}
+  ],
+  "transaction_details": {"net_received_amount": 42.3},
+  "money_release_date": "2026-08-19T03:00:00.000-04:00",
+  "money_release_status": "released"
+}`
+	stub := &stubRoundTripper{body: body, req: make(chan map[string]any, 1)}
+	p := &Provider{
+		cfg:        config.MercadoPagoConfig{MpAccessToken: "TEST_ACCESS_TOKEN"},
+		intents:    fakeIntents{},
+		collectors: fakeCollectors{},
+		sellers:    &fakeSellers{seller: testSeller(walletID)},
+		wallets:    &fakeWallets{wallet: &models.Wallet{ID: walletID, FeeBps: 500}},
+		httpClient: resty.New().SetTransport(stub),
+	}
+
+	intent := testIntent(walletID, uuid.MustParse("22222222-2222-2222-2222-222222222222"))
+	err := p.Checkout(context.Background(), intent, json.RawMessage(pixCheckoutData))
+	if err != nil {
+		t.Fatalf("Checkout: %v", err)
+	}
+
+	var got models.MercadoPagoIntentData
+	err = json.Unmarshal(intent.ProviderData, &got)
+	if err != nil {
+		t.Fatalf("unmarshal provider data: %v", err)
+	}
+	if !bytes.Contains(got.FeeDetails, []byte("application_fee")) {
+		t.Errorf("fee_details not captured: %s", got.FeeDetails)
+	}
+	if got.NetReceivedAmountCents == nil || *got.NetReceivedAmountCents != 4230 {
+		t.Errorf("net_received_amount_cents = %v, want 4230", got.NetReceivedAmountCents)
+	}
+	if got.MoneyReleaseDate == nil || *got.MoneyReleaseDate != "2026-08-19T03:00:00.000-04:00" {
+		t.Errorf("money_release_date = %v", got.MoneyReleaseDate)
+	}
+	if got.MoneyReleaseStatus == nil || *got.MoneyReleaseStatus != "released" {
+		t.Errorf("money_release_status = %v", got.MoneyReleaseStatus)
+	}
+}
+
 func TestCheckout_PixPinsShape(t *testing.T) {
 	walletID := uuid.New()
 	p, stub := newCheckoutTestProvider(

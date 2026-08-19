@@ -20,8 +20,15 @@ type Intent struct {
 	StatusDetail *IntentStatusDetail `json:"status_detail"`
 	ProviderData json.RawMessage     `json:"provider_data"`
 	Metadata     *json.RawMessage    `json:"metadata"`
-	CreatedAt    time.Time           `json:"created_at"`
-	UpdatedAt    time.Time           `json:"updated_at"`
+	// ExternalID is the caller's order id (e.g. the univents purchase id).
+	// ExternalGroup groups intents by a caller-side grouping key (e.g. the
+	// univents edition id). Both are counterparty ids — see the naming
+	// invariant in the refund plan (A7): external_* always holds the
+	// counterparty's id, never payssage's own.
+	ExternalID    *string   `json:"external_id,omitempty"`
+	ExternalGroup *string   `json:"external_group,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type IntentStatus string
@@ -50,23 +57,27 @@ const (
 )
 
 type CreateIntentInput struct {
-	WalletID     uuid.UUID
-	SellerID     uuid.UUID
-	Currency     string
-	AmountCents  int64
-	CheckoutData json.RawMessage
-	Metadata     *json.RawMessage
+	WalletID      uuid.UUID
+	SellerID      uuid.UUID
+	Currency      string
+	AmountCents   int64
+	CheckoutData  json.RawMessage
+	Metadata      *json.RawMessage
+	ExternalID    *string
+	ExternalGroup *string
 }
 
 type HardCreateIntentInput struct {
-	WalletID     uuid.UUID        `json:"wallet_id"`
-	SellerID     uuid.UUID        `json:"seller_id"`
-	CollectorID  *uuid.UUID       `json:"collector_id"`
-	AmountCents  int64            `json:"amount_cents"`
-	Currency     string           `json:"currency"`
-	Sandbox      bool             `json:"sandbox"`
-	Provider     string           `json:"provider"`
-	Status       IntentStatus     `json:"status"`
-	ProviderData json.RawMessage  `json:"provider_data"`
-	Metadata     *json.RawMessage `json:"metadata"`
+	WalletID      uuid.UUID        `json:"wallet_id"`
+	SellerID      uuid.UUID        `json:"seller_id"`
+	CollectorID   *uuid.UUID       `json:"collector_id"`
+	AmountCents   int64            `json:"amount_cents"`
+	Currency      string           `json:"currency"`
+	Sandbox       bool             `json:"sandbox"`
+	Provider      string           `json:"provider"`
+	Status        IntentStatus     `json:"status"`
+	ProviderData  json.RawMessage  `json:"provider_data"`
+	Metadata      *json.RawMessage `json:"metadata"`
+	ExternalID    *string          `json:"external_id"`
+	ExternalGroup *string          `json:"external_group"`
 }

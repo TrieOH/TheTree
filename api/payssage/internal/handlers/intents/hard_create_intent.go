@@ -33,16 +33,18 @@ func (h *Handlers) HardCreateIntent(ctx context.Context, req openapi.HardCreateI
 		sandbox = *req.Body.Sandbox
 	}
 	intent, err := h.ops.HardCreate(ctx, models.HardCreateIntentInput{
-		WalletID:     req.Body.WalletId,
-		SellerID:     req.Body.SellerId,
-		CollectorID:  req.Body.CollectorId,
-		AmountCents:  req.Body.AmountCents,
-		Currency:     req.Body.Currency,
-		Sandbox:      sandbox,
-		Provider:     req.Body.Provider,
-		Status:       req.Body.Status,
-		ProviderData: providerData,
-		Metadata:     &metadata,
+		WalletID:      req.Body.WalletId,
+		SellerID:      req.Body.SellerId,
+		CollectorID:   req.Body.CollectorId,
+		AmountCents:   req.Body.AmountCents,
+		Currency:      req.Body.Currency,
+		Sandbox:       sandbox,
+		Provider:      req.Body.Provider,
+		Status:        req.Body.Status,
+		ProviderData:  providerData,
+		Metadata:      &metadata,
+		ExternalID:    req.Body.ExternalId,
+		ExternalGroup: req.Body.ExternalGroup,
 	})
 	if err != nil {
 		return nil, err

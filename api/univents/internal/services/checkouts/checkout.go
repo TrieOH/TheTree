@@ -234,6 +234,11 @@ func (o *Operations) reserve(ctx context.Context, editionID, purchaserID uuid.UU
 			PaymentMethod: &in.PaymentMethod,
 			ExpiresAt:     expiresAt,
 		}
+		// Payer identity for refunds (refund plan B3): who the provider will
+		// refund. The front sends payment?.payer_email ?? profile.email.
+		if in.Payer.Email != "" {
+			purchase.PayerEmail = new(in.Payer.Email)
+		}
 		if free {
 			purchase.Status = models.PurchaseStatusApproved
 			purchase.PaymentMethod = nil // no payment happened
@@ -811,6 +816,11 @@ func (o *Operations) buildIntentRequest(purchase *models.Purchase, in CheckoutIn
 			"purchase_id": purchase.ID.String(),
 			"edition_id":  purchase.EditionID.String(),
 		},
+		// First-class correlation (refund plan A7): the caller ids payssage
+		// stores as external_id (purchase) + external_group (edition). The
+		// metadata copy is kept for backward compat.
+		ExternalID:    new(purchase.ID.String()),
+		ExternalGroup: new(purchase.EditionID.String()),
 	}
 }
 

@@ -63,12 +63,10 @@ func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 		// needs flipping. Acknowledge.
 		return nil
 	case eventRefunded:
-		// Deferred with D1: refunds arrive after approval; split 4 keeps
-		// the approved state intact and logs for the follow-up refund flow.
-		telemetry.Log().Info("webhook: refunded acknowledged — refund flow deferred (D1)",
-			zap.String("intent_id", input.IntentID.String()),
-			zap.String("purchase_id", purchase.ID.String()))
-		return nil
+		// Refund (refund plan slice 3, replaces the D1 deferral): flip the
+		// approved purchase to refunded, cancel the materialized rows, and
+		// revoke emitted badges — webhook-confirmed, like approval.
+		return o.refund(ctx, purchase)
 	default:
 		telemetry.Log().Warn("webhook: unhandled event type",
 			zap.String("event_type", input.EventType),

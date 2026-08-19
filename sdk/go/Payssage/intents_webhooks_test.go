@@ -124,3 +124,29 @@ func TestCancelIntent(t *testing.T) {
 		t.Fatalf("got %s %s, want POST /intents/%s/cancel", r.Method, r.URL.Path, intentID)
 	}
 }
+
+// TestRefundIntent pins the SDK refund call: POST /intents/{id}/refund, and
+// the response carries the intent (status stays succeeded until the
+// payment.refunded webhook confirms).
+func TestRefundIntent(t *testing.T) {
+	intentID := uuid.New()
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"data": {
+		"id": "`+intentID.String()+`", "wallet_id": "`+uuid.New().String()+`",
+		"seller_id": "`+uuid.New().String()+`", "collector_id": null,
+		"amount_cents": 100, "currency": "BRL", "sandbox": false,
+		"provider": "mercado_pago", "status": "succeeded", "status_detail": null,
+		"provider_data": {"refund_id": "987654321"}, "metadata": null,
+		"created_at": "2026-08-01T00:00:00Z", "updated_at": "2026-08-01T00:00:00Z"
+	}}`)
+
+	intent, err := client.RefundIntent(context.Background(), intentID)
+	if err != nil {
+		t.Fatalf("RefundIntent: %v", err)
+	}
+	if intent.Status != IntentStatusSucceeded {
+		t.Fatalf("status = %s, want succeeded (webhook confirms the flip)", intent.Status)
+	}
+	if r := getReq(); r.Method != http.MethodPost || r.URL.Path != "/intents/"+intentID.String()+"/refund" {
+		t.Fatalf("got %s %s, want POST /intents/%s/refund", r.Method, r.URL.Path, intentID)
+	}
+}

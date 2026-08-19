@@ -118,7 +118,7 @@ func NewOperations(
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
 		Payments:    NewPayments(r.Events, payssageClient, authzSvc, platformWalletID),
 		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
-		Checkouts:   NewCheckouts(r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, payssageClient, payssageClient, platformWalletID, wsOps),
+		Checkouts:   NewCheckouts(r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, payssageClient, payssageClient, platformWalletID, wsOps, authzSvc),
 		Purchases:   NewPurchases(r.Purchases),
 		WS:          wsOps,
 		Store:       NewStore(r.Purchases, r.Editions, notifier),

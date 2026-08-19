@@ -10,13 +10,16 @@ import (
 // CreateIntentRequest is the checkout payload: create a payment intent
 // against a wallet for the given seller, currency, and amount. Mirrors the
 // spec's `CreateIntentRequest` (`checkout_provider_data` is provider-specific
-// and may carry payer info, card tokens, etc.).
+// and may carry payer info, card tokens, etc.). ExternalID/ExternalGroup are
+// the caller's correlation ids (e.g. univents purchase id / edition id).
 type CreateIntentRequest struct {
 	SellerID             uuid.UUID      `json:"seller_id"`
 	Currency             string         `json:"currency"`
 	AmountCents          int64          `json:"amount_cents"`
 	CheckoutProviderData map[string]any `json:"checkout_provider_data,omitempty"`
 	Metadata             map[string]any `json:"metadata,omitempty"`
+	ExternalID           *string        `json:"external_id,omitempty"`
+	ExternalGroup        *string        `json:"external_group,omitempty"`
 }
 
 // Checkout starts a checkout: creates a payment intent against the wallet
@@ -50,6 +53,18 @@ func (c *Client) GetIntent(ctx context.Context, intentID uuid.UUID) (*Intent, er
 func (c *Client) CancelIntent(ctx context.Context, intentID uuid.UUID) (*Intent, error) {
 	var out Intent
 	err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/cancel", intentID), nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// RefundIntent fully refunds a succeeded payment intent (full refund only in
+// v1 — no amount) and returns its updated state. The intent status stays
+// `succeeded` until the payment.refunded webhook confirms.
+func (c *Client) RefundIntent(ctx context.Context, intentID uuid.UUID) (*Intent, error) {
+	var out Intent
+	err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/refund", intentID), nil, &out)
 	if err != nil {
 		return nil, err
 	}

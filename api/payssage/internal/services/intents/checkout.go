@@ -64,16 +64,18 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 		return nil, err
 	}
 	intent := &models.Intent{
-		ID:          id,
-		WalletID:    wallet.ID,
-		SellerID:    seller.ID,
-		CollectorID: collectorID,
-		AmountCents: payload.AmountCents,
-		Currency:    payload.Currency,
-		Sandbox:     wallet.Sandbox,
-		Provider:    seller.Provider,
-		Status:      models.IntentStatusPending,
-		Metadata:    payload.Metadata,
+		ID:            id,
+		WalletID:      wallet.ID,
+		SellerID:      seller.ID,
+		CollectorID:   collectorID,
+		AmountCents:   payload.AmountCents,
+		Currency:      payload.Currency,
+		Sandbox:       wallet.Sandbox,
+		Provider:      seller.Provider,
+		Status:        models.IntentStatusPending,
+		Metadata:      payload.Metadata,
+		ExternalID:    payload.ExternalID,
+		ExternalGroup: payload.ExternalGroup,
 	}
 
 	err = provider.Checkout(ctx, intent, payload.CheckoutData)
