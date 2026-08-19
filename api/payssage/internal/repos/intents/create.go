@@ -18,18 +18,20 @@ func (repo *Repo) Create(ctx context.Context, toCreate models.Intent) (*models.I
 	}
 
 	sqlcIntent, err := database.Queries(ctx, repo.q).CreateIntent(ctx, sqlc.CreateIntentParams{
-		ID:           toCreate.ID,
-		WalletID:     toCreate.WalletID,
-		SellerID:     toCreate.SellerID,
-		CollectorID:  toCreate.CollectorID,
-		AmountCents:  toCreate.AmountCents,
-		Currency:     toCreate.Currency,
-		Sandbox:      toCreate.Sandbox,
-		Provider:     toCreate.Provider,
-		Status:       string(toCreate.Status),
-		StatusDetail: statusDetail,
-		ProviderData: toCreate.ProviderData,
-		Metadata:     toCreate.Metadata,
+		ID:            toCreate.ID,
+		WalletID:      toCreate.WalletID,
+		SellerID:      toCreate.SellerID,
+		CollectorID:   toCreate.CollectorID,
+		AmountCents:   toCreate.AmountCents,
+		Currency:      toCreate.Currency,
+		Sandbox:       toCreate.Sandbox,
+		Provider:      toCreate.Provider,
+		Status:        string(toCreate.Status),
+		StatusDetail:  statusDetail,
+		ProviderData:  toCreate.ProviderData,
+		Metadata:      toCreate.Metadata,
+		ExternalID:    toCreate.ExternalID,
+		ExternalGroup: toCreate.ExternalGroup,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)

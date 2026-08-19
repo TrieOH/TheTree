@@ -29,4 +29,13 @@ type PaymentAbstractionLayer interface {
 	// read from intent.ProviderData. On success, intent.ProviderData is
 	// updated to reflect the canceled state.
 	CancelPendingPayment(ctx context.Context, intent *models.Intent) error
+
+	// Refund fully reverses an approved payment tied to intent (full refund
+	// only in v1 — no amount parameter; partials are a later additive
+	// change). The provider-specific reference is read from
+	// intent.ProviderData. On success, intent.ProviderData is updated with
+	// the refund id/status — the intent's Status itself is NOT flipped
+	// here; the provider webhook (payment.refunded) confirms the refund,
+	// mirroring the webhook-only approval (D3).
+	Refund(ctx context.Context, intent *models.Intent) error
 }

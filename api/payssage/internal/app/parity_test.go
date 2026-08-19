@@ -39,6 +39,12 @@ func (stubStrict) GetIntent(_ context.Context, _ openapi.GetIntentRequestObject)
 func (stubStrict) CancelIntent(_ context.Context, _ openapi.CancelIntentRequestObject) (openapi.CancelIntentResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) RefundIntent(_ context.Context, _ openapi.RefundIntentRequestObject) (openapi.RefundIntentResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) TestmodeRefundIntent(_ context.Context, _ openapi.TestmodeRefundIntentRequestObject) (openapi.TestmodeRefundIntentResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListOrganizations(_ context.Context, _ openapi.ListOrganizationsRequestObject) (openapi.ListOrganizationsResponseObject, error) {
 	return nil, errStub
 }
