@@ -18,6 +18,7 @@ export function BadgePreview({
   ticketName,
   participantName,
   actionUrl: actionUrlOverride,
+  showVariables = false,
 }: {
   badge: BadgeProfileBadge | BadgePrintItem | BadgeTemplate;
   className?: string;
@@ -28,6 +29,7 @@ export function BadgePreview({
   ticketName?: string;
   participantName?: string;
   actionUrl?: string;
+  showVariables?: boolean;
 }) {
   const design = badgeDesignSchema.safeParse(badge.design_data).success
     ? badgeDesignSchema.parse(badge.design_data)
@@ -58,7 +60,19 @@ export function BadgePreview({
     return element.paragraphs
       .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
       .join("\n")
-      .replace(/\{\{([^}]+)\}\}/g, (_, key: string) => values[key] ?? "");
+      .replace(/\{\{([^}]+)\}\}/g, (_, key: string) => {
+        if (values[key]) return values[key];
+        if (!showVariables) return "";
+        return (
+          {
+            event_name: "Nome do evento",
+            edition_name: "Nome da edição",
+            ticket_name: "Nome do ingresso",
+            participant_name: "Nome do participante",
+            checkin_url: "Link de check-in",
+          }[key] ?? key
+        );
+      });
   }
 
   return (

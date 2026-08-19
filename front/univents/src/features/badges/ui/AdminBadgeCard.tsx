@@ -84,6 +84,7 @@ export default function AdminBadgeCard({
           badge={item}
           className="h-full w-full object-cover"
           contain
+          showVariables={kind === "template"}
         />
 
         {kind === "template" && (
