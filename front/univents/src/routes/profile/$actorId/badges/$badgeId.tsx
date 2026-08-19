@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
@@ -6,6 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import { allPublicEditionsQueryOptions } from "@/features/editions/api";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { profileKeys } from "@/features/profile/api/query-keys";
 import { asUniventsProfile } from "@/features/profile/model/profile-data";
 
@@ -38,10 +40,17 @@ function ProfileBadgePage() {
     ...userBadgesQueryOptions(actorProfileId ?? ""),
     enabled: Boolean(actorProfileId),
   });
+  const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
+  const editionQueries = useQueries({
+    queries: events.map((event) => allPublicEditionsQueryOptions(event.id)),
+  });
   const badge = [
     ...(badges.data?.attendant.current ?? []),
     ...(badges.data?.staff.current ?? []),
   ].find((item) => item.emission_id === badgeId);
+  const edition = editionQueries
+    .flatMap((query) => query.data ?? [])
+    .find((item) => item.id === badge?.edition_id);
 
   if (profile.isLoading || badges.isLoading) {
     return (
@@ -106,6 +115,7 @@ function ProfileBadgePage() {
           participantName={
             profileData.preferredName || profileData.legalName || ""
           }
+          location={edition?.location_name ?? ""}
         />
       </div>
     </main>

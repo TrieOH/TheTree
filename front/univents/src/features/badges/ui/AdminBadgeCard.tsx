@@ -33,6 +33,8 @@ interface AdminBadgeCardProps {
   kind: "template" | "emission";
   index?: number;
   ticketName?: string;
+  participantName?: string;
+  location?: string;
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
@@ -44,6 +46,8 @@ export default function AdminBadgeCard({
   kind,
   index = 0,
   ticketName,
+  participantName,
+  location,
   onEdit,
   onDelete,
   onDuplicate,
@@ -85,6 +89,8 @@ export default function AdminBadgeCard({
           className="h-full w-full object-cover"
           contain
           showVariables={kind === "template"}
+          participantName={participantName}
+          location={location}
         />
 
         {kind === "template" && (

@@ -17,6 +17,7 @@ export function BadgePreview({
   editionName,
   ticketName,
   participantName,
+  location,
   actionUrl: actionUrlOverride,
   showVariables = false,
 }: {
@@ -28,6 +29,7 @@ export function BadgePreview({
   editionName?: string;
   ticketName?: string;
   participantName?: string;
+  location?: string;
   actionUrl?: string;
   showVariables?: boolean;
 }) {
@@ -53,6 +55,7 @@ export function BadgePreview({
     ticket_name:
       ticketName ?? ("ticket_name" in badge ? (badge.ticket_name ?? "") : ""),
     participant_name: participantName ?? "",
+    location: location ?? "",
     checkin_url: actionUrl,
   };
 
@@ -69,6 +72,7 @@ export function BadgePreview({
             edition_name: "Nome da edição",
             ticket_name: "Nome do ingresso",
             participant_name: "Nome do participante",
+            location: "Local da edição",
             checkin_url: "Link de check-in",
           }[key] ?? key
         );

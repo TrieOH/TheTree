@@ -14,7 +14,8 @@ import { badgeDesignSchema } from "@/features/badges/model";
 import AdminBadgeCard from "@/features/badges/ui/AdminBadgeCard";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { ToolbarCombobox } from "@/features/certifications/editor/ui/toolbar-combobox";
-import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
+import { allAdminEditionsQueryOptions } from "@/features/editions/api";
+import { useActorDisplayNames } from "@/features/profile/api/actor-display-names";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -32,7 +33,15 @@ export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/",
 )({ component: RouteComponent });
 
-function PrintableBadge({ badge }: { badge: BadgePrintItem }) {
+function PrintableBadge({
+  badge,
+  participantName,
+  location,
+}: {
+  badge: BadgePrintItem;
+  participantName: string;
+  location: string;
+}) {
   const design = badgeDesignSchema.safeParse(badge.design_data).success
     ? badgeDesignSchema.parse(badge.design_data)
     : null;
@@ -46,6 +55,8 @@ function PrintableBadge({ badge }: { badge: BadgePrintItem }) {
     >
       <BadgePreview
         badge={badge}
+        participantName={participantName}
+        location={location}
         className="relative h-full w-full rounded-none border-0 shadow-none"
       />
     </article>
@@ -119,6 +130,9 @@ function RouteComponent() {
     badgeTemplatesQueryOptions(editionId),
   );
   const printQuery = useQuery(badgePrintQueryOptions(editionId));
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  );
   const { data: tickets = [] } = useQuery(allTicketsQueryOptions(editionId));
   const filtered = useMemo(
     () =>
@@ -131,18 +145,10 @@ function RouteComponent() {
     tickets.map((ticket) => [ticket.id, ticket.name]),
   );
   const printItems = printQuery.data ?? [];
-  const { data: actorEmails = {} } = useQuery({
-    queryKey: [
-      "badge-print-actor-emails",
-      editionId,
-      printItems.map((item) => item.user_id),
-    ],
-    queryFn: () =>
-      getActorEmailsServerFn({
-        data: { actorIds: printItems.map((item) => item.user_id) },
-      }),
-    enabled: printItems.length > 0,
-  });
+  const printActorIds = [...new Set(printItems.map((item) => item.user_id))];
+  const { data: participantNames = {} } = useActorDisplayNames(printActorIds);
+  const location =
+    editions.find((edition) => edition.id === editionId)?.location_name ?? "";
   const filteredPrintItems = useMemo(() => {
     const search = emissionFilter.trim().toLowerCase();
     if (!search) return printItems;
@@ -180,14 +186,19 @@ function RouteComponent() {
         <div className="flex flex-wrap content-start gap-[4mm] p-[10mm]">
           {printMode === "badges"
             ? printItems.map((badge) => (
-                <PrintableBadge key={badge.emission_id} badge={badge} />
+                <PrintableBadge
+                  key={badge.emission_id}
+                  badge={badge}
+                  participantName={participantNames[badge.user_id]}
+                  location={location}
+                />
               ))
             : printItems.map((badge) => (
                 <PrintableQr
                   key={badge.emission_id}
                   badge={badge}
                   size={(printQrSizeMm / 25.4) * 96}
-                  participant={actorEmails[badge.user_id] ?? badge.user_id}
+                  participant={participantNames[badge.user_id]}
                 />
               ))}
         </div>
@@ -264,6 +275,7 @@ function RouteComponent() {
                         "Ingresso associado")
                       : "Padrão da edição"
                   }
+                  location={location}
                   onView={() =>
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
@@ -426,6 +438,8 @@ function RouteComponent() {
                   item={badge}
                   kind="emission"
                   index={i}
+                  participantName={participantNames[badge.user_id]}
+                  location={location}
                   onView={() => undefined}
                 />
               ))

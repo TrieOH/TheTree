@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
@@ -6,6 +6,8 @@ import { Globe, Mail } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import { allPublicEditionsQueryOptions } from "@/features/editions/api";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { PurchasesContent } from "@/features/purchases/ui/purchases-content";
 import { cn } from "@/shared/lib/utils";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
@@ -70,6 +72,15 @@ export function ProfileView({
   const { data: badges } = useQuery(
     userBadgesQueryOptions(result?.actor_id ?? ""),
   );
+  const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
+  const editionQueries = useQueries({
+    queries: events.map((event) => allPublicEditionsQueryOptions(event.id)),
+  });
+  const editionLocations = new Map(
+    editionQueries
+      .flatMap((query) => query.data ?? [])
+      .map((edition) => [edition.id, edition.location_name ?? ""]),
+  );
   const error = actorId
     ? profileQuery.error?.message
     : "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
@@ -119,6 +130,7 @@ export function ProfileView({
             profileUrl={profileUrl}
             profileIdentifier={publicIdentifier ?? ""}
             participantName={profile.preferredName || profile.legalName || ""}
+            editionLocations={editionLocations}
           />
         </div>
       ) : activeTab === "purchases" ? (
@@ -230,11 +242,13 @@ function ProfileBadges({
   profileUrl,
   profileIdentifier,
   participantName,
+  editionLocations,
 }: {
   badges: BadgeProfileBadge[];
   profileUrl: string;
   profileIdentifier: string;
   participantName: string;
+  editionLocations: Map<string, string>;
 }) {
   if (badges.length === 0) return null;
   return (
@@ -252,6 +266,7 @@ function ProfileBadges({
             framed={false}
             actionUrl={profileUrl}
             participantName={participantName}
+            location={editionLocations.get(badge.edition_id) ?? ""}
           />
         </Link>
       ))}
