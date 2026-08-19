@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type MercadoPagoCredentials struct {
 	PublicKey      string `json:"public_key"`
 	AccessToken    string `json:"access_token"`
@@ -18,6 +20,25 @@ type MercadoPagoIntentData struct {
 	PaymentMethodType       string `json:"payment_method_type"`
 	PixQRCode               string `json:"pix_qr_code,omitempty"` // FIXME maybe dont send this or the one below
 	PixQRCodeB64            string `json:"pix_qr_code_base64,omitempty"`
+	// Fee + settlement observability (refund plan Slice 1): captured from the
+	// MP payment response. FeeDetails is the raw fee_details array (entries
+	// carry {type, amount, fee_payer} — type application_fee = the
+	// marketplace cut, mercadopago_fee = MP's own processing fee).
+	// NetReceivedAmountCents is transaction_details.net_received_amount (the
+	// seller's net). MoneyReleaseDate/Status answer "where's my money" — the
+	// credit appears as a liberar until the release date.
+	FeeDetails             json.RawMessage `json:"fee_details,omitempty"`
+	NetReceivedAmountCents *int64          `json:"net_received_amount_cents,omitempty"`
+	MoneyReleaseDate       *string         `json:"money_release_date,omitempty"`
+	MoneyReleaseStatus     *string         `json:"money_release_status,omitempty"`
+	// Refund observability (refund plan A2): set by the refund op. The intent
+	// status stays succeeded until the payment.refunded webhook confirms;
+	// these fields record the MP refund object (id, status, status_detail,
+	// amount) for R1 fee-on-refund verification.
+	RefundID           *string `json:"refund_id,omitempty"`
+	RefundStatus       *string `json:"refund_status,omitempty"`
+	RefundStatusDetail *string `json:"refund_status_detail,omitempty"`
+	RefundAmountCents  *int64  `json:"refund_amount_cents,omitempty"`
 }
 
 // Payer is required by MP, optional for Stripe.

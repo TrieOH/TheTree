@@ -57,7 +57,7 @@ func SetupConstraintMessages() {
 		"idx_one_badge_template_per_scope": "This edition already has a template for this scope (default, ticket type, or staff).",
 
 		// purchases (store)
-		"chk_purchases_status_valid":                   "Purchase status must be one of: pending, approved, expired, cancelled.",
+		"chk_purchases_status_valid":                   "Purchase status must be one of: pending, approved, expired, cancelled, failed, rejected, refunded.",
 		"uniq_purchases_pending_per_purchaser_edition": "This person already has a pending purchase for this edition.",
 
 		// purchase_items

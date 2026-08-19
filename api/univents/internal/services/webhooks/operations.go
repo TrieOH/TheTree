@@ -17,10 +17,14 @@ import (
 	"github.com/riverqueue/river/rivertype"
 )
 
-// Badges is the badge-emission surface the receiver calls on approval.
-// Satisfied by *badges.Operations.
+// Badges is the badge-emission surface the receiver calls on approval and
+// refund. Satisfied by *badges.Operations.
 type Badges interface {
 	EmitForConfirmedRegistration(ctx context.Context, registrationID uuid.UUID) (*models.BadgeEmission, error)
+	// RevokeForRegistration revokes a participant badge when its
+	// registration is cancelled (refund plan slice 3: refunds flip
+	// registrations to cancelled and revoke the emitted badge).
+	RevokeForRegistration(ctx context.Context, registrationID uuid.UUID, reason string) error
 }
 
 // Notifier is the LISTEN/NOTIFY publish surface (split 6 subscribes).

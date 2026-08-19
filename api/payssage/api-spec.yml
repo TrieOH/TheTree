@@ -941,6 +941,45 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /intents/{intent_id}/refund:
+    post:
+      tags: [intents]
+      operationId: refundIntent
+      summary: Refund a succeeded payment intent (full refund)
+      description: |
+        Fully refunds a `succeeded` payment intent and returns its updated
+        state. The intent status stays `succeeded` until the provider's
+        `payment.refunded` webhook confirms the refund (webhook-only
+        confirmation, mirroring approval). Only `succeeded` intents are
+        refundable; an already-`refunded` intent returns as-is (idempotent).
+        Full refund only in v1 — no amount parameter (partials are a later
+        additive change).
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      responses:
+        '200':
+          description: Intent refunded (or refund initiated)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Intent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /wallets/{wallet_id}/intents:
     get:
       tags: [intents]
@@ -1098,6 +1137,44 @@ paths:
       responses:
         '201':
           description: Intent created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Intent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /testmode/intents/{intent_id}/refund:
+    post:
+      tags: [testmode, intents]
+      operationId: testmodeRefundIntent
+      summary: Refund an intent directly (test mode)
+      description: |
+        Test-mode helper: flips a `succeeded` intent to `refunded` and
+        stamps a fake refund marker in provider_data — no payment provider
+        is contacted. Use to simulate the provider's `payment.refunded`
+        outcome for downstream testing without a real refund.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IntentID'
+      responses:
+        '200':
+          description: Intent refunded (simulated)
           content:
             application/json:
               schema:
@@ -2104,6 +2181,12 @@ components:
         metadata:
           type: [ object, "null" ]
           additionalProperties: true
+        external_id:
+          type: [ string, "null" ]
+          description: Caller's order id (e.g. the univents purchase id). Counterparty id — never payssage's own.
+        external_group:
+          type: [ string, "null" ]
+          description: Caller's grouping key (e.g. the univents edition id). Counterparty id — never payssage's own.
 
     HardCreateIntentRequest:
       type: object
@@ -2147,6 +2230,12 @@ components:
         metadata:
           type: [ object, "null" ]
           additionalProperties: true
+        external_id:
+          type: [ string, "null" ]
+          description: Caller's order id (e.g. the univents purchase id).
+        external_group:
+          type: [ string, "null" ]
+          description: Caller's grouping key (e.g. the univents edition id).
 
     OAuthFlow:
       x-go-type: models.OAuthFlow

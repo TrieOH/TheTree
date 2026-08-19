@@ -3459,6 +3459,86 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /purchases/{purchase_id}/refund:
+    post:
+      tags: [checkouts]
+      operationId: refundPurchase
+      summary: Refund an approved purchase (organizer, full refund)
+      description: |
+        Initiates a full refund of an `approved` purchase. Event owner/admin
+        only (non-members 404, staff 403). Calls Payssage's refund for the
+        purchase's intent and returns the purchase — which stays `approved`
+        until the `payment.refunded` webhook flips it to `refunded`
+        (webhook-confirmed, single writer). Full refund only in v1 (no
+        amount).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PurchaseID'
+      responses:
+        '200':
+          description: Refund initiated (purchase still approved until the webhook confirms)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Purchase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/purchases:
+    get:
+      tags: [checkouts]
+      operationId: listEditionPurchases
+      summary: List an edition's purchases (organizer orders read)
+      description: |
+        Lists every purchase of an edition with its items and ticket
+        attendees, newest first — the organizer orders page (refund plan
+        B3). Event owner/admin only (non-members 404, staff 403).
+        `payer_email` identifies who the payment provider will refund;
+        attendees are the people the tickets were assigned to (gifted
+        tickets show the recipient).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: The edition's purchases
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EditionPurchase'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /editions/{edition_id}/my-ticket:
     get:
       tags: [checkouts]
@@ -3560,6 +3640,14 @@ components:
       in: path
       required: true
       description: Edition ID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+    PurchaseID:
+      name: purchase_id
+      in: path
+      required: true
+      description: Purchase ID.
       schema:
         $ref: '#/components/schemas/UUID'
 
@@ -3944,8 +4032,8 @@ components:
 
     PurchaseStatus:
       type: string
-      description: Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment lands in `failed`/`rejected` — distinct from `cancelled`, which is reserved for the customer (or the seller) cancelling an order.
-      enum: [pending, approved, expired, cancelled, failed, rejected]
+      description: Lifecycle of a purchase (D4). `pending` is a reservation; the webhook receiver (split 4) approves, the expiry worker (split 7) expires, and a failed/rejected payment lands in `failed`/`rejected` — distinct from `cancelled`, which is reserved for the customer (or the seller) cancelling an order. `refunded` (refund plan slice 3) is an approved order whose payment was reversed, webhook-confirmed via `payment.refunded`.
+      enum: [pending, approved, expired, cancelled, failed, rejected, refunded]
 
     PurchaseItemType:
       type: string
@@ -4151,6 +4239,9 @@ components:
         payssage_intent_id:
           $ref: '#/components/schemas/NullableUUID'
           description: The Payssage intent correlation key (D2). Null for free orders and pre-checkout seeds.
+        payer_email:
+          type: [ string, "null" ]
+          description: The checkout payer's email — the person the payment provider will refund (refund plan B3). Surfaced on the organizer orders read. Null for free orders.
         qr_code:
           type: [ string, "null" ]
         qr_code_base64:
@@ -4166,6 +4257,56 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PurchaseItem'
+
+    EditionPurchase:
+      type: object
+      description: |
+        One purchase in the organizer orders read (refund plan B3): the
+        shared purchase fields plus its items and the ticket attendees.
+        `payer_email` identifies who the payment provider will refund;
+        attendees are the people the tickets were assigned to.
+      required: [purchase_id, edition_id, status, total_cents, currency, expires_at, items, attendees]
+      properties:
+        purchase_id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/PurchaseStatus'
+        status_reason:
+          type: [ string, "null" ]
+        total_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        payment_method:
+          type: [ string, "null" ]
+        payer_email:
+          type: [ string, "null" ]
+        payssage_intent_id:
+          $ref: '#/components/schemas/NullableUUID'
+        created_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseItem'
+        attendees:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseAttendee'
+
+    PurchaseAttendee:
+      type: object
+      description: One person a ticket line was assigned to (from the registration).
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
 
     Checkout:
       allOf:

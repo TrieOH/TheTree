@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refund a Purchase on Univents via Mercado Pago — Final Work Plan (scoped)</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #161a22; --panel2: #1b2029; --border: #262d3a;
+    --text: #e6e9ef; --muted: #9aa3b2; --accent: #7c9cff; --accent2: #6ee7b7;
+    --warn: #fbbf24; --danger: #f87171; --code-bg: #10131a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 28px 80px; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; margin: 48px 0 12px; padding-top: 18px; border-top: 1px solid var(--border);
+    letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 26px 0 8px; color: var(--accent2); }
+  h4 { font-size: 14px; margin: 18px 0 6px; color: var(--accent); }
+  p { margin: 8px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 6px; }
+  .chip { background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+  .callout { border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    background: var(--panel); border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout.danger { border-left-color: var(--danger); }
+  .callout.ok { border-left-color: var(--accent2); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 1px 5px; color: #cdd6ff; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--panel2); color: var(--text); font-size: 12.5px; text-transform: uppercase;
+    letter-spacing: 0.04em; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  ul, ol { margin: 8px 0 8px 22px; padding: 0; }
+  li { margin: 4px 0; }
+  .toc { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px 24px; }
+  .toc ol { columns: 2; column-gap: 40px; }
+  .flow { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin: 14px 0; }
+  .flow .step { display: flex; gap: 12px; align-items: baseline; margin: 6px 0; }
+  .flow .n { flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--accent);
+    color: #0b0d12; font-weight: 700; font-size: 12px; display: flex; align-items: center;
+    justify-content: center; }
+  .file { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted);
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 0 6px; white-space: nowrap; }
+  .badge { display: inline-block; border-radius: 5px; padding: 1px 8px; font-size: 11.5px;
+    font-weight: 600; letter-spacing: 0.03em; }
+  .b-api { background: #1e293b; color: #93c5fd; border: 1px solid #334155; }
+  .b-front { background: #312e1e; color: #fcd34d; border: 1px solid #574a21; }
+  .b-sdk { background: #1e2a24; color: #86efac; border: 1px solid #264232; }
+  .b-db { background: #2a1e2e; color: #e9a8f5; border: 1px solid #4a2852; }
+  footer { margin-top: 60px; padding-top: 16px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 13px; }
+  .strike { text-decoration: line-through; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Refunding a Purchase on Univents (via Mercado Pago)</h1>
+<p class="sub">Final work plan · scope narrowed by design review · file-level inspections · fee diagnosis included · no code written</p>
+<div class="meta">
+  <span class="chip">api/payssage</span><span class="chip">api/univents</span>
+  <span class="chip">front/univents</span><span class="chip">sdk/go/Payssage</span>
+  <span class="chip">db migrations</span><span class="chip">Mercado Pago Checkout API</span>
+</div>
+
+<div class="toc">
+<h3 style="margin-top:0">Contents</h3>
+<ol>
+  <li><a href="#summary">Executive summary</a></li>
+  <li><a href="#decisions">Settled scope (design review outcomes)</a></li>
+  <li><a href="#today">How payment works today</a></li>
+  <li><a href="#mp">Mercado Pago refund facts</a></li>
+  <li><a href="#fees">Fee mechanics &amp; observability (verified working)</a></li>
+  <li><a href="#work-payssage">Work package A · Payssage API</a></li>
+  <li><a href="#work-univents">Work package B · Univents API</a></li>
+  <li><a href="#work-front">Work package C · Univents frontend</a></li>
+  <li><a href="#work-tests">Work package D · Tests &amp; e2e</a></li>
+  <li><a href="#cut">Explicitly cut (YAGNI)</a></li>
+  <li><a href="#sequence">Sequence</a></li>
+  <li><a href="#risks">Risks &amp; open items</a></li>
+  <li><a href="#appendix">Appendix · inspection log + sources</a></li>
+</ol>
+</div>
+
+<!-- ───────────────────────────── 1 ───────────────────────────── -->
+<h2 id="summary">1 · Executive summary</h2>
+
+<p>Refunds are <b>already half-wired</b>: payssage normalizes MP's <code>refunded</code> status into its intent model and already delivers <code>payment.refunded</code> D2-envelope webhooks to univents; univents' receiver has the <code>eventRefunded</code> case stubbed out per design decision <b>D1</b> (deferred). What's missing is the <b>refund action</b> (payssage has no <code>Refund</code> op), the <b>refund reaction</b> (no <code>refunded</code> purchase status or state flip), and the <b>organizer initiation surface</b> (no edition-purchase read, no refund endpoint, no admin UI).</p>
+
+<p>This version of the plan is <b>scoped down hard</b> by a design-review pass (12 decisions, §2) and <b>verified against the code</b> (§13 inspection log — several planned items turned out to already exist, e.g. badge revocation and the identityx actor lookup). Net effect: the build is ~6 slices (the first is fee observability + <code>external_id</code>/<code>external_group</code> intent tagging, §5/A7); the payssage frontend, partial refunds, a "refunding" state, WS frames, and eligibility rules are all cut.</p>
+
+<div class="callout ok">
+<b>Free lunch found during inspection:</b> badge revocation on refund is one call to the existing <code>RevokeByRegistration</code> op; the buyer identity for the admin list can come from a new <code>payer_email</code> column (the front already sends the payer's email at checkout) plus the existing <code>attendee_name/email</code> on registrations — no IdentityX resolution machinery needed.
+</div>
+
+<div class="callout">
+<b>Fee observability (§5) — verified working:</b> the wallet fee <b>is set</b> in prod and the cut <b>is being charged and received</b> (verified: 2,25 on a 45,00 payment lands in the marketplace account as "Venda Principal") — the earlier confusion was checking the wrong account and MP's settlement hold (<i>a liberar</i> until the release date). <b>Slice 1 captures MP's fee + release fields (<code>fee_details</code>, <code>net_received_amount</code>, <code>money_release_date/status</code>) into the intent</b> so balance/commission questions are answerable in-app, and fee-on-refund behavior (R1) becomes verifiable before sign-off.
+</div>
+
+<!-- ───────────────────────────── 2 ───────────────────────────── -->
+<h2 id="decisions">2 · Settled scope (design review outcomes)</h2>
+
+<table>
+  <tr><th>#</th><th>Decision</th><th>Choice</th><th>Consequence</th></tr>
+  <tr><td>D-1</td><td>Who triggers refunds</td><td><b>Organizer/admin only</b></td><td>New edition-orders read + refund endpoint + admin UI; no buyer self-service</td></tr>
+  <tr><td>D-2</td><td>How the status flips</td><td><b>Webhook-confirmed</b></td><td>Refund endpoint only calls payssage; <code>payment.refunded</code> flips the purchase (single writer, idempotent)</td></tr>
+  <tr><td>D-3</td><td>Partial refunds</td><td><b>Full only</b></td><td>No amount param anywhere; additive later, non-breaking</td></tr>
+  <tr><td>D-4</td><td>Badge/certs on refund</td><td><b>Revoke badge, leave certs</b></td><td><code>RevokeByRegistration</code> per ticket item (already exists); certs stand</td></tr>
+  <tr><td>D-5</td><td>Eligibility rules</td><td><b>None for v1</b></td><td>No date/check-in restrictions; organizer judgment</td></tr>
+  <tr><td>D-6</td><td>Pending state</td><td><b>None</b></td><td>Purchase stays <code>approved</code> until webhook; admin button shows local "requested"</td></tr>
+  <tr><td>D-7</td><td>Payssage frontend</td><td><b>Skip entirely</b></td><td>Dashboard already renders the Refunded badge; cuts package B</td></tr>
+  <tr><td>D-8</td><td>Buyer identity in admin list</td><td><b>Name + email</b></td><td>New <code>payer_email</code> column + attendee names from registrations</td></tr>
+  <tr><td>D-9</td><td>Amount param on refund API</td><td><b>Stripped</b></td><td>No body, no partial validation, no 3024 handling</td></tr>
+  <tr><td>D-10</td><td><code>refunded_after_expiry</code> edge</td><td><b>Stays manual</b></td><td>Rare late-approval-without-stock path unchanged; ops refunds via payssage API</td></tr>
+  <tr><td>D-11</td><td>Buyer UI for refunded</td><td><b>Distinct "Reembolsado"</b></td><td>List, order card, checkout status page; not collapsed into "cancelled"</td></tr>
+  <tr><td>D-12</td><td>Rejected refunds</td><td><b>Accept + document</b></td><td>No polling/ledger; intent <code>status_detail</code> records the failure; purchase stays approved</td></tr>
+</table>
+
+<!-- ───────────────────────────── 3 ───────────────────────────── -->
+<h2 id="today">3 · How payment works today</h2>
+
+<div class="flow">
+  <div class="step"><span class="n">1</span><span><b>Checkout</b> <span class="file">api/univents/internal/services/checkouts/checkout.go</span> — Tx1 reserves items (FOR UPDATE locks, server prices, availability), materializes the purchase (<code>pending</code>) + <code>purchase_items</code> + registrations/product_purchases/participations, schedules the 10:01 expiry job, issues the WS token. Post-commit creates the payssage intent; Tx2 attaches <code>payssage_intent_id</code> (+ pix QR). Free orders confirm immediately. Checkout never self-approves (D3).</span></div>
+  <div class="step"><span class="n">2</span><span><b>Payssage checkout</b> <span class="file">api/payssage/internal/features/providers/mercado_pago_provider/checkout.go</span> — <code>POST https://api.mercadopago.com/v1/payments</code> with the seller's MP token, <code>transaction_amount</code>, <code>application_fee</code> (from wallet <code>fee_bps</code>), <code>external_reference</code> = intent UUID, payer CPF/email, pix or card. Stores the MP payment id in <code>provider_data</code>.</span></div>
+  <div class="step"><span class="n">3</span><span><b>MP webhook</b> → payssage <span class="file">internal/services/webhooks/receive.go</span> — verify signature, re-fetch <code>GET /v1/payments/{id}</code>, normalize status, persist <code>webhook_events</code> (deduped on provider+external_id+event_type), dispatch D2 deliveries (HMAC-signed, retried ≤5×).</span></div>
+  <div class="step"><span class="n">4</span><span><b>D2 envelope</b> → univents <span class="file">internal/handlers/webhooks/receive_payssage_webhook.go</span> → <span class="file">services/webhooks/receive.go</span> — HMAC verify, correlate intent→purchase (D3 card-race re-query), switch on <code>event_type</code>.</span></div>
+  <div class="step"><span class="n">5</span><span><b>Approve</b> <span class="file">services/webhooks/approve.go</span> — guarded <code>pending→approved</code>, cancel expiry job, flip rows (registration confirmed + badge emit, product_purchase confirmed), NOTIFY <code>univents_changes</code> → WS <code>purchase.confirmed</code> + SSE stock delta.</span></div>
+</div>
+
+<p>Failure paths: <code>payment.failed|rejected|cancelled</code> → <code>cancel()</code> flips <code>pending→…</code> and rows to cancelled. Expiry frees the reservation; a late approval either honors the order or marks <code>status_reason = refunded_after_expiry</code> (D1 manual reconciliation — stays manual, D-10).</p>
+
+<!-- ───────────────────────────── 4 ───────────────────────────── -->
+<h2 id="mp">4 · Mercado Pago refund facts</h2>
+
+<div class="callout"><b>Endpoint:</b> <code>POST https://api.mercadopago.com/v1/payments/{payment_id}/refunds</code> — "Create Partial/Full Refund for a specific payment."</div>
+
+<table>
+  <tr><th>Fact</th><th>Detail</th></tr>
+  <tr><td>Full vs partial</td><td>Omit <code>amount</code> → full refund. Include <code>amount</code> → partial (errors <code>4040</code>/<code>4041</code> for bad amounts). v1 uses full only.</td></tr>
+  <tr><td>Auth</td><td><code>Authorization: Bearer {seller_access_token}</code> — the same per-seller token payssage already stores from the MP OAuth callback.</td></tr>
+  <tr><td>Idempotency</td><td><code>X-Idempotency-Key</code> expected (<code>4292 Header-X-Idempotency-Key-can't-be-null</code>); needed so a retry never double-refunds.</td></tr>
+  <tr><td>Refund statuses</td><td>Refund object: <code>approved</code>, <code>rejected</code>, <code>pending</code>, <code>canceled</code>, <code>authorized</code>. Refund is async from the buyer's side.</td></tr>
+  <tr><td>Payment status</td><td>Full → <code>refunded</code>; partial → <code>partially_refunded</code>. Payment carries a <code>refunds[]</code> array.</td></tr>
+  <tr><td>Time window</td><td><code>2024/15016 Payment too old to be refunded</code> — refunds are time-limited (~180 days for BR, verify).</td></tr>
+  <tr><td>Cancel ≠ refund</td><td>Cancellation (what <code>CancelPendingPayment</code> does) is for not-yet-approved payments; refunds reverse <b>approved</b> ones.</td></tr>
+  <tr><td>Balance</td><td>Refunds come from the seller's MP balance — insufficient funds → refund <code>rejected</code> (accepted limitation, D-12).</td></tr>
+  <tr><td>Webhooks</td><td>No dedicated refund topic — status changes ride the <code>payment</code> topic; payssage already re-syncs and normalizes <code>refunded</code> → <code>payment.refunded</code> in the D2 envelope.</td></tr>
+  <tr><td>Fee</td><td>payssage charges <code>application_fee</code> (verified working, §5). <b>Fee-on-refund is NOT documented by MP</b> — searched official docs PT/EN/ES, API refs, blog, community, third-party guides: the split mechanics are documented, the refund behavior of the commission is not. Answer empirically (see R1).</td></tr>
+</table>
+
+<!-- ───────────────────────────── 5 ───────────────────────────── -->
+<h2 id="fees">5 · Fee mechanics &amp; observability (verified working in prod)</h2>
+
+<h3>5.1 How the fee works</h3>
+<p>The code path is sound and short — <b>verified end-to-end in prod</b>:</p>
+<ol>
+  <li>Wallet fee configured via <code>PATCH /wallets/{id}/fee</code> (<code>fee_bps</code>; UI exists — <span class="file">front/payssage/src/features/wallets/ui/wallet-card.tsx</span> "Edit fee", displayed as a %). Prod wallet: <code>fee_bps = 500</code>.</li>
+  <li>At checkout, payssage reads <code>wallet.FeeBps</code> (<span class="file">api/payssage/internal/features/providers/mercado_pago_provider/checkout.go</span> L43–49): <code>feeBps := wallet.FeeBps; if feeBps == 0 { feeBps = checkoutData.MarketplaceFeeBPS }</code>. Univents never sends <code>marketplace_fee_bps</code>, so <b>feeBps = wallet fee</b>.</li>
+  <li><code>application_fee = calcApplicationFee(amountCents, feeBps)</code> is sent on the MP payment; MP deducts it from the seller and credits the <b>marketplace account</b> (owner of the payssage application).</li>
+</ol>
+
+<h3>5.2 Status: verified — the cut is charged and received</h3>
+<div class="callout ok">
+<b>Prod-verified.</b> Payment <code>174515095132</code> (R$ 45,00): MP applies <code>application_fee = 2.25</code> (5% = <code>fee_bps</code> 500), the seller nets 42.30, and the marketplace account shows the credit as "Venda Principal — R$ 2,25". No bug; the earlier confusion was checking the wrong account and MP's settlement hold:
+<pre><code>{"status": "approved", "transaction_amount": 45,
+ "fee_details": [
+   {"amount": 0.45, "fee_payer": "collector", "type": "mercadopago_fee"},
+   {"amount": 2.25, "fee_payer": "collector", "type": "application_fee"}
+ ],
+ "net_received_amount": 42.3}
+// 2.25 = 5% of 45.00; net = 45 − 2.25 − 0.45 ✓</code></pre>
+<b>Settlement note:</b> the credit appears in the account immediately but sits <i>a liberar</i> until MP's release date (pix D+1+, cards on capture) — the available balance moves only on release. If a release date passes with no movement, that's an MP account-hold (verification/KYC), not an integration issue.
+</div>
+
+<h3>5.3 Slice 1 — capture MP fee + release fields (in scope now)</h3>
+<p>Make fee and settlement state observable at the source, in <span class="file">api/payssage</span>:</p>
+<ul>
+  <li><b>Model</b> (<span class="file">models/mercado_pago.go</span>): extend <code>MercadoPagoIntentData</code> with <code>FeeDetails</code> (raw array: <code>type</code> incl. <code>application_fee</code>/<code>mercadopago_fee</code>, <code>amount</code>, <code>fee_payer</code>), <code>NetReceivedAmountCents</code>, <code>TotalPaidAmountCents</code>, the echoed <code>ApplicationFeeCents</code>, and <b><code>MoneyReleaseDate</code> + <code>MoneyReleaseStatus</code></b> (MP's settlement fields — the answer to "where's my money" without the panel). Exact response field names to confirm against one live payment before finalizing.</li>
+  <li><b>Provider</b> (<span class="file">features/providers/mercado_pago_provider/checkout.go</span>): extend the MP response struct to read those fields and marshal them into <code>provider_data</code> on every checkout.</li>
+  <li><b>Exposure</b>: <code>provider_data</code> already returns on <code>GET /intents/{id}</code> and the wallet intents list — no API change. (Dashboard display is optional ops convenience, out of the cut scope unless wanted.)</li>
+  <li><b>Tests</b>: <span class="file">checkout_test.go</span> asserts the captured fields against a canned MP response.</li>
+  <li><b>Future use</b>: the same captured data answers R1 (fee-on-refund) — refund a fee'd payment and read what MP returns for the fee portion.</li>
+</ul>
+
+<!-- ───────────────────────────── 6 ───────────────────────────── -->
+<h2 id="work-payssage">6 · Work package A — Payssage API <span class="badge b-api">api/payssage</span> <span class="badge b-sdk">sdk/go/Payssage</span></h2>
+
+<h3>A1 · Provider abstraction: add <code>Refund</code> (no amount)</h3>
+<p><span class="file">api/payssage/ports/</span> — extend <code>PaymentAbstractionLayer</code>:</p>
+<pre><code>// Refund fully reverses an approved payment tied to intent (full refund
+// only in v1). intent.ProviderData is updated on success (MP refund id +
+// status). The intent status itself is NOT flipped here — the provider
+// webhook confirms the refund (mirrors the webhook-only approval D3).
+Refund(ctx context.Context, intent *models.Intent) error</code></pre>
+<p>Contract unchanged: mutate in place, no partial mutation on error.</p>
+
+<h3>A2 · MP provider: <code>refund_payment.go</code> (mirror of <span class="file">cancel_pending_payment.go</span>)</h3>
+<ul>
+  <li>Read <code>transaction_id</code> from <code>provider_data</code> (missing → conflict "no mercadopago transaction to refund").</li>
+  <li>Resolve seller + credentials; guard revoked seller; guard non-empty token (same as cancel).</li>
+  <li><code>POST https://api.mercadopago.com/v1/payments/{transaction_id}/refunds</code>, <b>empty body</b> (full refund), headers <code>Authorization: Bearer {token}</code> + <code>X-Idempotency-Key</code> (UUIDv7; note: keyed per attempt is enough for v1 — MP 4292 requires presence, retry-safety is a bonus; do not reuse the checkout TODO, generate fresh).</li>
+  <li>Map failures via <code>mapMPError</code> (covers <code>2024/15016</code> too old, <code>2063</code> invalid state, <code>401</code>, <code>404</code>).</li>
+  <li>Parse refund response: <code>{id, status, status_detail, amount, date_created}</code>; write <code>refund_id</code>, <code>refund_status</code>, <code>refund_status_detail</code>, <code>refund_amount_cents</code> into <code>MercadoPagoIntentData</code> (<span class="file">api/payssage/models/mercado_pago.go</span>).</li>
+  <li><b>Do not change <code>intent.Status</code></b> — stays <code>succeeded</code>; the <code>payment.refunded</code> webhook flips it (D-2, D3-parity). Persist provider_data via the caller's <code>intents.Update</code>.</li>
+  <li>Fee capture moved to <b>Slice 1</b> (§5.3) — keeps this slice purely refund.</li>
+</ul>
+
+<h3>A3 · <code>NormalizeStatus</code> fix</h3>
+<p><span class="file">helpers.go</span>: add <code>case "partially_refunded": return models.IntentStatusRefunded</code>. Today MP's partial-refund status falls through to <code>pending</code> — a latent bug that would re-trigger pending-race logic. (External/panel-initiated partial refunds then also flip the purchase via the webhook.)</p>
+
+<h3>A4 · Intent service: <code>refund.go</code> (mirror of <span class="file">internal/services/intents/cancel.go</span>)</h3>
+<ul>
+  <li>Require identity → load intent → <code>CheckWalletAccess(…, admin)</code> (platform wallet is owned by the payssage svc actor, so univents' service key passes).</li>
+  <li>Guard: only <code>succeeded</code> intents are refundable. Already <code>refunded</code> → <b>idempotent no-op</b> returning the current intent (matches the duplicate-delivery philosophy; the organizer's second click gets a clean answer).</li>
+  <li><code>provider.Refund(ctx, intent)</code> → <code>o.intents.Update(ctx, *intent)</code>.</li>
+</ul>
+
+<h3>A5 · Handler + spec + testmode</h3>
+<ul>
+  <li><b>Spec</b> <span class="file">api/payssage/api-spec.yml</span>: <code>POST /intents/{intent_id}/refund</code> (tag <code>intents</code>), no request body, security <code>bearerAuth</code> + <code>apiKeyAuth</code> (univents calls with the payssage service key — <span class="file">sdk/go/Payssage/client.go</span> sets <code>X-API-Key</code>). Responses 200/401/403/404/409/500 (mirror <code>cancelIntent</code>).</li>
+  <li><b>Handler</b> <span class="file">api/payssage/internal/handlers/intents/refund_intent.go</span> — thin, returns the updated <code>Intent</code> in the standard <code>{code, data, timestamp, module}</code> envelope.</li>
+  <li><b>Testmode</b> <code>POST /testmode/intents/{intent_id}/refund</code> (TEST_MODE-gated like <code>hardCreateIntent</code>): flips a <code>succeeded</code> intent to <code>refunded</code>, sets provider_data <code>refund_id</code> (fake), no MP contact — lets the local e2e run the full flow sandbox-free.</li>
+</ul>
+
+<h3>A6 · Go SDK only</h3>
+<ul>
+  <li><span class="file">sdk/go/Payssage/intents.go</span>: <code>func (c *Client) RefundIntent(ctx, intentID uuid.UUID) (*Intent, error)</code> → <code>POST /intents/{id}/refund</code>, nil body. Error path already handled by <code>do()</code> → <code>APIError{StatusCode, Message}</code> (verified in <span class="file">client.go</span>).</li>
+  <li>Propagation/spec test modeled on <span class="file">intents_webhooks_test.go</span>.</li>
+  <li><b>No TS SDK change</b> (payssage frontend cut, D-7).</li>
+</ul>
+
+<h3>A7 · <code>external_id</code> + <code>external_group</code> on intents (purchase + edition)</h3>
+<p>Resolves the TODO at <span class="file">checkout.go</span> L94 ("remember to use external group feature we made") — there is no built feature yet; this adds it. Every payment intent gets two first-class, queryable fields set by univents at checkout:</p>
+<ul>
+  <li><code>external_id</code> = <b>purchase id</b> (the caller's order)</li>
+  <li><code>external_group</code> = <b>edition id</b> (groups all payments of an edition)</li>
+</ul>
+<p><b>Naming invariant (document in the spec):</b> every <code>external_*</code> field holds the id of the <b>counterparty</b>, never our own — MP payment <code>external_reference</code> = payssage intent id; intent <code>external_id</code>/<code>external_group</code> = univents purchase/edition ids. The webhook event's <code>external_id</code> is a different object and meaning (the provider's MP payment id, used for the dedupe index) — keep the two documented separately.</p>
+<ul>
+  <li><b>payssage model</b> (<span class="file">models/intents.go</span>): add <code>ExternalID *string</code> + <code>ExternalGroup *string</code> to <code>Intent</code>, <code>CreateIntentInput</code> and <code>HardCreateIntentInput</code> (testmode).</li>
+  <li><b>DB</b>: migration <code>006_external_group.sql</code> (next after 005_webhooks): <code>ALTER TABLE intents ADD COLUMN external_id TEXT;</code> + <code>ADD COLUMN external_group TEXT;</code> + <code>CREATE INDEX idx_intents_external_group ON intents (external_group);</code> — <b>no backfill inside the migration</b> (only one edition in prod; existing intents get marked by hand afterwards).</li>
+  <li><b>Manual backfill (one-time prod ops step, after deploy)</b> — univents already stores both ids on every checkout intent as <code>metadata->>'purchase_id'</code> / <code>metadata->>'edition_id'</code>, so a single hand-run UPDATE marks all current intents:</li>
+</ul>
+<pre><code>-- run by hand in prod once (not part of the migration)
+UPDATE intents SET
+    external_id   = metadata->>'purchase_id',
+    external_group = metadata->>'edition_id'
+WHERE metadata->>'purchase_id' IS NOT NULL;
+
+-- verify: any succeeded intent left NULL never carried the metadata
+-- (testmode hard-creates, non-univents callers) — expected to be a small set;
+-- single-edition prod means this should mark everything real
+SELECT count(*) AS null_id FROM intents WHERE external_id IS NULL;
+SELECT count(*) AS null_group FROM intents WHERE external_group IS NULL;</code></pre>
+<ul>
+  <li><b>Verification</b> (post-backfill): spot-check one succeeded intent per edition via <code>SELECT external_id, external_group, metadata FROM intents WHERE status = 'succeeded' LIMIT 5;</code> — both should match their <code>metadata</code> counterparts.</li>
+  <li><b>Service</b> (<span class="file">services/intents/checkout.go</span>): set <code>ExternalID: payload.ExternalID</code> + <code>ExternalGroup: payload.ExternalGroup</code> on the intent before <code>provider.Checkout</code>; testmode <code>hard_create</code> accepts both.</li>
+  <li><b>Spec + handler</b>: <code>CreateIntentRequest.external_id</code> + <code>external_group</code> (optional strings) and <code>Intent.external_id</code> + <code>external_group</code> in <span class="file">api/payssage/api-spec.yml</span>; handler passes them through. Exposed on get/list (no filter endpoint in v1 — the group index is there when filtering is wanted).</li>
+  <li><b>univents</b> (<span class="file">api/univents/internal/services/checkouts/checkout.go</span> <code>buildIntentRequest</code>): send <code>ExternalID = purchase.ID.String()</code> + <code>ExternalGroup = editionID.String()</code> (both already in scope; currently ride in <code>metadata</code> — promoted to queryable fields, metadata kept for backward compat).</li>
+  <li><b>SDKs</b>: Go (<span class="file">sdk/go/Payssage/intents.go</span>/<span class="file">types.go</span>) add both fields to <code>CreateIntentRequest</code> + <code>Intent</code>; regen the TS SDK. Tests: create intent with both, assert they round-trip on get/list.</li>
+</ul>
+
+<!-- ───────────────────────────── 7 ───────────────────────────── -->
+<h2 id="work-univents">7 · Work package B — Univents API <span class="badge b-api">api/univents</span> <span class="badge b-db">db</span></h2>
+
+<h3>B1 · <code>refunded</code> purchase status</h3>
+<ul>
+  <li><span class="file">api/univents/models/purchases.go</span>: add <code>PurchaseStatusRefunded PurchaseStatus = "refunded"</code>.</li>
+  <li><b>Migration <code>011_refunds.sql</code></b> (next is 011): <code>ALTER TABLE purchases DROP CONSTRAINT chk_purchases_status_valid; … ADD CONSTRAINT … CHECK (status IN ('pending','approved','expired','cancelled','failed','rejected','refunded'));</code> and add <code>payer_email TEXT NULL</code> (B3).</li>
+  <li><span class="file">api/univents/internal/app/constraints.go</span>: sync the registry — note its <code>chk_purchases_status_valid</code> message is <i>already stale</i> (lists only pending/approved/expired/cancelled while the migration has failed/rejected); fix while touching it (boot fails on drift).</li>
+  <li><span class="file">api/univents/api-spec.yml</span>: add <code>refunded</code> to <code>PurchaseStatus</code> enum; document <code>status_reason</code> values; add <code>payer_email</code> to <code>Purchase</code>.</li>
+  <li>Availability ledger needs no change: reserved = pending/approved only; leaving <code>approved</code> frees stock automatically (verified in <span class="file">internal/sqlc/purchases.sql.go</span>: <code>status IN ('pending','approved')</code>).</li>
+</ul>
+
+<h3>B2 · Webhook reaction — replace the D1 stub</h3>
+<p><span class="file">api/univents/internal/services/webhooks/receive.go</span> — the <code>eventRefunded</code> branch becomes a real <code>refund()</code> op (modeled on <code>approve.go</code>/<code>cancel.go</code>):</p>
+<ul>
+  <li><b>Guard</b>: only <code>approved → refunded</code> via <code>UpdateStatusIf</code> (idempotent — duplicate <code>payment.refunded</code> deliveries no-op). Refund for a <code>pending</code> purchase: log + ack, leave pending (the pending→cancelled/expired flows own it).</li>
+  <li><b>Flip materialized rows</b> in the same tx (mirror <code>flipCancelled</code>): registration <code>confirmed→cancelled</code>, product_purchase <code>confirmed→cancelled</code>, participation <code>registered→cancelled</code>.</li>
+  <li><b>Revoke badges</b> per ticket item: <code>badges.RevokeByRegistration(regID, "refunded")</code> — the repo op already exists (<span class="file">internal/repos/badges/revoke_by_registration.go</span>; sqlc <code>RevokeBadgeEmissionByRegistration</code> sets <code>status='revoked'</code>). Extend the <code>Badges</code> interface in <span class="file">operations.go</span> with the revoke method.</li>
+  <li><b>NOTIFY stock deltas only</b> (item ids, D10) — <b>skip the D9 purchase event</b>: the buyer's WS socket closes on <code>approved</code>, so nobody is listening, and the hub's <code>framesFor</code> default logs "unhandled purchase status" (verified in <span class="file">internal/services/ws/hub.go</span>). No WS frame work at all (cuts the frame constant, socket handling, and frontend socket list).</li>
+  <li>Leave <code>status_reason</code> nil for normal refunds (the <code>refunded_after_expiry</code> reason stays reserved for the manual edge, D-10).</li>
+</ul>
+
+<h3>B3 · Organizer surface (new)</h3>
+<p>Authz via the existing pattern: resolve edition → event → <code>authz.CheckEvent(ctx, actorID, eventID, models.EventMemberRoleAdmin)</code> (same as badge/edition admin ops, verified in <span class="file">api/univents/internal/authz/authz.go</span>).</p>
+<ul>
+  <li><b><code>GET /editions/{edition_id}/purchases</code></b> (owner/admin) — new sqlc query <code>ListPurchasesByEdition</code> (+ items join; none exists today — only <code>ListPurchasesByPurchaser</code>). Response = shared <code>Purchase</code> shape + items, plus buyer identity:
+    <ul>
+      <li><b><code>payer_email</code></b> — new column, set at checkout from <code>CheckoutInput.Payer.Email</code> (the front sends <code>payment?.payer_email ?? profile.email</code> — the person MP will refund; verified in <span class="file">front/univents/src/routes/events/$slug/checkout.tsx</span>).</li>
+      <li><b>attendee names</b> — join registrations (<code>attendee_name</code>/<code>attendee_email</code> already on the model, <span class="file">models/registrations.go</span>). Gifted tickets show the recipient — acceptable; the payer_email identifies who gets the money.</li>
+    </ul>
+  </li>
+  <li><b><code>POST /purchases/{purchase_id}/refund</code></b> (owner/admin):
+    <ol>
+      <li>Load purchase → resolve edition/event → <code>CheckEvent(admin)</code>.</li>
+      <li>Guard: <code>status == approved</code>; otherwise 409 (with "already refunded" for a <code>refunded</code> purchase — the admin UI disables the button after refetch).</li>
+      <li>Call <code>payssage.RefundIntent(ctx, *purchase.PayssageIntentID)</code> via <span class="file">sdk/go/Payssage</span> (service key). Map errors with the existing <code>mapPayssageError</code> pattern (4xx → 400 with provider message).</li>
+      <li><b>Do NOT flip the purchase</b> — the <code>payment.refunded</code> webhook confirms (D-2, single writer). Return the purchase (still <code>approved</code>) with 200.</li>
+    </ol>
+  </li>
+</ul>
+
+<h3>B4 · Spec + generated clients</h3>
+<ul>
+  <li>New endpoints (B3) + enum change (B1) in <span class="file">api/univents/api-spec.yml</span>.</li>
+  <li>Regenerate: <code>just generate</code> (oapi + orval, <span class="file">justfile</span> L79–87) → univents TS SDK (<code>@trieoh/univents-api</code>) + openapi types. Payssage spec regen for the new endpoint (Go server types + TS if any — front cut means TS payssage regen optional).</li>
+  <li>Keep <span class="file">parity_test.go</span> in both services in sync (spec↔server parity is enforced).</li>
+</ul>
+
+<!-- ───────────────────────────── 8 ───────────────────────────── -->
+<h2 id="work-front">8 · Work package C — Univents frontend <span class="badge b-front">front/univents</span></h2>
+
+<h3>C1 · Buyer surfaces (distinct "Reembolsado", D-11)</h3>
+<ul>
+  <li><span class="file">src/features/purchases/ui/purchases-content.tsx</span> — the status mapping (L35) currently collapses everything non-approved/pending to <code>"cancelled"</code>; map <code>refunded → "refunded"</code>.</li>
+  <li><span class="file">src/features/purchases/ui/order-card.tsx</span> — extend <code>OrderStatus</code> with <code>"refunded"</code> + <code>STATUS_CONFIG</code> entry ("Reembolsado", muted/blue tone; struck-through total like cancelled).</li>
+  <li><span class="file">src/features/purchases/ui/checkout-page.tsx</span> — add a <code>refunded</code> entry to <code>statusCopy</code> ("Pedido reembolsado" / "O valor da compra foi devolvido." + icon).</li>
+  <li>Socket untouched (no new terminal frame — refunded purchases never have a live socket).</li>
+</ul>
+
+<h3>C2 · Admin orders + refund page</h3>
+<ul>
+  <li>New route under the edition admin tree (<span class="file">src/routes/admin/events/$eventId_.editions.$editionId/orders/</span>) — table/cards of the edition's purchases (from <code>GET /editions/{id}/purchases</code>): order id, buyer (payer_email + attendee names), items, total, date, status badge.</li>
+  <li>Refund action on <code>approved</code> orders: confirm dialog ("o valor será devolvido ao comprador"), calls <code>POST /purchases/{id}/refund</code>, shows a local "Solicitado…" state (D-6 — no server state), refetches on success (webhook flips within seconds), toast on 409/error (D-12: a rejected MP refund leaves the purchase approved — documented limitation, no special UI in v1).</li>
+  <li>Follows the existing admin page patterns (products/programs/signatures index pages).</li>
+</ul>
+
+<!-- ───────────────────────────── 9 ───────────────────────────── -->
+<h2 id="work-tests">9 · Work package D — Tests &amp; e2e</h2>
+
+<ul>
+  <li><b>Payssage provider</b> (<span class="file">checkout_test.go</span> style): <code>Refund</code> sends empty body + idempotency header; missing transaction id → conflict; revoked seller → conflict; MP error mapping (2024/15016 → ?, 401, 404); provider_data updated, intent status untouched.</li>
+  <li><b>Payssage service</b>: succeeded-only guard; wallet access; already-refunded → idempotent no-op; partial never sent (regression guard for when amounts come back).</li>
+  <li><b>Univents receiver</b> (<span class="file">receive_test.go</span>/<span class="file">receive_db_test.go</span> style): approved→refunded flip; duplicate delivery no-op; materialized rows cancelled; badge revoked per ticket; NOTIFY payload = stock only; refund for pending purchase acked+left; spec parity.</li>
+  <li><b>Organizer endpoints</b>: authz (non-member → 404, staff → 403); guard (pending/refunded → 409); payssage error mapping; payer_email populated at checkout.</li>
+  <li><b>E2E recipe</b> (mirrors the verified curl recipes in the skills): seed → testmode <code>succeeded</code> intent → signed <code>payment.succeeded</code> → approved → <code>POST /purchases/{id}/refund</code> (organizer) → testmode refund → signed <code>payment.refunded</code> → purchase <code>refunded</code>; assert badge revoked + admin list shows it.</li>
+</ul>
+
+<!-- ───────────────────────────── 10 ───────────────────────────── -->
+<h2 id="cut">10 · Explicitly cut (YAGNI)</h2>
+
+<table>
+  <tr><th>Cut</th><th>Why</th><th>When it returns</th></tr>
+  <tr><td>Payssage frontend refund button</td><td>Univents admin is the only path; dashboard already renders the Refunded badge</td><td>Ops tooling need</td></tr>
+  <tr><td>Partial / amount-based refunds (all layers)</td><td>Full-only decided; additive field later is non-breaking</td><td>Product asks for partials</td></tr>
+  <tr><td>"refunding" intermediate state + WS frame</td><td>Socket closes on approved; webhook latency is sub-second</td><td>If buyers need live refund status</td></tr>
+  <tr><td>Refund window / check-in eligibility</td><td>Organizer judgment for v1; check-in isn't in the buy flow</td><td>Policy or abuse signal</td></tr>
+  <tr><td>Auto-refund of <code>refunded_after_expiry</code> edge</td><td>Rare race; stays manual (ops via payssage API)</td><td>If the race shows up in practice</td></tr>
+  <tr><td>Refund ledger / polling for rejected refunds</td><td>Accepted + documented (D-12); intent <code>status_detail</code> records failures</td><td>Refund volume grows</td></tr>
+  <tr><td>TS payssage SDK change</td><td>No payssage frontend work</td><td>With the frontend</td></tr>
+  <tr><td>IdentityX resolution for buyer names</td><td><code>payer_email</code> column + registrations already carry what's needed</td><td>If richer buyer profiles are wanted</td></tr>
+</table>
+
+<!-- ───────────────────────────── 11 ───────────────────────────── -->
+<h2 id="sequence">11 · Sequence</h2>
+
+<table>
+  <tr><th>#</th><th>Slice</th><th>Contents</th><th>Depends on</th></tr>
+  <tr><td>1</td><td><b>Fee observability + intent tagging</b> (§5.3, A7)</td><td>Capture MP <code>fee_details</code>/<code>net_received_amount</code>/<code>application_fee</code> + <code>money_release_date</code>/<code>money_release_status</code> into <code>MercadoPagoIntentData</code> in checkout.go; add <code>external_id</code> (purchase) + <code>external_group</code> (edition) to intents (model/DB/spec/SDKs/univents checkout) + hand backfill of existing intents; tests; future use: R1 fee-on-refund verification</td><td>—</td></tr>
+  <tr><td>2</td><td><b>Payssage refund op</b> (A1–A6)</td><td>Port <code>Refund</code>, MP <code>refund_payment.go</code>, NormalizeStatus fix, service, handler+spec, testmode, Go SDK, tests</td><td>—</td></tr>
+  <tr><td>3</td><td><b>Univents receiver + status</b> (B1–B2)</td><td><code>refunded</code> status (model/migration/constraints/spec), <code>refund()</code> webhook op with badge revocation + stock NOTIFY, tests</td><td>2 (SDK)</td></tr>
+  <tr><td>4</td><td><b>Organizer surface</b> (B3–B4)</td><td><code>payer_email</code> at checkout, edition-purchases read, purchase-refund endpoint, spec + orval regen, endpoint tests</td><td>2, 3</td></tr>
+  <tr><td>5</td><td><b>Frontend</b> (C1–C2)</td><td>Buyer "Reembolsado" surfaces + admin orders/refund page</td><td>4</td></tr>
+  <tr><td>6</td><td><b>e2e + fee-on-refund verification</b> (D + §5)</td><td>Full local recipe; verify R1 against a real refund using the Slice 1 captured data</td><td>1–5</td></tr>
+</table>
+
+<p>Slices 1+2 make refunds <i>work</i> end-to-end (initiable via curl/SDK); slice 3 adds the organizer UI path; slice 4 makes it usable.</p>
+
+<!-- ───────────────────────────── 12 ───────────────────────────── -->
+<h2 id="risks">12 · Risks &amp; open items</h2>
+
+<table>
+  <tr><th>#</th><th>Item</th><th>Status / handling</th></tr>
+  <tr><td>R1</td><td><b>Fee-on-refund settlement</b> — what MP does with the <code>application_fee</code> (clawed back from marketplace / kept / charged to seller) when a fee'd payment is fully refunded</td><td><b>Not documented</b> — doc searches (official PT/EN/ES, API refs, blog, community, third-party) confirm the split mechanics but never the refund behavior. <b>Sandbox probe blocked:</b> with the test credentials (app 7252535282253532, TESTUSER), card tokenization works (<code>POST /v1/card_tokens</code> → active) but <code>POST /v1/payments</code> returns code 7 "Unauthorized use of live credentials" — the known TESTUSER payment-creation restriction; sandbox e2e therefore relies on payssage testmode (hard-create) + signed webhooks, not real MP sandbox payments. <b>Empirical test closes it:</b> refund <code>174515095132</code> (R$ 45, fee 2,25) in the panel and check the marketplace account's Movimentos — a −2,25 reversal means clawback (refunds cost you the fee), no reversal means kept. Also observable via API after Slice 2 (re-GET payment → <code>refunds[]</code> + movements). Slice 1's captured fields + Slice 6 verify it in-app.</td></tr>
+  <tr><td>R2</td><td>Fee receipt &amp; settlement — <b>verified</b></td><td>Cut is charged (2.25 on a 45.00 payment) and credited to the marketplace account ("Venda Principal"); balance moves on MP's release date (a liberar until then). Slice 1 captures <code>money_release_date/status</code> for in-app visibility. Remaining question: fee-on-refund (R1).</td></tr>
+  <tr><td>R3</td><td>Rejected refunds are invisible to the organizer (D-12)</td><td>Accepted; intent <code>status_detail</code> + payssage dashboard are the record. Revisit if refund volume grows.</td></tr>
+  <tr><td>R4</td><td>Badge revocation vs. certs (D-4)</td><td>Badge revoked; certs stand (attendance was real). Policy can flip later via the existing invalidate op.</td></tr>
+  <tr><td>R5</td><td>Gifted tickets in the admin list</td><td>payer_email = payer (who gets the money); attendee names = recipients. UI labels both.</td></tr>
+  <tr><td>R6</td><td>MP refund time window (2024/15016)</td><td>Surfaced as a 400 from the endpoint; organizer retries or handles manually.</td></tr>
+  <tr><td>R7</td><td><code>partially_refunded</code> external refunds</td><td>A3 maps to <code>refunded</code> → purchase flips fully even for an external partial. Acceptable v1 semantics; note in docs.</td></tr>
+  <tr><td>R8</td><td>Chargebacks</td><td>Already normalized <code>charged_back → refunded</code>; the same flip applies — desired (money clawed back ⇒ order cancelled).</td></tr>
+</table>
+
+<!-- ───────────────────────────── 13 ───────────────────────────── -->
+<h2 id="appendix">13 · Appendix — inspection log + sources</h2>
+
+<h3>13.1 Verified code facts (this pass)</h3>
+<table>
+  <tr><th>Fact</th><th>Where verified</th></tr>
+  <tr><td>Badge revocation already exists: <code>RevokeByRegistration(registrationID, reason)</code> → <code>RevokeBadgeEmissionByRegistration</code> sets <code>status='revoked'</code>; <code>BadgeEmissionStatus</code> has <code>active|revoked</code></td><td><span class="file">api/univents/internal/repos/badges/revoke_by_registration.go</span>, <span class="file">internal/sqlc/badge_emissions.sql.go</span> L189, <span class="file">models/badges.go</span> L53–57</td></tr>
+  <tr><td>Buyer identity sources: registrations carry <code>attendee_email</code>/<code>attendee_name</code>/<code>purchaser_id</code>; identityx Go SDK has <code>Actors.GetByID</code> (not needed once <code>payer_email</code> lands); the front sends payer email at checkout (<code>payment?.payer_email ?? profile.email</code>)</td><td><span class="file">models/registrations.go</span> L21–35, <span class="file">sdk/go/IdentityX/actors.go</span> L56, <span class="file">front/univents/src/routes/events/$slug/checkout.tsx</span> L124–125</td></tr>
+  <tr><td>WS hub has no <code>refunded</code> case; its default logs "unhandled purchase status" and pushes nothing; the buyer socket closes on <code>approved</code> — so no WS frame work needed and the D9 purchase event should be skipped for refunds</td><td><span class="file">api/univents/internal/services/ws/hub.go</span> <code>framesFor</code> default, <span class="file">front/univents/src/features/purchases/hooks/use-purchase-socket.ts</span></td></tr>
+  <tr><td>Availability ledger counts only <code>pending</code>/<code>approved</code> — a refunded purchase frees stock with no query change</td><td><span class="file">api/univents/internal/sqlc/purchases.sql.go</span> L282/L328/L457</td></tr>
+  <tr><td>No edition-level purchase read exists (only <code>ListPurchasesByPurchaser</code>) — new sqlc query required</td><td><span class="file">internal/sqlc/purchases.sql.go</span> L404, <span class="file">internal/repos/purchases/get.go</span> L46</td></tr>
+  <tr><td>constraints.go <code>chk_purchases_status_valid</code> message is already stale (missing failed/rejected) — fix alongside adding refunded</td><td><span class="file">api/univents/internal/app/constraints.go</span> L60</td></tr>
+  <tr><td>Next migration is 011</td><td><span class="file">api/univents/db/migrations/</span> (010_store.sql last)</td></tr>
+  <tr><td>payssage <code>intents.Update</code> persists <code>provider_data</code>; SDK <code>do()</code> unwraps <code>{data}</code> and maps 4xx/5xx to <code>APIError{StatusCode, Message}</code> (the <code>mapPayssageError</code> pattern is reusable)</td><td><span class="file">api/payssage/internal/repos/intents/update.go</span> L24, <span class="file">sdk/go/Payssage/client.go</span> L40–80</td></tr>
+  <tr><td>Authz pattern for edition admin ops: <code>authz.CheckEvent(ctx, actorID, eventID, EventMemberRoleAdmin)</code></td><td><span class="file">api/univents/internal/services/badges/…</span>, <span class="file">internal/authz/authz.go</span> L20</td></tr>
+  <tr><td>Fee path: <code>feeBps := wallet.FeeBps; if 0 → checkoutData.MarketplaceFeeBPS</code> (univents sends none) → <code>application_fee = calcApplicationFee(amount, feeBps)</code>; wallet fee UI + display exist in the payssage front</td><td><span class="file">api/payssage/internal/features/providers/mercado_pago_provider/checkout.go</span> L43–49, <span class="file">front/payssage/src/features/wallets/ui/wallet-card.tsx</span></td></tr>
+  <tr><td>Codegen pipeline: <code>just generate</code> → <code>generate-oapi</code> + <code>generate-orval</code> (<code>pnpm orval</code>)</td><td><span class="file">justfile</span> L79–87</td></tr>
+  <tr><td>payssage front buyer UI status maps (to extend with refunded): purchases-content L35, order-card <code>STATUS_CONFIG</code>, checkout-page <code>statusCopy</code></td><td><span class="file">front/univents/src/features/purchases/ui/*</span></td></tr>
+  <tr><td>Testmode pattern: <code>hardCreateIntent</code> is TEST_MODE-gated and accepts any status incl. <code>refunded</code>; the e2e recipe fires signed webhook envelopes manually</td><td><span class="file">api/payssage/internal/handlers/intents/hard_create_intent.go</span>, univents skill recipes</td></tr>
+  <tr><td>Intent metadata already carries both correlation ids: univents <code>buildIntentRequest</code> sets <code>metadata = {purchase_id, edition_id}</code> (the backfill source for <code>external_id</code>/<code>external_group</code>); the webhook event's <code>external_id</code> is the provider payment id (dedupe index <code>uniq_webhook_events_external_id_type</code>) — distinct from the planned intent <code>external_id</code></td><td><span class="file">api/univents/internal/services/checkouts/checkout.go</span> L810–813, <span class="file">api/payssage/models/webhooks.go</span> L25, <span class="file">api/payssage/db/migrations/005_webhooks.sql</span> L40–42</td></tr>
+</table>
+
+<h3>13.2 Mercado Pago (official docs consulted)</h3>
+<ul>
+  <li>Create refund API reference — <code>POST /v1/payments/{id}/refunds</code> (full = no amount; partial = <code>amount</code>; error codes incl. <code>2024/15016</code>, <code>3024</code>, <code>4040/4041</code>, <code>2063</code>, <code>4292</code>): mercadopago.com/developers/…/create-refund/post</li>
+  <li>Refunds &amp; cancellations (checkout-api-orders) — refund vs cancellation semantics: mercadopago.com.mx/developers/en/docs/checkout-api-orders/refunds-cancellations</li>
+  <li>Payment management / cancellations-and-refunds: mercadopago.com.br/developers/en/docs/checkout-api-payments/payment-management/cancellations-and-refunds</li>
+  <li>Notifications — refunds ride the <code>payment</code> topic: mercadopago.com.mx/developers/en/docs/your-integrations/notifications</li>
+  <li>Transaction status — <code>refunded</code>/<code>partially_refunded</code>: mercadopago.com/developers/en/docs/checkout-api-orders/payment-management/status/transaction-status</li>
+  <li>Split payments / marketplace fee (<code>application_fee</code>): mercadopago.com.br/developers/en/docs/split-payments/integration-configuration/integrate-marketplace</li>
+  <li><b>Key fee fact (Slice 1 rationale):</b> <code>application_fee</code> requires the seller's access token to be <b>generated via OAuth</b> — otherwise MP errors "You cannot use <code>application_fee</code> with this payment". The payment response carries <code>fee_details[]</code> (<code>{type}</code> incl. <code>application_fee</code>/<code>mercadopago_fee</code>, <code>amount</code>, <code>fee_payer</code>) and <code>transaction_details.net_received_amount</code> — the exact fields Slice 1 captures. Sources: create-payment API reference, "Integrate Checkout into a Marketplace".</li>
+</ul>
+<p class="sub">Several devsite pages exceed fetchable size (JS-rendered); facts were cross-checked across the API reference + country mirrors. The fee-on-refund behavior (R1) and the exact BR refund window need one verification pass against live docs / a real payment — Slice 1's captured data is what makes that pass possible.</p>
+
+<footer>
+Final scoped plan generated from the TheTree monorepo (api/payssage, api/univents, front/univents, sdk/*) + Mercado Pago official documentation. No code written. All paths relative to the repo root.
+</footer>
+
+</div>
+</body>
+</html>

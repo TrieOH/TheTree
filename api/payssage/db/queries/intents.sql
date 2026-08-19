@@ -1,6 +1,6 @@
 -- name: CreateIntent :one
-INSERT INTO intents (id, wallet_id, seller_id, collector_id, amount_cents, currency, sandbox, provider, status, status_detail, provider_data, metadata)
-VALUES (@id, @wallet_id, @seller_id, @collector_id, @amount_cents, @currency, @sandbox, @provider, @status, @status_detail, @provider_data, @metadata)
+INSERT INTO intents (id, wallet_id, seller_id, collector_id, amount_cents, currency, sandbox, provider, status, status_detail, provider_data, metadata, external_id, external_group)
+VALUES (@id, @wallet_id, @seller_id, @collector_id, @amount_cents, @currency, @sandbox, @provider, @status, @status_detail, @provider_data, @metadata, @external_id, @external_group)
 RETURNING *;
 
 -- name: GetIntentByID :one

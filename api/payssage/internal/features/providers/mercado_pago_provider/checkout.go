@@ -98,17 +98,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		return fun.Errf("generate idempotency key: %v", err).Internal()
 	}
 
-	var mpResp struct {
-		ID                 int64  `json:"id"`
-		Status             string `json:"status"`
-		StatusDetail       string `json:"status_detail"`
-		PointOfInteraction struct {
-			TransactionData struct {
-				QRCode       string `json:"qr_code"`
-				QRCodeBase64 string `json:"qr_code_base64"`
-			} `json:"transaction_data"`
-		} `json:"point_of_interaction"`
-	}
+	var mpResp mpPaymentResponse
 	var mpErr map[string]any
 
 	resp, err := p.httpClient.R().
@@ -136,6 +126,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		OrderStatusDetail: mpResp.StatusDetail,
 		PaymentMethodID:   checkoutData.PaymentMethodID,
 	}
+	applySettlement(providerData, &mpResp)
 	if isPix {
 		providerData.PaymentMethodType = "bank_transfer"
 		providerData.PixQRCode = mpResp.PointOfInteraction.TransactionData.QRCode

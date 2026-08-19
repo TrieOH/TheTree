@@ -192,10 +192,7 @@ func fullyAvailable(items []models.PurchaseItem, availability []models.ItemAvail
 // DB and the WS hub routes on purchase_id, so a missed notification is a
 // stale snapshot, never data loss — errors are logged, not propagated.
 func (o *Operations) notify(ctx context.Context, purchase *models.Purchase, items []models.PurchaseItem, status models.PurchaseStatus) {
-	stock := notify.StockNotification{Kind: notify.KindStock, EditionID: purchase.EditionID}
-	for _, item := range items {
-		stock.ItemIDs = append(stock.ItemIDs, item.ItemID)
-	}
+	stock := stockNotification(purchase, items)
 	o.publish(ctx, stock)
 	o.publish(ctx, notify.PurchaseNotification{
 		Kind:       notify.KindPurchase,
@@ -203,6 +200,16 @@ func (o *Operations) notify(ctx context.Context, purchase *models.Purchase, item
 		PurchaseID: purchase.ID,
 		Status:     string(status),
 	})
+}
+
+// stockNotification builds the stock-delta payload (D10): item_ids only —
+// the SSE relay re-queries availability from the DB.
+func stockNotification(purchase *models.Purchase, items []models.PurchaseItem) notify.StockNotification {
+	stock := notify.StockNotification{Kind: notify.KindStock, EditionID: purchase.EditionID}
+	for _, item := range items {
+		stock.ItemIDs = append(stock.ItemIDs, item.ItemID)
+	}
+	return stock
 }
 
 func (o *Operations) publish(ctx context.Context, payload any) {

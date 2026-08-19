@@ -33,20 +33,22 @@ type Seller struct {
 
 // Intent mirrors `models.Intent` — a payment attempt (checkout).
 type Intent struct {
-	ID           uuid.UUID        `json:"id"`
-	WalletID     uuid.UUID        `json:"wallet_id"`
-	SellerID     uuid.UUID        `json:"seller_id"`
-	CollectorID  *uuid.UUID       `json:"collector_id"`
-	AmountCents  int64            `json:"amount_cents"`
-	Currency     string           `json:"currency"`
-	Sandbox      bool             `json:"sandbox"`
-	Provider     string           `json:"provider"`
-	Status       IntentStatus     `json:"status"`
-	StatusDetail *string          `json:"status_detail"`
-	ProviderData json.RawMessage  `json:"provider_data"`
-	Metadata     *json.RawMessage `json:"metadata"`
-	CreatedAt    time.Time        `json:"created_at"`
-	UpdatedAt    time.Time        `json:"updated_at"`
+	ID            uuid.UUID        `json:"id"`
+	WalletID      uuid.UUID        `json:"wallet_id"`
+	SellerID      uuid.UUID        `json:"seller_id"`
+	CollectorID   *uuid.UUID       `json:"collector_id"`
+	AmountCents   int64            `json:"amount_cents"`
+	Currency      string           `json:"currency"`
+	Sandbox       bool             `json:"sandbox"`
+	Provider      string           `json:"provider"`
+	Status        IntentStatus     `json:"status"`
+	StatusDetail  *string          `json:"status_detail"`
+	ProviderData  json.RawMessage  `json:"provider_data"`
+	Metadata      *json.RawMessage `json:"metadata"`
+	ExternalID    *string          `json:"external_id,omitempty"`
+	ExternalGroup *string          `json:"external_group,omitempty"`
+	CreatedAt     time.Time        `json:"created_at"`
+	UpdatedAt     time.Time        `json:"updated_at"`
 }
 
 // IntentStatus mirrors `models.IntentStatus`.

@@ -25,12 +25,14 @@ func (h *Handlers) Checkout(ctx context.Context, req openapi.CheckoutRequestObje
 		}
 	}
 	intent, err := h.ops.Checkout(ctx, models.CreateIntentInput{
-		WalletID:     req.WalletId,
-		SellerID:     req.Body.SellerId,
-		Currency:     req.Body.Currency,
-		AmountCents:  req.Body.AmountCents,
-		CheckoutData: checkoutData,
-		Metadata:     &metadata,
+		WalletID:      req.WalletId,
+		SellerID:      req.Body.SellerId,
+		Currency:      req.Body.Currency,
+		AmountCents:   req.Body.AmountCents,
+		CheckoutData:  checkoutData,
+		Metadata:      &metadata,
+		ExternalID:    req.Body.ExternalId,
+		ExternalGroup: req.Body.ExternalGroup,
 	})
 	if err != nil {
 		return nil, err

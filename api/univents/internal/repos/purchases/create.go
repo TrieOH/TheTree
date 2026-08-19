@@ -21,6 +21,7 @@ func (repo *Repo) CreatePurchase(ctx context.Context, toCreate *models.Purchase)
 		PaymentMethod:    toCreate.PaymentMethod,
 		PayssageSellerID: toCreate.PayssageSellerID,
 		PayssageIntentID: toCreate.PayssageIntentID,
+		PayerEmail:       toCreate.PayerEmail,
 		QrCode:           toCreate.QRCode,
 		QrCodeBase64:     toCreate.QRCodeBase64,
 		ExpiresAt:        toCreate.ExpiresAt,

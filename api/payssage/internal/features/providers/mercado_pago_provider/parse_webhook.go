@@ -54,11 +54,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 		return nil, fun.Errf("seller %s has no mercadopago access token; cannot resolve webhook for intent %s", seller.ID, intent.ID).Conflict()
 	}
 
-	var mpResp struct {
-		ID           int64  `json:"id"`
-		Status       string `json:"status"`
-		StatusDetail string `json:"status_detail"`
-	}
+	var mpResp mpPaymentResponse
 	var mpErr map[string]any
 
 	resp, err := p.httpClient.R().
@@ -81,6 +77,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	_ = utils.MapTo(&providerData, intent.ProviderData)
 	providerData.OrderStatus = mpResp.Status
 	providerData.OrderStatusDetail = mpResp.StatusDetail
+	applySettlement(&providerData, &mpResp)
 	providerDataBytes, err := json.Marshal(&providerData)
 	if err != nil {
 		return nil, fun.Errf("marshal provider data: %v", err).Internal()

@@ -112,6 +112,9 @@ func (f *fakePurchaseRepo) GetByID(_ context.Context, id uuid.UUID) (*models.Pur
 	}
 	return p, nil
 }
+func (f *fakePurchaseRepo) ListByEdition(context.Context, uuid.UUID) ([]models.Purchase, error) {
+	return nil, fun.ErrInternal("unused fake")
+}
 func (f *fakePurchaseRepo) GetByIDForOwner(_ context.Context, id, purchaserID uuid.UUID) (*models.Purchase, error) {
 	p := f.get(id)
 	if p == nil || p.PurchaserID != purchaserID {

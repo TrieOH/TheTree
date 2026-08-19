@@ -24,6 +24,9 @@ type PurchaseRepo interface {
 	// GetByIntentID is the webhook receiver's correlation read (D2).
 	GetByIntentID(ctx context.Context, intentID uuid.UUID) (*models.Purchase, error)
 	ListByPurchaser(ctx context.Context, purchaserID uuid.UUID) ([]models.Purchase, error)
+	// ListByEdition is the organizer read (refund plan B3): every purchase of
+	// an edition, newest first — for the owner/admin orders page.
+	ListByEdition(ctx context.Context, editionID uuid.UUID) ([]models.Purchase, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.PurchaseStatus, reason *string) (*models.Purchase, error)
 	// UpdateStatusIf performs a guarded status transition (WHERE status =
 	// from) and returns (nil, nil) when the guard misses. The webhook

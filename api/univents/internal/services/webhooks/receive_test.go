@@ -481,10 +481,30 @@ func TestReceive_FailureForNonPendingPurchaseIgnored(t *testing.T) {
 	}
 }
 
-func TestReceive_RefundedIgnored(t *testing.T) {
+func TestReceive_RefundedFlipsApproved(t *testing.T) {
 	h := newHarness(t)
 	intentID := uuid.New()
 	p := purchase(uuid.New(), intentID, models.PurchaseStatusApproved)
+
+	mock.When(h.purchases.GetByIntentID(mock.AnyContext(), mock.Equal(intentID))).ThenReturn(p, nil)
+	updated := purchase(uuid.New(), intentID, models.PurchaseStatusRefunded)
+	mock.When(h.purchases.UpdateStatusIf(mock.AnyContext(), mock.Equal(p.ID), mock.Equal(models.PurchaseStatusApproved), mock.Equal(models.PurchaseStatusRefunded), mock.Any[*string]())).ThenReturn(updated, nil)
+	mock.When(h.purchases.ListItemsByPurchase(mock.AnyContext(), mock.Equal(p.ID))).ThenReturn([]models.PurchaseItem{}, nil)
+
+	err := h.ops.Receive(context.Background(), input(intentID, "payment.refunded", []byte(`{}`)))
+	if err != nil {
+		t.Fatalf("Receive: %v", err)
+	}
+	_, _ = mock.Verify(h.purchases, mock.Once()).UpdateStatusIf(mock.AnyContext(), mock.Equal(p.ID), mock.Equal(models.PurchaseStatusApproved), mock.Equal(models.PurchaseStatusRefunded), mock.Any[*string]())
+	if got := h.notifier.payloads(); len(got) != 1 {
+		t.Fatalf("refunded published %d notifications, want 1 (stock only)", len(got))
+	}
+}
+
+func TestReceive_RefundedForNonApprovedIgnored(t *testing.T) {
+	h := newHarness(t)
+	intentID := uuid.New()
+	p := purchase(uuid.New(), intentID, models.PurchaseStatusPending)
 
 	mock.When(h.purchases.GetByIntentID(mock.AnyContext(), mock.Equal(intentID))).ThenReturn(p, nil)
 
