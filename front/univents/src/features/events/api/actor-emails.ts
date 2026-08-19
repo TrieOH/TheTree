@@ -10,16 +10,30 @@ const identityXAccessClient = createIdentityXAccessClient({
 export const getActorEmailsServerFn = createServerFn({ method: "GET" })
   .validator((data: { actorIds: string[] }) => data)
   .handler(async ({ data }) => {
-    const actors = await identityXAccessClient.actors.list(
-      env.VITE_TRIEOH_AUTH_PROJECT_ID,
+    const actors = await Promise.all(
+      [...new Set(data.actorIds)].map(async (actorId) => {
+        const actor = await identityXAccessClient.actors.getById(
+          env.VITE_TRIEOH_AUTH_PROJECT_ID,
+          actorId,
+        );
+        if (!actor.success) {
+          console.warn("[actor-emails] actor lookup failed", {
+            actorId,
+            code: actor.code,
+            errorId: actor.error_id,
+          });
+          return null;
+        }
+        if (!actor.data.email) {
+          console.warn("[actor-emails] actor has no email", { actorId });
+          return null;
+        }
+        return [actorId, actor.data.email] as const;
+      }),
     );
-
-    if (!actors.success) return {};
-
-    const requestedIds = new Set(data.actorIds);
     return Object.fromEntries(
-      actors.data
-        .filter((actor) => requestedIds.has(actor.id) && actor.email)
-        .map((actor) => [actor.id, actor.email as string]),
+      actors.filter(
+        (actor): actor is readonly [string, string] => actor !== null,
+      ),
     );
   });

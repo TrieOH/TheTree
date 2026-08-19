@@ -172,6 +172,28 @@ export async function withSpan<T>(
   }
 }
 
+export function recordCompletedSpan(
+  name: string,
+  startedAt: number,
+  attributes: Record<string, string | number | boolean>,
+  error?: unknown,
+): void {
+  const endedAt = Date.now()
+  const span = tracer.startSpan(name, { startTime: startedAt, attributes })
+  span.setAttribute("operation.duration_ms", endedAt - startedAt)
+  if (error === undefined) {
+    span.setAttribute("operation.outcome", "success")
+    span.addEvent("operation.completed")
+  } else {
+    const normalized = error instanceof Error ? error : new Error(String(error))
+    span.recordException(normalized)
+    span.setAttribute("operation.outcome", "failure")
+    span.addEvent("operation.failed", { message: normalized.message })
+    span.setStatus({ code: SpanStatusCode.ERROR, message: normalized.message })
+  }
+  span.end(endedAt)
+}
+
 /** Phase 2: real browser spans (fetch, document load) exported through the
  *  BFF's ingestTracesServerFn — the only escape hatch to Victoria Traces. */
 export function initBrowserTracing(
