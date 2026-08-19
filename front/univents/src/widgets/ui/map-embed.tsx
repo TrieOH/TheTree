@@ -149,7 +149,8 @@ export function LocationMap({
     setStatus("loading");
 
     try {
-      const L = (await import("leaflet")).default;
+      const leafletModule = await import("leaflet");
+      const L = leafletModule.default ?? leafletModule;
 
       // @ts-expect-error _getIconUrl is not in the official type
       delete L.Icon.Default.prototype._getIconUrl;
@@ -217,7 +218,28 @@ export function LocationMap({
     };
   }, [initMap]);
 
-  if (status === "error") return null;
+  if (status === "error") {
+    const query = encodeURIComponent(`${location.name}, ${location.address}`);
+    return (
+      <div
+        className={`location-map-wrapper ${className}`}
+        style={{ position: "relative" }}
+      >
+        <iframe
+          title={`Mapa de ${location.name}`}
+          src={`https://www.google.com/maps?q=${query}&output=embed`}
+          style={{
+            height,
+            width: "100%",
+            border: 0,
+            borderRadius: "12px",
+          }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -321,7 +343,8 @@ export function MultiLocationMap({
 
     void (async () => {
       try {
-        const L = (await import("leaflet")).default;
+        const leafletModule = await import("leaflet");
+        const L = leafletModule.default ?? leafletModule;
 
         // @ts-expect-error _getIconUrl is not in the official type
         delete L.Icon.Default.prototype._getIconUrl;
