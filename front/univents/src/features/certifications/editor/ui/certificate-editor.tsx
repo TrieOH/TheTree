@@ -22,12 +22,14 @@ interface CertificateEditorProps {
   eventId: string;
   editionId: string;
   templateId?: string;
+  duplicate?: boolean;
 }
 
 export function CertificateEditor({
   eventId,
   editionId,
   templateId,
+  duplicate = false,
 }: CertificateEditorProps) {
   const { data: signatures = [] } = useQuery(
     allSignaturesQueryOptions(eventId, editionId),
@@ -39,10 +41,13 @@ export function CertificateEditor({
 
   useEffect(() => {
     certificateEditorActions.reset();
-    if (templateQuery.data)
+    if (templateQuery.data) {
       certificateEditorActions.loadDraft(templateQuery.data);
+      if (duplicate)
+        certificateEditorActions.setName(`${templateQuery.data.name} (cópia)`);
+    }
     return () => certificateEditorActions.reset();
-  }, [templateQuery.data]);
+  }, [duplicate, templateQuery.data]);
 
   useEffect(() => {
     certificateEditorActions.setAvailableSignatures(
@@ -73,7 +78,8 @@ export function CertificateEditor({
         to: "/admin/events/$eventId/editions/$editionId/certifications",
         params: { eventId, editionId },
       });
-    if (templateId) updateTemplate.mutate({ templateId, data }, { onSuccess });
+    if (templateId && !duplicate)
+      updateTemplate.mutate({ templateId, data }, { onSuccess });
     else createTemplate.mutate({ eventId, editionId, data }, { onSuccess });
   }
 

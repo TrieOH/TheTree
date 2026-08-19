@@ -102,10 +102,12 @@ export function BadgeEditor({
   eventId,
   editionId,
   templateId,
+  duplicate = false,
 }: {
   eventId: string;
   editionId: string;
   templateId?: string;
+  duplicate?: boolean;
 }) {
   const navigate = useNavigate();
   const createMutation = useCreateBadgeTemplateMutation();
@@ -129,9 +131,13 @@ export function BadgeEditor({
 
   useEffect(() => {
     if (templateQuery.data) {
-      setDraft(structuredClone(templateQuery.data));
+      const copy = structuredClone(templateQuery.data);
+      setDraft({
+        ...copy,
+        name: duplicate ? `${copy.name} (cópia)` : copy.name,
+      });
     }
-  }, [templateQuery.data]);
+  }, [duplicate, templateQuery.data]);
 
   const updateDesign = useCallback(
     (changes: Partial<BadgeTemplateCreate["design_data"]>) =>
@@ -227,7 +233,7 @@ export function BadgeEditor({
           to: "/admin/events/$eventId/editions/$editionId/badges",
           params: { eventId, editionId },
         });
-      if (templateId)
+      if (templateId && !duplicate)
         updateMutation.mutate({ templateId, data, editionId }, { onSuccess });
       else createMutation.mutate({ editionId, data }, { onSuccess });
     } catch {
@@ -301,7 +307,7 @@ export function BadgeEditor({
                 searchPlaceholder="Buscar ingresso..."
                 className="w-full"
                 triggerClassName="h-9"
-                disabled={Boolean(templateId)}
+                disabled={Boolean(templateId) && !duplicate}
                 onChange={(value) =>
                   setDraft({
                     ...draft,
@@ -309,7 +315,7 @@ export function BadgeEditor({
                   })
                 }
               />
-              {templateId && (
+              {templateId && !duplicate && (
                 <p className="text-xs text-muted-foreground">
                   O ingresso associado não pode ser alterado após a criação.
                 </p>
@@ -326,7 +332,7 @@ export function BadgeEditor({
                 placeholder="Selecione a origem"
                 className="w-full"
                 triggerClassName="h-9"
-                disabled={Boolean(templateId)}
+                disabled={Boolean(templateId) && !duplicate}
                 onChange={(value) =>
                   setDraft({
                     ...draft,
@@ -334,7 +340,7 @@ export function BadgeEditor({
                   })
                 }
               />
-              {templateId && (
+              {templateId && !duplicate && (
                 <p className="text-xs text-muted-foreground">
                   A origem não pode ser alterada após a criação.
                 </p>

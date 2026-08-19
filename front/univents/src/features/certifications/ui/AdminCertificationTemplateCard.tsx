@@ -1,4 +1,4 @@
-import { FileText, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, FileText, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/shared/lib/utils";
 import {
@@ -21,6 +21,7 @@ interface AdminCertificationTemplateCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onView: () => void;
+  onDuplicate: () => void;
 }
 
 function MenuItems({
@@ -28,11 +29,13 @@ function MenuItems({
   onEdit,
   onView,
   onDelete,
+  onDuplicate,
 }: {
   isContext?: boolean;
   onEdit: () => void;
   onView: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
 }) {
   const Item = isContext ? ContextMenuItem : DropdownMenuItem;
   const stop =
@@ -52,6 +55,10 @@ function MenuItems({
         <Pencil className="size-4" />
         <span>Editar template</span>
       </Item>
+      <Item onClick={stop(onDuplicate)}>
+        <Copy className="size-4" />
+        <span>Duplicar template</span>
+      </Item>
       <Item
         onClick={stop(onDelete)}
         className="text-destructive focus:text-destructive"
@@ -69,6 +76,7 @@ export function AdminCertificationTemplateCard({
   onEdit,
   onDelete,
   onView,
+  onDuplicate,
 }: AdminCertificationTemplateCardProps) {
   const handleEdit = () => onEdit();
   const handleView = () => onView();
@@ -151,6 +159,7 @@ export function AdminCertificationTemplateCard({
                       onEdit={handleEdit}
                       onView={handleView}
                       onDelete={onDelete}
+                      onDuplicate={onDuplicate}
                     />
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -185,6 +194,7 @@ export function AdminCertificationTemplateCard({
           onEdit={handleEdit}
           onView={handleView}
           onDelete={onDelete}
+          onDuplicate={onDuplicate}
         />
       </ContextMenuContent>
     </ContextMenu>

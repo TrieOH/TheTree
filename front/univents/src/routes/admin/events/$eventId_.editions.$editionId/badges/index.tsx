@@ -127,7 +127,7 @@ function RouteComponent() {
               <Link
                 to="/admin/events/$eventId/editions/$editionId/badges/editor"
                 params={{ eventId, editionId }}
-                search={{ templateId: "" }}
+                search={{ templateId: "", duplicate: false }}
                 className={cn(
                   "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
                 )}
@@ -162,14 +162,21 @@ function RouteComponent() {
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     })
                   }
                   onEdit={() =>
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
+                    })
+                  }
+                  onDuplicate={() =>
+                    void navigate({
+                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
+                      params: { eventId, editionId },
+                      search: { templateId: template.id, duplicate: true },
                     })
                   }
                   onDelete={() => remove.mutate({ templateId: template.id })}
@@ -240,7 +247,7 @@ function RouteComponent() {
               <Link
                 to="/admin/events/$eventId/editions/$editionId/badges/editor"
                 params={{ eventId, editionId }}
-                search={{ templateId: "" }}
+                search={{ templateId: "", duplicate: false }}
                 className={cn(
                   "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
                 )}
@@ -275,14 +282,14 @@ function RouteComponent() {
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     })
                   }
                   onEdit={() =>
                     void navigate({
                       to: "/admin/events/$eventId/editions/$editionId/badges/editor",
                       params: { eventId, editionId },
-                      search: { templateId: template.id },
+                      search: { templateId: template.id, duplicate: false },
                     })
                   }
                   onDelete={() => remove.mutate({ templateId: template.id })}

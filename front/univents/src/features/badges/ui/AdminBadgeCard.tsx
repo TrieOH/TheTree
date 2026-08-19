@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -35,6 +35,7 @@ interface AdminBadgeCardProps {
   ticketName?: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  onDuplicate?: () => void;
   onView?: () => void;
 }
 
@@ -45,6 +46,7 @@ export default function AdminBadgeCard({
   ticketName,
   onEdit,
   onDelete,
+  onDuplicate,
   onView,
 }: AdminBadgeCardProps) {
   const title =
@@ -113,6 +115,17 @@ export default function AdminBadgeCard({
                   >
                     <Pencil className="size-4" />
                     <span>Editar</span>
+                  </DropdownMenuItem>
+                ) : null}
+                {onDuplicate ? (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate();
+                    }}
+                  >
+                    <Copy className="size-4" />
+                    <span>Duplicar</span>
                   </DropdownMenuItem>
                 ) : null}
                 {onDelete ? (
