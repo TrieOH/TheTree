@@ -6,6 +6,7 @@ import { usePatchEditionMutation } from "@/features/editions/api/mutations";
 import type { EditionI } from "@/features/editions/model";
 import { useUploadQueue } from "@/features/upload-queue";
 import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 
 type ImageField = "logo_url" | "banner_url";
 
@@ -18,6 +19,7 @@ export function EditionVisualCard({
 }) {
   const [dragging, setDragging] = useState<ImageField>();
   const [hovered, setHovered] = useState<ImageField>();
+  const [removeField, setRemoveField] = useState<ImageField>();
   const bannerInput = useRef<HTMLInputElement>(null);
   const logoInput = useRef<HTMLInputElement>(null);
   const { enqueue, tasks } = useUploadQueue();
@@ -60,7 +62,7 @@ export function EditionVisualCard({
   };
 
   const patch = (field: ImageField, url: string | null) =>
-    patchMutation.mutate({
+    patchMutation.mutateAsync({
       eventId,
       editionId: edition.id,
       data: {
@@ -175,7 +177,7 @@ export function EditionVisualCard({
               disabled={patchMutation.isPending}
               onClick={(event) => {
                 event.stopPropagation();
-                patch("banner_url", null);
+                setRemoveField("banner_url");
               }}
               onMouseEnter={() => setHovered(undefined)}
               onMouseLeave={() => setHovered("banner_url")}
@@ -230,7 +232,7 @@ export function EditionVisualCard({
               disabled={patchMutation.isPending}
               onClick={(event) => {
                 event.stopPropagation();
-                patch("logo_url", null);
+                setRemoveField("logo_url");
               }}
               onMouseEnter={() => setHovered(undefined)}
               onMouseLeave={() => setHovered("logo_url")}
@@ -241,6 +243,20 @@ export function EditionVisualCard({
           ) : null}
         </div>
       </div>
+      <AlertModal
+        open={Boolean(removeField)}
+        onOpenChange={(open) => !open && setRemoveField(undefined)}
+        title={`Remover ${removeField === "logo_url" ? "logo" : "banner"}?`}
+        description="Essa imagem será removida da edição. Essa ação não pode ser desfeita."
+        confirmLabel="Remover imagem"
+        variant="destructive"
+        loading={patchMutation.isPending}
+        onConfirm={async () => {
+          if (!removeField) return;
+          await patch(removeField, null);
+          setRemoveField(undefined);
+        }}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type { DragEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 import { useUploadQueue } from "../../upload-queue";
 import { usePatchEventMutation } from "../api/mutations";
 import type { EventI } from "../model";
@@ -12,6 +13,7 @@ type ImageField = "logo_url" | "banner_url";
 export function EventVisualCard({ event }: { event: EventI }) {
   const [dragging, setDragging] = useState<ImageField>();
   const [hovered, setHovered] = useState<ImageField>();
+  const [removeField, setRemoveField] = useState<ImageField>();
   const bannerInput = useRef<HTMLInputElement>(null);
   const logoInput = useRef<HTMLInputElement>(null);
   const { enqueue, tasks } = useUploadQueue();
@@ -41,7 +43,7 @@ export function EventVisualCard({ event }: { event: EventI }) {
   };
 
   const remove = (field: ImageField) =>
-    patchMutation.mutate({
+    patchMutation.mutateAsync({
       eventId: event.id,
       data: {
         full_name: event.full_name,
@@ -160,7 +162,7 @@ export function EventVisualCard({ event }: { event: EventI }) {
               disabled={patchMutation.isPending}
               onClick={(e) => {
                 e.stopPropagation();
-                remove("banner_url");
+                setRemoveField("banner_url");
               }}
               onMouseEnter={() => setHovered(undefined)}
               onMouseLeave={() => setHovered("banner_url")}
@@ -215,7 +217,7 @@ export function EventVisualCard({ event }: { event: EventI }) {
               disabled={patchMutation.isPending}
               onClick={(e) => {
                 e.stopPropagation();
-                remove("logo_url");
+                setRemoveField("logo_url");
               }}
               onMouseEnter={() => setHovered(undefined)}
               onMouseLeave={() => setHovered("logo_url")}
@@ -226,6 +228,20 @@ export function EventVisualCard({ event }: { event: EventI }) {
           ) : null}
         </div>
       </div>
+      <AlertModal
+        open={Boolean(removeField)}
+        onOpenChange={(open) => !open && setRemoveField(undefined)}
+        title={`Remover ${removeField === "logo_url" ? "logo" : "banner"}?`}
+        description="Essa imagem será removida do evento. Essa ação não pode ser desfeita."
+        confirmLabel="Remover imagem"
+        variant="destructive"
+        loading={patchMutation.isPending}
+        onConfirm={async () => {
+          if (!removeField) return;
+          await remove(removeField);
+          setRemoveField(undefined);
+        }}
+      />
     </div>
   );
 }
