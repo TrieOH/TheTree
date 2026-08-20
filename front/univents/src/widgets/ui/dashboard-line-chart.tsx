@@ -119,7 +119,7 @@ export function DashboardLineChart({ purchases }: DashboardLineChartProps) {
           triggerClassName="h-9 w-full text-sm"
         />
       </div>
-      <div className="min-w-0 max-w-full overflow-hidden">
+      <div className="min-w-0 max-w-full overflow-hidden outline-none focus-within:outline-none focus-within:ring-0 [&_*:focus]:outline-none [&_*:focus]:ring-0">
         <Chart
           definition={definition}
           height={240}

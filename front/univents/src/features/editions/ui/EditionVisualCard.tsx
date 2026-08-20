@@ -2,20 +2,36 @@ import { Trash2, Upload } from "lucide-react";
 import type { DragEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { usePatchEditionMutation } from "@/features/editions/api/mutations";
+import type { EditionI } from "@/features/editions/model";
+import { useUploadQueue } from "@/features/upload-queue";
 import { Button } from "@/shared/ui/shadcn/button";
-import { useUploadQueue } from "../../upload-queue";
-import { usePatchEventMutation } from "../api/mutations";
-import type { EventI } from "../model";
 
 type ImageField = "logo_url" | "banner_url";
 
-export function EventVisualCard({ event }: { event: EventI }) {
+export function EditionVisualCard({
+  edition,
+  eventId,
+}: {
+  edition: EditionI;
+  eventId: string;
+}) {
   const [dragging, setDragging] = useState<ImageField>();
   const [hovered, setHovered] = useState<ImageField>();
   const bannerInput = useRef<HTMLInputElement>(null);
   const logoInput = useRef<HTMLInputElement>(null);
   const { enqueue, tasks } = useUploadQueue();
-  const patchMutation = usePatchEventMutation();
+  const patchMutation = usePatchEditionMutation();
+
+  const isUploading = (field: ImageField) =>
+    tasks.some(
+      (task) =>
+        task.owner.type === "edition" &&
+        task.owner.id === edition.id &&
+        task.association?.handlerKey === "edition-image" &&
+        task.association.input?.field === field &&
+        !["completed", "failed", "rejected"].includes(task.status),
+    );
 
   const upload = async (field: ImageField, file?: File) => {
     if (!file) return;
@@ -23,12 +39,15 @@ export function EventVisualCard({ event }: { event: EventI }) {
     try {
       await enqueue({
         file,
-        owner: { type: "event", id: event.id, label: event.full_name },
+        owner: { type: "edition", id: edition.id, label: edition.name },
         mediaType: label,
-        label: `${event.full_name} — ${label}`,
-        storagePath: `events/${event.id}/${label}`,
-        correctionPath: `/admin/events/${event.id}`,
-        association: { handlerKey: "event-image", input: { field } },
+        label: `${edition.name} — ${label}`,
+        storagePath: `events/${eventId}/editions/${edition.id}/${label}`,
+        correctionPath: `/admin/events/${eventId}/editions/${edition.id}`,
+        association: {
+          handlerKey: "edition-image",
+          input: { field, eventId },
+        },
       });
       toast.success("Imagem adicionada à fila de upload.");
     } catch (error) {
@@ -40,41 +59,37 @@ export function EventVisualCard({ event }: { event: EventI }) {
     }
   };
 
-  const remove = (field: ImageField) =>
+  const patch = (field: ImageField, url: string | null) =>
     patchMutation.mutate({
-      eventId: event.id,
+      eventId,
+      editionId: edition.id,
       data: {
-        full_name: event.full_name,
-        slug: event.slug,
-        acronym: event.acronym,
-        description: event.description,
-        contact_email: event.contact_email,
-        logo_url: field === "logo_url" ? null : event.logo_url,
-        banner_url: field === "banner_url" ? null : event.banner_url,
+        name: edition.name,
+        slug: edition.slug,
+        starts_at: edition.starts_at,
+        ends_at: edition.ends_at,
+        tagline: edition.tagline,
+        description: edition.description,
+        registration_opens_at: edition.registration_opens_at,
+        location_name: edition.location_name,
+        location_description: edition.location_description,
+        contact_email: edition.contact_email,
+        logo_url: field === "logo_url" ? url : edition.logo_url,
+        banner_url: field === "banner_url" ? url : edition.banner_url,
       },
     });
 
-  const isUploading = (field: ImageField) =>
-    tasks.some(
-      (task) =>
-        task.owner.type === "event" &&
-        task.owner.id === event.id &&
-        task.association?.handlerKey === "event-image" &&
-        task.association.input?.field === field &&
-        !["completed", "failed", "rejected"].includes(task.status),
-    );
-
   const dropProps = (field: ImageField) => ({
-    onDragEnter: (e: DragEvent) => {
-      e.preventDefault();
+    onDragEnter: (event: DragEvent) => {
+      event.preventDefault();
       setDragging(field);
     },
-    onDragOver: (e: DragEvent) => e.preventDefault(),
+    onDragOver: (event: DragEvent) => event.preventDefault(),
     onDragLeave: () => setDragging(undefined),
-    onDrop: (e: DragEvent) => {
-      e.preventDefault();
+    onDrop: (event: DragEvent) => {
+      event.preventDefault();
       setDragging(undefined);
-      void upload(field, e.dataTransfer.files[0]);
+      void upload(field, event.dataTransfer.files[0]);
     },
   });
 
@@ -82,32 +97,32 @@ export function EventVisualCard({ event }: { event: EventI }) {
     if (
       tasks.some(
         (task) =>
-          task.owner.id === event.id &&
-          task.association?.handlerKey === "event-image" &&
+          task.owner.id === edition.id &&
+          task.association?.handlerKey === "edition-image" &&
           !["completed", "failed", "rejected"].includes(task.status),
       )
     )
-      toast.loading("Enviando imagem do evento…", {
-        id: `event-image-${event.id}`,
+      toast.loading("Enviando imagem da edição…", {
+        id: `edition-image-${edition.id}`,
         duration: Infinity,
       });
-    else toast.dismiss(`event-image-${event.id}`);
-  }, [event.id, tasks]);
+    else toast.dismiss(`edition-image-${edition.id}`);
+  }, [edition.id, tasks]);
 
   const input = (
     field: ImageField,
     ref: RefObject<HTMLInputElement | null>,
   ) => (
     <input
-      id={`event-${field.replace("_url", "")}-upload`}
+      id={`edition-${edition.id}-${field.replace("_url", "")}-upload`}
       ref={ref}
       type="file"
       accept="image/*"
       className="hidden"
       disabled={isUploading(field) || patchMutation.isPending}
-      onChange={(e) => {
-        void upload(field, e.target.files?.[0]);
-        e.currentTarget.value = "";
+      onChange={(event) => {
+        void upload(field, event.target.files?.[0]);
+        event.currentTarget.value = "";
       }}
     />
   );
@@ -126,10 +141,10 @@ export function EventVisualCard({ event }: { event: EventI }) {
         onMouseEnter={() => setHovered("banner_url")}
         onMouseLeave={() => setHovered(undefined)}
       >
-        {event.banner_url && !isUploading("banner_url") ? (
+        {edition.banner_url && !isUploading("banner_url") ? (
           <img
-            src={event.banner_url}
-            alt="Banner do evento"
+            src={edition.banner_url}
+            alt="Banner da edição"
             className="size-full rounded-md object-cover"
           />
         ) : null}
@@ -143,24 +158,24 @@ export function EventVisualCard({ event }: { event: EventI }) {
             variant="secondary"
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 active:-translate-y-1/2!"
             disabled={isUploading("banner_url") || patchMutation.isPending}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={(event) => {
+              event.stopPropagation();
               bannerInput.current?.click();
             }}
             aria-label="Adicionar ou trocar banner"
           >
             <Upload className="size-4" />
           </Button>
-          {event.banner_url && !isUploading("banner_url") ? (
+          {edition.banner_url && !isUploading("banner_url") ? (
             <Button
               type="button"
               size="icon"
               variant="destructive"
               className="absolute bottom-3 right-3 bg-destructive text-destructive-foreground shadow-xl hover:bg-destructive/90"
               disabled={patchMutation.isPending}
-              onClick={(e) => {
-                e.stopPropagation();
-                remove("banner_url");
+              onClick={(event) => {
+                event.stopPropagation();
+                patch("banner_url", null);
               }}
               onMouseEnter={() => setHovered(undefined)}
               onMouseLeave={() => setHovered("banner_url")}
@@ -181,10 +196,10 @@ export function EventVisualCard({ event }: { event: EventI }) {
         onMouseEnter={() => setHovered("logo_url")}
         onMouseLeave={() => setHovered(undefined)}
       >
-        {event.logo_url && !isUploading("logo_url") ? (
+        {edition.logo_url && !isUploading("logo_url") ? (
           <img
-            src={event.logo_url}
-            alt="Logo do evento"
+            src={edition.logo_url}
+            alt="Logo da edição"
             className="size-full rounded-full object-cover"
           />
         ) : null}
@@ -198,24 +213,24 @@ export function EventVisualCard({ event }: { event: EventI }) {
             variant="secondary"
             className="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full active:-translate-y-1/2!"
             disabled={isUploading("logo_url") || patchMutation.isPending}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={(event) => {
+              event.stopPropagation();
               logoInput.current?.click();
             }}
             aria-label="Adicionar ou trocar logo"
           >
             <Upload className="size-3.5" />
           </Button>
-          {event.logo_url && !isUploading("logo_url") ? (
+          {edition.logo_url && !isUploading("logo_url") ? (
             <Button
               type="button"
               size="icon"
               variant="destructive"
               className="absolute bottom-0 right-0 size-8 rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-xl ring-1 ring-border hover:bg-destructive/90!"
               disabled={patchMutation.isPending}
-              onClick={(e) => {
-                e.stopPropagation();
-                remove("logo_url");
+              onClick={(event) => {
+                event.stopPropagation();
+                patch("logo_url", null);
               }}
               onMouseEnter={() => setHovered(undefined)}
               onMouseLeave={() => setHovered("logo_url")}

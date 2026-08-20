@@ -111,12 +111,12 @@ const paymentProviders: Array<{
   name: string;
   description: string;
 }> = [
-    {
-      id: "mercadopago",
-      name: "Mercado Pago",
-      description: "Receba por Pix e cartão de crédito.",
-    },
-  ];
+  {
+    id: "mercadopago",
+    name: "Mercado Pago",
+    description: "Receba por Pix e cartão de crédito.",
+  },
+];
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
@@ -313,11 +313,11 @@ function EventOverviewRoute() {
       action: event?.logo_url
         ? undefined
         : {
-          label: "Adicionar",
-          disabled: isImageUploading("logo_url"),
-          onClick: () =>
-            document.getElementById("event-logo-upload")?.click(),
-        },
+            label: "Adicionar",
+            disabled: isImageUploading("logo_url"),
+            onClick: () =>
+              document.getElementById("event-logo-upload")?.click(),
+          },
     },
     {
       label: "Banner cadastrado",
@@ -326,11 +326,11 @@ function EventOverviewRoute() {
       action: event?.banner_url
         ? undefined
         : {
-          label: "Adicionar",
-          disabled: isImageUploading("banner_url"),
-          onClick: () =>
-            document.getElementById("event-banner-upload")?.click(),
-        },
+            label: "Adicionar",
+            disabled: isImageUploading("banner_url"),
+            onClick: () =>
+              document.getElementById("event-banner-upload")?.click(),
+          },
     },
     {
       label: "Descrição preenchida",
@@ -343,12 +343,12 @@ function EventOverviewRoute() {
     },
     ...(editions.length > 0
       ? [
-        {
-          label: "Pagamento conectado",
-          description: "Necessário para vender ingressos ou produtos.",
-          done: Boolean(event?.payssage_seller_id),
-        },
-      ]
+          {
+            label: "Pagamento conectado",
+            description: "Necessário para vender ingressos ou produtos.",
+            done: Boolean(event?.payssage_seller_id),
+          },
+        ]
       : []),
   ];
 
@@ -362,14 +362,14 @@ function EventOverviewRoute() {
     },
     ...(event?.status === "draft"
       ? [
-        {
-          label: "Publicar evento",
-          shortcut: "Mod+P",
-          onClick: () => setPublishConfirmOpen(true),
-          disabled: publishEventMutation.isPending,
-          variant: "default" as const,
-        },
-      ]
+          {
+            label: "Publicar evento",
+            shortcut: "Mod+P",
+            onClick: () => setPublishConfirmOpen(true),
+            disabled: publishEventMutation.isPending,
+            variant: "default" as const,
+          },
+        ]
       : []),
     {
       label: "Copiar link público",
@@ -380,21 +380,21 @@ function EventOverviewRoute() {
     },
     ...(isPublished
       ? [
-        {
-          label: "Descontinuar evento",
-          shortcut: "Mod+Shift+D",
-          onClick: () => setDiscontinueConfirmOpen(true),
-          disabled: discontinueEventMutation.isPending,
-          variant: "destructive" as const,
-        },
-        {
-          label: "Abrir painel público",
-          shortcut: "Mod+Shift+O",
-          to: "/events/$slug" as const,
-          params: { slug: event?.slug ?? "" },
-          variant: "default" as const,
-        },
-      ]
+          {
+            label: "Descontinuar evento",
+            shortcut: "Mod+Shift+D",
+            onClick: () => setDiscontinueConfirmOpen(true),
+            disabled: discontinueEventMutation.isPending,
+            variant: "destructive" as const,
+          },
+          {
+            label: "Abrir painel público",
+            shortcut: "Mod+Shift+O",
+            to: "/events/$slug" as const,
+            params: { slug: event?.slug ?? "" },
+            variant: "default" as const,
+          },
+        ]
       : []),
   ];
 
@@ -445,7 +445,7 @@ function EventOverviewRoute() {
         {event ? <EventVisualCard event={event} /> : null}
 
         <div
-          className="order-1 mt-12 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:mt-14"
+          className="order-1 mt-6 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:mt-8"
           role="toolbar"
           aria-label="Atalhos do evento"
         >
@@ -744,9 +744,9 @@ function EventOverviewRoute() {
                         connected
                           ? setDisconnectSellerConfirmOpen(true)
                           : connectSellerMutation.mutate({
-                            eventId,
-                            provider: provider.id,
-                          })
+                              eventId,
+                              provider: provider.id,
+                            })
                       }
                     >
                       {connected ? "Desconectar conta" : "Conectar"}
