@@ -25,6 +25,7 @@
     "@t3-oss/env-core": "catalog:",
     "@tanstack/charts": "^0.14.0",
     "@tanstack/react-charts": "^0.14.0",
+    "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-router-ssr-query": "catalog:",

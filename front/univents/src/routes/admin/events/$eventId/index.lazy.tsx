@@ -1,3 +1,4 @@
+import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
@@ -7,6 +8,7 @@ import {
   CalendarPlus,
   CalendarRange,
   ChevronRight,
+  Command,
   Copy,
   CreditCard,
   ExternalLink,
@@ -353,6 +355,7 @@ function EventOverviewRoute() {
   const actions = [
     {
       label: "Editar evento",
+      shortcut: "Mod+E",
       onClick: () => setEditEventOpen(true),
       disabled: !event,
       variant: "default" as const,
@@ -361,6 +364,7 @@ function EventOverviewRoute() {
       ? [
         {
           label: "Publicar evento",
+          shortcut: "Mod+P",
           onClick: () => setPublishConfirmOpen(true),
           disabled: publishEventMutation.isPending,
           variant: "default" as const,
@@ -369,6 +373,7 @@ function EventOverviewRoute() {
       : []),
     {
       label: "Copiar link público",
+      shortcut: "Mod+Shift+C",
       onClick: copyLink,
       disabled: !event,
       variant: "default" as const,
@@ -377,12 +382,14 @@ function EventOverviewRoute() {
       ? [
         {
           label: "Descontinuar evento",
+          shortcut: "Mod+Shift+D",
           onClick: () => setDiscontinueConfirmOpen(true),
           disabled: discontinueEventMutation.isPending,
           variant: "destructive" as const,
         },
         {
           label: "Abrir painel público",
+          shortcut: "Mod+Shift+O",
           to: "/events/$slug" as const,
           params: { slug: event?.slug ?? "" },
           variant: "default" as const,
@@ -390,6 +397,39 @@ function EventOverviewRoute() {
       ]
       : []),
   ];
+
+  useHotkeys(
+    [
+      {
+        hotkey: "Mod+E",
+        callback: () => setEditEventOpen(true),
+        options: { enabled: Boolean(event) },
+      },
+      {
+        hotkey: "Mod+P",
+        callback: () => setPublishConfirmOpen(true),
+        options: { enabled: event?.status === "draft" },
+      },
+      {
+        hotkey: "Mod+Shift+C",
+        callback: copyLink,
+        options: { enabled: Boolean(event) },
+      },
+      {
+        hotkey: "Mod+Shift+D",
+        callback: () => setDiscontinueConfirmOpen(true),
+        options: { enabled: isPublished },
+      },
+      {
+        hotkey: "Mod+Shift+O",
+        callback: () => {
+          if (event) window.location.href = `/events/${event.slug}`;
+        },
+        options: { enabled: isPublished && Boolean(event) },
+      },
+    ],
+    { ignoreInputs: true, preventDefault: true },
+  );
 
   const actionIcon = (label: string) => {
     if (label.includes("Editar")) return Pencil;
@@ -401,17 +441,32 @@ function EventOverviewRoute() {
 
   return (
     <>
-      <div className="relative flex flex-col gap-6 p-6 pb-28!">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 pb-28!">
         {event ? <EventVisualCard event={event} /> : null}
 
         <div
-          className="order-1 mt-12 space-y-2 sm:mt-14"
+          className="order-1 mt-12 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:mt-14"
           role="toolbar"
           aria-label="Atalhos do evento"
         >
-          <p className="px-1 text-xs font-semibold text-foreground">
-            Atalhos do evento
-          </p>
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Command className="size-3.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">
+                  Ações rápidas
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  Atalhos para as tarefas mais usadas
+                </p>
+              </div>
+            </div>
+            <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">
+              Ctrl/⌘ + tecla
+            </span>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             {actions.map((action) => {
               const Icon = actionIcon(action.label);
@@ -422,11 +477,20 @@ function EventOverviewRoute() {
                     to={action.to}
                     params={action.params}
                     aria-disabled={action.disabled}
-                    title={action.label}
+                    title={`${action.label} · ${action.shortcut}`}
                     aria-label={action.label}
-                    className="inline-flex size-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground shadow-xs transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50"
                   >
                     <Icon className="size-4" />
+                    <span>
+                      {action.label
+                        .replace(" evento", "")
+                        .replace(" público", "")
+                        .replace(" conta", "")}
+                    </span>
+                    <kbd className="hidden rounded border border-border/70 bg-muted px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
+                      {action.shortcut.replace("Mod", "⌘/Ctrl")}
+                    </kbd>
                   </Link>
                 );
               }
@@ -434,16 +498,26 @@ function EventOverviewRoute() {
               return (
                 <Button
                   key={action.label}
-                  size="icon"
+                  size="default"
                   variant={
                     action.variant === "destructive" ? "destructive" : "outline"
                   }
+                  className="h-9 gap-1.5 px-2 text-[11px] shadow-xs"
                   disabled={action.disabled}
                   onClick={action.onClick}
-                  title={action.label}
+                  title={`${action.label} · ${action.shortcut}`}
                   aria-label={action.label}
                 >
                   <Icon className="size-4" />
+                  <span>
+                    {action.label
+                      .replace(" evento", "")
+                      .replace(" público", "")
+                      .replace(" conta", "")}
+                  </span>
+                  <kbd className="hidden rounded border border-border/70 bg-muted/70 px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
+                    {action.shortcut.replace("Mod", "⌘/Ctrl")}
+                  </kbd>
                 </Button>
               );
             })}
