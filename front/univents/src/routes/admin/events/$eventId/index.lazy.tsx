@@ -1,17 +1,27 @@
-import { useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  CalendarDays,
+  Activity,
+  CalendarPlus,
+  CalendarRange,
   ChevronRight,
+  Copy,
   CreditCard,
+  ExternalLink,
   Eye,
-  LayoutGrid,
+  Layers3,
+  Package,
+  Pencil,
+  ShoppingBag,
+  Ticket,
+  Wallet,
+  XCircle,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
@@ -21,25 +31,31 @@ import {
   usePatchEventMutation,
   usePublishEventMutation,
 } from "@/features/events/api/mutations";
-import { EventImageActions } from "@/features/events/ui/EventImageActions";
+import { EventVisualCard } from "@/features/events/ui/EventVisualCard";
 import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import {
   useConnectEventSellerMutation,
   useDisconnectEventSellerMutation,
 } from "@/features/payments/api/mutations";
 import type { PaymentProviderI } from "@/features/payments/model";
-import { cn } from "@/shared/lib/utils";
+import { productsByEditionQueryOptions } from "@/features/products/api";
+import {
+  occurrencesQueryOptions,
+  programsQueryOptions,
+} from "@/features/programs/api";
+import { editionPurchasesQueryOptions } from "@/features/purchases/api";
+import { allTicketsQueryOptions } from "@/features/tickets/api";
+import { useUploadQueue } from "@/features/upload-queue";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui/shadcn/card";
 import { AlertModal } from "@/widgets/ui/alert-modal";
-import { QuickAction } from "@/widgets/ui/quick-action";
+import { DashboardBarList } from "@/widgets/ui/dashboard-bar-list";
+import {
+  DashboardLineChart,
+  type DashboardPurchasePoint,
+} from "@/widgets/ui/dashboard-line-chart";
+import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
+import { DashboardStatCard } from "@/widgets/ui/dashboard-stat-card";
 import { StepChecklist } from "@/widgets/ui/step-checklist";
 
 const statusConfig = {
@@ -65,17 +81,40 @@ const statusConfig = {
   },
 } as const;
 
+const editionStatusConfig = {
+  draft: {
+    label: "Rascunho",
+    className: "border-amber-500/20 bg-amber-500/10 text-amber-700",
+    dot: "bg-amber-500",
+  },
+  future: {
+    label: "Futura",
+    className: "border-sky-500/20 bg-sky-500/10 text-sky-700",
+    dot: "bg-sky-500",
+  },
+  active: {
+    label: "Ativa",
+    className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700",
+    dot: "bg-emerald-500",
+  },
+  past: {
+    label: "Encerrada",
+    className: "border-slate-500/20 bg-slate-500/10 text-slate-600",
+    dot: "bg-slate-500",
+  },
+} as const;
+
 const paymentProviders: Array<{
   id: PaymentProviderI;
   name: string;
   description: string;
 }> = [
-  {
-    id: "mercadopago",
-    name: "Mercado Pago",
-    description: "Receba por Pix e cartão de crédito.",
-  },
-];
+    {
+      id: "mercadopago",
+      name: "Mercado Pago",
+      description: "Receba por Pix e cartão de crédito.",
+    },
+  ];
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
@@ -85,6 +124,29 @@ function EventOverviewRoute() {
   const { eventId } = Route.useParams();
   const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions());
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  );
+  const purchaseQueries = useQueries({
+    queries: editions.map((edition) =>
+      editionPurchasesQueryOptions(edition.id),
+    ),
+  });
+  const ticketQueries = useQueries({
+    queries: editions.map((edition) => allTicketsQueryOptions(edition.id)),
+  });
+  const productQueries = useQueries({
+    queries: editions.map((edition) =>
+      productsByEditionQueryOptions(edition.id),
+    ),
+  });
+  const programQueries = useQueries({
+    queries: editions.map((edition) => programsQueryOptions(edition.id)),
+  });
+  const occurrenceQueries = useQueries({
+    queries: editions.map((edition) => occurrencesQueryOptions(edition.id)),
+  });
+  const { tasks } = useUploadQueue();
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false);
   const [disconnectSellerConfirmOpen, setDisconnectSellerConfirmOpen] =
@@ -95,6 +157,121 @@ function EventOverviewRoute() {
     null;
   const isPublished = event?.status === "active";
   const status = event ? statusConfig[event.status] : statusConfig.draft;
+  const purchases = purchaseQueries.flatMap((query) => query.data ?? []);
+  const approvedPurchases = purchases.filter(
+    (purchase) => purchase.status === "approved",
+  );
+  const revenue = approvedPurchases.reduce(
+    (total, purchase) => total + purchase.total_cents,
+    0,
+  );
+  const ticketCount = ticketQueries.reduce(
+    (total, query) => total + (query.data?.length ?? 0),
+    0,
+  );
+  const productCount = productQueries.reduce(
+    (total, query) => total + (query.data?.length ?? 0),
+    0,
+  );
+  const programCount = programQueries.reduce(
+    (total, query) => total + (query.data?.length ?? 0),
+    0,
+  );
+  const occurrenceCount = occurrenceQueries.reduce(
+    (total, query) => total + (query.data?.length ?? 0),
+    0,
+  );
+  const editionSales = editions.map((edition, index) => {
+    const editionPurchases = purchaseQueries[index]?.data ?? [];
+    const approvedRevenue = editionPurchases
+      .filter((purchase) => purchase.status === "approved")
+      .reduce((total, purchase) => total + purchase.total_cents, 0);
+    return {
+      name: edition.name,
+      purchases: editionPurchases.length,
+      revenue: approvedRevenue,
+    };
+  });
+  const maxEditionRevenue = Math.max(
+    ...editionSales.map((edition) => edition.revenue),
+    1,
+  );
+  const purchaseStatuses = [
+    { label: "Aprovadas", status: "approved", color: "bg-emerald-500" },
+    { label: "Pendentes", status: "pending", color: "bg-amber-500" },
+    { label: "Reembolsadas", status: "refunded", color: "bg-sky-500" },
+    { label: "Expiradas", status: "expired", color: "bg-slate-400" },
+    { label: "Canceladas", status: "cancelled", color: "bg-rose-500" },
+  ] as const;
+  const revenueBars = editionSales.slice(0, 6).map((edition) => ({
+    id: edition.name,
+    label: edition.name,
+    value: edition.revenue,
+    detail: new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(edition.revenue / 100),
+  }));
+  const statusBars = purchaseStatuses.map((item) => ({
+    id: item.status,
+    label: item.label,
+    value: purchases.filter((purchase) => purchase.status === item.status)
+      .length,
+    color: item.color,
+  }));
+  const purchaseTimeline: DashboardPurchasePoint[] = purchases
+    .filter((purchase) => purchase.created_at)
+    .map((purchase) => ({
+      timestamp: purchase.created_at ?? "",
+      status: purchase.status,
+      totalCents: purchase.total_cents,
+    }));
+  const summaryMetrics = [
+    {
+      label: "Criado em",
+      value: event
+        ? format(new Date(event.created_at), "dd MMM yyyy", { locale: ptBR })
+        : "—",
+      hint: "Data de criação do evento",
+      icon: CalendarPlus,
+    },
+    {
+      label: "Status",
+      value: status.label,
+      hint: "Estado atual do evento",
+      icon: Activity,
+    },
+    {
+      label: "Edições",
+      value: editions.length,
+      hint: `${editions.filter((edition) => edition.status === "active").length} ativa(s)`,
+      icon: Layers3,
+    },
+    {
+      label: "Compras",
+      value: purchases.length,
+      hint: `${approvedPurchases.length} aprovada(s)`,
+      icon: ShoppingBag,
+    },
+    {
+      label: "Receita aprovada",
+      value: new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(revenue / 100),
+      hint: "Somente compras aprovadas",
+      icon: Wallet,
+    },
+  ];
+  const isImageUploading = (field: "logo_url" | "banner_url") =>
+    tasks.some(
+      (task) =>
+        task.owner.type === "event" &&
+        task.owner.id === eventId &&
+        task.association?.handlerKey === "event-image" &&
+        task.association.input?.field === field &&
+        !["completed", "failed", "rejected"].includes(task.status),
+    );
 
   const publishEventMutation = usePublishEventMutation();
   const discontinueEventMutation = useDiscontinueEventMutation();
@@ -120,31 +297,13 @@ function EventOverviewRoute() {
     discontinueEventMutation.mutate(eventId);
   };
 
-  const metrics = [
-    {
-      label: "Criado em",
-      value: event
-        ? format(new Date(event.created_at), "dd MMM yyyy", { locale: ptBR })
-        : "—",
-      hint: "Data de criação do evento",
-    },
-    {
-      label: "Atualizado em",
-      value: event?.updated_at
-        ? format(new Date(event.updated_at), "dd MMM yyyy", { locale: ptBR })
-        : "—",
-      hint: "Última alteração registrada",
-    },
-    {
-      label: "Contato",
-      value: event?.contact_email ?? "—",
-      hint: "E-mail principal do evento",
-    },
-  ];
-  const heroDescription =
-    event?.description ?? "Sem descrição cadastrada para este evento.";
-
   const checklist = [
+    {
+      label: "Edição criada",
+      description:
+        "Crie uma edição para publicar datas, catálogo e programação.",
+      done: editions.length > 0,
+    },
     {
       label: "Logo cadastrado",
       description: "Identifica o evento nos cards e páginas públicas.",
@@ -152,10 +311,11 @@ function EventOverviewRoute() {
       action: event?.logo_url
         ? undefined
         : {
-            label: "Adicionar",
-            onClick: () =>
-              document.getElementById("event-logo-upload")?.click(),
-          },
+          label: "Adicionar",
+          disabled: isImageUploading("logo_url"),
+          onClick: () =>
+            document.getElementById("event-logo-upload")?.click(),
+        },
     },
     {
       label: "Banner cadastrado",
@@ -164,10 +324,11 @@ function EventOverviewRoute() {
       action: event?.banner_url
         ? undefined
         : {
-            label: "Adicionar",
-            onClick: () =>
-              document.getElementById("event-banner-upload")?.click(),
-          },
+          label: "Adicionar",
+          disabled: isImageUploading("banner_url"),
+          onClick: () =>
+            document.getElementById("event-banner-upload")?.click(),
+        },
     },
     {
       label: "Descrição preenchida",
@@ -178,6 +339,15 @@ function EventOverviewRoute() {
         onClick: () => setEditEventOpen(true),
       },
     },
+    ...(editions.length > 0
+      ? [
+        {
+          label: "Pagamento conectado",
+          description: "Necessário para vender ingressos ou produtos.",
+          done: Boolean(event?.payssage_seller_id),
+        },
+      ]
+      : []),
   ];
 
   const actions = [
@@ -189,13 +359,13 @@ function EventOverviewRoute() {
     },
     ...(event?.status === "draft"
       ? [
-          {
-            label: "Publicar evento",
-            onClick: () => setPublishConfirmOpen(true),
-            disabled: publishEventMutation.isPending,
-            variant: "default" as const,
-          },
-        ]
+        {
+          label: "Publicar evento",
+          onClick: () => setPublishConfirmOpen(true),
+          disabled: publishEventMutation.isPending,
+          variant: "default" as const,
+        },
+      ]
       : []),
     {
       label: "Copiar link público",
@@ -205,172 +375,314 @@ function EventOverviewRoute() {
     },
     ...(isPublished
       ? [
-          {
-            label: "Descontinuar evento",
-            onClick: () => setDiscontinueConfirmOpen(true),
-            disabled: discontinueEventMutation.isPending,
-            variant: "destructive" as const,
-          },
-          {
-            label: "Abrir painel público",
-            to: "/events/$slug" as const,
-            params: { slug: event?.slug ?? "" },
-            variant: "default" as const,
-          },
-        ]
+        {
+          label: "Descontinuar evento",
+          onClick: () => setDiscontinueConfirmOpen(true),
+          disabled: discontinueEventMutation.isPending,
+          variant: "destructive" as const,
+        },
+        {
+          label: "Abrir painel público",
+          to: "/events/$slug" as const,
+          params: { slug: event?.slug ?? "" },
+          variant: "default" as const,
+        },
+      ]
       : []),
   ];
 
+  const actionIcon = (label: string) => {
+    if (label.includes("Editar")) return Pencil;
+    if (label.includes("Copiar")) return Copy;
+    if (label.includes("Publicar")) return Eye;
+    if (label.includes("Descontinuar")) return XCircle;
+    return ExternalLink;
+  };
+
   return (
     <>
-      <div className="relative space-y-6 p-6 pb-28!">
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="overflow-hidden rounded-md border border-border/60 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.03),0_20px_40px_-24px_rgba(15,23,42,0.24)]"
+      <div className="relative flex flex-col gap-6 p-6 pb-28!">
+        {event ? <EventVisualCard event={event} /> : null}
+
+        <div
+          className="order-1 mt-12 space-y-2 sm:mt-14"
+          role="toolbar"
+          aria-label="Atalhos do evento"
         >
-          <div className="relative flex flex-col gap-6 p-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-primary/5 via-transparent to-transparent" />
+          <p className="px-1 text-xs font-semibold text-foreground">
+            Atalhos do evento
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {actions.map((action) => {
+              const Icon = actionIcon(action.label);
+              if ("to" in action && action.to) {
+                return (
+                  <Link
+                    key={action.label}
+                    to={action.to}
+                    params={action.params}
+                    aria-disabled={action.disabled}
+                    title={action.label}
+                    aria-label={action.label}
+                    className="inline-flex size-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  >
+                    <Icon className="size-4" />
+                  </Link>
+                );
+              }
 
-            <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="rounded-full px-3">
-                  <LayoutGrid className="size-3.5" />
-                  Overview
-                </Badge>
-              </div>
-
-              {event ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    Imagens do evento
-                  </span>
-                  <EventImageActions
-                    event={event}
-                    field="logo_url"
-                    inputId="event-logo-upload"
-                  />
-                  <EventImageActions
-                    event={event}
-                    field="banner_url"
-                    inputId="event-banner-upload"
-                  />
-                </div>
-              ) : null}
-
-              <div className="space-y-3">
-                <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  {event?.full_name ?? "Evento"}
-                </h1>
-                <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                  {heroDescription}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
-                  <CalendarDays className="size-3.5" />
-                  {event?.slug ?? "slug-do-evento"}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
-                  <Eye className="size-3.5" />
-                  Link público
-                </span>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1",
-                    status.className,
-                  )}
+              return (
+                <Button
+                  key={action.label}
+                  size="icon"
+                  variant={
+                    action.variant === "destructive" ? "destructive" : "outline"
+                  }
+                  disabled={action.disabled}
+                  onClick={action.onClick}
+                  title={action.label}
+                  aria-label={action.label}
                 >
-                  <span className={cn("size-1.5 rounded-full", status.dot)} />
-                  {status.label}
-                </span>
-              </div>
-            </div>
+                  <Icon className="size-4" />
+                </Button>
+              );
+            })}
           </div>
-        </motion.section>
+        </div>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {metrics.map((metric) => (
-            <Card
+        <section className="order-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {summaryMetrics.map((metric) => (
+            <DashboardStatCard
               key={metric.label}
-              className="border-border/60 bg-card/95 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2 text-xs uppercase tracking-[0.22em]">
-                  <span className="size-1.5 rounded-full bg-primary/60" />
-                  {metric.label}
-                </CardDescription>
-                <CardTitle className="text-2xl font-semibold tracking-tight">
-                  {metric.value}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-xs text-muted-foreground">{metric.hint}</p>
-              </CardContent>
-            </Card>
+              label={metric.label}
+              value={metric.value}
+              hint={metric.hint}
+              icon={metric.icon}
+            />
           ))}
         </section>
 
-        <Card className="border-border/60 bg-card/95 shadow-sm">
-          <CardHeader className="border-b border-border/60">
-            <CardTitle>Pagamentos</CardTitle>
-            <CardDescription>
-              Escolha a conta que receberá as vendas deste evento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 py-5 md:grid-cols-2 xl:grid-cols-3">
+        <DashboardPanel
+          title="Catálogo"
+          description="Conteúdo publicado nas edições deste evento."
+          icon={Package}
+          className="order-4"
+        >
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                label: "Ingressos",
+                value: ticketCount,
+                hint: "Tipos cadastrados",
+                icon: Ticket,
+              },
+              {
+                label: "Produtos",
+                value: productCount,
+                hint: "Produtos cadastrados",
+                icon: Package,
+              },
+              {
+                label: "Programas",
+                value: programCount,
+                hint: "Atividades cadastradas",
+                icon: CalendarRange,
+              },
+              {
+                label: "Ocorrências",
+                value: occurrenceCount,
+                hint: "Horários da programação",
+                icon: Layers3,
+              },
+            ].map((metric) => (
+              <DashboardStatCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                hint={metric.hint}
+                icon={metric.icon}
+              />
+            ))}
+          </div>
+        </DashboardPanel>
+
+        <section className="order-5 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
+          <DashboardPanel
+            title="Receita por edição"
+            description="Receita aprovada comparada entre as edições."
+            icon={Wallet}
+            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
+          >
+            <div className="mt-2">
+              <DashboardBarList
+                items={revenueBars}
+                maxValue={maxEditionRevenue}
+                emptyMessage="Ainda não há edições para comparar."
+              />
+            </div>
+          </DashboardPanel>
+
+          <DashboardPanel
+            title="Status das compras"
+            description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} no total.`}
+            icon={ShoppingBag}
+            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
+          >
+            <div className="mt-2">
+              <DashboardBarList
+                items={statusBars}
+                emptyMessage="Nenhuma compra registrada."
+              />
+            </div>
+          </DashboardPanel>
+        </section>
+
+        <DashboardPanel
+          title="Lucro"
+          description="Crescimento acumulado no período selecionado."
+          icon={Activity}
+          className="order-6"
+        >
+          <DashboardLineChart purchases={purchaseTimeline} />
+        </DashboardPanel>
+
+        <section className="order-7 space-y-3">
+          <div className="flex min-w-0 items-center justify-between gap-3 px-1">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Layers3 className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base font-semibold tracking-tight">
+                  Edições
+                </h2>
+                <p className="truncate text-xs text-muted-foreground">
+                  Acesse rapidamente cada edição do evento.
+                </p>
+              </div>
+            </div>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border/60 bg-muted/50 p-0 text-xs font-medium text-muted-foreground">
+              {editions.length}
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-lg border border-border/60 bg-card/95 shadow-sm">
+            {editions.length === 0 ? (
+              <p className="p-5 text-sm text-muted-foreground">
+                Nenhuma edição cadastrada.
+              </p>
+            ) : (
+              editions.slice(0, 6).map((edition, index) => {
+                const editionStatus = editionStatusConfig[edition.status];
+                return (
+                  <Link
+                    key={edition.id}
+                    to="/admin/events/$eventId/editions/$editionId"
+                    params={{ eventId, editionId: edition.id }}
+                    className={`group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/30 ${index > 0 ? "border-t border-border/60" : ""}`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {edition.name}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {format(new Date(edition.starts_at), "dd MMM yyyy", {
+                            locale: ptBR,
+                          })}
+                          {edition.location_name
+                            ? ` · ${edition.location_name}`
+                            : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span
+                        className={`hidden items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] sm:inline-flex ${editionStatus.className}`}
+                      >
+                        <span
+                          className={`size-1.5 rounded-full ${editionStatus.dot}`}
+                        />
+                        {editionStatus.label}
+                      </span>
+                      <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <section className="order-3 space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CreditCard className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold tracking-tight">
+                Pagamentos
+              </h2>
+              <p className="truncate text-xs text-muted-foreground">
+                Conta que receberá as vendas deste evento.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
             {paymentProviders.map((provider) => {
               const connected = Boolean(event?.payssage_seller_id);
 
               return (
                 <div
                   key={provider.id}
-                  className="flex min-h-36 flex-col justify-between gap-5 rounded-xl border border-border/60 bg-muted/15 p-4"
+                  className="flex w-full max-w-md items-center gap-3 rounded-xl bg-card px-3 py-3 ring-1 ring-foreground/10 shadow-xs"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-background p-2.5 shadow-sm">
-                        <CreditCard className="size-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{provider.name}</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          {provider.description}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={connected ? "default" : "secondary"}>
-                      {connected ? "Conectado" : "Disponível"}
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted/50 p-2">
+                    <img
+                      src="/mercado-pago.svg"
+                      alt="Mercado Pago"
+                      className="size-full object-contain"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">
+                      {provider.name}
+                    </p>
+                    <Badge
+                      className="mt-1"
+                      variant={connected ? "default" : "secondary"}
+                    >
+                      {connected ? "Conectado" : "Não conectado"}
                     </Badge>
                   </div>
-
-                  <Button
-                    className="w-full"
-                    variant={connected ? "outline" : "default"}
-                    disabled={
-                      !event ||
-                      connectSellerMutation.isPending ||
-                      disconnectSellerMutation.isPending
-                    }
-                    onClick={() =>
-                      connected
-                        ? setDisconnectSellerConfirmOpen(true)
-                        : connectSellerMutation.mutate({
+                  <div className="shrink-0">
+                    <Button
+                      className="h-9 text-xs"
+                      variant={connected ? "outline" : "default"}
+                      disabled={
+                        !event ||
+                        connectSellerMutation.isPending ||
+                        disconnectSellerMutation.isPending
+                      }
+                      onClick={() =>
+                        connected
+                          ? setDisconnectSellerConfirmOpen(true)
+                          : connectSellerMutation.mutate({
                             eventId,
                             provider: provider.id,
                           })
-                    }
-                  >
-                    {connected ? "Desconectar conta" : "Conectar conta"}
-                  </Button>
+                      }
+                    >
+                      {connected ? "Desconectar conta" : "Conectar"}
+                    </Button>
+                  </div>
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         <StepChecklist
           title="Event checklist"
@@ -381,51 +693,9 @@ function EventOverviewRoute() {
             completed: item.done,
             action: item.action,
           }))}
-          className="fixed right-4 top-24 z-40 sm:right-6"
+          className="order-8 w-full sm:fixed sm:right-4 sm:top-24 sm:z-40 sm:w-auto!"
+          mobileInline
         />
-
-        <Card className="border-border/60 bg-card/95 shadow-sm">
-          <CardHeader className="border-b border-border/60">
-            <CardTitle>Ações rápidas</CardTitle>
-            <CardDescription>
-              Atalhos para as operações mais comuns do evento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-3">
-            {actions.map((action) => {
-              if ("to" in action && action.to) {
-                return (
-                  <QuickAction
-                    key={action.label}
-                    to={action.to}
-                    params={action.params}
-                    disabled={action.disabled}
-                    variant={action.variant}
-                  >
-                    <span className="text-sm font-medium text-foreground">
-                      {action.label}
-                    </span>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </QuickAction>
-                );
-              }
-
-              return (
-                <QuickAction
-                  key={action.label}
-                  onClick={action.onClick}
-                  disabled={action.disabled}
-                  variant={action.variant}
-                >
-                  <span className="text-sm font-medium text-foreground">
-                    {action.label}
-                  </span>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </QuickAction>
-              );
-            })}
-          </CardContent>
-        </Card>
       </div>
 
       <ManageEventModal

@@ -1,6 +1,6 @@
 import { Check, ListChecks, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /** A compact, dismissible checklist with an optional action for each step. */
 export interface ChecklistItem {
@@ -8,7 +8,7 @@ export interface ChecklistItem {
   title: string;
   description?: string;
   completed: boolean;
-  action?: { label: string; onClick: () => void };
+  action?: { label: string; onClick: () => void; disabled?: boolean };
 }
 
 interface StepChecklistProps {
@@ -16,6 +16,7 @@ interface StepChecklistProps {
   items: ChecklistItem[];
   onDismiss?: () => void;
   defaultOpen?: boolean;
+  mobileInline?: boolean;
   className?: string;
 }
 
@@ -24,10 +25,17 @@ export function StepChecklist({
   items,
   onDismiss,
   defaultOpen = false,
+  mobileInline = false,
   className = "",
 }: StepChecklistProps) {
   const [open, setOpen] = useState(defaultOpen);
   const pending = items.filter((item) => !item.completed).length;
+
+  useEffect(() => {
+    if (mobileInline && window.matchMedia("(max-width: 639px)").matches) {
+      setOpen(true);
+    }
+  }, [mobileInline]);
 
   return (
     <div className={`relative inline-block ${className}`}>
@@ -42,7 +50,7 @@ export function StepChecklist({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.15 }}
-            className="fixed right-4 top-24 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 sm:right-6"
+            className={`${mobileInline ? "relative" : "fixed"} ${mobileInline ? "right-auto top-auto" : "right-4 top-24"} z-50 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 sm:right-6! sm:top-24! sm:fixed!`}
           >
             <ListChecks size={18} />
             {pending > 0 && (
@@ -63,7 +71,7 @@ export function StepChecklist({
             exit={{ opacity: 0, scale: 0.92, x: 12 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             style={{ transformOrigin: "top right" }}
-            className="fixed right-4 top-24 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-primary/15 bg-card/95 p-5 text-card-foreground shadow-xl shadow-primary/10 backdrop-blur-md sm:right-6"
+            className={`${mobileInline ? "relative w-full max-w-full" : "fixed right-4 top-24 w-80 max-w-[calc(100vw-2rem)]"} z-50 rounded-2xl border border-primary/15 bg-card/95 p-5 text-card-foreground shadow-xl shadow-primary/10 backdrop-blur-md sm:right-6! sm:top-24! sm:fixed! sm:w-80! sm:max-w-[calc(100vw-2rem)]!`}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               {title ? (
@@ -75,7 +83,7 @@ export function StepChecklist({
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close checklist"
-                className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className={`${mobileInline ? "hidden sm:block" : "block"} -mr-1 -mt-1 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground`}
               >
                 <X size={16} />
               </button>
@@ -120,7 +128,8 @@ export function StepChecklist({
                           <button
                             type="button"
                             onClick={item.action.onClick}
-                            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
+                            disabled={item.action.disabled}
+                            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                           >
                             {item.action.label}
                           </button>
