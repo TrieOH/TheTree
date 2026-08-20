@@ -610,7 +610,7 @@ function RouteComponent() {
             type: "textarea",
             rows: 4,
             placeholder:
-              "e.g. Collect basic personal information from the user.",
+              "e.g. Collect basic personal information from the user",
           },
         ]}
         disabled={isCreating}
