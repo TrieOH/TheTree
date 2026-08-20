@@ -47,7 +47,6 @@ import { Route as ProfileActorIdBadgesBadgeIdRouteImport } from './routes/profil
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as EventsEventIdPayssageOauthCallbackRouteImport } from './routes/events/$eventId/payssage/oauth/callback'
-import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events/$eventId/editions/$editionId/products'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures'
 import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/tickets/index'
@@ -281,12 +280,6 @@ const EventsEventIdPayssageOauthCallbackRoute =
     path: '/events/$eventId/payssage/oauth/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
-const EventsEventIdEditionsEditionIdProductsRoute =
-  EventsEventIdEditionsEditionIdProductsRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/products',
-    path: '/events/$eventId/editions/$editionId/products',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AdminEventsEventIdEditionsEditionIdIndexRoute =
   AdminEventsEventIdEditionsEditionIdIndexRouteImport.update({
     id: '/events/$eventId_/editions/$editionId/',
@@ -451,7 +444,6 @@ export interface FileRoutesByFullPath {
   '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
-  '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
@@ -505,7 +497,6 @@ export interface FileRoutesByTo {
   '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
-  '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
@@ -561,7 +552,6 @@ export interface FileRoutesById {
   '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/events/$slug/editions/': typeof EventsSlugEditionsIndexRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
-  '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/events/$eventId/payssage/oauth/callback': typeof EventsEventIdPayssageOauthCallbackRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
@@ -619,7 +609,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
-    | '/events/$eventId/editions/$editionId/products'
     | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
@@ -673,7 +662,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions'
     | '/admin/events/$eventId'
-    | '/events/$eventId/editions/$editionId/products'
     | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/members'
@@ -728,7 +716,6 @@ export interface FileRouteTypes {
     | '/profile/$actorId/badges/$badgeId'
     | '/events/$slug/editions/'
     | '/admin/events/$eventId/'
-    | '/events/$eventId/editions/$editionId/products'
     | '/events/$eventId/payssage/oauth/callback'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
@@ -775,7 +762,6 @@ export interface RootRouteChildren {
   EventsSlugStoreRoute: typeof EventsSlugStoreRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
   EventsSlugEditionsIndexRoute: typeof EventsSlugEditionsIndexRoute
-  EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
   EventsEventIdPayssageOauthCallbackRoute: typeof EventsEventIdPayssageOauthCallbackRoute
 }
 
@@ -1040,13 +1026,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdPayssageOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId/editions/$editionId/products': {
-      id: '/events/$eventId/editions/$editionId/products'
-      path: '/events/$eventId/editions/$editionId/products'
-      fullPath: '/events/$eventId/editions/$editionId/products'
-      preLoaderRoute: typeof EventsEventIdEditionsEditionIdProductsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/events/$eventId_/editions/$editionId/': {
       id: '/admin/events/$eventId_/editions/$editionId/'
       path: '/events/$eventId/editions/$editionId'
@@ -1298,8 +1277,6 @@ const rootRouteChildren: RootRouteChildren = {
   EventsSlugStoreRoute: EventsSlugStoreRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
   EventsSlugEditionsIndexRoute: EventsSlugEditionsIndexRoute,
-  EventsEventIdEditionsEditionIdProductsRoute:
-    EventsEventIdEditionsEditionIdProductsRoute,
   EventsEventIdPayssageOauthCallbackRoute:
     EventsEventIdPayssageOauthCallbackRoute,
 }

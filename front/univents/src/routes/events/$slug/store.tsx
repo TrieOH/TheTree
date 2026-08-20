@@ -112,7 +112,7 @@ function StorePage() {
         </div>
         {activeTab === "tickets" ? (
           tickets.length ? (
-            <div className="mt-8 flex flex-wrap gap-6">
+            <div className="mt-8 flex flex-wrap gap-6 sm:justify-start! justify-center">
               {tickets.map((ticket) => (
                 <TicketCard
                   key={ticket.id}
@@ -131,7 +131,7 @@ function StorePage() {
         ) : products.some(
             (_, index) => (variants[index]?.data ?? []).length > 0,
           ) ? (
-          <div className="mt-8 flex flex-wrap gap-6">
+          <div className="mt-8 flex flex-wrap gap-6 sm:justify-start! justify-center">
             {products.map((product, index) => {
               const productVariants = variants[index]?.data ?? [];
               return productVariants.length ? (
