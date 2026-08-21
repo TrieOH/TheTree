@@ -4,7 +4,6 @@ import {
   Award,
   CalendarDays,
   FileText,
-  MoreVertical,
   Package,
   Pencil,
   Send,
@@ -21,13 +20,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/ui/shadcn/dropdown-menu";
 import type { EditionI } from "../model";
 
 interface EditionCardProps {
@@ -65,21 +57,19 @@ const statusConfig: Record<
 };
 
 function MenuItems({
-  isContext = false,
   edition,
   onEdit,
   onPublish,
   eventId,
 }: {
-  isContext?: boolean;
   edition: EditionI;
   onEdit?: () => void;
   onPublish?: () => void;
   eventId: string;
 }) {
   const navigate = useNavigate();
-  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
-  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
+  const Item = ContextMenuItem;
+  const Separator = ContextMenuSeparator;
   const go = (to: string) => () => {
     void navigate({
       to,
@@ -231,32 +221,19 @@ export function AdminEditionCard({
               </div>
 
               <div className="absolute right-3 top-3 z-20">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        className={cn(
-                          "inline-flex size-9 items-center justify-center rounded-full",
-                          "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
-                          "transition-colors hover:bg-background",
-                        )}
-                        aria-label={`Abrir ações de ${edition.name}`}
-                      >
-                        <MoreVertical className="size-4" />
-                      </button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-56">
-                    <MenuItems
-                      edition={edition}
-                      onEdit={onEdit ? handleEdit : undefined}
-                      onPublish={onPublish ? handlePublish : undefined}
-                      eventId={eventId}
-                    />
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit();
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-background/85 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                  >
+                    <Pencil className="size-3.5" />
+                    Editar
+                  </button>
+                )}
               </div>
 
               <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
@@ -289,20 +266,6 @@ export function AdminEditionCard({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit();
-                }}
-                className={cn(
-                  "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium",
-                  "bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary",
-                )}
-              >
-                Editar
-                <ArrowUpRight className="size-3.5" />
-              </button>
             </div>
           </motion.article>
         }
@@ -310,7 +273,6 @@ export function AdminEditionCard({
 
       <ContextMenuContent align="end" className="w-56">
         <MenuItems
-          isContext
           edition={edition}
           onEdit={onEdit ? handleEdit : undefined}
           onPublish={onPublish ? handlePublish : undefined}
