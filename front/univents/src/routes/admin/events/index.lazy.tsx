@@ -10,15 +10,12 @@ import {
 } from "@/features/events/api";
 import {
   useCreateEventMutation,
-  useDiscontinueEventMutation,
   usePatchEventMutation,
-  usePublishEventMutation,
 } from "@/features/events/api/mutations";
 import type { EventI } from "@/features/events/model";
 import AdminEventCard from "@/features/events/ui/AdminEventCard";
 import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import { Button } from "@/shared/ui/shadcn/button";
-import { AlertModal } from "@/widgets/ui/alert-modal";
 
 export const Route = createLazyFileRoute("/admin/events/")({
   component: RouteComponent,
@@ -37,10 +34,6 @@ function RouteComponent() {
     direction: "desc",
   });
   const [modalOpen, setModalOpen] = useState(false);
-  const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null);
-  const [discontinuingEvent, setDiscontinuingEvent] = useState<EventI | null>(
-    null,
-  );
   const [editingEvent, setEditingEvent] = useState<EventI | null>(null);
 
   const { data: ownEvents = [] } = useQuery(allOwnEventsQueryOptions());
@@ -50,8 +43,6 @@ function RouteComponent() {
       list.findIndex((candidate) => candidate.id === event.id) === index,
   );
   const createMutation = useCreateEventMutation();
-  const publishEventMutation = usePublishEventMutation();
-  const discontinueEventMutation = useDiscontinueEventMutation();
   const patchEventMutation = usePatchEventMutation();
 
   const filteredEvents = [...events]
@@ -158,8 +149,6 @@ function RouteComponent() {
               key={event.id}
               event={event}
               index={idx}
-              onPublish={setPublishingEvent}
-              onDiscontinue={setDiscontinuingEvent}
               onEdit={setEditingEvent}
             />
           ))
@@ -188,35 +177,6 @@ function RouteComponent() {
             () => false,
           )
         }
-      />
-
-      <AlertModal
-        open={!!publishingEvent}
-        onOpenChange={() => setPublishingEvent(null)}
-        title="Publicar evento?"
-        description={`Ao publicar "${publishingEvent?.full_name}", ele ficará visível para o público.`}
-        confirmLabel="Publicar"
-        onConfirm={async () => {
-          if (!publishingEvent) return;
-          await publishEventMutation.mutateAsync(publishingEvent.id);
-          setPublishingEvent(null);
-        }}
-        variant="success"
-        loading={publishEventMutation.isPending}
-      />
-
-      <AlertModal
-        open={!!discontinuingEvent}
-        onOpenChange={() => setDiscontinuingEvent(null)}
-        title="Descontinuar evento?"
-        description={`Ao descontinuar "${discontinuingEvent?.full_name}", ele deixará de ser um evento ativo.`}
-        confirmLabel="Descontinuar"
-        onConfirm={() => {
-          if (!discontinuingEvent) return;
-          discontinueEventMutation.mutate(discontinuingEvent.id);
-        }}
-        variant="destructive"
-        loading={discontinueEventMutation.isPending}
       />
     </div>
   );
