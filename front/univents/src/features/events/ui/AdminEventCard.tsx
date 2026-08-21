@@ -5,7 +5,6 @@ import {
   Copy,
   Eye,
   Mail,
-  MoreVertical,
   Pencil,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -20,13 +19,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/ui/shadcn/dropdown-menu";
 
 const statusConfig: Record<
   EventStatusI,
@@ -63,7 +55,6 @@ interface AdminEventCardProps {
 
 function MenuItems({
   event,
-  isContext = false,
   onEdit,
   onPublish,
   onDiscontinue,
@@ -71,15 +62,14 @@ function MenuItems({
   onOpenDashboard,
 }: {
   event: EventI;
-  isContext?: boolean;
   onEdit?: () => void;
   onPublish: () => void;
   onDiscontinue: () => void;
   onOpenEditions: () => void;
   onOpenDashboard: () => void;
 }) {
-  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
-  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
+  const Item = ContextMenuItem;
+  const Separator = ContextMenuSeparator;
   const stop =
     (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
       e.preventDefault();
@@ -218,34 +208,19 @@ export default function AdminEventCard({
               </div>
 
               <div className="absolute right-4 top-4 z-20">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        className={cn(
-                          "inline-flex size-9 items-center justify-center rounded-full",
-                          "bg-background/85 text-foreground shadow-sm backdrop-blur-sm",
-                          "transition-colors hover:bg-background",
-                        )}
-                        aria-label={`Abrir ações de ${event.full_name}`}
-                      >
-                        <MoreVertical className="size-4" />
-                      </button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-56">
-                    <MenuItems
-                      event={event}
-                      onEdit={onEdit ? handleEdit : undefined}
-                      onPublish={handlePublish}
-                      onDiscontinue={handleDiscontinue}
-                      onOpenDashboard={handleOpenDashboard}
-                      onOpenEditions={handleOpenEditions}
-                    />
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit();
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-background/85 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                  >
+                    <Pencil className="size-3.5" />
+                    Editar
+                  </button>
+                )}
               </div>
 
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
@@ -280,20 +255,6 @@ export default function AdminEventCard({
                 </code>
               </div>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit();
-                }}
-                className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
-                  "bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary",
-                )}
-              >
-                Editar
-                <ArrowUpRight className="size-3.5" />
-              </button>
             </div>
           </motion.article>
         }
@@ -302,7 +263,6 @@ export default function AdminEventCard({
       <ContextMenuContent align="end" className="w-56">
         <MenuItems
           event={event}
-          isContext
           onEdit={onEdit ? handleEdit : undefined}
           onPublish={handlePublish}
           onDiscontinue={handleDiscontinue}

@@ -8,6 +8,7 @@ import {
   pastEditionsQueryOptions,
   upcomingEditionsQueryOptions,
 } from "@/features/editions/api";
+import { resolveEditionVisuals } from "@/features/editions/model/resolve-edition-visuals";
 import { OtherEditionsSection } from "@/features/editions/ui/OtherEditionsSection";
 import { ContactSection } from "@/features/events/ui/ContactSection";
 import { storeStockQueryOptions } from "@/features/products/api";
@@ -57,6 +58,12 @@ function RouteComponent() {
   );
 
   const initials = getInitials(event.full_name);
+  const visuals = resolveEditionVisuals(
+    event,
+    activeEdition,
+    upcomingEditions,
+    pastEditions,
+  );
   const stockById = new Map(stock.map((item) => [item.id, item.stock]));
   const mapLocation = useMemo(
     () =>
@@ -75,9 +82,9 @@ function RouteComponent() {
       {/* Banner Section */}
       <div className="relative">
         <div className="relative h-40 w-full border-b-4 border-b-accent min-[300px]:h-48 sm:h-52 md:h-64">
-          {event.banner_url ? (
+          {visuals.banner_url ? (
             <img
-              src={event.banner_url}
+              src={visuals.banner_url}
               alt={event.full_name}
               className="w-full h-full object-cover"
             />
@@ -103,10 +110,10 @@ function RouteComponent() {
         <div className="absolute inset-x-0 top-full z-10 flex -translate-y-1/2 justify-center">
           {/* Logo / Initials */}
           <div className="relative shrink-0">
-            {event.logo_url ? (
+            {visuals.logo_url ? (
               <div className="relative">
                 <img
-                  src={event.logo_url}
+                  src={visuals.logo_url}
                   alt={event.full_name}
                   className="aspect-square h-37.5 w-37.5 rounded-full border-4 border-accent bg-muted object-cover shadow-lg sm:h-40 sm:w-40"
                 />

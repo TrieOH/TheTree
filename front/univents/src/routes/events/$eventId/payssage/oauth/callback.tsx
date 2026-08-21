@@ -6,7 +6,7 @@ import z from "zod";
 import { useCompleteEventSellerMutation } from "@/features/payments/api/mutations";
 
 const searchSchema = z.object({
-  credential_id: z.string().uuid(),
+  credential_id: z.uuid(),
   public_key: z.string().min(1),
 });
 

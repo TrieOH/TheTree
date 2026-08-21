@@ -168,11 +168,13 @@ export function TransactionsDashboard({
   description = "Payment activity across your wallets.",
   intents,
   feeBps = 0,
+  walletFees,
 }: {
   title?: string;
   description?: string;
   intents: Intent[];
   feeBps?: number;
+  walletFees?: Record<string, number>;
 }) {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<IntentStatus | "all">("all");
@@ -216,11 +218,18 @@ export function TransactionsDashboard({
   const capturedVolume = environmentIntents
     .filter((intent) => intent.status === "succeeded")
     .reduce((total, intent) => total + intent.amount_cents, 0);
-  const revenueVolume = captured.reduce(
-    (total, intent) => total + intent.amount_cents,
+  const revenue = captured.reduce(
+    (total, intent) =>
+      total +
+      Math.round(
+        (intent.amount_cents * (walletFees?.[intent.wallet_id] ?? feeBps)) /
+          10_000,
+      ),
     0,
   );
-  const revenue = Math.round((revenueVolume * feeBps) / 10_000);
+  const revenueFeeDetail = walletFees
+    ? "Calculated per wallet"
+    : `${(feeBps / 100).toFixed(2)}% wallet fee`;
   const successRate = environmentIntents.length
     ? Math.round((captured.length / environmentIntents.length) * 100)
     : 0;
@@ -255,7 +264,7 @@ export function TransactionsDashboard({
     {
       label: "Revenue",
       value: formatBRL(revenue),
-      detail: `${(feeBps / 100).toFixed(2)}% wallet fee`,
+      detail: revenueFeeDetail,
       icon: TrendingUp,
     },
     {
