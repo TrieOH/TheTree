@@ -57,6 +57,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.0.6
       version: 4.3.0
+    '@tanstack/charts':
+      specifier: ^0.14.0
+      version: 0.14.0
     '@tanstack/devtools-event-client':
       specifier: ^0.4.0
       version: 0.4.3
@@ -96,6 +99,9 @@ catalogs:
     '@trieoh/identityx-sdk-ts':
       specifier: ^0.15.1
       version: 0.15.1
+    '@types/d3-shape':
+      specifier: ^3.1.8
+      version: 3.1.8
     '@types/node':
       specifier: ^24.10.1
       version: 24.13.2
@@ -114,6 +120,12 @@ catalogs:
     clsx:
       specifier: ^2.1.1
       version: 2.1.1
+    d3-shape:
+      specifier: ^3.2.0
+      version: 3.2.0
+    date-fns:
+      specifier: ^4.1.0
+      version: 4.4.0
     lucide-react:
       specifier: ^1.18.0
       version: 1.21.0
@@ -444,7 +456,7 @@ importers:
         specifier: 'catalog:'
         version: 0.13.11(typescript@7.0.2)(zod@4.4.3)
       '@tanstack/charts':
-        specifier: ^0.14.0
+        specifier: 'catalog:'
         version: 0.14.0(preact@10.29.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@1.9.13)
       '@tanstack/react-query':
         specifier: 'catalog:'
@@ -486,10 +498,10 @@ importers:
         specifier: 'catalog:'
         version: 2.1.1
       d3-shape:
-        specifier: ^3.2.0
+        specifier: 'catalog:'
         version: 3.2.0
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.4.0
       lucide-react:
         specifier: 'catalog:'
@@ -601,7 +613,7 @@ importers:
         specifier: 'catalog:'
         version: 0.13.11(typescript@7.0.2)(zod@4.4.3)
       '@tanstack/charts':
-        specifier: ^0.14.0
+        specifier: 'catalog:'
         version: 0.14.0(preact@10.29.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@1.9.13)
       '@tanstack/react-hotkeys':
         specifier: ^0.10.0
@@ -669,8 +681,11 @@ importers:
       d3-scale:
         specifier: ^4.0.2
         version: 4.0.2
+      d3-shape:
+        specifier: 'catalog:'
+        version: 3.2.0
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.4.0
       fabric:
         specifier: ^7.4.0
@@ -886,9 +901,6 @@ importers:
 
   lib/ts/ui-base:
     dependencies:
-      '@types/d3-shape':
-        specifier: ^3.1.8
-        version: 3.1.8
       next-themes:
         specifier: 'catalog:'
         version: 0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -897,8 +909,11 @@ importers:
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
       '@tanstack/charts':
-        specifier: ^0.14.0
+        specifier: 'catalog:'
         version: 0.14.0(preact@10.29.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@1.9.13)
+      '@types/d3-shape':
+        specifier: 'catalog:'
+        version: 3.1.8
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.17
@@ -912,10 +927,10 @@ importers:
         specifier: 'catalog:'
         version: 2.1.1
       d3-shape:
-        specifier: ^3.2.0
+        specifier: 'catalog:'
         version: 3.2.0
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.4.0
       lucide-react:
         specifier: 'catalog:'

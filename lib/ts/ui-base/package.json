@@ -9,9 +9,9 @@
     "./shadcn/*": "./src/shadcn/*.tsx"
   },
   "peerDependencies": {
-    "@tanstack/charts": "^0.14.0",
-    "date-fns": "^4.1.0",
-    "d3-shape": "^3.2.0",
+    "@tanstack/charts": "catalog:",
+    "date-fns": "catalog:",
+    "d3-shape": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "lucide-react": "catalog:",
@@ -21,13 +21,12 @@
     "sonner": "catalog:",
     "tailwind-merge": "catalog:"
   },
-  "dependencies": {
-    "@types/d3-shape": "^3.1.8"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@tanstack/charts": "^0.14.0",
-    "date-fns": "^4.1.0",
-    "d3-shape": "^3.2.0",
+    "@tanstack/charts": "catalog:",
+    "date-fns": "catalog:",
+    "d3-shape": "catalog:",
+    "@types/d3-shape": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "lucide-react": "catalog:",
