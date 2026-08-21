@@ -111,12 +111,12 @@ const paymentProviders: Array<{
   name: string;
   description: string;
 }> = [
-  {
-    id: "mercadopago",
-    name: "Mercado Pago",
-    description: "Receba por Pix e cartão de crédito.",
-  },
-];
+    {
+      id: "mercadopago",
+      name: "Mercado Pago",
+      description: "Receba por Pix e cartão de crédito.",
+    },
+  ];
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
@@ -124,6 +124,7 @@ export const Route = createLazyFileRoute("/admin/events/$eventId/")({
 
 function EventOverviewRoute() {
   const { eventId } = Route.useParams();
+  const navigate = Route.useNavigate();
   const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions());
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
   const { data: editions = [] } = useQuery(
@@ -313,11 +314,11 @@ function EventOverviewRoute() {
       action: event?.logo_url
         ? undefined
         : {
-            label: "Adicionar",
-            disabled: isImageUploading("logo_url"),
-            onClick: () =>
-              document.getElementById("event-logo-upload")?.click(),
-          },
+          label: "Adicionar",
+          disabled: isImageUploading("logo_url"),
+          onClick: () =>
+            document.getElementById("event-logo-upload")?.click(),
+        },
     },
     {
       label: "Banner cadastrado",
@@ -326,11 +327,11 @@ function EventOverviewRoute() {
       action: event?.banner_url
         ? undefined
         : {
-            label: "Adicionar",
-            disabled: isImageUploading("banner_url"),
-            onClick: () =>
-              document.getElementById("event-banner-upload")?.click(),
-          },
+          label: "Adicionar",
+          disabled: isImageUploading("banner_url"),
+          onClick: () =>
+            document.getElementById("event-banner-upload")?.click(),
+        },
     },
     {
       label: "Descrição preenchida",
@@ -343,12 +344,12 @@ function EventOverviewRoute() {
     },
     ...(editions.length > 0
       ? [
-          {
-            label: "Pagamento conectado",
-            description: "Necessário para vender ingressos ou produtos.",
-            done: Boolean(event?.payssage_seller_id),
-          },
-        ]
+        {
+          label: "Pagamento conectado",
+          description: "Necessário para vender ingressos ou produtos.",
+          done: Boolean(event?.payssage_seller_id),
+        },
+      ]
       : []),
   ];
 
@@ -362,14 +363,14 @@ function EventOverviewRoute() {
     },
     ...(event?.status === "draft"
       ? [
-          {
-            label: "Publicar evento",
-            shortcut: "Mod+P",
-            onClick: () => setPublishConfirmOpen(true),
-            disabled: publishEventMutation.isPending,
-            variant: "default" as const,
-          },
-        ]
+        {
+          label: "Publicar evento",
+          shortcut: "Mod+P",
+          onClick: () => setPublishConfirmOpen(true),
+          disabled: publishEventMutation.isPending,
+          variant: "default" as const,
+        },
+      ]
       : []),
     {
       label: "Copiar link público",
@@ -380,21 +381,21 @@ function EventOverviewRoute() {
     },
     ...(isPublished
       ? [
-          {
-            label: "Descontinuar evento",
-            shortcut: "Mod+Shift+D",
-            onClick: () => setDiscontinueConfirmOpen(true),
-            disabled: discontinueEventMutation.isPending,
-            variant: "destructive" as const,
-          },
-          {
-            label: "Abrir painel público",
-            shortcut: "Mod+Shift+O",
-            to: "/events/$slug" as const,
-            params: { slug: event?.slug ?? "" },
-            variant: "default" as const,
-          },
-        ]
+        {
+          label: "Descontinuar evento",
+          shortcut: "Mod+Shift+D",
+          onClick: () => setDiscontinueConfirmOpen(true),
+          disabled: discontinueEventMutation.isPending,
+          variant: "destructive" as const,
+        },
+        {
+          label: "Abrir painel público",
+          shortcut: "Mod+Shift+O",
+          to: "/events/$slug" as const,
+          params: { slug: event?.slug ?? "" },
+          variant: "default" as const,
+        },
+      ]
       : []),
   ];
 
@@ -423,7 +424,9 @@ function EventOverviewRoute() {
       {
         hotkey: "Mod+Shift+O",
         callback: () => {
-          if (event) window.location.href = `/events/${event.slug}`;
+          if (event) {
+            void navigate({ to: "/events/$slug", params: { slug: event.slug } });
+          }
         },
         options: { enabled: isPublished && Boolean(event) },
       },
@@ -580,7 +583,20 @@ function EventOverviewRoute() {
           </div>
         </DashboardPanel>
 
-        <section className="order-5 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
+        <section className="order-5 grid gap-4 xl:grid-cols-[1fr_1.35fr]">
+          <DashboardPanel
+            title="Status das compras"
+            description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} no total.`}
+            icon={ShoppingBag}
+            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
+          >
+            <div className="mt-2">
+              <DashboardBarList
+                items={statusBars}
+                emptyMessage="Nenhuma compra registrada."
+              />
+            </div>
+          </DashboardPanel>
           <DashboardPanel
             title="Receita por edição"
             description="Receita aprovada comparada entre as edições."
@@ -592,20 +608,6 @@ function EventOverviewRoute() {
                 items={revenueBars}
                 maxValue={maxEditionRevenue}
                 emptyMessage="Ainda não há edições para comparar."
-              />
-            </div>
-          </DashboardPanel>
-
-          <DashboardPanel
-            title="Status das compras"
-            description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} no total.`}
-            icon={ShoppingBag}
-            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
-          >
-            <div className="mt-2">
-              <DashboardBarList
-                items={statusBars}
-                emptyMessage="Nenhuma compra registrada."
               />
             </div>
           </DashboardPanel>
@@ -744,9 +746,9 @@ function EventOverviewRoute() {
                         connected
                           ? setDisconnectSellerConfirmOpen(true)
                           : connectSellerMutation.mutate({
-                              eventId,
-                              provider: provider.id,
-                            })
+                            eventId,
+                            provider: provider.id,
+                          })
                       }
                     >
                       {connected ? "Desconectar conta" : "Conectar"}

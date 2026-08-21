@@ -41,42 +41,36 @@ export function DashboardLineChart({ purchases }: DashboardLineChartProps) {
     return !Number.isNaN(time) && now - time <= milliseconds;
   });
   const chartData = useMemo(() => {
-    const grouped = new Map<string, { date: string; revenue: number }>();
-    for (const purchase of visible) {
-      const date = new Date(purchase.timestamp);
-      const key =
-        range === "1h" || range === "24h"
-          ? format(date, "yyyy-MM-dd HH:00")
-          : format(date, "yyyy-MM-dd");
-      const point = grouped.get(key) ?? {
-        date:
-          range === "1h" || range === "24h"
-            ? format(date, "dd/MM HH:00")
-            : format(date, "dd/MM"),
-        revenue: 0,
-      };
-      if (purchase.status === "approved")
-        point.revenue += purchase.totalCents / 100;
-      grouped.set(key, point);
-    }
-    const ordered = [...grouped.entries()].sort(([a], [b]) =>
-      a.localeCompare(b),
+    const ordered = [...visible].sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     );
     let accumulatedRevenue = 0;
-    const points = ordered.map(([, point]) => {
-      accumulatedRevenue += point.revenue;
-      return { ...point, revenue: accumulatedRevenue };
+    const points = ordered.map((purchase) => {
+      const date = new Date(purchase.timestamp);
+      if (purchase.status === "approved") {
+        accumulatedRevenue += purchase.totalCents / 100;
+      }
+      return {
+        date: date.toISOString(),
+        revenue: accumulatedRevenue,
+      };
     });
-    if (points.length === 0) return points;
-    return [
-      {
-        date: "",
-        revenue: 0,
-      },
-      ...points,
-    ];
+    return points;
   }, [range, visible]);
   const renderData = chartData.length ? chartData : [{ date: "", revenue: 0 }];
+  const tickLabels = new Map<string, string>();
+  const renderedDays = new Set<string>();
+  for (const point of renderData) {
+    const date = new Date(point.date);
+    if (Number.isNaN(date.getTime())) continue;
+    const day = format(date, "yyyy-MM-dd");
+    tickLabels.set(
+      point.date,
+      renderedDays.has(day) ? "" : format(date, "dd/MM"),
+    );
+    renderedDays.add(day);
+  }
   const definition = defineChart({
     marks: [
       lineY(renderData, {
@@ -91,7 +85,12 @@ export function DashboardLineChart({ purchases }: DashboardLineChartProps) {
     ],
     x: {
       scale: () => scalePoint<string>().padding(0),
-      axis: { label: "Período" },
+      axis: {
+        label: "Período",
+        ticks: {
+          format: (value) => tickLabels.get(value) ?? "",
+        },
+      },
     },
     y: {
       scale: () =>
@@ -103,7 +102,16 @@ export function DashboardLineChart({ purchases }: DashboardLineChartProps) {
       grid: true,
       axis: { label: "Lucro (R$)" },
     },
-    tooltip,
+    tooltip: {
+      use: tooltip,
+      format: (point) => {
+        const date = new Date(String(point.xValue));
+        const period = Number.isNaN(date.getTime())
+          ? "Período desconhecido"
+          : format(date, "dd/MM HH:mm");
+        return `Período: ${period}\nLucro acumulado: R$ ${Number(point.yValue).toFixed(2)}`;
+      },
+    },
   });
 
   return (

@@ -18,8 +18,12 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
-import { usePublishEditionMutation } from "@/features/editions/api/mutations";
+import {
+  usePatchEditionMutation,
+  usePublishEditionMutation,
+} from "@/features/editions/api/mutations";
 import { EditionVisualCard } from "@/features/editions/ui/EditionVisualCard";
+import { EditEditionModal } from "@/features/editions/ui/EditEditionModal";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
@@ -54,6 +58,7 @@ export const Route = createLazyFileRoute(
 
 function AdminEditionDetailRoute() {
   const { eventId, editionId } = Route.useParams();
+  const navigate = Route.useNavigate();
   const { data: editions = [], isPending } = useQuery(
     allAdminEditionsQueryOptions(eventId),
   );
@@ -77,6 +82,7 @@ function AdminEditionDetailRoute() {
     ],
   });
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [editEditionOpen, setEditEditionOpen] = useState(false);
   const [refundPurchaseId, setRefundPurchaseId] = useState<string | null>(null);
 
   const edition = useMemo(
@@ -88,12 +94,13 @@ function AdminEditionDetailRoute() {
   )?.slug;
 
   const publishEditionMutation = usePublishEditionMutation();
+  const patchEditionMutation = usePatchEditionMutation();
   const refundMutation = useRefundPurchaseMutation();
 
   const copyLink = () => {
     if (!edition || !eventSlug) return;
     void navigator.clipboard.writeText(
-      `${window.location.origin}/events/${eventSlug}/editions/${edition.slug}`,
+      `${window.location.origin}/events/${eventSlug}`,
     );
     toast.success("Link copiado");
   };
@@ -125,6 +132,11 @@ function AdminEditionDetailRoute() {
         options: { enabled: edition?.status === "draft" },
       },
       {
+        hotkey: "Mod+E",
+        callback: () => setEditEditionOpen(true),
+        options: { enabled: Boolean(edition) },
+      },
+      {
         hotkey: "Mod+Shift+C",
         callback: copyLink,
         options: {
@@ -135,7 +147,7 @@ function AdminEditionDetailRoute() {
         hotkey: "Mod+Shift+O",
         callback: () => {
           if (edition && eventSlug && edition.status !== "draft") {
-            window.location.href = `/events/${eventSlug}/editions/${edition.slug}`;
+            void navigate({ to: "/events/$slug", params: { slug: eventSlug } });
           }
         },
         options: {
@@ -169,40 +181,56 @@ function AdminEditionDetailRoute() {
       label: "Banner cadastrado",
       description: "Imagem principal exibida no topo da edição.",
       done: Boolean(edition.banner_url),
+      action: edition.banner_url
+        ? undefined
+        : { label: "Adicionar", onClick: () => document.getElementById(`edition-${edition.id}-banner-upload`)?.click() },
     },
     {
       label: "Logo cadastrado",
       description: "Identifica a edição nos cards e páginas públicas.",
       done: Boolean(edition.logo_url),
+      action: edition.logo_url
+        ? undefined
+        : { label: "Adicionar", onClick: () => document.getElementById(`edition-${edition.id}-logo-upload`)?.click() },
     },
     {
       label: "Descrição preenchida",
       description: "Apresente a edição para quem ainda não a conhece.",
       done: Boolean(edition.description),
+      action: { label: "Editar", onClick: () => setEditEditionOpen(true) },
     },
     {
       label: "Tagline definida",
       description: "Resumo curto exibido junto ao nome da edição.",
       done: Boolean(edition.tagline),
+      action: { label: "Editar", onClick: () => setEditEditionOpen(true) },
     },
     {
       label: "Local definido",
       description: "Local onde a edição será realizada.",
       done: Boolean(edition.location_name),
+      action: { label: "Editar", onClick: () => setEditEditionOpen(true) },
     },
   ];
 
   const actions = [
+    {
+      label: "Editar edição",
+      shortcut: "Mod+E",
+      onClick: () => setEditEditionOpen(true),
+      disabled: false,
+      variant: "default" as const,
+    },
     ...(isDraft
       ? [
-          {
-            label: "Publicar edição",
-            shortcut: "Mod+P",
-            onClick: () => setPublishConfirmOpen(true),
-            disabled: publishEditionMutation.isPending,
-            variant: "default" as const,
-          },
-        ]
+        {
+          label: "Publicar edição",
+          shortcut: "Mod+P",
+          onClick: () => setPublishConfirmOpen(true),
+          disabled: publishEditionMutation.isPending,
+          variant: "default" as const,
+        },
+      ]
       : []),
     {
       label: "Copiar link público",
@@ -213,17 +241,17 @@ function AdminEditionDetailRoute() {
     },
     ...(!isDraft
       ? [
-          {
-            label: "Abrir página pública",
-            shortcut: "Mod+Shift+O",
-            onClick: () => {
-              if (!eventSlug) return;
-              window.location.href = `/events/${eventSlug}/editions/${edition.slug}`;
-            },
-            disabled: false,
-            variant: "default" as const,
+        {
+          label: "Abrir página pública",
+          shortcut: "Mod+Shift+O",
+          onClick: () => {
+            if (!eventSlug) return;
+            void navigate({ to: "/events/$slug", params: { slug: eventSlug } });
           },
-        ]
+          disabled: false,
+          variant: "default" as const,
+        },
+      ]
       : []),
   ];
 
@@ -390,28 +418,32 @@ function AdminEditionDetailRoute() {
         </div>
       </DashboardPanel>
 
-      <DashboardPanel
-        title="Status das compras"
-        description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} registrada${purchases.length === 1 ? "" : "s"}.`}
-        icon={ShoppingBag}
-      >
-        <DashboardBarList
-          items={purchaseStatusBars}
-          maxValue={Math.max(
-            ...purchaseStatusBars.map((item) => item.value),
-            1,
-          )}
-          emptyMessage="Nenhuma compra registrada."
-        />
-      </DashboardPanel>
+      <section className="grid gap-4 xl:grid-cols-[1fr_1.8fr]">
+        <DashboardPanel
+          title="Status das compras"
+          description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} registrada${purchases.length === 1 ? "" : "s"}.`}
+          icon={ShoppingBag}
+          className="h-full rounded-lg bg-card p-5 ring-1 ring-foreground/10"
+        >
+          <DashboardBarList
+            items={purchaseStatusBars}
+            maxValue={Math.max(
+              ...purchaseStatusBars.map((item) => item.value),
+              1,
+            )}
+            emptyMessage="Nenhuma compra registrada."
+          />
+        </DashboardPanel>
 
-      <DashboardPanel
-        title="Lucro"
-        description="Crescimento acumulado das compras da edição."
-        icon={Activity}
-      >
-        <DashboardLineChart purchases={purchaseTimeline} />
-      </DashboardPanel>
+        <DashboardPanel
+          title="Lucro"
+          description="Crescimento acumulado das compras da edição."
+          icon={Activity}
+          className="h-full rounded-lg bg-card p-5 ring-1 ring-foreground/10"
+        >
+          <DashboardLineChart purchases={purchaseTimeline} />
+        </DashboardPanel>
+      </section>
 
       <StepChecklist
         title="Checklist da edição"
@@ -419,7 +451,8 @@ function AdminEditionDetailRoute() {
           id: item.label,
           title: item.label,
           description: item.description,
-          completed: item.done,
+            completed: item.done,
+            action: item.action,
         }))}
         className="w-full"
         mobileInline
@@ -437,6 +470,18 @@ function AdminEditionDetailRoute() {
           handlePublishEdition();
           setPublishConfirmOpen(false);
         }}
+      />
+      <EditEditionModal
+        open={editEditionOpen}
+        edition={edition}
+        onOpenChange={setEditEditionOpen}
+        onUpdate={(values) =>
+          patchEditionMutation.mutateAsync({
+            eventId,
+            editionId,
+            data: values,
+          })
+        }
       />
       <AlertModal
         open={refundPurchaseId !== null}
