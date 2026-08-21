@@ -1,6 +1,12 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
+import {
+  DashboardBarList,
+  DashboardLineChart,
+  type DashboardLineChartPoint,
+  DashboardStatCard,
+} from "@trieoh/ui-base";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -51,13 +57,7 @@ import { useUploadQueue } from "@/features/upload-queue";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
-import { DashboardBarList } from "@/widgets/ui/dashboard-bar-list";
-import {
-  DashboardLineChart,
-  type DashboardPurchasePoint,
-} from "@/widgets/ui/dashboard-line-chart";
 import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
-import { DashboardStatCard } from "@/widgets/ui/dashboard-stat-card";
 import { StepChecklist } from "@/widgets/ui/step-checklist";
 
 const statusConfig = {
@@ -111,12 +111,12 @@ const paymentProviders: Array<{
   name: string;
   description: string;
 }> = [
-    {
-      id: "mercadopago",
-      name: "Mercado Pago",
-      description: "Receba por Pix e cartão de crédito.",
-    },
-  ];
+  {
+    id: "mercadopago",
+    name: "Mercado Pago",
+    description: "Receba por Pix e cartão de crédito.",
+  },
+];
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
@@ -222,7 +222,7 @@ function EventOverviewRoute() {
       .length,
     color: item.color,
   }));
-  const purchaseTimeline: DashboardPurchasePoint[] = purchases
+  const purchaseTimeline: DashboardLineChartPoint[] = purchases
     .filter((purchase) => purchase.created_at)
     .map((purchase) => ({
       timestamp: purchase.created_at ?? "",
@@ -314,11 +314,11 @@ function EventOverviewRoute() {
       action: event?.logo_url
         ? undefined
         : {
-          label: "Adicionar",
-          disabled: isImageUploading("logo_url"),
-          onClick: () =>
-            document.getElementById("event-logo-upload")?.click(),
-        },
+            label: "Adicionar",
+            disabled: isImageUploading("logo_url"),
+            onClick: () =>
+              document.getElementById("event-logo-upload")?.click(),
+          },
     },
     {
       label: "Banner cadastrado",
@@ -327,11 +327,11 @@ function EventOverviewRoute() {
       action: event?.banner_url
         ? undefined
         : {
-          label: "Adicionar",
-          disabled: isImageUploading("banner_url"),
-          onClick: () =>
-            document.getElementById("event-banner-upload")?.click(),
-        },
+            label: "Adicionar",
+            disabled: isImageUploading("banner_url"),
+            onClick: () =>
+              document.getElementById("event-banner-upload")?.click(),
+          },
     },
     {
       label: "Descrição preenchida",
@@ -344,12 +344,12 @@ function EventOverviewRoute() {
     },
     ...(editions.length > 0
       ? [
-        {
-          label: "Pagamento conectado",
-          description: "Necessário para vender ingressos ou produtos.",
-          done: Boolean(event?.payssage_seller_id),
-        },
-      ]
+          {
+            label: "Pagamento conectado",
+            description: "Necessário para vender ingressos ou produtos.",
+            done: Boolean(event?.payssage_seller_id),
+          },
+        ]
       : []),
   ];
 
@@ -363,14 +363,14 @@ function EventOverviewRoute() {
     },
     ...(event?.status === "draft"
       ? [
-        {
-          label: "Publicar evento",
-          shortcut: "Mod+P",
-          onClick: () => setPublishConfirmOpen(true),
-          disabled: publishEventMutation.isPending,
-          variant: "default" as const,
-        },
-      ]
+          {
+            label: "Publicar evento",
+            shortcut: "Mod+P",
+            onClick: () => setPublishConfirmOpen(true),
+            disabled: publishEventMutation.isPending,
+            variant: "default" as const,
+          },
+        ]
       : []),
     {
       label: "Copiar link público",
@@ -381,21 +381,21 @@ function EventOverviewRoute() {
     },
     ...(isPublished
       ? [
-        {
-          label: "Descontinuar evento",
-          shortcut: "Mod+Shift+D",
-          onClick: () => setDiscontinueConfirmOpen(true),
-          disabled: discontinueEventMutation.isPending,
-          variant: "destructive" as const,
-        },
-        {
-          label: "Abrir painel público",
-          shortcut: "Mod+Shift+O",
-          to: "/events/$slug" as const,
-          params: { slug: event?.slug ?? "" },
-          variant: "default" as const,
-        },
-      ]
+          {
+            label: "Descontinuar evento",
+            shortcut: "Mod+Shift+D",
+            onClick: () => setDiscontinueConfirmOpen(true),
+            disabled: discontinueEventMutation.isPending,
+            variant: "destructive" as const,
+          },
+          {
+            label: "Abrir painel público",
+            shortcut: "Mod+Shift+O",
+            to: "/events/$slug" as const,
+            params: { slug: event?.slug ?? "" },
+            variant: "default" as const,
+          },
+        ]
       : []),
   ];
 
@@ -425,7 +425,10 @@ function EventOverviewRoute() {
         hotkey: "Mod+Shift+O",
         callback: () => {
           if (event) {
-            void navigate({ to: "/events/$slug", params: { slug: event.slug } });
+            void navigate({
+              to: "/events/$slug",
+              params: { slug: event.slug },
+            });
           }
         },
         options: { enabled: isPublished && Boolean(event) },
@@ -619,7 +622,7 @@ function EventOverviewRoute() {
           icon={Activity}
           className="order-6"
         >
-          <DashboardLineChart purchases={purchaseTimeline} />
+          <DashboardLineChart points={purchaseTimeline} />
         </DashboardPanel>
 
         <section className="order-7 space-y-3">
@@ -746,9 +749,9 @@ function EventOverviewRoute() {
                         connected
                           ? setDisconnectSellerConfirmOpen(true)
                           : connectSellerMutation.mutate({
-                            eventId,
-                            provider: provider.id,
-                          })
+                              eventId,
+                              provider: provider.id,
+                            })
                       }
                     >
                       {connected ? "Desconectar conta" : "Conectar"}

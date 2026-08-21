@@ -35,15 +35,15 @@ function WalletLayout() {
 
   const tabs = [
     {
-      label: "Collector",
-      to: "/admin/wallets/$walletID",
-      icon: Link2,
-      exact: true,
-    },
-    {
       label: "Transactions",
       to: "/admin/wallets/$walletID/transactions",
       icon: Receipt,
+      exact: true,
+    },
+    {
+      label: "Collector",
+      to: "/admin/wallets/$walletID",
+      icon: Link2,
       exact: true,
     },
     {

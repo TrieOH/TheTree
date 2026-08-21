@@ -1,12 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import {
-  ArrowUpRight,
-  Ban,
-  Copy,
-  Eye,
-  Mail,
-  Pencil,
-} from "lucide-react";
+import { ArrowUpRight, Ban, Copy, Eye, Mail, Pencil } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
 import { toast } from "sonner";
@@ -254,7 +247,6 @@ export default function AdminEventCard({
                   {event.slug}
                 </code>
               </div>
-
             </div>
           </motion.article>
         }

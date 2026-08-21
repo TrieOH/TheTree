@@ -265,7 +265,6 @@ export function AdminEditionCard({
                   /{edition.slug}
                 </p>
               </div>
-
             </div>
           </motion.article>
         }

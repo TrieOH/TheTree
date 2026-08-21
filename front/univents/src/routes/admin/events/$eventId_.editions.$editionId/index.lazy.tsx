@@ -2,6 +2,12 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import {
+  DashboardBarList,
+  DashboardLineChart,
+  type DashboardLineChartPoint,
+  DashboardStatCard,
+} from "@trieoh/ui-base";
+import {
   Activity,
   CalendarRange,
   CheckCircle2,
@@ -22,8 +28,8 @@ import {
   usePatchEditionMutation,
   usePublishEditionMutation,
 } from "@/features/editions/api/mutations";
-import { EditionVisualCard } from "@/features/editions/ui/EditionVisualCard";
 import { EditEditionModal } from "@/features/editions/ui/EditEditionModal";
+import { EditionVisualCard } from "@/features/editions/ui/EditionVisualCard";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
@@ -41,13 +47,7 @@ import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
-import { DashboardBarList } from "@/widgets/ui/dashboard-bar-list";
-import {
-  DashboardLineChart,
-  type DashboardPurchasePoint,
-} from "@/widgets/ui/dashboard-line-chart";
 import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
-import { DashboardStatCard } from "@/widgets/ui/dashboard-stat-card";
 import { StepChecklist } from "@/widgets/ui/step-checklist";
 
 export const Route = createLazyFileRoute(
@@ -183,7 +183,13 @@ function AdminEditionDetailRoute() {
       done: Boolean(edition.banner_url),
       action: edition.banner_url
         ? undefined
-        : { label: "Adicionar", onClick: () => document.getElementById(`edition-${edition.id}-banner-upload`)?.click() },
+        : {
+            label: "Adicionar",
+            onClick: () =>
+              document
+                .getElementById(`edition-${edition.id}-banner-upload`)
+                ?.click(),
+          },
     },
     {
       label: "Logo cadastrado",
@@ -191,7 +197,13 @@ function AdminEditionDetailRoute() {
       done: Boolean(edition.logo_url),
       action: edition.logo_url
         ? undefined
-        : { label: "Adicionar", onClick: () => document.getElementById(`edition-${edition.id}-logo-upload`)?.click() },
+        : {
+            label: "Adicionar",
+            onClick: () =>
+              document
+                .getElementById(`edition-${edition.id}-logo-upload`)
+                ?.click(),
+          },
     },
     {
       label: "Descrição preenchida",
@@ -223,14 +235,14 @@ function AdminEditionDetailRoute() {
     },
     ...(isDraft
       ? [
-        {
-          label: "Publicar edição",
-          shortcut: "Mod+P",
-          onClick: () => setPublishConfirmOpen(true),
-          disabled: publishEditionMutation.isPending,
-          variant: "default" as const,
-        },
-      ]
+          {
+            label: "Publicar edição",
+            shortcut: "Mod+P",
+            onClick: () => setPublishConfirmOpen(true),
+            disabled: publishEditionMutation.isPending,
+            variant: "default" as const,
+          },
+        ]
       : []),
     {
       label: "Copiar link público",
@@ -241,17 +253,20 @@ function AdminEditionDetailRoute() {
     },
     ...(!isDraft
       ? [
-        {
-          label: "Abrir página pública",
-          shortcut: "Mod+Shift+O",
-          onClick: () => {
-            if (!eventSlug) return;
-            void navigate({ to: "/events/$slug", params: { slug: eventSlug } });
+          {
+            label: "Abrir página pública",
+            shortcut: "Mod+Shift+O",
+            onClick: () => {
+              if (!eventSlug) return;
+              void navigate({
+                to: "/events/$slug",
+                params: { slug: eventSlug },
+              });
+            },
+            disabled: false,
+            variant: "default" as const,
           },
-          disabled: false,
-          variant: "default" as const,
-        },
-      ]
+        ]
       : []),
   ];
 
@@ -269,7 +284,7 @@ function AdminEditionDetailRoute() {
   const revenue = purchases
     .filter((purchase) => purchase.status === "approved")
     .reduce((total, purchase) => total + purchase.total_cents, 0);
-  const purchaseTimeline: DashboardPurchasePoint[] = purchases
+  const purchaseTimeline: DashboardLineChartPoint[] = purchases
     .filter((purchase) => purchase.created_at)
     .map((purchase) => ({
       timestamp: purchase.created_at ?? "",
@@ -441,7 +456,7 @@ function AdminEditionDetailRoute() {
           icon={Activity}
           className="h-full rounded-lg bg-card p-5 ring-1 ring-foreground/10"
         >
-          <DashboardLineChart purchases={purchaseTimeline} />
+          <DashboardLineChart points={purchaseTimeline} />
         </DashboardPanel>
       </section>
 
@@ -451,8 +466,8 @@ function AdminEditionDetailRoute() {
           id: item.label,
           title: item.label,
           description: item.description,
-            completed: item.done,
-            action: item.action,
+          completed: item.done,
+          action: item.action,
         }))}
         className="w-full"
         mobileInline
