@@ -51,6 +51,7 @@ import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures'
 import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/tickets/index'
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/index'
+import { Route as AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/purchases/index'
 import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
 import { Route as AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/index'
 import { Route as AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/index'
@@ -322,6 +323,16 @@ const AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute =
     path: '/',
     getParentRoute: () => AdminEventsEventIdEditionsEditionIdSignaturesRoute,
   } as any)
+const AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute =
+  AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/purchases/',
+    path: '/events/$eventId/editions/$editionId/purchases/',
+    getParentRoute: () => AdminRoute,
+  } as any).lazy(() =>
+    import('./routes/admin/events/$eventId_.editions.$editionId/purchases/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
   AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport.update({
     id: '/events/$eventId_/editions/$editionId/products/',
@@ -458,6 +469,7 @@ export interface FileRoutesByFullPath {
   '/admin/events/$eventId/editions/$editionId/badges/': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   '/admin/events/$eventId/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/purchases/': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
   '/admin/events/$eventId/editions/$editionId/tickets/': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
   '/admin/events/$eventId/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
@@ -510,6 +522,7 @@ export interface FileRoutesByTo {
   '/admin/events/$eventId/editions/$editionId/badges': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId/editions/$editionId/certifications': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   '/admin/events/$eventId/editions/$editionId/products': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/purchases': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   '/admin/events/$eventId/editions/$editionId/signatures': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
   '/admin/events/$eventId/editions/$editionId/tickets': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
   '/admin/events/$eventId/editions/$editionId/programs': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
@@ -566,6 +579,7 @@ export interface FileRoutesById {
   '/admin/events/$eventId_/editions/$editionId/badges/': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId_/editions/$editionId/certifications/': typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/purchases/': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   '/admin/events/$eventId_/editions/$editionId/signatures/': typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
   '/admin/events/$eventId_/editions/$editionId/tickets/': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
@@ -623,6 +637,7 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions/$editionId/badges/'
     | '/admin/events/$eventId/editions/$editionId/certifications/'
     | '/admin/events/$eventId/editions/$editionId/products/'
+    | '/admin/events/$eventId/editions/$editionId/purchases/'
     | '/admin/events/$eventId/editions/$editionId/signatures/'
     | '/admin/events/$eventId/editions/$editionId/tickets/'
     | '/admin/events/$eventId/editions/$editionId/programs/'
@@ -675,6 +690,7 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions/$editionId/badges'
     | '/admin/events/$eventId/editions/$editionId/certifications'
     | '/admin/events/$eventId/editions/$editionId/products'
+    | '/admin/events/$eventId/editions/$editionId/purchases'
     | '/admin/events/$eventId/editions/$editionId/signatures'
     | '/admin/events/$eventId/editions/$editionId/tickets'
     | '/admin/events/$eventId/editions/$editionId/programs'
@@ -730,6 +746,7 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId_/editions/$editionId/badges/'
     | '/admin/events/$eventId_/editions/$editionId/certifications/'
     | '/admin/events/$eventId_/editions/$editionId/products/'
+    | '/admin/events/$eventId_/editions/$editionId/purchases/'
     | '/admin/events/$eventId_/editions/$editionId/signatures/'
     | '/admin/events/$eventId_/editions/$editionId/tickets/'
     | '/admin/events/$eventId_/editions/$editionId/programs/'
@@ -1061,6 +1078,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport
       parentRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesRoute
     }
+    '/admin/events/$eventId_/editions/$editionId/purchases/': {
+      id: '/admin/events/$eventId_/editions/$editionId/purchases/'
+      path: '/events/$eventId/editions/$editionId/purchases'
+      fullPath: '/admin/events/$eventId/editions/$editionId/purchases/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/events/$eventId_/editions/$editionId/products/': {
       id: '/admin/events/$eventId_/editions/$editionId/products/'
       path: '/events/$eventId/editions/$editionId/products'
@@ -1177,6 +1201,7 @@ interface AdminRouteChildren {
   AdminEventsEventIdEditionsEditionIdBadgesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute
   AdminEventsEventIdEditionsEditionIdProductsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
+  AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   AdminEventsEventIdEditionsEditionIdTicketsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
   AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
   AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
@@ -1207,6 +1232,8 @@ const AdminRouteChildren: AdminRouteChildren = {
     AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute,
   AdminEventsEventIdEditionsEditionIdProductsIndexRoute:
     AdminEventsEventIdEditionsEditionIdProductsIndexRoute,
+  AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute:
+    AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute,
   AdminEventsEventIdEditionsEditionIdTicketsIndexRoute:
     AdminEventsEventIdEditionsEditionIdTicketsIndexRoute,
   AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute:

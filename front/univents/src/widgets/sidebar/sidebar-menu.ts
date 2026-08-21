@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   type LucideIcon,
   PenLine,
+  ShoppingBag,
   Tickets,
   UploadCloud,
   Users,
@@ -76,6 +77,14 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             to: "/admin/events/$eventId/editions/$editionId/products",
             params: { eventId, editionId },
             icon: Boxes,
+            exact: false,
+          },
+          {
+            id: "edition-purchases",
+            label: "Compras",
+            to: "/admin/events/$eventId/editions/$editionId/purchases",
+            params: { eventId, editionId },
+            icon: ShoppingBag,
             exact: false,
           },
           {

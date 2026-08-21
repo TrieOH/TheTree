@@ -1,9 +1,6 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import type { SortState } from "@trieoh/ui-base";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import type { EditionPurchase } from "@trieoh/univents-api/schemas";
 import {
   Activity,
   CalendarRange,
@@ -39,7 +36,6 @@ import {
 import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
 import { Button } from "@/shared/ui/shadcn/button";
-import { Card, CardContent } from "@/shared/ui/shadcn/card";
 import { AlertModal } from "@/widgets/ui/alert-modal";
 import { DashboardBarList } from "@/widgets/ui/dashboard-bar-list";
 import {
@@ -82,11 +78,7 @@ function AdminEditionDetailRoute() {
   });
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const [refundPurchaseId, setRefundPurchaseId] = useState<string | null>(null);
-  const [purchaseFilter, setPurchaseFilter] = useState("");
-  const [purchaseSort, setPurchaseSort] = useState<SortState<EditionPurchase>>({
-    field: "created_at",
-    direction: "desc",
-  });
+
   const edition = useMemo(
     () => editions.find((item) => item.id === editionId) ?? null,
     [editionId, editions],
@@ -97,30 +89,6 @@ function AdminEditionDetailRoute() {
 
   const publishEditionMutation = usePublishEditionMutation();
   const refundMutation = useRefundPurchaseMutation();
-  const filteredPurchases = useMemo(() => {
-    const search = purchaseFilter.trim().toLowerCase();
-    return purchases
-      .filter((purchase) => {
-        if (!search) return true;
-        return [
-          purchase.payer_email ?? "",
-          purchase.status,
-          purchase.purchase_id,
-          ...purchase.attendees.map((attendee) => attendee.email),
-        ].some((value) => value.toLowerCase().includes(search));
-      })
-      .sort((a, b) => {
-        const direction = purchaseSort.direction === "asc" ? 1 : -1;
-        if (purchaseSort.field === "total_cents") {
-          return (a.total_cents - b.total_cents) * direction;
-        }
-        return (
-          (new Date(a.created_at ?? 0).getTime() -
-            new Date(b.created_at ?? 0).getTime()) *
-          direction
-        );
-      });
-  }, [purchaseFilter, purchaseSort, purchases]);
 
   const copyLink = () => {
     if (!edition || !eventSlug) return;
@@ -444,118 +412,6 @@ function AdminEditionDetailRoute() {
       >
         <DashboardLineChart purchases={purchaseTimeline} />
       </DashboardPanel>
-
-      <PaginatedContainer<EditionPurchase>
-        items={filteredPurchases}
-        layout="list"
-        pageSize={6}
-        gap="3"
-        sort={purchaseSort}
-        onSortChange={setPurchaseSort}
-        sortFields={[
-          { key: "created_at", label: "Data" },
-          {
-            key: "total_cents",
-            label: "Valor",
-            comparator: (a, b) => a.total_cents - b.total_cents,
-          },
-        ]}
-        filterValue={purchaseFilter}
-        onFilterChange={setPurchaseFilter}
-        filterPlaceholder="Buscar por e-mail, status ou participante..."
-        itemLabel="compras"
-        emptyState={
-          <EmptyState
-            icon={ShoppingBag}
-            eyebrow="Compras"
-            title="Nenhuma compra encontrada"
-            description="Os pedidos desta edição aparecerão aqui."
-            className="border-0 bg-transparent px-0 py-4 shadow-none"
-          />
-        }
-        renderItems={(slice) =>
-          slice.map((purchase) => {
-            const itemQuantity = purchase.items.reduce(
-              (total, item) => total + item.quantity,
-              0,
-            );
-            const contactEmail =
-              purchase.payer_email ?? purchase.attendees[0]?.email ?? null;
-            const contactLabel = purchase.payer_email
-              ? "Pagador"
-              : purchase.attendees[0]?.email
-                ? "Contato do participante"
-                : "Pagador";
-            const displayEmail = contactEmail ?? "E-mail não informado";
-
-            return (
-              <Card
-                key={purchase.purchase_id}
-                className="border-border/60 bg-card/95 shadow-sm"
-              >
-                <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                      {displayEmail[0].toUpperCase()}
-                    </div>
-                    <div className="min-w-0 space-y-1">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                        {contactLabel}
-                      </p>
-                      <p className="truncate text-sm font-semibold">
-                        {displayEmail}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {itemQuantity} {itemQuantity === 1 ? "item" : "itens"}
-                        {" · "}
-                        {purchase.attendees.length}{" "}
-                        {purchase.attendees.length === 1
-                          ? "participante atribuído"
-                          : "participantes atribuídos"}
-                      </p>
-                      {purchase.attendees.length > 0 ? (
-                        <p className="max-w-xl truncate text-xs text-foreground/70">
-                          {purchase.attendees
-                            .map((attendee) => attendee.name)
-                            .join(", ")}
-                        </p>
-                      ) : (
-                        <p className="text-xs italic text-muted-foreground">
-                          Participantes ainda não atribuídos
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-semibold tabular-nums">
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: purchase.currency,
-                        }).format(purchase.total_cents / 100)}
-                      </p>
-                      <p className="text-xs capitalize text-muted-foreground">
-                        {purchase.status}
-                      </p>
-                    </div>
-                    {purchase.status === "approved" ? (
-                      <button
-                        type="button"
-                        className="text-sm font-medium text-destructive hover:underline"
-                        onClick={() =>
-                          setRefundPurchaseId(purchase.purchase_id)
-                        }
-                      >
-                        Reembolsar
-                      </button>
-                    ) : null}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        }
-      />
 
       <StepChecklist
         title="Checklist da edição"
