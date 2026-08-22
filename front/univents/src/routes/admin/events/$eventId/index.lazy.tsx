@@ -531,7 +531,7 @@ function EventOverviewRoute() {
                   variant={
                     action.variant === "destructive" ? "destructive" : "outline"
                   }
-                  className="h-9 shrink-0 flex-row gap-1.5 px-2 text-xs sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
+                  className={`h-9 shrink-0 flex-row gap-1.5 border px-2 text-xs sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight ${action.variant === "destructive" ? "border-destructive/60" : "border-border"}`}
                   disabled={action.disabled}
                   onClick={action.onClick}
                   title={`${action.label} · ${action.shortcut}`}
