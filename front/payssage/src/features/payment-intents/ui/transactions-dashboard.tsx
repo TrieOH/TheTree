@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SortState } from "@trieoh/ui-base";
-import { PaginatedContainer } from "@trieoh/ui-base";
+import {
+  DashboardBarList,
+  DashboardLineChart,
+  DashboardStatCard,
+  PaginatedContainer,
+} from "@trieoh/ui-base";
 import {
   Ban,
   CheckCircle2,
@@ -18,10 +23,8 @@ import { cn } from "#/shared/lib/utils";
 import { Badge } from "#/shared/ui/shadcn/badge";
 import { Button } from "#/shared/ui/shadcn/button";
 import { cancelIntentFn } from "../api";
-import type { Intent, IntentStatus } from "../model";
+import type { Intent, IntentFeeDetail, IntentStatus } from "../model";
 import { intentStatuses } from "../model";
-
-// import { mockIntents } from "../model/mock"
 
 const statusDetails: Record<
   IntentStatus,
@@ -76,6 +79,18 @@ const formatAmount = (intent: Intent) =>
     style: "currency",
     currency: intent.currency,
   }).format(intent.amount_cents / 100);
+
+const applicationFeeCents = (intent: Intent) => {
+  const feeDetails = intent.provider_data.fee_details;
+  if (!Array.isArray(feeDetails)) return undefined;
+
+  const applicationFee = (feeDetails as IntentFeeDetail[]).find(
+    (fee) => fee.type === "application_fee",
+  )?.amount;
+  return typeof applicationFee === "number"
+    ? Math.round(applicationFee * 100)
+    : undefined;
+};
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
@@ -221,15 +236,14 @@ export function TransactionsDashboard({
   const revenue = captured.reduce(
     (total, intent) =>
       total +
-      Math.round(
-        (intent.amount_cents * (walletFees?.[intent.wallet_id] ?? feeBps)) /
-          10_000,
-      ),
+      (applicationFeeCents(intent) ??
+        Math.round(
+          (intent.amount_cents * (walletFees?.[intent.wallet_id] ?? feeBps)) /
+            10_000,
+        )),
     0,
   );
-  const revenueFeeDetail = walletFees
-    ? "Calculated per wallet"
-    : `${(feeBps / 100).toFixed(2)}% wallet fee`;
+  const revenueFeeDetail = "Based on each transaction's fee";
   const successRate = environmentIntents.length
     ? Math.round((captured.length / environmentIntents.length) * 100)
     : 0;
@@ -318,59 +332,61 @@ export function TransactionsDashboard({
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
-          <div
+          <DashboardStatCard
             key={stat.label}
-            className="rounded-lg bg-card p-4 ring-1 ring-foreground/10"
-          >
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">{stat.label}</span>
-              <stat.icon className="size-4" />
-            </div>
-            <p className="mt-3 text-2xl font-semibold tracking-tight">
-              {stat.value}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">{stat.detail}</p>
-          </div>
+            label={stat.label}
+            value={stat.value}
+            hint={stat.detail}
+            icon={stat.icon}
+          />
         ))}
       </section>
 
-      <section className="rounded-lg bg-card p-4 ring-1 ring-foreground/10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-semibold">Status overview</h2>
+      <section className="grid gap-4 xl:grid-cols-[1fr_1.8fr]">
+        <section className="order-2 rounded-lg bg-card p-4 ring-1 ring-foreground/10 xl:order-1">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Status overview</h2>
+              <p className="text-xs text-muted-foreground">
+                Current intent distribution
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {environmentIntents.length} total
+            </span>
+          </div>
+          <div className="mt-5">
+            <DashboardBarList
+              items={intentStatuses.map((status) => ({
+                id: status,
+                label: statusDetails[status].label,
+                value: environmentIntents.filter(
+                  (intent) => intent.status === status,
+                ).length,
+                color: statusDetails[status].dot,
+              }))}
+              total={environmentIntents.length}
+              showPercentage
+              emptyMessage="No intents found."
+            />
+          </div>
+        </section>
+
+        <section className="order-1 rounded-lg bg-card p-4 ring-1 ring-foreground/10 xl:order-2">
+          <div className="mb-4">
+            <h2 className="font-semibold">Payment volume</h2>
             <p className="text-xs text-muted-foreground">
-              Current intent distribution
+              Accumulated payment volume over time.
             </p>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {environmentIntents.length} total
-          </span>
-        </div>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {intentStatuses.map((status) => {
-            const count = environmentIntents.filter(
-              (intent) => intent.status === status,
-            ).length;
-            const percentage = environmentIntents.length
-              ? (count / environmentIntents.length) * 100
-              : 0;
-            const details = statusDetails[status];
-            return (
-              <div key={status}>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{details.label}</span>
-                  <span className="font-medium">{count}</span>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={cn("h-full rounded-full", details.dot)}
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          <DashboardLineChart
+            points={environmentIntents.map((intent) => ({
+              timestamp: intent.created_at,
+              status: intent.status,
+              totalCents: intent.amount_cents,
+            }))}
+          />
+        </section>
       </section>
 
       <section className="space-y-3">

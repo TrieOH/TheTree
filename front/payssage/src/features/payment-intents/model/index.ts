@@ -12,6 +12,12 @@ export const intentStatuses = [
 
 export type IntentStatus = (typeof intentStatuses)[number];
 
+export interface IntentFeeDetail {
+  type?: string;
+  amount?: number;
+  fee_payer?: string;
+}
+
 export interface Intent {
   id: string;
   wallet_id: string;

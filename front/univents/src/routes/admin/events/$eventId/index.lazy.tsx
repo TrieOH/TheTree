@@ -1,13 +1,21 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
+import {
+  DashboardBarList,
+  DashboardLineChart,
+  type DashboardLineChartPoint,
+  DashboardStatCard,
+} from "@trieoh/ui-base";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Activity,
-  CalendarPlus,
+  Calendar,
   CalendarRange,
+  CheckCircle2,
   ChevronRight,
+  CircleAlert,
   Command,
   Copy,
   CreditCard,
@@ -51,37 +59,8 @@ import { useUploadQueue } from "@/features/upload-queue";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
-import { DashboardBarList } from "@/widgets/ui/dashboard-bar-list";
-import {
-  DashboardLineChart,
-  type DashboardPurchasePoint,
-} from "@/widgets/ui/dashboard-line-chart";
 import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
-import { DashboardStatCard } from "@/widgets/ui/dashboard-stat-card";
 import { StepChecklist } from "@/widgets/ui/step-checklist";
-
-const statusConfig = {
-  draft: {
-    label: "Rascunho",
-    className: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-    dot: "bg-amber-500",
-  },
-  active: {
-    label: "Ativo",
-    className: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-    dot: "bg-emerald-500",
-  },
-  archived: {
-    label: "Arquivado",
-    className: "bg-slate-500/10 text-slate-700 border-slate-500/20",
-    dot: "bg-slate-500",
-  },
-  discontinued: {
-    label: "Descontinuado",
-    className: "bg-rose-500/10 text-rose-700 border-rose-500/20",
-    dot: "bg-rose-500",
-  },
-} as const;
 
 const editionStatusConfig = {
   draft: {
@@ -124,6 +103,7 @@ export const Route = createLazyFileRoute("/admin/events/$eventId/")({
 
 function EventOverviewRoute() {
   const { eventId } = Route.useParams();
+  const navigate = Route.useNavigate();
   const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions());
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
   const { data: editions = [] } = useQuery(
@@ -158,10 +138,41 @@ function EventOverviewRoute() {
     [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
     null;
   const isPublished = event?.status === "active";
-  const status = event ? statusConfig[event.status] : statusConfig.draft;
+  const eventStatus = event
+    ? {
+        draft: {
+          label: "Rascunho",
+          className: "bg-amber-500/10 text-amber-700",
+        },
+        active: {
+          label: "Ativo",
+          className: "bg-emerald-500/10 text-emerald-700",
+        },
+        archived: {
+          label: "Arquivado",
+          className: "bg-slate-500/10 text-slate-700",
+        },
+        discontinued: {
+          label: "Descontinuado",
+          className: "bg-rose-500/10 text-rose-700",
+        },
+      }[event.status]
+    : null;
+  const createdDate = event
+    ? new Date(event.created_at)
+        .toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+        .replace(".", "")
+    : "";
   const purchases = purchaseQueries.flatMap((query) => query.data ?? []);
   const approvedPurchases = purchases.filter(
     (purchase) => purchase.status === "approved",
+  );
+  const refundedPurchases = purchases.filter(
+    (purchase) => purchase.status === "refunded",
   );
   const revenue = approvedPurchases.reduce(
     (total, purchase) => total + purchase.total_cents,
@@ -221,7 +232,7 @@ function EventOverviewRoute() {
       .length,
     color: item.color,
   }));
-  const purchaseTimeline: DashboardPurchasePoint[] = purchases
+  const purchaseTimeline: DashboardLineChartPoint[] = purchases
     .filter((purchase) => purchase.created_at)
     .map((purchase) => ({
       timestamp: purchase.created_at ?? "",
@@ -230,24 +241,13 @@ function EventOverviewRoute() {
     }));
   const summaryMetrics = [
     {
-      label: "Criado em",
-      value: event
-        ? format(new Date(event.created_at), "dd MMM yyyy", { locale: ptBR })
-        : "—",
-      hint: "Data de criação do evento",
-      icon: CalendarPlus,
-    },
-    {
-      label: "Status",
-      value: status.label,
-      hint: "Estado atual do evento",
-      icon: Activity,
-    },
-    {
-      label: "Edições",
-      value: editions.length,
-      hint: `${editions.filter((edition) => edition.status === "active").length} ativa(s)`,
-      icon: Layers3,
+      label: "Receita aprovada",
+      value: new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(revenue / 100),
+      hint: "Somente compras aprovadas",
+      icon: Wallet,
     },
     {
       label: "Compras",
@@ -256,13 +256,16 @@ function EventOverviewRoute() {
       icon: ShoppingBag,
     },
     {
-      label: "Receita aprovada",
-      value: new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(revenue / 100),
-      hint: "Somente compras aprovadas",
-      icon: Wallet,
+      label: "Aprovadas",
+      value: approvedPurchases.length,
+      hint: "Prontas para uso",
+      icon: CheckCircle2,
+    },
+    {
+      label: "Reembolsadas",
+      value: refundedPurchases.length,
+      hint: "Compras reembolsadas",
+      icon: CircleAlert,
     },
   ];
   const isImageUploading = (field: "logo_url" | "banner_url") =>
@@ -423,7 +426,12 @@ function EventOverviewRoute() {
       {
         hotkey: "Mod+Shift+O",
         callback: () => {
-          if (event) window.location.href = `/events/${event.slug}`;
+          if (event) {
+            void navigate({
+              to: "/events/$slug",
+              params: { slug: event.slug },
+            });
+          }
         },
         options: { enabled: isPublished && Boolean(event) },
       },
@@ -444,8 +452,27 @@ function EventOverviewRoute() {
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 pb-28!">
         {event ? <EventVisualCard event={event} /> : null}
 
+        {event && eventStatus ? (
+          <div className="space-y-1 px-1 text-center md:text-left">
+            <h1 className="text-xl font-medium tracking-tight text-foreground/90">
+              {event.full_name}
+            </h1>
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground md:justify-start">
+              <Calendar className="size-3.5" />
+              Criado em {createdDate}
+            </p>
+            <div>
+              <Badge
+                className={`w-fit border-0 px-2 py-0.5 text-xs font-normal ${eventStatus.className}`}
+              >
+                {eventStatus.label}
+              </Badge>
+            </div>
+          </div>
+        ) : null}
+
         <div
-          className="order-1 mt-6 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:mt-8"
+          className="order-1 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3"
           role="toolbar"
           aria-label="Atalhos do evento"
         >
@@ -479,14 +506,16 @@ function EventOverviewRoute() {
                     aria-disabled={action.disabled}
                     title={`${action.label} · ${action.shortcut}`}
                     aria-label={action.label}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground shadow-xs transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                    className="inline-flex h-9 shrink-0 flex-row items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
                   >
-                    <Icon className="size-4" />
-                    <span>
-                      {action.label
-                        .replace(" evento", "")
-                        .replace(" público", "")
-                        .replace(" conta", "")}
+                    <span className="flex items-center gap-1.5">
+                      <Icon className="size-4" />
+                      <span>
+                        {action.label
+                          .replace(" evento", "")
+                          .replace(" público", "")
+                          .replace(" conta", "")}
+                      </span>
                     </span>
                     <kbd className="hidden rounded border border-border/70 bg-muted px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
                       {action.shortcut.replace("Mod", "⌘/Ctrl")}
@@ -502,18 +531,20 @@ function EventOverviewRoute() {
                   variant={
                     action.variant === "destructive" ? "destructive" : "outline"
                   }
-                  className="h-9 gap-1.5 px-2 text-[11px] shadow-xs"
+                  className={`h-9 shrink-0 flex-row gap-1.5 border px-2 text-xs sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight ${action.variant === "destructive" ? "border-destructive/60" : "border-border"}`}
                   disabled={action.disabled}
                   onClick={action.onClick}
                   title={`${action.label} · ${action.shortcut}`}
                   aria-label={action.label}
                 >
-                  <Icon className="size-4" />
-                  <span>
-                    {action.label
-                      .replace(" evento", "")
-                      .replace(" público", "")
-                      .replace(" conta", "")}
+                  <span className="flex items-center gap-1.5">
+                    <Icon className="size-4" />
+                    <span>
+                      {action.label
+                        .replace(" evento", "")
+                        .replace(" público", "")
+                        .replace(" conta", "")}
+                    </span>
                   </span>
                   <kbd className="hidden rounded border border-border/70 bg-muted/70 px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
                     {action.shortcut.replace("Mod", "⌘/Ctrl")}
@@ -524,7 +555,7 @@ function EventOverviewRoute() {
           </div>
         </div>
 
-        <section className="order-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="order-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {summaryMetrics.map((metric) => (
             <DashboardStatCard
               key={metric.label}
@@ -580,7 +611,20 @@ function EventOverviewRoute() {
           </div>
         </DashboardPanel>
 
-        <section className="order-5 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
+        <section className="order-5 grid gap-4 xl:grid-cols-[1fr_1.35fr]">
+          <DashboardPanel
+            title="Status das compras"
+            description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} no total.`}
+            icon={ShoppingBag}
+            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
+          >
+            <div className="mt-2">
+              <DashboardBarList
+                items={statusBars}
+                emptyMessage="Nenhuma compra registrada."
+              />
+            </div>
+          </DashboardPanel>
           <DashboardPanel
             title="Receita por edição"
             description="Receita aprovada comparada entre as edições."
@@ -595,20 +639,6 @@ function EventOverviewRoute() {
               />
             </div>
           </DashboardPanel>
-
-          <DashboardPanel
-            title="Status das compras"
-            description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} no total.`}
-            icon={ShoppingBag}
-            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
-          >
-            <div className="mt-2">
-              <DashboardBarList
-                items={statusBars}
-                emptyMessage="Nenhuma compra registrada."
-              />
-            </div>
-          </DashboardPanel>
         </section>
 
         <DashboardPanel
@@ -617,7 +647,7 @@ function EventOverviewRoute() {
           icon={Activity}
           className="order-6"
         >
-          <DashboardLineChart purchases={purchaseTimeline} />
+          <DashboardLineChart points={purchaseTimeline} />
         </DashboardPanel>
 
         <section className="order-7 space-y-3">

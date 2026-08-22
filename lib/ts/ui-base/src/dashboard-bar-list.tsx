@@ -1,4 +1,4 @@
-interface DashboardBarListItem {
+export interface DashboardBarListItem {
   id: string;
   label: string;
   value: number;
@@ -9,16 +9,19 @@ interface DashboardBarListItem {
 interface DashboardBarListProps {
   items: DashboardBarListItem[];
   maxValue?: number;
+  total?: number;
+  showPercentage?: boolean;
   emptyMessage?: string;
 }
 
 export function DashboardBarList({
   items,
   maxValue,
+  total,
+  showPercentage = false,
   emptyMessage = "Nenhum dado disponível.",
 }: DashboardBarListProps) {
-  const maximum =
-    maxValue ?? Math.max(...items.map((item) => Number(item.value)), 1);
+  const maximum = maxValue ?? Math.max(...items.map((item) => item.value), 1);
 
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
@@ -27,9 +30,9 @@ export function DashboardBarList({
   return (
     <div className="space-y-4">
       {items.map((item) => {
-        const numericValue = Number(item.value);
-        const width = numericValue
-          ? Math.max((numericValue / maximum) * 100, 3)
+        const percentage = total ? (item.value / total) * 100 : 0;
+        const width = item.value
+          ? Math.max((item.value / maximum) * 100, 3)
           : 0;
 
         return (
@@ -38,6 +41,7 @@ export function DashboardBarList({
               <span className="min-w-0 truncate font-medium">{item.label}</span>
               <span className="shrink-0 text-muted-foreground">
                 {item.detail ?? item.value}
+                {showPercentage ? ` · ${percentage.toFixed(0)}%` : ""}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">

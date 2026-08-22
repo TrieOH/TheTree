@@ -35,15 +35,15 @@ function WalletLayout() {
 
   const tabs = [
     {
-      label: "Collector",
-      to: "/admin/wallets/$walletID",
-      icon: Link2,
-      exact: true,
-    },
-    {
       label: "Transactions",
       to: "/admin/wallets/$walletID/transactions",
       icon: Receipt,
+      exact: true,
+    },
+    {
+      label: "Collector",
+      to: "/admin/wallets/$walletID",
+      icon: Link2,
       exact: true,
     },
     {
@@ -74,8 +74,8 @@ function WalletLayout() {
 
   return (
     <div className="space-y-6">
-      <div className="-mx-6 -mt-6 border-b border-border/60 bg-background/50 px-6">
-        <div className="flex h-12 items-center gap-8">
+      <div className="-mx-6 -mt-6 overflow-x-auto border-b border-border/60 bg-background/50 px-6">
+        <div className="flex h-12 min-w-max items-center gap-6 sm:gap-8">
           {tabs.map((tab) => (
             <Link
               key={tab.label}

@@ -17,6 +17,9 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@tanstack/charts": "catalog:",
+    "d3-shape": "catalog:",
+    "date-fns": "catalog:",
     "@base-ui/react": "catalog:",
     "@hookform/resolvers": "catalog:",
     "@t3-oss/env-core": "catalog:",
