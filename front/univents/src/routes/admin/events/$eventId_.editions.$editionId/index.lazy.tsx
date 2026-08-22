@@ -9,6 +9,7 @@ import {
 } from "@trieoh/ui-base";
 import {
   Activity,
+  Calendar,
   CalendarRange,
   CheckCircle2,
   CircleAlert,
@@ -45,6 +46,7 @@ import {
 } from "@/features/purchases/api";
 import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
+import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
 import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
@@ -175,6 +177,26 @@ function AdminEditionDetailRoute() {
   }
 
   const isDraft = edition.status === "draft";
+  const editionStatus = {
+    draft: { label: "Rascunho", className: "bg-amber-500/10 text-amber-700" },
+    future: { label: "Futura", className: "bg-sky-500/10 text-sky-700" },
+    active: { label: "Ativa", className: "bg-emerald-500/10 text-emerald-700" },
+    past: { label: "Encerrada", className: "bg-slate-500/10 text-slate-700" },
+    archived: {
+      label: "Arquivada",
+      className: "bg-slate-500/10 text-slate-700",
+    },
+  }[edition.status] ?? {
+    label: edition.status,
+    className: "bg-muted text-muted-foreground",
+  };
+  const createdDate = new Date(edition.created_at)
+    .toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    .replace(".", "");
 
   const checklist = [
     {
@@ -308,8 +330,25 @@ function AdminEditionDetailRoute() {
     <div className="relative mx-auto max-w-7xl space-y-6 p-6 pb-28!">
       <EditionVisualCard edition={edition} eventId={eventId} />
 
+      <div className="space-y-1 px-1 text-center md:text-left">
+        <h1 className="text-xl font-medium tracking-tight text-foreground/90">
+          {edition.name}
+        </h1>
+        <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground md:justify-start">
+          <Calendar className="size-3.5" />
+          Criada em {createdDate}
+        </p>
+        <div>
+          <Badge
+            className={`w-fit border-0 px-2 py-0.5 text-xs font-normal ${editionStatus.className}`}
+          >
+            {editionStatus.label}
+          </Badge>
+        </div>
+      </div>
+
       <div
-        className="order-1 mt-12 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3 sm:mt-14"
+        className="order-1 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3"
         role="toolbar"
         aria-label="Atalhos da edição"
       >
@@ -359,6 +398,15 @@ function AdminEditionDetailRoute() {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
+            label: "Receita aprovada",
+            value: new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }).format(revenue / 100),
+            hint: "Compras aprovadas",
+            Icon: ShoppingBag,
+          },
+          {
             label: "Compras",
             value: purchases.length,
             hint: "Pedidos registrados",
@@ -369,15 +417,6 @@ function AdminEditionDetailRoute() {
             value: approvedPurchases,
             hint: "Prontas para uso",
             Icon: CheckCircle2,
-          },
-          {
-            label: "Receita aprovada",
-            value: new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(revenue / 100),
-            hint: "Compras aprovadas",
-            Icon: ShoppingBag,
           },
           {
             label: "Reembolsadas",
