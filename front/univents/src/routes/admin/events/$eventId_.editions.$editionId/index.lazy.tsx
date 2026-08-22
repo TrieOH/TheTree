@@ -378,14 +378,16 @@ function AdminEditionDetailRoute() {
                 key={action.label}
                 size="default"
                 variant="outline"
-                className="h-9 gap-1.5 px-2 text-[11px] shadow-xs"
+                className="h-9 shrink-0 flex-row gap-1.5 px-2 text-xs sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
                 disabled={action.disabled}
                 onClick={action.onClick}
                 title={`${action.label} · ${action.shortcut}`}
                 aria-label={action.label}
               >
-                <Icon className="size-4" />
-                <span>{action.label.replace(" edição", "")}</span>
+                <span className="flex items-center gap-1.5">
+                  <Icon className="size-4" />
+                  {action.label.replace(" edição", "")}
+                </span>
                 <kbd className="hidden rounded border border-border/70 bg-muted/70 px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
                   {action.shortcut.replace("Mod", "⌘/Ctrl")}
                 </kbd>

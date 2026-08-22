@@ -506,14 +506,16 @@ function EventOverviewRoute() {
                     aria-disabled={action.disabled}
                     title={`${action.label} · ${action.shortcut}`}
                     aria-label={action.label}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground shadow-xs transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                    className="inline-flex h-9 shrink-0 flex-row items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
                   >
-                    <Icon className="size-4" />
-                    <span>
-                      {action.label
-                        .replace(" evento", "")
-                        .replace(" público", "")
-                        .replace(" conta", "")}
+                    <span className="flex items-center gap-1.5">
+                      <Icon className="size-4" />
+                      <span>
+                        {action.label
+                          .replace(" evento", "")
+                          .replace(" público", "")
+                          .replace(" conta", "")}
+                      </span>
                     </span>
                     <kbd className="hidden rounded border border-border/70 bg-muted px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
                       {action.shortcut.replace("Mod", "⌘/Ctrl")}
@@ -529,18 +531,20 @@ function EventOverviewRoute() {
                   variant={
                     action.variant === "destructive" ? "destructive" : "outline"
                   }
-                  className="h-9 gap-1.5 px-2 text-[11px] shadow-xs"
+                  className="h-9 shrink-0 flex-row gap-1.5 px-2 text-xs sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
                   disabled={action.disabled}
                   onClick={action.onClick}
                   title={`${action.label} · ${action.shortcut}`}
                   aria-label={action.label}
                 >
-                  <Icon className="size-4" />
-                  <span>
-                    {action.label
-                      .replace(" evento", "")
-                      .replace(" público", "")
-                      .replace(" conta", "")}
+                  <span className="flex items-center gap-1.5">
+                    <Icon className="size-4" />
+                    <span>
+                      {action.label
+                        .replace(" evento", "")
+                        .replace(" público", "")
+                        .replace(" conta", "")}
+                    </span>
                   </span>
                   <kbd className="hidden rounded border border-border/70 bg-muted/70 px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
                     {action.shortcut.replace("Mod", "⌘/Ctrl")}
