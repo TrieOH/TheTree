@@ -20,6 +20,16 @@ WHERE edition_id = @edition_id
   AND deleted_at IS NULL
 LIMIT 1;
 
+-- name: CountConfirmedByEdition :one
+-- The number of confirmed attendees of an edition — the attendee-count
+-- read (GET /editions/{id}/attendees/count). Only paid registrations
+-- count; pending reservations and cancelled/expired rows do not.
+SELECT COUNT(*)
+FROM registrations
+WHERE edition_id = @edition_id
+  AND status = 'confirmed'
+  AND deleted_at IS NULL;
+
 -- name: UpdateRegistrationStatus :one
 UPDATE registrations
 SET

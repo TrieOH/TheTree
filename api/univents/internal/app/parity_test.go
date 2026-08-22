@@ -309,6 +309,9 @@ func (stubStrict) RefundPurchase(_ context.Context, _ openapi.RefundPurchaseRequ
 func (stubStrict) GetEditionMyTicket(_ context.Context, _ openapi.GetEditionMyTicketRequestObject) (openapi.GetEditionMyTicketResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) GetEditionAttendeeCount(_ context.Context, _ openapi.GetEditionAttendeeCountRequestObject) (openapi.GetEditionAttendeeCountResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) VerifyCertification(_ context.Context, _ openapi.VerifyCertificationRequestObject) (openapi.VerifyCertificationResponseObject, error) {
 	return nil, errStub
 }
