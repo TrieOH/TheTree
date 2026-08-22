@@ -145,4 +145,7 @@ FROM program_participations pp
 JOIN registrations r ON r.id = pp.registration_id AND r.deleted_at IS NULL
 JOIN program_occurrences po ON po.id = pp.occurrence_id AND po.deleted_at IS NULL
 WHERE po.program_id = @program_id
+  -- cancelled participations are history, not attendance: a dropped-out
+  -- attendee must not earn the program certificate
+  AND pp.status IN ('registered', 'attended', 'no_show')
 GROUP BY r.attendee_user_id, r.id, r.attendee_email, r.attendee_name;

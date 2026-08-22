@@ -193,6 +193,7 @@ import type {
   GetWsTokenParams,
   InternalServerErrorResponse,
   InvalidCertReason,
+  MyParticipation,
   MyPurchases,
   MyTicket,
   NotFoundResponse,
@@ -207,6 +208,8 @@ import type {
   ProductVariant,
   Program,
   ProgramOccurrence,
+  ProgramParticipant,
+  ProgramParticipation,
   Purchase,
   ReceivePayssageWebhookRequest,
   RemoveEventMemberBody,
@@ -5970,6 +5973,586 @@ export const useDeleteOccurrence = <TError = ErrorType<UnauthorizedResponse | Fo
       > => {
       return useMutation(getDeleteOccurrenceMutationOptions(options));
     }
+
+export type registerOccurrenceResponse201 = {
+  data: ProgramParticipation
+  status: 201
+}
+
+export type registerOccurrenceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type registerOccurrenceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type registerOccurrenceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type registerOccurrenceResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type registerOccurrenceResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type registerOccurrenceResponseSuccess = (registerOccurrenceResponse201) & {
+  headers: Headers;
+};
+export type registerOccurrenceResponseError = (registerOccurrenceResponse401 | registerOccurrenceResponse403 | registerOccurrenceResponse404 | registerOccurrenceResponse409 | registerOccurrenceResponse500) & {
+  headers: Headers;
+};
+
+export type registerOccurrenceResponse = (registerOccurrenceResponseSuccess | registerOccurrenceResponseError)
+
+export const getRegisterOccurrenceUrl = (occurrenceId: Uuid,) => {
+
+
+
+
+  return `/occurrences/${occurrenceId}/registration`
+}
+
+/**
+ * Self-service registration (activity registration feature). The
+ * caller must hold a confirmed (paid or free) ticket in the
+ * occurrence's edition, and the activity's access rules apply:
+ * `staff_only` programs require an event staff role, and
+ * `min_access_level` gates on the ticket's access level. Inside a
+ * transaction the occurrence row is locked, occupancy is checked
+ * against `max_capacity`, and a duplicate active registration is
+ * rejected (409) — the partial unique index
+ * (`uniq_program_participations_active_per_occurrence_attendee`) is
+ * the concurrency backstop. Registering is always a fresh row: the
+ * participation ledger is append-only, cancelled rows free the slot.
+ * @summary Sign the caller up for an occurrence
+ */
+export const registerOccurrence = async (occurrenceId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<registerOccurrenceResponse> => {
+
+  return customInstance<registerOccurrenceResponse>(getRegisterOccurrenceUrl(occurrenceId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRegisterOccurrenceMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerOccurrence>>, TError,{occurrenceId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerOccurrence>>, TError,{occurrenceId: Uuid}, TContext> => {
+
+const mutationKey = ['registerOccurrence'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerOccurrence>>, {occurrenceId: Uuid}> = (props) => {
+          const {occurrenceId} = props ?? {};
+
+          return  registerOccurrence(occurrenceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterOccurrenceMutationResult = NonNullable<Awaited<ReturnType<typeof registerOccurrence>>>
+
+    export type RegisterOccurrenceMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Sign the caller up for an occurrence
+ */
+export const useRegisterOccurrence = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerOccurrence>>, TError,{occurrenceId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerOccurrence>>,
+        TError,
+        {occurrenceId: Uuid},
+        TContext
+      > => {
+      return useMutation(getRegisterOccurrenceMutationOptions(options));
+    }
+
+export type deregisterOccurrenceResponse200 = {
+  data: ProgramParticipation
+  status: 200
+}
+
+export type deregisterOccurrenceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deregisterOccurrenceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deregisterOccurrenceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type deregisterOccurrenceResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type deregisterOccurrenceResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type deregisterOccurrenceResponseSuccess = (deregisterOccurrenceResponse200) & {
+  headers: Headers;
+};
+export type deregisterOccurrenceResponseError = (deregisterOccurrenceResponse401 | deregisterOccurrenceResponse403 | deregisterOccurrenceResponse404 | deregisterOccurrenceResponse409 | deregisterOccurrenceResponse500) & {
+  headers: Headers;
+};
+
+export type deregisterOccurrenceResponse = (deregisterOccurrenceResponseSuccess | deregisterOccurrenceResponseError)
+
+export const getDeregisterOccurrenceUrl = (occurrenceId: Uuid,) => {
+
+
+
+
+  return `/occurrences/${occurrenceId}/registration`
+}
+
+/**
+ * Self-service de-registration. Flips the caller's live participation
+ * to `cancelled` (history is kept; a re-registration inserts a fresh
+ * row). The spot is locked once attendance is marked: a guarded
+ * update only flips rows still in `registered`, so an
+ * `attended`/`no_show` participation returns 409. Unknown occurrence
+ * or not signed up is 404.
+ * @summary Cancel the caller's sign-up for an occurrence
+ */
+export const deregisterOccurrence = async (occurrenceId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<deregisterOccurrenceResponse> => {
+
+  return customInstance<deregisterOccurrenceResponse>(getDeregisterOccurrenceUrl(occurrenceId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeregisterOccurrenceMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deregisterOccurrence>>, TError,{occurrenceId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deregisterOccurrence>>, TError,{occurrenceId: Uuid}, TContext> => {
+
+const mutationKey = ['deregisterOccurrence'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deregisterOccurrence>>, {occurrenceId: Uuid}> = (props) => {
+          const {occurrenceId} = props ?? {};
+
+          return  deregisterOccurrence(occurrenceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeregisterOccurrenceMutationResult = NonNullable<Awaited<ReturnType<typeof deregisterOccurrence>>>
+
+    export type DeregisterOccurrenceMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Cancel the caller's sign-up for an occurrence
+ */
+export const useDeregisterOccurrence = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deregisterOccurrence>>, TError,{occurrenceId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deregisterOccurrence>>,
+        TError,
+        {occurrenceId: Uuid},
+        TContext
+      > => {
+      return useMutation(getDeregisterOccurrenceMutationOptions(options));
+    }
+
+export type listOccurrenceParticipantsResponse200 = {
+  data: ProgramParticipant[]
+  status: 200
+}
+
+export type listOccurrenceParticipantsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listOccurrenceParticipantsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listOccurrenceParticipantsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listOccurrenceParticipantsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listOccurrenceParticipantsResponseSuccess = (listOccurrenceParticipantsResponse200) & {
+  headers: Headers;
+};
+export type listOccurrenceParticipantsResponseError = (listOccurrenceParticipantsResponse401 | listOccurrenceParticipantsResponse403 | listOccurrenceParticipantsResponse404 | listOccurrenceParticipantsResponse500) & {
+  headers: Headers;
+};
+
+export type listOccurrenceParticipantsResponse = (listOccurrenceParticipantsResponseSuccess | listOccurrenceParticipantsResponseError)
+
+export const getListOccurrenceParticipantsUrl = (occurrenceId: Uuid,) => {
+
+
+
+
+  return `/occurrences/${occurrenceId}/participants`
+}
+
+/**
+ * The staff attendance surface: every live participation with the
+ * attendee's name/email from their registration. Any event staff
+ * (owner/admin/staff) may read it. Cancelled rows are history and are
+ * never listed — staff mark the people who are coming.
+ * @summary List an occurrence's participants
+ */
+export const listOccurrenceParticipants = async (occurrenceId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<listOccurrenceParticipantsResponse> => {
+
+  return customInstance<listOccurrenceParticipantsResponse>(getListOccurrenceParticipantsUrl(occurrenceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOccurrenceParticipantsQueryKey = (occurrenceId: Uuid,) => {
+    return [
+    `/occurrences/${occurrenceId}/participants`
+    ] as const;
+    }
+
+
+export const getListOccurrenceParticipantsQueryOptions = <TData = Awaited<ReturnType<typeof listOccurrenceParticipants>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(occurrenceId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOccurrenceParticipants>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOccurrenceParticipantsQueryKey(occurrenceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOccurrenceParticipants>>> = ({ signal }) => listOccurrenceParticipants(occurrenceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: occurrenceId !== null && occurrenceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOccurrenceParticipants>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOccurrenceParticipantsQueryResult = NonNullable<Awaited<ReturnType<typeof listOccurrenceParticipants>>>
+export type ListOccurrenceParticipantsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary List an occurrence's participants
+ */
+
+export function useListOccurrenceParticipants<TData = Awaited<ReturnType<typeof listOccurrenceParticipants>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ occurrenceId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOccurrenceParticipants>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOccurrenceParticipantsQueryOptions(occurrenceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type markParticipationAttendedResponse200 = {
+  data: ProgramParticipation
+  status: 200
+}
+
+export type markParticipationAttendedResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type markParticipationAttendedResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type markParticipationAttendedResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type markParticipationAttendedResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type markParticipationAttendedResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type markParticipationAttendedResponseSuccess = (markParticipationAttendedResponse200) & {
+  headers: Headers;
+};
+export type markParticipationAttendedResponseError = (markParticipationAttendedResponse401 | markParticipationAttendedResponse403 | markParticipationAttendedResponse404 | markParticipationAttendedResponse409 | markParticipationAttendedResponse500) & {
+  headers: Headers;
+};
+
+export type markParticipationAttendedResponse = (markParticipationAttendedResponseSuccess | markParticipationAttendedResponseError)
+
+export const getMarkParticipationAttendedUrl = (participationId: Uuid,) => {
+
+
+
+
+  return `/participations/${participationId}/mark-attended`
+}
+
+/**
+ * Staff-only attendance marking: flips the participation to
+ * `attended`. Re-marking an already-attended participation is
+ * idempotent, and a `no_show` → `attended` correction is allowed;
+ * a cancelled participation (refunded purchase, or the attendee
+ * dropped out) is 409 — a cancelled spot cannot be marked attended.
+ * Once attended, the attendee's own de-registration is locked (409).
+ * @summary Mark a participant as attended
+ */
+export const markParticipationAttended = async (participationId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<markParticipationAttendedResponse> => {
+
+  return customInstance<markParticipationAttendedResponse>(getMarkParticipationAttendedUrl(participationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkParticipationAttendedMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markParticipationAttended>>, TError,{participationId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof markParticipationAttended>>, TError,{participationId: Uuid}, TContext> => {
+
+const mutationKey = ['markParticipationAttended'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markParticipationAttended>>, {participationId: Uuid}> = (props) => {
+          const {participationId} = props ?? {};
+
+          return  markParticipationAttended(participationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkParticipationAttendedMutationResult = NonNullable<Awaited<ReturnType<typeof markParticipationAttended>>>
+
+    export type MarkParticipationAttendedMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Mark a participant as attended
+ */
+export const useMarkParticipationAttended = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markParticipationAttended>>, TError,{participationId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markParticipationAttended>>,
+        TError,
+        {participationId: Uuid},
+        TContext
+      > => {
+      return useMutation(getMarkParticipationAttendedMutationOptions(options));
+    }
+
+export type listMyParticipationsResponse200 = {
+  data: MyParticipation[]
+  status: 200
+}
+
+export type listMyParticipationsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listMyParticipationsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listMyParticipationsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listMyParticipationsResponseSuccess = (listMyParticipationsResponse200) & {
+  headers: Headers;
+};
+export type listMyParticipationsResponseError = (listMyParticipationsResponse401 | listMyParticipationsResponse404 | listMyParticipationsResponse500) & {
+  headers: Headers;
+};
+
+export type listMyParticipationsResponse = (listMyParticipationsResponseSuccess | listMyParticipationsResponseError)
+
+export const getListMyParticipationsUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/my-participations`
+}
+
+/**
+ * The single personal read of the activity registration feature (the
+ * public schedule stays stateless — the front joins this against it
+ * by `occurrence_id`). Returns the caller's live (non-cancelled)
+ * participations joined with their program and occurrence; cancelled
+ * rows are ledger history and never shown. `data` is `null` when the
+ * caller holds no ticket.
+ * @summary The caller's activity sign-ups in an edition
+ */
+export const listMyParticipations = async (editionId: string, options?: Parameters<typeof customInstance>[1]): Promise<listMyParticipationsResponse> => {
+
+  return customInstance<listMyParticipationsResponse>(getListMyParticipationsUrl(editionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyParticipationsQueryKey = (editionId: string,) => {
+    return [
+    `/editions/${editionId}/my-participations`
+    ] as const;
+    }
+
+
+export const getListMyParticipationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyParticipations>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyParticipations>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyParticipationsQueryKey(editionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyParticipations>>> = ({ signal }) => listMyParticipations(editionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyParticipations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyParticipationsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyParticipations>>>
+export type ListMyParticipationsQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary The caller's activity sign-ups in an edition
+ */
+
+export function useListMyParticipations<TData = Awaited<ReturnType<typeof listMyParticipations>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyParticipations>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyParticipationsQueryOptions(editionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type listBadgeTemplatesResponse200 = {
   data: BadgeTemplate[]

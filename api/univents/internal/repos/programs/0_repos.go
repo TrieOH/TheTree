@@ -70,6 +70,50 @@ func mapParticipation(src sqlc.ProgramParticipation) models.ProgramParticipation
 	}
 }
 
+func mapMyParticipation(src sqlc.ListActiveProgramParticipationsByEditionAndRegistrationRow) models.MyParticipation {
+	return models.MyParticipation{
+		ID:             src.ParticipationID,
+		EditionID:      src.EditionID,
+		OccurrenceID:   src.OccurrenceID,
+		RegistrationID: src.RegistrationID,
+		Status:         models.ProgramParticipationStatus(src.Status),
+		CreatedAt:      src.ParticipationCreatedAt,
+		UpdatedAt:      src.ParticipationUpdatedAt,
+		Program: models.Program{
+			ID:             src.ProgramID,
+			EditionID:      src.EditionID,
+			Kind:           models.ProgramKind(src.ProgramKind),
+			Name:           src.ProgramName,
+			Description:    src.ProgramDescription,
+			MinAccessLevel: src.ProgramMinAccessLevel,
+			StaffOnly:      src.ProgramStaffOnly,
+			Price:          &src.ProgramPrice,
+			BannerURL:      src.ProgramBannerUrl,
+		},
+		Occurrence: models.ProgramOccurrence{
+			ID:          src.OccurrenceID,
+			ProgramID:   src.ProgramID,
+			EditionID:   src.EditionID,
+			StartsAt:    src.OccurrenceStartsAt,
+			EndsAt:      src.OccurrenceEndsAt,
+			MaxCapacity: src.OccurrenceMaxCapacity,
+		},
+	}
+}
+
+func mapParticipant(src sqlc.ListProgramParticipationsByOccurrenceRow) models.ProgramParticipant {
+	return models.ProgramParticipant{
+		ID:             src.ParticipationID,
+		OccurrenceID:   src.OccurrenceID,
+		RegistrationID: src.RegistrationID,
+		Status:         models.ProgramParticipationStatus(src.Status),
+		CreatedAt:      src.ParticipationCreatedAt,
+		AttendeeUserID: src.AttendeeUserID,
+		AttendeeEmail:  src.AttendeeEmail,
+		AttendeeName:   src.AttendeeName,
+	}
+}
+
 func priceValue(p *int64) int64 {
 	if p == nil {
 		return 0

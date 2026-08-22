@@ -34,7 +34,8 @@ func SetupConstraintMessages() {
 		"chk_program_occurrences_dates_valid": "Program occurrence end time must be after the start time.",
 
 		// program_participations
-		"chk_program_participations_status_valid": "Participation status must be one of: registered, attended, no_show, cancelled.",
+		"chk_program_participations_status_valid":                    "Participation status must be one of: registered, attended, no_show, cancelled.",
+		"uniq_program_participations_active_per_occurrence_attendee": "This person is already registered for this activity occurrence.",
 
 		// signature_requests
 		"chk_signature_requests_status_valid":     "Signature request status must be one of: pending, completed, expired, cancelled.",

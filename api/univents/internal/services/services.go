@@ -112,7 +112,7 @@ func NewOperations(
 		Editions:    NewEditions(r.Events, r.Editions, authzSvc, badgesOps),
 		TicketTypes: NewTicketTypes(r.Events, r.Editions, r.TicketTypes, authzSvc),
 		Products:    NewProducts(r.Events, r.Editions, r.Products, authzSvc),
-		Programs:    NewPrograms(r.Events, r.Editions, r.Programs, r.Occurrences, authzSvc),
+		Programs:    NewPrograms(r.Events, r.Editions, r.Programs, r.Occurrences, r.Registrations, r.TicketTypes, r.Programs, authzSvc, notifier, tx),
 		Badges:      badgesOps,
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),
 		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),

@@ -204,6 +204,21 @@ func (stubStrict) DeleteOccurrence(_ context.Context, _ openapi.DeleteOccurrence
 func (stubStrict) GetOccurrence(_ context.Context, _ openapi.GetOccurrenceRequestObject) (openapi.GetOccurrenceResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) RegisterOccurrence(_ context.Context, _ openapi.RegisterOccurrenceRequestObject) (openapi.RegisterOccurrenceResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) DeregisterOccurrence(_ context.Context, _ openapi.DeregisterOccurrenceRequestObject) (openapi.DeregisterOccurrenceResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListOccurrenceParticipants(_ context.Context, _ openapi.ListOccurrenceParticipantsRequestObject) (openapi.ListOccurrenceParticipantsResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) MarkParticipationAttended(_ context.Context, _ openapi.MarkParticipationAttendedRequestObject) (openapi.MarkParticipationAttendedResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListMyParticipations(_ context.Context, _ openapi.ListMyParticipationsRequestObject) (openapi.ListMyParticipationsResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) PatchOccurrence(_ context.Context, _ openapi.PatchOccurrenceRequestObject) (openapi.PatchOccurrenceResponseObject, error) {
 	return nil, errStub
 }

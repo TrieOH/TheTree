@@ -59,6 +59,37 @@ type ProgramParticipation struct {
 	UpdatedAt      *time.Time                 `json:"updated_at"`
 }
 
+// MyParticipation is the caller's live activity sign-up in an edition,
+// joined with its program and occurrence — the "my activities" read. Only
+// active rows (registered/attended/no_show); cancelled rows are history and
+// never shown.
+type MyParticipation struct {
+	ID             uuid.UUID                  `json:"id"`
+	EditionID      uuid.UUID                  `json:"edition_id"`
+	OccurrenceID   uuid.UUID                  `json:"occurrence_id"`
+	RegistrationID uuid.UUID                  `json:"registration_id"`
+	Status         ProgramParticipationStatus `json:"status"`
+	CreatedAt      time.Time                  `json:"created_at"`
+	UpdatedAt      *time.Time                 `json:"updated_at"`
+
+	Program    Program           `json:"program"`
+	Occurrence ProgramOccurrence `json:"occurrence"`
+}
+
+// ProgramParticipant is one row of the staff attendance surface: a live
+// participation with the attendee's identity from their registration.
+type ProgramParticipant struct {
+	ID             uuid.UUID                  `json:"id"`
+	OccurrenceID   uuid.UUID                  `json:"occurrence_id"`
+	RegistrationID uuid.UUID                  `json:"registration_id"`
+	Status         ProgramParticipationStatus `json:"status"`
+	CreatedAt      time.Time                  `json:"created_at"`
+
+	AttendeeUserID uuid.UUID `json:"attendee_user_id"`
+	AttendeeEmail  string    `json:"attendee_email"`
+	AttendeeName   string    `json:"attendee_name"`
+}
+
 type CreateProgramInput struct {
 	EditionID      uuid.UUID
 	Kind           ProgramKind

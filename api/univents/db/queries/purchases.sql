@@ -144,20 +144,20 @@ WHERE pv.edition_id = @edition_id
   AND pv.deleted_at IS NULL;
 
 -- name: ListProgramOccurrenceAvailability :many
-WITH reserved AS (
-    SELECT pi.item_id, SUM(pi.quantity) AS reserved_quantity
-    FROM purchase_items pi
-    JOIN purchases p ON p.id = pi.purchase_id
-    WHERE pi.item_type = 'program_occurrence'
-      AND p.status IN ('pending', 'approved')
-      AND p.deleted_at IS NULL
-    GROUP BY pi.item_id
-)
+-- Stock position for program occurrences: occupancy = active participations
+-- (registered/attended/no_show). Paid spots materialize a participation at
+-- checkout, so this single count covers both the purchase and self-service
+-- paths; cancelled frees the slot (refund/expiry/deregister). base =
+-- max_capacity, null = unlimited.
 SELECT
-    po.id               AS item_id,
-    po.max_capacity     AS base_quantity,
-    COALESCE(r.reserved_quantity, 0)::BIGINT AS reserved_quantity
+    po.id                AS item_id,
+    po.max_capacity      AS base_quantity,
+    COUNT(pp.id)::BIGINT AS reserved_quantity
 FROM program_occurrences po
-LEFT JOIN reserved r ON r.item_id = po.id
+LEFT JOIN program_participations pp
+       ON pp.occurrence_id = po.id
+      AND pp.status IN ('registered', 'attended', 'no_show')
 WHERE po.edition_id = @edition_id
-  AND po.deleted_at IS NULL;
+  AND po.deleted_at IS NULL
+GROUP BY po.id, po.max_capacity
+ORDER BY po.id;

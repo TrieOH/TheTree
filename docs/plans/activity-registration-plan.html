@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activity Registration — Feature Plan</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212b;
+    --border: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --accent: #5b8cff;
+    --accent-soft: rgba(91, 140, 255, 0.12);
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.65;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+
+  header { margin-bottom: 2.2rem; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 1.02rem; max-width: 60ch; }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 2.6rem 0 0.2rem;
+  }
+  h2 .kicker {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+  }
+  h3 { font-size: 1rem; font-weight: 600; margin: 1.4rem 0 0.4rem; }
+  p { margin: 0.55rem 0; }
+  .muted { color: var(--muted); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    margin: 1rem 0;
+  }
+  .lead {
+    font-size: 1.08rem;
+    color: var(--text);
+    padding: 1.2rem 1.4rem;
+  }
+  .lead strong { color: #fff; }
+
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 1rem 0; }
+  @media (max-width: 760px) { .cols-3 { grid-template-columns: 1fr; } }
+  .col {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+  }
+  .col .emoji { font-size: 1.5rem; }
+  .col h4 { font-size: 0.95rem; margin: 0.4rem 0 0.3rem; }
+  .col p { font-size: 0.9rem; color: var(--muted); }
+
+  ul, ol { margin: 0.5rem 0 0.5rem 1.4rem; }
+  li { margin: 0.35rem 0; }
+  li::marker { color: var(--accent); }
+  .plain { list-style: none; margin-left: 0; }
+  .plain li { padding-left: 1.7rem; position: relative; }
+  .plain li::before {
+    content: "✓";
+    position: absolute; left: 0.2rem;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .plain li.warn::before { content: "✗"; color: var(--amber); }
+
+  .steps { counter-reset: step; list-style: none; margin: 1rem 0; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.6rem 0 0.6rem 3rem;
+    border-left: 2px solid var(--border);
+    margin-left: 0.9rem;
+  }
+  .steps li:last-child { border-left-color: transparent; }
+  .steps li::before {
+    content: counter(step);
+    position: absolute; left: -1.15rem; top: 0.55rem;
+    width: 2.1rem; height: 2.1rem;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft);
+    border: 1px solid rgba(91,140,255,0.4);
+    color: var(--accent);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.9rem 0; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code.inline {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.1rem 0.4rem;
+    color: #a8c0ff;
+  }
+  pre {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    margin: 0.8rem 0;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+    margin: 2.8rem 0 2.4rem;
+  }
+
+  .phase { border-left: 3px solid var(--accent); }
+  .phase .tag {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid rgba(91,140,255,0.3);
+    border-radius: 5px;
+    padding: 0.1rem 0.5rem;
+    margin-right: 0.5rem;
+  }
+
+  .flag {
+    background: rgba(251,191,36,0.07);
+    border: 1px solid rgba(251,191,36,0.35);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 1.2rem 0;
+  }
+  .flag strong { color: var(--amber); }
+
+  .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Univents · Feature Plan</div>
+    <h1>Activity Registration</h1>
+    <p class="subtitle">Let attendees sign up for event activities themselves — and give organizers a clean way to mark who actually showed up.</p>
+  </header>
+
+  <!-- Idea -->
+  <div class="card lead">
+    Attendees browse the event schedule, pick an activity, and sign up on the spot — no staff involved.
+    Organizers see the participant list for every activity and mark attendance.
+    Once someone is marked as attended, their spot is locked: it can no longer be cancelled, keeping attendance records trustworthy.
+  </div>
+
+  <!-- What it does -->
+  <h2><span class="kicker">The feature at a glance</span>What it does</h2>
+  <div class="cols-3">
+    <div class="col">
+      <div class="emoji">🙋</div>
+      <h4>Attendees</h4>
+      <p>Sign up and drop out of activities themselves, and see a personal "my activities" schedule.</p>
+    </div>
+    <div class="col">
+      <div class="emoji">🎫</div>
+      <h4>Access rules</h4>
+      <p>Only attendees with a valid ticket can sign up, and only for activities their ticket level allows.</p>
+    </div>
+    <div class="col">
+      <div class="emoji">✅</div>
+      <h4>Organizers</h4>
+      <p>Open any activity's participant list and mark who attended. Marked attendees can't back out.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>We asked to build four things, and this plan covers exactly that:</p>
+    <ul>
+      <li><strong>Registration</strong> — an attendee signs themselves up for an activity session.</li>
+      <li><strong>De-registration</strong> — they can cancel their spot any time before the activity, freeing it for someone else.</li>
+      <li><strong>Marking attendance</strong> — staff mark who showed up.</li>
+      <li><strong>Locking de-registration</strong> — once attendance is marked, the spot can no longer be cancelled.</li>
+    </ul>
+  </div>
+
+  <!-- How it works -->
+  <h2><span class="kicker">Step by step</span>How it works</h2>
+  <ol class="steps">
+    <li>An attendee opens the event's schedule page — it's public, anyone can browse the activities and their sessions.</li>
+    <li>They sign in and hit <strong>"Sign up"</strong> on a session. If their ticket allows it and there's room, it's theirs.</li>
+    <li>Their sign-ups show up under <strong>"My activities"</strong> — one place with everything they've joined.</li>
+    <li>Changed plans? They hit <strong>"Cancel"</strong>. The spot opens up for the next person. (Free, no penalty.)</li>
+    <li>On the day, staff open the activity's <strong>participant list</strong> and mark each person as attended.</li>
+    <li>Once marked, that person's spot is <strong>locked</strong> — it can't be cancelled anymore, by anyone.</li>
+  </ol>
+
+  <!-- Rules -->
+  <h2><span class="kicker">Simple, clear rules</span>The rules</h2>
+  <div class="card">
+    <ul class="plain">
+      <li><strong>A ticket is required.</strong> You need a confirmed (paid) ticket to sign up for activities. Unpaid reservations can't hold activity spots.</li>
+      <li><strong>Ticket level matters.</strong> Some activities require a higher ticket level, or are staff-only. The system checks and politely declines if you don't qualify.</li>
+      <li><strong>Capacity is enforced.</strong> Each session has a maximum number of spots. When it's full, sign-up is declined with a clear message.</li>
+      <li><strong>One spot per person, per session.</strong> No double sign-ups.</li>
+      <li><strong>Cancelling is always allowed — until attendance is marked.</strong> That's the lock.</li>
+      <li class="warn"><strong>History is kept.</strong> If someone signs up, cancels, signs up again, that trail stays visible to organizers. Your personal "my activities" view only ever shows your current sign-ups.</li>
+    </ul>
+  </div>
+
+  <!-- Engineers -->
+  <div class="divider"></div>
+
+  <h2><span class="kicker">For the engineers</span>Implementation details</h2>
+
+  <h3>Data model — reuse, don't reinvent</h3>
+  <div class="card">
+    <p>The activity-sign-up table (<code class="inline">program_participations</code>) already exists and already holds the statuses we need
+    (<code class="inline">registered → attended / no_show / cancelled</code>). Today it's only written by the paid checkout flow; this feature
+    opens it up to self-service. Key mechanics:</p>
+    <ul>
+      <li><strong>Register</strong> inserts a row (<code class="inline">status = registered</code>).</li>
+      <li><strong>De-register</strong> flips the row to <code class="inline">cancelled</code> — never deletes. The table is an <strong>append-only ledger</strong>: sign-up churn leaves a visible trail for staff, mirroring how ticket registrations already behave. "My activities" reads only the active (non-cancelled) rows.</li>
+      <li><strong>Mark attendance</strong> flips <code class="inline">registered → attended</code> with a guarded update (<code class="inline">WHERE status = 'registered'</code>) — the row itself is the lock; a cancelled spot can never be marked attended.</li>
+      <li><strong>Capacity + anti-double-signup</strong>: new partial unique index <code class="inline">(occurrence_id, registration_id) WHERE status IN ('registered','attended','no_show')</code> — the database rejects a racing double sign-up atomically. Register runs in a tx with a row lock on the occurrence (existing pattern).</li>
+      <li><strong>Availability moves to one pool</strong>: occurrence stock is computed from participations instead of purchase items — paid spots already materialize a participation, so numbers stay identical for existing data and self-sign-ups count automatically. Register/deregister publish the store's <code class="inline">stock</code> notification so live stock streams stay fresh.</li>
+    </ul>
+  </div>
+
+  <h3>API surface</h3>
+  <div class="card">
+    <table>
+      <tr><th>What</th><th>Route</th><th>Who</th><th>Result</th></tr>
+      <tr><td>Register</td><td><code>POST /occurrences/{id}/registration</code></td><td>attendee</td><td>201 created · 409 already signed up / full / locked · 403 no ticket or insufficient level · 404 unknown</td></tr>
+      <tr><td>De-register</td><td><code>DELETE /occurrences/{id}/registration</code></td><td>attendee</td><td>200 · 409 if attended (the lock) · 404 not signed up</td></tr>
+      <tr><td>My activities</td><td><code>GET /editions/{id}/my-participations</code></td><td>attendee</td><td>Active sign-ups + program/session detail — the front joins against the public schedule</td></tr>
+      <tr><td>Participant list</td><td><code>GET /occurrences/{id}/participants</code></td><td>staff</td><td>Names, emails, statuses — the marking surface</td></tr>
+      <tr><td>Mark attended</td><td><code>POST /participations/{id}/mark-attended</code></td><td>staff</td><td>registered → attended · idempotent · 409 on cancelled</td></tr>
+    </table>
+    <p class="muted" style="font-size:0.88rem;">Read seams stay orthogonal: the public schedule stays stateless and anonymous; personal state comes only from "My activities"; stock numbers live on the store's existing realtime surface. No BFF-style enrichment on shared reads.</p>
+  </div>
+
+  <h3>Permission check</h3>
+<pre>canSignUp(user, program):
+  ticket  = user's confirmed registration in the edition        # else 403
+  if program.staff_only        → require event staff role       # authz.CheckEvent
+  if program.min_access_level  → ticket.access_level must be ≥ it
+</pre>
+
+  <h3>Work plan</h3>
+  <div class="card phase"><span class="tag">Phase 1</span><strong>Database &amp; data layer</strong>
+    <ul>
+      <li>Migration: partial unique index. New queries: participation by (occurrence, registration), staff list, my list, occupancy count, guarded status update, ticket-level join.</li>
+      <li>Regenerate <code class="inline">internal/sqlc</code>; update the constraint registry (<code class="inline">internal/app/constraints.go</code> — boot fails if a constraint is unnamed).</li>
+      <li>Switch occurrence availability to participation count; fix cert eligibility to exclude <code>cancelled</code> (see flag below).</li>
+    </ul>
+  </div>
+  <div class="card phase"><span class="tag">Phase 2</span><strong>Service layer</strong>
+    <ul>
+      <li><code class="inline">internal/services/programs/</code>: permission check + register / deregister / mark-attended / my-participations / participants operations with tx + stock-notify wiring.</li>
+      <li>Extend <code class="inline">ports.ProgramParticipationRepo</code> + repo implementation.</li>
+    </ul>
+  </div>
+  <div class="card phase"><span class="tag">Phase 3</span><strong>API layer</strong>
+    <ul>
+      <li><code class="inline">api-spec.yml</code>: the 5 operations + schemas; handlers in <code class="inline">internal/handlers/programs/</code> (already mounted).</li>
+      <li>Regenerate <code class="inline">internal/openapi</code> (oapi-codegen) + parity-test stubs; <code class="inline">just generate-orval</code> so the frontend client types are ready.</li>
+    </ul>
+  </div>
+  <div class="card phase"><span class="tag">Phase 4</span><strong>Tests</strong>
+    <ul>
+      <li>Register: happy path · no ticket / low level / staff-only → 403 · full → 409 · double sign-up → 409 (incl. racing insert) · unknown → 404.</li>
+      <li>De-register: happy path · attended/no_show → 409 lock · not signed up → 404.</li>
+      <li>Mark attended: staff vs attendee → 403 · cancelled → 409 · idempotent re-mark.</li>
+      <li>Availability: sign-up moves the number · stock notify on register/deregister · refund/expiry frees the slot.</li>
+    </ul>
+  </div>
+
+  <h3>Later / follow-ups</h3>
+  <div class="card">
+    <ul>
+      <li>Enforce the same ticket-level / staff-only check on <strong>paid</strong> activity purchases (today it's only stored, never checked).</li>
+      <li><code class="inline">no_show</code> staff marking (schema already supports it).</li>
+      <li>Per-activity <strong>check-in QR codes</strong> — scan → mark attended; the API is ready for it.</li>
+      <li>Per-program <strong>staff assignments</strong> (the domain intends staff to be assigned to specific programs) — deferred until actually needed.</li>
+      <li>Self-serve sign-up for <strong>paid</strong> activities via the existing cart — deferred, paid activities aren't fully enabled yet.</li>
+    </ul>
+  </div>
+
+  <div class="flag">
+    <strong>One thing we'd fold in:</strong> the certificate eligibility query currently counts cancelled sign-ups too — meaning a cancelled spot can still earn a certificate today.
+    We recommend fixing it as part of this work (exclude cancelled). Flagging it because it's a behavior change, not strictly new feature.
+  </div>
+
+  <div class="footer">
+    Univents · TheTree monorepo — prepared for review. Decisions locked: ticket + level required · any event staff may mark attendance · confirmed tickets only · backend scope.
+  </div>
+
+</div>
+</body>
+</html>

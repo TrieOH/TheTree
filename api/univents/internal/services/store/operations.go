@@ -62,7 +62,8 @@ func (o *Operations) Stock(ctx context.Context, editionID uuid.UUID) ([]stockIte
 	ctx, span := telemetry.StartSpan(ctx, "StoreService.Stock")
 	defer span.End()
 
-	if _, err := o.editions.GetByID(ctx, editionID); err != nil {
+	_, err := o.editions.GetByID(ctx, editionID)
+	if err != nil {
 		return nil, err
 	}
 	avail, err := o.avail.Availability(ctx, editionID)

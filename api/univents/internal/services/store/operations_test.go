@@ -198,7 +198,8 @@ func TestStock(t *testing.T) {
 
 func TestStockUnknownEdition(t *testing.T) {
 	ops, _, _ := newStore(t, uuid.New())
-	if _, err := ops.Stock(context.Background(), uuid.New()); err == nil {
+	_, err := ops.Stock(context.Background(), uuid.New())
+	if err == nil {
 		t.Fatal("Stock on unknown edition: want error, got nil")
 	}
 }

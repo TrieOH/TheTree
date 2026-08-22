@@ -2125,6 +2125,220 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /occurrences/{occurrence_id}/registration:
+    post:
+      tags: [programs]
+      operationId: registerOccurrence
+      summary: Sign the caller up for an occurrence
+      description: |
+        Self-service registration (activity registration feature). The
+        caller must hold a confirmed (paid or free) ticket in the
+        occurrence's edition, and the activity's access rules apply:
+        `staff_only` programs require an event staff role, and
+        `min_access_level` gates on the ticket's access level. Inside a
+        transaction the occurrence row is locked, occupancy is checked
+        against `max_capacity`, and a duplicate active registration is
+        rejected (409) — the partial unique index
+        (`uniq_program_participations_active_per_occurrence_attendee`) is
+        the concurrency backstop. Registering is always a fresh row: the
+        participation ledger is append-only, cancelled rows free the slot.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '201':
+          description: The created participation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramParticipation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [programs]
+      operationId: deregisterOccurrence
+      summary: Cancel the caller's sign-up for an occurrence
+      description: |
+        Self-service de-registration. Flips the caller's live participation
+        to `cancelled` (history is kept; a re-registration inserts a fresh
+        row). The spot is locked once attendance is marked: a guarded
+        update only flips rows still in `registered`, so an
+        `attended`/`no_show` participation returns 409. Unknown occurrence
+        or not signed up is 404.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The cancelled participation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramParticipation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /occurrences/{occurrence_id}/participants:
+    get:
+      tags: [programs]
+      operationId: listOccurrenceParticipants
+      summary: List an occurrence's participants
+      description: |
+        The staff attendance surface: every live participation with the
+        attendee's name/email from their registration. Any event staff
+        (owner/admin/staff) may read it. Cancelled rows are history and are
+        never listed — staff mark the people who are coming.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Occurrence participants
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProgramParticipant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /participations/{participation_id}/mark-attended:
+    post:
+      tags: [programs]
+      operationId: markParticipationAttended
+      summary: Mark a participant as attended
+      description: |
+        Staff-only attendance marking: flips the participation to
+        `attended`. Re-marking an already-attended participation is
+        idempotent, and a `no_show` → `attended` correction is allowed;
+        a cancelled participation (refunded purchase, or the attendee
+        dropped out) is 409 — a cancelled spot cannot be marked attended.
+        Once attended, the attendee's own de-registration is locked (409).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: participation_id
+          in: path
+          required: true
+          description: Participation ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: The updated participation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramParticipation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /editions/{edition_id}/my-participations:
+    get:
+      tags: [programs]
+      operationId: listMyParticipations
+      summary: The caller's activity sign-ups in an edition
+      description: |
+        The single personal read of the activity registration feature (the
+        public schedule stays stateless — the front joins this against it
+        by `occurrence_id`). Returns the caller's live (non-cancelled)
+        participations joined with their program and occurrence; cancelled
+        rows are ledger history and never shown. `data` is `null` when the
+        caller holds no ticket.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: The caller's participations, or null without a ticket
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MyParticipation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /editions/{edition_id}/badges:
     get:
       tags: [badges]
@@ -4926,6 +5140,95 @@ components:
         deleted_at:
           type: [ string, "null" ]
           format: date-time
+
+    ProgramParticipation:
+      x-go-type: models.ProgramParticipation
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One person's sign-up for an occurrence. Mirrors `models.ProgramParticipation`.
+      required: [id, edition_id, occurrence_id, registration_id, status, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        occurrence_id:
+          $ref: '#/components/schemas/UUID'
+        registration_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/ProgramParticipationStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+
+    ProgramParticipationStatus:
+      type: string
+      enum: [registered, attended, no_show, cancelled]
+      description: |
+        `registered` = signed up; `attended`/`no_show` = staff marked the
+        outcome (attended locks the attendee's de-registration);
+        `cancelled` = dropped out or the purchase was refunded/expired.
+
+    MyParticipation:
+      x-go-type: models.MyParticipation
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: The caller's live sign-up joined with its program and occurrence. Mirrors `models.MyParticipation`.
+      required: [id, edition_id, occurrence_id, registration_id, status, created_at, program, occurrence]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        edition_id:
+          $ref: '#/components/schemas/UUID'
+        occurrence_id:
+          $ref: '#/components/schemas/UUID'
+        registration_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/ProgramParticipationStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: [ string, "null" ]
+          format: date-time
+        program:
+          $ref: '#/components/schemas/Program'
+        occurrence:
+          $ref: '#/components/schemas/ProgramOccurrence'
+
+    ProgramParticipant:
+      x-go-type: models.ProgramParticipant
+      x-go-type-import:
+        path: univents/models
+      type: object
+      description: One row of the staff attendance surface. Mirrors `models.ProgramParticipant`.
+      required: [id, occurrence_id, registration_id, status, created_at, attendee_user_id, attendee_email, attendee_name]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        occurrence_id:
+          $ref: '#/components/schemas/UUID'
+        registration_id:
+          $ref: '#/components/schemas/UUID'
+        status:
+          $ref: '#/components/schemas/ProgramParticipationStatus'
+        created_at:
+          type: string
+          format: date-time
+        attendee_user_id:
+          $ref: '#/components/schemas/UUID'
+        attendee_email:
+          type: string
+          format: email
+        attendee_name:
+          type: string
 
     CreateProgramOccurrenceRequest:
       type: object
