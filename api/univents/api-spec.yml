@@ -3791,6 +3791,37 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /editions/{edition_id}/attendees/count:
+    get:
+      tags: [checkouts]
+      operationId: getEditionAttendeeCount
+      summary: The number of confirmed attendees of an edition
+      description: |
+        The storefront's "N people already registered" number: how many
+        confirmed (paid) registrations the edition has. Pending
+        reservations and cancelled/expired rows do not count. Public, like
+        the edition browsing and store stock reads; unknown editions are
+        NOT_FOUND.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EditionID'
+      responses:
+        '200':
+          description: The confirmed attendee count
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AttendeeCount'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /ws/token:
     get:
       tags: [realtime]
@@ -4562,6 +4593,18 @@ components:
             `pending` = reserved but unpaid; `confirmed` = paid (or a free
             order). Cancelled/expired registrations are never returned —
             those do not count as holding a ticket.
+
+    AttendeeCount:
+      type: object
+      description: The number of confirmed attendees of an edition.
+      required: [count]
+      properties:
+        count:
+          type: integer
+          format: int64
+          description: |
+            Confirmed (paid) registrations of the edition; pending
+            reservations and cancelled/expired rows are excluded.
 
     EventMemberRole:
       x-go-type: models.EventMemberRole

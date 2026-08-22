@@ -12,6 +12,11 @@ import (
 type RegistrationRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Registration, error)
 
+	// CountConfirmedByEdition returns the number of confirmed attendees of
+	// an edition — the attendee-count read. Pending reservations and
+	// cancelled/expired rows do not count.
+	CountConfirmedByEdition(ctx context.Context, editionID uuid.UUID) (int64, error)
+
 	// GetActiveByEditionAndAttendee returns the attendee's active (pending or
 	// confirmed) registration in an edition, or nil when they hold none — the
 	// one-ticket-per-person check (checkout) and the my-ticket read.
