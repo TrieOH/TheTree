@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-interface DashboardStatCardProps {
+export interface DashboardStatCardProps {
   label: string;
   value: ReactNode;
   hint: string;

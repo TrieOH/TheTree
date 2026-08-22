@@ -9,7 +9,6 @@ import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import {
   useCreateEditionMutation,
   usePatchEditionMutation,
-  usePublishEditionMutation,
 } from "@/features/editions/api/mutations";
 import type { EditionI } from "@/features/editions/model";
 import { editionRangesOverlap } from "@/features/editions/model";
@@ -17,7 +16,6 @@ import { AdminEditionCard } from "@/features/editions/ui/AdminEditionCard";
 import { EditEditionModal } from "@/features/editions/ui/EditEditionModal";
 import { ManageEditionModal } from "@/features/editions/ui/ManageEditionModal";
 import { Button } from "@/shared/ui/shadcn/button";
-import { AlertModal } from "@/widgets/ui/alert-modal";
 
 const STATUS_SORT_ORDER: Record<EditionI["status"], number> = {
   active: 0,
@@ -37,7 +35,6 @@ function EditionsRoute() {
   );
   const createEditionMutation = useCreateEditionMutation();
   const patchEditionMutation = usePatchEditionMutation();
-  const publishEditionMutation = usePublishEditionMutation();
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortState<EditionI>>({
     field: "starts_at",
@@ -45,9 +42,6 @@ function EditionsRoute() {
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editionToEdit, setEditionToEdit] = useState<EditionI | null>(null);
-  const [editionToPublish, setEditionToPublish] = useState<EditionI | null>(
-    null,
-  );
 
   const filteredEditions = [...editions]
     .filter((edition) => {
@@ -141,7 +135,6 @@ function EditionsRoute() {
               eventId={eventId}
               index={idx}
               onEdit={setEditionToEdit}
-              onPublish={edition.is_draft ? setEditionToPublish : undefined}
             />
           ))
         }
@@ -200,31 +193,6 @@ function EditionsRoute() {
           }}
         />
       ) : null}
-
-      <AlertModal
-        open={Boolean(editionToPublish)}
-        onOpenChange={(open) => {
-          if (!open && !publishEditionMutation.isPending) {
-            setEditionToPublish(null);
-          }
-        }}
-        title="Publicar edição?"
-        description={
-          editionToPublish
-            ? `A edição "${editionToPublish.name}" ficará disponível publicamente.`
-            : undefined
-        }
-        confirmLabel="Publicar edição"
-        loading={publishEditionMutation.isPending}
-        onConfirm={async () => {
-          if (!editionToPublish) return;
-          await publishEditionMutation.mutateAsync({
-            eventId,
-            editionId: editionToPublish.id,
-          });
-          setEditionToPublish(null);
-        }}
-      />
     </div>
   );
 }

@@ -2,6 +2,11 @@
 @import "tailwindcss";
 @source "../node_modules/@trieoh/ui-base/src";
 
+svg.ts-chart:focus,
+svg.ts-chart:focus-visible {
+  outline: none;
+}
+
 @theme {
   --breakpoint-xs: 30rem;
 

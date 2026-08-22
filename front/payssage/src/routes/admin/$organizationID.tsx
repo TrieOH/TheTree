@@ -64,8 +64,8 @@ function NamespaceLayout() {
         )}
 
         {/* Tab Bar */}
-        <div className="border-b border-border/60 bg-background/50 px-6">
-          <div className="flex items-center gap-8 h-12">
+        <div className="overflow-x-auto border-b border-border/60 bg-background/50 px-6">
+          <div className="flex h-12 min-w-max items-center gap-6 sm:gap-8">
             {tabs.map((tab) => (
               <Link
                 key={tab.label}

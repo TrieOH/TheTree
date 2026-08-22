@@ -46,7 +46,10 @@ export default function WalletCard({
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const openWallet = () =>
-    navigate({ to: "/admin/wallets/$walletID", params: { walletID: data.id } });
+    navigate({
+      to: "/admin/wallets/$walletID/transactions",
+      params: { walletID: data.id },
+    });
   const copyId = async () => {
     await navigator.clipboard.writeText(data.id);
     setCopied(true);
@@ -97,7 +100,7 @@ export default function WalletCard({
       <ContextMenuTrigger
         render={
           <Link
-            to="/admin/wallets/$walletID"
+            to="/admin/wallets/$walletID/transactions"
             params={{ walletID: data.id }}
             className={cn(
               "relative w-full cursor-pointer rounded-sm bg-card py-4 ring-1 ring-foreground/10 shadow-xs duration-150",
