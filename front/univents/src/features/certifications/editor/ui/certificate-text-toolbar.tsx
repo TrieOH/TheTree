@@ -16,7 +16,6 @@ import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
 import {
   CERTIFICATE_FONT_FAMILIES,
-  CERTIFICATE_VARIABLES,
   DEFAULT_CERTIFICATE_TEXT_COLOR,
 } from "../constants";
 import {
@@ -29,12 +28,6 @@ import { ToolbarCombobox } from "./toolbar-combobox";
 const FONT_OPTIONS = CERTIFICATE_FONT_FAMILIES.map((font) => ({
   value: font.value,
   label: font.label,
-}));
-
-const VARIABLE_OPTIONS = CERTIFICATE_VARIABLES.map((variable) => ({
-  value: variable.token,
-  label: variable.label,
-  description: variable.description,
 }));
 
 const LINE_HEIGHT_OPTIONS = [
@@ -63,7 +56,7 @@ export function CertificateTextToolbar() {
 export function RichTextToolbar({
   controller,
   selectionStyles,
-  variableOptions = VARIABLE_OPTIONS,
+  variableOptions = [],
 }: {
   controller: CertificateRichTextController | null;
   selectionStyles: CertificateTextSelectionStyles | null;
@@ -264,15 +257,17 @@ export function RichTextToolbar({
           />
         ) : null}
       </div>
-      <ToolbarCombobox
-        options={variableOptions}
-        placeholder="Inserir informação dinâmica"
-        searchPlaceholder="Buscar informação…"
-        disabled={disabled}
-        iconOnly
-        icon={<Braces className="size-3.5" />}
-        onChange={(token) => controller?.insertText(token)}
-      />
+      {variableOptions.length > 0 ? (
+        <ToolbarCombobox
+          options={variableOptions}
+          placeholder="Inserir informação dinâmica"
+          searchPlaceholder="Buscar informação…"
+          disabled={disabled}
+          iconOnly
+          icon={<Braces className="size-3.5" />}
+          onChange={(token) => controller?.insertText(token)}
+        />
+      ) : null}
       <ToolbarCombobox
         value={
           selectionStyles?.lineHeight === null

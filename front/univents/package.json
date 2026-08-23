@@ -23,6 +23,7 @@
     "@mercadopago/sdk-js": "^0.0.3",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@t3-oss/env-core": "catalog:",
+    "@zxing/browser": "^0.1.5",
     "@tanstack/charts": "catalog:",
     "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-query": "catalog:",
