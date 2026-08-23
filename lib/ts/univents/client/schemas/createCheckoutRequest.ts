@@ -147,7 +147,7 @@ import type { CheckoutPaymentMethod } from './checkoutPaymentMethod';
  * defaults to 1 when omitted.
  */
 export interface CreateCheckoutRequest {
-  payment_method: CheckoutPaymentMethod;
+  payment_method?: CheckoutPaymentMethod;
   /**
      * MercadoPago card token from the front's SDK tokenization; required for cards.
      * @nullable
@@ -169,7 +169,7 @@ export interface CreateCheckoutRequest {
      * @nullable
      */
   installments?: number | null;
-  payer: CheckoutPayer;
+  payer?: CheckoutPayer;
   /** @minItems 1 */
   items: CheckoutItem[];
 }
