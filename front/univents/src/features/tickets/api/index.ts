@@ -3,12 +3,14 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
 import {
   createTicketType,
+  getEditionAttendeeCount,
   getEditionMyTicket,
   getTicketType,
   listTicketTypes,
   patchTicketType,
 } from "@trieoh/univents-api";
 import type {
+  AttendeeCount,
   MyTicket,
   PatchTicketTypeRequest,
 } from "@trieoh/univents-api/schemas";
@@ -113,3 +115,12 @@ export const myTicketQueryOptions = (editionId: string, enabled = true) => {
     enabled: Boolean(editionId) && enabled,
   });
 };
+
+export const attendeeCountQueryOptions = (editionId: string) =>
+  queryOptions({
+    queryKey: ticketKeys.attendeeCount(editionId),
+    queryFn: () =>
+      getEditionAttendeeCount(editionId, { public: true }).then(
+        orvalData<AttendeeCount>,
+      ),
+  });

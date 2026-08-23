@@ -12,8 +12,8 @@ interface ProfileHeaderProps {
   handle?: string;
   ownProfile: boolean;
   profileUrl: string;
-  activeTab: "about" | "badges" | "purchases";
-  onTabChange: (tab: "about" | "badges" | "purchases") => void;
+  activeTab: "about" | "badges" | "purchases" | "activities";
+  onTabChange: (tab: "about" | "badges" | "purchases" | "activities") => void;
 }
 
 export function ProfileHeader({
@@ -170,29 +170,44 @@ export function ProfileHeader({
           </div>
         </div>
       </div>
-      <nav className="mx-auto flex max-w-7xl px-4">
-        {(
-          [
-            ["about", "Sobre"],
-            ["badges", "Crachás"],
-            ...(ownProfile ? ([["purchases", "Compras"]] as const) : []),
-          ] as Array<["about" | "badges" | "purchases", string]>
-        ).map(([tab, label]) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => onTabChange(tab)}
-            className={cn(
-              "border-b-2 px-4 py-3 text-sm font-medium transition-colors",
-              activeTab === tab
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="relative mx-auto max-w-7xl">
+        <nav className="flex overflow-x-auto px-4 pr-12 sm:pr-4">
+          {(
+            [
+              ["about", "Sobre"],
+              ["badges", "Crachás"],
+              ...(ownProfile
+                ? ([
+                    ["purchases", "Compras"],
+                    ["activities", "Minhas atividades"],
+                  ] as const)
+                : []),
+            ] as Array<
+              ["about" | "badges" | "purchases" | "activities", string]
+            >
+          ).map(([tab, label]) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onTabChange(tab)}
+              className={cn(
+                "shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                activeTab === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        {ownProfile ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-r from-transparent to-card sm:hidden"
+          />
+        ) : null}
+      </div>
     </section>
   );
 }

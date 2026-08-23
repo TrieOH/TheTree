@@ -13,7 +13,6 @@ import {
   Activity,
   Calendar,
   CalendarRange,
-  CheckCircle2,
   ChevronRight,
   CircleAlert,
   Command,
@@ -54,7 +53,10 @@ import {
   programsQueryOptions,
 } from "@/features/programs/api";
 import { editionPurchasesQueryOptions } from "@/features/purchases/api";
-import { allTicketsQueryOptions } from "@/features/tickets/api";
+import {
+  allTicketsQueryOptions,
+  attendeeCountQueryOptions,
+} from "@/features/tickets/api";
 import { useUploadQueue } from "@/features/upload-queue";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -117,6 +119,9 @@ function EventOverviewRoute() {
   const ticketQueries = useQueries({
     queries: editions.map((edition) => allTicketsQueryOptions(edition.id)),
   });
+  const attendeeCountQueries = useQueries({
+    queries: editions.map((edition) => attendeeCountQueryOptions(edition.id)),
+  });
   const productQueries = useQueries({
     queries: editions.map((edition) =>
       productsByEditionQueryOptions(edition.id),
@@ -173,6 +178,10 @@ function EventOverviewRoute() {
   );
   const refundedPurchases = purchases.filter(
     (purchase) => purchase.status === "refunded",
+  );
+  const participantCount = attendeeCountQueries.reduce(
+    (total, query) => total + (query.data?.count ?? 0),
+    0,
   );
   const revenue = approvedPurchases.reduce(
     (total, purchase) => total + purchase.total_cents,
@@ -250,16 +259,16 @@ function EventOverviewRoute() {
       icon: Wallet,
     },
     {
-      label: "Compras",
-      value: purchases.length,
-      hint: `${approvedPurchases.length} aprovada(s)`,
-      icon: ShoppingBag,
+      label: "Participantes",
+      value: participantCount,
+      hint: "Ingressos comprados",
+      icon: Ticket,
     },
     {
-      label: "Aprovadas",
-      value: approvedPurchases.length,
-      hint: "Prontas para uso",
-      icon: CheckCircle2,
+      label: "Produtos Vendidos",
+      value: purchases.length,
+      hint: "Compras realizadas",
+      icon: ShoppingBag,
     },
     {
       label: "Reembolsadas",

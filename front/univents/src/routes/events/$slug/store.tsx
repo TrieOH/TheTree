@@ -10,6 +10,7 @@ import {
   productVariantsQueryOptions,
   storeStockQueryOptions,
 } from "@/features/products/api";
+import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductCardCompact } from "@/features/products/ui/ProductCardCompact";
 import {
@@ -45,6 +46,7 @@ function StorePage() {
   const { data: edition } = useSuspenseQuery(
     activeEditionQueryOptions(event.id),
   );
+  useInventoryStream(edition?.id ?? "");
   const { data: tickets = [] } = useSuspenseQuery(
     allTicketsQueryOptions(edition?.id ?? ""),
   );

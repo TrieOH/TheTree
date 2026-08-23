@@ -151,6 +151,7 @@ import type {
 import type {
   AddEventMemberRequest,
   AddSignatureRequest,
+  AttendeeCount,
   BadRequestResponse,
   BadgeEditionEmission,
   BadgePrintItem,
@@ -10885,6 +10886,112 @@ export function useGetEditionMyTicket<TData = Awaited<ReturnType<typeof getEditi
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetEditionMyTicketQueryOptions(editionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getEditionAttendeeCountResponse200 = {
+  data: AttendeeCount
+  status: 200
+}
+
+export type getEditionAttendeeCountResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getEditionAttendeeCountResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getEditionAttendeeCountResponseSuccess = (getEditionAttendeeCountResponse200) & {
+  headers: Headers;
+};
+export type getEditionAttendeeCountResponseError = (getEditionAttendeeCountResponse404 | getEditionAttendeeCountResponse500) & {
+  headers: Headers;
+};
+
+export type getEditionAttendeeCountResponse = (getEditionAttendeeCountResponseSuccess | getEditionAttendeeCountResponseError)
+
+export const getGetEditionAttendeeCountUrl = (editionId: string,) => {
+
+
+
+
+  return `/editions/${editionId}/attendees/count`
+}
+
+/**
+ * The storefront's "N people already registered" number: how many
+ * confirmed (paid) registrations the edition has. Pending
+ * reservations and cancelled/expired rows do not count. Public, like
+ * the edition browsing and store stock reads; unknown editions are
+ * NOT_FOUND.
+ * @summary The number of confirmed attendees of an edition
+ */
+export const getEditionAttendeeCount = async (editionId: string, options?: Parameters<typeof customInstance>[1]): Promise<getEditionAttendeeCountResponse> => {
+
+  return customInstance<getEditionAttendeeCountResponse>(getGetEditionAttendeeCountUrl(editionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEditionAttendeeCountQueryKey = (editionId: string,) => {
+    return [
+    `/editions/${editionId}/attendees/count`
+    ] as const;
+    }
+
+
+export const getGetEditionAttendeeCountQueryOptions = <TData = Awaited<ReturnType<typeof getEditionAttendeeCount>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse>>(editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEditionAttendeeCount>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEditionAttendeeCountQueryKey(editionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEditionAttendeeCount>>> = ({ signal }) => getEditionAttendeeCount(editionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: editionId !== null && editionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEditionAttendeeCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEditionAttendeeCountQueryResult = NonNullable<Awaited<ReturnType<typeof getEditionAttendeeCount>>>
+export type GetEditionAttendeeCountQueryError = ErrorType<NotFoundResponse | InternalServerErrorResponse>
+
+
+/**
+ * @summary The number of confirmed attendees of an edition
+ */
+
+export function useGetEditionAttendeeCount<TData = Awaited<ReturnType<typeof getEditionAttendeeCount>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse>>(
+ editionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEditionAttendeeCount>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEditionAttendeeCountQueryOptions(editionId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

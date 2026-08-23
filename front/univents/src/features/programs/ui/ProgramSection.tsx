@@ -1,13 +1,16 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { storeStockQueryOptions } from "@/features/products/api";
 import { cn } from "@/shared/lib/utils";
 import { occurrencesQueryOptions, programsQueryOptions } from "../api";
+import { useProgramRegistration } from "../hooks/use-program-registration";
 import type { OccurrenceI, ProgramI } from "../model";
 import { ProgramDayCard } from "./ProgramDayCard";
 
 interface ProgramSectionProps {
   editionId?: string;
+  eventId: string;
   eventSlug: string;
 }
 
@@ -46,12 +49,28 @@ export function groupByDay(programs: ProgramI[], occurrences: OccurrenceI[]) {
     }));
 }
 
-export function ProgramSection({ editionId, eventSlug }: ProgramSectionProps) {
+export function ProgramSection({
+  editionId,
+  eventId,
+  eventSlug,
+}: ProgramSectionProps) {
   if (!editionId) return null;
 
   const { data: programs } = useSuspenseQuery(programsQueryOptions(editionId));
   const { data: occurrences } = useSuspenseQuery(
     occurrencesQueryOptions(editionId),
+  );
+  const { data: stock } = useSuspenseQuery(storeStockQueryOptions(editionId));
+  const stockByOccurrence = new Map(
+    stock
+      .filter((item) => item.item_type === "program_occurrence")
+      .map((item) => [item.id, item.stock]),
+  );
+  const registration = useProgramRegistration(
+    editionId,
+    eventId,
+    eventSlug,
+    `/events/${eventSlug}`,
   );
 
   const days = groupByDay(programs, occurrences);
@@ -81,7 +100,13 @@ export function ProgramSection({ editionId, eventSlug }: ProgramSectionProps) {
               key={day.date.slice(0, 10)}
               className={cn("items-start gap-5", visibilityClasses[index])}
             >
-              <ProgramDayCard date={day.date} items={day.items} maxItems={3} />
+              <ProgramDayCard
+                date={day.date}
+                items={day.items}
+                maxItems={3}
+                registration={registration}
+                stockByOccurrence={stockByOccurrence}
+              />
               {index < visibleDays.length - 1 && (
                 <div
                   className={cn(
