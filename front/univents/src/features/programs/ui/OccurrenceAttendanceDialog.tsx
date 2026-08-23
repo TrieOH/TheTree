@@ -189,6 +189,7 @@ function QrScanner({
     let stopped = false;
     let stream: MediaStream | undefined;
     let frame = 0;
+    let stopFallback: (() => void) | undefined;
     const Detector = (
       window as unknown as {
         BarcodeDetector?: new (options: {
@@ -197,36 +198,56 @@ function QrScanner({
       }
     ).BarcodeDetector;
 
-    if (!Detector) {
-      toast.error("Leitura de QR Code não é suportada neste navegador");
-      onStop();
-      return;
-    }
+    const startNativeScanner = async () => {
+      if (!Detector || !videoRef.current) return false;
 
-    const detector = new Detector({ formats: ["qr_code"] });
-    const scan = async () => {
-      if (stopped || !videoRef.current) return;
-      const codes = await detector.detect(videoRef.current).catch(() => []);
-      if (codes[0]?.rawValue) onDetected(codes[0].rawValue);
-      else frame = requestAnimationFrame(scan);
+      const detector = new Detector({ formats: ["qr_code"] });
+      const scan = async () => {
+        if (stopped || !videoRef.current) return;
+        const codes = await detector.detect(videoRef.current).catch(() => []);
+        if (codes[0]?.rawValue) onDetected(codes[0].rawValue);
+        else frame = requestAnimationFrame(scan);
+      };
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+      });
+      if (stopped || !videoRef.current) return false;
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      void scan();
+      return true;
     };
 
-    void navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" } })
-      .then((camera) => {
-        stream = camera;
-        if (!videoRef.current || stopped) return;
-        videoRef.current.srcObject = camera;
-        return videoRef.current.play().then(scan);
-      })
-      .catch(() => {
+    const startFallbackScanner = async () => {
+      const { BrowserQRCodeReader } = await import("@zxing/browser");
+      if (stopped || !videoRef.current) return;
+
+      const reader = new BrowserQRCodeReader();
+      const controls = await reader.decodeFromConstraints(
+        { video: { facingMode: { ideal: "environment" } } },
+        videoRef.current,
+        (result) => {
+          if (!stopped && result?.getText()) onDetected(result.getText());
+        },
+      );
+      stopFallback = () => controls.stop();
+    };
+
+    void (async () => {
+      try {
+        const nativeStarted = await startNativeScanner();
+        if (!nativeStarted) await startFallbackScanner();
+      } catch {
         toast.error("Não foi possível acessar a câmera");
         onStop();
-      });
+      }
+    })();
 
     return () => {
       stopped = true;
       cancelAnimationFrame(frame);
+      stopFallback?.();
       stream?.getTracks().forEach((track) => {
         track.stop();
       });
