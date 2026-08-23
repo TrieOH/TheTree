@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { productKeys } from "@/features/products/api/query-keys";
 import { getErrorMessage } from "@/shared/lib/errors";
 import type {
   OccurrenceCreateOutput,
@@ -11,8 +12,11 @@ import {
   createProgramFn,
   deleteOccurrenceFn,
   deleteProgramFn,
+  deregisterOccurrenceFn,
+  markParticipationAttendedFn,
   patchOccurrenceFn,
   patchProgramFn,
+  registerOccurrenceFn,
 } from ".";
 import { programKeys } from "./query-keys";
 
@@ -32,6 +36,21 @@ export function useProgramMutation(editionId: string) {
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, "Não foi possível salvar o programa")),
+  });
+}
+
+export function useMarkParticipationAttendedMutation(occurrenceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: markParticipationAttendedFn,
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: programKeys.participants(occurrenceId),
+      });
+      toast.success("Presença confirmada");
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível marcar presença")),
   });
 }
 
@@ -96,6 +115,40 @@ export function useDeleteOccurrenceMutation(editionId: string) {
     onError: (error) =>
       toast.error(
         getErrorMessage(error, "Não foi possível excluir a ocorrência"),
+      ),
+  });
+}
+
+export function useOccurrenceRegistrationMutation(editionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      occurrenceId,
+      registered,
+    }: {
+      occurrenceId: string;
+      registered: boolean;
+    }) =>
+      registered
+        ? deregisterOccurrenceFn(occurrenceId)
+        : registerOccurrenceFn(occurrenceId),
+    onSuccess: (_, { registered }) => {
+      void qc.invalidateQueries({
+        queryKey: programKeys.myParticipations(editionId),
+      });
+      void qc.invalidateQueries({
+        queryKey: productKeys.storeStock(editionId),
+      });
+      toast.success(registered ? "Inscrição cancelada" : "Inscrição realizada");
+    },
+    onError: (error, { registered }) =>
+      toast.error(
+        getErrorMessage(
+          error,
+          registered
+            ? "Não foi possível cancelar a inscrição"
+            : "Não foi possível realizar a inscrição",
+        ),
       ),
   });
 }

@@ -15,6 +15,7 @@ import {
 import type { OccurrenceI } from "@/features/programs/model";
 import { ManageOccurrenceModal } from "@/features/programs/ui/ManageOccurrenceModal";
 import { OccurrenceAdminCard } from "@/features/programs/ui/OccurrenceAdminCard";
+import { OccurrenceAttendanceDialog } from "@/features/programs/ui/OccurrenceAttendanceDialog";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
 
@@ -46,6 +47,8 @@ function OccurrencesRoute() {
     occurrence?: OccurrenceI;
   }>({ open: false });
   const [occurrenceToDelete, setOccurrenceToDelete] =
+    useState<OccurrenceI | null>(null);
+  const [attendanceOccurrence, setAttendanceOccurrence] =
     useState<OccurrenceI | null>(null);
   const filtered = occurrences.filter(
     (item) =>
@@ -115,6 +118,7 @@ function OccurrencesRoute() {
               key={occurrence.id}
               occurrence={occurrence}
               onEdit={() => setModal({ open: true, occurrence })}
+              onAttendance={() => setAttendanceOccurrence(occurrence)}
               onDelete={() => {
                 setOccurrenceToDelete(occurrence);
               }}
@@ -136,6 +140,13 @@ function OccurrencesRoute() {
           setOccurrenceToDelete(null);
         }}
       />
+      {attendanceOccurrence ? (
+        <OccurrenceAttendanceDialog
+          occurrenceId={attendanceOccurrence.id}
+          open
+          onOpenChange={(open) => !open && setAttendanceOccurrence(null)}
+        />
+      ) : null}
       <ManageOccurrenceModal
         open={modal.open}
         occurrence={modal.occurrence}

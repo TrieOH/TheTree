@@ -16,6 +16,7 @@ import { useInventoryStream } from "@/features/products/hooks/use-inventory-stre
 import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
 import { ProgramSection } from "@/features/programs/ui/ProgramSection";
+import { UserActivitiesContent } from "@/features/programs/ui/UserActivitiesContent";
 import {
   allTicketsQueryOptions,
   myTicketQueryOptions,
@@ -178,11 +179,26 @@ function RouteComponent() {
           />
           <ProgramSection
             editionId={activeEdition?.id}
+            eventId={event.id}
             eventSlug={event.slug}
           />
+          {isAuthenticated && activeEdition ? (
+            <section className="w-full py-10">
+              <div className="mb-6 text-center">
+                <h2 className="text-3xl font-semibold tracking-tight">
+                  Minhas atividades
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Atividades em que você está inscrito neste evento.
+                </p>
+              </div>
+              <UserActivitiesContent edition={activeEdition} />
+            </section>
+          ) : null}
           <ProductsSection
             editionId={activeEdition?.id}
             eventSlug={event.slug}
+            stockById={stockById}
           />
           <OtherEditionsSection
             editions={[...pastEditions, ...upcomingEditions]}

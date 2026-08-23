@@ -128,6 +128,7 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
   };
 
   const session = () => useSession<IdentityXSessionData>(sessionConfig);
+  const refreshes = new Map<string, Promise<TokenResolution>>();
 
   const observedFetch = async (
     operation: string,
@@ -223,50 +224,60 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
       };
     }
 
-    let response: Response;
-    try {
-      response = await observedFetch(
-        "refresh",
-        joinURL(config.identityX.baseURL, "/auth/refresh"),
-        {
-          method: "POST",
-          headers: { "Refresh-Token": refreshToken },
-        },
-      );
-    } catch {
-      return {
-        success: false,
-        sessionInvalid: false,
-        error: {
-          success: false,
-          code: 503,
-          error_id: "AUTH_SERVICE_UNAVAILABLE",
-          message: "Authentication service unavailable",
-        },
-      };
-    }
-
-    const envelope = await readEnvelope<AuthTokens>(response);
-    if (!response.ok || !envelope.data?.access_token) {
-      const normalized = normalize(response, envelope);
-      const sessionInvalid = response.status === 401 || response.status === 403;
-      if (sessionInvalid) await current.clear();
-      return {
-        success: false,
-        sessionInvalid,
-        error: response.ok
-          ? {
+    let refresh = refreshes.get(refreshToken);
+    if (!refresh) {
+      refresh = (async (): Promise<TokenResolution> => {
+        let response: Response;
+        try {
+          response = await observedFetch(
+            "refresh",
+            joinURL(config.identityX.baseURL, "/auth/refresh"),
+            {
+              method: "POST",
+              headers: { "Refresh-Token": refreshToken },
+            },
+          );
+        } catch {
+          return {
             success: false,
-            code: 502,
-            error_id: "INVALID_REFRESH_RESPONSE",
-            message: "Authentication service returned invalid tokens",
-          }
-          : normalized,
-      };
+            sessionInvalid: false,
+            error: {
+              success: false,
+              code: 503,
+              error_id: "AUTH_SERVICE_UNAVAILABLE",
+              message: "Authentication service unavailable",
+            },
+          };
+        }
+
+        const envelope = await readEnvelope<AuthTokens>(response);
+        if (!response.ok || !envelope.data?.access_token) {
+          const normalized = normalize(response, envelope);
+          const sessionInvalid = response.status === 401 || response.status === 403;
+          return {
+            success: false,
+            sessionInvalid,
+            error: response.ok
+              ? {
+                success: false,
+                code: 502,
+                error_id: "INVALID_REFRESH_RESPONSE",
+                message: "Authentication service returned invalid tokens",
+              }
+              : normalized,
+          };
+        }
+
+        return { success: true, tokens: envelope.data };
+      })();
+      refreshes.set(refreshToken, refresh);
+      void refresh.finally(() => refreshes.delete(refreshToken));
     }
 
-    await current.update({ tokens: envelope.data });
-    return { success: true, tokens: envelope.data };
+    const resolution = await refresh;
+    if (resolution.success) await current.update({ tokens: resolution.tokens });
+    else if (resolution.sessionInvalid) await current.clear();
+    return resolution;
   }
 
   async function validTokens(): Promise<TokenResolution> {

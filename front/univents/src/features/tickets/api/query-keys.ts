@@ -9,6 +9,9 @@ export const ticketKeys = {
   myTicket: (editionId: string) =>
     [...ticketKeys.all, "my-ticket", editionId] as const,
 
+  attendeeCount: (editionId: string) =>
+    [...ticketKeys.all, "attendee-count", editionId] as const,
+
   detail: {
     byId: (id: string) => [...ticketKeys.all, "detail", "id", id] as const,
   },

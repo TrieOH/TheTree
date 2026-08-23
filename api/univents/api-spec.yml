@@ -4393,7 +4393,7 @@ components:
         (visa/master/...); for pix the server derives `pix` (no
         tokenization). `card_token` is required for cards; `installments`
         defaults to 1 when omitted.
-      required: [payment_method, payer, items]
+      required: [items]
       properties:
         payment_method:
           $ref: '#/components/schemas/CheckoutPaymentMethod'
