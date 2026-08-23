@@ -70,13 +70,13 @@ export function OccurrenceAttendanceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "max-h-[90dvh] overflow-y-auto sm:max-w-2xl",
+          "box-border min-w-0 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[90dvh] overflow-x-hidden overflow-y-auto p-4 sm:max-w-2xl sm:p-6",
           collapsed
             ? "lg:left-[calc(50%+2.25rem)] lg:max-w-[min(42rem,calc(100vw-6rem))]"
             : "lg:left-[calc(50%+9rem)] lg:max-w-[min(42rem,calc(100vw-20rem))]",
         )}
       >
-        <DialogHeader>
+        <DialogHeader className="min-w-0">
           <DialogTitle>Presença na atividade</DialogTitle>
           <DialogDescription>
             Leia o QR do crachá ou marque o participante pela lista.
@@ -95,7 +95,7 @@ export function OccurrenceAttendanceDialog({
           </Button>
         )}
 
-        <div className="relative">
+        <div className="relative min-w-0">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -105,7 +105,7 @@ export function OccurrenceAttendanceDialog({
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           {isPending ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               Carregando participantes…
@@ -143,7 +143,7 @@ function ParticipantRow({
 }) {
   const attended = participant.status === "attended";
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/60 p-3">
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 p-2.5 sm:gap-3 sm:p-3">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
         <UserCheck className="size-4" />
       </div>
@@ -159,6 +159,7 @@ function ParticipantRow({
         type="button"
         size="sm"
         variant={attended ? "outline" : "default"}
+        className="min-w-0 shrink-0 px-2 text-xs sm:px-3 sm:text-sm"
         disabled={attended || pending}
         onClick={onAttend}
       >
