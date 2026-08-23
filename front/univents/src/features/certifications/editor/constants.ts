@@ -90,6 +90,18 @@ export const CERTIFICATE_VARIABLES = [
     description: "Local informado na edição",
   },
   {
+    key: "workload_hours",
+    token: "{{workload_hours}}",
+    label: "Carga horária",
+    description: "Duração total da edição ou atividade em horas",
+  },
+  {
+    key: "participation_date",
+    token: "{{participation_date}}",
+    label: "Data de realização",
+    description: "Dia, mês e ano em que a edição ou atividade foi realizada",
+  },
+  {
     key: "certified_at",
     token: "{{certified_at}}",
     label: "Data de certificação",

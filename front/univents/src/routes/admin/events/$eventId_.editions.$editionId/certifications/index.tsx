@@ -164,6 +164,8 @@ function RouteComponent() {
             activity_name: edition?.name ?? "Nome da edição",
             participation_type: "edição",
             location: edition?.location_name ?? "Local da edição",
+            workload_hours: "Carga horária conforme presença",
+            participation_date: "Data da participação",
             certified_at: "DD/MM/AAAA",
             cert_hash: "HASH-DE-EXEMPLO",
             verify_url: window.location.href,
