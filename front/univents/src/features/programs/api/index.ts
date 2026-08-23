@@ -11,6 +11,8 @@ import {
   listEditionOccurrences,
   listEditionPrograms,
   listMyParticipations,
+  listOccurrenceParticipants,
+  markParticipationAttended,
   patchOccurrence,
   patchProgram,
   registerOccurrence,
@@ -19,6 +21,7 @@ import type {
   CreateProgramRequest,
   MyParticipation,
   PatchProgramRequest,
+  ProgramParticipant,
   ProgramParticipation,
 } from "@trieoh/univents-api/schemas";
 import type {
@@ -95,6 +98,20 @@ export const deregisterOccurrenceFn = createClientOnlyFn(
     deregisterOccurrence(occurrenceId).then(orvalData<ProgramParticipation>),
 );
 
+export const listOccurrenceParticipantsFn = createClientOnlyFn(
+  (occurrenceId: string) =>
+    listOccurrenceParticipants(occurrenceId).then(
+      orvalData<ProgramParticipant[]>,
+    ),
+);
+
+export const markParticipationAttendedFn = createClientOnlyFn(
+  (participationId: string) =>
+    markParticipationAttended(participationId).then(
+      orvalData<ProgramParticipation>,
+    ),
+);
+
 export const programsQueryOptions = (editionId: string) =>
   queryOptions({
     queryKey: programKeys.byEdition(editionId),
@@ -115,4 +132,11 @@ export const myParticipationsQueryOptions = (
     queryKey: programKeys.myParticipations(editionId),
     queryFn: () => listMyParticipationsFn(editionId),
     enabled: Boolean(editionId) && enabled,
+  });
+
+export const occurrenceParticipantsQueryOptions = (occurrenceId: string) =>
+  queryOptions({
+    queryKey: programKeys.participants(occurrenceId),
+    queryFn: () => listOccurrenceParticipantsFn(occurrenceId),
+    enabled: Boolean(occurrenceId),
   });

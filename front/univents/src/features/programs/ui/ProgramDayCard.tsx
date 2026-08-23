@@ -1,6 +1,8 @@
 import type { ProgramParticipationStatus } from "@trieoh/univents-api/schemas";
 import { Activity, Award, ChevronRight, LogIn } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 import type { OccurrenceI, ProgramI } from "../model";
 
 function formatTimeRange(start: string, end: string): string {
@@ -62,6 +64,7 @@ export function ProgramDayCard({
   registration,
   stockByOccurrence,
 }: ProgramDayCardProps) {
+  const [occurrenceToCancel, setOccurrenceToCancel] = useState<string>();
   const visible = items.slice(0, maxItems);
   const remaining = items.length - maxItems;
 
@@ -143,6 +146,7 @@ export function ProgramDayCard({
                     occurrenceId={occurrence.id}
                     program={program}
                     registration={registration}
+                    onCancel={() => setOccurrenceToCancel(occurrence.id)}
                   />
                 ) : null}
               </div>
@@ -160,6 +164,22 @@ export function ProgramDayCard({
           </div>
         )}
       </div>
+      {registration ? (
+        <AlertModal
+          open={Boolean(occurrenceToCancel)}
+          onOpenChange={(open) => !open && setOccurrenceToCancel(undefined)}
+          title="Cancelar inscrição?"
+          description="Sua vaga será liberada para outra pessoa. Você poderá se inscrever novamente enquanto houver disponibilidade."
+          confirmLabel="Cancelar inscrição"
+          variant="destructive"
+          loading={registration.pendingOccurrenceId === occurrenceToCancel}
+          onConfirm={async () => {
+            if (!occurrenceToCancel) return;
+            registration.onToggle(occurrenceToCancel, true);
+            setOccurrenceToCancel(undefined);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -168,10 +188,12 @@ function RegistrationButton({
   occurrenceId,
   program,
   registration,
+  onCancel,
 }: {
   occurrenceId: string;
   program: ProgramI;
   registration: NonNullable<ProgramDayCardProps["registration"]>;
+  onCancel: () => void;
 }) {
   const status = registration.participationByOccurrence.get(occurrenceId);
   const registered = status === "registered";
@@ -216,7 +238,9 @@ function RegistrationButton({
       )}
       disabled={pending || blocked || registration.hasTicket === undefined}
       onPointerDown={(event) => event.stopPropagation()}
-      onClick={() => registration.onToggle(occurrenceId, registered)}
+      onClick={() =>
+        registered ? onCancel() : registration.onToggle(occurrenceId, false)
+      }
     >
       {pending ? "Salvando…" : label}
     </button>

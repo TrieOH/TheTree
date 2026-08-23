@@ -8,7 +8,6 @@ import type { BadgeProfileBadge } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
-import { UserActivitiesContent } from "@/features/programs/ui/UserActivitiesContent";
 import { PurchasesContent } from "@/features/purchases/ui/purchases-content";
 import { cn } from "@/shared/lib/utils";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
@@ -43,8 +42,8 @@ export interface ProfileViewProps {
   }>;
   ownProfile?: boolean;
   viewerActorId?: string;
-  activeTab: "about" | "badges" | "purchases" | "activities";
-  onTabChange: (tab: "about" | "badges" | "purchases" | "activities") => void;
+  activeTab: "about" | "badges" | "purchases";
+  onTabChange: (tab: "about" | "badges" | "purchases") => void;
 }
 
 export function ProfileView({
@@ -82,8 +81,6 @@ export function ProfileView({
       .flatMap((query) => query.data ?? [])
       .map((edition) => [edition.id, edition.location_name ?? ""]),
   );
-  const editions = editionQueries.flatMap((query) => query.data ?? []);
-  const eventsById = new Map(events.map((event) => [event.id, event]));
   const error = actorId
     ? profileQuery.error?.message
     : "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
@@ -139,10 +136,6 @@ export function ProfileView({
       ) : activeTab === "purchases" ? (
         <div className="mx-auto mt-4 max-w-7xl px-4">
           <PurchasesContent />
-        </div>
-      ) : activeTab === "activities" && isOwnProfile ? (
-        <div className="mx-auto mt-4 max-w-7xl px-4">
-          <UserActivitiesContent editions={editions} events={eventsById} />
         </div>
       ) : (
         <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">

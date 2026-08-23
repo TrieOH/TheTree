@@ -12,8 +12,8 @@ interface ProfileHeaderProps {
   handle?: string;
   ownProfile: boolean;
   profileUrl: string;
-  activeTab: "about" | "badges" | "purchases" | "activities";
-  onTabChange: (tab: "about" | "badges" | "purchases" | "activities") => void;
+  activeTab: "about" | "badges" | "purchases";
+  onTabChange: (tab: "about" | "badges" | "purchases") => void;
 }
 
 export function ProfileHeader({
@@ -176,15 +176,8 @@ export function ProfileHeader({
             [
               ["about", "Sobre"],
               ["badges", "Crachás"],
-              ...(ownProfile
-                ? ([
-                    ["purchases", "Compras"],
-                    ["activities", "Minhas atividades"],
-                  ] as const)
-                : []),
-            ] as Array<
-              ["about" | "badges" | "purchases" | "activities", string]
-            >
+              ...(ownProfile ? ([["purchases", "Compras"]] as const) : []),
+            ] as Array<["about" | "badges" | "purchases", string]>
           ).map(([tab, label]) => (
             <button
               key={tab}

@@ -1,29 +1,19 @@
-import { useQueries } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import type { Edition, Event } from "@trieoh/univents-api/schemas";
-import { CalendarDays, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Edition } from "@trieoh/univents-api/schemas";
+import { CalendarDays, Clock, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/shared/ui/shadcn/button";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 import { myParticipationsQueryOptions } from "../api";
+import { useOccurrenceRegistrationMutation } from "../api/mutations";
 
-export function UserActivitiesContent({
-  editions,
-  events,
-}: {
-  editions: Edition[];
-  events: ReadonlyMap<string, Event>;
-}) {
-  const queries = useQueries({
-    queries: editions.map((edition) =>
-      myParticipationsQueryOptions(edition.id),
-    ),
-  });
-  const activities = queries.flatMap((query, index) =>
-    (query.data ?? []).map((participation) => ({
-      participation,
-      edition: editions[index],
-    })),
-  );
+export function UserActivitiesContent({ edition }: { edition: Edition }) {
+  const query = useQuery(myParticipationsQueryOptions(edition.id));
+  const activities = query.data ?? [];
+  const mutation = useOccurrenceRegistrationMutation(edition.id);
+  const [occurrenceToCancel, setOccurrenceToCancel] = useState<string>();
 
-  if (queries.some((query) => query.isPending)) {
+  if (query.isPending) {
     return (
       <p className="text-sm text-muted-foreground">Carregando atividades…</p>
     );
@@ -42,46 +32,67 @@ export function UserActivitiesContent({
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {activities.map(({ participation, edition }) => {
-        const event = edition ? events.get(edition.event_id) : undefined;
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {activities.map((participation) => {
         return (
           <article
             key={participation.id}
-            className="rounded-lg border border-border bg-card p-4 shadow-sm"
+            className="flex min-w-0 items-center gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-xs"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-primary">
-                  {event?.full_name ?? edition?.name}
-                </p>
-                <h2 className="mt-1 truncate font-semibold">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CalendarDays className="size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 className="truncate text-sm font-semibold">
                   {participation.program.name}
                 </h2>
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {statusLabel(participation.status)}
+                </span>
               </div>
-              <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                {statusLabel(participation.status)}
-              </span>
+              <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                <Clock className="size-3.5 shrink-0" />
+                {formatOccurrence(
+                  participation.occurrence.starts_at,
+                  participation.occurrence.ends_at,
+                )}
+              </p>
             </div>
-            <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Clock className="size-4" />
-              {formatOccurrence(
-                participation.occurrence.starts_at,
-                participation.occurrence.ends_at,
-              )}
-            </p>
-            {event ? (
-              <Link
-                to="/events/$slug/programs"
-                params={{ slug: event.slug }}
-                className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline"
+            {participation.status === "registered" ? (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                aria-label={`Cancelar inscrição em ${participation.program.name}`}
+                onClick={() =>
+                  setOccurrenceToCancel(participation.occurrence_id)
+                }
               >
-                Ver programação
-              </Link>
+                <X className="size-4" />
+              </Button>
             ) : null}
           </article>
         );
       })}
+      <AlertModal
+        open={Boolean(occurrenceToCancel)}
+        onOpenChange={(open) => !open && setOccurrenceToCancel(undefined)}
+        title="Cancelar inscrição?"
+        description="Sua vaga será liberada para outra pessoa. Você poderá se inscrever novamente enquanto houver disponibilidade."
+        confirmLabel="Cancelar inscrição"
+        variant="destructive"
+        loading={mutation.isPending}
+        onConfirm={async () => {
+          if (!occurrenceToCancel) return;
+          await mutation.mutateAsync({
+            occurrenceId: occurrenceToCancel,
+            registered: true,
+          });
+          setOccurrenceToCancel(undefined);
+        }}
+      />
     </div>
   );
 }

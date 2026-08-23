@@ -1,4 +1,4 @@
-import { CalendarDays, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Pencil, Trash2, UserCheck } from "lucide-react";
 import { Button } from "@/shared/ui/shadcn/button";
 import type { OccurrenceI } from "../model";
 
@@ -6,10 +6,12 @@ export function OccurrenceAdminCard({
   occurrence,
   onEdit,
   onDelete,
+  onAttendance,
 }: {
   occurrence: OccurrenceI;
   onEdit: () => void;
   onDelete: () => void;
+  onAttendance: () => void;
 }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 transition-colors hover:bg-accent/5">
@@ -34,6 +36,15 @@ export function OccurrenceAdminCard({
         </p>
       </div>
       <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onAttendance}
+        >
+          <UserCheck className="mr-2 size-3.5" />
+          Presença
+        </Button>
         <Button type="button" variant="outline" size="sm" onClick={onEdit}>
           <Pencil className="mr-2 size-3.5" />
           Editar

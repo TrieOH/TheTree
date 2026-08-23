@@ -13,6 +13,7 @@ import {
   deleteOccurrenceFn,
   deleteProgramFn,
   deregisterOccurrenceFn,
+  markParticipationAttendedFn,
   patchOccurrenceFn,
   patchProgramFn,
   registerOccurrenceFn,
@@ -35,6 +36,21 @@ export function useProgramMutation(editionId: string) {
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, "Não foi possível salvar o programa")),
+  });
+}
+
+export function useMarkParticipationAttendedMutation(occurrenceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: markParticipationAttendedFn,
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: programKeys.participants(occurrenceId),
+      });
+      toast.success("Presença confirmada");
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível marcar presença")),
   });
 }
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 
 const profileSearchSchema = z.object({
-  tab: z.enum(["about", "badges", "purchases", "activities"]).catch("about"),
+  tab: z.enum(["about", "badges", "purchases"]).catch("about"),
 });
 
 export const Route = createFileRoute("/profile/")({

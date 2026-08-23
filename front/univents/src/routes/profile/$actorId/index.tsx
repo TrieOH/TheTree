@@ -6,7 +6,7 @@ import { ProfileView } from "@/features/profile/ui/profile-view";
 
 export const Route = createFileRoute("/profile/$actorId/")({
   validateSearch: z.object({
-    tab: z.enum(["about", "badges", "purchases", "activities"]).catch("about"),
+    tab: z.enum(["about", "badges", "purchases"]).catch("about"),
   }),
   component: PublicProfilePage,
 });
