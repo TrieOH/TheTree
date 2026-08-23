@@ -190,6 +190,7 @@ function QrScanner({
     let stream: MediaStream | undefined;
     let frame = 0;
     let stopFallback: (() => void) | undefined;
+    let detected = false;
     const Detector = (
       window as unknown as {
         BarcodeDetector?: new (options: {
@@ -198,6 +199,18 @@ function QrScanner({
       }
     ).BarcodeDetector;
 
+    const finishDetection = (value: string) => {
+      if (stopped || detected) return;
+      detected = true;
+      stopped = true;
+      cancelAnimationFrame(frame);
+      stopFallback?.();
+      stream?.getTracks().forEach((track) => {
+        track.stop();
+      });
+      onDetected(value);
+    };
+
     const startNativeScanner = async () => {
       if (!Detector || !videoRef.current) return false;
 
@@ -205,7 +218,7 @@ function QrScanner({
       const scan = async () => {
         if (stopped || !videoRef.current) return;
         const codes = await detector.detect(videoRef.current).catch(() => []);
-        if (codes[0]?.rawValue) onDetected(codes[0].rawValue);
+        if (codes[0]?.rawValue) finishDetection(codes[0].rawValue);
         else frame = requestAnimationFrame(scan);
       };
 
@@ -228,7 +241,7 @@ function QrScanner({
         { video: { facingMode: { ideal: "environment" } } },
         videoRef.current,
         (result) => {
-          if (!stopped && result?.getText()) onDetected(result.getText());
+          if (!stopped && result?.getText()) finishDetection(result.getText());
         },
       );
       stopFallback = () => controls.stop();
@@ -260,7 +273,7 @@ function QrScanner({
         ref={videoRef}
         muted
         playsInline
-        className="aspect-video w-full rounded-lg bg-black object-cover"
+        className="mx-auto aspect-square w-full max-w-sm rounded-lg bg-black object-cover"
       />
       <Button
         type="button"
