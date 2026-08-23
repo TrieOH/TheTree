@@ -6,6 +6,7 @@ import { Separator } from "@/shared/ui/shadcn/separator";
 import type { CertificationTemplateElement } from "../../model";
 import {
   CERTIFICATE_IMAGE_ACCEPT,
+  CERTIFICATE_VARIABLES,
   MIN_CERTIFICATE_ELEMENT_SIZE,
 } from "../constants";
 import { certificateEditorActions, useCertificateEditorState } from "../store";
@@ -384,15 +385,49 @@ function SignatureProperties({
 }
 
 function TextProperties({ element }: { element: TextCertificateElement }) {
+  const controller = useCertificateEditorState(
+    (state) => state.richTextController,
+  );
+
   return (
     <div className="space-y-4">
       <p className="rounded-md bg-muted p-2.5 text-xs leading-relaxed text-muted-foreground">
         Dê um duplo clique no texto para editar. A formatação da seleção aparece
-        na barra acima do canvas, onde também é possível inserir informações
-        dinâmicas.
+        na barra acima do canvas.
       </p>
       <Separator />
       <PositionSizeProperties element={element} />
+      <Separator />
+      <div className="space-y-2.5">
+        <div>
+          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Informações dinâmicas
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Clique para inserir no texto selecionado.
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          {CERTIFICATE_VARIABLES.map((variable) => (
+            <Button
+              key={variable.token}
+              type="button"
+              variant="outline"
+              className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left text-xs"
+              disabled={!controller}
+              title={variable.description}
+              onClick={() => controller?.insertText(variable.token)}
+            >
+              <span className="min-w-0">
+                <span className="block truncate">{variable.label}</span>
+                <span className="mt-0.5 block text-[11px] font-normal leading-tight text-muted-foreground">
+                  {variable.description}
+                </span>
+              </span>
+            </Button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

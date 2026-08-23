@@ -158,7 +158,7 @@ function RouteComponent() {
             if (!open) setViewingTemplate(null);
           }}
           variables={{
-            participant_name: "Nome completo do participante",
+            participant_name: "Nome civil do participante",
             event_name: "Nome do evento",
             edition_name: edition?.name ?? "Nome da edição",
             activity_name: edition?.name ?? "Nome da edição",

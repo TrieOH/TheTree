@@ -56,8 +56,8 @@ export const CERTIFICATE_VARIABLES = [
   {
     key: "participant_name",
     token: "{{participant_name}}",
-    label: "Nome completo do participante",
-    description: "Nome legal informado no perfil do participante",
+    label: "Nome civil do participante",
+    description: "Nome civil informado no perfil do participante",
   },
   {
     key: "event_name",
