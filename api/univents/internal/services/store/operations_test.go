@@ -19,6 +19,7 @@ import (
 	"univents/models"
 
 	"github.com/MintzyG/fun"
+	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/google/uuid"
 )
 
@@ -90,6 +91,15 @@ type sseClient struct {
 
 func dialSSE(t *testing.T, ts *httptest.Server, editionID uuid.UUID) *sseClient {
 	t.Helper()
+	c, _ := dialSSEHead(t, ts, editionID, "")
+	return c
+}
+
+// dialSSEHead is dialSSE plus the raw response head lines (status line and
+// headers), so tests can assert what the hijacked stream actually emits.
+// extraHead are raw request header lines to send (e.g. "Origin: …\r\n").
+func dialSSEHead(t *testing.T, ts *httptest.Server, editionID uuid.UUID, extraHead string) (*sseClient, []string) {
+	t.Helper()
 	dialer := net.Dialer{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -99,12 +109,13 @@ func dialSSE(t *testing.T, ts *httptest.Server, editionID uuid.UUID) *sseClient 
 	}
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = fmt.Fprintf(conn, "GET /editions/%s/store/stream HTTP/1.1\r\nHost: test\r\n\r\n", editionID)
+	_, err = fmt.Fprintf(conn, "GET /editions/%s/store/stream HTTP/1.1\r\nHost: test\r\n%s\r\n", editionID, extraHead)
 	if err != nil {
 		t.Fatalf("write request: %v", err)
 	}
 	rd := bufio.NewReader(conn)
 	// Response head up to the blank line.
+	var head []string
 	for {
 		line, err := rd.ReadString('\n')
 		if err != nil {
@@ -113,8 +124,9 @@ func dialSSE(t *testing.T, ts *httptest.Server, editionID uuid.UUID) *sseClient 
 		if line == "\r\n" {
 			break
 		}
+		head = append(head, strings.TrimRight(line, "\r\n"))
 	}
-	return &sseClient{conn: conn, rd: rd}
+	return &sseClient{conn: conn, rd: rd}, head
 }
 
 // event is one SSE block: `event: <name>` / `data: <json>` / blank line.
@@ -309,6 +321,116 @@ func TestSSEDeltaRecomputesStockFromDB(t *testing.T) {
 	}
 	if delta.ID != itemID || delta.ItemType != "ticket" || delta.Stock != 6 {
 		t.Fatalf("delta = %+v, want ticket stock 6 (recomputed from DB)", delta)
+	}
+}
+
+// headToMap flattens raw response head lines ("Name: value") into a map,
+// joining repeated headers with ", ".
+func headToMap(head []string) map[string]string {
+	got := map[string]string{}
+	for _, line := range head {
+		if name, value, ok := strings.Cut(line, ": "); ok {
+			if prev, seen := got[name]; seen {
+				got[name] = prev + ", " + value
+			} else {
+				got[name] = value
+			}
+		}
+	}
+	return got
+}
+
+// TestSSECORSHeaders pins the fix for the cross-origin stream: the harness
+// CORS middleware writes Allow-Origin/Allow-Credentials/Vary into the
+// ResponseWriter before the handler runs, but the SSE handler hijacks the
+// connection (discarding the ResponseWriter) and emits a hand-built head.
+// Those headers must survive into the raw head or the browser blocks the
+// EventSource. Origin absent → no CORS headers emitted (plain clients still
+// work).
+func TestSSECORSHeaders(t *testing.T) {
+	editionID := uuid.New()
+	ops, avail, _ := newStore(t, editionID)
+	avail.set(nil)
+
+	// Simulate rs/cors handleActualRequest with AllowCredentials: true.
+	origin := "http://localhost:3002"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Add("Vary", "Origin")
+		ops.ServeStream(w, r, editionID)
+	}))
+	t.Cleanup(ts.Close)
+
+	c, head := dialSSEHead(t, ts, editionID, "")
+	defer c.conn.Close()
+	got := headToMap(head)
+	if v := got["Access-Control-Allow-Origin"]; v != origin {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", v, origin)
+	}
+	if v := got["Access-Control-Allow-Credentials"]; v != "true" {
+		t.Fatalf("Access-Control-Allow-Credentials = %q, want true", v)
+	}
+	if !strings.Contains(got["Vary"], "Origin") {
+		t.Fatalf("Vary = %q, want it to include Origin", got["Vary"])
+	}
+	if v := got["Content-Type"]; !strings.HasPrefix(v, "text/event-stream") {
+		t.Fatalf("Content-Type = %q, want text/event-stream", v)
+	}
+
+	// And the stream still delivers events with the CORS head in place.
+	if ev, ok := c.readEvent(t); !ok || ev.name != "snapshot" {
+		t.Fatalf("no snapshot event after CORS head: %+v ok=%v", ev, ok)
+	}
+}
+
+// TestSSECORSViaHarnessMiddleware proves the env-configured CORS settings
+// reach the hijacked stream through the real middleware the harness applies
+// (fun middlewares CORS = rs/cors, AllowCredentials: true — the same
+// mws.CORS config httpserver.stack builds from CORS_ALLOWED_ORIGINS). The
+// handler never reads the config itself: it reproduces whatever the
+// middleware stamped on the ResponseWriter before the hijack. A disallowed
+// origin must get no Allow-Origin header (the browser still blocks it).
+func TestSSECORSViaHarnessMiddleware(t *testing.T) {
+	editionID := uuid.New()
+	ops, avail, _ := newStore(t, editionID)
+	avail.set(nil)
+
+	cors := mws.CORS(mws.CORSConfig{
+		AllowedOrigins:   []string{"http://localhost:3002"}, // CORS_ALLOWED_ORIGINS in .env
+		AllowCredentials: true,
+	})
+	ts := httptest.NewServer(cors(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ops.ServeStream(w, r, editionID)
+	})))
+	t.Cleanup(ts.Close)
+
+	// Allowed origin → the configured setting appears on the stream head.
+	c, head := dialSSEHead(t, ts, editionID, "Origin: http://localhost:3002\r\n")
+	defer c.conn.Close()
+	got := headToMap(head)
+	if v := got["Access-Control-Allow-Origin"]; v != "http://localhost:3002" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want the configured origin", v)
+	}
+	if v := got["Access-Control-Allow-Credentials"]; v != "true" {
+		t.Fatalf("Access-Control-Allow-Credentials = %q, want true", v)
+	}
+	if !strings.Contains(got["Vary"], "Origin") {
+		t.Fatalf("Vary = %q, want it to include Origin", got["Vary"])
+	}
+	if ev, ok := c.readEvent(t); !ok || ev.name != "snapshot" {
+		t.Fatalf("no snapshot after real CORS middleware: %+v ok=%v", ev, ok)
+	}
+
+	// Disallowed origin → the middleware stamps nothing, so the hijacked
+	// head carries no Allow-Origin and the browser keeps blocking.
+	c2, head2 := dialSSEHead(t, ts, editionID, "Origin: http://evil.example\r\n")
+	defer c2.conn.Close()
+	if v := headToMap(head2)["Access-Control-Allow-Origin"]; v != "" {
+		t.Fatalf("disallowed origin got Access-Control-Allow-Origin = %q, want none", v)
+	}
+	if ev, ok := c2.readEvent(t); !ok || ev.name != "snapshot" {
+		t.Fatalf("no snapshot for disallowed-origin client: %+v ok=%v", ev, ok)
 	}
 }
 

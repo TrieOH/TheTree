@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,6 +38,19 @@ type sseStream struct {
 	closeOnce sync.Once
 }
 
+// corsResponseHeaders are the response headers the harness CORS middleware
+// (rs/cors with AllowCredentials) sets on the ResponseWriter for an actual
+// request. Hijack discards the ResponseWriter, so the hand-built head must
+// re-emit them or the browser blocks the cross-origin stream (EventSource
+// is CORS-gated). Connection/Content-Length/Transfer-Encoding are hop-by-hop
+// and deliberately excluded: the body is close-delimited.
+var corsResponseHeaders = []string{
+	"Access-Control-Allow-Origin",
+	"Access-Control-Allow-Credentials",
+	"Access-Control-Expose-Headers",
+	"Vary",
+}
+
 // newSSEStream hijacks the connection and writes the response head. Any
 // error means the connection was not taken over (the caller can still write
 // a plain HTTP error).
@@ -51,13 +65,22 @@ func newSSEStream(w http.ResponseWriter) (*sseStream, error) {
 	}
 	bw := rw.Writer
 
-	head := "HTTP/1.1 200 OK\r\n" +
-		"Content-Type: text/event-stream; charset=utf-8\r\n" +
+	// Snapshot the CORS headers the middleware set before hijacking (the
+	// ResponseWriter is discarded on Hijack) and splice them into the raw
+	// head; no Origin header means none were set and none are emitted.
+	head := strings.Builder{}
+	head.WriteString("HTTP/1.1 200 OK\r\n")
+	for _, name := range corsResponseHeaders {
+		for _, v := range w.Header().Values(name) {
+			head.WriteString(name + ": " + v + "\r\n")
+		}
+	}
+	head.WriteString("Content-Type: text/event-stream; charset=utf-8\r\n" +
 		"Cache-Control: no-cache\r\n" +
 		"Connection: keep-alive\r\n" +
 		"X-Accel-Buffering: no\r\n" +
-		"\r\n"
-	_, err = bw.WriteString(head)
+		"\r\n")
+	_, err = bw.WriteString(head.String())
 	if err != nil {
 		_ = conn.Close()
 		return nil, err
