@@ -109,7 +109,8 @@ export function ProgramDayCard({
                 <span className="text-xs font-semibold text-primary">
                   {formatTimeRange(occurrence.starts_at, occurrence.ends_at)}
                 </span>
-                {stockByOccurrence?.has(occurrence.id) ? (
+                {program.kind === "activity" &&
+                stockByOccurrence?.has(occurrence.id) ? (
                   <span className="ml-2 text-[11px] text-muted-foreground">
                     {stockByOccurrence.get(occurrence.id) === null
                       ? "Vagas ilimitadas"
