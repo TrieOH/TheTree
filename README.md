@@ -37,16 +37,21 @@ docs/            # CONTEXT.md (domain glossary), adr/, agents/
 - `just` — all dev recipes live in the `justfile`
 - `golangci-lint` (for `just lint`)
 - `gotestsum` (for `just test`)
+- `trivy` (for the pre-push hook's whole-repo scan)
 
-Both are installable with `just setup` (pinned versions). `go install` puts
-binaries in `$(go env GOPATH)/bin` — add it to `PATH` if `just test`/`just
-lint` report "command not found":
+All three are installable with `just setup` (pinned versions). `go install`
+puts binaries in `$(go env GOPATH)/bin` and trivy goes to `~/.local/bin` —
+add both to `PATH` if a command reports "command not found":
 
 ```bash
 just setup
-export PATH="$(go env GOPATH)/bin:$PATH"   # bash / zsh
-fish_add_path "$HOME/go/bin"                # fish (already set up in config.fish)
+export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"   # bash / zsh
+fish_add_path "$HOME/.local/bin" "$HOME/go/bin"             # fish (already set up in config.fish)
 ```
+
+The pre-push hook runs `trivy fs` on the whole repo at every severity on
+every push (the vulnerability DB refreshes automatically, so new CVEs are
+caught even without code changes).
 
 ## Quickstart
 

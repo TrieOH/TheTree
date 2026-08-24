@@ -20,7 +20,7 @@ const (
 	sqlcVersion         = "1.31.1"
 	gotestsumVersion    = "1.13.0"
 	golangciLintVersion = "2.12.2"
-	trivyVersion        = "0.71.2" // keep in sync with trivy-scan.yml filter paths
+	trivyVersion        = "0.74.0" // keep in sync with trivy-scan.yml filter paths
 
 	// oapiCodegenVersion must stay in sync with the binary baked into the
 	// go-tools image (git.trieoh.com/trieoh/go-tools:3), which the service
@@ -320,10 +320,11 @@ func (m *Thetree) FrontendLintTsc(
 }
 
 // Trivy scans the given project paths (comma-separated, or "all"/empty for
-// the whole repo root) with trivy fs: HIGH/CRITICAL vulnerabilities, secrets,
-// and misconfigurations. It fails on any finding (exit code 1), matching the
-// old shell-based trivy-scan.yml. The vulnerability DB is cached in a volume,
-// so it is downloaded once per runner and reused across runs.
+// the whole repo root) with trivy fs: all severities (LOW through
+// CRITICAL), secrets, and misconfigurations. It fails on any finding (exit
+// code 1), matching the old shell-based trivy-scan.yml. The vulnerability
+// DB is cached in a volume, so it is downloaded once per runner and reused
+// across runs.
 func (m *Thetree) Trivy(ctx context.Context, source *dagger.Directory, projects string) (string, error) {
 	c := dag.Container().
 		From(fmt.Sprintf("aquasec/trivy:%s", trivyVersion)).
@@ -340,7 +341,7 @@ func (m *Thetree) Trivy(ctx context.Context, source *dagger.Directory, projects 
 	for _, p := range list {
 		c = c.WithExec([]string{
 			"trivy", "fs",
-			"--severity", "HIGH,CRITICAL",
+			"--severity", "LOW,MEDIUM,HIGH,CRITICAL",
 			"--scanners", "vuln,secret,misconfig",
 			"--exit-code", "1",
 			p,

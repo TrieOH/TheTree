@@ -46,10 +46,15 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc => go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.16.0
+// The otel log modules are pinned BELOW their required versions because
+// github.com/dagger/otel-go@v1.43.0 uses the pre-0.21 log API (log.KeyValue).
+// `dagger develop` re-pins these to v0.16.0 — restore them if it does:
+// otlploghttp must stay >= v0.19.0 (CVE-2026-39882, enforced by the trivy
+// pre-push hook).
+replace go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc => go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.17.0
 
-replace go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp => go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.16.0
+replace go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp => go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.19.0
 
-replace go.opentelemetry.io/otel/log => go.opentelemetry.io/otel/log v0.16.0
+replace go.opentelemetry.io/otel/log => go.opentelemetry.io/otel/log v0.17.0
 
-replace go.opentelemetry.io/otel/sdk/log => go.opentelemetry.io/otel/sdk/log v0.16.0
+replace go.opentelemetry.io/otel/sdk/log => go.opentelemetry.io/otel/sdk/log v0.17.0
