@@ -128,16 +128,9 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 	if err != nil {
 		return nil, err
 	}
-	if event.PayssageSellerID == nil || event.PayssagePublicKey == nil {
-		return nil, fun.ErrBadRequest("event has no payment config")
-	}
 
 	// 2. Validate the cart (shape errors → 400 listing the offending lines)
 	//    and the payment payload (cards need token + payment_method_id).
-	err = o.validatePayment(in)
-	if err != nil {
-		return nil, err
-	}
 	lines, err := o.validateLines(in.Items)
 	if err != nil {
 		return nil, err
@@ -160,6 +153,15 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 		// The hub turns the purchase event into the confirmed frame.
 		o.notifyPurchase(ctx, res.purchase, models.PurchaseStatusApproved)
 		return o.result(res), nil
+	}
+	if event.PayssageSellerID == nil || event.PayssagePublicKey == nil {
+		o.revert(ctx, res.purchase, res.items)
+		return nil, fun.ErrBadRequest("event has no payment config")
+	}
+	err = o.validatePayment(in)
+	if err != nil {
+		o.revert(ctx, res.purchase, res.items)
+		return nil, err
 	}
 
 	// 4. Create the Payssage intent (post-commit — no HTTP inside the DB

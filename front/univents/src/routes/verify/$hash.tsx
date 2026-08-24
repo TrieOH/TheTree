@@ -23,7 +23,10 @@ import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
 import { profileKeys } from "@/features/profile/api/query-keys";
 import { asUniventsProfile } from "@/features/profile/model/profile-data";
-import { programsQueryOptions } from "@/features/programs/api";
+import {
+  myParticipationsQueryOptions,
+  programsQueryOptions,
+} from "@/features/programs/api";
 import type { ProgramI } from "@/features/programs/model";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import {
@@ -47,6 +50,21 @@ function formatCertifiedAt(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatParticipationDate(value: string) {
+  return new Date(value).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatHours(milliseconds: number) {
+  const hours = milliseconds / 3_600_000;
+  return Number.isInteger(hours)
+    ? String(hours)
+    : hours.toFixed(1).replace(".", ",");
 }
 
 function getOrigin() {
@@ -94,6 +112,15 @@ function VerifiedTemplateSection({
       return asUniventsProfile(response.data.profile ?? {}).legalName ?? "";
     },
   });
+  const { data: participationData } = useQuery({
+    ...myParticipationsQueryOptions(
+      payload.program_id
+        ? (activityLookup.get(payload.program_id)?.edition_id ?? "")
+        : payload.edition_id,
+    ),
+    enabled: auth.profile()?.id === payload.user_id,
+  });
+  const myParticipations = participationData ?? [];
 
   const variables = useMemo(() => {
     const activity =
@@ -106,6 +133,22 @@ function VerifiedTemplateSection({
         : (activity?.edition_id ?? null);
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null;
     const event = edition ? (eventLookup.get(edition.event_id) ?? null) : null;
+    const attended = myParticipations.filter(
+      (participation) => participation.status === "attended",
+    );
+    const attendedForCertificate = payload.program_id
+      ? attended.filter(
+          (participation) => participation.program.id === payload.program_id,
+        )
+      : attended;
+    const startDate = attendedForCertificate[0]?.occurrence.starts_at;
+    const workload = attendedForCertificate.reduce(
+      (total, participation) =>
+        total +
+        new Date(participation.occurrence.ends_at).getTime() -
+        new Date(participation.occurrence.starts_at).getTime(),
+      0,
+    );
 
     return {
       participant_name: participantName,
@@ -117,12 +160,16 @@ function VerifiedTemplateSection({
           : (activity?.name ?? edition?.name ?? ""),
       participation_type: payload.program_id === null ? "edição" : "atividade",
       location: edition?.location_name ?? "",
+      workload_hours:
+        attendedForCertificate.length > 0 ? formatHours(workload) : "",
+      participation_date: startDate ? formatParticipationDate(startDate) : "",
       certified_at: formatCertifiedAt(payload.issued_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
     };
   }, [
     activityLookup,
+    myParticipations,
     editionLookup,
     eventLookup,
     hash,

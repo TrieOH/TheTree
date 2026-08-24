@@ -11,7 +11,6 @@ import {
   Activity,
   Calendar,
   CalendarRange,
-  CheckCircle2,
   CircleAlert,
   Command,
   Copy,
@@ -45,7 +44,10 @@ import {
   useRefundPurchaseMutation,
 } from "@/features/purchases/api";
 import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
-import { allTicketsQueryOptions } from "@/features/tickets/api";
+import {
+  allTicketsQueryOptions,
+  attendeeCountQueryOptions,
+} from "@/features/tickets/api";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
@@ -69,6 +71,9 @@ function AdminEditionDetailRoute() {
   const queryClient = useQueryClient();
   const { data: purchases = [] } = useQuery(
     editionPurchasesQueryOptions(editionId),
+  );
+  const { data: attendeeCount } = useQuery(
+    attendeeCountQueryOptions(editionId),
   );
   const [
     { data: tickets = [] },
@@ -297,9 +302,6 @@ function AdminEditionDetailRoute() {
     if (label.includes("link")) return Copy;
     return ExternalLink;
   };
-  const approvedPurchases = purchases.filter(
-    (purchase) => purchase.status === "approved",
-  ).length;
   const refundedPurchases = purchases.filter(
     (purchase) => purchase.status === "refunded",
   ).length;
@@ -409,16 +411,16 @@ function AdminEditionDetailRoute() {
             Icon: ShoppingBag,
           },
           {
-            label: "Compras",
-            value: purchases.length,
-            hint: "Pedidos registrados",
+            label: "Participantes",
+            value: attendeeCount?.count ?? 0,
+            hint: "Ingressos comprados",
             Icon: Users,
           },
           {
-            label: "Aprovadas",
-            value: approvedPurchases,
-            hint: "Prontas para uso",
-            Icon: CheckCircle2,
+            label: "Produtos Vendidos",
+            value: purchases.length,
+            hint: "Compras realizadas",
+            Icon: ShoppingBag,
           },
           {
             label: "Reembolsadas",

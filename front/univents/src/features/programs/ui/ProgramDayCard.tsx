@@ -1,5 +1,8 @@
+import type { ProgramParticipationStatus } from "@trieoh/univents-api/schemas";
 import { Activity, Award, ChevronRight, LogIn } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
+import { AlertModal } from "@/widgets/ui/alert-modal";
 import type { OccurrenceI, ProgramI } from "../model";
 
 function formatTimeRange(start: string, end: string): string {
@@ -39,6 +42,17 @@ interface ProgramDayCardProps {
   maxItems?: number;
   certificateProgramIds?: ReadonlySet<string>;
   showFullDescription?: boolean;
+  registration?: {
+    isAuthenticated: boolean;
+    hasTicket: boolean | null | undefined;
+    ticketStatus?: "pending" | "confirmed";
+    accessLevel?: number;
+    isStaff: boolean;
+    participationByOccurrence: ReadonlyMap<string, ProgramParticipationStatus>;
+    pendingOccurrenceId?: string;
+    onToggle: (occurrenceId: string, registered: boolean) => void;
+  };
+  stockByOccurrence?: ReadonlyMap<string, number | null>;
 }
 
 export function ProgramDayCard({
@@ -47,7 +61,10 @@ export function ProgramDayCard({
   maxItems = 3,
   certificateProgramIds,
   showFullDescription = false,
+  registration,
+  stockByOccurrence,
 }: ProgramDayCardProps) {
+  const [occurrenceToCancel, setOccurrenceToCancel] = useState<string>();
   const visible = items.slice(0, maxItems);
   const remaining = items.length - maxItems;
 
@@ -92,6 +109,16 @@ export function ProgramDayCard({
                 <span className="text-xs font-semibold text-primary">
                   {formatTimeRange(occurrence.starts_at, occurrence.ends_at)}
                 </span>
+                {program.kind === "activity" &&
+                stockByOccurrence?.has(occurrence.id) ? (
+                  <span className="ml-2 text-[11px] text-muted-foreground">
+                    {stockByOccurrence.get(occurrence.id) === null
+                      ? "Vagas ilimitadas"
+                      : stockByOccurrence.get(occurrence.id) === 0
+                        ? "Esgotado"
+                        : `${stockByOccurrence.get(occurrence.id)} vagas restantes`}
+                  </span>
+                ) : null}
 
                 {/* Title */}
                 <h4 className="mt-1 text-[15px] font-bold text-card-foreground leading-snug">
@@ -115,6 +142,14 @@ export function ProgramDayCard({
                     {program.description}
                   </p>
                 )}
+                {program.kind === "activity" && registration ? (
+                  <RegistrationButton
+                    occurrenceId={occurrence.id}
+                    program={program}
+                    registration={registration}
+                    onCancel={() => setOccurrenceToCancel(occurrence.id)}
+                  />
+                ) : null}
               </div>
             </div>
           );
@@ -130,6 +165,85 @@ export function ProgramDayCard({
           </div>
         )}
       </div>
+      {registration ? (
+        <AlertModal
+          open={Boolean(occurrenceToCancel)}
+          onOpenChange={(open) => !open && setOccurrenceToCancel(undefined)}
+          title="Cancelar inscrição?"
+          description="Sua vaga será liberada para outra pessoa. Você poderá se inscrever novamente enquanto houver disponibilidade."
+          confirmLabel="Cancelar inscrição"
+          variant="destructive"
+          loading={registration.pendingOccurrenceId === occurrenceToCancel}
+          onConfirm={async () => {
+            if (!occurrenceToCancel) return;
+            registration.onToggle(occurrenceToCancel, true);
+            setOccurrenceToCancel(undefined);
+          }}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function RegistrationButton({
+  occurrenceId,
+  program,
+  registration,
+  onCancel,
+}: {
+  occurrenceId: string;
+  program: ProgramI;
+  registration: NonNullable<ProgramDayCardProps["registration"]>;
+  onCancel: () => void;
+}) {
+  const status = registration.participationByOccurrence.get(occurrenceId);
+  const registered = status === "registered";
+  const pending = registration.pendingOccurrenceId === occurrenceId;
+  const insufficientLevel =
+    program.min_access_level != null &&
+    (registration.accessLevel ?? -1) < program.min_access_level;
+  const blocked =
+    status === "attended" ||
+    status === "no_show" ||
+    registration.ticketStatus === "pending" ||
+    insufficientLevel ||
+    (program.staff_only && !registration.isStaff);
+  const label = !registration.isAuthenticated
+    ? "Entrar para se inscrever"
+    : registration.hasTicket === undefined
+      ? "Verificando ingresso…"
+      : registration.hasTicket === false
+        ? "Ingresso necessário"
+        : status === "attended"
+          ? "Participou"
+          : status === "no_show"
+            ? "Não compareceu"
+            : registration.ticketStatus === "pending"
+              ? "Aguardando aprovação"
+              : program.staff_only && !registration.isStaff
+                ? "Somente equipe"
+                : insufficientLevel
+                  ? "Nível de ingresso insuficiente"
+                  : registered
+                    ? "Cancelar inscrição"
+                    : "Inscrever-se";
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "mt-3 inline-flex h-8 items-center rounded-md border px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        registered
+          ? "border-border bg-background text-muted-foreground hover:bg-muted"
+          : "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
+      )}
+      disabled={pending || blocked || registration.hasTicket === undefined}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={() =>
+        registered ? onCancel() : registration.onToggle(occurrenceId, false)
+      }
+    >
+      {pending ? "Salvando…" : label}
+    </button>
   );
 }

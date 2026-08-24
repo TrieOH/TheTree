@@ -44,7 +44,10 @@ export function AlertModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md z-50">
+      <DialogContent
+        className="sm:max-w-md z-50"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <DialogHeader className="pb-4 border-b border-border">
           <DialogTitle className="text-base font-semibold text-left">
             {title}

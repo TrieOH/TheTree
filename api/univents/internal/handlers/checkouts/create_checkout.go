@@ -52,21 +52,29 @@ func (h *Handlers) CreateEditionCheckout(ctx context.Context, req openapi.Create
 
 // toCheckoutInput maps the generated request body to the service's domain
 // input. Validation (ticket attendee, per-type quantity, duplicates,
-// payment fields) runs in the service — the spec only enforces the static
-// shape.
+// payment fields for paid orders) runs in the service — the spec only
+// enforces the static request shape.
 func toCheckoutInput(body *openapi.CreateCheckoutRequest) checkouts.CheckoutInput {
+	paymentMethod := ""
+	if body.PaymentMethod != nil {
+		paymentMethod = string(*body.PaymentMethod)
+	}
+	payer := checkouts.Payer{}
+	if body.Payer != nil {
+		payer = checkouts.Payer{
+			Email:                body.Payer.Email,
+			IdentificationType:   body.Payer.IdentificationType,
+			IdentificationNumber: body.Payer.IdentificationNumber,
+		}
+	}
 	in := checkouts.CheckoutInput{
-		PaymentMethod:   string(body.PaymentMethod),
+		PaymentMethod:   paymentMethod,
 		CardToken:       body.CardToken,
 		PaymentMethodID: body.PaymentMethodId,
 		Installments:    body.Installments,
 		IssuerID:        body.IssuerId,
-		Payer: checkouts.Payer{
-			Email:                body.Payer.Email,
-			IdentificationType:   body.Payer.IdentificationType,
-			IdentificationNumber: body.Payer.IdentificationNumber,
-		},
-		Items: make([]checkouts.CheckoutLine, 0, len(body.Items)),
+		Payer:           payer,
+		Items:           make([]checkouts.CheckoutLine, 0, len(body.Items)),
 	}
 	for _, item := range body.Items {
 		line := checkouts.CheckoutLine{

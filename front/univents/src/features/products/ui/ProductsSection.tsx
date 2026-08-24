@@ -10,11 +10,13 @@ import { ProductCard } from "./ProductCard";
 interface ProductsSectionProps {
   editionId?: string;
   eventSlug: string;
+  stockById?: ReadonlyMap<string, number | null>;
 }
 
 export function ProductsSection({
   editionId,
   eventSlug,
+  stockById,
 }: ProductsSectionProps) {
   if (!editionId) return null;
 
@@ -52,7 +54,10 @@ export function ProductsSection({
             <ProductCard
               key={product.id}
               product={product}
-              variants={variants}
+              variants={variants.map((variant) => ({
+                ...variant,
+                stock: stockById?.get(variant.id) ?? variant.stock,
+              }))}
               maxVariants={3}
               editionId={editionId}
             />

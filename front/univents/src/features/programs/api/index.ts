@@ -7,14 +7,22 @@ import {
   createProgramOccurrence,
   deleteOccurrence,
   deleteProgram,
+  deregisterOccurrence,
   listEditionOccurrences,
   listEditionPrograms,
+  listMyParticipations,
+  listOccurrenceParticipants,
+  markParticipationAttended,
   patchOccurrence,
   patchProgram,
+  registerOccurrence,
 } from "@trieoh/univents-api";
 import type {
   CreateProgramRequest,
+  MyParticipation,
   PatchProgramRequest,
+  ProgramParticipant,
+  ProgramParticipation,
 } from "@trieoh/univents-api/schemas";
 import type {
   OccurrenceCreateOutput,
@@ -77,6 +85,33 @@ export const deleteOccurrenceFn = createClientOnlyFn((id: string) =>
   ),
 );
 
+export const listMyParticipationsFn = createClientOnlyFn((editionId: string) =>
+  listMyParticipations(editionId).then(orvalData<MyParticipation[] | null>),
+);
+
+export const registerOccurrenceFn = createClientOnlyFn((occurrenceId: string) =>
+  registerOccurrence(occurrenceId).then(orvalData<ProgramParticipation>),
+);
+
+export const deregisterOccurrenceFn = createClientOnlyFn(
+  (occurrenceId: string) =>
+    deregisterOccurrence(occurrenceId).then(orvalData<ProgramParticipation>),
+);
+
+export const listOccurrenceParticipantsFn = createClientOnlyFn(
+  (occurrenceId: string) =>
+    listOccurrenceParticipants(occurrenceId).then(
+      orvalData<ProgramParticipant[]>,
+    ),
+);
+
+export const markParticipationAttendedFn = createClientOnlyFn(
+  (participationId: string) =>
+    markParticipationAttended(participationId).then(
+      orvalData<ProgramParticipation>,
+    ),
+);
+
 export const programsQueryOptions = (editionId: string) =>
   queryOptions({
     queryKey: programKeys.byEdition(editionId),
@@ -87,4 +122,21 @@ export const occurrencesQueryOptions = (editionId: string) =>
   queryOptions({
     queryKey: programKeys.occurrences(editionId),
     queryFn: () => listOccurrencesFn(editionId),
+  });
+
+export const myParticipationsQueryOptions = (
+  editionId: string,
+  enabled = true,
+) =>
+  queryOptions({
+    queryKey: programKeys.myParticipations(editionId),
+    queryFn: () => listMyParticipationsFn(editionId),
+    enabled: Boolean(editionId) && enabled,
+  });
+
+export const occurrenceParticipantsQueryOptions = (occurrenceId: string) =>
+  queryOptions({
+    queryKey: programKeys.participants(occurrenceId),
+    queryFn: () => listOccurrenceParticipantsFn(occurrenceId),
+    enabled: Boolean(occurrenceId),
   });

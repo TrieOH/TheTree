@@ -3,10 +3,13 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { activeEditionQueryOptions } from "@/features/editions/api";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
+import { storeStockQueryOptions } from "@/features/products/api";
+import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import {
   occurrencesQueryOptions,
   programsQueryOptions,
 } from "@/features/programs/api";
+import { useProgramRegistration } from "@/features/programs/hooks/use-program-registration";
 import { ProgramDayCard } from "@/features/programs/ui/ProgramDayCard";
 import { groupByDay } from "@/features/programs/ui/ProgramSection";
 import { Carousel } from "@/widgets/carousel/GenericCarousel";
@@ -36,21 +39,42 @@ function ProgramsPage() {
     );
   }
 
-  return <Programs editionId={edition.id} eventSlug={event.slug} />;
+  return (
+    <Programs
+      editionId={edition.id}
+      eventId={event.id}
+      eventSlug={event.slug}
+    />
+  );
 }
 
 function Programs({
   editionId,
+  eventId,
   eventSlug,
 }: {
   editionId: string;
+  eventId: string;
   eventSlug: string;
 }) {
+  useInventoryStream(editionId);
   const { data: programs } = useSuspenseQuery(programsQueryOptions(editionId));
   const { data: occurrences } = useSuspenseQuery(
     occurrencesQueryOptions(editionId),
   );
+  const { data: stock } = useSuspenseQuery(storeStockQueryOptions(editionId));
+  const stockByOccurrence = new Map(
+    stock
+      .filter((item) => item.item_type === "program_occurrence")
+      .map((item) => [item.id, item.stock]),
+  );
   const days = groupByDay(programs, occurrences);
+  const registration = useProgramRegistration(
+    editionId,
+    eventId,
+    eventSlug,
+    `/events/${eventSlug}/programs`,
+  );
 
   return (
     <main className="min-h-screen bg-background px-4 pt-4 pb-24 md:pt-6">
@@ -89,6 +113,8 @@ function Programs({
                   items={day.items}
                   maxItems={day.items.length}
                   showFullDescription
+                  registration={registration}
+                  stockByOccurrence={stockByOccurrence}
                 />
               )}
               itemMinWidth={320}

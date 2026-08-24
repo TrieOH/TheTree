@@ -111,23 +111,28 @@ function CheckoutPage() {
       }
     }
 
-    const data: CreateCheckoutRequest = {
-      payment_method:
-        !payment || payment.payment_method_id === "pix" ? "pix" : "credit_card",
-      card_token: payment?.card_token,
-      payment_method_id:
-        !payment || payment.payment_method_id === "pix"
-          ? undefined
-          : payment.payment_method_id,
-      issuer_id: payment?.issuer_id,
-      installments: payment?.installments,
-      payer: {
-        email: payment?.payer_email ?? profile.email,
-        identification_type: payment?.identification_type ?? "",
-        identification_number: payment?.identification_number ?? "",
-      },
-      items: checkoutItems,
-    };
+    const data: CreateCheckoutRequest =
+      totalCents === 0
+        ? { items: checkoutItems }
+        : {
+            payment_method:
+              !payment || payment.payment_method_id === "pix"
+                ? "pix"
+                : "credit_card",
+            card_token: payment?.card_token,
+            payment_method_id:
+              !payment || payment.payment_method_id === "pix"
+                ? undefined
+                : payment.payment_method_id,
+            issuer_id: payment?.issuer_id,
+            installments: payment?.installments,
+            payer: {
+              email: payment?.payer_email ?? profile.email,
+              identification_type: payment?.identification_type ?? "",
+              identification_number: payment?.identification_number ?? "",
+            },
+            items: checkoutItems,
+          };
 
     try {
       const result = await withSpan("action:checkout", () =>
