@@ -1,0 +1,186 @@
+#!/bin/sh
+
+# Pre-commit: lint / typecheck / tests, but only in the modules touched by
+# the staged changes — keeps the hook fast on a monorepo.
+#
+#   api/<svc>, lib/go, sdk/go/<sdk>  → golangci-lint run + go test (mandatory:
+#                                     tests use testcontainers, so Docker must be up)
+#   front/<svc>                      → biome check (lint+format), tsc, test (if any)
+#   sdk/ts/<sdk>                     → typecheck
+#   lib/ts/*                         → no runnable scripts — skipped
+#
+# Root dependency/config files (go.work, pnpm-lock.yaml, package.json, ...)
+# trigger a full run, since a change there can break any module.
+
+set -eu
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/thetree-precommit.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+targets="$tmp/targets"
+pids="$tmp/pids"
+: >"$targets"
+: >"$pids"
+
+add_target() {
+    grep -qxF "$1" "$targets" || echo "$1" >>"$targets"
+}
+
+# --- 1. classify staged files into check targets -----------------------
+
+git diff --cached --name-only --diff-filter=ACMRD >"$tmp/staged"
+
+global=0
+while IFS= read -r f; do
+    case "$f" in
+        package.json|pnpm-lock.yaml|pnpm-workspace.yaml|go.work|go.work.sum|.golangci.yml)
+            global=1
+            ;;
+        api/*)
+            rest=${f#api/}; add_target "go:api/${rest%%/*}" ;;
+        lib/go/*)
+            add_target "go:lib/go" ;;
+        sdk/go/*)
+            rest=${f#sdk/go/}; add_target "go:sdk/go/${rest%%/*}" ;;
+        front/*)
+            rest=${f#front/}; add_target "ts:front/${rest%%/*}" ;;
+        sdk/ts/*)
+            rest=${f#sdk/ts/}; add_target "ts:sdk/ts/${rest%%/*}" ;;
+    esac
+done <"$tmp/staged"
+
+# a change to workspace/dep config can break any module → run everything
+if [ "$global" -eq 1 ]; then
+    : >"$targets"
+    for d in api/identityx api/informd api/payssage api/univents lib/go sdk/go/IdentityX sdk/go/Payssage; do
+        add_target "go:$d"
+    done
+    for d in front/identityx front/informd front/payssage front/univents; do
+        add_target "ts:$d"
+    done
+    for d in sdk/ts/*; do
+        [ -d "$d" ] && add_target "ts:$d"
+    done
+fi
+
+if [ ! -s "$targets" ]; then
+    echo "✓ nothing to check (no module files staged)"
+    exit 0
+fi
+
+# drop stale targets (full-run list may mention removed modules)
+: >"$tmp/targets.fresh"
+while IFS= read -r t; do
+    [ -d "${t#*:}" ] && echo "$t" >>"$tmp/targets.fresh"
+done <"$targets"
+mv "$tmp/targets.fresh" "$targets"
+
+# --- 2. run checks per target, in parallel -----------------------------
+
+run_target() {
+    t=$1
+    dir=${t#*:}
+    work="$tmp/$dir"
+    mkdir -p "$work"
+    log="$work/log"
+    : >"$log"
+    rc=0
+
+    case "$t" in
+        go:*)
+            echo "golangci-lint run ./$dir/..." >>"$log"
+            golangci-lint run "./$dir/..." >>"$log" 2>&1 || rc=1
+            if [ "$rc" -eq 0 ]; then
+                if docker info >/dev/null 2>&1; then
+                    echo "go test ./... (in $dir)" >>"$log"
+                    (cd "$dir" && go test ./...) >>"$log" 2>&1 || rc=1
+                else
+                    echo "  ✗ docker unavailable — go tests must run; start the Docker daemon and retry" >>"$log"
+                    rc=1
+                fi
+            fi
+            ;;
+        ts:front/*)
+            if [ ! -f "$dir/package.json" ]; then
+                echo "no package.json — skipped" >"$work/notes"
+                echo 0 >"$work/status"
+                return 0
+            fi
+            name=$(node -p "require('./$dir/package.json').name")
+            echo "pnpm -F $name check" >>"$log"
+            pnpm -F "$name" check >>"$log" 2>&1 || rc=1
+            if [ "$rc" -eq 0 ]; then
+                echo "pnpm -F $name tsc" >>"$log"
+                pnpm -F "$name" tsc >>"$log" 2>&1 || rc=1
+            fi
+            if [ "$rc" -eq 0 ] && \
+                node -e "process.exit(require('./$dir/package.json').scripts && require('./$dir/package.json').scripts.test ? 0 : 1)" 2>/dev/null; then
+                echo "pnpm -F $name test" >>"$log"
+                pnpm -F "$name" test >>"$log" 2>&1 || rc=1
+            fi
+            ;;
+        ts:sdk/ts/*)
+            if [ ! -f "$dir/package.json" ]; then
+                echo "no package.json — skipped" >"$work/notes"
+                echo 0 >"$work/status"
+                return 0
+            fi
+            name=$(node -p "require('./$dir/package.json').name")
+            echo "pnpm -F $name typecheck" >>"$log"
+            pnpm -F "$name" typecheck >>"$log" 2>&1 || rc=1
+            ;;
+    esac
+
+    echo "$rc" >"$work/status"
+    return "$rc"
+}
+
+# golangci-lint refuses concurrent runs (it holds a lock file), so all Go
+# targets run sequentially inside one background chain; TS targets each run
+# in their own job, in parallel with the Go chain.
+grep '^go:' "$targets" >"$tmp/go_targets" || true
+grep '^ts:' "$targets" >"$tmp/ts_targets" || true
+
+run_go_chain() {
+    while IFS= read -r t; do
+        echo "▶ ${t#*:}"
+        run_target "$t" || true
+    done <"$tmp/go_targets"
+}
+
+if [ -s "$tmp/go_targets" ]; then
+    run_go_chain &
+    echo "$!" >>"$pids"
+fi
+
+while IFS= read -r t; do
+    echo "▶ ${t#*:}"
+    run_target "$t" &
+    echo "$!" >>"$pids"
+done <"$tmp/ts_targets"
+
+# drain all background jobs (the Go chain swallows per-module failures, so
+# the exit code is derived from the per-module status files below)
+while IFS= read -r p; do
+    wait "$p" || true
+done <"$pids"
+
+# --- 3. report + derive exit code ---------------------------------------
+
+fail=0
+while IFS= read -r t; do
+    dir=${t#*:}
+    rc=$(cat "$tmp/$dir/status" 2>/dev/null || echo 1)
+    if [ "$rc" -eq 0 ]; then
+        printf '✓ %s' "$dir"
+        [ -f "$tmp/$dir/notes" ] && printf ' (%s)' "$(cat "$tmp/$dir/notes")"
+        echo
+    else
+        fail=1
+        echo "✗ $dir"
+        cat "$tmp/$dir/log" 2>/dev/null
+        echo
+    fi
+done <"$targets"
+
+exit "$fail"

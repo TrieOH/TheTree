@@ -46,7 +46,8 @@ func TestTraceContextPropagation(t *testing.T) {
 	ctx, span := otel.Tracer("propagation-test").Start(context.Background(), "root")
 	defer span.End()
 
-	if _, err := client.Tokens.GetJWKS(ctx, true); err != nil {
+	_, err = client.Tokens.GetJWKS(ctx, true)
+	if err != nil {
 		t.Fatalf("GetJWKS: %v", err)
 	}
 

@@ -1,0 +1,117 @@
+#!/bin/sh
+
+set -eu
+
+ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
+
+scope_exists() {
+    scope="$1"
+
+    case "$scope" in
+        root|all|docs|agents|dagger|forgejo)
+            return 0
+            ;;
+    esac
+
+    # api/<service> -> <service>
+    for dir in api/*; do
+        [ -d "$dir" ] || continue
+
+        name=$(basename "$dir")
+
+        if [ "$scope" = "$name" ]; then
+            return 0
+        fi
+    done
+
+    # front/<service> -> <service>-ui
+    for dir in front/*; do
+        [ -d "$dir" ] || continue
+
+        name=$(basename "$dir")
+
+        if [ "$scope" = "$name-ui" ]; then
+            return 0
+        fi
+    done
+
+    # lib/ts -> lib-ts
+    # lib/go -> lib-go
+    if [ "$scope" = "lib-ts" ] && [ -d "lib/ts" ]; then
+        return 0
+    fi
+
+    if [ "$scope" = "lib-go" ] && [ -d "lib/go" ]; then
+        return 0
+    fi
+
+    # sdk/<lang>/<sdk> -> sdk-<lang>-<sdk>
+    for lang in ts go; do
+        for dir in "sdk/$lang"/*; do
+            [ -d "$dir" ] || continue
+
+            name=$(basename "$dir")
+
+            if [ "$scope" = "sdk-$lang-$name" ]; then
+                return 0
+            fi
+        done
+    done
+
+    return 1
+}
+
+branch=$(git symbolic-ref --quiet --short HEAD || true)
+
+if [ -z "$branch" ]; then
+    echo "❌ Cannot determine current branch."
+    exit 1
+fi
+
+# main is allowed — it's already protected server-side (admin-only pushes)
+if [ "$branch" = "main" ]; then
+    echo "✓ Branch: main"
+    exit 0
+fi
+
+# SCOPE/ACTION/NAME
+#
+# NAME:
+#   lowercase kebab-case
+#
+# Example:
+#   payssage/feat/add-invoice-generation
+#   sdk-go-payssage/fix/nullable-response
+#
+if ! printf '%s\n' "$branch" | grep -Eq "^[a-z0-9][a-z0-9-]*/($ACTIONS)/[a-z0-9][a-z0-9-]*$"; then
+    echo ""
+    echo "❌ Invalid branch name: $branch"
+    echo ""
+    echo "Expected:"
+    echo "  SCOPE/ACTION/NAME"
+    echo ""
+    echo "Examples:"
+    echo "  payssage/feat/add-invoice-generation"
+    echo "  payssage-ui/fix/login-validation"
+    echo "  sdk-go-payssage/feat/add-webhooks"
+    echo "  lib-go/refactor/http-client"
+    echo ""
+    echo "Actions:"
+    echo "  feat fix refactor perf style docs test build ci chore revert"
+    echo ""
+    exit 1
+fi
+
+scope=$(printf '%s\n' "$branch" | cut -d/ -f1)
+action=$(printf '%s\n' "$branch" | cut -d/ -f2)
+
+if ! scope_exists "$scope"; then
+    echo ""
+    echo "❌ Invalid branch scope: $scope"
+    echo ""
+    echo "The scope must correspond to a known project."
+    echo ""
+    exit 1
+fi
+
+echo "✓ Branch: $scope/$action"

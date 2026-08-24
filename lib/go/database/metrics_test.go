@@ -21,7 +21,7 @@ func TestPoolCollectorDescribesSevenMetrics(t *testing.T) {
 	}
 }
 
-func TestPoolCollectorNilPoolNoPanic(t *testing.T) {
+func TestPoolCollectorNilPoolNoPanic(_ *testing.T) {
 	poolMu.Lock()
 	poolRef = nil
 	poolMu.Unlock()

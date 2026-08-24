@@ -1,0 +1,97 @@
+#!/bin/sh
+
+set -eu
+
+COMMIT_MSG_FILE="$1"
+
+ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
+
+scope_exists() {
+    scope="$1"
+
+    case "$scope" in
+        root|all|docs|agents|dagger|forgejo)
+            return 0
+            ;;
+    esac
+
+    # api/<service> -> <service>
+    for dir in api/*; do
+        [ -d "$dir" ] || continue
+
+        name=$(basename "$dir")
+
+        if [ "$scope" = "$name" ]; then
+            return 0
+        fi
+    done
+
+    # front/<service> -> <service>-ui
+    for dir in front/*; do
+        [ -d "$dir" ] || continue
+
+        name=$(basename "$dir")
+
+        if [ "$scope" = "$name-ui" ]; then
+            return 0
+        fi
+    done
+
+    # lib/ts -> lib-ts
+    # lib/go -> lib-go
+    if [ "$scope" = "lib-ts" ] && [ -d "lib/ts" ]; then
+        return 0
+    fi
+
+    if [ "$scope" = "lib-go" ] && [ -d "lib/go" ]; then
+        return 0
+    fi
+
+    # sdk/ts/<sdk> -> sdk-ts-<sdk>
+    # sdk/go/<sdk> -> sdk-go-<sdk>
+    for lang in ts go; do
+        for dir in "sdk/$lang"/*; do
+            [ -d "$dir" ] || continue
+
+            name=$(basename "$dir")
+
+            if [ "$scope" = "sdk-$lang-$name" ]; then
+                return 0
+            fi
+        done
+    done
+
+    return 1
+}
+
+message=$(head -n 1 "$COMMIT_MSG_FILE")
+
+if ! printf '%s\n' "$message" | grep -Eq "^($ACTIONS)\([a-z0-9][a-z0-9-]*\): .+$"; then
+    echo ""
+    echo "❌ Invalid commit message."
+    echo ""
+    echo "Expected:"
+    echo "  ACTION(SCOPE): MESSAGE"
+    echo ""
+    echo "Actions:"
+    echo "  feat fix refactor perf style docs test build ci chore revert"
+    echo ""
+    echo "Example:"
+    echo "  feat(payssage): add invoice generation"
+    echo ""
+    exit 1
+fi
+
+action=$(printf '%s\n' "$message" | sed -E 's/^([a-z]+)\(.*/\1/')
+scope=$(printf '%s\n' "$message" | sed -E 's/^[a-z]+\(([^)]+)\): .*/\1/')
+
+if ! scope_exists "$scope"; then
+    echo ""
+    echo "❌ Invalid commit scope: $scope"
+    echo ""
+    echo "The scope must correspond to a known project."
+    echo ""
+    exit 1
+fi
+
+echo "✓ Commit: $action($scope)"

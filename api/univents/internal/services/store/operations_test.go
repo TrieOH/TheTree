@@ -363,7 +363,7 @@ func TestSSECORSHeaders(t *testing.T) {
 	t.Cleanup(ts.Close)
 
 	c, head := dialSSEHead(t, ts, editionID, "")
-	defer c.conn.Close()
+	defer func() { _ = c.conn.Close() }()
 	got := headToMap(head)
 	if v := got["Access-Control-Allow-Origin"]; v != origin {
 		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", v, origin)
@@ -407,7 +407,7 @@ func TestSSECORSViaHarnessMiddleware(t *testing.T) {
 
 	// Allowed origin → the configured setting appears on the stream head.
 	c, head := dialSSEHead(t, ts, editionID, "Origin: http://localhost:3002\r\n")
-	defer c.conn.Close()
+	defer func() { _ = c.conn.Close() }()
 	got := headToMap(head)
 	if v := got["Access-Control-Allow-Origin"]; v != "http://localhost:3002" {
 		t.Fatalf("Access-Control-Allow-Origin = %q, want the configured origin", v)
@@ -425,7 +425,7 @@ func TestSSECORSViaHarnessMiddleware(t *testing.T) {
 	// Disallowed origin → the middleware stamps nothing, so the hijacked
 	// head carries no Allow-Origin and the browser keeps blocking.
 	c2, head2 := dialSSEHead(t, ts, editionID, "Origin: http://evil.example\r\n")
-	defer c2.conn.Close()
+	defer func() { _ = c2.conn.Close() }()
 	if v := headToMap(head2)["Access-Control-Allow-Origin"]; v != "" {
 		t.Fatalf("disallowed origin got Access-Control-Allow-Origin = %q, want none", v)
 	}
