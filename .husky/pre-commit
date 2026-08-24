@@ -102,7 +102,6 @@ run_target() {
             ;;
         ts:front/*)
             if [ ! -f "$dir/package.json" ]; then
-                echo "no package.json — skipped" >"$work/notes"
                 echo 0 >"$work/status"
                 return 0
             fi
@@ -121,7 +120,6 @@ run_target() {
             ;;
         ts:sdk/ts/*)
             if [ ! -f "$dir/package.json" ]; then
-                echo "no package.json — skipped" >"$work/notes"
                 echo 0 >"$work/status"
                 return 0
             fi
@@ -141,9 +139,36 @@ run_target() {
 grep '^go:' "$targets" >"$tmp/go_targets" || true
 grep '^ts:' "$targets" >"$tmp/ts_targets" || true
 
+# human-readable "what is running" label, e.g. "api/payssage — lint + test"
+desc() {
+    t=$1
+    dir=${t#*:}
+    case "$t" in
+        go:*) echo "$dir — lint + test" ;;
+        ts:front/*)
+            if [ ! -f "$dir/package.json" ]; then
+                echo "$dir — no package.json, skipped"
+                return
+            fi
+            what="check + tsc"
+            if node -e "process.exit(require('./$dir/package.json').scripts && require('./$dir/package.json').scripts.test ? 0 : 1)" 2>/dev/null; then
+                what="$what + test"
+            fi
+            echo "$dir — $what"
+            ;;
+        ts:sdk/ts/*)
+            if [ -f "$dir/package.json" ]; then
+                echo "$dir — typecheck"
+            else
+                echo "$dir — no package.json, skipped"
+            fi
+            ;;
+    esac
+}
+
 run_go_chain() {
     while IFS= read -r t; do
-        echo "▶ ${t#*:}"
+        echo "▶ $(desc "$t")"
         run_target "$t" || true
     done <"$tmp/go_targets"
 }
@@ -154,7 +179,7 @@ if [ -s "$tmp/go_targets" ]; then
 fi
 
 while IFS= read -r t; do
-    echo "▶ ${t#*:}"
+    echo "▶ $(desc "$t")"
     run_target "$t" &
     echo "$!" >>"$pids"
 done <"$tmp/ts_targets"
@@ -168,19 +193,25 @@ done <"$pids"
 # --- 3. report + derive exit code ---------------------------------------
 
 fail=0
+total=0
 while IFS= read -r t; do
+    total=$((total + 1))
     dir=${t#*:}
     rc=$(cat "$tmp/$dir/status" 2>/dev/null || echo 1)
     if [ "$rc" -eq 0 ]; then
-        printf '✓ %s' "$dir"
-        [ -f "$tmp/$dir/notes" ] && printf ' (%s)' "$(cat "$tmp/$dir/notes")"
-        echo
+        echo "✓ $(desc "$t")"
     else
         fail=1
-        echo "✗ $dir"
+        echo "✗ $(desc "$t")"
         cat "$tmp/$dir/log" 2>/dev/null
         echo
     fi
 done <"$targets"
+
+if [ "$fail" -eq 0 ]; then
+    echo "✓ all $total checks passed"
+else
+    echo "✗ some checks failed"
+fi
 
 exit "$fail"
