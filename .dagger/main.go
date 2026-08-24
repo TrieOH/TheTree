@@ -7,6 +7,8 @@ import (
 	"dagger/thetree/internal/dagger"
 	"fmt"
 	"strings"
+	"sync"
+
 )
 
 type Thetree struct{}
@@ -26,22 +28,38 @@ const (
 	oapiCodegenVersion = "2.8.0"
 )
 
+// goBase returns a bare Go toolchain container with the workspace build
+// caches mounted but NO source. Tool-install layers built on top of it
+// stay cacheable across commits: dagger invalidates an exec layer whenever
+// a mounted source directory changes, so installing tools AFTER mounting
+// the source (as before) re-downloaded sqlc / oapi-codegen / golangci-lint
+// / gotestsum on every commit.
+func (m *Thetree) goBase() *dagger.Container {
+	return dag.Container().
+		From(fmt.Sprintf("golang:%s-bookworm", goVersion)).
+		WithMountedCache("/root/go/pkg/mod", dag.CacheVolume("go-mod")).
+		WithMountedCache("/root/.cache/go-build", dag.CacheVolume("go-build"))
+}
+
+// withSource mounts the workspace source onto a tool-ready container.
+// Do this LAST, after every tool install, so the install layers keep their
+// cache across source changes.
+func (m *Thetree) withSource(c *dagger.Container, source *dagger.Directory, service string) *dagger.Container {
+	return c.
+		WithDirectory("/workspace", m.scopedSource(source, service)).
+		WithWorkdir("/workspace").
+		WithEnvVariable("GOWORK", "/workspace/go.work")
+}
+
 // baseGo returns a container with the full repo source mounted.
 func (m *Thetree) baseGo(source *dagger.Directory) *dagger.Container {
-	return m.baseGoScoped(source, "")
+	return m.withSource(m.goBase(), source, "")
 }
 
 // baseGoScoped returns a container with only the workspace modules needed
 // by the given service. Pass an empty service string for the full source.
 func (m *Thetree) baseGoScoped(source *dagger.Directory, service string) *dagger.Container {
-	dirs := m.scopedSource(source, service)
-	return dag.Container().
-		From(fmt.Sprintf("golang:%s-bookworm", goVersion)).
-		WithMountedCache("/root/go/pkg/mod", dag.CacheVolume("go-mod")).
-		WithMountedCache("/root/.cache/go-build", dag.CacheVolume("go-build")).
-		WithDirectory("/workspace", dirs).
-		WithWorkdir("/workspace").
-		WithEnvVariable("GOWORK", "/workspace/go.work")
+	return m.withSource(m.goBase(), source, service)
 }
 
 // scopedSource extracts only the Go workspace files — all api/, lib/go/, sdk/go/,
@@ -144,7 +162,7 @@ func (m *Thetree) oapiGenerate(c *dagger.Container, service string) *dagger.Cont
 
 // Compile builds a single service.
 func (m *Thetree) Compile(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service)))
+	c := m.withSource(m.withOapiCodegen(m.withSqlc(m.goBase())), source, service)
 	c = m.sqlcGenerate(c, service)
 	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{"sh", "-c", fmt.Sprintf("cd api/%s && go build ./...", service)})
@@ -153,7 +171,7 @@ func (m *Thetree) Compile(ctx context.Context, source *dagger.Directory, service
 
 // Lint runs golangci-lint for a single service.
 func (m *Thetree) Lint(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withGolangciLint(m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service))))
+	c := m.withSource(m.withGolangciLint(m.withOapiCodegen(m.withSqlc(m.goBase()))), source, service)
 	c = m.sqlcGenerate(c, service)
 	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{
@@ -164,8 +182,13 @@ func (m *Thetree) Lint(ctx context.Context, source *dagger.Directory, service st
 }
 
 // Test runs gotestsum for a single service.
+//
+// DB-backed integration tests (lib/testdb, testcontainers) auto-skip here:
+// the dagger module runtime has no Docker daemon access, and testdb skips
+// when no provider is reachable. CI runs those integration tests on the
+// runner, which has Docker — see .forgejo/workflows/ci.yml.
 func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service string) (string, error) {
-	c := m.withGotestsum(m.withOapiCodegen(m.withSqlc(m.baseGoScoped(source, service))))
+	c := m.withSource(m.withGotestsum(m.withOapiCodegen(m.withSqlc(m.goBase()))), source, service)
 	c = m.sqlcGenerate(c, service)
 	c = m.oapiGenerate(c, service)
 	c = c.WithExec([]string{
@@ -175,26 +198,55 @@ func (m *Thetree) Test(ctx context.Context, source *dagger.Directory, service st
 	return c.Stdout(ctx)
 }
 
-// CI runs compile, lint, and test for the given services (comma-separated or "all").
+// CI runs compile, lint, and test for the given services (comma-separated
+// or "all"), one service per goroutine — the dagger engine schedules the
+// pipelines in parallel, so multi-service runs finish in roughly the time
+// of the slowest service instead of the sum.
+//
+// The test step runs the unit tests; the DB-backed integration tests
+// auto-skip (no Docker in the module runtime) and are executed on the CI
+// runner by the workflow's `tests` job instead.
 // Generated OpenAPI bindings (internal/openapi) are not committed; every
 // build path regenerates them from api-spec.yml (see oapiGenerate).
 func (m *Thetree) CI(ctx context.Context, source *dagger.Directory, services string) (string, error) {
 	list := parseServices(services)
-	var out string
+	var (
+		mu  sync.Mutex
+		out strings.Builder
+		wg  sync.WaitGroup
+		errs = make(chan error, len(list))
+	)
 	for _, s := range list {
-		if _, err := m.Compile(ctx, source, s); err != nil {
-			return "", fmt.Errorf("compile %s: %w", s, err)
-		}
-		if _, err := m.Lint(ctx, source, s); err != nil {
-			return "", fmt.Errorf("lint %s: %w", s, err)
-		}
-		res, err := m.Test(ctx, source, s)
-		if err != nil {
-			return "", fmt.Errorf("test %s: %w", s, err)
-		}
-		out += fmt.Sprintf("--- %s ---\n%s\n", s, res)
+		s := s
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := m.Compile(ctx, source, s); err != nil {
+				errs <- fmt.Errorf("compile %s: %w", s, err)
+				return
+			}
+			if _, err := m.Lint(ctx, source, s); err != nil {
+				errs <- fmt.Errorf("lint %s: %w", s, err)
+				return
+			}
+			res, err := m.Test(ctx, source, s)
+			if err != nil {
+				errs <- fmt.Errorf("test %s: %w", s, err)
+				return
+			}
+			mu.Lock()
+			out.WriteString(fmt.Sprintf("--- %s ---\n%s\n", s, res))
+			mu.Unlock()
+		}()
 	}
-	return out, nil
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			return "", err
+		}
+	}
+	return out.String(), nil
 }
 
 const registry = "git.trieoh.com"

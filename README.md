@@ -36,7 +36,17 @@ docs/            # CONTEXT.md (domain glossary), adr/, agents/
 - Docker + Docker Compose
 - `just` — all dev recipes live in the `justfile`
 - `golangci-lint` (for `just lint`)
-- `gotestsum` (for `just test`) — `go install gotest.tools/gotestsum@latest`
+- `gotestsum` (for `just test`)
+
+Both are installable with `just setup` (pinned versions). `go install` puts
+binaries in `$(go env GOPATH)/bin` — add it to `PATH` if `just test`/`just
+lint` report "command not found":
+
+```bash
+just setup
+export PATH="$(go env GOPATH)/bin:$PATH"   # bash / zsh
+fish_add_path "$HOME/go/bin"                # fish (already set up in config.fish)
+```
 
 ## Quickstart
 

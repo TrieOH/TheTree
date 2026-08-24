@@ -37,6 +37,11 @@ jobs:
               - 'api/univents/**'
               - 'lib/go/**'
 
+  # Hermetic compile + lint + unit tests, one service per goroutine inside
+  # dagger. The DB-backed integration tests (lib/testdb, testcontainers)
+  # auto-skip here: the dagger module runtime has no Docker daemon access,
+  # and testdb skips when no provider is reachable. They run in the
+  # `tests` job below, on the runner where Docker exists.
   ci:
     needs: changes
     if: ${{ needs.changes.outputs.any == 'true' }}
@@ -57,7 +62,59 @@ jobs:
         run: curl -fsSL https://get.docker.com | sh
       - uses: https://github.com/dagger/dagger-for-github@v6
         with:
-          version: "v0.21.7"
+          version: "v0.21.8"
           verb: call
           module: .dagger
           args: ci --source=. --services=${{ steps.services.outputs.list }}
+
+  # Integration tests only: the testcontainers-backed DB tests need a real
+  # Docker daemon, so they run here on the runner (which has Docker) — the
+  # unit tests already ran in the `ci` job. Only the services with
+  # integration tests are covered (univents, identityx).
+  tests:
+    needs: changes
+    if: ${{ needs.changes.outputs.univents == 'true' || needs.changes.outputs.identityx == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: build integration service list
+        id: services
+        run: |
+          list=""
+          [ "${{ needs.changes.outputs.identityx }}" == "true" ] && list="$list,identityx"
+          [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
+          echo "list=${list#,}" >> "$GITHUB_OUTPUT"
+      - name: Set up Docker
+        run: curl -fsSL https://get.docker.com | sh
+      - uses: https://github.com/actions/setup-go@v5
+        with:
+          go-version: "1.26.4"
+          cache: true
+      # Generated code (sqlc + internal/openapi) is gitignored, so every
+      # test path regenerates it first — same tools/versions as .dagger/main.go.
+      - name: Generate code
+        run: |
+          set -euo pipefail
+          curl -sSL https://downloads.sqlc.dev/sqlc_1.31.1_linux_amd64.tar.gz -o /tmp/sqlc.tar.gz
+          tar -xzf /tmp/sqlc.tar.gz -C /usr/local/bin sqlc
+          GOBIN=/usr/local/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
+          for s in ${SERVICES//,/ }; do
+            (cd "api/$s" && {
+              sqlc generate
+              oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
+              oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+              go get github.com/oapi-codegen/runtime@v1.6.0
+            })
+          done
+        env:
+          SERVICES: ${{ steps.services.outputs.list }}
+      - name: Run integration tests
+        run: |
+          set -euo pipefail
+          for s in ${SERVICES//,/ }; do
+            echo "=== $s ==="
+            (cd "api/$s" && go test -count=1 ./...)
+          done
+        env:
+          SERVICES: ${{ steps.services.outputs.list }}

@@ -81,7 +81,7 @@ jobs:
         run: curl -fsSL https://get.docker.com | sh
       - uses: https://github.com/dagger/dagger-for-github@v6
         with:
-          version: "v0.21.7"
+          version: "v0.21.8"
           verb: call
           module: .dagger
           args: trivy --source=. --projects=${{ steps.projects.outputs.list }}

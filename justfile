@@ -64,6 +64,19 @@ test +NAME="":
       *)         gotestsum --format testdox --format-hide-empty-pkg ./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;
     esac
 
+# Install the Go dev tools (golangci-lint, gotestsum), pinned to the same
+# versions CI uses. go install puts binaries in $(go env GOPATH)/bin — if
+# `just test` / `just lint` report "command not found", add it to PATH:
+#
+#   export PATH="$(go env GOPATH)/bin:$PATH"
+setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+    go install gotest.tools/gotestsum@v1.13.0
+    echo "installed into $(go env GOPATH)/bin"
+    echo 'add to PATH if needed:  export PATH="$(go env GOPATH)/bin:$PATH"'
+
 # Update every Go module in the workspace to the latest dependency versions,
 # then sync go.work.sum.
 goup:

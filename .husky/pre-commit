@@ -77,6 +77,35 @@ mv "$tmp/targets.fresh" "$targets"
 
 # --- 2. run checks per target, in parallel -----------------------------
 
+run_lint() {
+    t=$1
+    dir=${t#*:}
+    work="$tmp/$dir"
+    mkdir -p "$work"
+    log="$work/lint.log"
+    : >"$log"
+    echo "golangci-lint run ./$dir/..." >>"$log"
+    golangci-lint run "./$dir/..." >>"$log" 2>&1
+    echo $? >"$work/lint.status"
+}
+
+run_test() {
+    t=$1
+    dir=${t#*:}
+    work="$tmp/$dir"
+    mkdir -p "$work"
+    log="$work/test.log"
+    : >"$log"
+    if docker info >/dev/null 2>&1; then
+        echo "go test ./... (in $dir)" >>"$log"
+        (cd "$dir" && go test ./...) >>"$log" 2>&1
+        echo $? >"$work/test.status"
+    else
+        echo "  ✗ docker unavailable — go tests must run; start the Docker daemon and retry" >>"$log"
+        echo 1 >"$work/test.status"
+    fi
+}
+
 run_target() {
     t=$1
     dir=${t#*:}
@@ -87,19 +116,6 @@ run_target() {
     rc=0
 
     case "$t" in
-        go:*)
-            echo "golangci-lint run ./$dir/..." >>"$log"
-            golangci-lint run "./$dir/..." >>"$log" 2>&1 || rc=1
-            if [ "$rc" -eq 0 ]; then
-                if docker info >/dev/null 2>&1; then
-                    echo "go test ./... (in $dir)" >>"$log"
-                    (cd "$dir" && go test ./...) >>"$log" 2>&1 || rc=1
-                else
-                    echo "  ✗ docker unavailable — go tests must run; start the Docker daemon and retry" >>"$log"
-                    rc=1
-                fi
-            fi
-            ;;
         ts:front/*)
             if [ ! -f "$dir/package.json" ]; then
                 echo 0 >"$work/status"
@@ -134,8 +150,9 @@ run_target() {
 }
 
 # golangci-lint refuses concurrent runs (it holds a lock file), so all Go
-# targets run sequentially inside one background chain; TS targets each run
-# in their own job, in parallel with the Go chain.
+# lints run sequentially inside one background chain; go tests are
+# independent (each module has its own testcontainers) and run in parallel
+# jobs alongside the lint chain; TS targets each run in their own job.
 grep '^go:' "$targets" >"$tmp/go_targets" || true
 grep '^ts:' "$targets" >"$tmp/ts_targets" || true
 
@@ -166,17 +183,23 @@ desc() {
     esac
 }
 
-run_go_chain() {
+run_lint_chain() {
     while IFS= read -r t; do
-        echo "▶ $(desc "$t")"
-        run_target "$t" || true
+        echo "▶ ${t#*:} — lint"
+        run_lint "$t"
     done <"$tmp/go_targets"
 }
 
 if [ -s "$tmp/go_targets" ]; then
-    run_go_chain &
+    run_lint_chain &
     echo "$!" >>"$pids"
 fi
+
+while IFS= read -r t; do
+    echo "▶ ${t#*:} — test"
+    run_test "$t" &
+    echo "$!" >>"$pids"
+done <"$tmp/go_targets"
 
 while IFS= read -r t; do
     echo "▶ $(desc "$t")"
@@ -184,8 +207,7 @@ while IFS= read -r t; do
     echo "$!" >>"$pids"
 done <"$tmp/ts_targets"
 
-# drain all background jobs (the Go chain swallows per-module failures, so
-# the exit code is derived from the per-module status files below)
+# drain all background jobs (per-module status files carry the results)
 while IFS= read -r p; do
     wait "$p" || true
 done <"$pids"
@@ -197,13 +219,27 @@ total=0
 while IFS= read -r t; do
     total=$((total + 1))
     dir=${t#*:}
-    rc=$(cat "$tmp/$dir/status" 2>/dev/null || echo 1)
+    work="$tmp/$dir"
+    logs="$work/log"
+    case "$t" in
+        go:*)
+            rc=0
+            [ "$(cat "$work/lint.status" 2>/dev/null || echo 1)" -eq 0 ] || rc=1
+            [ "$(cat "$work/test.status" 2>/dev/null || echo 1)" -eq 0 ] || rc=1
+            logs="$work/lint.log $work/test.log"
+            ;;
+        ts:*)
+            rc=$(cat "$work/status" 2>/dev/null || echo 1)
+            ;;
+    esac
     if [ "$rc" -eq 0 ]; then
         echo "✓ $(desc "$t")"
     else
         fail=1
         echo "✗ $(desc "$t")"
-        cat "$tmp/$dir/log" 2>/dev/null
+        for l in $logs; do
+            [ -f "$l" ] && cat "$l"
+        done
         echo
     fi
 done <"$targets"
