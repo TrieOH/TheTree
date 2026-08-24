@@ -267,9 +267,16 @@ deploy/                                  # runtime repo (TrieOH/deploy)
     <ul>
       <li><strong>Project/containers:</strong> <code class="inline">name: thetree-staging</code>, containers <code class="inline">postgres-staging</code>, <code class="inline">rustfs-staging</code>, <code class="inline">identityx-staging</code>, <code class="inline">univents-staging</code>, <code class="inline">payssage-staging</code>, <code class="inline">informd-staging</code> — own volumes and network.</li>
       <li><strong>mailpit</strong> instead of real SMTP — every service's <code class="inline">SMTP_HOST</code> points at it.</li>
-      <li><strong>No <code class="inline">obs-net</code></strong> — staging must not pollute prod observability.</li>
+      <li><strong>No <code class="inline">obs-net</code></strong> — staging must not pollute prod observability. <em>(Amended 2026-08-24 — see flag below.)</em></li>
       <li><strong>Loopback debug ports</strong> (<code class="inline">127.0.0.1:18080 → identityx</code>, <code class="inline">127.0.0.1:18082 → payssage</code>) so server-side scripts and smoke tests can call the APIs directly.</li>
     </ul>
+    <div class="flag">
+      <strong>Amendment (2026-08-24):</strong> the "no <code class="inline">obs-net</code>" delta is revised — staging <em>should</em>
+      ship telemetry, into the <strong>same</strong> Victoria instances with an <code class="inline">env="staging"</code>
+      stream label (a second Victoria stack doesn't fit 8GB RAM), with all prod alerts filtered to
+      <code class="inline">env="prod"</code>. Blind staging is undebuggable staging — without telemetry, the e2e
+      errors this plan exists to catch are invisible. See <code class="inline">docs/infra-wishlist.md</code> #18.
+    </div>
     <p>Same pinned image tags as prod (<code class="inline">identityx:v0.35.3</code>, <code class="inline">univents:v0.10.4</code>, <code class="inline">payssage:v0.7.4</code>, <code class="inline">informd:latest</code>), bumped alongside prod so staging always previews the current prod behavior.</p>
   </div>
 
