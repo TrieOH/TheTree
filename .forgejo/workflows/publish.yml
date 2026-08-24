@@ -21,8 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
-      - name: Set up Docker
-        run: curl -fsSL https://get.docker.com | sh
+      - uses: ./.forgejo/actions/setup-docker
       - name: Build & publish via Dagger
         uses: https://github.com/dagger/dagger-for-github@v6
         env:

@@ -77,8 +77,7 @@ jobs:
           list="${list%]}"
           list="${list//\"/}"
           echo "list=${list}" >> "$GITHUB_OUTPUT"
-      - name: Set up Docker
-        run: curl -fsSL https://get.docker.com | sh
+      - uses: ./.forgejo/actions/setup-docker
       - uses: https://github.com/dagger/dagger-for-github@v6
         with:
           version: "v0.21.8"

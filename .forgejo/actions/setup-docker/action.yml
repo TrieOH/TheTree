@@ -1,0 +1,35 @@
+name: Setup Docker CLI
+description: >
+  Installs the docker CLI from a pinned static tarball (no latest, no apt),
+  cached in the runner's internal cache so CI doesn't re-download it every
+  run. The daemon socket is automounted into job containers by the runner
+  (docker_host: automount), so only the CLI is needed — the full daemon
+  install from get.docker.com is redundant.
+  Keep `version` in sync with the DinD daemon image in
+  infra/forgejo/compose.yml (docker:<version>-dind).
+inputs:
+  version:
+    description: Docker CLI version (static tarball on download.docker.com)
+    required: false
+    default: "29.7.2"
+runs:
+  using: composite
+  steps:
+    - name: Restore docker CLI from cache
+      id: cache
+      uses: https://code.forgejo.org/actions/cache@v1
+      with:
+        path: /usr/local/bin/docker
+        key: docker-cli-${{ inputs.version }}
+    - name: Install pinned docker CLI (cache miss)
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${{ inputs.version }}.tgz" -o /tmp/docker.tgz
+        tar -xzf /tmp/docker.tgz -C /tmp docker/docker
+        install -m 0755 /tmp/docker/docker /usr/local/bin/docker
+        rm -f /tmp/docker.tgz
+    - name: Smoke test
+      shell: bash
+      run: docker version --format '{{.Client.Version}}'

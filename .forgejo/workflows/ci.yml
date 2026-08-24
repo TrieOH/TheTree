@@ -58,8 +58,7 @@ jobs:
           [ "${{ needs.changes.outputs.payssage }}" == "true" ] && list="$list,payssage"
           [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
           echo "list=${list#,}" >> "$GITHUB_OUTPUT"
-      - name: Set up Docker
-        run: curl -fsSL https://get.docker.com | sh
+      - uses: ./.forgejo/actions/setup-docker
       - uses: https://github.com/dagger/dagger-for-github@v6
         with:
           version: "v0.21.8"
@@ -85,8 +84,7 @@ jobs:
           [ "${{ needs.changes.outputs.identityx }}" == "true" ] && list="$list,identityx"
           [ "${{ needs.changes.outputs.univents }}" == "true" ] && list="$list,univents"
           echo "list=${list#,}" >> "$GITHUB_OUTPUT"
-      - name: Set up Docker
-        run: curl -fsSL https://get.docker.com | sh
+      - uses: ./.forgejo/actions/setup-docker
       - uses: https://github.com/actions/setup-go@v5
         with:
           go-version: "1.26.4"
