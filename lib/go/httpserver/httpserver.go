@@ -97,6 +97,11 @@ func spanRouteNameMiddleware(next http.Handler) http.Handler {
 			if pattern := chi.RouteContext(r.Context()).RoutePattern(); pattern != "" {
 				span.SetName(r.Method + " " + pattern)
 				span.SetAttributes(semconv.HTTPRoute(pattern))
+			} else {
+				// No route matched (404): mirror the metrics middleware's
+				// "not_found" label so untracked traffic is searchable
+				// (resolveRoutePattern returns "not_found" for empty patterns).
+				span.SetName(r.Method + " not_found")
 			}
 		}
 	})
@@ -141,6 +146,10 @@ func NewRouter(cfg Config) http.Handler {
 		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/metrics"
+		}),
+		// The river queue UI is a dev-only surface: don't trace it.
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return !strings.HasPrefix(r.URL.Path, "/riverui")
 		}),
 		// CORS preflights are noise: don't trace OPTIONS at all.
 		otelhttp.WithFilter(func(r *http.Request) bool {
