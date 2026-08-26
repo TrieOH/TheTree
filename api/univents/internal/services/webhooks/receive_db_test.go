@@ -8,12 +8,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 
 	"lib/database"
 	"lib/testdb"
 
 	"univents/internal/repos"
+	"univents/internal/services/checkouts/jobs"
 	"univents/internal/services/webhooks"
 	"univents/internal/sqlc"
 	"univents/models"
@@ -55,10 +58,12 @@ func (b *recordingBadges) revokedIDs() []uuid.UUID {
 	return append([]uuid.UUID{}, b.revoked...)
 }
 
-// recordingRiver records JobCancel calls.
+// recordingRiver records JobCancel calls and captures InsertTx args (the
+// gifted-ticket email enqueue).
 type recordingRiver struct {
 	mu        sync.Mutex
 	cancelled []int64
+	inserted  []rivertype.JobArgs
 }
 
 func (r *recordingRiver) JobCancel(_ context.Context, id int64) (*rivertype.JobRow, error) {
@@ -68,10 +73,23 @@ func (r *recordingRiver) JobCancel(_ context.Context, id int64) (*rivertype.JobR
 	return &rivertype.JobRow{}, nil
 }
 
+func (r *recordingRiver) InsertTx(_ context.Context, _ pgx.Tx, args river.JobArgs, _ *river.InsertOpts) (*rivertype.JobInsertResult, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.inserted = append(r.inserted, args)
+	return &rivertype.JobInsertResult{}, nil
+}
+
 func (r *recordingRiver) ids() []int64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return append([]int64{}, r.cancelled...)
+}
+
+func (r *recordingRiver) insertedArgs() []rivertype.JobArgs {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]rivertype.JobArgs{}, r.inserted...)
 }
 
 type dbFixture struct {
@@ -196,7 +214,7 @@ func seedPendingPurchase(t *testing.T, r *repos.Repos, fx dbFixture) pendingPurc
 			EditionID:      fx.editionID,
 			TicketTypeID:   fx.ticketID,
 			PurchaserID:    purchaserID,
-			AttendeeUserID: purchaserID,
+			AttendeeUserID: &purchaserID,
 			AttendeeEmail:  "buyer@example.com",
 			AttendeeName:   "Buyer",
 			Status:         models.RegistrationStatusPending,
@@ -253,7 +271,7 @@ func seedPendingPurchase(t *testing.T, r *repos.Repos, fx dbFixture) pendingPurc
 // real Postgres: signed delivery → guarded pending→approved → materialized
 // rows flipped (registrations confirmed, product_purchases confirmed,
 // participations stay registered) → badge emit + expiry-job cancel +
-// NOTIFY — all committed in one tx.
+// notifications.
 func TestReceiveDB_ApproveEndToEnd(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
@@ -328,6 +346,116 @@ func TestReceiveDB_ApproveEndToEnd(t *testing.T) {
 	notifies := notifier.decoded()
 	if len(notifies) != 2 {
 		t.Fatalf("notifications = %d, want 2 (stock + purchase)", len(notifies))
+	}
+
+	// Account holders never get the gift email — no gifts.send_email job.
+	if got := river.insertedArgs(); len(got) != 0 {
+		t.Fatalf("river inserts = %v, want none (attendee has an account)", got)
+	}
+}
+
+// TestReceiveDB_ApproveGiftEmailOnly pins the gifted-ticket email trigger:
+// approving a purchase whose ticket attendee has no account yet (email-only
+// gift) confirms the registration, defers the badge, and enqueues
+// gifts.send_email in the same tx.
+func TestReceiveDB_ApproveGiftEmailOnly(t *testing.T) {
+	pool := testdb.Postgres(t, "../../../db/migrations")
+	q := sqlc.New(pool)
+	runner := database.NewPGXTxRunner(pool)
+	database.SetDefaultRunner(runner)
+	r := repos.New(q)
+
+	fx := seedDBFixture(t, q)
+
+	// A pending purchase whose only item is an email-only gift (the
+	// split-7 checkout shape for an accountless recipient).
+	ctx := context.Background()
+	purchaserID := uuid.New()
+	intentID := uuid.New()
+	var regID uuid.UUID
+	err := database.RunTx(ctx, func(ctx context.Context) error {
+		p, err := r.Purchases.CreatePurchase(ctx, &models.Purchase{
+			EditionID:        fx.editionID,
+			PurchaserID:      purchaserID,
+			Status:           models.PurchaseStatusPending,
+			TotalCents:       1000,
+			Currency:         "BRL",
+			ExpiresAt:        time.Now().Add(10 * time.Minute),
+			PayssageIntentID: &intentID,
+		})
+		if err != nil {
+			return err
+		}
+		reg, err := r.Registrations.Create(ctx, &models.Registration{
+			EditionID:      fx.editionID,
+			TicketTypeID:   fx.ticketID,
+			PurchaserID:    purchaserID,
+			AttendeeUserID: nil, // accountless recipient
+			AttendeeEmail:  "friend@example.com",
+			AttendeeName:   "John Doe",
+			Status:         models.RegistrationStatusPending,
+		})
+		if err != nil {
+			return err
+		}
+		regID = reg.ID
+		_, err = r.Purchases.CreatePurchaseItem(ctx, &models.PurchaseItem{
+			PurchaseID:     p.ID,
+			ItemType:       models.PurchaseItemTypeTicket,
+			ItemID:         fx.ticketID,
+			Quantity:       1,
+			UnitPriceCents: 1000,
+			RegistrationID: &reg.ID,
+		})
+		return err
+	})
+	if err != nil {
+		t.Fatalf("seed gift purchase: %v", err)
+	}
+
+	badges := &recordingBadges{}
+	river := &recordingRiver{}
+	ops := webhooks.NewOperations(
+		r.Purchases, r.Registrations, r.Products, r.Programs,
+		badges, &recordingNotifier{}, river, runner, testSecret,
+	)
+	ops.SetCardRaceWait(0)
+
+	err = ops.Receive(ctx, input(intentID, "payment.succeeded", []byte(`{"event":"ok"}`)))
+	if err != nil {
+		t.Fatalf("Receive: %v", err)
+	}
+
+	reg, err := r.Registrations.GetByID(ctx, regID)
+	if err != nil {
+		t.Fatalf("registration GetByID: %v", err)
+	}
+	if reg.Status != models.RegistrationStatusConfirmed {
+		t.Fatalf("registration status = %s, want confirmed", reg.Status)
+	}
+	if reg.AttendeeUserID != nil {
+		t.Fatalf("attendee_user_id = %v, want nil (still unclaimed)", *reg.AttendeeUserID)
+	}
+
+	// Badge emission is called but deferred by the real badges service for
+	// accountless registrations (no profile to attach it to) — that skip is
+	// covered by the badges unit test; the emit happens for real when the
+	// recipient claims and the my-ticket read re-runs it.
+	if emitted := badges.ids(); len(emitted) != 1 || emitted[0] != regID {
+		t.Fatalf("badge emit = %v, want [%s] (deferred inside the badges service)", emitted, regID)
+	}
+
+	// The gift email job is enqueued atomically with the confirmation.
+	inserted := river.insertedArgs()
+	if len(inserted) != 1 {
+		t.Fatalf("river inserts = %d, want 1 (gifts.send_email)", len(inserted))
+	}
+	args, ok := inserted[0].(jobs.SendGiftEmailArgs)
+	if !ok {
+		t.Fatalf("inserted args = %T, want jobs.SendGiftEmailArgs", inserted[0])
+	}
+	if args.RegistrationID != regID {
+		t.Fatalf("gift email registration = %s, want %s", args.RegistrationID, regID)
 	}
 }
 

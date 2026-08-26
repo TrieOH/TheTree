@@ -15,12 +15,15 @@ import (
 // the buy flow).
 func seedRegistration(t *testing.T, r regRepo, editionID, ticketID uuid.UUID, status models.RegistrationStatus) {
 	t.Helper()
+	// One attendee per email: the active-per-edition email index enforces
+	// one ticket per person, and each seeded row is a different person.
+	attendeeID := uuid.New()
 	_, err := r.Create(context.Background(), &models.Registration{
 		EditionID:      editionID,
 		TicketTypeID:   ticketID,
-		PurchaserID:    uuid.New(),
-		AttendeeUserID: uuid.New(),
-		AttendeeEmail:  "attendee@example.com",
+		PurchaserID:    attendeeID,
+		AttendeeUserID: &attendeeID,
+		AttendeeEmail:  "attendee-" + attendeeID.String() + "@example.com",
 		AttendeeName:   "Attendee",
 		Status:         status,
 	})

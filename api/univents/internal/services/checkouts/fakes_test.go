@@ -2,12 +2,15 @@ package checkouts_test
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"univents/internal/services/checkouts"
+	"univents/internal/services/checkouts/jobs"
 	"univents/models"
 
+	idx "sdk/identityx"
 	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
@@ -137,6 +140,20 @@ func (f *fakeRiver) insertCount() int {
 	return len(f.inserted)
 }
 
+// giftEmailArgs returns the registration ids of every enqueued
+// gifts.send_email job (the accountless gifted-recipient email).
+func (f *fakeRiver) giftEmailArgs() []jobs.SendGiftEmailArgs {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []jobs.SendGiftEmailArgs
+	for _, in := range f.inserted {
+		if a, ok := in.args.(jobs.SendGiftEmailArgs); ok {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
 // fakeTokens issues deterministic ws tokens.
 type fakeTokens struct {
 	mu     sync.Mutex
@@ -154,6 +171,56 @@ func (f *fakeTokens) issuedCount() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return len(f.issued)
+}
+
+// fakeActors fakes the IdentityX actor lookup seam (checkout's attendee
+// resolution + gift claim). Seeded per test: byEmail maps a normalized
+// email to its account's actor id (and byID the reverse); an email or id
+// with no mapping has no account yet (checkouts.ErrActorNotFound).
+type fakeActors struct {
+	mu      sync.Mutex
+	byEmail map[string]uuid.UUID
+	byID    map[uuid.UUID]string
+}
+
+func newFakeActors() *fakeActors {
+	return &fakeActors{
+		byEmail: make(map[string]uuid.UUID),
+		byID:    make(map[uuid.UUID]string),
+	}
+}
+
+func (f *fakeActors) seed(email string, id uuid.UUID) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	email = normalizeEmail(email)
+	f.byEmail[email] = id
+	f.byID[id] = email
+}
+
+func (f *fakeActors) GetByEmail(_ context.Context, email string) (*idx.Actor, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	email = normalizeEmail(email)
+	id, ok := f.byEmail[email]
+	if !ok {
+		return nil, checkouts.ErrActorNotFound
+	}
+	return &idx.Actor{ID: id, Email: &email}, nil
+}
+
+func (f *fakeActors) GetByID(_ context.Context, id uuid.UUID) (*idx.Actor, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	email, ok := f.byID[id]
+	if !ok {
+		return nil, checkouts.ErrActorNotFound
+	}
+	return &idx.Actor{ID: id, Email: &email}, nil
+}
+
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 // ── Intent builders ────────────────────────────────────────────────────────
@@ -206,7 +273,7 @@ func programLine(occurrenceID uuid.UUID) checkouts.CheckoutLine {
 }
 
 func selfAttendee(userID uuid.UUID) *checkouts.Attendee {
-	return &checkouts.Attendee{UserID: userID, Email: "buyer@example.com", Name: "Jane Doe"}
+	return &checkouts.Attendee{UserID: &userID, Email: "buyer@example.com", Name: "Jane Doe"}
 }
 
 func pixInput(lines ...checkouts.CheckoutLine) checkouts.CheckoutInput {

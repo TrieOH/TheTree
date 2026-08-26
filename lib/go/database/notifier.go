@@ -133,7 +133,10 @@ func (n *Notifier) run() {
 		}
 		n.mu.Unlock()
 
-		if err != nil && !isClosed(conn) {
+		// waitForNotifications only returns on a connection error, so the
+		// dropped-connection warn fires whenever the conn was not closed
+		// intentionally (SA4023: the error is never nil).
+		if !isClosed(conn) {
 			slog.Warn("notifier: listen loop dropped", "err", err)
 		}
 		if !sleepCtx(n.closeCh, backoff) {

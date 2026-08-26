@@ -22,7 +22,7 @@ func (repo *Repo) GetActiveByEditionAndAttendee(ctx context.Context, editionID, 
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).GetActiveByEditionAndAttendee(ctx, sqlc.GetActiveByEditionAndAttendeeParams{
 		EditionID:      editionID,
-		AttendeeUserID: attendeeID,
+		AttendeeUserID: &attendeeID,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)

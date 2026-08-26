@@ -129,7 +129,7 @@ func newResumeOps(t *testing.T, intents checkouts.IntentClient) (*repos.Repos, *
 	ops := checkouts.NewOperations(
 		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
 		r.Registrations, r.Products, r.Programs,
-		nil, nil, nil, tx, intents, nil, uuid.Nil, nil, authz.New(r.Events),
+		nil, nil, nil, tx, intents, nil, uuid.Nil, nil, nil, authz.New(r.Events),
 	)
 	ops.SetIntentRetry(3, 0)
 	return r, q, ops

@@ -156,7 +156,7 @@ func TestCreatePurchaseWithItemsInOneTx(t *testing.T) {
 			EditionID:      fx.editionID,
 			TicketTypeID:   fx.ticketID,
 			PurchaserID:    purchaserID,
-			AttendeeUserID: purchaserID,
+			AttendeeUserID: &purchaserID,
 			AttendeeEmail:  "buyer@example.com",
 			AttendeeName:   "Buyer",
 			Status:         models.RegistrationStatusPending,

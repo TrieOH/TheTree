@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"lib/database"
@@ -72,10 +73,13 @@ type CheckoutLine struct {
 }
 
 // Attendee is the person a ticket unit is assigned to — the purchaser
-// themselves or a gifted recipient. The front resolves recipient emails to
-// IdentityX user ids; the id is trusted as-is.
+// themselves or a gifted recipient. Email is always required; UserID is
+// optional: the server resolves the email against IdentityX at checkout,
+// ties the account's actor id when one exists, and leaves it nil for
+// email-only gifts (the recipient has no account yet). When both are sent,
+// the id must belong to the email (verified server-side).
 type Attendee struct {
-	UserID uuid.UUID
+	UserID *uuid.UUID
 	Email  string
 	Name   string
 }
@@ -132,6 +136,15 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 	// 2. Validate the cart (shape errors → 400 listing the offending lines)
 	//    and the payment payload (cards need token + payment_method_id).
 	lines, err := o.validateLines(in.Items)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2b. Resolve every ticket attendee's identity against IdentityX
+	//    (HTTP — outside the tx): tie the account's actor id when the email
+	//    has one, verify id+email pairs, dedupe the cart. Mismatches and
+	//    unknown emails with a claimed id → 400.
+	lines, err = o.resolveAttendees(ctx, lines)
 	if err != nil {
 		return nil, err
 	}
@@ -428,6 +441,10 @@ func (o *Operations) materialize(ctx context.Context, purchase *models.Purchase,
 			if err != nil {
 				return nil, err
 			}
+			// Email-only free gift: schedule the gifted-ticket email in the
+			// same tx (accountless recipients get the claim instructions;
+			// the badge itself is deferred until they claim).
+			o.enqueueGiftEmail(ctx, reg)
 		}
 		item, err := o.purchases.CreatePurchaseItem(ctx, &models.PurchaseItem{
 			PurchaseID:     purchase.ID,
@@ -526,28 +543,74 @@ func (o *Operations) activeRegistrationFor(ctx context.Context, editionID, atten
 // checkOneTicketPerPerson enforces the one-ticket-per-person rule inside
 // the checkout tx: every ticket line's attendee must not already hold an
 // active (pending or confirmed) registration in the edition — for
-// themselves or as a gifted recipient. Cancelled/expired registrations
-// free the slot. The clean 409 comes from this pre-check; the partial
-// unique index (uniq_registrations_active_per_edition_attendee) is the
-// backstop that catches two concurrent checkouts racing on the same
+// themselves or as a gifted recipient. Attendees with an account are
+// checked by user id; accountless (email-only) recipients by email. The
+// clean 409 comes from this pre-check; the partial unique indexes
+// (uniq_registrations_active_per_edition_attendee / _email_per_edition)
+// are the backstop that catch two concurrent checkouts racing on the same
 // attendee atomically.
 func (o *Operations) checkOneTicketPerPerson(ctx context.Context, editionID uuid.UUID, priced []pricedLine) error {
 	for _, pl := range priced {
 		if pl.Line.ItemType != models.PurchaseItemTypeTicket {
 			continue
 		}
-		existing, err := o.activeRegistrationFor(ctx, editionID, pl.Line.Attendee.UserID)
+		if pl.Line.Attendee.UserID != nil {
+			existing, err := o.activeRegistrationFor(ctx, editionID, *pl.Line.Attendee.UserID)
+			if err != nil {
+				return err
+			}
+			if existing != nil {
+				return oneTicketPerPersonError("items[].ticket.attendee.user_id", pl.Line.Attendee.UserID.String())
+			}
+			continue
+		}
+		// Email-only recipient (no IdentityX account yet): the slot is held
+		// by email — another email-only gift to the same address is blocked
+		// (the partial unique index is the concurrency backstop). Absent
+		// row = holds no ticket, a normal state.
+		existing, err := o.registrations.GetActiveByEditionAndAttendeeEmail(ctx, editionID, pl.Line.Attendee.Email)
 		if err != nil {
+			if fun.Is(err, fun.CodeNotFound) {
+				continue
+			}
 			return err
 		}
 		if existing != nil {
-			return fun.Err("this person already has a ticket for this edition").WithFields(&fun.FieldError{
-				Field:   "items[].ticket.attendee.user_id",
-				Message: pl.Line.Attendee.UserID.String(),
-			}).Conflict()
+			return oneTicketPerPersonError("items[].ticket.attendee.email", pl.Line.Attendee.Email)
 		}
 	}
 	return nil
+}
+
+// oneTicketPerPersonError is the clean 409 for a cart/DB violation of the
+// one-ticket-per-person rule.
+func oneTicketPerPersonError(field, message string) error {
+	return fun.Err("this person already has a ticket for this edition").WithFields(&fun.FieldError{
+		Field: field, Message: message,
+	}).Conflict()
+}
+
+// enqueueGiftEmail schedules the gifted-ticket email for an accountless
+// free-order recipient inside the checkout tx (the registration is already
+// confirmed at checkout — the gift email and the confirmation commit
+// atomically). Account holders are skipped: they see the ticket in
+// my-ticket and get the badge email.
+func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registration) {
+	if reg.AttendeeUserID != nil {
+		return
+	}
+	tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
+	if !ok {
+		telemetry.Log().Error("checkout: no transaction in context for gift email",
+			zap.String("registration_id", reg.ID.String()))
+		return
+	}
+	_, err := o.river.InsertTx(ctx, tx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, nil)
+	if err != nil {
+		telemetry.Log().Error("checkout: failed to enqueue gift email",
+			zap.String("registration_id", reg.ID.String()),
+			zap.Error(err))
+	}
 }
 
 // insertExpiryJob enqueues the purchases.expire job inside the checkout tx
@@ -696,7 +759,7 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 
 	seenProduct := make(map[uuid.UUID]bool, len(items))
 	seenProgram := make(map[uuid.UUID]bool, len(items))
-	seenAttendee := make(map[uuid.UUID]bool, len(items))
+	seenAttendee := make(map[string]bool, len(items))
 	hasTicket := false
 
 	for i, line := range items {
@@ -719,15 +782,21 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 				}).BadRequest()
 			}
 			// One ticket per person per edition — two lines for the same
-			// attendee (e.g. two tickets for yourself) are rejected here;
-			// a ticket the attendee already holds is caught in the tx
-			// (checkOneTicketPerPerson).
-			if seenAttendee[line.Attendee.UserID] {
+			// attendee (e.g. two tickets for yourself, or two gifts to the
+			// same email) are rejected here; a ticket the attendee already
+			// holds is caught in the tx (checkOneTicketPerPerson). The
+			// email key is the pre-resolution pass — resolveAttendees
+			// re-dedupes by the resolved id right after.
+			attendeeKey := "e:" + strings.ToLower(strings.TrimSpace(line.Attendee.Email))
+			if line.Attendee.UserID != nil {
+				attendeeKey = "u:" + line.Attendee.UserID.String()
+			}
+			if seenAttendee[attendeeKey] {
 				return nil, fun.Err("only one ticket per person").WithFields(&fun.FieldError{
-					Field: field + ".attendee.user_id", Message: "this person already has a ticket in the cart",
+					Field: field + ".attendee", Message: "this person already has a ticket in the cart",
 				}).BadRequest()
 			}
-			seenAttendee[line.Attendee.UserID] = true
+			seenAttendee[attendeeKey] = true
 			hasTicket = true
 		case models.PurchaseItemTypeProduct:
 			if seenProduct[line.ItemID] {
@@ -761,6 +830,82 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 		}).BadRequest()
 	}
 	return items, nil
+}
+
+// resolveAttendees resolves every ticket attendee's identity against
+// IdentityX (HTTP — outside the checkout tx) and dedupes the cart:
+//
+//   - attendee with only an email → tie the account's actor id when the
+//     email has one (existing account — the gift is already bound to the
+//     person); otherwise the gift stays email-only (nil user id, the
+//     recipient claims it after creating an account).
+//   - attendee with both id and email → the email must resolve to that
+//     same actor (GetByEmail + id compare): a different actor, or an email
+//     with no account at all, is a 400 — the pair is inconsistent.
+//   - two lines resolving to the same person (same id, or same email when
+//     accountless) → 400, the one-ticket-per-person cart rule.
+//
+// Emails are normalized (trim + lowercase) to match IdentityX, which stores
+// them lowercased. A failure to reach IdentityX fails the checkout closed:
+// an attendee whose account cannot be verified must not be silently gifted
+// as email-only (they may hold a ticket already).
+func (o *Operations) resolveAttendees(ctx context.Context, lines []CheckoutLine) ([]CheckoutLine, error) {
+	out := append([]CheckoutLine(nil), lines...)
+	seen := make(map[string]bool, len(out))
+	for i := range out {
+		line := &out[i]
+		if line.ItemType != models.PurchaseItemTypeTicket || line.Attendee == nil {
+			continue
+		}
+
+		email := strings.TrimSpace(strings.ToLower(line.Attendee.Email))
+		if email == "" {
+			return nil, fun.Err("ticket lines require an attendee email").WithFields(&fun.FieldError{
+				Field: fmt.Sprintf("items[%d].attendee.email", i), Message: "required",
+			}).BadRequest()
+		}
+		line.Attendee.Email = email
+
+		// One lookup per attendee: ErrActorNotFound means the email has no
+		// account in the univents identityx project.
+		actor, err := o.actors.GetByEmail(ctx, email)
+		switch {
+		case err != nil && !errors.Is(err, ErrActorNotFound):
+			// IdentityX unreachable — fail the checkout closed: an attendee
+			// whose account cannot be verified must not be silently gifted
+			// as email-only (they may already hold a ticket).
+			return nil, err
+		case errors.Is(err, ErrActorNotFound) && line.Attendee.UserID != nil:
+			// A user_id was claimed for an email with no account — the pair
+			// cannot both be true.
+			return nil, fun.Err("attendee email does not match an account").WithFields(&fun.FieldError{
+				Field: fmt.Sprintf("items[%d].attendee.email", i), Message: email,
+			}).BadRequest()
+		case errors.Is(err, ErrActorNotFound):
+			// No account yet — email-only gift; keep the nil user id.
+		case line.Attendee.UserID == nil:
+			line.Attendee.UserID = &actor.ID
+		case actor.ID != *line.Attendee.UserID:
+			return nil, fun.Err("attendee user_id does not match the email").WithFields(&fun.FieldError{
+				Field: fmt.Sprintf("items[%d].attendee.user_id", i), Message: line.Attendee.UserID.String(),
+			}).BadRequest()
+		}
+
+		// Post-resolution dedup: two lines that resolve to the same person
+		// (explicit id, or a resolved account) collide here; email-only
+		// lines collide on the normalized email.
+		key := "e:" + line.Attendee.Email
+		if line.Attendee.UserID != nil {
+			key = "u:" + line.Attendee.UserID.String()
+		}
+		if seen[key] {
+			return nil, fun.Err("only one ticket per person").WithFields(&fun.FieldError{
+				Field: fmt.Sprintf("items[%d].attendee", i), Message: "this person already has a ticket in the cart",
+			}).BadRequest()
+		}
+		seen[key] = true
+	}
+	return out, nil
 }
 
 // ── Intent request ─────────────────────────────────────────────────────────

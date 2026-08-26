@@ -159,11 +159,12 @@ type fakes struct {
 	river    *fakeRiver
 	tokens   *fakeTokens
 	payssage *fakePayssage
+	actors   *fakeActors
 }
 
 // newOps wires the real repos (disposable Postgres with the real
 // migrations) behind faked external seams: payssage (intent creation),
-// badges, notifier, river, ws tokens.
+// badges, notifier, river, ws tokens, identityx actor resolution.
 func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentRequest) (*payssage.Intent, error)) (*repos.Repos, *checkouts.Operations, *fakes, *sqlc.Queries) {
 	t.Helper()
 	pool := testdb.Postgres(t, "../../../db/migrations")
@@ -179,12 +180,13 @@ func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentReques
 		river:    &fakeRiver{},
 		tokens:   &fakeTokens{},
 		payssage: ps,
+		actors:   newFakeActors(),
 	}
 	ops := checkouts.NewOperations(
 		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
 		r.Registrations, r.Products, r.Programs,
 		fs.badges, fs.notifier, fs.river, tx,
-		nil, ps, walletID, fs.tokens, authz.New(r.Events),
+		nil, ps, walletID, fs.tokens, fs.actors, authz.New(r.Events),
 	)
 	return r, ops, fs, q
 }
@@ -199,6 +201,7 @@ func TestCheckout_HappyPathPix(t *testing.T) {
 	})
 	fx := seedStore(t, r)
 	purchaserID := uuid.New()
+	fs.actors.seed("buyer@example.com", purchaserID)
 
 	res, err := ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(ticketLine(fx.ticketID, selfAttendee(purchaserID)), productLine(fx.variantID, 2), programLine(fx.occurrenceID)))
@@ -273,7 +276,7 @@ func assertPixReservationShape(t *testing.T, r *repos.Repos, fs *fakes, purchase
 	if err != nil {
 		t.Fatalf("load registration: %v", err)
 	}
-	if reg.Status != models.RegistrationStatusPending || reg.AttendeeUserID != purchaserID {
+	if reg.Status != models.RegistrationStatusPending || *reg.AttendeeUserID != purchaserID {
 		t.Fatalf("registration = %+v, want pending for the purchaser", reg)
 	}
 
@@ -295,7 +298,7 @@ func assertPixReservationShape(t *testing.T, r *repos.Repos, fs *fakes, purchase
 // returns a succeeded intent, but the purchase stays pending — only the
 // webhook confirms.
 func TestCheckout_CardStaysPending(t *testing.T) {
-	r, ops, _, _ := newOps(t, func(_ uuid.UUID, req payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, _ := newOps(t, func(_ uuid.UUID, req payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		if req.CheckoutProviderData["payment_method_id"] != "visa" {
 			t.Errorf("provider payment_method_id = %v, want visa", req.CheckoutProviderData["payment_method_id"])
 		}
@@ -326,14 +329,16 @@ func TestCheckout_CardStaysPending(t *testing.T) {
 	})
 	fx := seedStore(t, r)
 
-	in := pixInput(ticketLine(fx.ticketID, selfAttendee(uuid.New())))
+	buyerID := uuid.New()
+	fs.actors.seed("buyer@example.com", buyerID)
+	in := pixInput(ticketLine(fx.ticketID, selfAttendee(buyerID)))
 	in.PaymentMethod = "credit_card"
 	token := "mp-token-1"
 	methodID := "visa"
 	in.CardToken = &token
 	in.PaymentMethodID = &methodID
 
-	res, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(), in)
+	res, err := ops.Checkout(context.Background(), fx.editionID, buyerID, in)
 	if err != nil {
 		t.Fatalf("Checkout: %v", err)
 	}
@@ -354,6 +359,7 @@ func TestCheckout_FreeOrderConfirmsImmediately(t *testing.T) {
 	})
 	fx := seedStore(t, r)
 	purchaserID := uuid.New()
+	fs.actors.seed("buyer@example.com", purchaserID)
 
 	// A free ticket type: price 0, capacity 1.
 	freeTicket, err := r.TicketTypes.Create(context.Background(), &models.TicketType{
@@ -419,10 +425,12 @@ func TestCheckout_OutOfStock409(t *testing.T) {
 // TestCheckout_UnknownItem400 pins the item-list validation contract:
 // unknown item ids are 400 (the cart is wrong), not 404.
 func TestCheckout_UnknownItem400(t *testing.T) {
-	r, ops, _, _ := newOps(t, nil)
+	r, ops, fs, _ := newOps(t, nil)
 	fx := seedStore(t, r)
-	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
-		pixInput(ticketLine(uuid.New(), selfAttendee(uuid.New()))))
+	buyerID := uuid.New()
+	fs.actors.seed("buyer@example.com", buyerID)
+	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID,
+		pixInput(ticketLine(uuid.New(), selfAttendee(buyerID))))
 	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
@@ -430,12 +438,14 @@ func TestCheckout_UnknownItem400(t *testing.T) {
 
 // TestCheckout_ItemNotInEdition400 pins edition scoping on item ids.
 func TestCheckout_ItemNotInEdition400(t *testing.T) {
-	r, ops, _, _ := newOps(t, nil)
+	r, ops, fs, _ := newOps(t, nil)
 	fx := seedStore(t, r)
 	other := seedStore(t, r)
+	buyerID := uuid.New()
+	fs.actors.seed("buyer@example.com", buyerID)
 
-	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
-		pixInput(ticketLine(other.ticketID, selfAttendee(uuid.New()))))
+	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID,
+		pixInput(ticketLine(other.ticketID, selfAttendee(buyerID))))
 	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
@@ -511,11 +521,12 @@ func TestCheckout_DuplicateProduct400(t *testing.T) {
 // TestCheckout_SecondPending409 pins the partial unique index: a second
 // checkout while a pending purchase exists for the same user+edition 409s.
 func TestCheckout_SecondPending409(t *testing.T) {
-	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		return pixIntent(), nil
 	})
 	fx := seedStore(t, r)
 	purchaserID := uuid.New()
+	fs.actors.seed("buyer@example.com", purchaserID)
 
 	_, err := ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(ticketLine(fx.ticketID, selfAttendee(purchaserID))))
@@ -536,7 +547,7 @@ func TestCheckout_SecondPending409(t *testing.T) {
 // payment error so the buyer can retry immediately.
 func TestCheckout_IntentFailureReverts(t *testing.T) {
 	calls := 0
-	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		calls++
 		if calls == 1 {
 			return nil, &payssage.APIError{StatusCode: 400, Message: "card rejected"}
@@ -545,6 +556,7 @@ func TestCheckout_IntentFailureReverts(t *testing.T) {
 	})
 	fx := seedStore(t, r)
 	purchaserID := uuid.New()
+	fs.actors.seed("buyer@example.com", purchaserID)
 
 	_, err := ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(ticketLine(fx.ticketID, selfAttendee(purchaserID))))
@@ -582,16 +594,12 @@ func TestCheckout_AttachFailureCancelsIntent(t *testing.T) {
 	})
 	fx := seedStore(t, r)
 
-	// Break the purchases repo's AttachIntent via a phantom purchase id is
-	// not possible here — instead assert the normal path doesn't cancel,
-	// and the cancel path fires when attach fails. Simulate the failure by
-	// pointing the purchase at a tx that errors: drop the purchases table's
-	// backing… simplest is a direct repo swap; instead verify cancel is
-	// called when attach returns an error by wrapping the repo.
-	// (Covered by the unit-level revert test above; here we pin that a
-	// successful attach never cancels.)
-	res, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
-		pixInput(ticketLine(fx.ticketID, selfAttendee(uuid.New()))))
+	// The attach failure itself is covered by the unit-level revert test;
+	// here we pin that a successful attach never cancels the intent.
+	buyerID := uuid.New()
+	fs.actors.seed("buyer@example.com", buyerID)
+	res, err := ops.Checkout(context.Background(), fx.editionID, buyerID,
+		pixInput(ticketLine(fx.ticketID, selfAttendee(buyerID))))
 	if err != nil {
 		t.Fatalf("Checkout: %v", err)
 	}
@@ -631,11 +639,12 @@ func TestCheckout_TwoTicketsForSelf400(t *testing.T) {
 // cannot be ticketed again — neither for themselves nor as a gifted
 // recipient.
 func TestCheckout_AlreadyHoldsTicket409(t *testing.T) {
-	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		return pixIntent(), nil
 	})
 	fx := seedStore(t, r)
 	buyerID := uuid.New()
+	fs.actors.seed("buyer@example.com", buyerID)
 
 	// Free order: approved + confirmed registration for the buyer.
 	freeTicket, err := r.TicketTypes.Create(context.Background(), &models.TicketType{
@@ -665,7 +674,7 @@ func TestCheckout_AlreadyHoldsTicket409(t *testing.T) {
 	// ticket per person, regardless of who pays).
 	gifterID := uuid.New()
 	_, err = ops.Checkout(context.Background(), fx.editionID, gifterID, pixInput(
-		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: buyerID, Email: "buyer@example.com", Name: "Jane Doe"}),
+		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &buyerID, Email: "buyer@example.com", Name: "Jane Doe"}),
 	))
 	if err == nil || !fun.Is(err, fun.CodeConflict) {
 		t.Fatalf("gift to holder: err = %v, want CONFLICT", err)
@@ -677,11 +686,13 @@ func TestCheckout_AlreadyHoldsTicket409(t *testing.T) {
 // attendee whose registration is still pending gets 409 until it expires or
 // cancels.
 func TestCheckout_PendingReservationBlocks409(t *testing.T) {
-	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		return pixIntent(), nil
 	})
 	fx := seedStore(t, r)
 	holderID := uuid.New()
+	fs.actors.seed("buyer@example.com", holderID)
+	fs.actors.seed("holder@example.com", holderID)
 
 	// The holder reserves a paid ticket (pending registration).
 	_, err := ops.Checkout(context.Background(), fx.editionID, holderID,
@@ -693,7 +704,7 @@ func TestCheckout_PendingReservationBlocks409(t *testing.T) {
 	// Another purchaser cannot gift the holder a second ticket.
 	gifterID := uuid.New()
 	_, err = ops.Checkout(context.Background(), fx.editionID, gifterID, pixInput(
-		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: holderID, Email: "holder@example.com", Name: "Holder"}),
+		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &holderID, Email: "holder@example.com", Name: "Holder"}),
 	))
 	if err == nil || !fun.Is(err, fun.CodeConflict) {
 		t.Fatalf("gift to pending holder: err = %v, want CONFLICT", err)
@@ -704,16 +715,18 @@ func TestCheckout_PendingReservationBlocks409(t *testing.T) {
 // model: two ticket lines for the same ticket type create two registrations
 // (one per attendee), each linked from its own purchase_items row.
 func TestCheckout_Gifting_TwoTicketsSameType(t *testing.T) {
-	r, ops, _, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, _ := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		return pixIntent(), nil
 	})
 	fx := seedStore(t, r)
 	buyerID := uuid.New()
 	recipientID := uuid.New()
+	fs.actors.seed("buyer@example.com", buyerID)
+	fs.actors.seed("friend@example.com", recipientID)
 
 	res, err := ops.Checkout(context.Background(), fx.editionID, buyerID, pixInput(
 		ticketLine(fx.ticketID, selfAttendee(buyerID)),
-		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: recipientID, Email: "friend@example.com", Name: "John Doe"}),
+		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &recipientID, Email: "friend@example.com", Name: "John Doe"}),
 	))
 	if err != nil {
 		t.Fatalf("Checkout: %v", err)
@@ -744,8 +757,8 @@ func TestCheckout_Gifting_TwoTicketsSameType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load reg2: %v", err)
 	}
-	if reg1.AttendeeUserID != buyerID || reg2.AttendeeUserID != recipientID {
-		t.Fatalf("attendees = %s/%s, want buyer/recipient", reg1.AttendeeUserID, reg2.AttendeeUserID)
+	if *reg1.AttendeeUserID != buyerID || *reg2.AttendeeUserID != recipientID {
+		t.Fatalf("attendees = %s/%s, want buyer/recipient", *reg1.AttendeeUserID, *reg2.AttendeeUserID)
 	}
 }
 
@@ -804,11 +817,12 @@ func TestCheckout_Concurrency_LastUnit(t *testing.T) {
 // TestCheckout_ProgramItemAttachesToTicket pins D4b's participation link:
 // the participation row carries the first ticket registration's id.
 func TestCheckout_ProgramItemAttachesToTicket(t *testing.T) {
-	r, ops, _, q := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
+	r, ops, fs, q := newOps(t, func(_ uuid.UUID, _ payssage.CreateIntentRequest) (*payssage.Intent, error) {
 		return pixIntent(), nil
 	})
 	fx := seedStore(t, r)
 	purchaserID := uuid.New()
+	fs.actors.seed("buyer@example.com", purchaserID)
 
 	res, err := ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(ticketLine(fx.ticketID, selfAttendee(purchaserID)), programLine(fx.occurrenceID)))

@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 
+	"lib/database"
 	"lib/telemetry"
+	"univents/internal/services/checkouts/jobs"
 	"univents/internal/services/notify"
 	"univents/models"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -119,7 +122,7 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 					zap.String("purchase_id", purchase.ID.String()))
 				continue
 			}
-			_, err := o.registrations.UpdateStatus(ctx, *item.RegistrationID, models.RegistrationStatusConfirmed, nil)
+			reg, err := o.registrations.UpdateStatus(ctx, *item.RegistrationID, models.RegistrationStatusConfirmed, nil)
 			if err != nil {
 				return err
 			}
@@ -127,6 +130,7 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 			if err != nil {
 				return err
 			}
+			o.enqueueGiftEmail(ctx, reg)
 		case models.PurchaseItemTypeProduct:
 			if item.ProductPurchaseID == nil {
 				telemetry.Log().Warn("webhook: product item without product_purchase",
@@ -144,6 +148,30 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 
 	o.notify(ctx, purchase, items, models.PurchaseStatusApproved)
 	return nil
+}
+
+// enqueueGiftEmail schedules the gifted-ticket email for an accountless
+// recipient (attendee_user_id NULL) inside the approve tx — the same tx
+// that just confirmed the registration, so the job commits atomically with
+// the confirmation (no email for abandoned or reverted reservations).
+// Account holders are skipped: they see the ticket in my-ticket and get the
+// badge email.
+func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registration) {
+	if reg.AttendeeUserID != nil {
+		return
+	}
+	tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
+	if !ok {
+		telemetry.Log().Error("webhook: no transaction in context for gift email",
+			zap.String("registration_id", reg.ID.String()))
+		return
+	}
+	_, err := o.river.InsertTx(ctx, tx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, nil)
+	if err != nil {
+		telemetry.Log().Error("webhook: failed to enqueue gift email",
+			zap.String("registration_id", reg.ID.String()),
+			zap.Error(err))
+	}
 }
 
 // cancelExpiryJob cancels the 10:01 expiry job when the purchase has one

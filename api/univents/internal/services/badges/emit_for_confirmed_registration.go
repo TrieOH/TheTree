@@ -6,6 +6,7 @@ import (
 	"univents/models"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 // EmitForConfirmedRegistration emits the participant badge for a confirmed
@@ -24,10 +25,21 @@ func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrat
 		//nolint:nilnil // no-op contract: pending/failed registrations simply never emit
 		return nil, nil
 	}
+	if reg.AttendeeUserID == nil {
+		// Accountless gifted ticket (email-only recipient): there is no
+		// profile to attach the badge to or email it to (the badge email's
+		// QR points at the profile). Emission is deferred until the
+		// recipient claims an account and the registration gets its actor
+		// id — the claim flow re-emits from here.
+		telemetry.Log().Info("badge emission deferred: attendee has no account yet",
+			zap.String("registration_id", registrationID.String()))
+		//nolint:nilnil // deferred emission is a normal state, not an error
+		return nil, nil
+	}
 
 	emission, err := o.emissions.Upsert(ctx, &models.BadgeEmission{
 		EditionID:      reg.EditionID,
-		UserID:         reg.AttendeeUserID,
+		UserID:         *reg.AttendeeUserID,
 		Origin:         models.BadgeEmissionOriginParticipant,
 		RegistrationID: &reg.ID,
 	})

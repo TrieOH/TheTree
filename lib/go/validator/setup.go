@@ -58,7 +58,7 @@ func SetupValidator() *validator.Validate {
 
 	// Use JSON field names for better API responses
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		name, _, _ := strings.Cut(fld.Tag.Get("json"), ",")
 		if name == "-" {
 			return ""
 		}

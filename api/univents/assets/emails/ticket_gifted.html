@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>You received a gifted ticket | Univents</title>
+  <style>
+    @media screen and (max-width: 480px) {
+      .email-shell {
+        padding: 24px 10px !important;
+      }
+
+      .email-card-content {
+        padding: 26px 20px 30px 20px !important;
+      }
+
+      .email-title {
+        font-size: 22px !important;
+      }
+
+      .email-button {
+        width: 100% !important;
+      }
+
+      .email-button a {
+        box-sizing: border-box !important;
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="margin:0; padding:0; background-color:#f8f7fb; color:#111827; font-family:Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="width:100%; background-color:#f8f7fb;">
+    <tr>
+      <td align="center" class="email-shell" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="width:100%; max-width:600px;">
+          <tr>
+            <td align="center" style="padding:0 0 24px 0;">
+              <div style="color:#7627a3; font-size:25px; font-weight:bold; letter-spacing:-0.5px;">
+                Univents
+              </div>
+              <div
+                style="padding-top:5px; color:#64748b; font-size:11px; letter-spacing:1.5px; text-transform:uppercase;">
+                Where meaningful events come together
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff; border:1px solid #e9e1ef; border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td
+                    style="height:5px; background-color:#7627a3; border-radius:12px 12px 0 0; font-size:1px; line-height:1px;">
+                    &nbsp;
+                  </td>
+                </tr>
+                <tr>
+                  <td class="email-card-content" style="padding:32px 32px 36px 32px;">
+                    <h1 class="email-title"
+                      style="margin:0 0 8px 0; color:#171225; font-size:24px; line-height:1.25; font-weight:bold;">
+                      You received a gifted ticket
+                    </h1>
+                    <p style="margin:0 0 28px 0; color:#64748b; font-size:14px; line-height:1.5;">
+                      {{.EventName}} &mdash; {{.EditionName}}
+                    </p>
+                    <p style="margin:0 0 16px 0; color:#334155; font-size:15px; line-height:1.65;">
+                      Hello {{.RecipientName}},
+                    </p>
+                    <p style="margin:0 0 24px 0; color:#334155; font-size:15px; line-height:1.65;">
+                      Someone gave you a <strong style="color:#171225;">{{.TicketTypeName}}</strong> ticket for
+                      <strong style="color:#171225;">{{.EventName}} &mdash; {{.EditionName}}</strong>.
+                      To claim it and receive your badge, create an account with the email address
+                      <strong style="color:#171225;">{{.RecipientEmail}}</strong> and open the link below.
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#7627a3" class="email-button" style="border-radius:7px;">
+                          <a href="{{.ClaimLink}}"
+                            style="display:inline-block; padding:14px 26px; border:1px solid #7627a3; border-radius:7px; background-color:#7627a3; color:#ffffff; font-size:14px; font-weight:bold; text-decoration:none;">Claim
+                            your ticket
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:28px 0 8px 0; color:#64748b; font-size:13px; line-height:1.5;">
+                      If the button doesn't work, copy and paste this URL:
+                    </p>
+                    <p style="margin:0; color:#7627a3; font-size:12px; line-height:1.5; word-break:break-all;">
+                      {{.ClaimLink}}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:20px 16px 0 16px; color:#94a3b8; font-size:12px; line-height:1.5;">
+              If you weren't expecting this gift, you can safely ignore this email.
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:10px 16px 0 16px; color:#c4b5d0; font-size:11px;">
+              &copy; Univents
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>

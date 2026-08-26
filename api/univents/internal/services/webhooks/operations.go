@@ -14,6 +14,8 @@ import (
 	"univents/ports"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
 
@@ -33,11 +35,13 @@ type Notifier interface {
 	Notify(ctx context.Context, channel, payload string) error
 }
 
-// River is the expiry-job cancellation surface. Satisfied by
-// *river.Client[pgx.Tx]. A no-op until split 7 checkout schedules the
-// 10:01 expiry job (seeded split-4 purchases carry a null river_job_id).
+// River is the checkout-side river surface: cancelling the 10:01 expiry
+// job on approval, and enqueuing the gifted-ticket email inside the approve
+// tx (gifts.send_email) for accountless recipients. Satisfied by
+// *river.Client[pgx.Tx].
 type River interface {
 	JobCancel(ctx context.Context, jobID int64) (*rivertype.JobRow, error)
+	InsertTx(ctx context.Context, tx pgx.Tx, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes

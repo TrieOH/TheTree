@@ -22,6 +22,17 @@ type RegistrationRepo interface {
 	// one-ticket-per-person check (checkout) and the my-ticket read.
 	GetActiveByEditionAndAttendee(ctx context.Context, editionID, attendeeID uuid.UUID) (*models.Registration, error)
 
+	// GetActiveByEditionAndAttendeeEmail returns the email-only recipient's
+	// active (pending or confirmed) registration in an edition, or nil when
+	// they hold none — the one-ticket-per-person check for gifted tickets to
+	// recipients without an IdentityX account (attendee_user_id NULL).
+	GetActiveByEditionAndAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string) (*models.Registration, error)
+
+	// ClaimByAttendeeEmail ties an email-only gifted registration to the
+	// recipient's IdentityX account (gift claim, fired lazily from the
+	// my-ticket read). NOT_FOUND when the email holds no active gift.
+	ClaimByAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string, userID uuid.UUID) (*models.Registration, error)
+
 	// Create + UpdateStatus are the checkout (split 7) / webhook receiver
 	// (split 4) write side: pending rows are materialized at checkout and
 	// flipped on approve/cancel/expire.

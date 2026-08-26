@@ -27,8 +27,7 @@ func Validate(v any) error {
 	}
 	err := vd.Struct(v)
 	if err != nil {
-		var ve validator.ValidationErrors
-		if errors.As(err, &ve) {
+		if ve, ok := errors.AsType[validator.ValidationErrors](err); ok {
 			fields := validationErrsToFields(ve)
 			return fun.Err(validationMessage(fields)).WithFields(fields...).Validation()
 		}
@@ -58,8 +57,8 @@ func validationMessage(fields []any) string {
 // validationErrsToFields converts validator.ValidationErrors into
 // []any of *fun.FieldError, with password masking and passwd expansion.
 func validationErrsToFields(err error) []any {
-	var ve validator.ValidationErrors
-	if !errors.As(err, &ve) {
+	ve, ok := errors.AsType[validator.ValidationErrors](err)
+	if !ok {
 		return []any{&fun.FieldError{Field: "body", Message: err.Error()}}
 	}
 

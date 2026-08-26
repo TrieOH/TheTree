@@ -5,6 +5,8 @@ import (
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
+
+	"github.com/google/uuid"
 )
 
 type Repo struct {
@@ -78,7 +80,7 @@ func mapCertEmissionError(src sqlc.CertEmissionError) models.CertEmissionError {
 
 func mapEligibleAttendee(src sqlc.ListDistinctRegistrationsByEditionRow) models.CertEligibleAttendee {
 	return models.CertEligibleAttendee{
-		UserID:         src.UserID,
+		UserID:         userIDOrNil(src.UserID),
 		RegistrationID: src.RegistrationID,
 		AttendeeEmail:  src.AttendeeEmail,
 		AttendeeName:   src.AttendeeName,
@@ -87,9 +89,19 @@ func mapEligibleAttendee(src sqlc.ListDistinctRegistrationsByEditionRow) models.
 
 func mapEligibleParticipant(src sqlc.ListDistinctParticipantsByProgramRow) models.CertEligibleAttendee {
 	return models.CertEligibleAttendee{
-		UserID:         src.UserID,
+		UserID:         userIDOrNil(src.UserID),
 		RegistrationID: src.RegistrationID,
 		AttendeeEmail:  src.AttendeeEmail,
 		AttendeeName:   src.AttendeeName,
 	}
+}
+
+// userIDOrNil dereferences the nullable attendee user id, falling back to
+// uuid.Nil for accountless (email-only) attendees — the sentinel the cert
+// grant job skips (a cert must be owned by an account).
+func userIDOrNil(id *uuid.UUID) uuid.UUID {
+	if id == nil {
+		return uuid.Nil
+	}
+	return *id
 }

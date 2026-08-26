@@ -78,6 +78,8 @@ type MyParticipation struct {
 
 // ProgramParticipant is one row of the staff attendance surface: a live
 // participation with the attendee's identity from their registration.
+// AttendeeUserID is nil for accountless recipients (email-only gifted
+// tickets) until they claim an account.
 type ProgramParticipant struct {
 	ID             uuid.UUID                  `json:"id"`
 	OccurrenceID   uuid.UUID                  `json:"occurrence_id"`
@@ -85,9 +87,9 @@ type ProgramParticipant struct {
 	Status         ProgramParticipationStatus `json:"status"`
 	CreatedAt      time.Time                  `json:"created_at"`
 
-	AttendeeUserID uuid.UUID `json:"attendee_user_id"`
-	AttendeeEmail  string    `json:"attendee_email"`
-	AttendeeName   string    `json:"attendee_name"`
+	AttendeeUserID *uuid.UUID `json:"attendee_user_id"`
+	AttendeeEmail  string     `json:"attendee_email"`
+	AttendeeName   string     `json:"attendee_name"`
 }
 
 type CreateProgramInput struct {

@@ -131,7 +131,7 @@ func seedExpiring(t *testing.T, r *repos.Repos, status models.PurchaseStatus) (*
 		EditionID:      edition.ID,
 		TicketTypeID:   ticket.ID,
 		PurchaserID:    purchaserID,
-		AttendeeUserID: purchaserID,
+		AttendeeUserID: &purchaserID,
 		AttendeeEmail:  "buyer@example.com",
 		AttendeeName:   "Jane Doe",
 		Status:         models.RegistrationStatusPending,

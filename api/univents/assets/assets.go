@@ -81,3 +81,21 @@ func RenderBadgeEmittedEmail(data BadgeEmittedEmailData) (string, error) {
 	}
 	return buf.String(), nil
 }
+
+type TicketGiftedEmailData struct {
+	RecipientName  string
+	RecipientEmail string
+	EventName      string
+	EditionName    string
+	TicketTypeName string
+	ClaimLink      string
+}
+
+func RenderTicketGiftedEmail(data TicketGiftedEmailData) (string, error) {
+	var buf bytes.Buffer
+	err := templates.ExecuteTemplate(&buf, "ticket_gifted.html", data)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}

@@ -88,8 +88,8 @@ func seedActivity(t *testing.T, r *repos.Repos) fixture {
 	for attendee, regID := range regs {
 		reg, err := r.Registrations.Create(ctx, &models.Registration{
 			EditionID: edition.ID, TicketTypeID: ticket.ID,
-			PurchaserID: attendee, AttendeeUserID: attendee,
-			AttendeeEmail: "attendee@example.com", AttendeeName: "Attendee",
+			PurchaserID: attendee, AttendeeUserID: &attendee,
+			AttendeeEmail: "attendee-" + attendee.String() + "@example.com", AttendeeName: "Attendee",
 			Status: models.RegistrationStatusConfirmed,
 		})
 		if err != nil {

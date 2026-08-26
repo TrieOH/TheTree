@@ -116,6 +116,12 @@ func (w *grantCertsDeps) grantEditionAttendanceCerts(ctx context.Context, editio
 
 	eligible := make([]models.CertEligibleAttendee, 0, len(attendees))
 	for _, a := range attendees {
+		if a.UserID == uuid.Nil {
+			// Accountless gifted ticket (email-only recipient): no profile
+			// to own the cert yet — skipped until the claim flow ties an
+			// actor id and the grant job re-runs.
+			continue
+		}
 		hasCert, err := w.certs.HasCertForRegistration(ctx, a.RegistrationID, templateID)
 		if err != nil {
 			w.recordEmissionError(ctx, editionID, a.UserID, templateID, nil, fmt.Sprintf("failed to check existing cert: %v", err))
@@ -141,6 +147,12 @@ func (w *grantCertsDeps) grantProgramCerts(ctx context.Context, editionID, progr
 
 	eligible := make([]models.CertEligibleAttendee, 0, len(participants))
 	for _, p := range participants {
+		if p.UserID == uuid.Nil {
+			// Accountless gifted ticket (email-only recipient): no profile
+			// to own the cert yet — skipped until the claim flow ties an
+			// actor id and the grant job re-runs.
+			continue
+		}
 		hasCert, err := w.certs.HasCertForProgram(ctx, p.UserID, programID)
 		if err != nil {
 			w.recordEmissionError(ctx, editionID, p.UserID, nil, &programID, fmt.Sprintf("failed to check existing cert: %v", err))

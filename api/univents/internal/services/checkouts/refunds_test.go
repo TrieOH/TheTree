@@ -38,12 +38,13 @@ func newRefundOps(t *testing.T) (*repos.Repos, *checkouts.Operations, *fakes, fi
 		river:    &fakeRiver{},
 		tokens:   &fakeTokens{},
 		payssage: ps,
+		actors:   newFakeActors(),
 	}
 	ops := checkouts.NewOperations(
 		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
 		r.Registrations, r.Products, r.Programs,
 		fs.badges, fs.notifier, fs.river, tx,
-		nil, ps, walletID, fs.tokens, authz.New(r.Events),
+		nil, ps, walletID, fs.tokens, fs.actors, authz.New(r.Events),
 	)
 	fx := seedStore(t, r)
 	// The owner is a member via AddEventMember (Create does not auto-insert

@@ -60,6 +60,7 @@ func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *da
 		libriver.Register(certsJobs.NewGrantCertsWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(certsJobs.NewGrantCertsForOccurrenceWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(checkoutsJobs.NewExpirePurchaseWorker(r.Purchases, r.Registrations, r.Products, r.Programs, notifier, tx)),
+		libriver.Register(checkoutsJobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, app.emailClient)),
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
 

@@ -1092,16 +1092,18 @@ paths:
 
         Gifting: ticket lines are one-per-person (`quantity: 1`, one
         `attendee` each) — self-purchase sends the purchaser's own
-        user_id/email/name; a gifted ticket sends the recipient's, resolved
-        by the front from their email via IdentityX. `attendee.user_id` is
-        trusted as-is. Buying N tickets for the same ticket type sends N
-        lines. One active ticket per person per edition is enforced — the
-        same attendee cannot appear twice in the cart (400), and any
-        attendee who already holds a pending/confirmed registration for the
-        edition is rejected (409); cancelled/expired registrations free the
-        slot. Program lines require ≥1 ticket line in the same cart (a
-        participation attaches to the ticket's registration); program
-        quantity is fixed at 1.
+        user_id/email/name; a gifted ticket sends the recipient's. The server
+        resolves every ticket attendee's email against IdentityX: an attendee
+        without `user_id` is tied to the account when one exists (or stays
+        email-only — no account yet); an attendee with both id and email is
+        verified to be the same user (mismatch → 400). Buying N tickets for
+        the same ticket type sends N lines. One active ticket per person per
+        edition is enforced — the same attendee cannot appear twice in the
+        cart (400), and any attendee who already holds a pending/confirmed
+        registration for the edition is rejected (409); cancelled/expired
+        registrations free the slot. Program lines require ≥1 ticket line in
+        the same cart (a participation attaches to the ticket's
+        registration); program quantity is fixed at 1.
 
         One active `pending` purchase per user+edition is enforced by a
         partial unique index — a second checkout returns 409 with the
@@ -4346,13 +4348,17 @@ components:
       type: object
       description: |
         One person a ticket unit is assigned to — the purchaser themselves or
-        a gifted recipient. The front resolves the recipient email to an
-        IdentityX user id; `user_id` is trusted as-is (the front rejects
-        unknown recipients).
-      required: [user_id, email, name]
+        a gifted recipient. `email` is always required; `user_id` is optional
+        and, when present, must belong to the email (the server resolves the
+        email against IdentityX and verifies the pair — a mismatch is 400).
+        An attendee without a `user_id` is a gift to someone with no account
+        yet: the server looks the email up and ties the actor id when the
+        account exists, otherwise the ticket stays email-only until the
+        recipient creates an account under that email.
+      required: [email, name]
       properties:
         user_id:
-          $ref: '#/components/schemas/UUID'
+          $ref: '#/components/schemas/NullableUUID'
         email:
           x-oapi-codegen-extra-tags:
             validate: "required,email"
@@ -5251,8 +5257,8 @@ components:
       x-go-type-import:
         path: univents/models
       type: object
-      description: One row of the staff attendance surface. Mirrors `models.ProgramParticipant`.
-      required: [id, occurrence_id, registration_id, status, created_at, attendee_user_id, attendee_email, attendee_name]
+      description: One row of the staff attendance surface. Mirrors `models.ProgramParticipant`. `attendee_user_id` is null for attendees who have no IdentityX account yet (email-only gifted tickets).
+      required: [id, occurrence_id, registration_id, status, created_at, attendee_email, attendee_name]
       properties:
         id:
           $ref: '#/components/schemas/UUID'
@@ -5266,7 +5272,7 @@ components:
           type: string
           format: date-time
         attendee_user_id:
-          $ref: '#/components/schemas/UUID'
+          $ref: '#/components/schemas/NullableUUID'
         attendee_email:
           type: string
           format: email

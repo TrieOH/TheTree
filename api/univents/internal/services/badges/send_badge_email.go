@@ -19,6 +19,14 @@ import (
 // (profile URL) as an inline image (cid: — email clients render these,
 // unlike data: URIs) plus a link to the badge.
 func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registration, emission *models.BadgeEmission) {
+	if reg.AttendeeUserID == nil {
+		// Unreachable via EmitForConfirmedRegistration (accountless
+		// registrations never emit), kept as a guard for future callers.
+		telemetry.Log().Info("badge email skipped: attendee has no account yet",
+			zap.String("registration_id", reg.ID.String()))
+		return
+	}
+
 	edition, err := o.editions.GetByID(ctx, reg.EditionID)
 	if err != nil {
 		telemetry.Log().Error("failed to get edition for badge email", zap.Error(err))
@@ -31,7 +39,7 @@ func (o *Operations) sendBadgeEmail(ctx context.Context, reg *models.Registratio
 		return
 	}
 
-	actionURL := profileURL(reg.AttendeeUserID)
+	actionURL := profileURL(*reg.AttendeeUserID)
 	badgeLink := actionURL + "/badges/" + emission.ID.String()
 
 	qrPNG, err := qrcode.Encode(actionURL, qrcode.Medium, 256)
