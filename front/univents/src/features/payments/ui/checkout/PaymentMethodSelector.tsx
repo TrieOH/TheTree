@@ -8,7 +8,6 @@ interface PaymentMethodSelectorProps {
   amountCents: number;
   selectedMethod: PaymentMethodI | null;
   onSelectMethod: (method: PaymentMethodI) => void;
-  onCancel?: () => void;
   disabled?: boolean;
   isTooLowForCreditCard?: boolean;
 }
@@ -39,12 +38,11 @@ export function PaymentMethodSelector({
   amountCents,
   selectedMethod,
   onSelectMethod,
-  onCancel,
   disabled = false,
   isTooLowForCreditCard = false,
 }: PaymentMethodSelectorProps) {
   return (
-    <div className="w-full min-w-75 space-y-4">
+    <div className="w-full min-w-0 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2 pb-2 border-b border-border">
         <Lock className="w-4 h-4 text-primary" />
@@ -155,16 +153,6 @@ export function PaymentMethodSelector({
             {formatCurrency(amountCents)}
           </span>
         </div>
-
-        <Button
-          variant="ghost"
-          size="xl"
-          disabled={disabled}
-          onClick={onCancel}
-          className="w-full text-muted-foreground hover:text-foreground"
-        >
-          Cancelar e voltar
-        </Button>
       </div>
     </div>
   );

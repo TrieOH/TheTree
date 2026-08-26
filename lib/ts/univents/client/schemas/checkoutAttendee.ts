@@ -134,16 +134,20 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { Uuid } from './uuid';
+import type { NullableUUID } from './nullableUUID';
 
 /**
  * One person a ticket unit is assigned to — the purchaser themselves or
- * a gifted recipient. The front resolves the recipient email to an
- * IdentityX user id; `user_id` is trusted as-is (the front rejects
- * unknown recipients).
+ * a gifted recipient. `email` is always required; `user_id` is optional
+ * and, when present, must belong to the email (the server resolves the
+ * email against IdentityX and verifies the pair — a mismatch is 400).
+ * An attendee without a `user_id` is a gift to someone with no account
+ * yet: the server looks the email up and ties the actor id when the
+ * account exists, otherwise the ticket stays email-only until the
+ * recipient creates an account under that email.
  */
 export interface CheckoutAttendee {
-  user_id: Uuid;
+  user_id?: NullableUUID | null;
   email: string;
   name: string;
 }
