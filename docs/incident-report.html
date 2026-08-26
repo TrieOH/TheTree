@@ -224,8 +224,8 @@ Recovery was natural: when the build finished (17:34), the box settled on its ow
 </div>
 
 <div class="action">
-  <p><span class="badge b-future">Future</span><span class="title">Fix the Forgejo leak at the root</span></p>
-  <p>Investigate the ~250 MB/day creep (pprof on the container) and upstream it, instead of relying on the daily restart. Also consider a deploy key so the server's <code>~/infra</code> checkout can <code>git pull</code> from its own Forgejo (currently unauthenticated).</p>
+  <p><span class="badge b-ok">Investigated</span><span class="title">Forgejo "leak" — root cause found</span></p>
+  <p>Replicated Forgejo 10.0.3 locally (identical image, heavy churn for 1h): <b>anon memory, Go heap and goroutines all flat</b> — no Go heap leak. Prod decomposition: the 430MB cgroup is <b>~220MB of reclaimable page cache</b> (no memory pressure → kernel never evicts); app anon is flat at ~191MB. The daily creep (264→466MB pre-fix) <b>stopped after the runner interval fix</b> — the old 2s-fetch / 1s-report polling was the driver. Keep the daily restart as belt-and-suspenders; monitor beszel for a few days to confirm.</p>
 </div>
 
 <div class="foot">
