@@ -13,7 +13,6 @@ interface PaymentProviderSelectorProps {
   amount: number;
   handleSubmit: (data: SubmitPaymentPayloadI) => void;
   sellerPublicKey: string;
-  onCancel?: () => void;
 }
 
 export function PaymentProviderSelector({
@@ -21,7 +20,6 @@ export function PaymentProviderSelector({
   amount,
   handleSubmit,
   sellerPublicKey,
-  onCancel,
 }: PaymentProviderSelectorProps) {
   const isTooLowForCreditCard = amount < 100;
   const [method, setMethod] = useState<PaymentMethodI | null>(null);
@@ -74,7 +72,6 @@ export function PaymentProviderSelector({
             amountCents={amount}
             selectedMethod={method}
             onSelectMethod={handleSelectMethod}
-            onCancel={onCancel}
             isTooLowForCreditCard={isTooLowForCreditCard}
           />
 

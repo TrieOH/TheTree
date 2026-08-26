@@ -3101,16 +3101,18 @@ export const getCreateEditionCheckoutUrl = (editionId: string,) => {
  *
  * Gifting: ticket lines are one-per-person (`quantity: 1`, one
  * `attendee` each) — self-purchase sends the purchaser's own
- * user_id/email/name; a gifted ticket sends the recipient's, resolved
- * by the front from their email via IdentityX. `attendee.user_id` is
- * trusted as-is. Buying N tickets for the same ticket type sends N
- * lines. One active ticket per person per edition is enforced — the
- * same attendee cannot appear twice in the cart (400), and any
- * attendee who already holds a pending/confirmed registration for the
- * edition is rejected (409); cancelled/expired registrations free the
- * slot. Program lines require ≥1 ticket line in the same cart (a
- * participation attaches to the ticket's registration); program
- * quantity is fixed at 1.
+ * user_id/email/name; a gifted ticket sends the recipient's. The server
+ * resolves every ticket attendee's email against IdentityX: an attendee
+ * without `user_id` is tied to the account when one exists (or stays
+ * email-only — no account yet); an attendee with both id and email is
+ * verified to be the same user (mismatch → 400). Buying N tickets for
+ * the same ticket type sends N lines. One active ticket per person per
+ * edition is enforced — the same attendee cannot appear twice in the
+ * cart (400), and any attendee who already holds a pending/confirmed
+ * registration for the edition is rejected (409); cancelled/expired
+ * registrations free the slot. Program lines require ≥1 ticket line in
+ * the same cart (a participation attaches to the ticket's
+ * registration); program quantity is fixed at 1.
  *
  * One active `pending` purchase per user+edition is enforced by a
  * partial unique index — a second checkout returns 409 with the

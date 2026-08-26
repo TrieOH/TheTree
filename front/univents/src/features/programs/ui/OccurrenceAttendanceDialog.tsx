@@ -42,7 +42,7 @@ export function OccurrenceAttendanceDialog({
   const markByQr = (value: string) => {
     const actorId = actorIdFromQr(value);
     const participant = participants.find(
-      (item) => item.attendee_user_id.toLowerCase() === actorId.toLowerCase(),
+      (item) => item.attendee_user_id?.toLowerCase() === actorId.toLowerCase(),
     );
     if (!participant) {
       toast.error(
@@ -63,7 +63,9 @@ export function OccurrenceAttendanceDialog({
       participant.attendee_name,
       participant.attendee_email,
       participant.attendee_user_id,
-    ].some((value) => value.toLowerCase().includes(search.toLowerCase())),
+    ].some(
+      (value) => value?.toLowerCase().includes(search.toLowerCase()) ?? false,
+    ),
   );
 
   return (

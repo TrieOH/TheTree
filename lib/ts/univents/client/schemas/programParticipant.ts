@@ -134,11 +134,12 @@
  *
  * OpenAPI spec version: 0.1.0
  */
+import type { NullableUUID } from './nullableUUID';
 import type { ProgramParticipationStatus } from './programParticipationStatus';
 import type { Uuid } from './uuid';
 
 /**
- * One row of the staff attendance surface. Mirrors `models.ProgramParticipant`.
+ * One row of the staff attendance surface. Mirrors `models.ProgramParticipant`. `attendee_user_id` is null for attendees who have no IdentityX account yet (email-only gifted tickets).
  */
 export interface ProgramParticipant {
   id: Uuid;
@@ -146,7 +147,7 @@ export interface ProgramParticipant {
   registration_id: Uuid;
   status: ProgramParticipationStatus;
   created_at: string;
-  attendee_user_id: Uuid;
+  attendee_user_id?: NullableUUID | null;
   attendee_email: string;
   attendee_name: string;
 }

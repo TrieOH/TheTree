@@ -6,7 +6,8 @@ import type {
   CheckoutItem,
   CreateCheckoutRequest,
 } from "@trieoh/univents-api/schemas";
-import { Check } from "lucide-react";
+import { Check, Gift, Lock, Mail, ShieldCheck } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { activeEditionQueryOptions } from "@/features/editions/api";
@@ -18,6 +19,15 @@ import { profileKeys } from "@/features/profile/api/query-keys";
 import { useCreateCheckoutMutation } from "@/features/purchases/api";
 import { getErrorMessage } from "@/shared/lib/errors";
 import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import { Label } from "@/shared/ui/shadcn/label";
+
+function formatBRL(cents: number) {
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
 export const Route = createFileRoute("/events/$slug/checkout")({
   beforeLoad: async (args) => {
@@ -67,6 +77,11 @@ function CheckoutPage() {
     activeEdition?.id ?? edition.id,
   );
   const checkout = useCreateCheckoutMutation();
+  const hasTicket = items.some((item) => item.type === "ticket");
+  const [isGift, setIsGift] = useState(false);
+  const [giftName, setGiftName] = useState("");
+  const [giftEmail, setGiftEmail] = useState("");
+  const giftEmailRef = useRef<HTMLInputElement>(null);
 
   const submitPayment = async (payment?: {
     card_token?: string;
@@ -78,6 +93,15 @@ function CheckoutPage() {
     identification_type: string;
     identification_number: string;
   }) => {
+    if (isGift && !giftName.trim()) {
+      toast.error("Informe o nome de quem receberá o presente");
+      return;
+    }
+    if (isGift && !giftEmailRef.current?.checkValidity()) {
+      giftEmailRef.current?.reportValidity();
+      return;
+    }
+
     const profile = auth.profile();
     if (!profile?.id || !profile.email) {
       toast.error("Complete seu perfil antes de comprar");
@@ -103,9 +127,9 @@ function CheckoutPage() {
           item_id: item.id,
           quantity: 1,
           attendee: {
-            user_id: buyer.id,
-            email: buyer.email,
-            name: buyer.email,
+            user_id: isGift ? undefined : buyer.id,
+            email: isGift ? giftEmail.trim() : buyer.email,
+            name: isGift ? giftName.trim() : buyer.email,
           },
         });
       }
@@ -175,61 +199,216 @@ function CheckoutPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-12">
-      <div className="mb-8 border-b border-border pb-6">
-        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-primary">
-          <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+    <main className="mx-auto w-full max-w-6xl px-4 pb-44 pt-6 sm:px-6 md:pb-36 md:pt-12">
+      {/* Header + stepper */}
+      <div className="mb-6 border-b border-border pb-5 md:mb-8 md:pb-6">
+        <div className="mb-3 flex items-center gap-2 text-xs font-medium text-primary md:mb-4">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Check className="size-3.5" />
           </span>
-          Pedido conferido
-          <span className="h-px w-8 bg-border" />
-          <span className="flex size-6 items-center justify-center rounded-full border border-primary">
+          <span className="hidden sm:inline">Pedido conferido</span>
+          <span className="h-px w-6 bg-border sm:w-8" />
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-primary">
             2
           </span>
           <span className="text-muted-foreground">
             {totalCents === 0 ? "Confirmação" : "Pagamento"}
           </span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Finalizar compra</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          Finalizar compra
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Confira seu pedido para {event.full_name}.
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-card p-5 md:p-6">
-          <OrderSummary
-            items={items}
-            totalCents={totalCents}
-            title="Seu pedido"
-          />
-        </section>
-
-        <section className="flex flex-col rounded-xl border border-primary/20 bg-primary/3 p-6">
-          {totalCents === 0 ? (
-            <div className="flex flex-1 flex-col justify-center gap-3">
-              <p className="text-sm text-muted-foreground">
-                Este pedido é gratuito.
-              </p>
-              <Button
-                disabled={checkout.isPending}
-                onClick={() => void submitPayment()}
-              >
-                {checkout.isPending ? "Finalizando…" : "Finalizar compra"}
-              </Button>
-            </div>
-          ) : event.payssage_public_key ? (
-            <PaymentProviderSelector
-              amount={totalCents}
-              sellerPublicKey={event.payssage_public_key}
-              handleSubmit={(payment) => void submitPayment(payment)}
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-8">
+        <div className="space-y-4 lg:space-y-5">
+          <section className="rounded-md border border-border bg-card p-4 shadow-sm sm:p-5 md:p-6">
+            <OrderSummary
+              items={items}
+              totalCents={totalCents}
+              title="Seu pedido"
             />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Este evento ainda não configurou o recebimento de pagamentos.
-            </p>
+          </section>
+
+          {hasTicket && (
+            <section className="rounded-md border border-border bg-card p-4 shadow-sm sm:p-5 md:p-6">
+              <button
+                type="button"
+                aria-pressed={isGift}
+                onClick={() => setIsGift((value) => !value)}
+                className="flex w-full items-center gap-3 text-left focus-visible:outline-none sm:gap-4"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-11">
+                  <Gift className="size-5" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold sm:text-base">
+                    Este ingresso é um presente?
+                  </span>
+                  <span className="block text-xs text-muted-foreground sm:text-sm">
+                    Enviaremos o ingresso diretamente para quem você escolher.
+                  </span>
+                </span>
+                <span
+                  className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${isGift ? "border-primary bg-primary" : "border-border bg-muted"}`}
+                >
+                  <span
+                    className={`absolute inset-y-0 my-auto size-4 rounded-full shadow-sm ring-1 transition-all ${isGift ? "translate-x-6 bg-primary-foreground ring-primary-foreground/30" : "translate-x-1 bg-background ring-border"}`}
+                  />
+                </span>
+              </button>
+
+              {isGift && (
+                <div className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="gift-name">Nome de quem vai receber</Label>
+                    <Input
+                      id="gift-name"
+                      required
+                      value={giftName}
+                      onChange={(event) => setGiftName(event.target.value)}
+                      placeholder="Nome completo"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gift-email">E-mail para entrega</Label>
+                    <Input
+                      id="gift-email"
+                      ref={giftEmailRef}
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={giftEmail}
+                      onChange={(event) => setGiftEmail(event.target.value)}
+                      placeholder="presente@exemplo.com"
+                    />
+                  </div>
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground sm:col-span-2">
+                    <Mail className="size-3.5 shrink-0" /> O presenteado
+                    receberá as instruções após a confirmação
+                    {totalCents === 0 ? "." : " do pagamento."}
+                  </p>
+                </div>
+              )}
+            </section>
           )}
+        </div>
+
+        <section
+          id="payment-section"
+          className="scroll-mt-20 overflow-hidden rounded-md border border-primary/20 bg-card shadow-md shadow-primary/5 lg:sticky lg:top-6"
+        >
+          <div className="border-b border-border bg-primary/5 p-5 sm:p-6">
+            <div className="mb-2 flex items-center gap-2 text-primary">
+              {totalCents === 0 ? (
+                <Check className="size-4" />
+              ) : (
+                <Lock className="size-4" />
+              )}
+              <span className="text-xs font-bold uppercase tracking-wider">
+                Finalizar compra
+              </span>
+            </div>
+            <h2 className="text-lg font-bold sm:text-xl">
+              {totalCents === 0
+                ? "Confirme seu pedido"
+                : "Como você prefere pagar?"}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {totalCents === 0
+                ? "Nenhum dado de pagamento será necessário."
+                : "Escolha uma opção para continuar com segurança."}
+            </p>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            {totalCents === 0 ? (
+              <div className="flex flex-1 flex-col justify-center gap-4">
+                <div className="border-l-2 border-primary bg-primary/5 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Total do pedido
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-primary">
+                    Gratuito
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Conclua agora sem informar dados de pagamento.
+                  </p>
+                </div>
+                <Button
+                  size="lg"
+                  className="h-12 w-full justify-between px-5 text-base shadow-md shadow-primary/15"
+                  disabled={checkout.isPending}
+                  onClick={() => void submitPayment()}
+                >
+                  {checkout.isPending ? (
+                    "Confirmando…"
+                  ) : (
+                    <span>
+                      <span className="sm:hidden">Finalizar grátis</span>
+                      <span className="hidden sm:inline">
+                        Finalizar pedido gratuito
+                      </span>
+                    </span>
+                  )}
+                  {!checkout.isPending && (
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+                      <Check className="size-4" />
+                    </span>
+                  )}
+                </Button>
+              </div>
+            ) : event.payssage_public_key ? (
+              <PaymentProviderSelector
+                amount={totalCents}
+                sellerPublicKey={event.payssage_public_key}
+                handleSubmit={(payment) => void submitPayment(payment)}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Este evento ainda não configurou o recebimento de pagamentos.
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-t border-border bg-muted/30 px-5 py-4 text-xs text-muted-foreground sm:px-6">
+            <span className="flex items-center gap-2">
+              {totalCents === 0 ? (
+                <Check className="size-4 shrink-0 text-primary" />
+              ) : (
+                <ShieldCheck className="size-4 shrink-0 text-primary" />
+              )}
+              {totalCents === 0 ? "Sem cobrança" : "Pagamento protegido"}
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="size-4 shrink-0 text-primary" />
+              {totalCents === 0
+                ? "Confirmação imediata"
+                : "Status em tempo real"}
+            </span>
+          </div>
         </section>
+      </div>
+
+      {/* Sticky mobile summary bar — keeps total + CTA reachable without
+          scrolling all the way down, and jumps straight to payment. */}
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-card/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur supports-backdrop-filter:bg-card/80 md:hidden">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-lg font-bold leading-tight">
+              {totalCents === 0 ? "Gratuito" : formatBRL(totalCents)}
+            </p>
+          </div>
+          <a href="#payment-section">
+            <Button size="lg" className="px-6">
+              {totalCents === 0 ? "Finalizar pedido" : "Ir para pagamento"}
+            </Button>
+          </a>
+        </div>
       </div>
     </main>
   );

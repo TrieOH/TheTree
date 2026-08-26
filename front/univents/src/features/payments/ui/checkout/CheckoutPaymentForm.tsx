@@ -19,7 +19,6 @@ interface CheckoutPaymentFormProps {
   paymentIntentId: string | null;
   sellerPublicKey: string;
   onSubmit: (data: SubmitPaymentPayloadI) => void;
-  onCancel: () => void;
   onExpire: () => void;
 }
 
@@ -30,7 +29,6 @@ export default function CheckoutPaymentForm({
   reservationExpiresAt,
   sellerPublicKey,
   onSubmit,
-  onCancel,
   onExpire,
 }: CheckoutPaymentFormProps) {
   const isProcessing =
@@ -75,7 +73,6 @@ export default function CheckoutPaymentForm({
           <PaymentProviderSelector
             amount={totalCents}
             handleSubmit={onSubmit}
-            onCancel={onCancel}
             sellerPublicKey={sellerPublicKey}
           />
         </div>

@@ -91,6 +91,13 @@ const inputLike = [
   "disabled:cursor-not-allowed disabled:opacity-50",
 ].join(" ");
 
+const selectLike = cn(
+  inputLike,
+  "h-10 cursor-pointer appearance-none",
+  "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8",
+  "[color-scheme:light] dark:[color-scheme:dark] [&>option]:bg-popover [&>option]:text-popover-foreground",
+);
+
 function IframeField({
   id,
   label,
@@ -137,15 +144,7 @@ function SelectField({
       >
         {label}
       </Label>
-      <select
-        id={id}
-        defaultValue=""
-        className={cn(
-          inputLike,
-          "h-9 cursor-pointer appearance-none",
-          "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8",
-        )}
-      >
+      <select id={id} defaultValue="" className={selectLike}>
         <option value="" disabled />
       </select>
     </div>
@@ -230,11 +229,7 @@ function PixForm({
               setIdentificationType(e.target.value);
               setIdentificationNumber("");
             }}
-            className={cn(
-              inputLike,
-              "h-9 cursor-pointer appearance-none",
-              "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8",
-            )}
+            className={selectLike}
           >
             <option value="CPF">CPF</option>
             <option value="CNPJ">CNPJ</option>
@@ -568,11 +563,7 @@ function CreditCardForm({
               setIdentificationType(e.target.value);
               setIdentificationNumber("");
             }}
-            className={cn(
-              inputLike,
-              "h-9 cursor-pointer appearance-none",
-              "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8",
-            )}
+            className={selectLike}
           >
             <option value="CPF">CPF</option>
             <option value="CNPJ">CNPJ</option>
