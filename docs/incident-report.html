@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Incident Report — trieoh host saturation (2026-08-26)</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-2: #131313;
+    --bg-3: #1c1c1c;
+    --text: #f5f5f5;
+    --text-dim: #b3b3b3;
+    --orange: #ff8c1a;
+    --orange-soft: #ffb35c;
+    --border: #2c2c2c;
+    --ok: #4ade80;
+    --warn: #facc15;
+    --future: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+  header {
+    border-bottom: 2px solid var(--orange);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  .kicker {
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  h1 { font-size: 30px; margin: 0 0 10px; }
+  .meta { color: var(--text-dim); font-size: 14px; }
+  .meta b { color: var(--text); }
+  h2 {
+    color: var(--orange);
+    font-size: 19px;
+    margin: 44px 0 14px;
+    padding-left: 12px;
+    border-left: 4px solid var(--orange);
+  }
+  h3 { color: var(--orange-soft); font-size: 15px; margin: 24px 0 8px; }
+  p, li { color: var(--text); }
+  a { color: var(--orange); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 12px 0 20px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--bg-3); color: var(--orange-soft); font-weight: 600; }
+  td.hl { color: var(--orange); font-weight: 700; }
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 12px 0;
+  }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--bg-3);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--orange-soft);
+  }
+  pre {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-right: 6px;
+  }
+  .b-ok { background: rgba(74,222,128,.15); color: var(--ok); border: 1px solid var(--ok); }
+  .b-future { background: rgba(148,163,184,.12); color: var(--future); border: 1px solid var(--future); }
+  .action { border-left: 3px solid var(--orange); padding: 10px 14px; margin: 10px 0; background: var(--bg-2); border-radius: 0 8px 8px 0; }
+  .action p { margin: 4px 0; }
+  .action .title { font-weight: 700; color: var(--text); }
+  .foot {
+    margin-top: 56px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .big { font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Incident Report</p>
+  <h1>trieoh host saturation during Forgejo Actions publish build</h1>
+  <p class="meta">
+    <b>Date:</b> 2026-08-26, 17:04–17:34 UTC (30 min) &nbsp;·&nbsp;
+    <b>Severity:</b> high (full host unresponsive, no data loss) &nbsp;·&nbsp;
+    <b>Status:</b> <span style="color:var(--ok)">Resolved</span> — natural recovery, build succeeded
+  </p>
+</header>
+
+<h2>Summary</h2>
+<p class="big">
+A routine <b>publish build</b> (<code>univents/v0.10.12</code>, commit <code>d9dec307</code>, tag pushed 17:03 UTC)
+ran the dagger <code>publish</code> workflow inside <code>forgejo-dind</code> on the trieoh host
+(<b>2 cores / 7.8 GiB / zero swap</b>). The build was <b>capped</b> at the dind limit (then 1.5 CPU / 3 GiB)
+and <b>succeeded</b> — but for ~18 minutes it pinned the host at <b>100% CPU</b>, starved Forgejo so badly the
+Actions runner could not report for 15 minutes, and made every service unresponsive.
+Recovery was natural: when the build finished (17:34), the box settled on its own.
+</p>
+
+<div class="card">
+  <b style="color:var(--orange)">Why it happened — in one sentence:</b>
+  <p style="margin:6px 0 0">
+  A CI job allocated <b>75% of the host's only 2 cores</b> on a machine already running the full service stack,
+  and the runner's aggressive 1-second reporting turned Forgejo's normal slowness into a
+  <b>retry storm</b> that ballooned Forgejo to ~2 GB and ~90% CPU — a self-amplifying loop until the build finished.
+  </p>
+</div>
+
+<h2>Timeline (UTC, minute-level from beszel)</h2>
+<table>
+  <tr><th>Time</th><th>Host CPU</th><th>Host RAM (used)</th><th>Event</th></tr>
+  <tr><td>16:45–17:04</td><td>~30–50%</td><td>2.5 G (32%)</td><td>Calm baseline, load ~1</td></tr>
+  <tr><td>17:04:24</td><td>—</td><td>—</td><td>Runner picks up task 1213 (<code>TrieOH/TheTree</code>, publish workflow)</td></tr>
+  <tr><td>17:05–17:06</td><td class="hl">90 → 100%</td><td>3.0 → 3.5 G</td><td>Load 1-min spikes to <b>17.7</b>; disk starts growing</td></tr>
+  <tr><td>17:06–17:23</td><td class="hl">98–100%</td><td class="hl">→ 5.08 G (65.5%)</td><td><b>Forgejo balloons to ~1.9–2.0 GB / ~90% CPU</b>; runner report timeouts 17:07–17:22; load 1-min peaks <b>21.7</b>; disk 31 → 37.7 G</td></tr>
+  <tr><td>17:24–17:29</td><td>34–47%</td><td>4.5 → 4.0 G</td><td>Heavy phase ends; Forgejo back to ~570 MB; reports flow again</td></tr>
+  <tr><td>17:30–17:33</td><td>84–93%</td><td>4.3–5.1 G</td><td>Image export/push phase; <b>dind hits its 3 GiB cap</b> (3004 MB @17:31)</td></tr>
+  <tr><td>17:34</td><td>29%</td><td>2.8 G (36%)</td><td><b>Build done</b>, dagger engine exits 0 — natural recovery</td></tr>
+</table>
+
+<h2>Key numbers</h2>
+<ul>
+  <li><b>CPU:</b> 100% for ~18 minutes on a 2-core box (load 1-min peak 21.7)</li>
+  <li><b>RAM:</b> actual anonymous memory peaked at <b>5.08 / 7.75 GiB (65.5%)</b> — never exhausted, <b>no OOM-killer events</b>, no container crashed</li>
+  <li><b>Why it "looked" like 100% RAM:</b> ~2.6 GiB of page cache on top; with no swap and 8.6 GB of disk writes in 30 min, the kernel constantly reclaimed cache → everything thrashed</li>
+  <li><b>Disk:</b> 30.9 → 39.5 G during the build (+8.6 G of images/buildkit cache)</li>
+  <li><b>Forgejo leak:</b> container creeps ~250 MB → 550+ MB per day (daily 05:00 restart resets it); was already at 564 MB before the build (12 h of creep)</li>
+  <li><b>Outcome:</b> build succeeded, image pushed, zero data loss</li>
+</ul>
+
+<h2>Root cause — three layers</h2>
+<ol>
+  <li><b>Trigger:</b> a normal publish build (univents v0.10.12). Not a runaway — just a build on a machine with no headroom.</li>
+  <li><b>Co-tenancy:</b> the whole stack (Forgejo + Postgres + Grafana + 3× Victoria + 4 apps + mox + ntfy + beszel ≈ 2.5–3 GiB baseline) shares a 2-core / 7.8 GiB / no-swap box with CI. dind's 1.5-core cap = <b>75% of all CPU</b>.</li>
+  <li><b>The amplifier — retry storm:</b> runner <code>report_interval: 1s</code> with short client timeouts. When Forgejo slowed, the runner hammered it with timed-out retries → Forgejo ballooned to ~2 GB / ~90% CPU → slower → more timeouts. Forgejo (not the build) was the single biggest CPU consumer of the incident.</li>
+</ol>
+
+<h2>Evidence trail</h2>
+<ul>
+  <li>beszel history (SQLite, 30-day retention): host + per-container minute-level CPU/RAM — the timeline above</li>
+  <li>Runner logs: task 1213 pickup 17:04:24; <code>context deadline exceeded</code> reporting to <code>forgejo:3000</code> 17:07–17:22</li>
+  <li>Kernel logs: no OOM-killer events in the window (nothing was ever killed)</li>
+  <li><code>docker inspect</code>: dind limits confirmed applied (Compose v5.3.1 honors <code>deploy.resources.limits</code>)</li>
+  <li>dagger engine container exited 0 at 17:34 — build completed cleanly</li>
+</ul>
+
+<h2>Action items</h2>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Runner retry storm fix</span></p>
+  <p><code>forgejo/runner/config.yml</code>: <code>report_interval</code> 1s → 5s, <code>fetch_timeout</code> 5s → 20s, <code>fetch_interval</code> 2s → 5s. Removes the feedback loop.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Right-size dind</span></p>
+  <p><code>forgejo/compose.yml</code>: dind limits <b>1.5 CPU / 3 GiB → 1.0 CPU / 2.5 GiB</b> — leaves headroom so Forgejo can always answer the runner. Trade-off: builds are somewhat slower and may occasionally hit the memory cap inside dind.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Forgejo memory backstop</span></p>
+  <p><code>forgejo/compose.yml</code>: <b>2 GiB memory cap</b> on the forgejo container — the daily 05:00 restart resets the leak; this prevents a bad day from eating the box.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Host monitoring + Grafana alerts</span></p>
+  <p><code>observability/</code>: added <b>node-exporter</b> (+ scrape job) and two alert rules — <b>Host CPU &gt; 90%</b> and <b>Host memory &gt; 85%</b>, both for 5 min. The CPU alert would have fired ~17:11 during the incident. Note: Grafana needs a <i>contact point</i> configured (UI) to push notifications.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">beszel alerts</span></p>
+  <p>Created via beszel API: <b>CPU &gt; 90%</b>, <b>Memory &gt; 85%</b>, <b>Disk &gt; 85%</b>, each averaged over 5 minutes. Email (admin@trieoh.com) is configured; optionally wire ntfy push in the beszel UI for phone notifications.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Applied</span><span class="title">Add swap (4 GiB)</span></p>
+  <p><b>4 GiB swapfile active</b> at <code>/swapfile</code> (persisted in <code>/etc/fstab</code>, priority -2). Removes the no-swap cliff — the box now has a memory buffer under load. Script kept in the repo: <code>infra/scripts/add-swap.sh</code>.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Future</span><span class="title">Move Actions to a separate host</span></p>
+  <p>A 2-core box running prod + CI co-tenancy will keep hitting this wall. Dedicate a host (or bigger VM) to the runner.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Future</span><span class="title">Fix the Forgejo leak at the root</span></p>
+  <p>Investigate the ~250 MB/day creep (pprof on the container) and upstream it, instead of relying on the daily restart. Also consider a deploy key so the server's <code>~/infra</code> checkout can <code>git pull</code> from its own Forgejo (currently unauthenticated).</p>
+</div>
+
+<div class="foot">
+  Produced 2026-08-26 · Evidence: beszel history, runner logs, kernel logs, docker inspect, git history ·
+  <span style="color:var(--orange)">TrieOH platform</span>
+</div>
+
+</div>
+</body>
+</html>
