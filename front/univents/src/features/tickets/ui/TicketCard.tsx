@@ -1,5 +1,6 @@
 import type { MyTicket } from "@trieoh/univents-api/schemas";
 import { ArrowUp, Check, ShoppingCart, Star, TicketCheck } from "lucide-react";
+import { toast } from "sonner";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -47,8 +48,10 @@ export function TicketCard({
   const isUpgrade =
     hasHeldTicket &&
     !isHeld &&
-    ticket.access_level > (heldTicket?.ticket_type.access_level ?? -1) &&
-    ticket.price_cents > (heldTicket?.ticket_type.price_cents ?? 0);
+    ticket.access_level > (heldTicket?.ticket_type.access_level ?? -1);
+  const upgradePrice = heldTicket
+    ? ticket.price_cents - heldTicket.ticket_type.price_cents
+    : 0;
   const buttonLabel = isHeld
     ? "Ingresso atual"
     : isUpgrade
@@ -116,12 +119,9 @@ export function TicketCard({
         >
           {formatPrice(ticket.price_cents)}
         </span>
-        {isUpgrade && heldTicket && (
+        {isUpgrade && upgradePrice > 0 && (
           <span className="ml-2 text-xs text-muted-foreground">
-            +
-            {formatPrice(
-              ticket.price_cents - heldTicket.ticket_type.price_cents,
-            )}
+            +{formatPrice(upgradePrice)}
           </span>
         )}
       </div>
@@ -145,23 +145,31 @@ export function TicketCard({
         <Button
           size="sm"
           variant={inCart ? "secondary" : "default"}
-          disabled={
-            isOutOfStock || anotherTicketInCart || isHeld || hasHeldTicket
-          }
+          disabled={isOutOfStock || anotherTicketInCart}
           className="mt-auto h-9 w-full gap-2 text-xs font-semibold shadow-sm"
-          onClick={() =>
+          onClick={() => {
+            if (isUpgrade) {
+              toast.info(
+                "Ingresso adicionado. No checkout, marque-o como presente; upgrades estarão disponíveis em breve.",
+              );
+            } else if (hasHeldTicket) {
+              toast.info(
+                "Você já possui um ingresso. Este novo ingresso deverá ser atribuído como presente no checkout.",
+              );
+            }
             addItem(
               {
                 id: ticket.id,
                 type: "ticket",
                 name: ticket.name,
                 price_cents: ticket.price_cents,
-                inventory_remaining: ticket.max_quantity ?? 999,
-                has_inventory: ticket.max_quantity !== null,
+                inventory_remaining: stock ?? ticket.max_quantity ?? 999,
+                has_inventory: stock !== null && ticket.max_quantity !== null,
+                is_upgrade: isUpgrade,
               },
               1,
-            )
-          }
+            );
+          }}
         >
           {isOutOfStock ? (
             <TicketCheck className="h-4 w-4" />

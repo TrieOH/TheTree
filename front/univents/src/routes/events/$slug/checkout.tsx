@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
@@ -6,7 +6,14 @@ import type {
   CheckoutItem,
   CreateCheckoutRequest,
 } from "@trieoh/univents-api/schemas";
-import { Check, Gift, Lock, Mail, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Gift,
+  Lock,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
@@ -17,6 +24,7 @@ import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderS
 import { useCart } from "@/features/products/hooks/use-cart";
 import { profileKeys } from "@/features/profile/api/query-keys";
 import { useCreateCheckoutMutation } from "@/features/purchases/api";
+import { myTicketQueryOptions } from "@/features/tickets/api";
 import { getErrorMessage } from "@/shared/lib/errors";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
@@ -79,6 +87,15 @@ function CheckoutPage() {
   const checkout = useCreateCheckoutMutation();
   const hasTicket = items.some((item) => item.type === "ticket");
   const [isGift, setIsGift] = useState(false);
+  const currentEditionId = activeEdition?.id ?? edition.id;
+  const {
+    data: heldTicket = null,
+    isPending: isCheckingTicket,
+    isError: ticketCheckFailed,
+  } = useQuery(myTicketQueryOptions(currentEditionId, true));
+  const isUpgrade = items.some(
+    (item) => item.type === "ticket" && item.is_upgrade,
+  );
   const [giftName, setGiftName] = useState("");
   const [giftEmail, setGiftEmail] = useState("");
   const giftEmailRef = useRef<HTMLInputElement>(null);
@@ -93,6 +110,24 @@ function CheckoutPage() {
     identification_type: string;
     identification_number: string;
   }) => {
+    if (hasTicket && isCheckingTicket) {
+      toast.info("Aguarde enquanto verificamos seu ingresso atual");
+      return;
+    }
+    if (hasTicket && ticketCheckFailed) {
+      toast.error(
+        "Não foi possível verificar seu ingresso atual. Tente novamente.",
+      );
+      return;
+    }
+    if (heldTicket && !isGift && hasTicket) {
+      toast.warning(
+        isUpgrade
+          ? "Upgrade de ingresso estará disponível em breve. Se este ingresso for para outra pessoa, marque-o como presente."
+          : "Você já possui um ingresso. Marque a compra como presente para continuar.",
+      );
+      return;
+    }
     if (isGift && !giftName.trim()) {
       toast.error("Informe o nome de quem receberá o presente");
       return;
@@ -235,6 +270,15 @@ function CheckoutPage() {
 
           {hasTicket && (
             <section className="rounded-md border border-border bg-card p-4 shadow-sm sm:p-5 md:p-6">
+              {heldTicket && (
+                <div className="mb-5 flex gap-3 border-l-2 border-amber-500 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <p>
+                    Você já possui o ingresso {heldTicket.ticket_type.name}.
+                    Para comprar outro, marque abaixo que ele é um presente.
+                  </p>
+                </div>
+              )}
               <button
                 type="button"
                 aria-pressed={isGift}

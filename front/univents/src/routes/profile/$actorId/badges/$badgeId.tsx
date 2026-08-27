@@ -5,6 +5,7 @@ import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { ArrowLeft } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
+import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
@@ -44,10 +45,9 @@ function ProfileBadgePage() {
   const editionQueries = useQueries({
     queries: events.map((event) => allPublicEditionsQueryOptions(event.id)),
   });
-  const badge = [
-    ...(badges.data?.attendant.current ?? []),
-    ...(badges.data?.staff.current ?? []),
-  ].find((item) => item.emission_id === badgeId);
+  const badge = badges.data
+    ? allProfileBadges(badges.data).find((item) => item.emission_id === badgeId)
+    : undefined;
   const edition = editionQueries
     .flatMap((query) => query.data ?? [])
     .find((item) => item.id === badge?.edition_id);

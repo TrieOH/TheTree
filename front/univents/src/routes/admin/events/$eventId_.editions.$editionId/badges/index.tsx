@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import { BadgeCheck, FileText, Plus, Printer, QrCode } from "lucide-react";
 import QRCode from "qrcode";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   badgePrintQueryOptions,
   badgeTemplatesQueryOptions,
@@ -17,6 +17,7 @@ import { ToolbarCombobox } from "@/features/certifications/editor/ui/toolbar-com
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { useActorDisplayNames } from "@/features/profile/api/actor-display-names";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
+import { printElement } from "@/shared/lib/print-element";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import {
@@ -58,6 +59,7 @@ function PrintableBadge({
         participantName={participantName}
         location={location}
         className="relative h-full w-full rounded-none border-0 shadow-none"
+        style={{ width: "100%", height: "100%", aspectRatio: "auto" }}
       />
     </article>
   );
@@ -122,6 +124,7 @@ function RouteComponent() {
   const [printQrSizeMm, setPrintQrSizeMm] = useState(48);
   const [customQrSize, setCustomQrSize] = useState("48");
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const printRootRef = useRef<HTMLDivElement>(null);
   const presetQrSizes = [30, 48, 60, 210];
   const selectedPreset = presetQrSizes.includes(Number(customQrSize))
     ? customQrSize
@@ -174,15 +177,27 @@ function RouteComponent() {
   useEffect(() => {
     if (!printPending || qrDialogOpen || !printQuery.data) return;
 
-    const frame = requestAnimationFrame(() => {
-      window.print();
+    let cancelled = false;
+    const prepare = async () => {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      if (cancelled || !printRootRef.current) return;
+      await printElement(printRootRef.current, "Crachás");
       setPrintPending(false);
-    });
-    return () => cancelAnimationFrame(frame);
+    };
+    void prepare();
+    return () => {
+      cancelled = true;
+    };
   }, [printPending, printQuery.data, qrDialogOpen]);
   return (
     <>
-      <div className="hidden print:block">
+      <div
+        ref={printRootRef}
+        data-badge-print-root
+        className="hidden print:block"
+      >
         <div className="flex flex-wrap content-start gap-[4mm] p-[10mm]">
           {printMode === "badges"
             ? printItems.map((badge) => (
@@ -322,7 +337,7 @@ function RouteComponent() {
                     const result = await printQuery.refetch();
                     if (result.data) {
                       setPrintMode("badges");
-                      requestAnimationFrame(() => window.print());
+                      setPrintPending(true);
                     }
                   }}
                   className={cn(

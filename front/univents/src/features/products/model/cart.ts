@@ -11,6 +11,7 @@ export interface CartItem {
   quantity: number;
   inventory_remaining: number;
   has_inventory: boolean;
+  is_upgrade?: boolean;
 }
 
 export const getProductMaxQuantity = (
@@ -82,7 +83,6 @@ export const cartActions = {
       ) {
         return prev;
       }
-
       let newItems: CartItem[];
       if (existing) {
         const newQuantity = getValidQuantity(
