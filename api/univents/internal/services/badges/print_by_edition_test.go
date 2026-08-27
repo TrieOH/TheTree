@@ -47,7 +47,7 @@ func TestPrintByEdition_ActiveOnly(t *testing.T) {
 	mock.When(templates.ListByEditionIDs(mock.AnyContext(), mock.Any[[]uuid.UUID]())).
 		ThenReturn([]models.BadgeTemplate{tpl}, nil)
 
-	ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+	ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 	items, err := ops.PrintByEdition(ownerCtx(), editionID, nil)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestPrintByEdition_FiltersByEmissionIDs(t *testing.T) {
 	mock.When(templates.ListByEditionIDs(mock.AnyContext(), mock.Any[[]uuid.UUID]())).
 		ThenReturn(nil, nil)
 
-	ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+	ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 	items, err := ops.PrintByEdition(ownerCtx(), editionID, []uuid.UUID{secondID})
 	if err != nil {

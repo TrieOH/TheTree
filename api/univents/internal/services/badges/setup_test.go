@@ -41,7 +41,7 @@ func newOps(
 	email *email.Client,
 ) *badges.Operations {
 	t.Helper()
-	return newOpsWithAuthz(t, templates, emissions, registrations, editions, events, email, mock.Mock[ports.EventRepo]())
+	return newOpsWithDeps(t, templates, emissions, registrations, editions, events, &fakeActors{}, email, mock.Mock[ports.EventRepo]())
 }
 
 // newOpsWithAuthz is newOps with control over the event repo used by authz
@@ -50,14 +50,49 @@ func newOpsWithAuthz(
 	t *testing.T,
 	templates ports.BadgeTemplateRepo,
 	emissions ports.BadgeEmissionRepo,
+	editions ports.EditionRepo,
+	authzEvents ports.EventRepo,
+) *badges.Operations {
+	t.Helper()
+	return newOpsWithDeps(t, templates, emissions, nil, editions, nil, &fakeActors{}, nil, authzEvents)
+}
+
+// newOpsWithDeps is the full constructor: everything newOps provides plus the
+// actor resolver (the profile-badges gift claim needs the account email) and
+// the authz event repo.
+func newOpsWithDeps(
+	t *testing.T,
+	templates ports.BadgeTemplateRepo,
+	emissions ports.BadgeEmissionRepo,
 	registrations ports.RegistrationRepo,
 	editions ports.EditionRepo,
 	events ports.EventRepo,
+	actors ports.ActorResolver,
 	email *email.Client,
 	authzEvents ports.EventRepo,
 ) *badges.Operations {
 	t.Helper()
-	return badges.NewOperations(templates, emissions, registrations, editions, events, email, authz.New(authzEvents))
+	return badges.NewOperations(templates, emissions, registrations, editions, events, actors, email, authz.New(authzEvents))
+}
+
+// fakeActors is a no-account actor resolver: unknown id/email →
+// ports.ErrActorNotFound, so the claim short-circuits unless seeded.
+// Seed with fakeActors{byID: ...} for claim tests.
+type fakeActors struct {
+	byID map[uuid.UUID]*idx.Actor
+}
+
+func (f *fakeActors) GetByID(_ context.Context, id uuid.UUID) (*idx.Actor, error) {
+	if f.byID != nil {
+		if a, ok := f.byID[id]; ok {
+			return a, nil
+		}
+	}
+	return nil, ports.ErrActorNotFound
+}
+
+func (f *fakeActors) GetByEmail(_ context.Context, _ string) (*idx.Actor, error) {
+	return nil, ports.ErrActorNotFound
 }
 
 // ownerCtx returns a context with an authenticated identity for feature tests

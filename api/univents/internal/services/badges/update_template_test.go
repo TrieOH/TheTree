@@ -57,7 +57,7 @@ func TestUpdateTemplate_MergesPartialFields(t *testing.T) {
 					return []any{&models.BadgeTemplate{ID: templateID, Name: gotName, DesignData: gotDesign}, nil}
 				})
 
-			ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+			ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 			_, err := ops.UpdateTemplate(ownerCtx(), models.UpdateBadgeTemplateInput{
 				TemplateID: templateID,
@@ -110,7 +110,7 @@ func TestUpdateTemplate_EmptyPatchIsNoOpMerge(t *testing.T) {
 			return []any{&models.BadgeTemplate{ID: templateID, Name: gotName, DesignData: gotDesign}, nil}
 		})
 
-	ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+	ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 	_, err := ops.UpdateTemplate(ownerCtx(), models.UpdateBadgeTemplateInput{TemplateID: templateID})
 	if err != nil {

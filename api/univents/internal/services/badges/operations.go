@@ -12,6 +12,7 @@ type Operations struct {
 	registrations ports.RegistrationRepo
 	editions      ports.EditionRepo
 	events        ports.EventRepo
+	actors        ports.ActorResolver
 	email         *email.Client
 	authz         *authz.Service
 }
@@ -22,6 +23,7 @@ func NewOperations(
 	registrations ports.RegistrationRepo,
 	editions ports.EditionRepo,
 	events ports.EventRepo,
+	actors ports.ActorResolver,
 	email *email.Client,
 	authz *authz.Service,
 ) *Operations {
@@ -31,6 +33,7 @@ func NewOperations(
 		registrations: registrations,
 		editions:      editions,
 		events:        events,
+		actors:        actors,
 		email:         email,
 		authz:         authz,
 	}

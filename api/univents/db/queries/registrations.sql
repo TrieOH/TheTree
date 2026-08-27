@@ -72,3 +72,22 @@ WHERE edition_id = @edition_id
   AND status IN ('pending', 'confirmed')
   AND deleted_at IS NULL
 RETURNING *;
+
+-- name: ClaimAllByAttendeeEmail :many
+-- Ties every active email-only gift for this email to the recipient's
+-- IdentityX account — the profile-badges claim, fired from the badges
+-- read (a profile requires an account, so the account email
+-- deterministically resolves the gifts). Crosses editions, unlike
+-- ClaimRegistrationByEmail. Returns the claimed registrations so the
+-- caller can emit deferred badges for the confirmed ones; pending gifts
+-- are claimed too (tied to the account as soon as it exists).
+-- Cancelled/expired gifts are history.
+UPDATE registrations
+SET
+    attendee_user_id = @attendee_user_id,
+    updated_at       = now()
+WHERE attendee_email = @attendee_email
+  AND attendee_user_id IS NULL
+  AND status IN ('pending', 'confirmed')
+  AND deleted_at IS NULL
+RETURNING *;

@@ -49,7 +49,7 @@ func TestListByEdition_IncludesAllStatusesAndDerivesTemplate(t *testing.T) {
 	mock.When(templates.ListByEditionIDs(mock.AnyContext(), mock.Any[[]uuid.UUID]())).
 		ThenReturn([]models.BadgeTemplate{tpl}, nil)
 
-	ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+	ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 	items, err := ops.ListByEdition(ownerCtx(), editionID)
 	if err != nil {

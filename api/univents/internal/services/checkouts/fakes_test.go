@@ -9,6 +9,7 @@ import (
 	"univents/internal/services/checkouts"
 	"univents/internal/services/checkouts/jobs"
 	"univents/models"
+	"univents/ports"
 
 	idx "sdk/identityx"
 	payssage "sdk/payssage"
@@ -176,7 +177,7 @@ func (f *fakeTokens) issuedCount() int {
 // fakeActors fakes the IdentityX actor lookup seam (checkout's attendee
 // resolution + gift claim). Seeded per test: byEmail maps a normalized
 // email to its account's actor id (and byID the reverse); an email or id
-// with no mapping has no account yet (checkouts.ErrActorNotFound).
+// with no mapping has no account yet (ports.ErrActorNotFound).
 type fakeActors struct {
 	mu      sync.Mutex
 	byEmail map[string]uuid.UUID
@@ -204,7 +205,7 @@ func (f *fakeActors) GetByEmail(_ context.Context, email string) (*idx.Actor, er
 	email = normalizeEmail(email)
 	id, ok := f.byEmail[email]
 	if !ok {
-		return nil, checkouts.ErrActorNotFound
+		return nil, ports.ErrActorNotFound
 	}
 	return &idx.Actor{ID: id, Email: &email}, nil
 }
@@ -214,7 +215,7 @@ func (f *fakeActors) GetByID(_ context.Context, id uuid.UUID) (*idx.Actor, error
 	defer f.mu.Unlock()
 	email, ok := f.byID[id]
 	if !ok {
-		return nil, checkouts.ErrActorNotFound
+		return nil, ports.ErrActorNotFound
 	}
 	return &idx.Actor{ID: id, Email: &email}, nil
 }
