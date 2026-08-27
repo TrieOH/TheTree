@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import type { CSSProperties } from "react";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
 import {
   type BadgeElement,
@@ -20,6 +21,7 @@ export function BadgePreview({
   location,
   actionUrl: actionUrlOverride,
   showVariables = false,
+  style,
 }: {
   badge: BadgeProfileBadge | BadgePrintItem | BadgeTemplate;
   className?: string;
@@ -32,6 +34,7 @@ export function BadgePreview({
   location?: string;
   actionUrl?: string;
   showVariables?: boolean;
+  style?: CSSProperties;
 }) {
   const design = badgeDesignSchema.safeParse(badge.design_data).success
     ? badgeDesignSchema.parse(badge.design_data)
@@ -97,6 +100,7 @@ export function BadgePreview({
             ? { width: "100%", height: "auto" }
             : { width: "auto", height: "100%" }
           : {}),
+        ...style,
       }}
     >
       {design.elements.map((element) => (

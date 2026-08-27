@@ -5,6 +5,7 @@ import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileBadge } from "@/features/badges/model";
+import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
@@ -124,9 +125,7 @@ export function ProfileView({
       {activeTab === "badges" ? (
         <div className="mx-auto mt-5 max-w-7xl px-4">
           <ProfileBadges
-            badges={
-              badges?.attendant.current.concat(badges.staff.current) ?? []
-            }
+            badges={badges ? allProfileBadges(badges) : []}
             profileUrl={profileUrl}
             profileIdentifier={publicIdentifier ?? ""}
             participantName={profile.preferredName || profile.legalName || ""}

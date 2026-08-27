@@ -10,6 +10,20 @@ svg.ts-chart:focus-visible {
   @page {
     margin: 0;
   }
+
+  body {
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  [data-badge-print-root] {
+    display: block !important;
+    width: 100% !important;
+    color-adjust: exact;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 }
 @source "../node_modules/@trieoh/ui-base/src";
 @custom-variant dark (&:where(.dark, .dark *));
