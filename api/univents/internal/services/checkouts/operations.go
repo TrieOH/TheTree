@@ -7,7 +7,6 @@ package checkouts
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"lib/database"
@@ -16,7 +15,6 @@ import (
 	"univents/models"
 	"univents/ports"
 
-	idx "sdk/identityx"
 	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
@@ -56,23 +54,8 @@ type TokenIssuer interface {
 	IssueToken(ctx context.Context, purchaseID, userID uuid.UUID) (string, time.Time, error)
 }
 
-// ActorResolver is the IdentityX actor lookup seam for checkout's attendee
-// resolution (gift buying) and the gift claim: resolve an attendee email to
-// its account in the univents identityx project (GetByEmail), or the
-// caller's account email by id (GetByID — the claim matches a gifted
-// registration by the account's own email). No account / unknown actor is
-// reported as ErrActorNotFound. Satisfied by an adapter over the SDK's
-// *idx.ActorService (NewSDKActorResolver); faked in tests.
-type ActorResolver interface {
-	GetByEmail(ctx context.Context, email string) (*idx.Actor, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*idx.Actor, error)
-}
-
-// ErrActorNotFound is returned by ActorResolver when the email has no
-// account in the univents IdentityX project — the attendee is a gift to
-// someone who has not created an account yet.
-var ErrActorNotFound = errors.New("identityx: no account for email")
-
+// ActorResolver is the IdentityX actor lookup seam (ports.ActorResolver),
+// used by checkout for attendee resolution (gift buying) and the gift claim.
 // Badges is the badge-emission surface the free-order path calls (a free
 // ticket is confirmed at checkout, so the participant badge emits
 // immediately). Satisfied by *badges.Operations.
@@ -117,8 +100,8 @@ type Operations struct {
 	payssage         PayssageClient
 	walletID         uuid.UUID // the single platform wallet (D6)
 	tokens           TokenIssuer
-	actors           ActorResolver  // attendee email → account (gift buying)
-	authz            *authz.Service // organizer orders/refund (refund plan B3)
+	actors           ports.ActorResolver // attendee email → account (gift buying)
+	authz            *authz.Service      // organizer orders/refund (refund plan B3)
 
 	// intentAttempts / intentRetryDelay are the resume's GetIntent budget.
 	// Overridable in tests.
@@ -145,7 +128,7 @@ func NewOperations(
 	payssage PayssageClient,
 	walletID uuid.UUID,
 	tokens TokenIssuer,
-	actors ActorResolver,
+	actors ports.ActorResolver,
 	authz *authz.Service,
 ) *Operations {
 	return &Operations{

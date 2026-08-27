@@ -7,6 +7,7 @@ import (
 
 	"lib/telemetry"
 	"univents/models"
+	"univents/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -70,7 +71,7 @@ func (o *Operations) MyTicket(ctx context.Context, editionID, userID uuid.UUID) 
 func (o *Operations) claimGiftByAccountEmail(ctx context.Context, editionID, userID uuid.UUID) (*models.Registration, error) {
 	actor, err := o.actors.GetByID(ctx, userID)
 	if err != nil {
-		if errors.Is(err, ErrActorNotFound) {
+		if errors.Is(err, ports.ErrActorNotFound) {
 			//nolint:nilnil // unknown actor — nothing to claim by
 			return nil, nil
 		}

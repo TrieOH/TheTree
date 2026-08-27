@@ -145,7 +145,7 @@ func TestPrintByEdition_StaffTemplateDesignData(t *testing.T) {
 	mock.When(templates.ListByEditionIDs(mock.AnyContext(), mock.Any[[]uuid.UUID]())).
 		ThenReturn([]models.BadgeTemplate{staffTpl}, nil)
 
-	ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+	ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 	items, err := ops.PrintByEdition(ownerCtx(), editionID, nil)
 	if err != nil {
@@ -219,7 +219,7 @@ func TestCreateTemplate_AcceptsStaffScope(t *testing.T) {
 			return []any{in, nil}
 		})
 
-	ops := newOpsWithAuthz(t, templates, emissions, nil, editions, nil, nil, authzEvents)
+	ops := newOpsWithAuthz(t, templates, emissions, editions, authzEvents)
 
 	_, err := ops.CreateTemplate(ownerCtx(), models.CreateBadgeTemplateInput{
 		EditionID:  editionID,

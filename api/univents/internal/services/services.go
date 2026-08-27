@@ -105,7 +105,7 @@ func NewOperations(
 	tx database.TxRunner,
 	webhookSecret string,
 ) *Operations {
-	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, emailClient, authzSvc)
+	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, checkouts.NewSDKActorResolver(idxClient.Actors), emailClient, authzSvc)
 	wsOps := NewWS(r.WsTokens, r.Purchases, payssageClient, notifier)
 	return &Operations{
 		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps),

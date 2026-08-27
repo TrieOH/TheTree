@@ -15,6 +15,7 @@ import (
 	"univents/internal/services/checkouts/jobs"
 	"univents/internal/services/notify"
 	"univents/models"
+	"univents/ports"
 
 	payssage "sdk/payssage"
 
@@ -870,18 +871,18 @@ func (o *Operations) resolveAttendees(ctx context.Context, lines []CheckoutLine)
 		// account in the univents identityx project.
 		actor, err := o.actors.GetByEmail(ctx, email)
 		switch {
-		case err != nil && !errors.Is(err, ErrActorNotFound):
+		case err != nil && !errors.Is(err, ports.ErrActorNotFound):
 			// IdentityX unreachable — fail the checkout closed: an attendee
 			// whose account cannot be verified must not be silently gifted
 			// as email-only (they may already hold a ticket).
 			return nil, err
-		case errors.Is(err, ErrActorNotFound) && line.Attendee.UserID != nil:
+		case errors.Is(err, ports.ErrActorNotFound) && line.Attendee.UserID != nil:
 			// A user_id was claimed for an email with no account — the pair
 			// cannot both be true.
 			return nil, fun.Err("attendee email does not match an account").WithFields(&fun.FieldError{
 				Field: fmt.Sprintf("items[%d].attendee.email", i), Message: email,
 			}).BadRequest()
-		case errors.Is(err, ErrActorNotFound):
+		case errors.Is(err, ports.ErrActorNotFound):
 			// No account yet — email-only gift; keep the nil user id.
 		case line.Attendee.UserID == nil:
 			line.Attendee.UserID = &actor.ID

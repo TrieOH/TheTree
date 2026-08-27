@@ -33,6 +33,13 @@ type RegistrationRepo interface {
 	// my-ticket read). NOT_FOUND when the email holds no active gift.
 	ClaimByAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string, userID uuid.UUID) (*models.Registration, error)
 
+	// ClaimAllByAttendeeEmail ties every active email-only gift for the
+	// email to the recipient's IdentityX account (the profile-badges claim,
+	// fired from the badges read) and returns the claimed registrations so
+	// the caller can emit deferred badges for the confirmed ones. No gifts →
+	// empty slice, nil.
+	ClaimAllByAttendeeEmail(ctx context.Context, attendeeEmail string, userID uuid.UUID) ([]*models.Registration, error)
+
 	// Create + UpdateStatus are the checkout (split 7) / webhook receiver
 	// (split 4) write side: pending rows are materialized at checkout and
 	// flipped on approve/cancel/expire.
