@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
+  AUTH_RETURN_TO_STORAGE_KEY,
+  clearAuthReturnTo,
   isAuthOnlyPath,
+  readAuthReturnTo,
   requiresVerifiedEmail,
   safeInternalReturnTo,
+  storeAuthReturnTo,
   verificationReturnTo,
 } from "./auth-path";
+
+function memoryStorage() {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+  };
+}
 
 describe("isAuthOnlyPath", () => {
   it.each([
@@ -81,5 +94,26 @@ describe("verificationReturnTo", () => {
         "/events/evento/checkout",
       ),
     ).toBe("/events/evento/checkout");
+  });
+});
+
+describe("auth return-to storage", () => {
+  it("shares a valid internal destination until it expires", () => {
+    const storage = memoryStorage();
+    storeAuthReturnTo(storage, "/events/evento/checkout", 1_000);
+
+    expect(readAuthReturnTo(storage, 1_001)).toBe("/events/evento/checkout");
+    expect(readAuthReturnTo(storage, 601_001)).toBeNull();
+    expect(storage.getItem(AUTH_RETURN_TO_STORAGE_KEY)).toBeNull();
+  });
+
+  it("rejects invalid data and clears explicitly", () => {
+    const storage = memoryStorage();
+    storage.setItem(AUTH_RETURN_TO_STORAGE_KEY, "invalid");
+    expect(readAuthReturnTo(storage)).toBeNull();
+
+    storeAuthReturnTo(storage, "/profile");
+    clearAuthReturnTo(storage);
+    expect(readAuthReturnTo(storage)).toBeNull();
   });
 });

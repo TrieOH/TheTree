@@ -2,6 +2,7 @@ import { useAuthActions } from "@trieoh/front-core";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { clearAuthReturnTo } from "@/features/auths/lib/auth-path";
 import { Button } from "@/shared/ui/shadcn/button";
 
 export function LogoutCard() {
@@ -12,6 +13,7 @@ export function LogoutCard() {
     if (isLoading) return;
     setIsLoading(true);
     try {
+      clearAuthReturnTo(localStorage);
       await handleLogout();
     } catch (_error) {
       toast.error("Ocorreu um erro ao tentar sair da sessão.");

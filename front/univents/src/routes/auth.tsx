@@ -3,7 +3,11 @@ import { ModernAuth, useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import z from "zod";
-import { AUTH_RETURN_TO_STORAGE_KEY } from "@/features/auths/lib/auth-path";
+import {
+  clearAuthReturnTo,
+  readAuthReturnTo,
+  storeAuthReturnTo,
+} from "@/features/auths/lib/auth-path";
 import { requireGuest } from "@/features/auths/lib/route-guard";
 import { Logo } from "@/shared/ui/logo";
 
@@ -25,7 +29,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (search.redirect) {
-      localStorage.setItem(AUTH_RETURN_TO_STORAGE_KEY, search.redirect);
+      storeAuthReturnTo(localStorage, search.redirect);
     }
   }, [search.redirect]);
 
@@ -36,8 +40,9 @@ function AuthPage() {
       return;
     }
 
-    const destination = search.redirect || "/profile";
-    localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
+    const destination =
+      search.redirect || readAuthReturnTo(localStorage) || "/profile";
+    clearAuthReturnTo(localStorage);
     router.update({
       context: {
         ...router.options.context,

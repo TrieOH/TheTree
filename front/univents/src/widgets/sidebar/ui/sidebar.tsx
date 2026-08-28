@@ -1,6 +1,7 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useAuthActions } from "@trieoh/front-core";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { clearAuthReturnTo } from "@/features/auths/lib/auth-path";
 import { cn } from "@/shared/lib/utils";
 import { Logo } from "@/shared/ui/logo";
 import { useSidebar } from "../hooks/use-sidebar";
@@ -118,7 +119,10 @@ export function Sidebar() {
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            onClick={handleLogout}
+            onClick={() => {
+              clearAuthReturnTo(localStorage);
+              void handleLogout();
+            }}
           >
             <LogOut className="h-4 w-4 shrink-0" strokeWidth={2} />
             <span

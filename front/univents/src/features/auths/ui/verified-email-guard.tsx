@@ -14,8 +14,9 @@ import {
   DialogTitle,
 } from "@/shared/ui/shadcn/dialog";
 import {
-  AUTH_RETURN_TO_STORAGE_KEY,
+  clearAuthReturnTo,
   requiresVerifiedEmail,
+  storeAuthReturnTo,
   verificationReturnTo,
 } from "../lib/auth-path";
 
@@ -44,7 +45,7 @@ export function VerifiedEmailGuard({
 
   useEffect(() => {
     if (blocked) {
-      localStorage.setItem(AUTH_RETURN_TO_STORAGE_KEY, returnTo);
+      storeAuthReturnTo(localStorage, returnTo);
     }
   }, [blocked, returnTo]);
 
@@ -74,7 +75,7 @@ export function VerifiedEmailGuard({
         toast.info("A verificação ainda não foi confirmada.");
         return;
       }
-      localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
+      clearAuthReturnTo(localStorage);
       toast.success("E-mail verificado. Acesso liberado.");
       await router.invalidate();
     } finally {
@@ -123,7 +124,10 @@ export function VerifiedEmailGuard({
             <Button
               variant="ghost"
               className="w-full text-muted-foreground"
-              onClick={() => void handleLogout()}
+              onClick={() => {
+                clearAuthReturnTo(localStorage);
+                void handleLogout();
+              }}
             >
               <LogOut /> Sair da conta
             </Button>

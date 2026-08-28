@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-  AUTH_RETURN_TO_STORAGE_KEY,
+  clearAuthReturnTo,
+  readAuthReturnTo,
   safeInternalReturnTo,
+  storeAuthReturnTo,
 } from "@/features/auths/lib/auth-path";
 import { AuthActionPage } from "@/features/auths/ui/auth-action-page";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -36,7 +38,7 @@ function VerifyEmailPage() {
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   useEffect(() => {
-    if (returnTo) localStorage.setItem(AUTH_RETURN_TO_STORAGE_KEY, returnTo);
+    if (returnTo) storeAuthReturnTo(localStorage, returnTo);
     if (!token) return;
 
     void auth
@@ -47,9 +49,9 @@ function VerifyEmailPage() {
           if (refreshed.success) {
             const destination = safeInternalReturnTo(
               returnTo,
-              localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY),
+              readAuthReturnTo(localStorage),
             );
-            localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
+            clearAuthReturnTo(localStorage);
             toast.success("E-mail verificado com sucesso.");
             await navigate({ to: destination, replace: true });
             return;
@@ -79,9 +81,9 @@ function VerifyEmailPage() {
     }
     const destination = safeInternalReturnTo(
       returnTo,
-      localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY),
+      readAuthReturnTo(localStorage),
     );
-    localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
+    clearAuthReturnTo(localStorage);
     await navigate({ to: destination, replace: true });
   }
 
@@ -129,7 +131,7 @@ function VerifyEmailPage() {
                 search: {
                   redirect: safeInternalReturnTo(
                     returnTo,
-                    localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY),
+                    readAuthReturnTo(localStorage),
                   ),
                 },
                 replace: true,

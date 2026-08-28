@@ -3,7 +3,10 @@ import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AUTH_RETURN_TO_STORAGE_KEY } from "@/features/auths/lib/auth-path";
+import {
+  clearAuthReturnTo,
+  readAuthReturnTo,
+} from "@/features/auths/lib/auth-path";
 
 const providerSchema = z.enum(["google", "github"]);
 const callbackSearchSchema = z.object({
@@ -52,9 +55,8 @@ function OAuthCallbackPage() {
         }
 
         toast.success("Login realizado com sucesso");
-        const destination =
-          localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY) || "/profile";
-        localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
+        const destination = readAuthReturnTo(localStorage) || "/profile";
+        clearAuthReturnTo(localStorage);
         window.location.assign(destination);
       } catch (error) {
         const message =

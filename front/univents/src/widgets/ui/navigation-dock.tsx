@@ -5,7 +5,10 @@ import type { LucideIcon } from "lucide-react";
 import { Calendar, Home, LayoutGrid, LogIn, LogOut, User } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { memo, useMemo, useRef, useState } from "react";
-import { isAuthOnlyPath } from "@/features/auths/lib/auth-path";
+import {
+  clearAuthReturnTo,
+  isAuthOnlyPath,
+} from "@/features/auths/lib/auth-path";
 import { cn } from "@/shared/lib/utils";
 import {
   Tooltip,
@@ -236,7 +239,12 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
   const navItems = useMemo(
     () =>
       getNavItems(
-        { logout: () => handleLogoutTo(logoutDestination) },
+        {
+          logout: () => {
+            clearAuthReturnTo(localStorage);
+            return handleLogoutTo(logoutDestination);
+          },
+        },
         isAuthenticated,
       ),
     [handleLogoutTo, isAuthenticated, logoutDestination],
