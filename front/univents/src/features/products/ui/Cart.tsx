@@ -295,7 +295,7 @@ export function Cart({
                     onCheckout();
                   }}
                 >
-                  Finalizar compra
+                  COMPRAR
                 </Button>
               )}
               <div className="flex gap-2">
