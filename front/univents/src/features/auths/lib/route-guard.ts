@@ -37,8 +37,11 @@ export function requireGuest(
     ...options,
     onRedirect:
       options.onRedirect ??
-      (() => {
-        throw redirect({ to: "/profile", search: { tab: "about" } });
+      ((location) => {
+        const search = location.search as Record<string, unknown>;
+        const destination =
+          typeof search.redirect === "string" ? search.redirect : "/profile";
+        throw redirect({ to: destination });
       }),
   });
 }
@@ -51,7 +54,11 @@ export async function requireConfiguredProfile({
     auth?: ReturnType<typeof useAuth>;
     queryClient: QueryClient;
   };
-  location: { pathname: string };
+  location: {
+    pathname: string;
+    href: string;
+    search: Record<string, unknown>;
+  };
 }) {
   if (context.auth?.isAuthenticated !== true) {
     return;
@@ -68,8 +75,20 @@ export async function requireConfiguredProfile({
     },
   });
 
-  if (!profile && location.pathname !== "/profile/setup") {
-    throw redirect({ to: "/profile/setup", search: { returnTo: undefined } });
+  if (
+    !profile &&
+    location.pathname !== "/profile/setup" &&
+    location.pathname !== "/auth/verify-email"
+  ) {
+    const returnTo =
+      location.pathname === "/auth" &&
+      typeof location.search.redirect === "string"
+        ? location.search.redirect
+        : location.href;
+    throw redirect({
+      to: "/profile/setup",
+      search: { returnTo },
+    });
   }
   if (profile && location.pathname === "/profile/setup") {
     throw redirect({ to: "/profile", search: { tab: "about" } });

@@ -103,6 +103,7 @@ export function ProfileHeader({
             <div className="mb-4 flex gap-2">
               <Link
                 to="/profile/edit"
+                search={{ returnTo: undefined }}
                 className={buttonVariants({
                   className: "h-11 flex-1 rounded-lg shadow-sm",
                 })}
@@ -265,6 +266,7 @@ function DesktopActions({ profileUrl }: { profileUrl: string }) {
       />
       <Link
         to="/profile/edit"
+        search={{ returnTo: undefined }}
         className={buttonVariants({
           className: "h-10 rounded-md px-4 shadow-sm",
         })}

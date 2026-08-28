@@ -51,15 +51,17 @@ export function useAuthActions() {
     queryClient.invalidateQueries()
   }
 
-  const handleLogout = async () => {
+  const handleLogoutTo = async (destination: string) => {
     await handleAuthAction(
       false,
-      "/",
+      destination,
       "Logout successful!",
       () => authManager.logout(),
     )
     queryClient.clear()
   }
 
-  return { handleLoginSuccess, handleLogout }
+  const handleLogout = () => handleLogoutTo("/")
+
+  return { handleLoginSuccess, handleLogout, handleLogoutTo }
 }

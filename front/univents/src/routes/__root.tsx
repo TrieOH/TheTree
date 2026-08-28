@@ -13,6 +13,7 @@ import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { ThemeProvider } from "next-themes";
 import { env } from "@/env";
 import { requireConfiguredProfile } from "@/features/auths/lib/route-guard";
+import { VerifiedEmailGuard } from "@/features/auths/ui/verified-email-guard";
 import { UploadQueueProvider } from "@/features/upload-queue/ui/upload-queue-provider";
 import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
@@ -79,7 +80,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               >
                 <AuthContextUpdater>
                   <UploadQueueProvider>
-                    {children}
+                    <VerifiedEmailGuard>{children}</VerifiedEmailGuard>
                     <NavigationDock className="print:hidden" />
                     <OverlayScrollbar />
                   </UploadQueueProvider>

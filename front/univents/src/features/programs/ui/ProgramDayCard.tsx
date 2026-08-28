@@ -203,11 +203,12 @@ function RegistrationButton({
     program.min_access_level != null &&
     (registration.accessLevel ?? -1) < program.min_access_level;
   const blocked =
-    status === "attended" ||
-    status === "no_show" ||
-    registration.ticketStatus === "pending" ||
-    insufficientLevel ||
-    (program.staff_only && !registration.isStaff);
+    registration.isAuthenticated &&
+    (status === "attended" ||
+      status === "no_show" ||
+      registration.ticketStatus === "pending" ||
+      insufficientLevel ||
+      (program.staff_only && !registration.isStaff));
   const label = !registration.isAuthenticated
     ? "Entrar para se inscrever"
     : registration.hasTicket === undefined

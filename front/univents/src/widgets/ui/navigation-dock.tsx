@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { Calendar, Home, LayoutGrid, LogIn, LogOut, User } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { memo, useMemo, useRef, useState } from "react";
+import { isAuthOnlyPath } from "@/features/auths/lib/auth-path";
 import { cn } from "@/shared/lib/utils";
 import {
   Tooltip,
@@ -219,19 +220,26 @@ const MobileNavItem = ({
 };
 
 export const NavigationDock = memo(({ className }: NavigationDockProps) => {
-  const { handleLogout } = useAuthActions();
+  const { handleLogoutTo } = useAuthActions();
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const locked = location.pathname === "/profile/setup";
+  const logoutDestination = isAuthOnlyPath(location.pathname)
+    ? "/"
+    : location.href;
 
   const isAdmin = useMemo(
     () => location.pathname.startsWith("/admin"),
     [location.pathname],
   );
   const navItems = useMemo(
-    () => getNavItems({ logout: handleLogout }, isAuthenticated),
-    [handleLogout, isAuthenticated],
+    () =>
+      getNavItems(
+        { logout: () => handleLogoutTo(logoutDestination) },
+        isAuthenticated,
+      ),
+    [handleLogoutTo, isAuthenticated, logoutDestination],
   );
 
   const activeId = useMemo(() => {

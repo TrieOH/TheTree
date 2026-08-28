@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ModernAuth, useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { requireGuest } from "@/features/auths/lib/route-guard";
@@ -21,34 +22,32 @@ function AuthPage() {
   const search = Route.useSearch();
   const { auth: sessionAuth } = useAuth();
 
+  useEffect(() => {
+    if (search.redirect) {
+      sessionStorage.setItem("univents:auth-redirect", search.redirect);
+    }
+  }, [search.redirect]);
+
   const handleLoginSuccess = async (message?: string) => {
     const auth = router.options.context.auth;
-
     if (!auth) {
       toast.error("Não foi possível inicializar a autenticação");
       return;
     }
 
+    const destination = search.redirect || "/profile";
+    sessionStorage.removeItem("univents:auth-redirect");
     router.update({
       context: {
         ...router.options.context,
         auth: { ...auth, isAuthenticated: true },
       },
     });
-
-    const destination = search.redirect || "/profile";
     await navigate({ to: destination, replace: true });
     toast.success(message ?? "Login realizado com sucesso");
-    if (
-      !sessionAuth.profile()?.verified_at &&
-      router.state.location.pathname !== "/profile/setup"
-    ) {
+    if (!sessionAuth.profile()?.verified_at) {
       toast.warning("Seu e-mail ainda não foi verificado", {
         description: "Verifique sua conta para liberar todos os recursos.",
-        action: {
-          label: "Verificar agora",
-          onClick: () => void navigate({ to: "/profile/config" }),
-        },
       });
     }
     router.options.context.queryClient.invalidateQueries();

@@ -11,6 +11,9 @@ import { ProfileEditor } from "@/features/profile/ui/profile-editor";
 
 export const Route = createFileRoute("/profile/edit")({
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    returnTo: typeof search.returnTo === "string" ? search.returnTo : undefined,
+  }),
   component: EditProfilePage,
 });
 
@@ -18,7 +21,12 @@ function EditProfilePage() {
   const { auth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { returnTo } = Route.useSearch();
   const actorId = auth.profile()?.id;
+  const finish = () =>
+    returnTo
+      ? window.location.assign(returnTo)
+      : navigate({ to: "/profile", search: { tab: "about" } });
   const load = useCallback(async () => {
     const [schema, profile] = await Promise.all([
       auth.getProfileSchema(),
@@ -62,11 +70,11 @@ function EditProfilePage() {
     <ProfileEditor
       load={load}
       save={save}
-      onCancel={() => navigate({ to: "/profile", search: { tab: "about" } })}
+      onCancel={finish}
       onSaved={() => {
         void queryClient
           .invalidateQueries({ queryKey: profileKeys.all, refetchType: "all" })
-          .then(() => navigate({ to: "/profile", search: { tab: "about" } }));
+          .then(finish);
       }}
     />
   );
