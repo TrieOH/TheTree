@@ -3,6 +3,7 @@ import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { AUTH_RETURN_TO_STORAGE_KEY } from "@/features/auths/lib/auth-path";
 
 const providerSchema = z.enum(["google", "github"]);
 const callbackSearchSchema = z.object({
@@ -52,8 +53,8 @@ function OAuthCallbackPage() {
 
         toast.success("Login realizado com sucesso");
         const destination =
-          sessionStorage.getItem("univents:auth-redirect") || "/profile";
-        sessionStorage.removeItem("univents:auth-redirect");
+          localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY) || "/profile";
+        localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
         window.location.assign(destination);
       } catch (error) {
         const message =

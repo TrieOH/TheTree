@@ -3,6 +3,7 @@ import {
   isAuthOnlyPath,
   requiresVerifiedEmail,
   safeInternalReturnTo,
+  verificationReturnTo,
 } from "./auth-path";
 
 describe("isAuthOnlyPath", () => {
@@ -41,6 +42,11 @@ describe("safeInternalReturnTo", () => {
       "/profile",
     );
   });
+
+  it("preserves a checkout nested in the profile setup return", () => {
+    const destination = "/profile/setup?returnTo=%2Fevents%2Fevento%2Fcheckout";
+    expect(safeInternalReturnTo(destination)).toBe(destination);
+  });
 });
 
 describe("requiresVerifiedEmail", () => {
@@ -64,4 +70,16 @@ describe("requiresVerifiedEmail", () => {
       expect(requiresVerifiedEmail(pathname)).toBe(false);
     },
   );
+});
+
+describe("verificationReturnTo", () => {
+  it("stores the final checkout instead of nesting the profile setup", () => {
+    expect(
+      verificationReturnTo(
+        "/profile/setup",
+        "/profile/setup?returnTo=%2Fevents%2Fevento%2Fcheckout",
+        "/events/evento/checkout",
+      ),
+    ).toBe("/events/evento/checkout");
+  });
 });

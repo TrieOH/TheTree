@@ -4,7 +4,10 @@ import { AlertCircle, MailWarning, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { safeInternalReturnTo } from "@/features/auths/lib/auth-path";
+import {
+  AUTH_RETURN_TO_STORAGE_KEY,
+  safeInternalReturnTo,
+} from "@/features/auths/lib/auth-path";
 import { AuthActionPage } from "@/features/auths/ui/auth-action-page";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
@@ -33,7 +36,7 @@ function VerifyEmailPage() {
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   useEffect(() => {
-    if (returnTo) localStorage.setItem("univents:verify-return", returnTo);
+    if (returnTo) localStorage.setItem(AUTH_RETURN_TO_STORAGE_KEY, returnTo);
     if (!token) return;
 
     void auth
@@ -44,9 +47,9 @@ function VerifyEmailPage() {
           if (refreshed.success) {
             const destination = safeInternalReturnTo(
               returnTo,
-              localStorage.getItem("univents:verify-return"),
+              localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY),
             );
-            localStorage.removeItem("univents:verify-return");
+            localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
             toast.success("E-mail verificado com sucesso.");
             await navigate({ to: destination, replace: true });
             return;
@@ -76,9 +79,9 @@ function VerifyEmailPage() {
     }
     const destination = safeInternalReturnTo(
       returnTo,
-      localStorage.getItem("univents:verify-return"),
+      localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY),
     );
-    localStorage.removeItem("univents:verify-return");
+    localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
     await navigate({ to: destination, replace: true });
   }
 
@@ -126,7 +129,7 @@ function VerifyEmailPage() {
                 search: {
                   redirect: safeInternalReturnTo(
                     returnTo,
-                    localStorage.getItem("univents:verify-return"),
+                    localStorage.getItem(AUTH_RETURN_TO_STORAGE_KEY),
                   ),
                 },
                 replace: true,

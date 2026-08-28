@@ -13,7 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/shadcn/dialog";
-import { requiresVerifiedEmail } from "../lib/auth-path";
+import {
+  AUTH_RETURN_TO_STORAGE_KEY,
+  requiresVerifiedEmail,
+  verificationReturnTo,
+} from "../lib/auth-path";
 
 export function VerifiedEmailGuard({
   children,
@@ -31,12 +35,18 @@ export function VerifiedEmailGuard({
     isAuthenticated &&
     !profile?.verified_at &&
     requiresVerifiedEmail(location.pathname);
+  const search = location.search as Record<string, unknown>;
+  const returnTo = verificationReturnTo(
+    location.pathname,
+    location.href,
+    typeof search.returnTo === "string" ? search.returnTo : undefined,
+  );
 
   useEffect(() => {
     if (blocked) {
-      localStorage.setItem("univents:verify-return", location.href);
+      localStorage.setItem(AUTH_RETURN_TO_STORAGE_KEY, returnTo);
     }
-  }, [blocked, location.href]);
+  }, [blocked, returnTo]);
 
   async function resend() {
     if (!profile?.email) return;
@@ -64,7 +74,7 @@ export function VerifiedEmailGuard({
         toast.info("A verificação ainda não foi confirmada.");
         return;
       }
-      localStorage.removeItem("univents:verify-return");
+      localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
       toast.success("E-mail verificado. Acesso liberado.");
       await router.invalidate();
     } finally {

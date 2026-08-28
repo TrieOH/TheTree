@@ -3,6 +3,7 @@ import { ModernAuth, useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import z from "zod";
+import { AUTH_RETURN_TO_STORAGE_KEY } from "@/features/auths/lib/auth-path";
 import { requireGuest } from "@/features/auths/lib/route-guard";
 import { Logo } from "@/shared/ui/logo";
 
@@ -24,7 +25,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (search.redirect) {
-      sessionStorage.setItem("univents:auth-redirect", search.redirect);
+      localStorage.setItem(AUTH_RETURN_TO_STORAGE_KEY, search.redirect);
     }
   }, [search.redirect]);
 
@@ -36,7 +37,7 @@ function AuthPage() {
     }
 
     const destination = search.redirect || "/profile";
-    sessionStorage.removeItem("univents:auth-redirect");
+    localStorage.removeItem(AUTH_RETURN_TO_STORAGE_KEY);
     router.update({
       context: {
         ...router.options.context,
