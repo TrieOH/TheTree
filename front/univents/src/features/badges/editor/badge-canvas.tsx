@@ -78,10 +78,12 @@ function BadgeElementView({
   element,
   editing,
   adapter,
+  previewValues,
 }: {
   element: BadgeElement;
   editing: boolean;
   adapter: TextElementAdapter;
+  previewValues: Record<string, string>;
 }) {
   if (element.type === "image")
     return (
@@ -98,8 +100,27 @@ function BadgeElementView({
       />
     );
   if (element.type === "qr") return <QrPreview element={element} />;
+  const previewElement = editing
+    ? element
+    : {
+        ...element,
+        paragraphs: element.paragraphs.map((paragraph) => ({
+          ...paragraph,
+          runs: paragraph.runs.map((run) => ({
+            ...run,
+            text: run.text.replace(
+              /\{\{([^}]+)\}\}/g,
+              (match, key: string) => previewValues[key] || match,
+            ),
+          })),
+        })),
+      };
   return (
-    <TextElementView element={element} editing={editing} adapter={adapter} />
+    <TextElementView
+      element={previewElement}
+      editing={editing}
+      adapter={adapter}
+    />
   );
 }
 
@@ -110,6 +131,7 @@ interface BadgeCanvasProps {
   onChangeElement: (id: string, changes: Partial<BadgeElement>) => void;
   onDeleteElement: (id: string) => void;
   textAdapter: TextElementAdapter;
+  previewValues: Record<string, string>;
 }
 
 export function BadgeCanvas({
@@ -119,6 +141,7 @@ export function BadgeCanvas({
   onChangeElement,
   onDeleteElement,
   textAdapter,
+  previewValues,
 }: BadgeCanvasProps) {
   const { ref: stageRef, size: viewport } = useElementSize<HTMLDivElement>();
   const [zoom, setZoom] = useState(1);
@@ -289,6 +312,7 @@ export function BadgeCanvas({
                 element={element}
                 editing={editingId === element.id}
                 adapter={effectiveTextAdapter}
+                previewValues={previewValues}
               />
             </BadgeElementFrame>
           ))}

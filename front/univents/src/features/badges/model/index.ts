@@ -58,8 +58,19 @@ export const badgeElementSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+const BADGE_PX_PER_MM = 96 / 25.4;
+
+export const badgeMmToPx = (value: number) => value * BADGE_PX_PER_MM;
+export const badgePxToMm = (value: number) =>
+  Number((value / BADGE_PX_PER_MM).toFixed(1));
+export const MIN_BADGE_CANVAS_SIZE_MM = 26;
+export const MIN_BADGE_CANVAS_SIZE_PX = badgeMmToPx(MIN_BADGE_CANVAS_SIZE_MM);
+
 export const badgeDesignSchema = z.object({
-  canvas: z.object({ width: z.number().min(200), height: z.number().min(200) }),
+  canvas: z.object({
+    width: z.number().min(MIN_BADGE_CANVAS_SIZE_PX),
+    height: z.number().min(MIN_BADGE_CANVAS_SIZE_PX),
+  }),
   backgroundColor: z.string(),
   background: z.string().nullable(),
   elements: z.array(badgeElementSchema),
