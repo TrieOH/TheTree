@@ -1,38 +1,61 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, MailWarning, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  clearAuthReturnTo,
+  readAuthReturnTo,
+  safeInternalReturnTo,
+  storeAuthReturnTo,
+} from "@/features/auths/lib/auth-path";
 import { AuthActionPage } from "@/features/auths/ui/auth-action-page";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Input } from "@/shared/ui/shadcn/input";
 
 export const Route = createFileRoute("/auth_/verify-email")({
   validateSearch: (search) =>
-    z.object({ token: z.string().catch("") }).parse(search),
+    z
+      .object({
+        token: z.string().catch(""),
+        returnTo: z.string().optional(),
+      })
+      .parse(search),
   component: VerifyEmailPage,
 });
 
 function VerifyEmailPage() {
-  const { token } = Route.useSearch();
+  const { token, returnTo } = Route.useSearch();
   const navigate = useNavigate();
   const { auth } = useAuth();
-  const [status, setStatus] = useState<"loading" | "error" | "success">(
-    token ? "loading" : "error",
-  );
-  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<
+    "required" | "loading" | "error" | "success"
+  >(token ? "loading" : "required");
+  const [email, setEmail] = useState(auth.profile()?.email ?? "");
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState("");
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   useEffect(() => {
+    if (returnTo) storeAuthReturnTo(localStorage, returnTo);
     if (!token) return;
 
     void auth
       .verifyEmail(token)
-      .then((response) => {
+      .then(async (response) => {
         if (response.success) {
+          const refreshed = await auth.refresh();
+          if (refreshed.success) {
+            const destination = safeInternalReturnTo(
+              returnTo,
+              readAuthReturnTo(localStorage),
+            );
+            clearAuthReturnTo(localStorage);
+            toast.success("E-mail verificado com sucesso.");
+            await navigate({ to: destination, replace: true });
+            return;
+          }
           setStatus("success");
           return;
         }
@@ -48,7 +71,21 @@ function VerifyEmailPage() {
         );
         toast.error("Não foi possível verificar o link de e-mail.");
       });
-  }, [auth, token]);
+  }, [auth, navigate, returnTo, token]);
+
+  async function continueAfterVerification() {
+    const response = await auth.refresh();
+    if (!response.success || !auth.profile()?.verified_at) {
+      toast.info("A verificação ainda não foi confirmada.");
+      return;
+    }
+    const destination = safeInternalReturnTo(
+      returnTo,
+      readAuthReturnTo(localStorage),
+    );
+    clearAuthReturnTo(localStorage);
+    await navigate({ to: destination, replace: true });
+  }
 
   async function resendVerification() {
     if (!isValidEmail) {
@@ -91,12 +128,42 @@ function VerifyEmailPage() {
             onClick={() =>
               navigate({
                 to: "/auth",
-                search: { redirect: "" },
+                search: {
+                  redirect: safeInternalReturnTo(
+                    returnTo,
+                    readAuthReturnTo(localStorage),
+                  ),
+                },
                 replace: true,
               })
             }
           >
             Ir para o login
+          </Button>
+        </div>
+      ) : status === "required" ? (
+        <div className="space-y-5 text-center">
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+            <MailWarning className="mx-auto mb-3 size-8 text-amber-600" />
+            <p className="font-semibold">Verifique seu e-mail para continuar</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Enviamos um link para {email || "o e-mail da sua conta"}.
+            </p>
+          </div>
+          <Button
+            className="h-11 w-full"
+            disabled={resending || !isValidEmail}
+            onClick={() => void resendVerification()}
+          >
+            <RefreshCw className={resending ? "animate-spin" : undefined} />
+            {resending ? "Enviando…" : "Reenviar e-mail"}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 w-full"
+            onClick={() => void continueAfterVerification()}
+          >
+            Já verifiquei
           </Button>
         </div>
       ) : (

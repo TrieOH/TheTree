@@ -46,7 +46,7 @@
     "@trieoh/univents-api": "workspace:*",
     "aws4fetch": "^1.0.20",
     "class-variance-authority": "catalog:",
-    "d3-scale": "^4.0.2",
+    "d3-scale": "catalog:",
     "d3-shape": "catalog:",
     "date-fns": "catalog:",
     "fabric": "^7.4.0",

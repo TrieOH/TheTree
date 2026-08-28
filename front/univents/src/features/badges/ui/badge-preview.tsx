@@ -1,5 +1,7 @@
 import QRCode from "qrcode";
 import type { CSSProperties } from "react";
+import { useElementSize } from "../../certifications/editor/hooks/use-element-size";
+import { StaticTextElement } from "../../certifications/editor/ui/elements/text-element-view";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
 import {
   type BadgeElement,
@@ -62,39 +64,42 @@ export function BadgePreview({
     checkin_url: actionUrl,
   };
 
-  function textFor(element: Extract<BadgeElement, { type: "text" }>) {
-    return element.paragraphs
-      .flatMap((paragraph) => paragraph.runs.map((run) => run.text))
-      .join("\n")
-      .replace(/\{\{([^}]+)\}\}/g, (_, key: string) => {
-        if (values[key]) return values[key];
-        if (!showVariables) return "";
-        return (
-          {
-            event_name: "Nome do evento",
-            edition_name: "Nome da edição",
-            ticket_name: "Nome do ingresso",
-            participant_name: "Nome do participante",
-            location: "Local da edição",
-            checkin_url: "Link de check-in",
-          }[key] ?? key
-        );
-      });
+  function previewText(element: Extract<BadgeElement, { type: "text" }>) {
+    return {
+      ...element,
+      paragraphs: element.paragraphs.map((paragraph) => ({
+        ...paragraph,
+        runs: paragraph.runs.map((run) => ({
+          ...run,
+          text: run.text.replace(/\{\{([^}]+)\}\}/g, (_, key: string) => {
+            if (values[key]) return values[key];
+            if (!showVariables) return "";
+            return (
+              {
+                event_name: "Nome do evento",
+                edition_name: "Nome da edição",
+                ticket_name: "Nome do ingresso",
+                participant_name: "Nome do participante",
+                location: "Local da edição",
+                checkin_url: "Link de check-in",
+              }[key] ?? key
+            );
+          }),
+        })),
+      })),
+    };
   }
+
+  const { ref, size } = useElementSize<HTMLDivElement>();
+  const scale = size.width ? size.width / design.canvas.width : 1;
 
   return (
     <div
+      ref={ref}
       className={`${className} shrink-0 overflow-hidden rounded-md${framed ? " border shadow-sm" : ""}`}
       style={{
         aspectRatio: `${design.canvas.width} / ${design.canvas.height}`,
-        containerType: "inline-size",
-        backgroundColor: design.backgroundColor,
-        backgroundImage: design.background
-          ? `url(${design.background})`
-          : undefined,
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundSize: "cover",
+        position: "relative",
         ...(contain
           ? design.canvas.width >= design.canvas.height
             ? { width: "100%", height: "auto" }
@@ -103,35 +108,46 @@ export function BadgePreview({
         ...style,
       }}
     >
-      {design.elements.map((element) => (
-        <BadgeElementPreview
-          key={element.id}
-          element={element}
-          design={design}
-          actionUrl={actionUrl}
-          text={element.type === "text" ? textFor(element) : undefined}
-        />
-      ))}
+      <div
+        className="absolute left-0 top-0 overflow-hidden"
+        style={{
+          width: design.canvas.width,
+          height: design.canvas.height,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          backgroundColor: design.backgroundColor,
+          backgroundImage: design.background
+            ? `url(${design.background})`
+            : undefined,
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+        }}
+      >
+        {design.elements.map((element) => (
+          <BadgeElementPreview
+            key={element.id}
+            element={element.type === "text" ? previewText(element) : element}
+            actionUrl={actionUrl}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 function BadgeElementPreview({
   element,
-  design,
   actionUrl,
-  text,
 }: {
   element: BadgeElement;
-  design: typeof DEFAULT_BADGE_TEMPLATE.design_data;
   actionUrl: string;
-  text?: string;
 }) {
   const style = {
-    left: `${(element.x / design.canvas.width) * 100}%`,
-    top: `${(element.y / design.canvas.height) * 100}%`,
-    width: `${(element.width / design.canvas.width) * 100}%`,
-    height: `${(element.height / design.canvas.height) * 100}%`,
+    left: element.x,
+    top: element.y,
+    width: element.width,
+    height: element.height,
   };
 
   if (element.type === "image") {
@@ -159,19 +175,8 @@ function BadgeElementPreview({
     );
   }
   return (
-    <div
-      className="absolute overflow-hidden whitespace-pre-wrap"
-      style={{
-        ...style,
-        height: `calc(${(element.height / design.canvas.height) * 100}% + ${(6 / design.canvas.width) * 100}cqw)`,
-        color: element.paragraphs[0]?.runs[0]?.color,
-        fontWeight: element.paragraphs[0]?.runs[0]?.bold ? "bold" : "normal",
-        fontSize: `${((element.paragraphs[0]?.runs[0]?.fontSize ?? 20) / design.canvas.width) * 100}cqw`,
-        lineHeight: element.paragraphs[0]?.lineHeight,
-        textAlign: element.paragraphs[0]?.align,
-      }}
-    >
-      {text}
+    <div className="absolute overflow-hidden" style={style}>
+      <StaticTextElement element={element} />
     </div>
   );
 }

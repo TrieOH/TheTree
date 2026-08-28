@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/ui/shadcn/dropdown-menu";
-import type { BadgePrintItem, BadgeTemplate } from "../model";
+import { type BadgePrintItem, type BadgeTemplate, badgePxToMm } from "../model";
 import { BadgePreview } from "./badge-preview";
 
 interface AdminBadgeCardProps {
@@ -83,10 +83,10 @@ export default function AdminBadgeCard({
       tabIndex={0}
       onClick={onView}
     >
-      <div className="relative aspect-video overflow-hidden bg-muted">
+      <div className="relative flex h-64 items-center justify-center overflow-hidden bg-muted p-4">
         <BadgePreview
           badge={item}
-          className="h-full w-full object-cover"
+          className="max-h-full max-w-full"
           contain
           showVariables={kind === "template"}
           participantName={participantName}
@@ -163,7 +163,7 @@ export default function AdminBadgeCard({
       </CardHeader>
       <CardContent className="px-4 pb-4 text-xs text-muted-foreground">
         {kind === "template"
-          ? `${(item as BadgeTemplate).design_data.canvas.width} × ${(item as BadgeTemplate).design_data.canvas.height}px · ${(item as BadgeTemplate).design_data.elements.length} elementos`
+          ? `${badgePxToMm((item as BadgeTemplate).design_data.canvas.width)} × ${badgePxToMm((item as BadgeTemplate).design_data.canvas.height)} mm · ${(item as BadgeTemplate).design_data.elements.length} elementos`
           : (item as BadgePrintItem).ticket_name}
       </CardContent>
     </motion.article>

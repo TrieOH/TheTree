@@ -1,17 +1,18 @@
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "./cn";
 
-export interface ToolbarComboboxOption {
+export interface ComboboxOption {
   value: string;
   label: string;
   description?: string;
 }
 
-export interface ToolbarComboboxProps {
+export interface ComboboxProps {
   value?: string;
-  options: readonly ToolbarComboboxOption[];
+  options: readonly ComboboxOption[];
   placeholder: string;
   searchPlaceholder?: string;
   disabled?: boolean;
@@ -23,7 +24,7 @@ export interface ToolbarComboboxProps {
   onChange: (value: string) => void;
 }
 
-export function ToolbarCombobox({
+export function Combobox({
   value,
   options,
   placeholder,
@@ -35,9 +36,11 @@ export function ToolbarCombobox({
   triggerClassName,
   dropdownClassName,
   onChange,
-}: ToolbarComboboxProps) {
+}: ComboboxProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, minWidth: 0 });
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const selectedOption = options.find((option) => option.value === value);
@@ -53,13 +56,36 @@ export function ToolbarCombobox({
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (
+        !containerRef.current?.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
   useEffect(() => setHighlightedIndex(0), [open, query]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const placeDropdown = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        setPosition({ top: rect.bottom + 4, left: rect.left, minWidth: rect.width });
+      }
+    };
+    placeDropdown();
+    window.addEventListener("resize", placeDropdown);
+    window.addEventListener("scroll", placeDropdown, true);
+    return () => {
+      window.removeEventListener("resize", placeDropdown);
+      window.removeEventListener("scroll", placeDropdown, true);
+    };
+  }, [open]);
 
   return (
     <div
@@ -99,10 +125,12 @@ export function ToolbarCombobox({
           </>
         )}
       </button>
-      {open ? (
+      {open ? createPortal(
         <div
+          ref={dropdownRef}
+          style={position}
           className={cn(
-            "absolute top-full left-0 z-50 mt-1 w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
+            "fixed z-70 w-max max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
             iconOnly && "w-64 max-w-none",
             dropdownClassName,
           )}
@@ -176,8 +204,14 @@ export function ToolbarCombobox({
               ))
             )}
           </ul>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );
 }
+
+// Backwards-compatible names for existing toolbar consumers.
+export const ToolbarCombobox = Combobox;
+export type ToolbarComboboxOption = ComboboxOption;
+export type ToolbarComboboxProps = ComboboxProps;

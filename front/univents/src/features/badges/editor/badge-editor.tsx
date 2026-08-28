@@ -32,31 +32,36 @@ import {
 } from "../api/mutations";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
 import type { BadgeElement, BadgeTemplateCreate } from "../model";
-import { badgeTemplateCreateSchema } from "../model";
+import {
+  badgeMmToPx,
+  badgePxToMm,
+  badgeTemplateCreateSchema,
+  MIN_BADGE_CANVAS_SIZE_MM,
+  MIN_BADGE_CANVAS_SIZE_PX,
+} from "../model";
 import { BadgeCanvas } from "./badge-canvas";
 import { uploadBadgeAssets } from "./upload-assets";
 
 const VARIABLES = [
   [
     "{{participant_name}}",
-    "Nome completo do participante",
-    "Nome legal informado no perfil do participante",
+    "Nome civil do participante",
+    "Nome civil informado no perfil do participante",
   ],
-  ["{{event_name}}", "Nome do evento"],
-  ["{{edition_name}}", "Nome da edição"],
-  ["{{ticket_name}}", "Tipo de ingresso"],
+  ["{{event_name}}", "Nome do evento", "Nome do evento"],
+  ["{{edition_name}}", "Nome da edição", "Nome da edição do evento"],
+  ["{{ticket_name}}", "Tipo de ingresso", "Ingresso associado ao participante"],
   ["{{location}}", "Local", "Local informado na edição"],
 ] as const;
-const VARIABLE_OPTIONS = VARIABLES.map(([value, label, description]) => ({
-  value,
-  label,
-  description,
-}));
+const DEFAULT_PREVIEW_VALUES: Record<string, string> = {
+  participant_name: "Maria da Silva",
+  event_name: "Nome do evento",
+  edition_name: "Edição 2026",
+  ticket_name: "Ingresso participante",
+  location: "Centro de Convenções",
+};
 
 const uid = () => crypto.randomUUID();
-const PX_PER_MM = 96 / 25.4;
-const pxToMm = (value: number) => Number((value / PX_PER_MM).toFixed(1));
-const mmToPx = (value: number) => Math.round(value * PX_PER_MM);
 
 const BADGE_SIZE_PRESETS = [
   {
@@ -122,6 +127,7 @@ export function BadgeEditor({
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [previewValues, setPreviewValues] = useState(DEFAULT_PREVIEW_VALUES);
   const [textController, setTextController] =
     useState<CertificateRichTextController | null>(null);
   const [textSelectionStyles, setTextSelectionStyles] =
@@ -162,7 +168,11 @@ export function BadgeEditor({
   );
   const resizeCanvas = (canvas: { width: number; height: number }) => {
     const previous = draft.design_data.canvas;
-    if (canvas.width < 200 || canvas.height < 200) return;
+    if (
+      canvas.width < MIN_BADGE_CANVAS_SIZE_PX ||
+      canvas.height < MIN_BADGE_CANVAS_SIZE_PX
+    )
+      return;
     const scaleX = canvas.width / previous.width;
     const scaleY = canvas.height / previous.height;
     const fontScale = Math.sqrt(scaleX * scaleY);
@@ -496,25 +506,52 @@ export function BadgeEditor({
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
-                  value={pxToMm(draft.design_data.canvas.width)}
+                  min={MIN_BADGE_CANVAS_SIZE_MM}
+                  step={0.1}
+                  value={badgePxToMm(draft.design_data.canvas.width)}
                   onChange={(e) =>
                     resizeCanvas({
                       ...draft.design_data.canvas,
-                      width: mmToPx(Number(e.target.value)),
+                      width: badgeMmToPx(Number(e.target.value)),
                     })
                   }
                 />
                 <Input
                   type="number"
-                  value={pxToMm(draft.design_data.canvas.height)}
+                  min={MIN_BADGE_CANVAS_SIZE_MM}
+                  step={0.1}
+                  value={badgePxToMm(draft.design_data.canvas.height)}
                   onChange={(e) =>
                     resizeCanvas({
                       ...draft.design_data.canvas,
-                      height: mmToPx(Number(e.target.value)),
+                      height: badgeMmToPx(Number(e.target.value)),
                     })
                   }
                 />
               </div>
+            </div>
+            <div className="mt-6 space-y-2">
+              <Label>Valores de pré-visualização</Label>
+              {VARIABLES.map(([variable, label]) => {
+                const key = variable.slice(2, -2);
+                return (
+                  <Input
+                    key={variable}
+                    aria-label={label}
+                    placeholder={label}
+                    value={previewValues[key] ?? ""}
+                    onChange={(event) =>
+                      setPreviewValues((current) => ({
+                        ...current,
+                        [key]: event.target.value,
+                      }))
+                    }
+                  />
+                );
+              })}
+              <p className="text-xs text-muted-foreground">
+                Usados somente no editor; não são salvos no template.
+              </p>
             </div>
             <div className="mt-6 space-y-2">
               <Label>Camadas</Label>
@@ -594,7 +631,6 @@ export function BadgeEditor({
             <RichTextToolbar
               controller={textController}
               selectionStyles={textSelectionStyles}
-              variableOptions={VARIABLE_OPTIONS}
             />
             <BadgeCanvas
               design={draft.design_data}
@@ -602,6 +638,7 @@ export function BadgeEditor({
               onSelect={setSelectedId}
               onChangeElement={updateElement}
               textAdapter={textAdapter}
+              previewValues={previewValues}
               onDeleteElement={(id) => {
                 deleteElement(id);
               }}
@@ -612,92 +649,10 @@ export function BadgeEditor({
             {selected ? (
               <div className="mt-4 space-y-4">
                 {selected.type === "text" && (
-                  <div className="hidden">
-                    <div className="space-y-2">
-                      <Label>Conteúdo</Label>
-                      <textarea
-                        className="min-h-24 w-full rounded-md border border-muted bg-background p-2 text-sm"
-                        value={selected.content}
-                        onChange={(e) =>
-                          updateElement(selected.id, {
-                            content: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {VARIABLES.map(([value, label]) => (
-                        <button
-                          type="button"
-                          key={value}
-                          title={label}
-                          className="rounded border border-muted px-2 py-1 text-xs"
-                          onClick={() =>
-                            updateElement(selected.id, {
-                              content: `${selected.content}${value}`,
-                            })
-                          }
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label>Tamanho</Label>
-                        <Input
-                          type="number"
-                          value={selected.fontSize}
-                          onChange={(e) =>
-                            updateElement(selected.id, {
-                              fontSize: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Cor</Label>
-                        <Input
-                          type="color"
-                          value={selected.color}
-                          onChange={(e) =>
-                            updateElement(selected.id, {
-                              color: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <ToolbarCombobox
-                        value={selected.fontWeight}
-                        options={[
-                          { value: "normal", label: "Normal" },
-                          { value: "bold", label: "Negrito" },
-                        ]}
-                        placeholder="Peso"
-                        onChange={(value) =>
-                          updateElement(selected.id, {
-                            fontWeight: value as "normal" | "bold",
-                          })
-                        }
-                      />
-                      <ToolbarCombobox
-                        value={selected.align}
-                        options={[
-                          { value: "left", label: "Esquerda" },
-                          { value: "center", label: "Centro" },
-                          { value: "right", label: "Direita" },
-                        ]}
-                        placeholder="Alinhamento"
-                        onChange={(value) =>
-                          updateElement(selected.id, {
-                            align: value as "left" | "center" | "right",
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
+                  <p className="rounded-md bg-muted p-2.5 text-xs leading-relaxed text-muted-foreground">
+                    Dê um duplo clique no texto para editar. A formatação da
+                    seleção aparece na barra acima do canvas.
+                  </p>
                 )}
                 {selected.type === "image" && (
                   <>
@@ -782,32 +737,105 @@ export function BadgeEditor({
                     </div>
                   </div>
                 )}
+                <div className="border-t border-border" />
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label>Largura (mm)</Label>
+                  <div className="block space-y-1">
+                    <span className="text-xs text-muted-foreground">
+                      Posição X
+                    </span>
                     <Input
                       type="number"
-                      value={pxToMm(selected.width)}
+                      step={0.1}
+                      value={badgePxToMm(selected.x)}
                       onChange={(e) =>
                         updateElement(selected.id, {
-                          width: mmToPx(Number(e.target.value)),
+                          x: badgeMmToPx(Number(e.target.value)),
                         })
                       }
                     />
                   </div>
-                  <div>
-                    <Label>Altura (mm)</Label>
+                  <div className="block space-y-1">
+                    <span className="text-xs text-muted-foreground">
+                      Posição Y
+                    </span>
                     <Input
                       type="number"
-                      value={pxToMm(selected.height)}
+                      step={0.1}
+                      value={badgePxToMm(selected.y)}
                       onChange={(e) =>
                         updateElement(selected.id, {
-                          height: mmToPx(Number(e.target.value)),
+                          y: badgeMmToPx(Number(e.target.value)),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="block space-y-1">
+                    <span className="text-xs text-muted-foreground">
+                      Largura (mm)
+                    </span>
+                    <Input
+                      type="number"
+                      step={0.1}
+                      value={badgePxToMm(selected.width)}
+                      onChange={(e) =>
+                        updateElement(selected.id, {
+                          width: badgeMmToPx(Number(e.target.value)),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="block space-y-1">
+                    <span className="text-xs text-muted-foreground">
+                      Altura (mm)
+                    </span>
+                    <Input
+                      type="number"
+                      step={0.1}
+                      value={badgePxToMm(selected.height)}
+                      onChange={(e) =>
+                        updateElement(selected.id, {
+                          height: badgeMmToPx(Number(e.target.value)),
                         })
                       }
                     />
                   </div>
                 </div>
+                {selected.type === "text" && (
+                  <>
+                    <div className="border-t border-border" />
+                    <div className="space-y-2.5">
+                      <div>
+                        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                          Informações dinâmicas
+                        </h3>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          Clique para inserir no texto selecionado.
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        {VARIABLES.map(([token, label, description]) => (
+                          <Button
+                            key={token}
+                            type="button"
+                            variant="outline"
+                            className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left text-xs"
+                            disabled={!textController}
+                            title={description}
+                            onClick={() => textController?.insertText(token)}
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate">{label}</span>
+                              <span className="mt-0.5 block text-[11px] font-normal leading-tight text-muted-foreground">
+                                {description}
+                              </span>
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="border-t border-border" />
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"

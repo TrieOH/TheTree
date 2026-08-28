@@ -85,7 +85,11 @@ function InitialProfileSetup() {
       if (returnTo && !personalizeMore) {
         window.location.assign(returnTo);
       } else {
-        await navigate({ to: personalizeMore ? "/profile/edit" : "/profile" });
+        await navigate(
+          personalizeMore
+            ? { to: "/profile/edit", search: { returnTo } }
+            : { to: "/profile", search: { tab: "about" } },
+        );
       }
     } catch (error) {
       toast.error(

@@ -249,7 +249,11 @@ function readSelectionStyles(editor: RichEditor) {
   };
 }
 
-function StaticTextElement({ element }: { element: TextCertificateElement }) {
+export function StaticTextElement({
+  element,
+}: {
+  element: TextCertificateElement;
+}) {
   return (
     <div
       className="h-full w-full overflow-hidden whitespace-pre-wrap wrap-break-word"

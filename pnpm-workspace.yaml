@@ -64,6 +64,8 @@ catalog:
   '@t3-oss/env-core': ^0.13.11
   '@base-ui/react': ^1.6.0
   date-fns: ^4.1.0
+  d3-scale: ^4.0.2
+  '@types/d3-scale': ^4.0.9
   d3-shape: ^3.2.0
   '@types/d3-shape': ^3.1.8
 

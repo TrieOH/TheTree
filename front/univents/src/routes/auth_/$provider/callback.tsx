@@ -1,8 +1,12 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  clearAuthReturnTo,
+  readAuthReturnTo,
+} from "@/features/auths/lib/auth-path";
 
 const providerSchema = z.enum(["google", "github"]);
 const callbackSearchSchema = z.object({
@@ -22,7 +26,6 @@ export const Route = createFileRoute("/auth_/$provider/callback")({
 
 function OAuthCallbackPage() {
   const navigate = Route.useNavigate();
-  const router = useRouter();
   const { provider } = Route.useParams();
   const { code, state } = Route.useSearch();
   const { auth } = useAuth();
@@ -51,13 +54,10 @@ function OAuthCallbackPage() {
           );
         }
 
-        router.options.context.queryClient.invalidateQueries();
         toast.success("Login realizado com sucesso");
-        await navigate({
-          to: "/profile",
-          search: { tab: "about" },
-          replace: true,
-        });
+        const destination = readAuthReturnTo(localStorage) || "/profile";
+        clearAuthReturnTo(localStorage);
+        window.location.assign(destination);
       } catch (error) {
         const message =
           error instanceof Error
@@ -69,7 +69,7 @@ function OAuthCallbackPage() {
     };
 
     void completeLogin();
-  }, [auth, code, navigate, provider, router, state]);
+  }, [auth, code, navigate, provider, state]);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background">
