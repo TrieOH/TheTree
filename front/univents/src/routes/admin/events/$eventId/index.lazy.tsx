@@ -2,15 +2,14 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import {
+  ChartCard,
+  type ChartDatum,
   DashboardBarList,
-  DashboardLineChart,
-  type DashboardLineChartPoint,
   DashboardStatCard,
 } from "@trieoh/ui-base";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Activity,
   Calendar,
   CalendarRange,
   ChevronRight,
@@ -187,6 +186,35 @@ function EventOverviewRoute() {
     (total, purchase) => total + purchase.total_cents,
     0,
   );
+  const revenueByDay = new Map<
+    number,
+    { revenueCents: number; purchases: number }
+  >();
+  for (const purchase of approvedPurchases) {
+    if (!purchase.created_at) continue;
+    const date = new Date(purchase.created_at);
+    if (Number.isNaN(date.getTime())) continue;
+    date.setHours(0, 0, 0, 0);
+    const day = revenueByDay.get(date.getTime()) ?? {
+      revenueCents: 0,
+      purchases: 0,
+    };
+    day.revenueCents += purchase.total_cents;
+    day.purchases += 1;
+    revenueByDay.set(date.getTime(), day);
+  }
+  let accumulatedRevenue = 0;
+  const profitData: ChartDatum[] = [...revenueByDay.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([timestamp, day]) => {
+      accumulatedRevenue += day.revenueCents;
+      return {
+        date: new Date(timestamp),
+        value: accumulatedRevenue / 100,
+        series: "Lucro",
+        purchases: day.purchases,
+      };
+    });
   const ticketCount = ticketQueries.reduce(
     (total, query) => total + (query.data?.length ?? 0),
     0,
@@ -241,13 +269,6 @@ function EventOverviewRoute() {
       .length,
     color: item.color,
   }));
-  const purchaseTimeline: DashboardLineChartPoint[] = purchases
-    .filter((purchase) => purchase.created_at)
-    .map((purchase) => ({
-      timestamp: purchase.created_at ?? "",
-      status: purchase.status,
-      totalCents: purchase.total_cents,
-    }));
   const summaryMetrics = [
     {
       label: "Receita aprovada",
@@ -650,14 +671,33 @@ function EventOverviewRoute() {
           </DashboardPanel>
         </section>
 
-        <DashboardPanel
-          title="Lucro"
-          description="Crescimento acumulado no período selecionado."
-          icon={Activity}
-          className="order-6"
-        >
-          <DashboardLineChart points={purchaseTimeline} />
-        </DashboardPanel>
+        <section className="order-6">
+          <ChartCard
+            title="Lucro"
+            subtitle="Crescimento acumulado no período selecionado."
+            data={profitData}
+            allowedTypes={["line"]}
+            initialRange="30d"
+            showSeriesFilter={false}
+            showSearchFilter={false}
+            continuity
+            showPointsToggle={false}
+            seriesLabels={{ Lucro: "Lucro acumulado" }}
+            tooltipDetails={(datum) => [
+              {
+                label: "Compras",
+                value: String(datum.purchases ?? 0),
+              },
+            ]}
+            valueFormatter={(value) =>
+              new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+                maximumFractionDigits: 0,
+              }).format(value)
+            }
+          />
+        </section>
 
         <section className="order-7 space-y-3">
           <div className="flex min-w-0 items-center justify-between gap-3 px-1">

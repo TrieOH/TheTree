@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { SortState } from "@trieoh/ui-base";
 import {
+  ChartCard,
+  type ChartDatum,
   DashboardBarList,
-  DashboardLineChart,
   DashboardStatCard,
   PaginatedContainer,
+  type SortState,
 } from "@trieoh/ui-base";
 import {
   Ban,
@@ -220,6 +221,35 @@ export function TransactionsDashboard({
   const environmentIntents = intents.filter((intent) =>
     environmentFilter === "production" ? !intent.sandbox : intent.sandbox,
   );
+  const volumeByDay = new Map<
+    number,
+    { amountCents: number; transactions: number }
+  >();
+  for (const intent of environmentIntents) {
+    if (intent.status !== "succeeded") continue;
+    const date = new Date(intent.created_at);
+    if (Number.isNaN(date.getTime())) continue;
+    date.setHours(0, 0, 0, 0);
+    const day = volumeByDay.get(date.getTime()) ?? {
+      amountCents: 0,
+      transactions: 0,
+    };
+    day.amountCents += intent.amount_cents;
+    day.transactions += 1;
+    volumeByDay.set(date.getTime(), day);
+  }
+  let accumulatedVolume = 0;
+  const volumeData: ChartDatum[] = [...volumeByDay.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([timestamp, day]) => {
+      accumulatedVolume += day.amountCents;
+      return {
+        date: new Date(timestamp),
+        value: accumulatedVolume / 100,
+        series: "volume",
+        transactions: day.transactions,
+      };
+    });
   const captured = environmentIntents.filter(
     (intent) => intent.status === "succeeded" || intent.status === "refunded",
   );
@@ -372,19 +402,31 @@ export function TransactionsDashboard({
           </div>
         </section>
 
-        <section className="order-1 rounded-lg bg-card p-4 ring-1 ring-foreground/10 xl:order-2">
-          <div className="mb-4">
-            <h2 className="font-semibold">Payment volume</h2>
-            <p className="text-xs text-muted-foreground">
-              Accumulated payment volume over time.
-            </p>
-          </div>
-          <DashboardLineChart
-            points={environmentIntents.map((intent) => ({
-              timestamp: intent.created_at,
-              status: intent.status,
-              totalCents: intent.amount_cents,
-            }))}
+        <section className="order-1 xl:order-2">
+          <ChartCard
+            title="Payment volume"
+            subtitle="Accumulated payment volume over time."
+            data={volumeData}
+            allowedTypes={["line"]}
+            initialRange="30d"
+            showSeriesFilter={false}
+            showSearchFilter={false}
+            showPointsToggle={false}
+            seriesLabels={{ volume: "Accumulated volume" }}
+            seriesColors={{ volume: "#10b981" }}
+            tooltipDetails={(datum) => [
+              {
+                label: "Transactions",
+                value: String(datum.transactions ?? 0),
+              },
+            ]}
+            valueFormatter={(value) =>
+              new Intl.NumberFormat(undefined, {
+                style: "currency",
+                currency: "BRL",
+                maximumFractionDigits: 0,
+              }).format(value)
+            }
           />
         </section>
       </section>

@@ -2,13 +2,12 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import {
+  ChartCard,
+  type ChartDatum,
   DashboardBarList,
-  DashboardLineChart,
-  type DashboardLineChartPoint,
   DashboardStatCard,
 } from "@trieoh/ui-base";
 import {
-  Activity,
   Calendar,
   CalendarRange,
   CircleAlert,
@@ -308,13 +307,35 @@ function AdminEditionDetailRoute() {
   const revenue = purchases
     .filter((purchase) => purchase.status === "approved")
     .reduce((total, purchase) => total + purchase.total_cents, 0);
-  const purchaseTimeline: DashboardLineChartPoint[] = purchases
-    .filter((purchase) => purchase.created_at)
-    .map((purchase) => ({
-      timestamp: purchase.created_at ?? "",
-      status: purchase.status,
-      totalCents: purchase.total_cents,
-    }));
+  const revenueByDay = new Map<
+    number,
+    { revenueCents: number; purchases: number }
+  >();
+  for (const purchase of purchases) {
+    if (purchase.status !== "approved" || !purchase.created_at) continue;
+    const date = new Date(purchase.created_at);
+    if (Number.isNaN(date.getTime())) continue;
+    date.setHours(0, 0, 0, 0);
+    const day = revenueByDay.get(date.getTime()) ?? {
+      revenueCents: 0,
+      purchases: 0,
+    };
+    day.revenueCents += purchase.total_cents;
+    day.purchases += 1;
+    revenueByDay.set(date.getTime(), day);
+  }
+  let accumulatedRevenue = 0;
+  const profitData: ChartDatum[] = [...revenueByDay.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([timestamp, day]) => {
+      accumulatedRevenue += day.revenueCents;
+      return {
+        date: new Date(timestamp),
+        value: accumulatedRevenue / 100,
+        series: "revenue",
+        purchases: day.purchases,
+      };
+    });
   const purchaseStatusBars = [
     ["Aprovadas", "approved", "bg-emerald-500"],
     ["Pendentes", "pending", "bg-amber-500"],
@@ -493,14 +514,28 @@ function AdminEditionDetailRoute() {
           />
         </DashboardPanel>
 
-        <DashboardPanel
+        <ChartCard
           title="Lucro"
-          description="Crescimento acumulado das compras da edição."
-          icon={Activity}
-          className="h-full rounded-lg bg-card p-5 ring-1 ring-foreground/10"
-        >
-          <DashboardLineChart points={purchaseTimeline} />
-        </DashboardPanel>
+          subtitle="Crescimento acumulado das compras da edição."
+          data={profitData}
+          allowedTypes={["line"]}
+          initialRange="30d"
+          showSeriesFilter={false}
+          showSearchFilter={false}
+          showPointsToggle={false}
+          seriesLabels={{ revenue: "Lucro acumulado" }}
+          seriesColors={{ revenue: "#10b981" }}
+          tooltipDetails={(datum) => [
+            { label: "Compras", value: String(datum.purchases ?? 0) },
+          ]}
+          valueFormatter={(value) =>
+            new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+              maximumFractionDigits: 0,
+            }).format(value)
+          }
+        />
       </section>
 
       <StepChecklist
