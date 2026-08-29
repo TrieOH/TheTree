@@ -101,7 +101,7 @@ export function BadgePreview({
         aspectRatio: `${design.canvas.width} / ${design.canvas.height}`,
         position: "relative",
         ...(contain
-          ? design.canvas.width >= design.canvas.height
+          ? design.canvas.width > design.canvas.height
             ? { width: "100%", height: "auto" }
             : { width: "auto", height: "100%" }
           : {}),
