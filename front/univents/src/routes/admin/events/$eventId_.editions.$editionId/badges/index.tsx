@@ -149,7 +149,8 @@ function RouteComponent() {
   );
   const printItems = printQuery.data ?? [];
   const printActorIds = [...new Set(printItems.map((item) => item.user_id))];
-  const { data: participantNames = {} } = useActorDisplayNames(printActorIds);
+  const { data: participantNames = {}, isPending: participantNamesPending } =
+    useActorDisplayNames(printActorIds);
   const location =
     editions.find((edition) => edition.id === editionId)?.location_name ?? "";
   const filteredPrintItems = useMemo(() => {
@@ -175,7 +176,13 @@ function RouteComponent() {
   }
 
   useEffect(() => {
-    if (!printPending || qrDialogOpen || !printQuery.data) return;
+    if (
+      !printPending ||
+      qrDialogOpen ||
+      !printQuery.data ||
+      participantNamesPending
+    )
+      return;
 
     let cancelled = false;
     const prepare = async () => {
@@ -190,7 +197,7 @@ function RouteComponent() {
     return () => {
       cancelled = true;
     };
-  }, [printPending, printQuery.data, qrDialogOpen]);
+  }, [participantNamesPending, printPending, printQuery.data, qrDialogOpen]);
   return (
     <>
       <div
