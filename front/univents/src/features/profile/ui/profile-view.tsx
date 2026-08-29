@@ -4,7 +4,10 @@ import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
 import { Globe, Mail } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
-import type { BadgeProfileBadge } from "@/features/badges/model";
+import {
+  type BadgeProfileBadge,
+  badgeDesignSchema,
+} from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
@@ -252,23 +255,37 @@ function ProfileBadges({
   if (badges.length === 0) return null;
   return (
     <div className="flex flex-wrap items-start justify-center gap-2 sm:justify-start!">
-      {badges.map((badge) => (
-        <Link
-          key={badge.emission_id}
-          to="/profile/$actorId/badges/$badgeId"
-          params={{ actorId: profileIdentifier, badgeId: badge.emission_id }}
-          className="flex items-start"
-          aria-label={`Abrir badge ${badge.template_name ?? badge.edition_name}`}
-        >
-          <BadgePreview
-            badge={badge}
-            framed={false}
-            actionUrl={profileUrl}
-            participantName={participantName}
-            location={editionLocations.get(badge.edition_id) ?? ""}
-          />
-        </Link>
-      ))}
+      {badges.map((badge) =>
+        (() => {
+          const design = badgeDesignSchema.safeParse(badge.design_data);
+          const canvas = design.success
+            ? design.data.canvas
+            : { width: 321, height: 204 };
+          const width = (160 * canvas.width) / canvas.height;
+          return (
+            <Link
+              key={badge.emission_id}
+              to="/profile/$actorId/badges/$badgeId"
+              params={{
+                actorId: profileIdentifier,
+                badgeId: badge.emission_id,
+              }}
+              className="flex w-fit max-w-full items-start"
+              aria-label={`Abrir badge ${badge.template_name ?? badge.edition_name}`}
+            >
+              <BadgePreview
+                badge={badge}
+                framed={false}
+                actionUrl={profileUrl}
+                participantName={participantName}
+                location={editionLocations.get(badge.edition_id) ?? ""}
+                className="relative h-auto max-w-full"
+                style={{ width, height: "auto", maxWidth: "100%" }}
+              />
+            </Link>
+          );
+        })(),
+      )}
     </div>
   );
 }

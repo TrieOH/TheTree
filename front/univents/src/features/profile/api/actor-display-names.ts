@@ -10,21 +10,21 @@ export function useActorDisplayNames(actorIds: string[]) {
   return useQuery({
     queryKey: profileKeys.displayNames(ids),
     queryFn: async () => {
-      const [profiles, emails] = await Promise.all([
-        Promise.all(
-          ids.map(async (actorId) => {
-            const response = await auth.getActorProfile(actorId);
-            if (!response.success || !response.data) return null;
-            return [
-              actorId,
-              profileDisplayName(
-                asUniventsProfile(response.data.profile ?? {}),
-              ),
-            ] as const;
-          }),
-        ),
-        getActorEmailsServerFn({ data: { actorIds: ids } }),
-      ]);
+      const profiles = [] as Array<readonly [string, string] | null>;
+      for (const actorId of ids) {
+        const response = await auth.getActorProfile(actorId);
+        profiles.push(
+          response.success && response.data
+            ? [
+                actorId,
+                profileDisplayName(
+                  asUniventsProfile(response.data.profile ?? {}),
+                ),
+              ]
+            : null,
+        );
+      }
+      const emails = await getActorEmailsServerFn({ data: { actorIds: ids } });
       return Object.fromEntries(
         ids.map((id) => [
           id,
