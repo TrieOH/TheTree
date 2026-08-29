@@ -205,7 +205,7 @@ function RouteComponent() {
         data-badge-print-root
         className="hidden print:block"
       >
-        <div className="flex flex-wrap content-start gap-[4mm] p-[10mm]">
+        <div className="flex flex-wrap content-start gap-[4mm] p-[10mm] print:p-0">
           {printMode === "badges"
             ? printItems.map((badge) => (
                 <PrintableBadge

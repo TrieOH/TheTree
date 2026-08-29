@@ -27,7 +27,7 @@ export async function printElement(element: HTMLElement, title: string) {
   printDocument.open();
   printDocument.write(`<!doctype html>
     <html class="${document.documentElement.className}">
-      <head><base href="${document.baseURI}"><title>${title}</title>${styles}</head>
+      <head><base href="${document.baseURI}"><title>${title}</title>${styles}<style>@page { margin: 2mm !important; } body { margin: 0 !important; }</style></head>
       <body>${element.outerHTML}</body>
     </html>`);
   printDocument.close();
