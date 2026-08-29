@@ -4,7 +4,6 @@ import { queryError } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { ArrowLeft } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
-import type { BadgeProfileBadge } from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
@@ -108,7 +107,7 @@ function ProfileBadgePage() {
       </Link>
       <div className="flex h-dvh w-dvw max-h-full max-w-full items-center justify-center">
         <BadgePreview
-          badge={badge as BadgeProfileBadge}
+          badge={badge}
           className="relative h-full w-full max-h-full max-w-full"
           contain
           framed={false}
