@@ -3,6 +3,23 @@ INSERT INTO program_participations (edition_id, occurrence_id, registration_id, 
 VALUES (@edition_id, @occurrence_id, @registration_id, @status)
 RETURNING *;
 
+-- name: UpsertParticipationAttended :one
+-- The checkpoint check-in upsert: staff marks an attendee present by
+-- creating the attended participation on first scan (the row is anchored
+-- to the attendee's edition-ticket registration — checkpoints have no
+-- sign-up of their own) or flipping an existing live row back to
+-- attended (idempotent re-scan). The partial unique index
+-- (uniq_program_participations_active_per_occurrence_attendee) is the
+-- conflict target: a cancelled row is not in the index, so re-checking-in
+-- after a cancel inserts a fresh row (append-only ledger, like register).
+INSERT INTO program_participations (edition_id, occurrence_id, registration_id, status)
+VALUES (@edition_id, @occurrence_id, @registration_id, 'attended')
+ON CONFLICT (occurrence_id, registration_id) WHERE status IN ('registered', 'attended', 'no_show')
+DO UPDATE SET
+    status     = 'attended',
+    updated_at = now()
+RETURNING *;
+
 -- name: GetProgramParticipationByID :one
 SELECT *
 FROM program_participations

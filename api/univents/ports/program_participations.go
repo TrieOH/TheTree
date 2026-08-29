@@ -43,6 +43,12 @@ type ProgramParticipationRepo interface {
 	// no_show→attended staff correction). 0 rows = cancelled → 409.
 	UpdateParticipationStatusIfNotCancelled(ctx context.Context, id uuid.UUID, status models.ProgramParticipationStatus) (*models.ProgramParticipation, error)
 
+	// UpsertAttended is the checkpoint check-in write (staff): creates the
+	// attended participation on first scan or flips an existing live row to
+	// attended — one atomic statement, never duplicates (the partial unique
+	// index is the conflict target).
+	UpsertAttended(ctx context.Context, editionID, occurrenceID, registrationID uuid.UUID) (*models.ProgramParticipation, error)
+
 	// ListActiveByEditionAndRegistration is the "my activities" read: the
 	// caller's live participations joined with program + occurrence.
 	ListActiveByEditionAndRegistration(ctx context.Context, editionID, registrationID uuid.UUID) ([]models.MyParticipation, error)

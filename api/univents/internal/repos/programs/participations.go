@@ -49,6 +49,25 @@ func (repo *Repo) UpdateParticipationStatus(ctx context.Context, id uuid.UUID, s
 	return new(mapParticipation(result)), nil
 }
 
+// UpsertAttended is the checkpoint check-in write: one atomic statement
+// that creates the attended participation on first scan or flips an
+// existing live row to attended (idempotent re-scan). The partial unique
+// index is the conflict target, so a cancelled row is untouched and the
+// insert creates a fresh row (append-only ledger).
+func (repo *Repo) UpsertAttended(ctx context.Context, editionID, occurrenceID, registrationID uuid.UUID) (*models.ProgramParticipation, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.UpsertAttended")
+	defer span.End()
+	result, err := database.Queries(ctx, repo.q).UpsertParticipationAttended(ctx, sqlc.UpsertParticipationAttendedParams{
+		EditionID:      editionID,
+		OccurrenceID:   occurrenceID,
+		RegistrationID: registrationID,
+	})
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapParticipation(result)), nil
+}
+
 // GetParticipationByID returns one participation by id.
 func (repo *Repo) GetParticipationByID(ctx context.Context, id uuid.UUID) (*models.ProgramParticipation, error) {
 	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.GetParticipationByID")

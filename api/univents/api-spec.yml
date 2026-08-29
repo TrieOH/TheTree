@@ -2260,6 +2260,62 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /occurrences/{occurrence_id}/check-in:
+    post:
+      tags: [programs]
+      operationId: checkInOccurrence
+      summary: Check an attendee in at a checkpoint occurrence
+      description: |
+        Staff-only checkpoint check-in. Checkpoints are pass-through —
+        attendees never register for them — so an attendee is marked
+        present by identity, gating only on "can they pass": a confirmed
+        edition ticket plus the checkpoint's access rules (`staff_only`,
+        `min_access_level`). The first scan upserts an attended
+        participation anchored to the attendee's edition-ticket
+        registration; re-scanning the same attendee is idempotent (the
+        live participation is flipped to `attended`, never duplicated).
+        Only checkpoint occurrences are accepted — activities keep the
+        mark-attended flow (400 otherwise).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: occurrence_id
+          in: path
+          required: true
+          description: Occurrence ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+            example:
+              attendee_id: 2e6c6b0e-9c2a-4c1e-8d4f-9e1b7f3a5c2d
+      responses:
+        '200':
+          description: The attendance participation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramParticipation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /participations/{participation_id}/mark-attended:
     post:
       tags: [programs]
@@ -5103,6 +5159,16 @@ components:
         deleted_at:
           type: [ string, "null" ]
           format: date-time
+
+    CheckInRequest:
+      type: object
+      description: |
+        Request body for checkpoint check-in. `attendee_id` is the
+        IdentityX actor id resolved from the attendee's badge QR.
+      required: [attendee_id]
+      properties:
+        attendee_id:
+          $ref: '#/components/schemas/UUID'
 
     CreateProgramRequest:
       type: object

@@ -210,6 +210,9 @@ func (stubStrict) RegisterOccurrence(_ context.Context, _ openapi.RegisterOccurr
 func (stubStrict) DeregisterOccurrence(_ context.Context, _ openapi.DeregisterOccurrenceRequestObject) (openapi.DeregisterOccurrenceResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) CheckInOccurrence(_ context.Context, _ openapi.CheckInOccurrenceRequestObject) (openapi.CheckInOccurrenceResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListOccurrenceParticipants(_ context.Context, _ openapi.ListOccurrenceParticipantsRequestObject) (openapi.ListOccurrenceParticipantsResponseObject, error) {
 	return nil, errStub
 }

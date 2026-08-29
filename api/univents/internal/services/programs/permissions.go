@@ -36,26 +36,40 @@ func (o *Operations) checkEligible(ctx context.Context, occ *models.ProgramOccur
 		return nil, nil, err
 	}
 
+	err = o.checkProgramAccess(ctx, occ, program, reg, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return reg, program, nil
+}
+
+// checkProgramAccess enforces the program's access rules for an attendee
+// (shared by register and checkpoint check-in):
+//
+//   - staff_only programs additionally require an event staff role
+//     (owner/admin/staff);
+//   - min_access_level gates on the ticket's access level (null = open).
+func (o *Operations) checkProgramAccess(ctx context.Context, occ *models.ProgramOccurrence, program *models.Program, reg *models.Registration, userID uuid.UUID) error {
 	if program.StaffOnly {
 		edition, err := o.editions.GetByID(ctx, occ.EditionID)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 		err = o.authz.CheckEvent(ctx, userID, edition.EventID, models.EventMemberRoleStaff)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 	}
 
 	if program.MinAccessLevel != nil {
 		ticket, err := o.ticketTypes.GetByID(ctx, reg.TicketTypeID)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 		if ticket.AccessLevel < *program.MinAccessLevel {
-			return nil, nil, fun.ErrForbidden("your ticket level does not grant access to this activity")
+			return fun.ErrForbidden("your ticket level does not grant access to this " + string(program.Kind))
 		}
 	}
 
-	return reg, program, nil
+	return nil
 }

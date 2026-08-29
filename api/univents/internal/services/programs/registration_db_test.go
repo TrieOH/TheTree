@@ -35,6 +35,10 @@ type fixture struct {
 	programID    uuid.UUID
 	occurrenceID uuid.UUID
 	staffID      uuid.UUID
+
+	// checkpoint fixture (TestCheckpointCheckIn_*)
+	checkpointProgramID    uuid.UUID
+	checkpointOccurrenceID uuid.UUID
 }
 
 // seedActivity creates the fixture through the real repos (disposable
@@ -190,6 +194,164 @@ func TestActivityRegistration_Lifecycle(t *testing.T) {
 	}
 	if len(notifier.stockPayloads()) < 4 {
 		t.Fatalf("want ≥4 stock deltas (register×2, deregister×2), got %d", len(notifier.stockPayloads()))
+	}
+}
+
+// seedCheckpoint creates the checkpoint graph: event → edition → ticket
+// type → confirmed registrations → checkpoint program (no price, no
+// capacity — checkpoints are pass-through) → occurrence.
+func seedCheckpoint(t *testing.T, r *repos.Repos) fixture {
+	t.Helper()
+	ctx := context.Background()
+	fx := fixture{
+		ownerID:   uuid.New(),
+		attendeeA: uuid.New(),
+		attendeeB: uuid.New(),
+		staffID:   uuid.New(),
+	}
+
+	event, err := r.Events.Create(ctx, &models.Event{
+		OwnerID: fx.ownerID, FullName: "Checkpoint Test Event",
+		Slug: "checkpoint-test-" + uuid.NewString()[:8], Status: models.EventStatusActive,
+	})
+	if err != nil {
+		t.Fatalf("seed event: %v", err)
+	}
+	fx.eventID = event.ID
+
+	edition, err := r.Editions.Create(ctx, &models.Edition{
+		EventID: event.ID, Name: "Checkpoint Test Edition",
+		Slug:     "checkpoint-test-ed-" + uuid.NewString()[:8],
+		StartsAt: time.Now().Add(-time.Hour), EndsAt: time.Now().Add(24 * time.Hour),
+		CreatedBy: fx.ownerID,
+	})
+	if err != nil {
+		t.Fatalf("seed edition: %v", err)
+	}
+	fx.editionID = edition.ID
+
+	ticket, err := r.TicketTypes.Create(ctx, &models.TicketType{
+		EditionID: edition.ID, Name: "Standard", AccessLevel: 0, PriceCents: 0,
+	})
+	if err != nil {
+		t.Fatalf("seed ticket type: %v", err)
+	}
+	fx.ticketID = ticket.ID
+
+	// Attendees A and B each hold a confirmed ticket.
+	regs := map[uuid.UUID]*uuid.UUID{
+		fx.attendeeA: &fx.regA,
+		fx.attendeeB: &fx.regB,
+	}
+	for attendee, regID := range regs {
+		reg, err := r.Registrations.Create(ctx, &models.Registration{
+			EditionID: edition.ID, TicketTypeID: ticket.ID,
+			PurchaserID: attendee, AttendeeUserID: &attendee,
+			AttendeeEmail: "attendee-" + attendee.String() + "@example.com", AttendeeName: "Attendee",
+			Status: models.RegistrationStatusConfirmed,
+		})
+		if err != nil {
+			t.Fatalf("seed registration: %v", err)
+		}
+		*regID = reg.ID
+	}
+
+	program, err := r.Programs.Create(ctx, &models.Program{
+		EditionID: edition.ID, Kind: models.ProgramKindCheckpoint, Name: "Security Gate",
+	})
+	if err != nil {
+		t.Fatalf("seed checkpoint program: %v", err)
+	}
+	fx.checkpointProgramID = program.ID
+
+	occurrence, err := r.Programs.CreateOccurrence(ctx, &models.ProgramOccurrence{
+		ProgramID: program.ID, EditionID: edition.ID,
+		StartsAt: time.Now().Add(2 * time.Hour), EndsAt: time.Now().Add(3 * time.Hour),
+	})
+	if err != nil {
+		t.Fatalf("seed checkpoint occurrence: %v", err)
+	}
+	fx.checkpointOccurrenceID = occurrence.ID
+
+	_, err = r.Events.AddEventMember(ctx, event.ID, fx.staffID, models.EventMemberRoleStaff)
+	if err != nil {
+		t.Fatalf("seed staff member: %v", err)
+	}
+
+	return fx
+}
+
+// TestCheckpointCheckIn_Lifecycle pins the checkpoint flow on the real
+// ledger: the first scan upserts an attended participation anchored to the
+// attendee's edition-ticket registration, a re-scan is idempotent (never
+// duplicates — the partial unique index is the conflict target), the
+// attendee shows up on the staff surface, and no stock delta is published
+// (check-in does not move availability).
+func TestCheckpointCheckIn_Lifecycle(t *testing.T) {
+	r, ops, notifier, pool := newDB(t)
+	fx := seedCheckpoint(t, r)
+
+	part, err := ops.CheckIn(context.Background(), fx.checkpointOccurrenceID, fx.attendeeA, fx.staffID)
+	if err != nil {
+		t.Fatalf("check-in: %v", err)
+	}
+	if part.Status != models.ProgramParticipationStatusAttended {
+		t.Fatalf("status = %s, want attended", part.Status)
+	}
+	if part.RegistrationID != fx.regA {
+		t.Fatalf("registration = %s, want attendee A's ticket %s", part.RegistrationID, fx.regA)
+	}
+	assertLedgerRows(t, pool, fx.checkpointOccurrenceID, fx.regA, 1)
+
+	// Re-scan: same attendee, still one row, still attended.
+	again, err := ops.CheckIn(context.Background(), fx.checkpointOccurrenceID, fx.attendeeA, fx.staffID)
+	if err != nil {
+		t.Fatalf("re-check-in: %v", err)
+	}
+	if again.Status != models.ProgramParticipationStatusAttended {
+		t.Fatalf("re-check-in status = %s, want attended", again.Status)
+	}
+	assertLedgerRows(t, pool, fx.checkpointOccurrenceID, fx.regA, 1)
+
+	// The staff attendance surface now shows the checked-in attendee.
+	list, err := ops.Participants(context.Background(), fx.checkpointOccurrenceID, fx.staffID)
+	if err != nil {
+		t.Fatalf("participants: %v", err)
+	}
+	if len(list) != 1 || list[0].RegistrationID != fx.regA {
+		t.Fatalf("participants = %+v, want only attendee A", list)
+	}
+
+	// No stock delta: check-in never moves availability.
+	if len(notifier.stockPayloads()) != 0 {
+		t.Fatalf("stock payloads = %+v, want none", notifier.stockPayloads())
+	}
+}
+
+// TestCheckpointCheckIn_Gates pins the pass gate on the real ledger: only
+// event staff may check in, only ticket-holding attendees can pass, and
+// only checkpoint occurrences accept check-in.
+func TestCheckpointCheckIn_Gates(t *testing.T) {
+	r, ops, _, _ := newDB(t)
+	fx := seedCheckpoint(t, r)
+
+	// Non-staff actor → 403.
+	_, err := ops.CheckIn(context.Background(), fx.checkpointOccurrenceID, fx.attendeeA, fx.attendeeB)
+	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+		t.Fatalf("check-in as non-staff: want 403, got %v", err)
+	}
+
+	// Attendee without a ticket → 403 (cannot pass).
+	_, err = ops.CheckIn(context.Background(), fx.checkpointOccurrenceID, uuid.New(), fx.staffID)
+	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+		t.Fatalf("check-in without ticket: want 403, got %v", err)
+	}
+
+	// Activity occurrence → 400 (activities keep mark-attended).
+	actFx := seedActivity(t, r)
+	_, err = ops.CheckIn(context.Background(), actFx.occurrenceID, fx.attendeeA, actFx.staffID)
+	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+		t.Fatalf("check-in on activity: want 400, got %v", err)
 	}
 }
 
