@@ -163,6 +163,7 @@ import type {
   Certification,
   CertificationTemplate,
   CertificationTemplateProgram,
+  CheckInRequest,
   Checkout,
   CheckoutResult,
   CompleteEventPaymentsRequest,
@@ -6328,6 +6329,127 @@ export function useListOccurrenceParticipants<TData = Awaited<ReturnType<typeof 
 
 
 
+
+export type checkInOccurrenceResponse200 = {
+  data: ProgramParticipation
+  status: 200
+}
+
+export type checkInOccurrenceResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type checkInOccurrenceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type checkInOccurrenceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type checkInOccurrenceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type checkInOccurrenceResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type checkInOccurrenceResponseSuccess = (checkInOccurrenceResponse200) & {
+  headers: Headers;
+};
+export type checkInOccurrenceResponseError = (checkInOccurrenceResponse400 | checkInOccurrenceResponse401 | checkInOccurrenceResponse403 | checkInOccurrenceResponse404 | checkInOccurrenceResponse500) & {
+  headers: Headers;
+};
+
+export type checkInOccurrenceResponse = (checkInOccurrenceResponseSuccess | checkInOccurrenceResponseError)
+
+export const getCheckInOccurrenceUrl = (occurrenceId: Uuid,) => {
+
+
+
+
+  return `/occurrences/${occurrenceId}/check-in`
+}
+
+/**
+ * Staff-only checkpoint check-in. Checkpoints are pass-through —
+ * attendees never register for them — so an attendee is marked
+ * present by identity, gating only on "can they pass": a confirmed
+ * edition ticket plus the checkpoint's access rules (`staff_only`,
+ * `min_access_level`). The first scan upserts an attended
+ * participation anchored to the attendee's edition-ticket
+ * registration; re-scanning the same attendee is idempotent (the
+ * live participation is flipped to `attended`, never duplicated).
+ * Only checkpoint occurrences are accepted — activities keep the
+ * mark-attended flow (400 otherwise).
+ * @summary Check an attendee in at a checkpoint occurrence
+ */
+export const checkInOccurrence = async (occurrenceId: Uuid,
+    checkInRequest: CheckInRequest, options?: Parameters<typeof customInstance>[1]): Promise<checkInOccurrenceResponse> => {
+
+  return customInstance<checkInOccurrenceResponse>(getCheckInOccurrenceUrl(occurrenceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(checkInRequest)
+  }
+);}
+
+
+
+
+
+export const getCheckInOccurrenceMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInOccurrence>>, TError,{occurrenceId: Uuid;data: BodyType<CheckInRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkInOccurrence>>, TError,{occurrenceId: Uuid;data: BodyType<CheckInRequest>}, TContext> => {
+
+const mutationKey = ['checkInOccurrence'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkInOccurrence>>, {occurrenceId: Uuid;data: BodyType<CheckInRequest>}> = (props) => {
+          const {occurrenceId,data} = props ?? {};
+
+          return  checkInOccurrence(occurrenceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckInOccurrenceMutationResult = NonNullable<Awaited<ReturnType<typeof checkInOccurrence>>>
+    export type CheckInOccurrenceMutationBody = BodyType<CheckInRequest>
+    export type CheckInOccurrenceMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Check an attendee in at a checkpoint occurrence
+ */
+export const useCheckInOccurrence = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInOccurrence>>, TError,{occurrenceId: Uuid;data: BodyType<CheckInRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkInOccurrence>>,
+        TError,
+        {occurrenceId: Uuid;data: BodyType<CheckInRequest>},
+        TContext
+      > => {
+      return useMutation(getCheckInOccurrenceMutationOptions(options));
+    }
 
 export type markParticipationAttendedResponse200 = {
   data: ProgramParticipation

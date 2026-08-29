@@ -3,6 +3,7 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
+  checkInOccurrence,
   createProgram,
   createProgramOccurrence,
   deleteOccurrence,
@@ -108,6 +109,13 @@ export const listOccurrenceParticipantsFn = createClientOnlyFn(
 export const markParticipationAttendedFn = createClientOnlyFn(
   (participationId: string) =>
     markParticipationAttended(participationId).then(
+      orvalData<ProgramParticipation>,
+    ),
+);
+
+export const checkInOccurrenceFn = createClientOnlyFn(
+  (occurrenceId: string, attendeeId: string) =>
+    checkInOccurrence(occurrenceId, { attendee_id: attendeeId }).then(
       orvalData<ProgramParticipation>,
     ),
 );

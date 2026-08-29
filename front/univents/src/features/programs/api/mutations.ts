@@ -8,6 +8,7 @@ import type {
   ProgramCreateOutput,
 } from "../model";
 import {
+  checkInOccurrenceFn,
   createOccurrenceFn,
   createProgramFn,
   deleteOccurrenceFn,
@@ -51,6 +52,22 @@ export function useMarkParticipationAttendedMutation(occurrenceId: string) {
     },
     onError: (error) =>
       toast.error(getErrorMessage(error, "Não foi possível marcar presença")),
+  });
+}
+
+export function useCheckpointCheckInMutation(occurrenceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (attendeeId: string) =>
+      checkInOccurrenceFn(occurrenceId, attendeeId),
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: programKeys.participants(occurrenceId),
+      });
+      toast.success("Presença confirmada");
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível fazer check-in")),
   });
 }
 
