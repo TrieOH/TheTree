@@ -129,7 +129,6 @@ export function ProfileView({
         <div className="mx-auto mt-5 max-w-7xl px-4">
           <ProfileBadges
             badges={badges ? allProfileBadges(badges) : []}
-            profileUrl={profileUrl}
             profileIdentifier={publicIdentifier ?? ""}
             participantName={profile.preferredName || profile.legalName || ""}
             editionLocations={editionLocations}
@@ -241,13 +240,11 @@ export function ProfileView({
 
 function ProfileBadges({
   badges,
-  profileUrl,
   profileIdentifier,
   participantName,
   editionLocations,
 }: {
   badges: BadgeProfileBadge[];
-  profileUrl: string;
   profileIdentifier: string;
   participantName: string;
   editionLocations: Map<string, string>;
@@ -276,7 +273,6 @@ function ProfileBadges({
               <BadgePreview
                 badge={badge}
                 framed={false}
-                actionUrl={profileUrl}
                 participantName={participantName}
                 location={editionLocations.get(badge.edition_id) ?? ""}
                 className="relative h-auto max-w-full"

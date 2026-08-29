@@ -143,6 +143,7 @@ function OccurrencesRoute() {
       {attendanceOccurrence ? (
         <OccurrenceAttendanceDialog
           occurrenceId={attendanceOccurrence.id}
+          programKind={program?.kind ?? "activity"}
           open
           onOpenChange={(open) => !open && setAttendanceOccurrence(null)}
         />

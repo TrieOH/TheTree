@@ -15,7 +15,10 @@ import {
 import { Input } from "@/shared/ui/shadcn/input";
 import { useSidebar } from "@/widgets/sidebar/hooks/use-sidebar";
 import { occurrenceParticipantsQueryOptions } from "../api";
-import { useMarkParticipationAttendedMutation } from "../api/mutations";
+import {
+  useCheckpointCheckInMutation,
+  useMarkParticipationAttendedMutation,
+} from "../api/mutations";
 import { actorIdFromQr } from "../lib/actor-id-from-qr";
 
 type BarcodeDetectorLike = {
@@ -24,10 +27,12 @@ type BarcodeDetectorLike = {
 
 export function OccurrenceAttendanceDialog({
   occurrenceId,
+  programKind,
   open,
   onOpenChange,
 }: {
   occurrenceId: string;
+  programKind: "activity" | "checkpoint";
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -36,11 +41,17 @@ export function OccurrenceAttendanceDialog({
     occurrenceParticipantsQueryOptions(occurrenceId),
   );
   const mutation = useMarkParticipationAttendedMutation(occurrenceId);
+  const checkInMutation = useCheckpointCheckInMutation(occurrenceId);
   const [search, setSearch] = useState("");
   const [scanning, setScanning] = useState(false);
 
   const markByQr = (value: string) => {
     const actorId = actorIdFromQr(value);
+    if (programKind === "checkpoint") {
+      setScanning(false);
+      checkInMutation.mutate(actorId);
+      return;
+    }
     const participant = participants.find(
       (item) => item.attendee_user_id?.toLowerCase() === actorId.toLowerCase(),
     );
@@ -79,9 +90,15 @@ export function OccurrenceAttendanceDialog({
         )}
       >
         <DialogHeader className="min-w-0">
-          <DialogTitle>Presença na atividade</DialogTitle>
+          <DialogTitle>
+            {programKind === "checkpoint"
+              ? "Check-in no checkpoint"
+              : "Presença na atividade"}
+          </DialogTitle>
           <DialogDescription>
-            Leia o QR do crachá ou marque o participante pela lista.
+            {programKind === "checkpoint"
+              ? "Leia o QR do crachá para registrar a presença, sem inscrição prévia."
+              : "Leia o QR do crachá ou marque o participante pela lista."}
           </DialogDescription>
         </DialogHeader>
 
