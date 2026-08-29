@@ -15,6 +15,7 @@ import {
   FlaskConical,
   Percent,
   ReceiptText,
+  ShieldX,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -63,9 +64,9 @@ const statusDetails: Record<
   },
   rejected: {
     label: "Rejected",
-    icon: XCircle,
-    className: "bg-destructive/10 text-destructive",
-    dot: "bg-destructive",
+    icon: ShieldX,
+    className: "bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    dot: "bg-orange-500",
   },
   refunded: {
     label: "Refunded",
