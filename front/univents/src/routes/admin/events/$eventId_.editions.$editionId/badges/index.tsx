@@ -1,10 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import { BadgeCheck, FileText, Plus, Printer, QrCode } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarClock,
+  FileText,
+  Plus,
+  Printer,
+  QrCode,
+} from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  badgeEmissionsQueryOptions,
   badgePrintQueryOptions,
   badgeTemplatesQueryOptions,
 } from "@/features/badges/api";
@@ -119,10 +127,12 @@ function RouteComponent() {
     "templates",
   );
   const [printMode, setPrintMode] = useState<"badges" | "qrs">("badges");
+  const [printedAfter, setPrintedAfter] = useState("");
   const [printPending, setPrintPending] = useState(false);
   const [qrSizeMm, setQrSizeMm] = useState(48);
   const [printQrSizeMm, setPrintQrSizeMm] = useState(48);
   const [customQrSize, setCustomQrSize] = useState("48");
+  const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const printRootRef = useRef<HTMLDivElement>(null);
   const presetQrSizes = [30, 48, 60, 210];
@@ -133,6 +143,9 @@ function RouteComponent() {
     badgeTemplatesQueryOptions(editionId),
   );
   const printQuery = useQuery(badgePrintQueryOptions(editionId));
+  const { data: emissions = [] } = useQuery(
+    badgeEmissionsQueryOptions(editionId),
+  );
   const { data: editions = [] } = useQuery(
     allAdminEditionsQueryOptions(eventId),
   );
@@ -148,20 +161,34 @@ function RouteComponent() {
     tickets.map((ticket) => [ticket.id, ticket.name]),
   );
   const printItems = printQuery.data ?? [];
-  const printActorIds = [...new Set(printItems.map((item) => item.user_id))];
+  const printableItems = useMemo(() => {
+    if (!printedAfter) return printItems;
+    const timestamp = new Date(printedAfter).getTime();
+    const emissionIds = new Set(
+      emissions
+        .filter(
+          (emission) => new Date(emission.emitted_at).getTime() >= timestamp,
+        )
+        .map((emission) => emission.id),
+    );
+    return printItems.filter((item) => emissionIds.has(item.emission_id));
+  }, [emissions, printItems, printedAfter]);
+  const printActorIds = [
+    ...new Set(printableItems.map((item) => item.user_id)),
+  ];
   const { data: participantNames = {}, isPending: participantNamesPending } =
     useActorDisplayNames(printActorIds);
   const location =
     editions.find((edition) => edition.id === editionId)?.location_name ?? "";
   const filteredPrintItems = useMemo(() => {
     const search = emissionFilter.trim().toLowerCase();
-    if (!search) return printItems;
-    return printItems.filter((item) =>
+    if (!search) return printableItems;
+    return printableItems.filter((item) =>
       [item.event_name, item.edition_name, item.ticket_name, item.template_name]
         .filter(Boolean)
         .some((value) => value?.toLowerCase().includes(search)),
     );
-  }, [emissionFilter, printItems]);
+  }, [emissionFilter, printableItems]);
 
   async function printQrs() {
     const sizeMm = customQrSize ? Number(customQrSize) : qrSizeMm;
@@ -207,7 +234,7 @@ function RouteComponent() {
       >
         <div className="flex flex-wrap content-start gap-[4mm] p-[10mm] print:p-0">
           {printMode === "badges"
-            ? printItems.map((badge) => (
+            ? printableItems.map((badge) => (
                 <PrintableBadge
                   key={badge.emission_id}
                   badge={badge}
@@ -215,7 +242,7 @@ function RouteComponent() {
                   location={location}
                 />
               ))
-            : printItems.map((badge) => (
+            : printableItems.map((badge) => (
                 <PrintableQr
                   key={badge.emission_id}
                   badge={badge}
@@ -337,9 +364,67 @@ function RouteComponent() {
             itemLabel="crachás"
             headerActions={
               <div className="flex flex-wrap items-center gap-2">
+                <Dialog open={dateDialogOpen} onOpenChange={setDateDialogOpen}>
+                  <DialogTrigger
+                    render={
+                      <Button
+                        variant={printedAfter ? "default" : "outline"}
+                        className="h-9"
+                      >
+                        <CalendarClock className="size-4" />
+                        Filtrar data
+                      </Button>
+                    }
+                  />
+                  {dateDialogOpen && (
+                    <DialogContent className="w-[calc(100%-2rem)] sm:max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle>Filtrar crachás por data</DialogTitle>
+                        <DialogDescription>
+                          Exiba e imprima somente os crachás gerados a partir da
+                          data e hora escolhidas.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <label
+                        htmlFor="badges-printed-after"
+                        className="space-y-2 text-sm font-medium"
+                      >
+                        Gerados a partir de
+                        <Input
+                          id="badges-printed-after"
+                          type="datetime-local"
+                          value={printedAfter}
+                          onChange={(event) =>
+                            setPrintedAfter(event.target.value)
+                          }
+                          className="mt-2 h-10 w-full min-w-0 text-base sm:text-sm"
+                        />
+                      </label>
+                      <div className="flex gap-2">
+                        {printedAfter ? (
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setPrintedAfter("")}
+                          >
+                            Limpar
+                          </Button>
+                        ) : null}
+                        <Button
+                          className="flex-1"
+                          onClick={() => setDateDialogOpen(false)}
+                        >
+                          Aplicar
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  )}
+                </Dialog>
                 <Button
                   variant="default"
-                  disabled={printQuery.isFetching}
+                  disabled={
+                    printQuery.isFetching || printableItems.length === 0
+                  }
                   onClick={async () => {
                     const result = await printQuery.refetch();
                     if (result.data) {
@@ -360,7 +445,9 @@ function RouteComponent() {
                       <Button
                         variant="outline"
                         className="h-9"
-                        disabled={printQuery.isFetching}
+                        disabled={
+                          printQuery.isFetching || printableItems.length === 0
+                        }
                       >
                         <QrCode className="size-4" />
                         Imprimir QR codes
