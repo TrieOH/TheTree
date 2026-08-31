@@ -5,7 +5,7 @@ import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import { AlertTriangle, Award } from "lucide-react";
 import { useMemo, useState } from "react";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
-import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
+import { getActorEmailsServerFn } from "@/features/events/server";
 import { programsQueryOptions } from "@/features/programs/api";
 import {
   AlertDialog,
