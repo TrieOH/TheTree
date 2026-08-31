@@ -271,7 +271,7 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
       ref={ref}
       role="dialog"
       aria-label="Sort options"
-      className="absolute right-0 top-[calc(100%+6px)] z-50 w-52 rounded-md border border-border bg-card shadow-lg shadow-black/5 p-2"
+      className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-md border border-border bg-card p-2 shadow-lg shadow-black/5 sm:absolute! sm:right-0! sm:top-[calc(100%+6px)]! sm:left-auto! sm:w-52! sm:max-w-none! sm:translate-x-0! sm:translate-y-0!"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-2 pb-2 mb-1">
