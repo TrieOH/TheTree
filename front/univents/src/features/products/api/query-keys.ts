@@ -7,19 +7,18 @@ export const productKeys = {
   storeStock: (editionId: string) =>
     [...productKeys.lists(), "stock", editionId] as const,
   detail: (productId: string) => [...productKeys.all, productId] as const,
+  vendorCodes: (editionId: string) =>
+    [...productKeys.all, "vendor-code", editionId] as const,
   byVendorCode: (editionId: string, vendorCode: string) =>
-    [...productKeys.all, "vendor-code", editionId, vendorCode] as const,
+    [...productKeys.vendorCodes(editionId), vendorCode] as const,
 
   variants: {
     all: ["variants"] as const,
     byProduct: (productId: string) =>
       [...productKeys.variants.all, "product", productId] as const,
+    vendorCodes: (editionId: string) =>
+      [...productKeys.variants.all, "vendor-code", editionId] as const,
     byVendorCode: (editionId: string, vendorCode: string) =>
-      [
-        ...productKeys.variants.all,
-        "vendor-code",
-        editionId,
-        vendorCode,
-      ] as const,
+      [...productKeys.variants.vendorCodes(editionId), vendorCode] as const,
   },
 };

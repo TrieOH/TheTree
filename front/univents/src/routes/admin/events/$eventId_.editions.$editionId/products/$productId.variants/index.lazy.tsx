@@ -23,7 +23,7 @@ export const Route = createLazyFileRoute(
 });
 
 function RouteComponent() {
-  const { productId } = Route.useParams();
+  const { editionId, productId } = Route.useParams();
   const router = useRouter();
   const { data: variants = [] } = useQuery(
     productVariantsQueryOptions(productId),
@@ -188,6 +188,7 @@ function RouteComponent() {
           await deleteVariantMutation.mutateAsync({
             variantId: deletingVariant.id,
             productId,
+            editionId,
           });
           setDeletingVariant(null);
         }}
