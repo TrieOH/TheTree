@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createTanStackIdentityXBff } from "@trieoh/front-core/auth/tanstack/server";
 import { z } from "zod";
 import { env } from "@/env";
+import { preventResponseCaching } from "@/shared/lib/http-cache";
 
 const providerSchema = z.enum(["github", "google"]);
 
@@ -20,11 +21,17 @@ const bff = createTanStackIdentityXBff({
 
 export const loginServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ email: z.email(), password: z.string().min(1) }))
-  .handler(({ data }) => bff.login(data.email, data.password));
+  .handler(({ data }) => {
+    preventResponseCaching();
+    return bff.login(data.email, data.password);
+  });
 
 export const loginWithProviderServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ provider: providerSchema }))
-  .handler(({ data }) => bff.loginWithProvider(data.provider));
+  .handler(({ data }) => {
+    preventResponseCaching();
+    return bff.loginWithProvider(data.provider);
+  });
 
 export const completeProviderLoginServerFn = createServerFn({ method: "POST" })
   .validator(
@@ -34,20 +41,28 @@ export const completeProviderLoginServerFn = createServerFn({ method: "POST" })
       state: z.string().min(1),
     }),
   )
-  .handler(({ data }) =>
-    bff.completeProviderLogin(data.provider, data.code, data.state),
-  );
+  .handler(({ data }) => {
+    preventResponseCaching();
+    return bff.completeProviderLogin(data.provider, data.code, data.state);
+  });
 
-export const logoutServerFn = createServerFn({ method: "POST" }).handler(() =>
-  bff.logout(),
-);
+export const logoutServerFn = createServerFn({ method: "POST" }).handler(() => {
+  preventResponseCaching();
+  return bff.logout();
+});
 
-export const refreshServerFn = createServerFn({ method: "POST" }).handler(() =>
-  bff.refresh(),
+export const refreshServerFn = createServerFn({ method: "POST" }).handler(
+  () => {
+    preventResponseCaching();
+    return bff.refresh();
+  },
 );
 
 export const restoreSessionServerFn = createServerFn({ method: "GET" }).handler(
-  () => bff.restore(),
+  () => {
+    preventResponseCaching();
+    return bff.restore();
+  },
 );
 
 export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
@@ -63,4 +78,7 @@ export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
       headers: z.record(z.string(), z.string()).optional(),
     }),
   )
-  .handler(({ data }) => bff.request(data));
+  .handler(({ data }) => {
+    preventResponseCaching();
+    return bff.request(data);
+  });
