@@ -165,6 +165,7 @@ export function CertificationList({
                   {
                     certificationId: certToInvalidate.id,
                     reason: "Invalidado pelo administrador",
+                    verificationHash: certToInvalidate.verification_hash,
                   },
                   { onSuccess: () => setCertToInvalidate(null) },
                 );

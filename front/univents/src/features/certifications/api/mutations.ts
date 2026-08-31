@@ -3,6 +3,10 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/shared/lib/errors";
 import type { CertificationTemplateCreateI } from "../model";
 import {
+  removeCertificationTemplateCache,
+  syncCertificationTemplateCache,
+} from "./cache";
+import {
   createCertificationTemplateFn,
   deleteCertificationTemplateFn,
   invalidateCertificationFn,
@@ -12,12 +16,8 @@ import {
 } from "./index";
 import { certificationKeys } from "./query-keys";
 
-interface EditionInput {
-  eventId: string;
+interface CreateTemplateInput {
   editionId: string;
-}
-
-interface CreateTemplateInput extends EditionInput {
   data: CertificationTemplateCreateI;
 }
 
@@ -26,10 +26,8 @@ export function useCreateCertificationTemplateMutation() {
   return useMutation({
     mutationFn: ({ editionId, data }: CreateTemplateInput) =>
       createCertificationTemplateFn(editionId, data),
-    onSuccess: (_template, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: certificationKeys.templatesByEdition(variables.editionId),
-      });
+    onSuccess: (template) => {
+      syncCertificationTemplateCache(queryClient, template);
       toast.success("Template de certificado criado");
     },
     onError: (error) =>
@@ -49,11 +47,7 @@ export function useLinkCertificationTemplateMutation() {
     }) => linkCertificationTemplateFn(templateId, programId),
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: [
-          ...certificationKeys.templates(),
-          "links",
-          variables.templateId,
-        ],
+        queryKey: certificationKeys.templateLinks(variables.templateId),
       });
       toast.success("Template vinculado à atividade");
     },
@@ -74,17 +68,8 @@ export function useUpdateCertificationTemplateMutation() {
       templateId: string;
       data: CertificationTemplateCreateI;
     }) => updateCertificationTemplateFn(templateId, data),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: certificationKeys.templates(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: [
-          ...certificationKeys.templates(),
-          "detail",
-          variables.templateId,
-        ],
-      });
+    onSuccess: (template) => {
+      syncCertificationTemplateCache(queryClient, template);
       toast.success("Template atualizado");
     },
     onError: (error) =>
@@ -97,19 +82,10 @@ export function useUpdateCertificationTemplateMutation() {
 export function useDeleteCertificationTemplateMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ templateId }: { templateId: string }) =>
+    mutationFn: ({ templateId }: { editionId: string; templateId: string }) =>
       deleteCertificationTemplateFn(templateId),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: certificationKeys.templates(),
-      });
-      void queryClient.removeQueries({
-        queryKey: [
-          ...certificationKeys.templates(),
-          "detail",
-          variables.templateId,
-        ],
-      });
+    onSuccess: (_, { editionId, templateId }) => {
+      removeCertificationTemplateCache(queryClient, editionId, templateId);
       toast.success("Template excluído");
     },
     onError: (error) =>
@@ -128,11 +104,15 @@ export function useInvalidateCertificationMutation() {
     }: {
       certificationId: string;
       reason: string;
+      verificationHash: string;
     }) => invalidateCertificationFn({ certificationId, reason }),
-    onSuccess: () => {
+    onSuccess: (_, { verificationHash }) => {
       toast.success("Certificado invalidado");
       void queryClient.invalidateQueries({
         queryKey: certificationKeys.issued(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: certificationKeys.verification(verificationHash),
       });
     },
     onError: (error) =>
@@ -154,11 +134,7 @@ export function useUnlinkCertificationTemplateMutation() {
     }) => unlinkCertificationTemplateFn(templateId, programId),
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: [
-          ...certificationKeys.templates(),
-          "links",
-          variables.templateId,
-        ],
+        queryKey: certificationKeys.templateLinks(variables.templateId),
       });
       toast.success("Vínculos removidos");
     },

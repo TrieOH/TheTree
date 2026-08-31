@@ -100,7 +100,7 @@ export const getCertificationTemplateLinksFn = createClientOnlyFn(
 
 export const certificationTemplateLinksQueryOptions = (templateId: string) =>
   queryOptions({
-    queryKey: [...certificationKeys.templates(), "links", templateId],
+    queryKey: certificationKeys.templateLinks(templateId),
     queryFn: () => getCertificationTemplateLinksFn(templateId),
   });
 
