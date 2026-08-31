@@ -53,6 +53,8 @@ svg.ts-chart:focus-visible {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -78,6 +80,8 @@ svg.ts-chart:focus-visible {
   --border: oklch(0.8761 0 0);
   --input: oklch(0.8761 0 0);
   --ring: oklch(0.6816 0.167674 261.9443);
+  --selection: oklch(0.7975 0.1018 262.7 / 0.45);
+  --selection-foreground: oklch(0.1139 0.0789 264.05);
 }
 
 
@@ -101,6 +105,8 @@ svg.ts-chart:focus-visible {
   --border: oklch(0.35 0.02 260);
   --input: oklch(0.35 0.02 260);
   --ring: oklch(0.55 0.15 260);
+  --selection: oklch(0.6999 0.157 61.76 / 0.45);
+  --selection-foreground: oklch(0.95 0.005 260);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -124,6 +130,8 @@ svg.ts-chart:focus-visible {
   --border: oklch(0.35 0.02 260);
   --input: oklch(0.35 0.02 260);
   --ring: oklch(0.55 0.15 260);
+  --selection: oklch(0.6999 0.157 61.76 / 0.45);
+  --selection-foreground: oklch(0.95 0.005 260);
   }
 }
 
@@ -142,6 +150,11 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  color: var(--color-selection-foreground);
+  background-color: var(--color-selection);
 }
 
 @layer base {
