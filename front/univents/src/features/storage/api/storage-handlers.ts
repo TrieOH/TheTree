@@ -1,4 +1,5 @@
 import { AwsClient } from "aws4fetch";
+import { privateJsonResponse } from "@/shared/lib/http-cache";
 import type { StorageUploadRequest } from "../model";
 
 type StorageOptionalEnvKeys =
@@ -189,14 +190,14 @@ export async function handleStorageUpload(
     const maxSize = getMaxSize(env);
 
     if (!allowedTypes.includes(contentType)) {
-      return Response.json(
+      return privateJsonResponse(
         { error: buildAllowedTypesErrorMessage(allowedTypes) },
         { status: 400 },
       );
     }
 
     if (size > maxSize) {
-      return Response.json(
+      return privateJsonResponse(
         { error: "File exceeds 10MB limit" },
         { status: 400 },
       );
@@ -219,13 +220,13 @@ export async function handleStorageUpload(
 
     const publicUrl = `${getS3Url("", env).toString()}${filename}`;
 
-    return Response.json({
+    return privateJsonResponse({
       uploadUrl: signed.url,
       key: filename,
       publicUrl,
     });
   } catch (error) {
-    return Response.json(
+    return privateJsonResponse(
       { error: error instanceof Error ? error.message : "Upload failed" },
       { status: 500 },
     );
@@ -244,41 +245,41 @@ export async function handleStorageImagePreprocess(
     const maxSize = getMaxSize(env);
 
     if (!allowedTypes.includes(file.type)) {
-      return Response.json(
+      return privateJsonResponse(
         { error: buildAllowedTypesErrorMessage(allowedTypes) },
         { status: 400 },
       );
     }
 
     if (file.size > maxSize) {
-      return Response.json(
+      return privateJsonResponse(
         { error: "File exceeds 10MB limit" },
         { status: 400 },
       );
     }
 
     if (!allowedTypes.includes(moderationFile.type)) {
-      return Response.json(
+      return privateJsonResponse(
         { error: buildAllowedTypesErrorMessage(allowedTypes) },
         { status: 400 },
       );
     }
 
     if (moderationFile.size > maxSize) {
-      return Response.json(
+      return privateJsonResponse(
         { error: "File exceeds 10MB limit" },
         { status: 400 },
       );
     }
 
     const approved = await moderateFileBytes(moderationFile, env);
-    if (!approved) return Response.json({ approved: false });
+    if (!approved) return privateJsonResponse({ approved: false });
 
     const key = buildStorageKey(file.name, path, idempotencyKey);
     const publicUrl = await putFileToStorage(file, key, env);
-    return Response.json({ approved: true, publicUrl });
+    return privateJsonResponse({ approved: true, publicUrl });
   } catch (error) {
-    return Response.json(
+    return privateJsonResponse(
       {
         error: error instanceof Error ? error.message : "Preprocessing failed",
       },

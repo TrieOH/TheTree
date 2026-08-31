@@ -10,6 +10,7 @@ import {
   CACHE_PRIVATE_NO_STORE,
   CACHE_PUBLIC_STATIC,
   preventResponseCaching,
+  privateJsonResponse,
 } from "./http-cache";
 
 describe("HTTP cache policies", () => {
@@ -28,5 +29,17 @@ describe("HTTP cache policies", () => {
     expect(CACHE_PUBLIC_STATIC).toContain("max-age=300");
     expect(CACHE_PUBLIC_STATIC).toContain("stale-while-revalidate=");
     expect(CACHE_PUBLIC_STATIC).not.toContain("s-maxage");
+  });
+
+  it("creates private JSON responses without discarding other headers", async () => {
+    const response = privateJsonResponse(
+      { uploadUrl: "signed" },
+      { status: 201, headers: { "X-Test": "kept" } },
+    );
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get("Cache-Control")).toBe(CACHE_PRIVATE_NO_STORE);
+    expect(response.headers.get("X-Test")).toBe("kept");
+    await expect(response.json()).resolves.toEqual({ uploadUrl: "signed" });
   });
 });

@@ -160,6 +160,7 @@ export const uploadFile = async (file: File, path?: string): Promise<string> =>
 
     const uploadRes = await fetch("/storage/upload", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(uploadPayload),
     });
 
