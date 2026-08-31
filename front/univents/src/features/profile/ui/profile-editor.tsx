@@ -196,7 +196,7 @@ export function ProfileEditor({
                 schema,
                 withProfileTimestamps(original, nextValues),
               ),
-              handle.trim() || undefined,
+              submittedHandle || undefined,
             );
             if (!response.success)
               throw new Error(

@@ -6,7 +6,7 @@ import { Save, UserPen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
-import { profileKeys } from "@/features/profile/api/query-keys";
+import { invalidateProfileCaches } from "@/features/profile/api/cache";
 import {
   isInitialProfileComplete,
   withProfileTimestamps,
@@ -77,10 +77,7 @@ function InitialProfileSetup() {
           response.message || "Não foi possível salvar o perfil.",
         );
       }
-      await queryClient.invalidateQueries({
-        queryKey: profileKeys.all,
-        refetchType: "all",
-      });
+      await invalidateProfileCaches(queryClient);
       toast.success("Perfil criado");
       if (returnTo && !personalizeMore) {
         window.location.assign(returnTo);

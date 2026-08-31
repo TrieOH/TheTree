@@ -5,7 +5,7 @@ import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";
-import { profileKeys } from "@/features/profile/api/query-keys";
+import { syncActorProfileCache } from "@/features/profile/api/cache";
 import type { ProfileSchemaNode } from "@/features/profile/model/profile-data";
 import { ProfileEditor } from "@/features/profile/ui/profile-editor";
 
@@ -51,31 +51,27 @@ function EditProfilePage() {
     };
   }, [actorId, auth]);
   const save = useCallback(
-    (profile: ProfileData, handle?: string) => {
+    async (profile: ProfileData, handle?: string) => {
       const { pfpUrl, ...profileData } = profile;
-      return actorId
-        ? auth.upsertActorProfile(actorId, {
-            handle,
-            pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
-            profile: profileData,
-          })
-        : Promise.resolve({
-            success: false as const,
-            message: "Usuário não autenticado",
-          });
+      if (!actorId) {
+        return {
+          success: false as const,
+          message: "Usuário não autenticado",
+        };
+      }
+      const response = await auth.upsertActorProfile(actorId, {
+        handle,
+        pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
+        profile: profileData,
+      });
+      if (response.success) {
+        syncActorProfileCache(queryClient, actorId, profile, handle);
+      }
+      return response;
     },
-    [actorId, auth],
+    [actorId, auth, queryClient],
   );
   return (
-    <ProfileEditor
-      load={load}
-      save={save}
-      onCancel={finish}
-      onSaved={() => {
-        void queryClient
-          .invalidateQueries({ queryKey: profileKeys.all, refetchType: "all" })
-          .then(finish);
-      }}
-    />
+    <ProfileEditor load={load} save={save} onCancel={finish} onSaved={finish} />
   );
 }

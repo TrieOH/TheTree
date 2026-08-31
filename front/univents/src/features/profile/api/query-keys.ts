@@ -1,8 +1,11 @@
 export const profileKeys = {
   all: ["profiles"] as const,
-  detail: (actorId: string) => [...profileKeys.all, "detail", actorId] as const,
+  details: () => [...profileKeys.all, "detail"] as const,
+  detail: (actorId: string) => [...profileKeys.details(), actorId] as const,
+  certificateNames: () => [...profileKeys.all, "certificate-name"] as const,
   certificateName: (actorId: string) =>
-    [...profileKeys.all, "certificate-name", actorId] as const,
+    [...profileKeys.certificateNames(), actorId] as const,
+  displayNameLists: () => [...profileKeys.all, "display-names"] as const,
   displayNames: (actorIds: string[]) =>
-    [...profileKeys.all, "display-names", actorIds] as const,
+    [...profileKeys.displayNameLists(), actorIds] as const,
 };
