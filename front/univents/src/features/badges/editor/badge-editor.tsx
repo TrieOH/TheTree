@@ -244,7 +244,7 @@ export function BadgeEditor({
           params: { eventId, editionId },
         });
       if (templateId && !duplicate)
-        updateMutation.mutate({ templateId, data, editionId }, { onSuccess });
+        updateMutation.mutate({ templateId, data }, { onSuccess });
       else createMutation.mutate({ editionId, data }, { onSuccess });
     } catch {
       toast.error("Não foi possível enviar as imagens do crachá");

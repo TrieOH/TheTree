@@ -346,7 +346,9 @@ function RouteComponent() {
                       search: { templateId: template.id, duplicate: true },
                     })
                   }
-                  onDelete={() => remove.mutate({ templateId: template.id })}
+                  onDelete={() =>
+                    remove.mutate({ editionId, templateId: template.id })
+                  }
                 />
               ))
             }
@@ -550,72 +552,6 @@ function RouteComponent() {
                   participantName={participantNames[badge.user_id]}
                   location={location}
                   onView={() => undefined}
-                />
-              ))
-            }
-          />
-        )}
-        {false && (
-          <PaginatedContainer<BadgeTemplate>
-            items={filtered}
-            layout="grid"
-            minItemWidth="16rem"
-            pageSize={8}
-            gap="6"
-            filterValue={filter}
-            onFilterChange={setFilter}
-            filterPlaceholder="Buscar templates..."
-            itemLabel="templates"
-            headerActions={
-              <Link
-                to="/admin/events/$eventId/editions/$editionId/badges/editor"
-                params={{ eventId, editionId }}
-                search={{ templateId: "", duplicate: false }}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground",
-                )}
-              >
-                <Plus className="size-4" />
-                Novo template
-              </Link>
-            }
-            emptyState={
-              <EmptyState
-                icon={BadgeCheck}
-                eyebrow="Crachás"
-                title="Nenhum template encontrado"
-                description="Crie um template totalmente personalizado ou parta do padrão do sistema."
-                className="border-0 bg-transparent"
-              />
-            }
-            renderItems={(slice) =>
-              slice.map((template, i) => (
-                <AdminBadgeCard
-                  key={template.id}
-                  item={template}
-                  kind="template"
-                  index={i}
-                  ticketName={
-                    template.ticket_type_id
-                      ? (ticketNames.get(template.ticket_type_id) ??
-                        "Ingresso associado")
-                      : "Padrão da edição"
-                  }
-                  onView={() =>
-                    void navigate({
-                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
-                      params: { eventId, editionId },
-                      search: { templateId: template.id, duplicate: false },
-                    })
-                  }
-                  onEdit={() =>
-                    void navigate({
-                      to: "/admin/events/$eventId/editions/$editionId/badges/editor",
-                      params: { eventId, editionId },
-                      search: { templateId: template.id, duplicate: false },
-                    })
-                  }
-                  onDelete={() => remove.mutate({ templateId: template.id })}
                 />
               ))
             }
