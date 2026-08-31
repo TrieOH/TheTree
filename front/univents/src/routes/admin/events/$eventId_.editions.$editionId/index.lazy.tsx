@@ -3,7 +3,6 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import {
   ChartCard,
-  type ChartDatum,
   DashboardBarList,
   DashboardStatCard,
 } from "@trieoh/ui-base";
@@ -39,7 +38,7 @@ import {
   programsQueryOptions,
 } from "@/features/programs/api";
 import { editionPurchasesQueryOptions } from "@/features/purchases/api";
-import { useRefundPurchaseMutation } from "@/features/purchases/api/mutations";
+import { buildPurchaseMetrics } from "@/features/purchases/model/purchase-metrics";
 import {
   allTicketsQueryOptions,
   attendeeCountQueryOptions,
@@ -85,7 +84,6 @@ function AdminEditionDetailRoute() {
   });
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const [editEditionOpen, setEditEditionOpen] = useState(false);
-  const [refundPurchaseId, setRefundPurchaseId] = useState<string | null>(null);
 
   const edition = useMemo(
     () => editions.find((item) => item.id === editionId) ?? null,
@@ -97,7 +95,6 @@ function AdminEditionDetailRoute() {
 
   const publishEditionMutation = usePublishEditionMutation();
   const patchEditionMutation = usePatchEditionMutation();
-  const refundMutation = useRefundPurchaseMutation();
 
   const copyLink = () => {
     if (!edition || !eventSlug) return;
@@ -110,19 +107,6 @@ function AdminEditionDetailRoute() {
   const handlePublishEdition = () => {
     if (!edition) return;
     publishEditionMutation.mutate({ eventId, editionId });
-  };
-
-  const handleRefund = async () => {
-    if (!refundPurchaseId) return;
-    try {
-      await refundMutation.mutateAsync({
-        purchaseId: refundPurchaseId,
-        editionId,
-      });
-      setRefundPurchaseId(null);
-    } catch {
-      // Error feedback is centralized in the mutation.
-    }
   };
 
   useHotkeys(
@@ -296,41 +280,8 @@ function AdminEditionDetailRoute() {
     if (label.includes("link")) return Copy;
     return ExternalLink;
   };
-  const refundedPurchases = purchases.filter(
-    (purchase) => purchase.status === "refunded",
-  ).length;
-  const revenue = purchases
-    .filter((purchase) => purchase.status === "approved")
-    .reduce((total, purchase) => total + purchase.total_cents, 0);
-  const revenueByDay = new Map<
-    number,
-    { revenueCents: number; purchases: number }
-  >();
-  for (const purchase of purchases) {
-    if (purchase.status !== "approved" || !purchase.created_at) continue;
-    const date = new Date(purchase.created_at);
-    if (Number.isNaN(date.getTime())) continue;
-    date.setHours(0, 0, 0, 0);
-    const day = revenueByDay.get(date.getTime()) ?? {
-      revenueCents: 0,
-      purchases: 0,
-    };
-    day.revenueCents += purchase.total_cents;
-    day.purchases += 1;
-    revenueByDay.set(date.getTime(), day);
-  }
-  let accumulatedRevenue = 0;
-  const profitData: ChartDatum[] = [...revenueByDay.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([timestamp, day]) => {
-      accumulatedRevenue += day.revenueCents;
-      return {
-        date: new Date(timestamp),
-        value: accumulatedRevenue / 100,
-        series: "revenue",
-        purchases: day.purchases,
-      };
-    });
+  const { revenue, refundedPurchaseCount, statusCounts, profitData } =
+    buildPurchaseMetrics(purchases, "revenue");
   const purchaseStatusBars = [
     ["Aprovadas", "approved", "bg-emerald-500"],
     ["Pendentes", "pending", "bg-amber-500"],
@@ -340,7 +291,7 @@ function AdminEditionDetailRoute() {
   ].map(([label, status, color]) => ({
     id: status,
     label,
-    value: purchases.filter((purchase) => purchase.status === status).length,
+    value: statusCounts[status] ?? 0,
     color,
   }));
 
@@ -440,7 +391,7 @@ function AdminEditionDetailRoute() {
           },
           {
             label: "Reembolsadas",
-            value: refundedPurchases,
+            value: refundedPurchaseCount,
             hint: "Compras reembolsadas",
             Icon: CircleAlert,
           },
@@ -570,18 +521,6 @@ function AdminEditionDetailRoute() {
             data: values,
           })
         }
-      />
-      <AlertModal
-        open={refundPurchaseId !== null}
-        onOpenChange={(open) => {
-          if (!open && !refundMutation.isPending) setRefundPurchaseId(null);
-        }}
-        title="Solicitar reembolso?"
-        description="O pagamento será encaminhado para reembolso. A compra ficará como reembolsada após a confirmação do webhook."
-        confirmLabel="Solicitar reembolso"
-        variant="destructive"
-        loading={refundMutation.isPending}
-        onConfirm={handleRefund}
       />
     </div>
   );
