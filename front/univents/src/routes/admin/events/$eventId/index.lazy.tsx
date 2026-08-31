@@ -3,7 +3,6 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import {
   ChartCard,
-  type ChartDatum,
   DashboardBarList,
   DashboardStatCard,
 } from "@trieoh/ui-base";
@@ -39,6 +38,7 @@ import {
   usePatchEventMutation,
   usePublishEventMutation,
 } from "@/features/events/api/mutations";
+import { buildEventOverviewMetrics } from "@/features/events/model/event-overview";
 import { EventVisualCard } from "@/features/events/ui/EventVisualCard";
 import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import {
@@ -171,81 +171,27 @@ function EventOverviewRoute() {
         })
         .replace(".", "")
     : "";
-  const purchases = purchaseQueries.flatMap((query) => query.data ?? []);
-  const approvedPurchases = purchases.filter(
-    (purchase) => purchase.status === "approved",
-  );
-  const refundedPurchases = purchases.filter(
-    (purchase) => purchase.status === "refunded",
-  );
-  const participantCount = attendeeCountQueries.reduce(
-    (total, query) => total + (query.data?.count ?? 0),
-    0,
-  );
-  const revenue = approvedPurchases.reduce(
-    (total, purchase) => total + purchase.total_cents,
-    0,
-  );
-  const revenueByDay = new Map<
-    number,
-    { revenueCents: number; purchases: number }
-  >();
-  for (const purchase of approvedPurchases) {
-    if (!purchase.created_at) continue;
-    const date = new Date(purchase.created_at);
-    if (Number.isNaN(date.getTime())) continue;
-    date.setHours(0, 0, 0, 0);
-    const day = revenueByDay.get(date.getTime()) ?? {
-      revenueCents: 0,
-      purchases: 0,
-    };
-    day.revenueCents += purchase.total_cents;
-    day.purchases += 1;
-    revenueByDay.set(date.getTime(), day);
-  }
-  let accumulatedRevenue = 0;
-  const profitData: ChartDatum[] = [...revenueByDay.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([timestamp, day]) => {
-      accumulatedRevenue += day.revenueCents;
-      return {
-        date: new Date(timestamp),
-        value: accumulatedRevenue / 100,
-        series: "Lucro",
-        purchases: day.purchases,
-      };
-    });
-  const ticketCount = ticketQueries.reduce(
-    (total, query) => total + (query.data?.length ?? 0),
-    0,
-  );
-  const productCount = productQueries.reduce(
-    (total, query) => total + (query.data?.length ?? 0),
-    0,
-  );
-  const programCount = programQueries.reduce(
-    (total, query) => total + (query.data?.length ?? 0),
-    0,
-  );
-  const occurrenceCount = occurrenceQueries.reduce(
-    (total, query) => total + (query.data?.length ?? 0),
-    0,
-  );
-  const editionSales = editions.map((edition, index) => {
-    const editionPurchases = purchaseQueries[index]?.data ?? [];
-    const approvedRevenue = editionPurchases
-      .filter((purchase) => purchase.status === "approved")
-      .reduce((total, purchase) => total + purchase.total_cents, 0);
-    return {
-      name: edition.name,
-      purchases: editionPurchases.length,
-      revenue: approvedRevenue,
-    };
+  const {
+    purchases,
+    revenue,
+    refundedPurchaseCount,
+    participantCount,
+    ticketCount,
+    productCount,
+    programCount,
+    occurrenceCount,
+    profitData,
+    editionSales,
+    maxEditionRevenue,
+  } = buildEventOverviewMetrics({
+    editions,
+    purchasesByEdition: purchaseQueries.map((query) => query.data ?? []),
+    attendeeCounts: attendeeCountQueries.map((query) => query.data?.count ?? 0),
+    ticketCounts: ticketQueries.map((query) => query.data?.length ?? 0),
+    productCounts: productQueries.map((query) => query.data?.length ?? 0),
+    programCounts: programQueries.map((query) => query.data?.length ?? 0),
+    occurrenceCounts: occurrenceQueries.map((query) => query.data?.length ?? 0),
   });
-  const maxEditionRevenue = Math.max(
-    ...editionSales.map((edition) => edition.revenue),
-    1,
-  );
   const purchaseStatuses = [
     { label: "Aprovadas", status: "approved", color: "bg-emerald-500" },
     { label: "Pendentes", status: "pending", color: "bg-amber-500" },
@@ -293,7 +239,7 @@ function EventOverviewRoute() {
     },
     {
       label: "Reembolsadas",
-      value: refundedPurchases.length,
+      value: refundedPurchaseCount,
       hint: "Compras reembolsadas",
       icon: CircleAlert,
     },
