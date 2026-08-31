@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useActorDisplayNames } from "@/features/profile/api/actor-display-names";
 import { Button } from "@/shared/ui/shadcn/button";
 import { occurrenceParticipantsQueryOptions } from "../api";
 import { drawSequence, drawTimeline, randomItem } from "../lib/draw-sequence";
@@ -29,6 +30,15 @@ export function OccurrenceDrawPage({
   const { data: participants = [], isPending } = useQuery(
     occurrenceParticipantsQueryOptions(occurrenceId),
   );
+  const actorIds = useMemo(
+    () =>
+      participants.flatMap((participant) =>
+        participant.attendee_user_id ? [participant.attendee_user_id] : [],
+      ),
+    [participants],
+  );
+  const { data: displayNames = {}, isFetching: isLoadingNames } =
+    useActorDisplayNames(actorIds);
   const [audience, setAudience] = useState<Audience>("attended");
   const [winner, setWinner] = useState<ProgramParticipant>();
   const [displayed, setDisplayed] = useState<ProgramParticipant>();
@@ -50,6 +60,13 @@ export function OccurrenceDrawPage({
   const clearTimers = () => {
     timers.current.forEach(window.clearTimeout);
     timers.current = [];
+  };
+  const participantName = (participant: ProgramParticipant) => {
+    const actorId = participant.attendee_user_id;
+    const profileName = actorId ? displayNames[actorId] : undefined;
+    return profileName && profileName !== actorId
+      ? profileName
+      : participant.attendee_email;
   };
 
   useEffect(() => clearTimers, []);
@@ -219,7 +236,7 @@ export function OccurrenceDrawPage({
               ) : null}
             </div>
           ) : null}
-          {isPending ? (
+          {isPending || isLoadingNames ? (
             <LoaderCircle className="size-10 animate-spin opacity-70" />
           ) : eligible.length === 0 ? (
             <>
@@ -270,7 +287,7 @@ export function OccurrenceDrawPage({
                   Vencedor
                 </p>
                 <p className="mt-4 max-w-[90vw] wrap-break-word text-4xl font-bold sm:text-7xl">
-                  {winner.attendee_name}
+                  {participantName(winner)}
                 </p>
                 <p className="mt-3 break-all text-sm opacity-65 sm:text-base">
                   {winner.attendee_email}
@@ -290,7 +307,7 @@ export function OccurrenceDrawPage({
                     className="absolute inset-0 flex items-center justify-center overflow-hidden wrap-break-word px-3 text-3xl leading-tight font-semibold sm:text-6xl"
                   >
                     <span className="line-clamp-2">
-                      {displayed.attendee_name}
+                      {participantName(displayed)}
                     </span>
                   </motion.p>
                 </AnimatePresence>
@@ -328,7 +345,7 @@ export function OccurrenceDrawPage({
                 type="button"
                 size="lg"
                 className="min-w-52 gap-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-[#d7ff43] dark:text-[#111407] dark:hover:bg-[#e3ff77]"
-                disabled={isPending || eligible.length === 0}
+                disabled={isPending || isLoadingNames || eligible.length === 0}
                 onClick={draw}
               >
                 <Gift className="size-4" />

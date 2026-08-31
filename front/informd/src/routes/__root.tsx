@@ -62,12 +62,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-body antialiased wrap-anywhere">
-        <PostHogProvider>
-          <TanStackQueryProvider>
-            <AuthProvider
-              adapter={identityXAuthAdapter}
-              baseURL={env.VITE_AUTH_API_URL}
-            >
+        <TanStackQueryProvider>
+          <AuthProvider
+            adapter={identityXAuthAdapter}
+            baseURL={env.VITE_AUTH_API_URL}
+          >
+            <PostHogProvider>
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools
@@ -83,9 +83,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   ]}
                 />
               </AuthContextUpdater>
-            </AuthProvider>
-          </TanStackQueryProvider>
-        </PostHogProvider>
+            </PostHogProvider>
+          </AuthProvider>
+        </TanStackQueryProvider>
         <Toaster />
         <Scripts />
       </body>

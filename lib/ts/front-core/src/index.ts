@@ -1,5 +1,8 @@
 // Providers
-export { PostHogProvider } from "./providers/posthog"
+export {
+  AuthenticatedPostHogProvider,
+  PostHogProvider,
+} from "./providers/posthog"
 export type { PostHogConfig } from "./providers/posthog"
 export {
   TanStackQueryProvider,

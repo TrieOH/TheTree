@@ -1,3 +1,4 @@
+import { useAuth } from "@trieoh/identityx-sdk-ts/react"
 import posthog from "posthog-js"
 import { PostHogProvider as BasePostHogProvider } from "posthog-js/react"
 import { useEffect, type ReactNode } from "react"
@@ -42,4 +43,27 @@ export function PostHogProvider({
   }, [config.capturePageview, config.host, config.key, config.personProfiles])
 
   return <BasePostHogProvider client={posthog}>{children}</BasePostHogProvider>
+}
+
+export function AuthenticatedPostHogProvider({
+  config,
+  children,
+}: {
+  config: PostHogConfig
+  children: ReactNode
+}) {
+  const { auth, isAuthenticated } = useAuth()
+  const userId = isAuthenticated ? auth.profile()?.id : undefined
+
+  useEffect(() => {
+    if (!posthog.__loaded) return
+
+    if (userId) {
+      posthog.identify(userId)
+    } else if (posthog.get_property("$user_id")) {
+      posthog.reset()
+    }
+  }, [userId])
+
+  return <PostHogProvider config={config}>{children}</PostHogProvider>
 }

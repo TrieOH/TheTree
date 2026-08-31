@@ -4,6 +4,7 @@ import { queryError } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { ArrowLeft } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
+import { badgeDesignSchema } from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
@@ -93,6 +94,12 @@ function ProfileBadgePage() {
     );
   }
 
+  const design = badgeDesignSchema.safeParse(badge.design_data);
+  const canvas = design.success
+    ? design.data.canvas
+    : { width: 321, height: 204 };
+  const aspectRatio = canvas.width / canvas.height;
+
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background">
       <Link
@@ -108,9 +115,12 @@ function ProfileBadgePage() {
       <div className="flex h-dvh w-dvw max-h-full max-w-full items-center justify-center">
         <BadgePreview
           badge={badge}
-          className="relative h-full w-full max-h-full max-w-full"
-          contain
+          className="relative"
           framed={false}
+          style={{
+            width: `min(100dvw, calc(100dvh * ${aspectRatio}))`,
+            height: `min(100dvh, calc(100dvw / ${aspectRatio}))`,
+          }}
           participantName={
             profileData.preferredName || profileData.legalName || ""
           }
