@@ -20,7 +20,7 @@ export const Route = createFileRoute(
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams();
   const { data: signatures = [] } = useQuery(
-    allSignaturesQueryOptions(eventId, editionId),
+    allSignaturesQueryOptions(editionId),
   );
   const removeSignatureMutation = useRemoveSignatureMutation();
   const [filter, setFilter] = useState("");
@@ -148,7 +148,6 @@ function RouteComponent() {
         onConfirm={async () => {
           if (!removingSignature) return;
           await removeSignatureMutation.mutateAsync({
-            eventId,
             editionId,
             signatureId: removingSignature.id,
           });

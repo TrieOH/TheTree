@@ -48,9 +48,9 @@ export const getAllSignaturesFn = createClientOnlyFn(
   },
 );
 
-export const allSignaturesQueryOptions = (eventId: string, editionId: string) =>
+export const allSignaturesQueryOptions = (editionId: string) =>
   queryOptions({
-    queryKey: signatureKeys.byEdition(eventId, editionId),
+    queryKey: signatureKeys.byEdition(editionId),
     queryFn: () => getAllSignaturesFn(editionId),
   });
 
@@ -58,13 +58,9 @@ export const getSignatureFn = createClientOnlyFn((sigId: string) => {
   return getSignature(sigId, { public: true }).then(orvalData<SignatureI>);
 });
 
-export const signatureQueryOptions = (
-  eventId: string,
-  editionId: string,
-  sigId: string,
-) =>
+export const signatureQueryOptions = (sigId: string) =>
   queryOptions({
-    queryKey: signatureKeys.byId(eventId, editionId, sigId),
+    queryKey: signatureKeys.byId(sigId),
     queryFn: () => getSignatureFn(sigId),
   });
 
@@ -83,7 +79,7 @@ export const getAllSignatureRequestsFn = createClientOnlyFn(
 
 export const allSignatureRequestsQueryOptions = (editionId: string) =>
   queryOptions({
-    queryKey: [...signatureKeys.all, "requests", editionId],
+    queryKey: signatureKeys.requestsByEdition(editionId),
     queryFn: () => getAllSignatureRequestsFn(editionId),
   });
 
@@ -104,7 +100,7 @@ export const getSignatureRequestFn = createClientOnlyFn((requestId: string) =>
 
 export const signatureRequestQueryOptions = (requestId: string) =>
   queryOptions({
-    queryKey: [...signatureKeys.all, "request", requestId],
+    queryKey: signatureKeys.requestById(requestId),
     queryFn: () => getSignatureRequestFn(requestId),
   });
 

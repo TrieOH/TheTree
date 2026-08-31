@@ -1,70 +1,31 @@
-import {
-  type QueryClient,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type {
-  SignatureCreateOutputI,
-  SignatureI,
-} from "@/features/signatures/model";
+import type { SignatureCreateOutputI } from "@/features/signatures/model";
 import { getErrorMessage } from "@/shared/lib/errors";
-import { createSignatureFn, removeSignatureFn } from "./index";
-import { signatureKeys } from "./query-keys";
+import type { SignatureRequestCreateOutputI } from "../model";
+import { findActorIdByEmailServerFn } from "./actor-lookup";
+import {
+  invalidateSignatureRequestCache,
+  removeSignatureCache,
+  syncSignatureCache,
+  syncSignatureRequestCache,
+} from "./cache";
+import {
+  cancelSignatureRequestFn,
+  createSignatureFn,
+  createSignatureRequestFn,
+  removeSignatureFn,
+} from "./index";
 
 type CreateSignatureInput = {
-  eventId: string;
   editionId: string;
   data: SignatureCreateOutputI;
 };
 
 type RemoveSignatureInput = {
-  eventId: string;
   editionId: string;
   signatureId: string;
 };
-
-function upsertById(
-  signatures: SignatureI[] | undefined,
-  signature: SignatureI,
-) {
-  const list = signatures ?? [];
-  const index = list.findIndex((item) => item.id === signature.id);
-
-  if (index === -1) return [...list, signature];
-
-  const next = [...list];
-  next[index] = signature;
-  return next;
-}
-
-function removeById(signatures: SignatureI[] | undefined, signatureId: string) {
-  return (signatures ?? []).filter((signature) => signature.id !== signatureId);
-}
-
-function syncSignatureCaches(
-  queryClient: QueryClient,
-  eventId: string,
-  editionId: string,
-  signature: SignatureI,
-) {
-  queryClient.setQueryData<SignatureI[]>(
-    signatureKeys.byEdition(eventId, editionId),
-    (old) => upsertById(old, signature),
-  );
-}
-
-function syncSignatureRemoval(
-  queryClient: QueryClient,
-  eventId: string,
-  editionId: string,
-  signatureId: string,
-) {
-  queryClient.setQueryData<SignatureI[]>(
-    signatureKeys.byEdition(eventId, editionId),
-    (old) => removeById(old, signatureId),
-  );
-}
 
 export function useCreateSignatureMutation() {
   const queryClient = useQueryClient();
@@ -72,13 +33,8 @@ export function useCreateSignatureMutation() {
   return useMutation({
     mutationFn: ({ editionId, data }: CreateSignatureInput) =>
       createSignatureFn(editionId, data),
-    onSuccess: (signature, variables) => {
-      syncSignatureCaches(
-        queryClient,
-        variables.eventId,
-        variables.editionId,
-        signature,
-      );
+    onSuccess: (signature) => {
+      syncSignatureCache(queryClient, signature);
       toast.success("Assinatura criada com sucesso");
     },
     onError: (error) =>
@@ -94,18 +50,57 @@ export function useRemoveSignatureMutation() {
   return useMutation({
     mutationFn: ({ signatureId }: RemoveSignatureInput) =>
       removeSignatureFn(signatureId),
-    onSuccess: (_res, variables) => {
-      syncSignatureRemoval(
-        queryClient,
-        variables.eventId,
-        variables.editionId,
-        variables.signatureId,
-      );
+    onSuccess: (_, { editionId, signatureId }) => {
+      removeSignatureCache(queryClient, editionId, signatureId);
       toast.success("Assinatura removida");
     },
     onError: (error) =>
       toast.error(
         getErrorMessage(error, "Não foi possível remover a assinatura"),
+      ),
+  });
+}
+
+export function useCreateSignatureRequestMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      editionId,
+      data,
+    }: {
+      editionId: string;
+      data: SignatureRequestCreateOutputI;
+    }) =>
+      createSignatureRequestFn(editionId, {
+        ...data,
+        signatory_title: data.signatory_title || undefined,
+        signatory_user_id: await findActorIdByEmailServerFn({
+          data: { email: data.signatory_email },
+        }),
+      }),
+    onSuccess: (request) => {
+      syncSignatureRequestCache(queryClient, request);
+      toast.success("Convite enviado");
+    },
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível enviar o convite")),
+  });
+}
+
+export function useCancelSignatureRequestMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ requestId }: { editionId: string; requestId: string }) =>
+      cancelSignatureRequestFn(requestId),
+    onSuccess: (_, { editionId, requestId }) => {
+      invalidateSignatureRequestCache(queryClient, editionId, requestId);
+      toast.success("Convite cancelado");
+    },
+    onError: (error) =>
+      toast.error(
+        getErrorMessage(error, "Não foi possível cancelar o convite"),
       ),
   });
 }

@@ -2,9 +2,15 @@ export const signatureKeys = {
   all: ["signatures"] as const,
 
   lists: () => [...signatureKeys.all, "list"] as const,
-  byEdition: (eventId: string, editionId: string) =>
-    [...signatureKeys.lists(), eventId, editionId] as const,
+  byEdition: (editionId: string) =>
+    [...signatureKeys.lists(), editionId] as const,
 
-  byId: (eventId: string, editionId: string, signatureId: string) =>
-    [...signatureKeys.all, eventId, editionId, signatureId] as const,
+  byId: (signatureId: string) =>
+    [...signatureKeys.all, "detail", signatureId] as const,
+
+  requests: () => [...signatureKeys.all, "requests"] as const,
+  requestsByEdition: (editionId: string) =>
+    [...signatureKeys.requests(), "list", editionId] as const,
+  requestById: (requestId: string) =>
+    [...signatureKeys.requests(), "detail", requestId] as const,
 };

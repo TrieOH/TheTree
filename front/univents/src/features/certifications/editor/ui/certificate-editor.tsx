@@ -32,7 +32,7 @@ export function CertificateEditor({
   duplicate = false,
 }: CertificateEditorProps) {
   const { data: signatures = [] } = useQuery(
-    allSignaturesQueryOptions(eventId, editionId),
+    allSignaturesQueryOptions(editionId),
   );
   const templateQuery = useQuery({
     ...certificationTemplateQueryOptions(templateId ?? ""),
