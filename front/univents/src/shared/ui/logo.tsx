@@ -50,7 +50,7 @@ export function Logo({
   const renderImage = (v: "complete" | "icon", variantClassName: string) => (
     <img
       src={getSrc(v)}
-      alt={`Univents Logo ${v}`}
+      alt="Univents"
       loading={loading}
       className={cn(
         "w-full h-auto object-contain",
