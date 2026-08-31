@@ -6,8 +6,8 @@ import {
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import type { EditionApiI, EditionI } from "../model";
+import { syncEditionCaches } from "./cache";
 import { patchEditionFn } from "./index";
-import { editionKeys } from "./query-keys";
 
 registerUploadAssociationHandler("edition-image", async (task, url) => {
   const field = task.association?.input?.field;
@@ -47,12 +47,5 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
     logo_url: field === "logo_url" ? url : edition.logo_url,
     banner_url: field === "banner_url" ? url : edition.banner_url,
   });
-  getContext().queryClient.setQueryData<EditionI[]>(
-    editionKeys.adminListByEvent(updated.event_id),
-    (old = []) => old.map((item) => (item.id === updated.id ? updated : item)),
-  );
-  getContext().queryClient.setQueryData<EditionI[]>(
-    editionKeys.publicListByEvent(updated.event_id),
-    (old = []) => old.map((item) => (item.id === updated.id ? updated : item)),
-  );
+  syncEditionCaches(getContext().queryClient, updated);
 });
