@@ -89,8 +89,8 @@ export function CalendarEditor({
   const { data: loadedOccurrences = [] } = useQuery(
     occurrencesQueryOptions(editionId),
   );
-  const occurrenceMutation = useOccurrenceMutation(editionId);
-  const deleteOccurrenceMutation = useDeleteOccurrenceMutation(editionId);
+  const occurrenceMutation = useOccurrenceMutation();
+  const deleteOccurrenceMutation = useDeleteOccurrenceMutation();
   const [occurrences, setOccurrences] = useState<OccurrenceI[]>([]);
   const programs = loadedPrograms as ProgramI[];
   const visibleOccurrences = loadedOccurrences.length

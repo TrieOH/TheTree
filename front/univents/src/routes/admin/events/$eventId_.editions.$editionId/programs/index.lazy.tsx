@@ -72,7 +72,7 @@ function ProgramsRoute() {
   );
 
   const mutation = useProgramMutation(editionId);
-  const deleteMutation = useDeleteProgramMutation(editionId);
+  const deleteMutation = useDeleteProgramMutation();
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortState<ProgramI>>({
     field: "name",
