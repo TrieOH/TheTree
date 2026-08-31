@@ -2,8 +2,8 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortState } from "@trieoh/ui-base";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
-import { CalendarDays, CalendarRange, Plus } from "lucide-react";
-import { useState } from "react";
+import { CalendarClock, CalendarDays, CalendarRange, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   allCertificationTemplatesQueryOptions,
   certificationTemplateLinksQueryOptions,
@@ -33,6 +33,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/shared/ui/shadcn/dropdown-menu";
 import { AlertModal } from "@/widgets/ui/alert-modal";
 
 export const Route = createLazyFileRoute(
@@ -74,6 +79,8 @@ function ProgramsRoute() {
   const mutation = useProgramMutation(editionId);
   const deleteMutation = useDeleteProgramMutation(editionId);
   const [filter, setFilter] = useState("");
+  const [startsAfter, setStartsAfter] = useState("");
+  const [endsBefore, setEndsBefore] = useState("");
   const [sort, setSort] = useState<SortState<ProgramI>>({
     field: "name",
     direction: "asc",
@@ -89,15 +96,43 @@ function ProgramsRoute() {
   const unlinkCertificate = useUnlinkCertificationTemplateMutation();
   const [programToUnlink, setProgramToUnlink] = useState<ProgramI | null>(null);
 
-  const filtered = programs
-    .filter((program) =>
-      program.name.toLowerCase().includes(filter.trim().toLowerCase()),
-    )
-    .sort((a, b) =>
-      sort.direction === "asc"
-        ? a.name.localeCompare(b.name)
-        : b.name.localeCompare(a.name),
-    );
+  const firstOccurrenceByProgram = useMemo(
+    () =>
+      occurrences.reduce((starts, occurrence) => {
+        const current = starts.get(occurrence.program_id);
+        const timestamp = new Date(occurrence.starts_at).getTime();
+        if (current === undefined || timestamp < current) {
+          starts.set(occurrence.program_id, timestamp);
+        }
+        return starts;
+      }, new Map<string, number>()),
+    [occurrences],
+  );
+  const startsAfterTimestamp = startsAfter
+    ? new Date(startsAfter).getTime()
+    : Number.NEGATIVE_INFINITY;
+  const endsBeforeTimestamp = endsBefore
+    ? new Date(endsBefore).getTime()
+    : Number.POSITIVE_INFINITY;
+  const hasDateTimeFilter = Boolean(startsAfter || endsBefore);
+  const programsInDateTimeRange = useMemo(
+    () =>
+      new Set(
+        occurrences
+          .filter(
+            (item) =>
+              new Date(item.starts_at).getTime() <= endsBeforeTimestamp &&
+              new Date(item.ends_at).getTime() >= startsAfterTimestamp,
+          )
+          .map((item) => item.program_id),
+      ),
+    [endsBeforeTimestamp, occurrences, startsAfterTimestamp],
+  );
+  const filtered = programs.filter(
+    (program) =>
+      program.name.toLowerCase().includes(filter.trim().toLowerCase()) &&
+      (!hasDateTimeFilter || programsInDateTimeRange.has(program.id)),
+  );
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -112,6 +147,20 @@ function ProgramsRoute() {
         sortFields={[
           { key: "name", label: "Nome" },
           { key: "kind", label: "Tipo" },
+          {
+            key: "created_at",
+            label: "Horário",
+            comparator: (a, b) => {
+              const aStart = firstOccurrenceByProgram.get(a.id);
+              const bStart = firstOccurrenceByProgram.get(b.id);
+              if (aStart === bStart) return a.name.localeCompare(b.name);
+              if (aStart === undefined)
+                return sort.direction === "asc" ? 1 : -1;
+              if (bStart === undefined)
+                return sort.direction === "asc" ? -1 : 1;
+              return aStart - bStart;
+            },
+          },
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
@@ -119,6 +168,73 @@ function ProgramsRoute() {
         itemLabel="programas"
         headerActions={
           <>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="relative h-9 gap-2"
+                  />
+                }
+              >
+                <CalendarClock className="size-4" />
+                Data e hora
+                {hasDateTimeFilter ? (
+                  <span className="size-2 rounded-full bg-primary" />
+                ) : null}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[calc(100vw-2rem)]! max-w-sm! space-y-3 p-4 sm:w-80!"
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
+                <div>
+                  <p className="text-sm font-semibold">Período da ocorrência</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Encontre programações dentro de um intervalo.
+                  </p>
+                </div>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    De
+                  </span>
+                  <input
+                    type="datetime-local"
+                    value={startsAfter}
+                    onChange={(event) => setStartsAfter(event.target.value)}
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Até
+                  </span>
+                  <input
+                    type="datetime-local"
+                    value={endsBefore}
+                    min={startsAfter || undefined}
+                    onChange={(event) => setEndsBefore(event.target.value)}
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+                  />
+                </label>
+                {hasDateTimeFilter ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setStartsAfter("");
+                      setEndsBefore("");
+                    }}
+                  >
+                    Limpar período
+                  </Button>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               type="button"
               className="h-9 gap-2"
