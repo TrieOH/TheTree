@@ -1,5 +1,5 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import {
   ChartCard,
@@ -38,11 +38,8 @@ import {
   occurrencesQueryOptions,
   programsQueryOptions,
 } from "@/features/programs/api";
-import {
-  editionPurchasesQueryOptions,
-  useRefundPurchaseMutation,
-} from "@/features/purchases/api";
-import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
+import { editionPurchasesQueryOptions } from "@/features/purchases/api";
+import { useRefundPurchaseMutation } from "@/features/purchases/api/mutations";
 import {
   allTicketsQueryOptions,
   attendeeCountQueryOptions,
@@ -67,7 +64,6 @@ function AdminEditionDetailRoute() {
   );
   const { data: ownEvents = [] } = useQuery(allOwnEventsQueryOptions());
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions());
-  const queryClient = useQueryClient();
   const { data: purchases = [] } = useQuery(
     editionPurchasesQueryOptions(editionId),
   );
@@ -119,14 +115,13 @@ function AdminEditionDetailRoute() {
   const handleRefund = async () => {
     if (!refundPurchaseId) return;
     try {
-      await refundMutation.mutateAsync(refundPurchaseId);
-      toast.success("Reembolso solicitado");
-      await queryClient.invalidateQueries({
-        queryKey: purchaseQueryKeys.edition(editionId),
+      await refundMutation.mutateAsync({
+        purchaseId: refundPurchaseId,
+        editionId,
       });
       setRefundPurchaseId(null);
     } catch {
-      toast.error("Não foi possível solicitar o reembolso.");
+      // Error feedback is centralized in the mutation.
     }
   };
 

@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
+import type { Checkout } from "@trieoh/univents-api/schemas";
 import { useEffect, useRef, useState } from "react";
 import { env } from "@/env";
 import { checkoutQueryOptions, getWsTokenFn } from "../api";
-import { purchaseQueryKeys } from "../api/query-keys";
+import { invalidatePurchaseCaches } from "../api/cache";
 
 export function usePurchaseSocket(purchaseId: string, pending: boolean) {
   const queryClient = useQueryClient();
@@ -46,12 +47,10 @@ export function usePurchaseSocket(purchaseId: string, pending: boolean) {
           } catch {
             // REST invalidation below remains the source of truth.
           }
-          void queryClient.invalidateQueries({
-            queryKey: checkoutQueryOptions(purchaseId).queryKey,
-          });
-          void queryClient.invalidateQueries({
-            queryKey: purchaseQueryKeys.all,
-          });
+          const editionId = queryClient.getQueryData<Checkout>(
+            checkoutQueryOptions(purchaseId).queryKey,
+          )?.edition_id;
+          invalidatePurchaseCaches(queryClient, purchaseId, editionId);
         };
         socket.onclose = () => {
           setConnected(false);

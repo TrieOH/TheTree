@@ -1,16 +1,12 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import type { SortState } from "@trieoh/ui-base";
 import { PaginatedContainer } from "@trieoh/ui-base";
 import type { EditionPurchase } from "@trieoh/univents-api/schemas";
 import { ShoppingBag } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-  editionPurchasesQueryOptions,
-  useRefundPurchaseMutation,
-} from "@/features/purchases/api";
-import { purchaseQueryKeys } from "@/features/purchases/api/query-keys";
+import { editionPurchasesQueryOptions } from "@/features/purchases/api";
+import { useRefundPurchaseMutation } from "@/features/purchases/api/mutations";
 import { AdminPurchaseCard } from "@/features/purchases/ui/admin-purchase-card";
 import { Card, CardContent } from "@/shared/ui/shadcn/card";
 import { AlertModal } from "@/widgets/ui/alert-modal";
@@ -21,7 +17,6 @@ export const Route = createLazyFileRoute(
 
 function EditionPurchasesRoute() {
   const { editionId } = Route.useParams();
-  const queryClient = useQueryClient();
   const { data: purchases = [] } = useQuery(
     editionPurchasesQueryOptions(editionId),
   );
@@ -50,14 +45,10 @@ function EditionPurchasesRoute() {
   const refund = async () => {
     if (!refundId) return;
     try {
-      await refundMutation.mutateAsync(refundId);
-      await queryClient.invalidateQueries({
-        queryKey: purchaseQueryKeys.edition(editionId),
-      });
+      await refundMutation.mutateAsync({ purchaseId: refundId, editionId });
       setRefundId(null);
-      toast.success("Reembolso solicitado");
     } catch {
-      toast.error("Não foi possível solicitar o reembolso.");
+      // Error feedback is centralized in the mutation.
     }
   };
 

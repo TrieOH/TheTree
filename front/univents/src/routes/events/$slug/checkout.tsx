@@ -23,7 +23,7 @@ import { OrderSummary } from "@/features/payments/ui/checkout/OrderSummary";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { profileKeys } from "@/features/profile/api/query-keys";
-import { useCreateCheckoutMutation } from "@/features/purchases/api";
+import { useCreateCheckoutMutation } from "@/features/purchases/api/mutations";
 import { myTicketQueryOptions } from "@/features/tickets/api";
 import { getErrorMessage } from "@/shared/lib/errors";
 import { Button } from "@/shared/ui/shadcn/button";

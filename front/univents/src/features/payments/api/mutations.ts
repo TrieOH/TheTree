@@ -52,7 +52,8 @@ export function useDisconnectEventSellerMutation() {
   return useMutation({
     mutationFn: disconnectEventSellerFn,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: eventKeys.all });
+      void queryClient.invalidateQueries({ queryKey: eventKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: eventKeys.details() });
       toast.success("Mercado Pago desconectado");
     },
     onError: (error) =>
