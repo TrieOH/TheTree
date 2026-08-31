@@ -134,11 +134,29 @@ svg.ts-chart:focus-visible {
 body {
   margin: 0;
   min-width: 320px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
   color: var(--color-foreground);
   background-color: var(--color-background);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
+    text-wrap: balance;
+  }
+
+  :where(button, input, textarea, select) {
+    font: inherit;
+  }
+
+  :where(code, kbd, pre) {
+    font-variant-ligatures: none;
+  }
 }
 
 html.overlay-scrollbar {
