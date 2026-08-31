@@ -24,7 +24,7 @@ export const Route = createLazyFileRoute(
 )({ component: OccurrencesRoute });
 
 function OccurrencesRoute() {
-  const { editionId, programId } = Route.useParams();
+  const { eventId, editionId, programId } = Route.useParams();
   const router = useRouter();
   const { data: programs = [] } = useQuery(programsQueryOptions(editionId));
   const { data: allOccurrences = [] } = useQuery(
@@ -119,6 +119,20 @@ function OccurrencesRoute() {
               occurrence={occurrence}
               onEdit={() => setModal({ open: true, occurrence })}
               onAttendance={() => setAttendanceOccurrence(occurrence)}
+              onDraw={
+                program?.kind === "activity"
+                  ? () =>
+                      router.navigate({
+                        to: "/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw",
+                        params: {
+                          eventId,
+                          editionId,
+                          programId,
+                          occurrenceId: occurrence.id,
+                        },
+                      })
+                  : undefined
+              }
               onDelete={() => {
                 setOccurrenceToDelete(occurrence);
               }}

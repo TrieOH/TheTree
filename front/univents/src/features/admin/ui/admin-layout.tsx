@@ -17,8 +17,15 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const isCertificateEditor = pathname.endsWith("/certifications/editor");
   const isBadgeEditor = pathname.endsWith("/badges/editor");
   const isCalendarEditor = pathname.endsWith("/programs/calendar");
+  const isOccurrenceDraw =
+    pathname.includes("/occurrences/") && pathname.endsWith("/draw");
 
-  if (isCertificateEditor || isBadgeEditor || isCalendarEditor) {
+  if (
+    isCertificateEditor ||
+    isBadgeEditor ||
+    isCalendarEditor ||
+    isOccurrenceDraw
+  ) {
     return (
       <div className="h-dvh overflow-hidden bg-background">{children}</div>
     );
