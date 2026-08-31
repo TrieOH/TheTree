@@ -66,18 +66,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="min-w-[320px] antialiased wrap:anywhere">
-        <PostHogProvider>
-          <TanStackQueryProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <AuthProvider
-                adapter={identityXAuthAdapter}
-                baseURL={env.VITE_AUTH_API_URL}
-                fallback={
-                  <div className="h-screen w-screen flex items-center justify-center">
-                    <WaveSpinnerLoading text="Carregando..." />
-                  </div>
-                }
-              >
+        <TanStackQueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthProvider
+              adapter={identityXAuthAdapter}
+              baseURL={env.VITE_AUTH_API_URL}
+              fallback={
+                <div className="h-screen w-screen flex items-center justify-center">
+                  <WaveSpinnerLoading text="Carregando..." />
+                </div>
+              }
+            >
+              <PostHogProvider>
                 <AuthContextUpdater>
                   <UploadQueueProvider>
                     <VerifiedEmailGuard>{children}</VerifiedEmailGuard>
@@ -97,10 +97,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     ]}
                   />
                 </AuthContextUpdater>
-              </AuthProvider>
-            </ThemeProvider>
-          </TanStackQueryProvider>
-        </PostHogProvider>
+              </PostHogProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </TanStackQueryProvider>
         <Toaster />
         <Scripts />
       </body>

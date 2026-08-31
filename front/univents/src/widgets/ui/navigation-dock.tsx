@@ -282,6 +282,8 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
     location.pathname.endsWith("/certifications/editor") ||
     location.pathname.endsWith("/badges/editor") ||
     location.pathname.includes("/badges/") ||
+    (location.pathname.includes("/occurrences/") &&
+      location.pathname.endsWith("/draw")) ||
     location.pathname === "/profile/edit";
 
   if (hidden) return null;

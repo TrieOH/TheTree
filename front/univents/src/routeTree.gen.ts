@@ -74,6 +74,10 @@ const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRo
   createFileRoute(
     '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/',
   )()
+const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRouteImport =
+  createFileRoute(
+    '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw',
+  )()
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -412,6 +416,18 @@ const AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute =
       (d) => d.Route,
     ),
   )
+const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRouteImport.update(
+    {
+      id: '/events/$eventId_/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw',
+      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw',
+      getParentRoute: () => AdminRoute,
+    } as any,
+  ).lazy(() =>
+    import('./routes/admin/events/$eventId_.editions.$editionId/programs/$programId.occurrences/$occurrenceId.draw.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -467,6 +483,7 @@ export interface FileRoutesByFullPath {
   '/admin/events/$eventId/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
   '/admin/events/$eventId/editions/$editionId/products/$productId/variants/': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
   '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
+  '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -519,6 +536,7 @@ export interface FileRoutesByTo {
   '/admin/events/$eventId/editions/$editionId/programs': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
   '/admin/events/$eventId/editions/$editionId/products/$productId/variants': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
   '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
+  '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -575,6 +593,7 @@ export interface FileRoutesById {
   '/admin/events/$eventId_/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
   '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
+  '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw': typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -632,6 +651,7 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions/$editionId/programs/'
     | '/admin/events/$eventId/editions/$editionId/products/$productId/variants/'
     | '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/'
+    | '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -684,6 +704,7 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions/$editionId/programs'
     | '/admin/events/$eventId/editions/$editionId/products/$productId/variants'
     | '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences'
+    | '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw'
   id:
     | '__root__'
     | '/'
@@ -739,6 +760,7 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId_/editions/$editionId/programs/'
     | '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/'
     | '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/'
+    | '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1142,6 +1164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw'
+      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/$occurrenceId/draw'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -1185,6 +1214,7 @@ interface AdminRouteChildren {
   AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexLazyRoute
   AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
   AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1219,6 +1249,8 @@ const AdminRouteChildren: AdminRouteChildren = {
     AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute,
   AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute:
     AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexLazyRoute,
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute:
+    AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesOccurrenceIdDrawLazyRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

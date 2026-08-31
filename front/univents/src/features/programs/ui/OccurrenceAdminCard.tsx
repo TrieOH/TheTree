@@ -1,4 +1,4 @@
-import { CalendarDays, Pencil, Trash2, UserCheck } from "lucide-react";
+import { CalendarDays, Gift, Pencil, Trash2, UserCheck } from "lucide-react";
 import { Button } from "@/shared/ui/shadcn/button";
 import type { OccurrenceI } from "../model";
 
@@ -7,11 +7,13 @@ export function OccurrenceAdminCard({
   onEdit,
   onDelete,
   onAttendance,
+  onDraw,
 }: {
   occurrence: OccurrenceI;
   onEdit: () => void;
   onDelete: () => void;
   onAttendance: () => void;
+  onDraw?: () => void;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-border/60 bg-card px-3 py-3 transition-colors hover:bg-accent/5 sm:flex-row! sm:items-center! sm:justify-between! sm:px-4!">
@@ -37,7 +39,19 @@ export function OccurrenceAdminCard({
             : " · Vagas ilimitadas"}
         </p>
       </div>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] gap-1.5 sm:flex sm:shrink-0 sm:gap-2">
+      <div className="flex min-w-0 flex-wrap gap-1.5 sm:shrink-0 sm:gap-2">
+        {onDraw ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-w-0 px-2 text-xs sm:px-3 sm:text-sm"
+            onClick={onDraw}
+          >
+            <Gift className="mr-1.5 size-3.5 shrink-0 sm:mr-2" />
+            <span className="truncate">Sortear</span>
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"
