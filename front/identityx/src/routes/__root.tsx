@@ -64,17 +64,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-body antialiased wrap-anywhere">
-        <PHProvider>
-          <TanStackQueryProvider>
-            <AuthProvider
-              baseURL={env.VITE_API_URL}
-              isProjectMode={false}
-              adapter={identityXAuthAdapter}
-            >
+        <TanStackQueryProvider>
+          <AuthProvider
+            baseURL={env.VITE_API_URL}
+            isProjectMode={false}
+            adapter={identityXAuthAdapter}
+          >
+            <PHProvider>
               <AuthContextUpdater>{children}</AuthContextUpdater>
-            </AuthProvider>
-          </TanStackQueryProvider>
-        </PHProvider>
+            </PHProvider>
+          </AuthProvider>
+        </TanStackQueryProvider>
         <Toaster />
         <Scripts />
       </body>
