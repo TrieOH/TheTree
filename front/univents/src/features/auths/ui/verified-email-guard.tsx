@@ -1,5 +1,4 @@
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { useAuthActions } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { LogOut, MailWarning, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -13,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/shadcn/dialog";
+import { useSessionActions } from "../hooks/use-session-actions";
 import {
   clearAuthReturnTo,
   requiresVerifiedEmail,
@@ -26,7 +26,7 @@ export function VerifiedEmailGuard({
   children: React.ReactNode;
 }) {
   const { auth, isAuthenticated } = useAuth();
-  const { handleLogout } = useAuthActions();
+  const { logout } = useSessionActions();
   const location = useLocation();
   const router = useRouter();
   const [resending, setResending] = useState(false);
@@ -125,8 +125,7 @@ export function VerifiedEmailGuard({
               variant="ghost"
               className="w-full text-muted-foreground"
               onClick={() => {
-                clearAuthReturnTo(localStorage);
-                void handleLogout();
+                void logout();
               }}
             >
               <LogOut /> Sair da conta
