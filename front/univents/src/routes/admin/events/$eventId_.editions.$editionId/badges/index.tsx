@@ -9,7 +9,6 @@ import {
   Printer,
   QrCode,
 } from "lucide-react";
-import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   badgeEmissionsQueryOptions,
@@ -18,9 +17,12 @@ import {
 } from "@/features/badges/api";
 import { useDeleteBadgeTemplateMutation } from "@/features/badges/api/mutations";
 import type { BadgePrintItem, BadgeTemplate } from "@/features/badges/model";
-import { badgeDesignSchema } from "@/features/badges/model";
+import { selectBadgePrintItems } from "@/features/badges/model/print-selection";
 import AdminBadgeCard from "@/features/badges/ui/AdminBadgeCard";
-import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import {
+  PrintableBadge,
+  PrintableQr,
+} from "@/features/badges/ui/printable-badge";
 import { ToolbarCombobox } from "@/features/certifications/editor/ui/toolbar-combobox";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { useActorDisplayNames } from "@/features/profile/api/actor-display-names";
@@ -41,81 +43,6 @@ import { Input } from "@/shared/ui/shadcn/input";
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/",
 )({ component: RouteComponent });
-
-function PrintableBadge({
-  badge,
-  participantName,
-  location,
-}: {
-  badge: BadgePrintItem;
-  participantName: string;
-  location: string;
-}) {
-  const design = badgeDesignSchema.safeParse(badge.design_data).success
-    ? badgeDesignSchema.parse(badge.design_data)
-    : null;
-  const widthMm = design ? design.canvas.width / (96 / 25.4) : 85;
-  const heightMm = design ? design.canvas.height / (96 / 25.4) : 54;
-
-  return (
-    <article
-      className="overflow-hidden bg-transparent text-black shadow print:break-inside-avoid print:shadow-none"
-      style={{ width: `${widthMm}mm`, height: `${heightMm}mm` }}
-    >
-      <BadgePreview
-        badge={badge}
-        participantName={participantName}
-        location={location}
-        className="relative h-full w-full rounded-none border-0 shadow-none"
-        style={{ width: "100%", height: "100%", aspectRatio: "auto" }}
-      />
-    </article>
-  );
-}
-
-function PrintableQr({
-  badge,
-  size,
-  participant,
-}: {
-  badge: BadgePrintItem;
-  size: number;
-  participant: string;
-}) {
-  const matrix = QRCode.create(badge.action_url).modules;
-  const margin = 2;
-  const viewSize = matrix.size + margin * 2;
-  return (
-    <article
-      className="flex break-inside-avoid flex-col items-center gap-2 text-center text-black"
-      style={{ width: size }}
-    >
-      <svg
-        role="img"
-        aria-label={`QR Code de ${participant}`}
-        viewBox={`0 0 ${viewSize} ${viewSize}`}
-        style={{ width: size, height: size }}
-        shapeRendering="crispEdges"
-      >
-        <rect width="100%" height="100%" fill="white" />
-        {Array.from({ length: matrix.size * matrix.size }, (_, index) => {
-          const row = Math.floor(index / matrix.size);
-          const column = index % matrix.size;
-          return matrix.get(row, column) ? (
-            <rect
-              key={`${row}-${column}`}
-              x={column + margin}
-              y={row + margin}
-              width="1"
-              height="1"
-            />
-          ) : null;
-        })}
-      </svg>
-      <strong className="max-w-full truncate text-sm">{participant}</strong>
-    </article>
-  );
-}
 
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams();
@@ -161,18 +88,10 @@ function RouteComponent() {
     tickets.map((ticket) => [ticket.id, ticket.name]),
   );
   const printItems = printQuery.data ?? [];
-  const printableItems = useMemo(() => {
-    if (!printedAfter) return printItems;
-    const timestamp = new Date(printedAfter).getTime();
-    const emissionIds = new Set(
-      emissions
-        .filter(
-          (emission) => new Date(emission.emitted_at).getTime() >= timestamp,
-        )
-        .map((emission) => emission.id),
-    );
-    return printItems.filter((item) => emissionIds.has(item.emission_id));
-  }, [emissions, printItems, printedAfter]);
+  const printableItems = useMemo(
+    () => selectBadgePrintItems(printItems, emissions, printedAfter),
+    [emissions, printItems, printedAfter],
+  );
   const printActorIds = [
     ...new Set(printableItems.map((item) => item.user_id)),
   ];
