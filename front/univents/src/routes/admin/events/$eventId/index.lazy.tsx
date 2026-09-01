@@ -1,27 +1,7 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute, Link } from "@tanstack/react-router";
-import {
-  ChartCard,
-  DashboardBarList,
-  DashboardStatCard,
-} from "@trieoh/ui-base";
-import {
-  Calendar,
-  CalendarRange,
-  CircleAlert,
-  Command,
-  Copy,
-  ExternalLink,
-  Eye,
-  Layers3,
-  Package,
-  Pencil,
-  ShoppingBag,
-  Ticket,
-  Wallet,
-  XCircle,
-} from "lucide-react";
+import { createLazyFileRoute } from "@tanstack/react-router";
+import { Calendar } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
@@ -36,6 +16,11 @@ import {
 } from "@/features/events/api/mutations";
 import { buildEventOverviewMetrics } from "@/features/events/model/event-overview";
 import { EventEditionsList } from "@/features/events/ui/EventEditionsList";
+import { EventOverviewDashboard } from "@/features/events/ui/EventOverviewDashboard";
+import {
+  type EventQuickAction,
+  EventQuickActions,
+} from "@/features/events/ui/EventQuickActions";
 import { EventVisualCard } from "@/features/events/ui/EventVisualCard";
 import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import {
@@ -55,9 +40,7 @@ import {
 } from "@/features/tickets/api";
 import { useUploadQueue } from "@/features/upload-queue";
 import { Badge } from "@/shared/ui/shadcn/badge";
-import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
-import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
 import { StepChecklist } from "@/widgets/ui/step-checklist";
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
@@ -133,19 +116,7 @@ function EventOverviewRoute() {
         })
         .replace(".", "")
     : "";
-  const {
-    purchases,
-    revenue,
-    refundedPurchaseCount,
-    participantCount,
-    ticketCount,
-    productCount,
-    programCount,
-    occurrenceCount,
-    profitData,
-    editionSales,
-    maxEditionRevenue,
-  } = buildEventOverviewMetrics({
+  const overviewMetrics = buildEventOverviewMetrics({
     editions,
     purchasesByEdition: purchaseQueries.map((query) => query.data ?? []),
     attendeeCounts: attendeeCountQueries.map((query) => query.data?.count ?? 0),
@@ -154,58 +125,6 @@ function EventOverviewRoute() {
     programCounts: programQueries.map((query) => query.data?.length ?? 0),
     occurrenceCounts: occurrenceQueries.map((query) => query.data?.length ?? 0),
   });
-  const purchaseStatuses = [
-    { label: "Aprovadas", status: "approved", color: "bg-emerald-500" },
-    { label: "Pendentes", status: "pending", color: "bg-amber-500" },
-    { label: "Reembolsadas", status: "refunded", color: "bg-sky-500" },
-    { label: "Expiradas", status: "expired", color: "bg-slate-400" },
-    { label: "Canceladas", status: "cancelled", color: "bg-rose-500" },
-  ] as const;
-  const revenueBars = editionSales.slice(0, 6).map((edition) => ({
-    id: edition.name,
-    label: edition.name,
-    value: edition.revenue,
-    detail: new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(edition.revenue / 100),
-  }));
-  const statusBars = purchaseStatuses.map((item) => ({
-    id: item.status,
-    label: item.label,
-    value: purchases.filter((purchase) => purchase.status === item.status)
-      .length,
-    color: item.color,
-  }));
-  const summaryMetrics = [
-    {
-      label: "Receita aprovada",
-      value: new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(revenue / 100),
-      hint: "Somente compras aprovadas",
-      icon: Wallet,
-    },
-    {
-      label: "Participantes",
-      value: participantCount,
-      hint: "Ingressos comprados",
-      icon: Ticket,
-    },
-    {
-      label: "Produtos Vendidos",
-      value: purchases.length,
-      hint: "Compras realizadas",
-      icon: ShoppingBag,
-    },
-    {
-      label: "Reembolsadas",
-      value: refundedPurchaseCount,
-      hint: "Compras reembolsadas",
-      icon: CircleAlert,
-    },
-  ];
   const isImageUploading = (field: "logo_url" | "banner_url") =>
     tasks.some(
       (task) =>
@@ -293,7 +212,7 @@ function EventOverviewRoute() {
       : []),
   ];
 
-  const actions = [
+  const actions: EventQuickAction[] = [
     {
       label: "Editar evento",
       shortcut: "Mod+E",
@@ -377,14 +296,6 @@ function EventOverviewRoute() {
     { ignoreInputs: true, preventDefault: true },
   );
 
-  const actionIcon = (label: string) => {
-    if (label.includes("Editar")) return Pencil;
-    if (label.includes("Copiar")) return Copy;
-    if (label.includes("Publicar")) return Eye;
-    if (label.includes("Descontinuar")) return XCircle;
-    return ExternalLink;
-  };
-
   return (
     <>
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 pb-28!">
@@ -409,203 +320,9 @@ function EventOverviewRoute() {
           </div>
         ) : null}
 
-        <div
-          className="order-1 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3"
-          role="toolbar"
-          aria-label="Atalhos do evento"
-        >
-          <div className="flex items-center justify-between gap-3 px-1">
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Command className="size-3.5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground">
-                  Ações rápidas
-                </p>
-                <p className="truncate text-[11px] text-muted-foreground">
-                  Atalhos para as tarefas mais usadas
-                </p>
-              </div>
-            </div>
-            <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">
-              Ctrl/⌘ + tecla
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {actions.map((action) => {
-              const Icon = actionIcon(action.label);
-              if ("to" in action && action.to) {
-                return (
-                  <Link
-                    key={action.label}
-                    to={action.to}
-                    params={action.params}
-                    aria-disabled={action.disabled}
-                    title={`${action.label} · ${action.shortcut}`}
-                    aria-label={action.label}
-                    className="inline-flex h-9 shrink-0 flex-row items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Icon className="size-4" />
-                      <span>
-                        {action.label
-                          .replace(" evento", "")
-                          .replace(" público", "")
-                          .replace(" conta", "")}
-                      </span>
-                    </span>
-                    <kbd className="hidden rounded border border-border/70 bg-muted px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
-                      {action.shortcut.replace("Mod", "⌘/Ctrl")}
-                    </kbd>
-                  </Link>
-                );
-              }
+        <EventQuickActions actions={actions} />
 
-              return (
-                <Button
-                  key={action.label}
-                  size="default"
-                  variant={
-                    action.variant === "destructive" ? "destructive" : "outline"
-                  }
-                  className={`h-9 shrink-0 flex-row gap-1.5 border px-2 text-xs sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight ${action.variant === "destructive" ? "border-destructive/60" : "border-border"}`}
-                  disabled={action.disabled}
-                  onClick={action.onClick}
-                  title={`${action.label} · ${action.shortcut}`}
-                  aria-label={action.label}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <Icon className="size-4" />
-                    <span>
-                      {action.label
-                        .replace(" evento", "")
-                        .replace(" público", "")
-                        .replace(" conta", "")}
-                    </span>
-                  </span>
-                  <kbd className="hidden rounded border border-border/70 bg-muted/70 px-1 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline-block">
-                    {action.shortcut.replace("Mod", "⌘/Ctrl")}
-                  </kbd>
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-
-        <section className="order-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {summaryMetrics.map((metric) => (
-            <DashboardStatCard
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-              hint={metric.hint}
-              icon={metric.icon}
-            />
-          ))}
-        </section>
-
-        <DashboardPanel
-          title="Catálogo"
-          description="Conteúdo publicado nas edições deste evento."
-          icon={Package}
-          className="order-4"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              {
-                label: "Ingressos",
-                value: ticketCount,
-                hint: "Tipos cadastrados",
-                icon: Ticket,
-              },
-              {
-                label: "Produtos",
-                value: productCount,
-                hint: "Produtos cadastrados",
-                icon: Package,
-              },
-              {
-                label: "Programas",
-                value: programCount,
-                hint: "Atividades cadastradas",
-                icon: CalendarRange,
-              },
-              {
-                label: "Ocorrências",
-                value: occurrenceCount,
-                hint: "Horários da programação",
-                icon: Layers3,
-              },
-            ].map((metric) => (
-              <DashboardStatCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-                hint={metric.hint}
-                icon={metric.icon}
-              />
-            ))}
-          </div>
-        </DashboardPanel>
-
-        <section className="order-5 grid gap-4 xl:grid-cols-[1fr_1.35fr]">
-          <DashboardPanel
-            title="Status das compras"
-            description={`${purchases.length} compra${purchases.length === 1 ? "" : "s"} no total.`}
-            icon={ShoppingBag}
-            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
-          >
-            <div className="mt-2">
-              <DashboardBarList
-                items={statusBars}
-                emptyMessage="Nenhuma compra registrada."
-              />
-            </div>
-          </DashboardPanel>
-          <DashboardPanel
-            title="Receita por edição"
-            description="Receita aprovada comparada entre as edições."
-            icon={Wallet}
-            className="rounded-lg bg-card p-5 ring-1 ring-foreground/10"
-          >
-            <div className="mt-2">
-              <DashboardBarList
-                items={revenueBars}
-                maxValue={maxEditionRevenue}
-                emptyMessage="Ainda não há edições para comparar."
-              />
-            </div>
-          </DashboardPanel>
-        </section>
-
-        <section className="order-6">
-          <ChartCard
-            title="Lucro"
-            subtitle="Crescimento acumulado no período selecionado."
-            data={profitData}
-            allowedTypes={["line"]}
-            initialRange="30d"
-            showSeriesFilter={false}
-            showSearchFilter={false}
-            continuity
-            showPointsToggle={false}
-            seriesLabels={{ Lucro: "Lucro acumulado" }}
-            tooltipDetails={(datum) => [
-              {
-                label: "Compras",
-                value: String(datum.purchases ?? 0),
-              },
-            ]}
-            valueFormatter={(value) =>
-              new Intl.NumberFormat("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-                maximumFractionDigits: 0,
-              }).format(value)
-            }
-          />
-        </section>
+        <EventOverviewDashboard metrics={overviewMetrics} />
 
         <EventEditionsList eventId={eventId} editions={editions} />
 

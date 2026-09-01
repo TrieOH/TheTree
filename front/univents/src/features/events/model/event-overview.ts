@@ -55,6 +55,8 @@ export function buildEventOverviewMetrics({
   };
 }
 
+export type EventOverviewMetrics = ReturnType<typeof buildEventOverviewMetrics>;
+
 function sum(values: number[]) {
   return values.reduce((total, value) => total + value, 0);
 }
