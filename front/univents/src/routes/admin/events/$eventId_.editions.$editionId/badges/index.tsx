@@ -162,17 +162,21 @@ function RouteComponent() {
   );
   const printItems = printQuery.data ?? [];
   const printableItems = useMemo(() => {
-    if (!printedAfter) return printItems;
-    const timestamp = new Date(printedAfter).getTime();
-    const emissionIds = new Set(
+    const minTimestamp = printedAfter ? new Date(printedAfter).getTime() : null;
+
+    const validEmissionIds = new Set(
       emissions
-        .filter(
-          (emission) => new Date(emission.emitted_at).getTime() >= timestamp,
-        )
+        .filter((emission) => {
+          if (emission.status !== "active") return false;
+          if (!minTimestamp) return true;
+          return new Date(emission.emitted_at).getTime() >= minTimestamp;
+        })
         .map((emission) => emission.id),
     );
-    return printItems.filter((item) => emissionIds.has(item.emission_id));
+
+    return printItems.filter((item) => validEmissionIds.has(item.emission_id));
   }, [emissions, printItems, printedAfter]);
+
   const printActorIds = [
     ...new Set(printableItems.map((item) => item.user_id)),
   ];
