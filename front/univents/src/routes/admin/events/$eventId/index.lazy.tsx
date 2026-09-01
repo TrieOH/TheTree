@@ -1,7 +1,6 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Calendar } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
@@ -16,13 +15,14 @@ import {
 } from "@/features/events/api/mutations";
 import { buildEventOverviewMetrics } from "@/features/events/model/event-overview";
 import { EventEditionsList } from "@/features/events/ui/EventEditionsList";
+import { EventOverviewChecklist } from "@/features/events/ui/EventOverviewChecklist";
 import { EventOverviewDashboard } from "@/features/events/ui/EventOverviewDashboard";
+import { EventOverviewDialogs } from "@/features/events/ui/EventOverviewDialogs";
+import { EventOverviewHeader } from "@/features/events/ui/EventOverviewHeader";
 import {
   type EventQuickAction,
   EventQuickActions,
 } from "@/features/events/ui/EventQuickActions";
-import { EventVisualCard } from "@/features/events/ui/EventVisualCard";
-import { ManageEventModal } from "@/features/events/ui/ManageEventModal";
 import {
   useConnectEventSellerMutation,
   useDisconnectEventSellerMutation,
@@ -39,9 +39,6 @@ import {
   attendeeCountQueryOptions,
 } from "@/features/tickets/api";
 import { useUploadQueue } from "@/features/upload-queue";
-import { Badge } from "@/shared/ui/shadcn/badge";
-import { AlertModal } from "@/widgets/ui/alert-modal";
-import { StepChecklist } from "@/widgets/ui/step-checklist";
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
@@ -87,35 +84,6 @@ function EventOverviewRoute() {
     [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
     null;
   const isPublished = event?.status === "active";
-  const eventStatus = event
-    ? {
-        draft: {
-          label: "Rascunho",
-          className: "bg-amber-500/10 text-amber-700",
-        },
-        active: {
-          label: "Ativo",
-          className: "bg-emerald-500/10 text-emerald-700",
-        },
-        archived: {
-          label: "Arquivado",
-          className: "bg-slate-500/10 text-slate-700",
-        },
-        discontinued: {
-          label: "Descontinuado",
-          className: "bg-rose-500/10 text-rose-700",
-        },
-      }[event.status]
-    : null;
-  const createdDate = event
-    ? new Date(event.created_at)
-        .toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-        .replace(".", "")
-    : "";
   const overviewMetrics = buildEventOverviewMetrics({
     editions,
     purchasesByEdition: purchaseQueries.map((query) => query.data ?? []),
@@ -158,59 +126,6 @@ function EventOverviewRoute() {
     if (!event || event.status !== "active") return;
     discontinueEventMutation.mutate(eventId);
   };
-
-  const checklist = [
-    {
-      label: "Edição criada",
-      description:
-        "Crie uma edição para publicar datas, catálogo e programação.",
-      done: editions.length > 0,
-    },
-    {
-      label: "Logo cadastrado",
-      description: "Identifica o evento nos cards e páginas públicas.",
-      done: Boolean(event?.logo_url),
-      action: event?.logo_url
-        ? undefined
-        : {
-            label: "Adicionar",
-            disabled: isImageUploading("logo_url"),
-            onClick: () =>
-              document.getElementById("event-logo-upload")?.click(),
-          },
-    },
-    {
-      label: "Banner cadastrado",
-      description: "Imagem principal exibida no topo do evento.",
-      done: Boolean(event?.banner_url),
-      action: event?.banner_url
-        ? undefined
-        : {
-            label: "Adicionar",
-            disabled: isImageUploading("banner_url"),
-            onClick: () =>
-              document.getElementById("event-banner-upload")?.click(),
-          },
-    },
-    {
-      label: "Descrição preenchida",
-      description: "Apresente o evento para quem ainda não o conhece.",
-      done: Boolean(event?.description),
-      action: {
-        label: "Editar",
-        onClick: () => setEditEventOpen(true),
-      },
-    },
-    ...(editions.length > 0
-      ? [
-          {
-            label: "Pagamento conectado",
-            description: "Necessário para vender ingressos ou produtos.",
-            done: Boolean(event?.payssage_seller_id),
-          },
-        ]
-      : []),
-  ];
 
   const actions: EventQuickAction[] = [
     {
@@ -299,26 +214,7 @@ function EventOverviewRoute() {
   return (
     <>
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 pb-28!">
-        {event ? <EventVisualCard event={event} /> : null}
-
-        {event && eventStatus ? (
-          <div className="space-y-1 px-1 text-center md:text-left">
-            <h1 className="text-xl font-medium tracking-tight text-foreground/90">
-              {event.full_name}
-            </h1>
-            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground md:justify-start">
-              <Calendar className="size-3.5" />
-              Criado em {createdDate}
-            </p>
-            <div>
-              <Badge
-                className={`w-fit border-0 px-2 py-0.5 text-xs font-normal ${eventStatus.className}`}
-              >
-                {eventStatus.label}
-              </Badge>
-            </div>
-          </div>
-        ) : null}
+        <EventOverviewHeader event={event} />
 
         <EventQuickActions actions={actions} />
 
@@ -339,70 +235,52 @@ function EventOverviewRoute() {
           onDisconnect={() => setDisconnectSellerConfirmOpen(true)}
         />
 
-        <StepChecklist
-          title="Event checklist"
-          items={checklist.map((item) => ({
-            id: item.label,
-            title: item.label,
-            description: item.description,
-            completed: item.done,
-            action: item.action,
-          }))}
-          className="order-8 w-full sm:fixed sm:right-4 sm:top-24 sm:z-40 sm:w-auto!"
-          mobileInline
+        <EventOverviewChecklist
+          editionCount={editions.length}
+          hasLogo={Boolean(event?.logo_url)}
+          hasBanner={Boolean(event?.banner_url)}
+          hasDescription={Boolean(event?.description)}
+          paymentConnected={Boolean(event?.payssage_seller_id)}
+          logoUploading={isImageUploading("logo_url")}
+          bannerUploading={isImageUploading("banner_url")}
+          onAddLogo={() =>
+            document.getElementById("event-logo-upload")?.click()
+          }
+          onAddBanner={() =>
+            document.getElementById("event-banner-upload")?.click()
+          }
+          onEdit={() => setEditEventOpen(true)}
         />
       </div>
 
-      <ManageEventModal
-        key={event?.id ?? "event"}
-        open={editEventOpen}
-        onOpenChange={setEditEventOpen}
+      <EventOverviewDialogs
         event={event}
-        onCreate={(values) =>
+        editOpen={editEventOpen}
+        publishOpen={publishConfirmOpen}
+        discontinueOpen={discontinueConfirmOpen}
+        disconnectOpen={disconnectSellerConfirmOpen}
+        publishing={publishEventMutation.isPending}
+        discontinuing={discontinueEventMutation.isPending}
+        disconnecting={disconnectSellerMutation.isPending}
+        onEditOpenChange={setEditEventOpen}
+        onPublishOpenChange={setPublishConfirmOpen}
+        onDiscontinueOpenChange={setDiscontinueConfirmOpen}
+        onDisconnectOpenChange={setDisconnectSellerConfirmOpen}
+        onEdit={(values) =>
           event
             ? patchEventMutation.mutateAsync({ eventId, data: values })
             : false
         }
-      />
-
-      <AlertModal
-        open={disconnectSellerConfirmOpen}
-        onOpenChange={setDisconnectSellerConfirmOpen}
-        title="Desconectar Mercado Pago?"
-        description="Este evento deixará de receber novos pagamentos até uma conta ser conectada novamente."
-        confirmLabel="Desconectar"
-        variant="destructive"
-        loading={disconnectSellerMutation.isPending}
-        onConfirm={() => {
+        onDisconnect={() =>
           disconnectSellerMutation.mutate(eventId, {
             onSuccess: () => setDisconnectSellerConfirmOpen(false),
-          });
-        }}
-      />
-
-      <AlertModal
-        open={publishConfirmOpen}
-        onOpenChange={setPublishConfirmOpen}
-        title="Publicar evento?"
-        description="Depois de publicar, o painel público ficará disponível para o evento."
-        confirmLabel="Publicar evento"
-        variant="default"
-        loading={publishEventMutation.isPending}
-        onConfirm={async () => {
+          })
+        }
+        onPublish={() => {
           handlePublishEvent();
           setPublishConfirmOpen(false);
         }}
-      />
-
-      <AlertModal
-        open={discontinueConfirmOpen}
-        onOpenChange={setDiscontinueConfirmOpen}
-        title="Descontinuar evento?"
-        description="O evento deixará de ser ativo e a data de atualização será atualizada."
-        confirmLabel="Descontinuar evento"
-        variant="destructive"
-        loading={discontinueEventMutation.isPending}
-        onConfirm={async () => {
+        onDiscontinue={() => {
           handleDiscontinueEvent();
           setDiscontinueConfirmOpen(false);
         }}
