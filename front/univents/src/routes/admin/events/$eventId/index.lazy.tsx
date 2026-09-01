@@ -12,7 +12,6 @@ import {
   CircleAlert,
   Command,
   Copy,
-  CreditCard,
   ExternalLink,
   Eye,
   Layers3,
@@ -43,7 +42,7 @@ import {
   useConnectEventSellerMutation,
   useDisconnectEventSellerMutation,
 } from "@/features/payments/api/mutations";
-import type { PaymentProviderI } from "@/features/payments/model";
+import { EventPaymentPanel } from "@/features/payments/ui/EventPaymentPanel";
 import { productsByEditionQueryOptions } from "@/features/products/api";
 import {
   occurrencesQueryOptions,
@@ -60,18 +59,6 @@ import { Button } from "@/shared/ui/shadcn/button";
 import { AlertModal } from "@/widgets/ui/alert-modal";
 import { DashboardPanel } from "@/widgets/ui/dashboard-panel";
 import { StepChecklist } from "@/widgets/ui/step-checklist";
-
-const paymentProviders: Array<{
-  id: PaymentProviderI;
-  name: string;
-  description: string;
-}> = [
-  {
-    id: "mercadopago",
-    name: "Mercado Pago",
-    description: "Receba por Pix e cartão de crédito.",
-  },
-];
 
 export const Route = createLazyFileRoute("/admin/events/$eventId/")({
   component: EventOverviewRoute,
@@ -622,73 +609,18 @@ function EventOverviewRoute() {
 
         <EventEditionsList eventId={eventId} editions={editions} />
 
-        <section className="order-3 space-y-3">
-          <div className="flex items-center gap-3 px-1">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <CreditCard className="size-5" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold tracking-tight">
-                Pagamentos
-              </h2>
-              <p className="truncate text-xs text-muted-foreground">
-                Conta que receberá as vendas deste evento.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {paymentProviders.map((provider) => {
-              const connected = Boolean(event?.payssage_seller_id);
-
-              return (
-                <div
-                  key={provider.id}
-                  className="flex w-full max-w-md items-center gap-3 rounded-xl bg-card px-3 py-3 ring-1 ring-foreground/10 shadow-xs"
-                >
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted/50 p-2">
-                    <img
-                      src="/mercado-pago.svg"
-                      alt="Mercado Pago"
-                      className="size-full object-contain"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">
-                      {provider.name}
-                    </p>
-                    <Badge
-                      className="mt-1"
-                      variant={connected ? "default" : "secondary"}
-                    >
-                      {connected ? "Conectado" : "Não conectado"}
-                    </Badge>
-                  </div>
-                  <div className="shrink-0">
-                    <Button
-                      className="h-9 text-xs"
-                      variant={connected ? "outline" : "default"}
-                      disabled={
-                        !event ||
-                        connectSellerMutation.isPending ||
-                        disconnectSellerMutation.isPending
-                      }
-                      onClick={() =>
-                        connected
-                          ? setDisconnectSellerConfirmOpen(true)
-                          : connectSellerMutation.mutate({
-                              eventId,
-                              provider: provider.id,
-                            })
-                      }
-                    >
-                      {connected ? "Desconectar conta" : "Conectar"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <EventPaymentPanel
+          connected={Boolean(event?.payssage_seller_id)}
+          disabled={
+            !event ||
+            connectSellerMutation.isPending ||
+            disconnectSellerMutation.isPending
+          }
+          onConnect={(provider) =>
+            connectSellerMutation.mutate({ eventId, provider })
+          }
+          onDisconnect={() => setDisconnectSellerConfirmOpen(true)}
+        />
 
         <StepChecklist
           title="Event checklist"
