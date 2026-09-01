@@ -5,13 +5,14 @@ export function selectBadgePrintItems(
   emissions: BadgeEditionEmission[],
   emittedAfter: string,
 ) {
-  if (!emittedAfter) return items;
-  const timestamp = new Date(emittedAfter).getTime();
-  if (Number.isNaN(timestamp)) return [];
+  const timestamp = emittedAfter ? new Date(emittedAfter).getTime() : null;
+  if (timestamp !== null && Number.isNaN(timestamp)) return [];
 
   const emissionIds = new Set(
     emissions
       .filter((emission) => {
+        if (emission.status !== "active") return false;
+        if (timestamp === null) return true;
         const emittedAt = new Date(emission.emitted_at).getTime();
         return !Number.isNaN(emittedAt) && emittedAt >= timestamp;
       })
