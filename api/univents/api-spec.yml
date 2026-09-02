@@ -1987,6 +1987,49 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /programs/{program_id}/certifications/emit:
+    post:
+      tags: [certifications]
+      operationId: emitProgramCertifications
+      summary: Enqueue certification emission for a program
+      description: |
+        Enqueues the `cert.grant_occurrence` job for the program's
+        participants. The job is idempotent: it only emits certificates
+        for participants who do not already hold one for the program
+        (accountless gifted participants are skipped), and records
+        failures for later inspection via
+        `/editions/{edition_id}/certifications/emission-errors`. The
+        actor must be an owner or admin of the event.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Program ID.
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Grant job enqueued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProgramCertEmissionResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /editions/{edition_id}/occurrences:
     get:
       tags: [programs]
@@ -5918,6 +5961,17 @@ components:
         updated_at:
           type: [ string, "null" ]
           format: date-time
+
+    ProgramCertEmissionResult:
+      type: object
+      description: Result of enqueueing a program certification grant job.
+      required: [program_id, queued]
+      properties:
+        program_id:
+          $ref: '#/components/schemas/UUID'
+        queued:
+          type: boolean
+          description: True when the cert grant job was enqueued.
 
     CertEmissionError:
       x-go-type: models.CertEmissionError
