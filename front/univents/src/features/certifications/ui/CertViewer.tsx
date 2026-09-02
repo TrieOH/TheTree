@@ -1,4 +1,5 @@
 import { Download, Eye, FileImage, FileText, LoaderCircle } from "lucide-react";
+import type { ReactNode, RefObject } from "react";
 import { forwardRef, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -26,6 +27,84 @@ interface CertViewerProps {
   variables?: CertificateVariableValues;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+}
+
+export function CertificateDownloadButtons({
+  canvasRef,
+  templateName,
+  prominent = false,
+}: {
+  canvasRef: RefObject<HTMLDivElement | null>;
+  templateName: string;
+  prominent?: boolean;
+}) {
+  const [exporting, setExporting] = useState<CertificateExportFormat | null>(
+    null,
+  );
+
+  async function download(format: CertificateExportFormat) {
+    if (!canvasRef.current || exporting) return;
+    setExporting(format);
+    try {
+      const { downloadCertificate } = await import(
+        "../export/certificate-export"
+      );
+      await downloadCertificate(canvasRef.current, templateName, format);
+    } catch {
+      toast.error(
+        `Não foi possível exportar o certificado em ${format.toUpperCase()}.`,
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  return (
+    <div
+      className={
+        prominent ? "grid w-full grid-cols-2 gap-3" : "flex items-center gap-2"
+      }
+    >
+      <Button
+        type="button"
+        size={prominent ? "default" : "sm"}
+        variant="outline"
+        className={prominent ? "h-11 gap-2" : undefined}
+        disabled={exporting !== null}
+        onClick={() => void download("png")}
+      >
+        {exporting === "png" ? (
+          <LoaderCircle
+            className={
+              prominent ? "size-5 animate-spin" : "size-4 animate-spin"
+            }
+          />
+        ) : (
+          <FileImage className={prominent ? "size-5" : "size-4"} />
+        )}
+        {prominent ? "Baixar PNG" : "PNG"}
+      </Button>
+      <Button
+        type="button"
+        size={prominent ? "default" : "sm"}
+        variant={prominent ? "outline" : "default"}
+        className={prominent ? "h-11 gap-2" : undefined}
+        disabled={exporting !== null}
+        onClick={() => void download("pdf")}
+      >
+        {exporting === "pdf" ? (
+          <LoaderCircle
+            className={
+              prominent ? "size-5 animate-spin" : "size-4 animate-spin"
+            }
+          />
+        ) : (
+          <Download className={prominent ? "size-5" : "size-4"} />
+        )}
+        {prominent ? "Baixar PDF" : "PDF"}
+      </Button>
+    </div>
+  );
 }
 
 export function CertViewer({
@@ -131,13 +210,14 @@ export function CertViewer({
 interface CertificateTemplateStaticViewProps {
   template: CertificationTemplateI;
   variables?: CertificateVariableValues;
+  overlay?: ReactNode;
 }
 
 export const CertificateTemplateStaticView = forwardRef<
   HTMLDivElement,
   CertificateTemplateStaticViewProps
 >(function CertificateTemplateStaticView(
-  { template, variables = {} },
+  { template, variables = {}, overlay },
   canvasRef,
 ) {
   const { ref, size } = useElementSize<HTMLDivElement>();
@@ -159,12 +239,13 @@ export const CertificateTemplateStaticView = forwardRef<
     >
       {scale > 0 ? (
         <div
-          className="relative shrink-0 overflow-hidden bg-white shadow-2xl ring-1 ring-black/10"
+          className="relative shrink-0 overflow-hidden bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.14),0_0_12px_rgba(0,0,0,0.10)]"
           style={{
             width: canvas.width * scale,
             height: canvas.height * scale,
           }}
         >
+          {overlay}
           <div
             ref={canvasRef}
             className="relative origin-top-left overflow-hidden bg-white"

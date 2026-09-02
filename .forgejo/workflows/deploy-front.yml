@@ -2,13 +2,11 @@ name: Deploy Frontends
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'front/identityx/**'
-      - 'front/informd/**'
-      - 'front/payssage/**'
-      - 'front/univents/**'
+    tags:
+      - 'identityx-ui/v*'
+      - 'informd-ui/v*'
+      - 'payssage-ui/v*'
+      - 'univents-ui/v*'
 
 defaults:
   run:
@@ -24,42 +22,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Filter changes
-        uses: https://github.com/dorny/paths-filter@v4
-        id: filter
-        with:
-          filters: |
-            identityx:
-              - 'front/identityx/**'
-            informd:
-              - 'front/informd/**'
-            payssage:
-              - 'front/payssage/**'
-            univents:
-              - 'front/univents/**'
-
-      - name: Check if any frontend changed
-        id: any_frontend
-        run: echo "changed=${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.univents == 'true' }}" >> $GITHUB_OUTPUT
-
       - name: Setup Node
-        if: steps.any_frontend.outputs.changed == 'true'
         uses: https://github.com/actions/setup-node@v6
         with:
           node-version: 22
 
       - name: Setup pnpm
-        if: steps.any_frontend.outputs.changed == 'true'
         uses: https://github.com/pnpm/action-setup@v6
         with:
           version: 10
 
       - name: Install dependencies
-        if: steps.any_frontend.outputs.changed == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build IdentityX
-        if: ${{ steps.filter.outputs.identityx == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'identityx-ui/') }}
         run: pnpm -F identityx build
         env:
           VITE_APP_TITLE: ${{ vars.IDENTITYX_APP_TITLE }}
@@ -68,7 +45,7 @@ jobs:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.IDENTITYX_POSTHOG_KEY }}
 
       - name: Deploy IdentityX
-        if: ${{ steps.filter.outputs.identityx == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'identityx-ui/') }}
         uses: https://github.com/cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -77,7 +54,7 @@ jobs:
           command: deploy
 
       - name: Build Informd
-        if: ${{ steps.filter.outputs.informd == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'informd-ui/') }}
         run: pnpm -F informd build
         env:
           VITE_APP_TITLE: ${{ vars.INFORMD_APP_TITLE }}
@@ -88,7 +65,7 @@ jobs:
           VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.INFORMD_AUTH_PROJECT_ID }}
 
       - name: Deploy Informd
-        if: ${{ steps.filter.outputs.informd == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'informd-ui/') }}
         uses: https://github.com/cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -97,7 +74,7 @@ jobs:
           command: deploy
 
       - name: Build Payssage
-        if: ${{ steps.filter.outputs.payssage == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'payssage-ui/') }}
         run: pnpm -F payssage build
         env:
           VITE_APP_TITLE: ${{ vars.PAYSSAGE_APP_TITLE }}
@@ -110,7 +87,7 @@ jobs:
           VITE_INTENT_TEST_MODE: ${{ vars.PAYSSAGE_INTENT_TEST_MODE }}
 
       - name: Deploy Payssage
-        if: ${{ steps.filter.outputs.payssage == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'payssage-ui/') }}
         uses: https://github.com/cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -119,7 +96,7 @@ jobs:
           command: deploy
 
       - name: Build Univents
-        if: ${{ steps.filter.outputs.univents == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'univents-ui/') }}
         run: pnpm -F univents build
         env:
           VITE_APP_TITLE: ${{ vars.UNIVENTS_APP_TITLE }}
@@ -131,7 +108,7 @@ jobs:
           VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.UNIVENTS_AUTH_PROJECT_ID }}
 
       - name: Deploy Univents
-        if: ${{ steps.filter.outputs.univents == 'true' }}
+        if: ${{ startsWith(github.ref_name, 'univents-ui/') }}
         uses: https://github.com/cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

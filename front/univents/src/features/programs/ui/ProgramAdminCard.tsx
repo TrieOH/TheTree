@@ -4,6 +4,7 @@ import {
   Clock3,
   MoreVertical,
   Pencil,
+  Send,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
@@ -43,6 +44,9 @@ export function ProgramAdminCard({
   onDelete,
   onManageCertificate,
   onUnlinkCertificate,
+  onEmitCertificates,
+  emissionCooldownLabel,
+  isEmittingCertificates = false,
   hasCertificate = false,
 }: {
   program: ProgramI;
@@ -53,6 +57,9 @@ export function ProgramAdminCard({
   onDelete: () => void;
   onManageCertificate: () => void;
   onUnlinkCertificate: () => void;
+  onEmitCertificates: () => void;
+  emissionCooldownLabel?: string;
+  isEmittingCertificates?: boolean;
   hasCertificate?: boolean;
 }) {
   const card = (
@@ -127,6 +134,22 @@ export function ProgramAdminCard({
                   ? "Desvincular certificado"
                   : "Vincular certificado"}
               </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={Boolean(
+                  emissionCooldownLabel || isEmittingCertificates,
+                )}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEmitCertificates();
+                }}
+              >
+                <Send className="size-4" />
+                {isEmittingCertificates
+                  ? "Iniciando emissão..."
+                  : emissionCooldownLabel
+                    ? `Emitir novamente em ${emissionCooldownLabel}`
+                    : "Emitir certificados"}
+              </DropdownMenuItem>
               <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
                 Banner{" "}
                 <ProgramImageActions
@@ -197,6 +220,20 @@ export function ProgramAdminCard({
         <ContextMenuItem onClick={onEdit}>
           <Pencil className="size-4" />
           Editar programa
+        </ContextMenuItem>
+        <ContextMenuItem
+          disabled={Boolean(emissionCooldownLabel || isEmittingCertificates)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onEmitCertificates();
+          }}
+        >
+          <Send className="size-4" />
+          {isEmittingCertificates
+            ? "Iniciando emissão..."
+            : emissionCooldownLabel
+              ? `Emitir novamente em ${emissionCooldownLabel}`
+              : "Emitir certificados"}
         </ContextMenuItem>
         <ContextMenuItem onClick={onManageOccurrences}>
           <CalendarDays className="size-4" />

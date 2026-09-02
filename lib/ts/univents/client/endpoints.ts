@@ -209,6 +209,7 @@ import type {
   Product,
   ProductVariant,
   Program,
+  ProgramCertEmissionResult,
   ProgramOccurrence,
   ProgramParticipant,
   ProgramParticipation,
@@ -5552,6 +5553,118 @@ export const useCreateProgramOccurrence = <TError = ErrorType<BadRequestResponse
         TContext
       > => {
       return useMutation(getCreateProgramOccurrenceMutationOptions(options));
+    }
+
+export type emitProgramCertificationsResponse200 = {
+  data: ProgramCertEmissionResult
+  status: 200
+}
+
+export type emitProgramCertificationsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type emitProgramCertificationsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type emitProgramCertificationsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type emitProgramCertificationsResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type emitProgramCertificationsResponseSuccess = (emitProgramCertificationsResponse200) & {
+  headers: Headers;
+};
+export type emitProgramCertificationsResponseError = (emitProgramCertificationsResponse401 | emitProgramCertificationsResponse403 | emitProgramCertificationsResponse404 | emitProgramCertificationsResponse500) & {
+  headers: Headers;
+};
+
+export type emitProgramCertificationsResponse = (emitProgramCertificationsResponseSuccess | emitProgramCertificationsResponseError)
+
+export const getEmitProgramCertificationsUrl = (programId: Uuid,) => {
+
+
+
+
+  return `/programs/${programId}/certifications/emit`
+}
+
+/**
+ * Enqueues the `cert.grant_occurrence` job for the program's
+ * participants. The job is idempotent: it only emits certificates
+ * for participants who do not already hold one for the program
+ * (accountless gifted participants are skipped), and records
+ * failures for later inspection via
+ * `/editions/{edition_id}/certifications/emission-errors`. The
+ * actor must be an owner or admin of the event.
+ * @summary Enqueue certification emission for a program
+ */
+export const emitProgramCertifications = async (programId: Uuid, options?: Parameters<typeof customInstance>[1]): Promise<emitProgramCertificationsResponse> => {
+
+  return customInstance<emitProgramCertificationsResponse>(getEmitProgramCertificationsUrl(programId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getEmitProgramCertificationsMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emitProgramCertifications>>, TError,{programId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof emitProgramCertifications>>, TError,{programId: Uuid}, TContext> => {
+
+const mutationKey = ['emitProgramCertifications'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof emitProgramCertifications>>, {programId: Uuid}> = (props) => {
+          const {programId} = props ?? {};
+
+          return  emitProgramCertifications(programId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EmitProgramCertificationsMutationResult = NonNullable<Awaited<ReturnType<typeof emitProgramCertifications>>>
+
+    export type EmitProgramCertificationsMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
+
+    /**
+ * @summary Enqueue certification emission for a program
+ */
+export const useEmitProgramCertifications = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emitProgramCertifications>>, TError,{programId: Uuid}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof emitProgramCertifications>>,
+        TError,
+        {programId: Uuid},
+        TContext
+      > => {
+      return useMutation(getEmitProgramCertificationsMutationOptions(options));
     }
 
 export type listEditionOccurrencesResponse200 = {

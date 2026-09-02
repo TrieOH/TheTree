@@ -16,7 +16,7 @@ export const DEFAULT_CERTIFICATION_TEMPLATE: CertificationTemplateI = {
   created_at: "",
   design_data: {
     canvas: { width: 1484, height: 1060 },
-    background: "/certificate-template.png",
+    background: "/certificate-template.webp",
     elements: [
       {
         id: "hash_0655c435-ae03-4b92-b46f-edd6f96890a8",
