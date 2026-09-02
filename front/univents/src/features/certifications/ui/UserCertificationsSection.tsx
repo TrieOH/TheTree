@@ -1,5 +1,5 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { FileCheck2 } from "lucide-react";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
@@ -104,12 +104,29 @@ function CertificateProfileCard({
   const canvas = template.design_data.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
   const width = 320;
   const height = (width * canvas.height) / canvas.width;
+  const navigate = useNavigate();
+
+  const openCertificate = () => {
+    void navigate({
+      to: "/verify/$hash",
+      params: { hash: certification.verification_hash },
+    });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openCertificate();
+    }
+  };
 
   return (
-    <Link
-      to="/verify/$hash"
-      params={{ hash: certification.verification_hash }}
-      className="block max-w-full transition hover:-translate-y-0.5"
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={openCertificate}
+      onKeyDown={handleKeyDown}
+      className="block max-w-full cursor-pointer transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       style={{ width, height, maxWidth: "100%" }}
       aria-label={`Abrir certificado de ${scopeName}`}
     >
@@ -129,6 +146,6 @@ function CertificateProfileCard({
           verify_url: `${window.location.origin}/verify/${certification.verification_hash}`,
         }}
       />
-    </Link>
+    </div>
   );
 }
