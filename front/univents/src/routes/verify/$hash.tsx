@@ -329,7 +329,7 @@ function VerifyCertificationPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:px-6 md:py-8 lg:grid-cols-2 lg:items-stretch">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:px-6! md:py-8! lg:grid-cols-2! lg:items-stretch!">
         <div className={showCertificateArea ? "min-w-0" : "hidden"}>
           {templateQuery && payload ? (
             <VerifiedTemplateSection
