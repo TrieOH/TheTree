@@ -288,7 +288,7 @@ function ProgramsRoute() {
                 navigate({
                   to: "/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences",
                   params: {
-                    eventId: program.edition_id,
+                    eventId,
                     editionId,
                     programId: program.id,
                   },
