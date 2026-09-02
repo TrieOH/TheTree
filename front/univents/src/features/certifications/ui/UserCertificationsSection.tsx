@@ -1,154 +1,134 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Award, CalendarDays, ExternalLink, FileCheck2 } from "lucide-react";
+import { FileCheck2 } from "lucide-react";
+import { allPublicEditionsQueryOptions } from "@/features/editions/api";
+import type { EditionI } from "@/features/editions/model";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { programsQueryOptions } from "@/features/programs/api";
-import { cn } from "@/shared/lib/utils";
-import { Badge } from "@/shared/ui/shadcn/badge";
-import { buttonVariants } from "@/shared/ui/shadcn/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui/shadcn/card";
+import type { ProgramI } from "@/features/programs/model";
 import { Skeleton } from "@/shared/ui/shadcn/skeleton";
-import { certificationsByUserQueryOptions } from "../api";
-
-interface UserCertificationsSectionProps {
-  editionId?: string;
-  title?: string;
-  subtitle?: string;
-}
+import {
+  certificationsByUserQueryOptions,
+  certificationTemplateQueryOptions,
+} from "../api";
+import { getCertificationTemplateOrDefault } from "../default-template";
+import { DEFAULT_CERTIFICATE_CANVAS } from "../editor/constants";
+import type { CertificationI } from "../model";
+import { CertificateTemplateStaticView } from "./CertViewer";
 
 export function UserCertificationsSection({
-  editionId,
-  title = "Meus certificados",
-  subtitle = editionId
-    ? "Certificados emitidos nesta edição."
-    : "Todos os certificados emitidos para sua conta.",
-}: UserCertificationsSectionProps) {
-  const certificationsQuery = useQuery({
-    ...certificationsByUserQueryOptions(),
+  participantName,
+}: {
+  participantName: string;
+}) {
+  const certifications = useQuery(certificationsByUserQueryOptions());
+  const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
+  const editionQueries = useQueries({
+    queries: events.map((event) => allPublicEditionsQueryOptions(event.id)),
   });
-  const programsQuery = useQuery({
-    ...programsQueryOptions(editionId ?? ""),
-    enabled: Boolean(editionId),
+  const editions = editionQueries.flatMap((query) => query.data ?? []);
+  const programQueries = useQueries({
+    queries: editions.map((edition) => programsQueryOptions(edition.id)),
   });
-  const programs = programsQuery.data ?? [];
-  const activityNames = new Map(
-    programs.map((program) => [program.id, program.name]),
-  );
-  const activityIds = new Set(activityNames.keys());
-  const certifications = editionId
-    ? (certificationsQuery.data ?? []).filter(
-        (certification) =>
-          (certification.program_id === null &&
-            certification.edition_id === editionId) ||
-          (certification.program_id !== null &&
-            activityIds.has(certification.program_id)),
-      )
-    : (certificationsQuery.data ?? []);
-  const isLoading = certificationsQuery.isLoading || programsQuery.isLoading;
+  const programs = programQueries.flatMap((query) => query.data ?? []);
+
+  if (certifications.isLoading) {
+    return (
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="aspect-[1.35] rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!certifications.data?.length) {
+    return (
+      <div className="grid min-h-64 place-items-center rounded-xl border border-dashed bg-card/40 p-8 text-center">
+        <div>
+          <FileCheck2 className="mx-auto size-9 text-muted-foreground" />
+          <h2 className="mt-3 font-semibold">Nenhum certificado emitido</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Seus certificados aparecerão aqui quando forem liberados.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <section className="space-y-4">
-      {editionId ? (
-        <div>
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Award className="size-5 text-primary" />
-            {title}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-        </div>
-      ) : null}
-
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-44 rounded-xl" />
-          <Skeleton className="h-44 rounded-xl" />
-        </div>
-      ) : certifications.length === 0 ? (
-        <div className="flex min-h-36 flex-col items-center justify-center rounded-lg border border-border/40 bg-card px-6 py-7 text-center shadow-sm">
-          <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <FileCheck2 className="size-5" />
-          </div>
-          <p className="text-sm font-medium">
-            {editionId
-              ? "Nenhum certificado nesta edição"
-              : "Nenhum certificado encontrado"}
-          </p>
-          <p className="mt-1 max-w-md text-xs text-muted-foreground">
-            Seus certificados emitidos aparecerão aqui assim que estiverem
-            disponíveis.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {certifications.map((certification) => {
-            const targetName =
-              certification.program_id === null
-                ? "Certificado da edição"
-                : (activityNames.get(certification.program_id ?? "") ??
-                  "Certificado de atividade");
-
-            return (
-              <Card key={certification.id} className="overflow-hidden">
-                <CardHeader className="border-b bg-muted/20 pb-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <CardTitle className="truncate text-base">
-                        {targetName}
-                      </CardTitle>
-                      <CardDescription className="mt-1 flex items-center gap-1.5 text-xs">
-                        <CalendarDays className="size-3.5" />
-                        Emitido em{" "}
-                        {formatCertificateDate(certification.issued_at)}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary">
-                      {certification.program_id === null
-                        ? "Edição"
-                        : "Atividade"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4 p-4">
-                  <div className="rounded-md bg-muted px-3 py-2">
-                    <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                      Código de verificação
-                    </p>
-                    <p className="mt-1 truncate font-mono text-xs">
-                      {certification.verification_hash || "Código indisponível"}
-                    </p>
-                  </div>
-                  {certification.verification_hash ? (
-                    <Link
-                      to="/verify/$hash"
-                      params={{ hash: certification.verification_hash }}
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        "w-full",
-                      )}
-                    >
-                      Verificar certificado
-                      <ExternalLink className="size-3.5" />
-                    </Link>
-                  ) : null}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-    </section>
+    <div className="flex flex-wrap items-start justify-center gap-3 sm:justify-start!">
+      {certifications.data.map((certification) => {
+        const edition = editions.find(
+          (item) => item.id === certification.edition_id,
+        );
+        return (
+          <CertificateProfileCard
+            key={certification.id}
+            certification={certification}
+            participantName={participantName}
+            eventName={
+              events.find((event) => event.id === edition?.event_id)
+                ?.full_name ?? "Evento"
+            }
+            edition={edition}
+            program={programs.find(
+              (program) => program.id === certification.program_id,
+            )}
+          />
+        );
+      })}
+    </div>
   );
 }
 
-function formatCertificateDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(value));
+function CertificateProfileCard({
+  certification,
+  participantName,
+  eventName,
+  edition,
+  program,
+}: {
+  certification: CertificationI;
+  participantName: string;
+  eventName: string;
+  edition?: EditionI;
+  program?: ProgramI;
+}) {
+  const { data: linkedTemplate } = useQuery({
+    ...certificationTemplateQueryOptions(certification.template_id ?? ""),
+    enabled: Boolean(certification.template_id),
+  });
+  const template = getCertificationTemplateOrDefault(linkedTemplate);
+  const scopeName = program?.name ?? edition?.name ?? "Participação";
+  const canvas = template.design_data.canvas ?? DEFAULT_CERTIFICATE_CANVAS;
+  const width = 320;
+  const height = (width * canvas.height) / canvas.width;
+
+  return (
+    <Link
+      to="/verify/$hash"
+      params={{ hash: certification.verification_hash }}
+      className="block max-w-full transition hover:-translate-y-0.5"
+      style={{ width, height, maxWidth: "100%" }}
+      aria-label={`Abrir certificado de ${scopeName}`}
+    >
+      <CertificateTemplateStaticView
+        template={template}
+        variables={{
+          participant_name: participantName,
+          event_name: eventName,
+          edition_name: edition?.name ?? "",
+          activity_name: scopeName,
+          participation_type: program ? "atividade" : "edição",
+          location: edition?.location_name ?? "",
+          certified_at: new Date(certification.issued_at).toLocaleDateString(
+            "pt-BR",
+          ),
+          cert_hash: certification.verification_hash,
+          verify_url: `${window.location.origin}/verify/${certification.verification_hash}`,
+        }}
+      />
+    </Link>
+  );
 }

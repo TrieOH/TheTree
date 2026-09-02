@@ -10,6 +10,7 @@ import {
 } from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
+import { UserCertificationsSection } from "@/features/certifications/ui/UserCertificationsSection";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { PurchasesContent } from "@/features/purchases/ui/purchases-content";
@@ -46,8 +47,8 @@ export interface ProfileViewProps {
   }>;
   ownProfile?: boolean;
   viewerActorId?: string;
-  activeTab: "about" | "badges" | "purchases";
-  onTabChange: (tab: "about" | "badges" | "purchases") => void;
+  activeTab: "about" | "badges" | "certificates" | "purchases";
+  onTabChange: (tab: "about" | "badges" | "certificates" | "purchases") => void;
 }
 
 export function ProfileView({
@@ -132,6 +133,12 @@ export function ProfileView({
             profileIdentifier={publicIdentifier ?? ""}
             participantName={profile.preferredName || profile.legalName || ""}
             editionLocations={editionLocations}
+          />
+        </div>
+      ) : activeTab === "certificates" && isOwnProfile ? (
+        <div className="mx-auto mt-5 max-w-7xl px-4">
+          <UserCertificationsSection
+            participantName={profile.preferredName || profile.legalName || ""}
           />
         </div>
       ) : activeTab === "purchases" ? (

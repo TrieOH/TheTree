@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
-  Award,
   LogOut,
   Palette,
   Pencil,
@@ -11,7 +10,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { UserCertificationsSection } from "@/features/certifications/ui/UserCertificationsSection";
 import {
   Accordion,
   AccordionContent,
@@ -86,13 +84,6 @@ export function ProfileConfigPage() {
             description="Ajuste como o Univents funciona para você."
           />
           <Accordion multiple>
-            <ProfileOption
-              value="certificates"
-              icon={Award}
-              title="Meus certificados"
-            >
-              <UserCertificationsSection />
-            </ProfileOption>
             <ProfileOption
               value="appearance"
               icon={Palette}

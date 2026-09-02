@@ -178,7 +178,7 @@ function VerifiedTemplateSection({
   ]);
 
   return (
-    <div className="mb-6 overflow-hidden rounded-xl border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{templateData.name}</p>
@@ -276,38 +276,53 @@ function VerifyCertificationPage() {
       editionId: edition.id,
     };
   }, [activityLookup, editionLookup, payload]);
+  const activity = payload?.program_id
+    ? activityLookup.get(payload.program_id)
+    : undefined;
+  const edition = payload
+    ? editionLookup.get(activity?.edition_id ?? payload.edition_id)
+    : undefined;
+  const event = edition ? eventLookup.get(edition.event_id) : undefined;
+  const certificateName = activity?.name ?? edition?.name ?? "Certificado";
 
   return (
     <main className="min-h-screen bg-background">
       <section className="border-b border-border/60 bg-linear-to-b from-muted/40 via-background to-background">
-        <div className="mx-auto max-w-3xl px-4 py-10 md:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
               <ShieldCheck className="size-4" />
               Verificação pública
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">
-              Certificado
+              {certificateName}
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Validação pública do certificado usando o hash da URL.
+              {event?.full_name
+                ? `Certificado emitido por ${event.full_name}.`
+                : "Validação pública de autenticidade do certificado."}
             </p>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-8">
-        {templateQuery && payload && (
-          <VerifiedTemplateSection
-            hash={hash}
-            templateQuery={templateQuery}
-            payload={payload}
-            activityLookup={activityLookup}
-            editionLookup={editionLookup}
-            eventLookup={eventLookup}
-          />
-        )}
-
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:px-6 md:py-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <div>
+          {templateQuery && payload ? (
+            <VerifiedTemplateSection
+              hash={hash}
+              templateQuery={templateQuery}
+              payload={payload}
+              activityLookup={activityLookup}
+              editionLookup={editionLookup}
+              eventLookup={eventLookup}
+            />
+          ) : isLoading ? (
+            <div className="grid min-h-80 place-items-center rounded-xl border bg-muted/30">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : null}
+        </div>
         <Card className="overflow-hidden border-border/60 bg-card shadow-sm">
           <CardHeader className="border-b border-border/60">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -332,41 +347,30 @@ function VerifyCertificationPage() {
                   Certificado verificado com sucesso
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border bg-muted/20 p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Usuário
-                    </p>
-                    <p className="mt-1 font-mono text-sm break-all">
-                      {payload?.user_id}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border bg-muted/20 p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Tipo
-                    </p>
-                    <p className="mt-1 text-sm font-medium capitalize">
-                      {payload?.program_id === null ? "edition" : "program"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border bg-muted/20 p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Target
-                  </p>
-                  <p className="mt-1 font-mono text-sm break-all">
-                    {payload?.program_id ?? payload?.edition_id}
-                  </p>
-                </div>
+                <dl className="divide-y rounded-xl border bg-muted/20 px-4">
+                  <CertificateDetail label="Evento" value={event?.full_name} />
+                  <CertificateDetail label="Edição" value={edition?.name} />
+                  {activity ? (
+                    <CertificateDetail
+                      label="Atividade"
+                      value={activity.name}
+                    />
+                  ) : null}
+                  <CertificateDetail
+                    label="Emitido em"
+                    value={
+                      payload ? formatCertifiedAt(payload.issued_at) : undefined
+                    }
+                  />
+                </dl>
 
                 <Separator />
 
-                <div className="text-sm text-muted-foreground">
-                  Emitido em{" "}
-                  <span className="font-medium text-foreground">
-                    {payload ? formatCertifiedAt(payload.issued_at) : "-"}
-                  </span>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Código de verificação
+                  </p>
+                  <p className="mt-1 break-all font-mono text-xs">{hash}</p>
                 </div>
               </>
             ) : (
@@ -387,13 +391,13 @@ function VerifyCertificationPage() {
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="gap-1.5">
                   <Hash className="size-3.5" />
-                  {payload.program_id === null ? "edition" : "program"}
+                  {payload.program_id === null ? "Edição" : "Atividade"}
                 </Badge>
                 <Badge
                   variant="secondary"
                   className="font-mono text-[10px] uppercase tracking-wider"
                 >
-                  {data?.valid ? "verified" : "unverified"}
+                  {data?.valid ? "Verificado" : "Não verificado"}
                 </Badge>
               </div>
             )}
@@ -401,5 +405,23 @@ function VerifyCertificationPage() {
         </Card>
       </div>
     </main>
+  );
+}
+
+function CertificateDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string;
+}) {
+  if (!value) return null;
+  return (
+    <div className="py-3">
+      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 text-sm font-medium">{value}</dd>
+    </div>
   );
 }
