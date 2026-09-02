@@ -1,8 +1,8 @@
 import type { SubmitPaymentPayloadI } from "@/features/payments/model";
+import type { CheckoutPhase } from "@/features/payments/model/checkout-phase";
 import { OrderSummary } from "@/features/payments/ui/checkout/OrderSummary";
 import { Timer } from "@/features/payments/ui/checkout/Timer";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
-import type { CheckoutPhase } from "@/features/products/hooks/use-checkout-socket";
 import type { ReservedItemI } from "@/features/products/model";
 
 interface CheckoutPaymentFormProps {

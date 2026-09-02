@@ -1,17 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { upsertById } from "../../../shared/lib/query-cache";
 import type { EventI } from "../model";
 import { eventKeys } from "./query-keys";
-
-function upsertById(events: EventI[] | undefined, event: EventI) {
-  if (!events) return events;
-  const index = events.findIndex((item) => item.id === event.id);
-
-  if (index === -1) return [...events, event];
-
-  const next = [...events];
-  next[index] = event;
-  return next;
-}
 
 function removeById(events: EventI[] | undefined, eventId: string) {
   return events?.filter((item) => item.id !== eventId);

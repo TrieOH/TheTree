@@ -1,16 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { upsertById } from "../../../shared/lib/query-cache";
 import { productKeys } from "../../products/api/query-keys";
 import type { OccurrenceI, ProgramI } from "../model";
 import { programKeys } from "./query-keys";
-
-function upsertById<T extends { id: string }>(list: T[] | undefined, item: T) {
-  if (!list) return list;
-  const index = list.findIndex((candidate) => candidate.id === item.id);
-  if (index === -1) return [...list, item];
-  const next = [...list];
-  next[index] = item;
-  return next;
-}
 
 export function syncProgramCache(queryClient: QueryClient, program: ProgramI) {
   queryClient.setQueryData<ProgramI[]>(

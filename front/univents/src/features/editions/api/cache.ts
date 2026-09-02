@@ -1,17 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { upsertById } from "../../../shared/lib/query-cache";
 import type { EditionI } from "../model";
 import { editionKeys } from "./query-keys";
-
-function upsertById(editions: EditionI[] | undefined, edition: EditionI) {
-  if (!editions) return editions;
-  const index = editions.findIndex((item) => item.id === edition.id);
-
-  if (index === -1) return [...editions, edition];
-
-  const next = [...editions];
-  next[index] = edition;
-  return next;
-}
 
 function invalidateDerivedEditions(queryClient: QueryClient, eventId: string) {
   void queryClient.invalidateQueries({
