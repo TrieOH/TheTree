@@ -3,16 +3,22 @@ import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortState } from "@trieoh/ui-base";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import { CalendarClock, CalendarDays, CalendarRange, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   allCertificationTemplatesQueryOptions,
   certificationTemplateLinksQueryOptions,
 } from "@/features/certifications/api";
 import {
+  useEmitProgramCertificationsMutation,
   useLinkCertificationTemplateMutation,
   useUnlinkCertificationTemplateMutation,
 } from "@/features/certifications/api/mutations";
 import { ToolbarCombobox } from "@/features/certifications/editor/ui/toolbar-combobox";
+import {
+  certificationEmissionCooldownRemaining,
+  formatCertificationEmissionCooldown,
+  startCertificationEmissionCooldown,
+} from "@/features/certifications/model/emission-cooldown";
 import {
   occurrencesQueryOptions,
   programsQueryOptions,
@@ -94,7 +100,14 @@ function ProgramsRoute() {
   const [certificateTemplateId, setCertificateTemplateId] = useState("");
   const linkCertificate = useLinkCertificationTemplateMutation();
   const unlinkCertificate = useUnlinkCertificationTemplateMutation();
+  const emitCertificates = useEmitProgramCertificationsMutation();
+  const [now, setNow] = useState(Date.now());
   const [programToUnlink, setProgramToUnlink] = useState<ProgramI | null>(null);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const firstOccurrenceByProgram = useMemo(
     () =>
@@ -272,39 +285,64 @@ function ProgramsRoute() {
           />
         }
         renderItems={(slice) =>
-          slice.map((program, index) => (
-            <ProgramAdminCard
-              key={program.id}
-              program={program}
-              index={index}
-              occurrences={occurrences.filter(
-                (item) => item.program_id === program.id,
-              )}
-              onEdit={() => {
-                setEditing(program);
-                setModalOpen(true);
-              }}
-              onManageOccurrences={() =>
-                navigate({
-                  to: "/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences",
-                  params: {
-                    eventId,
-                    editionId,
-                    programId: program.id,
-                  },
-                })
-              }
-              onDelete={() => {
-                setProgramToDelete(program);
-              }}
-              hasCertificate={linkedTemplateByProgram.has(program.id)}
-              onManageCertificate={() => {
-                setCertificateProgram(program);
-                setCertificateTemplateId("");
-              }}
-              onUnlinkCertificate={() => setProgramToUnlink(program)}
-            />
-          ))
+          slice.map((program, index) => {
+            const cooldown = certificationEmissionCooldownRemaining(
+              program.id,
+              now,
+            );
+            return (
+              <ProgramAdminCard
+                key={program.id}
+                program={program}
+                index={index}
+                occurrences={occurrences.filter(
+                  (item) => item.program_id === program.id,
+                )}
+                onEdit={() => {
+                  setEditing(program);
+                  setModalOpen(true);
+                }}
+                onManageOccurrences={() =>
+                  navigate({
+                    to: "/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences",
+                    params: {
+                      eventId,
+                      editionId,
+                      programId: program.id,
+                    },
+                  })
+                }
+                onDelete={() => {
+                  setProgramToDelete(program);
+                }}
+                hasCertificate={linkedTemplateByProgram.has(program.id)}
+                onManageCertificate={() => {
+                  setCertificateProgram(program);
+                  setCertificateTemplateId("");
+                }}
+                onUnlinkCertificate={() => setProgramToUnlink(program)}
+                emissionCooldownLabel={
+                  cooldown > 0
+                    ? formatCertificationEmissionCooldown(cooldown)
+                    : undefined
+                }
+                isEmittingCertificates={
+                  emitCertificates.isPending &&
+                  emitCertificates.variables === program.id
+                }
+                onEmitCertificates={() => {
+                  if (
+                    certificationEmissionCooldownRemaining(program.id) > 0 ||
+                    emitCertificates.isPending
+                  )
+                    return;
+                  startCertificationEmissionCooldown(program.id);
+                  setNow(Date.now());
+                  emitCertificates.mutate(program.id);
+                }}
+              />
+            );
+          })
         }
       />
       <AlertModal

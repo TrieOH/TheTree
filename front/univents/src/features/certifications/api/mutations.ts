@@ -9,6 +9,7 @@ import {
 import {
   createCertificationTemplateFn,
   deleteCertificationTemplateFn,
+  emitProgramCertificationsFn,
   invalidateCertificationFn,
   linkCertificationTemplateFn,
   unlinkCertificationTemplateFn,
@@ -142,5 +143,14 @@ export function useUnlinkCertificationTemplateMutation() {
       toast.error(
         getErrorMessage(error, "Não foi possível remover os vínculos"),
       ),
+  });
+}
+
+export function useEmitProgramCertificationsMutation() {
+  return useMutation({
+    mutationFn: emitProgramCertificationsFn,
+    onSuccess: () => toast.success("Emissão de certificados iniciada"),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, "Não foi possível iniciar a emissão")),
   });
 }

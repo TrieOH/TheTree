@@ -5,6 +5,7 @@ import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createCertificationTemplate,
   deleteCertificationTemplate,
+  emitProgramCertifications,
   getCertification,
   getCertificationTemplate,
   invalidateCertification,
@@ -119,6 +120,13 @@ export const unlinkCertificationTemplateFn = createClientOnlyFn(
       unlinkCertificationTemplate(templateId, { program_id: programId }).then(
         orvalData<null>,
       ),
+    ),
+);
+
+export const emitProgramCertificationsFn = createClientOnlyFn(
+  (programId: string) =>
+    withSpan("action:program-certifications-emit", () =>
+      emitProgramCertifications(programId).then(orvalData),
     ),
 );
 
