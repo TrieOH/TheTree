@@ -4,8 +4,10 @@ import {
   ArrowLeft,
   CheckCircle2,
   Gift,
+  History,
   ListChecks,
   LoaderCircle,
+  RotateCcw,
   Users,
   X,
 } from "lucide-react";
@@ -45,7 +47,9 @@ export function OccurrenceDrawPage({
   const [drawing, setDrawing] = useState(false);
   const [immersive, setImmersive] = useState(false);
   const [countdown, setCountdown] = useState<number>();
-  const [rollDurationMs, setRollDurationMs] = useState(0);
+  const [singleParticipantDraw, setSingleParticipantDraw] = useState(false);
+  const [allowRepeatWinners, setAllowRepeatWinners] = useState(false);
+  const [winnerHistory, setWinnerHistory] = useState<ProgramParticipant[]>([]);
   const timers = useRef<number[]>([]);
 
   const eligible = useMemo(
@@ -57,6 +61,13 @@ export function OccurrenceDrawPage({
       ),
     [audience, participants],
   );
+  const available = useMemo(() => {
+    if (allowRepeatWinners) return eligible;
+    const winnerIds = new Set(
+      winnerHistory.map((participant) => participant.id),
+    );
+    return eligible.filter((participant) => !winnerIds.has(participant.id));
+  }, [allowRepeatWinners, eligible, winnerHistory]);
   const clearTimers = () => {
     timers.current.forEach(window.clearTimeout);
     timers.current = [];
@@ -87,25 +98,33 @@ export function OccurrenceDrawPage({
     setDisplayed(undefined);
     setDrawing(false);
     setCountdown(undefined);
+    setSingleParticipantDraw(false);
   };
 
   const draw = () => {
-    const pool =
-      eligible.length > 1 && winner
-        ? eligible.filter((participant) => participant.id !== winner.id)
-        : eligible;
-    const selected = randomItem(pool);
+    const selected = randomItem(available);
     if (!selected) return;
 
     clearTimers();
     setWinner(undefined);
     setDisplayed(undefined);
-    setDrawing(true);
     setImmersive(true);
+
+    if (available.length === 1) {
+      setSingleParticipantDraw(true);
+      setDisplayed(selected);
+      setWinner(selected);
+      setWinnerHistory((history) => [...history, selected]);
+      setDrawing(false);
+      setCountdown(undefined);
+      return;
+    }
+
+    setSingleParticipantDraw(false);
+    setDrawing(true);
     setCountdown(3);
-    const sequence = drawSequence(eligible);
-    const { delays, durationMs } = drawTimeline(sequence.length);
-    setRollDurationMs(durationMs);
+    const sequence = drawSequence(available);
+    const { delays, durationMs } = drawTimeline(sequence.length, 6170);
 
     [2, 1].forEach((value, index) => {
       timers.current.push(
@@ -126,6 +145,7 @@ export function OccurrenceDrawPage({
         () => {
           setDisplayed(selected);
           setWinner(selected);
+          setWinnerHistory((history) => [...history, selected]);
           setDrawing(false);
         },
         1650 + durationMs + 180,
@@ -134,9 +154,9 @@ export function OccurrenceDrawPage({
   };
 
   return (
-    <main className="h-dvh overflow-y-auto bg-white text-[#17201b] dark:bg-[#141618] dark:text-[#f3f5f2]">
-      <div className="grid min-h-full min-w-0 lg:grid-cols-[21rem_minmax(0,1fr)]">
-        <aside className="space-y-6 border-b border-slate-200 p-5 dark:border-white/10 lg:border-r lg:border-b-0 lg:p-6">
+    <main className="h-dvh overflow-y-auto bg-white text-[#17201b] dark:bg-[#141618] dark:text-[#f3f5f2] lg:overflow-hidden!">
+      <div className="grid min-h-full min-w-0 lg:h-full! lg:grid-cols-[21rem_minmax(0,1fr)]">
+        <aside className="space-y-6 border-b border-slate-200 p-5 dark:border-white/10 lg:h-full! lg:overflow-y-auto! lg:border-r lg:border-b-0 lg:p-6">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               type="button"
@@ -199,6 +219,88 @@ export function OccurrenceDrawPage({
               </span>
             </div>
           </div>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Repetir vencedores</p>
+                <p className="text-xs text-muted-foreground">
+                  Permitir quem já ganhou
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={allowRepeatWinners}
+                disabled={drawing}
+                onClick={() => setAllowRepeatWinners((value) => !value)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                  allowRepeatWinners
+                    ? "bg-blue-600 dark:bg-[#d7ff43]"
+                    : "bg-slate-300 dark:bg-white/20"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-sm transition-transform dark:bg-[#111407] ${
+                    allowRepeatWinners ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+                <span className="sr-only">Permitir vencedores repetidos</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+              <div className="flex items-center gap-2">
+                <History className="size-4 text-muted-foreground" />
+                <p className="text-sm font-semibold">Vencedores</p>
+                {winnerHistory.length > 0 ? (
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {winnerHistory.length}
+                  </span>
+                ) : null}
+              </div>
+              {winnerHistory.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                  disabled={drawing}
+                  onClick={() => {
+                    setWinnerHistory([]);
+                    setWinner(undefined);
+                    setDisplayed(undefined);
+                    setSingleParticipantDraw(false);
+                  }}
+                >
+                  <RotateCcw className="size-3.5" />
+                  Limpar
+                </Button>
+              ) : null}
+            </div>
+
+            {winnerHistory.length > 0 ? (
+              <ol className="space-y-1">
+                {[...winnerHistory].reverse().map((participant, index) => (
+                  <li
+                    key={`${participant.id}-${winnerHistory.length - index}`}
+                    className="flex min-w-0 items-center gap-2 py-1.5 text-sm"
+                  >
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                      {winnerHistory.length - index}.
+                    </span>
+                    <span className="truncate font-medium">
+                      {participantName(participant)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Os resultados aparecerão aqui.
+              </p>
+            )}
+          </section>
         </aside>
 
         <motion.section
@@ -272,16 +374,28 @@ export function OccurrenceDrawPage({
             <>
               <Confetti />
               <motion.div
-                initial={{ opacity: 0, y: 32 }}
-                animate={{ opacity: 1, y: 0 }}
+                key={`${winner.id}-${winnerHistory.length}`}
+                initial={
+                  singleParticipantDraw
+                    ? { opacity: 0, y: 12, scale: 0.94 }
+                    : { opacity: 0, y: 32 }
+                }
+                animate={
+                  singleParticipantDraw
+                    ? { opacity: 1, y: 0, scale: 1 }
+                    : { opacity: 1, y: 0 }
+                }
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 className="relative z-10 max-w-full"
               >
                 <motion.div
                   className="mx-auto mb-8 h-1 bg-blue-600 dark:bg-[#d7ff43]"
                   initial={{ width: 0 }}
-                  animate={{ width: 72 }}
-                  transition={{ delay: 0.2, duration: 0.35 }}
+                  animate={{ width: singleParticipantDraw ? 112 : 72 }}
+                  transition={{
+                    delay: singleParticipantDraw ? 0.35 : 0.2,
+                    duration: 0.35,
+                  }}
                 />
                 <p className="text-sm font-semibold text-blue-700 uppercase dark:text-[#d7ff43] sm:text-base">
                   Vencedor
@@ -312,20 +426,15 @@ export function OccurrenceDrawPage({
                   </motion.p>
                 </AnimatePresence>
               </div>
-              {drawing ? (
-                <div className="mx-auto mt-10 h-px w-48 overflow-hidden bg-slate-200 dark:bg-white/15">
-                  <motion.div
-                    className="h-full bg-blue-600 dark:bg-[#d7ff43]"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{
-                      duration: rollDurationMs / 1000,
-                      ease: "easeInOut",
-                    }}
-                  />
-                </div>
-              ) : null}
             </div>
+          ) : available.length === 0 ? (
+            <>
+              <History className="mb-4 size-12 opacity-60" />
+              <p className="text-xl font-semibold">Todos já foram sorteados</p>
+              <p className="mt-2 max-w-md text-sm opacity-65">
+                Limpe o histórico ou permita repetir vencedores.
+              </p>
+            </>
           ) : (
             <>
               <Gift className="mb-5 size-12 text-blue-600 dark:text-[#d7ff43]" />
@@ -345,7 +454,12 @@ export function OccurrenceDrawPage({
                 type="button"
                 size="lg"
                 className="min-w-52 gap-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-[#d7ff43] dark:text-[#111407] dark:hover:bg-[#e3ff77]"
-                disabled={isPending || isLoadingNames || eligible.length === 0}
+                disabled={
+                  isPending ||
+                  isLoadingNames ||
+                  eligible.length === 0 ||
+                  available.length === 0
+                }
                 onClick={draw}
               >
                 <Gift className="size-4" />
