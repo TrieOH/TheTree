@@ -2,18 +2,10 @@ import type { MyTicket } from "@trieoh/univents-api/schemas";
 import { ArrowUp, Check, ShoppingCart, Star, TicketCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/features/products/hooks/use-cart";
+import { formatPrice } from "@/shared/lib/money";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import type { TicketI } from "../model";
-
-function formatPrice(cents: number): string {
-  if (cents === 0) return "Gratuito";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 0,
-  }).format(cents / 100);
-}
 
 interface TicketCardProps {
   ticket: TicketI;

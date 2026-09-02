@@ -30,8 +30,8 @@ function OccurrencesRoute() {
   const { data: allOccurrences = [] } = useQuery(
     occurrencesQueryOptions(editionId),
   );
-  const mutation = useOccurrenceMutation(editionId);
-  const deleteMutation = useDeleteOccurrenceMutation(editionId);
+  const mutation = useOccurrenceMutation();
+  const deleteMutation = useDeleteOccurrenceMutation();
   const program = programs.find((item) => item.id === programId);
   const occurrences = useMemo(
     () => allOccurrences.filter((item) => item.program_id === programId),

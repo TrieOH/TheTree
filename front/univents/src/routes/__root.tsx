@@ -65,7 +65,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
+      <body className="min-w-[320px] antialiased wrap:anywhere">
         <TanStackQueryProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AuthProvider

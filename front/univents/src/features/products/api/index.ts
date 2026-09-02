@@ -188,11 +188,3 @@ export const deleteVariantFn = createClientOnlyFn((variantId: string) => {
     deleteProductVariant(variantId).then(orvalData<null>),
   );
 });
-
-// ──────────── WebSocket ────────────
-
-export const getWebsocketAuthToken = createClientOnlyFn(() => {
-  console.warn("Not Implemeted");
-  return { data: { token: "" }, success: false };
-  // return authFetcher.get<{ token: string }>("/ws/token");
-});

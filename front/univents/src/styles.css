@@ -53,6 +53,8 @@ svg.ts-chart:focus-visible {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -78,6 +80,8 @@ svg.ts-chart:focus-visible {
   --border: oklch(0.8761 0 0);
   --input: oklch(0.8761 0 0);
   --ring: oklch(0.6816 0.167674 261.9443);
+  --selection: oklch(0.7975 0.1018 262.7 / 0.45);
+  --selection-foreground: oklch(0.1139 0.0789 264.05);
 }
 
 
@@ -101,6 +105,8 @@ svg.ts-chart:focus-visible {
   --border: oklch(0.35 0.02 260);
   --input: oklch(0.35 0.02 260);
   --ring: oklch(0.55 0.15 260);
+  --selection: oklch(0.6999 0.157 61.76 / 0.45);
+  --selection-foreground: oklch(0.95 0.005 260);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -124,6 +130,8 @@ svg.ts-chart:focus-visible {
   --border: oklch(0.35 0.02 260);
   --input: oklch(0.35 0.02 260);
   --ring: oklch(0.55 0.15 260);
+  --selection: oklch(0.6999 0.157 61.76 / 0.45);
+  --selection-foreground: oklch(0.95 0.005 260);
   }
 }
 
@@ -134,11 +142,54 @@ svg.ts-chart:focus-visible {
 body {
   margin: 0;
   min-width: 320px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
   color: var(--color-foreground);
   background-color: var(--color-background);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  color: var(--color-selection-foreground);
+  background-color: var(--color-selection);
+}
+
+@layer base {
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
+    text-wrap: balance;
+  }
+
+  :where(button, input, textarea, select) {
+    font: inherit;
+  }
+
+  :where(code, kbd, pre) {
+    font-variant-ligatures: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  :where([class*="transition-transform"], [class*="transition-all"]) {
+    transition-property: color, background-color, border-color, opacity,
+      box-shadow;
+  }
+
+  :where(.animate-pulse) {
+    animation: none;
+    opacity: 0.7;
+  }
+
+  :where(.animate-spin) {
+    animation-duration: 1.5s;
+  }
 }
 
 html.overlay-scrollbar {

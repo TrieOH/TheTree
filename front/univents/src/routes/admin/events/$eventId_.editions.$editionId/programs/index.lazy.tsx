@@ -77,7 +77,7 @@ function ProgramsRoute() {
   );
 
   const mutation = useProgramMutation(editionId);
-  const deleteMutation = useDeleteProgramMutation(editionId);
+  const deleteMutation = useDeleteProgramMutation();
   const [filter, setFilter] = useState("");
   const [startsAfter, setStartsAfter] = useState("");
   const [endsBefore, setEndsBefore] = useState("");

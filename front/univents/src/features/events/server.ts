@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createIdentityXAccessClient } from "@trieoh/identityx-access-sdk-ts";
 import { env } from "@/env";
+import { preventResponseCaching } from "@/shared/lib/http-cache";
 
 const identityXAccessClient = createIdentityXAccessClient({
   baseURL: env.VITE_AUTH_API_URL,
@@ -10,6 +11,7 @@ const identityXAccessClient = createIdentityXAccessClient({
 export const getActorEmailsServerFn = createServerFn({ method: "GET" })
   .validator((data: { actorIds: string[] }) => data)
   .handler(async ({ data }) => {
+    preventResponseCaching();
     const actors = await Promise.all(
       [...new Set(data.actorIds)].map(async (actorId) => {
         const actor = await identityXAccessClient.actors.getById(

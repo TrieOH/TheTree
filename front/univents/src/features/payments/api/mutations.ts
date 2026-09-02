@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { syncEventCaches } from "@/features/events/api/mutations";
+import { syncEventCaches } from "@/features/events/api/cache";
 import { eventKeys } from "@/features/events/api/query-keys";
 import { getErrorMessage } from "@/shared/lib/errors";
 import type { PaymentProviderI } from "../model";
@@ -52,7 +52,8 @@ export function useDisconnectEventSellerMutation() {
   return useMutation({
     mutationFn: disconnectEventSellerFn,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: eventKeys.all });
+      void queryClient.invalidateQueries({ queryKey: eventKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: eventKeys.details() });
       toast.success("Mercado Pago desconectado");
     },
     onError: (error) =>

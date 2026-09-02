@@ -2,7 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/shared/lib/errors";
-import type { EventI } from "../model";
+import { syncEventCaches } from "./cache";
 import {
   createEventFn,
   discontinueEventFn,
@@ -16,76 +16,9 @@ import {
 } from "./members";
 import { eventKeys } from "./query-keys";
 
-function upsertById(events: EventI[] | undefined, event: EventI) {
-  const list = events ?? [];
-  const index = list.findIndex((item) => item.id === event.id);
-
-  if (index === -1) return [...list, event];
-
-  const next = [...list];
-  next[index] = event;
-  return next;
-}
-
-function removeById(events: EventI[] | undefined, eventId: string) {
-  return (events ?? []).filter((item) => item.id !== eventId);
-}
-
-function shouldBePublic(event: Pick<EventI, "status">) {
-  return event.status !== "draft";
-}
-
-export function syncEventCaches(queryClient: QueryClient, event: EventI) {
-  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) =>
-    upsertById(old, event),
-  );
-
-  queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) => {
-    if (shouldBePublic(event)) return upsertById(old, event);
-    return removeById(old, event.id);
-  });
-
-  queryClient.setQueryData<EventI[]>(eventKeys.joinedLists(), (old) =>
-    old?.some((item) => item.id === event.id) ? upsertById(old, event) : old,
-  );
-}
-
-function syncEventStatusInCaches(
-  queryClient: QueryClient,
-  eventId: string,
-  status: EventI["status"],
-  updatedAt: string,
-) {
-  const ownEvent = queryClient
-    .getQueryData<EventI[]>(eventKeys.ownLists())
-    ?.find((event) => event.id === eventId);
-  const joinedEvent = queryClient
-    .getQueryData<EventI[]>(eventKeys.joinedLists())
-    ?.find((event) => event.id === eventId);
-  const publicEvent = queryClient
-    .getQueryData<EventI[]>(eventKeys.publicLists())
-    ?.find((event) => event.id === eventId);
-  const cachedEvent = ownEvent ?? joinedEvent ?? publicEvent;
-
-  if (!cachedEvent) return;
-
-  const nextEvent = { ...cachedEvent, status, updated_at: updatedAt };
-
-  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) =>
-    old?.some((event) => event.id === eventId)
-      ? upsertById(old, nextEvent)
-      : old,
-  );
-
-  queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) =>
-    upsertById(old, nextEvent),
-  );
-
-  queryClient.setQueryData<EventI[]>(eventKeys.joinedLists(), (old) =>
-    old?.some((event) => event.id === eventId)
-      ? upsertById(old, nextEvent)
-      : old,
-  );
+function invalidateEventReads(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: eventKeys.lists() });
+  void queryClient.invalidateQueries({ queryKey: eventKeys.details() });
 }
 
 export function useCreateEventMutation() {
@@ -107,13 +40,8 @@ export function usePublishEventMutation() {
 
   return useMutation({
     mutationFn: (eventId: string) => publishEventFn(eventId),
-    onSuccess: (_, eventId) => {
-      syncEventStatusInCaches(
-        queryClient,
-        eventId,
-        "active",
-        new Date().toISOString(),
-      );
+    onSuccess: () => {
+      invalidateEventReads(queryClient);
       toast.success("Evento publicado com sucesso!");
     },
     onError: (error) =>
@@ -133,6 +61,7 @@ export function usePatchEventMutation() {
     }) => patchEventFn(eventId, data),
     onSuccess: (res) => {
       syncEventCaches(queryClient, res);
+      void queryClient.invalidateQueries({ queryKey: eventKeys.details() });
       toast.success("Evento atualizado com sucesso!");
     },
     onError: (error) =>
@@ -145,13 +74,8 @@ export function useDiscontinueEventMutation() {
 
   return useMutation({
     mutationFn: (eventId: string) => discontinueEventFn(eventId),
-    onSuccess: (_, eventId) => {
-      syncEventStatusInCaches(
-        queryClient,
-        eventId,
-        "discontinued",
-        new Date().toISOString(),
-      );
+    onSuccess: () => {
+      invalidateEventReads(queryClient);
       toast.success("Evento descontinuado com sucesso!");
     },
     onError: (error) =>
@@ -167,7 +91,8 @@ export function useAddEventMemberMutation() {
     onSuccess: (res, input) => {
       queryClient.setQueryData<EventMemberWithEmailI[]>(
         eventKeys.members(input.eventId),
-        (old = []) => [...old.filter((member) => member.id !== res.id), res],
+        (old) =>
+          old ? [...old.filter((member) => member.id !== res.id), res] : old,
       );
       toast.success("Membro adicionado com sucesso!");
     },
@@ -184,7 +109,8 @@ export function useRemoveEventMemberMutation() {
     onSuccess: (_, input) => {
       queryClient.setQueryData<EventMemberWithEmailI[]>(
         eventKeys.members(input.eventId),
-        (old = []) => old.filter((member) => member.user_id !== input.userId),
+        (old) =>
+          old ? old.filter((member) => member.user_id !== input.userId) : old,
       );
       toast.success("Membro removido com sucesso!");
     },

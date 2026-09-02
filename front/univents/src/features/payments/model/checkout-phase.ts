@@ -1,0 +1,16 @@
+export type CheckoutPhase =
+  | "idle"
+  | "connecting"
+  | "awaiting_reservation"
+  | "reservation_confirmed"
+  | "partial_reservation"
+  | "reservation_failed"
+  | "awaiting_payment"
+  | "payment_processing"
+  | "payment_failed"
+  | "purchase_cancelled"
+  | "payment_pending"
+  | "pix_pending"
+  | "payment_confirmed"
+  | "session_expired"
+  | "error";

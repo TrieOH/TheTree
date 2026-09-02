@@ -15,12 +15,8 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { formatMoney } from "@/shared/lib/money";
 import { resolvePurchaseCatalog } from "../api/purchase-catalog";
-
-const money = (cents: number, currency: string) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(
-    cents / 100,
-  );
 
 const statusCopy = {
   pending: [
@@ -163,7 +159,7 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                   </p>
                 </div>
                 <span className="shrink-0 text-xs font-semibold tabular-nums min-[360px]:text-sm">
-                  {money(
+                  {formatMoney(
                     item.unit_price_cents * item.quantity,
                     purchase.currency,
                   )}
@@ -175,13 +171,13 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
           <div className="mt-6 space-y-2 border-t border-border pt-5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{money(subtotal, purchase.currency)}</span>
+              <span>{formatMoney(subtotal, purchase.currency)}</span>
             </div>
           </div>
           <div className="mt-4 flex justify-between border-t border-border pt-4 font-bold">
             <span>Total</span>
             <span className="text-xl tabular-nums">
-              {money(purchase.total_cents, purchase.currency)}
+              {formatMoney(purchase.total_cents, purchase.currency)}
             </span>
           </div>
           <div className="mt-auto flex items-center gap-1.5 pt-8 text-xs text-muted-foreground">

@@ -193,7 +193,7 @@ function RouteComponent() {
               onClick={() => {
                 if (!deletingTemplate) return;
                 deleteTemplateMutation.mutate(
-                  { templateId: deletingTemplate.id },
+                  { editionId, templateId: deletingTemplate.id },
                   { onSuccess: () => setDeletingTemplate(null) },
                 );
               }}

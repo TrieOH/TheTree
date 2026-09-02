@@ -17,10 +17,7 @@ import {
   type CertificateVariableValues,
   resolveCertificationTemplate,
 } from "../editor/variables";
-import {
-  type CertificateExportFormat,
-  downloadCertificate,
-} from "../export/certificate-export";
+import type { CertificateExportFormat } from "../export/certificate-export";
 import type { CertificationTemplateI } from "../model";
 
 interface CertViewerProps {
@@ -47,6 +44,9 @@ export function CertViewer({
     if (!canvasRef.current || exporting) return;
     setExporting(format);
     try {
+      const { downloadCertificate } = await import(
+        "../export/certificate-export"
+      );
       await downloadCertificate(canvasRef.current, template.name, format);
     } catch {
       toast.error(

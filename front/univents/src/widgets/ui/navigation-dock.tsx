@@ -1,14 +1,11 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useAuthActions } from "@trieoh/front-core";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import type { LucideIcon } from "lucide-react";
 import { Calendar, Home, LayoutGrid, LogIn, LogOut, User } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { memo, useMemo, useRef, useState } from "react";
-import {
-  clearAuthReturnTo,
-  isAuthOnlyPath,
-} from "@/features/auths/lib/auth-path";
+import { useSessionActions } from "@/features/auths/hooks/use-session-actions";
+import { isAuthOnlyPath } from "@/features/auths/lib/auth-path";
 import { cn } from "@/shared/lib/utils";
 import {
   Tooltip,
@@ -223,7 +220,7 @@ const MobileNavItem = ({
 };
 
 export const NavigationDock = memo(({ className }: NavigationDockProps) => {
-  const { handleLogoutTo } = useAuthActions();
+  const { logoutTo } = useSessionActions();
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -240,14 +237,13 @@ export const NavigationDock = memo(({ className }: NavigationDockProps) => {
     () =>
       getNavItems(
         {
-          logout: () => {
-            clearAuthReturnTo(localStorage);
-            return handleLogoutTo(logoutDestination);
+          logout: async () => {
+            await logoutTo(logoutDestination);
           },
         },
         isAuthenticated,
       ),
-    [handleLogoutTo, isAuthenticated, logoutDestination],
+    [isAuthenticated, logoutDestination, logoutTo],
   );
 
   const activeId = useMemo(() => {

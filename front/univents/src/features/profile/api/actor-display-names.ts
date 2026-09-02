@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
+import { getActorEmailsServerFn } from "@/features/events/server";
 import { asUniventsProfile, profileDisplayName } from "../model/profile-data";
 import { profileKeys } from "./query-keys";
 

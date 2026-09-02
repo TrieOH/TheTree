@@ -11,8 +11,8 @@ interface SpinnerProps {
 
 export function Spinner({
   size = "3rem",
-  activeColor = "#7627a3",
-  trackColor = "#f2d4fe",
+  activeColor = "var(--primary)",
+  trackColor = "color-mix(in srgb, var(--primary) 18%, transparent)",
   duration = "8s",
   className,
 }: SpinnerProps) {

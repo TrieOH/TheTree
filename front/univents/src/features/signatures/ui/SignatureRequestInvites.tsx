@@ -2,11 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import { Mail, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-  allSignatureRequestsQueryOptions,
-  cancelSignatureRequestFn,
-} from "@/features/signatures/api";
+import { allSignatureRequestsQueryOptions } from "@/features/signatures/api";
+import { useCancelSignatureRequestMutation } from "@/features/signatures/api/mutations";
 import type { SignatureRequestI } from "@/features/signatures/model";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
@@ -15,6 +12,7 @@ import { CreateSignatureRequestModal } from "./CreateSignatureRequestModal";
 
 export function SignatureRequestInvites({ editionId }: { editionId: string }) {
   const requestsQuery = useQuery(allSignatureRequestsQueryOptions(editionId));
+  const cancelRequest = useCancelSignatureRequestMutation();
   const [createOpen, setCreateOpen] = useState(false);
   const [filter, setFilter] = useState("");
 
@@ -30,17 +28,6 @@ export function SignatureRequestInvites({ editionId }: { editionId: string }) {
       ].some((value) => value.toLowerCase().includes(search)),
     );
   }, [filter, requestsQuery.data]);
-
-  const cancelInvite = async (request: SignatureRequestI) => {
-    try {
-      await cancelSignatureRequestFn(request.id);
-      await requestsQuery.refetch();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao cancelar convite",
-      );
-    }
-  };
 
   return (
     <>
@@ -129,7 +116,13 @@ export function SignatureRequestInvites({ editionId }: { editionId: string }) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => void cancelInvite(request)}
+                    disabled={cancelRequest.isPending}
+                    onClick={() =>
+                      cancelRequest.mutate({
+                        editionId,
+                        requestId: request.id,
+                      })
+                    }
                   >
                     Cancelar
                   </Button>
@@ -144,7 +137,6 @@ export function SignatureRequestInvites({ editionId }: { editionId: string }) {
         editionId={editionId}
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onCreated={() => requestsQuery.refetch().then(() => undefined)}
       />
     </>
   );

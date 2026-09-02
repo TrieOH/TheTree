@@ -6,8 +6,8 @@ import {
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import type { EventI } from "../model";
+import { syncEventCaches } from "./cache";
 import { patchEventFn } from "./index";
-import { syncEventCaches } from "./mutations";
 
 type ImageField = "logo_url" | "banner_url";
 

@@ -6,8 +6,8 @@ import {
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import type { VariantI } from "../model";
+import { syncVariantCaches } from "./cache";
 import { patchVariantFn } from "./index";
-import { productKeys } from "./query-keys";
 
 registerUploadAssociationHandler("variant-gallery", async (task, url) => {
   const productId = task.association?.input?.productId;
@@ -31,8 +31,5 @@ registerUploadAssociationHandler("variant-gallery", async (task, url) => {
     stock: variant.stock,
     gallery_urls: [...(variant.gallery_urls ?? []), url],
   });
-  getContext().queryClient.setQueryData<VariantI[]>(
-    productKeys.variants.byProduct(productId),
-    (old = []) => old.map((item) => (item.id === updated.id ? updated : item)),
-  );
+  syncVariantCaches(getContext().queryClient, updated);
 });

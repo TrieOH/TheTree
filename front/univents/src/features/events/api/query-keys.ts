@@ -7,8 +7,9 @@ export const eventKeys = {
   joinedLists: () => [...eventKeys.lists(), "joined"] as const,
   members: (eventId: string) => [...eventKeys.all, eventId, "members"] as const,
 
+  details: () => [...eventKeys.all, "detail"] as const,
   detail: {
     publicBySlug: (slug: string) =>
-      [...eventKeys.all, "detail", "public", "slug", slug] as const,
+      [...eventKeys.details(), "public", "slug", slug] as const,
   },
 };

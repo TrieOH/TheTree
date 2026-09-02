@@ -1,7 +1,5 @@
 import { useMemo } from "react";
-import { toast } from "sonner";
-import { createSignatureRequestFn } from "@/features/signatures/api";
-import { findActorIdByEmailServerFn } from "@/features/signatures/api/actor-lookup";
+import { useCreateSignatureRequestMutation } from "@/features/signatures/api/mutations";
 import {
   type SignatureRequestCreateInputI,
   type SignatureRequestCreateOutputI,
@@ -15,7 +13,6 @@ interface CreateSignatureRequestModalProps {
   editionId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated: () => Promise<void>;
 }
 
 const defaults: SignatureRequestCreateInputI = {
@@ -30,9 +27,9 @@ export function CreateSignatureRequestModal({
   editionId,
   open,
   onOpenChange,
-  onCreated,
 }: CreateSignatureRequestModalProps) {
   const steps = useMemo(() => createSignatureRequestFormSteps(), []);
+  const createRequest = useCreateSignatureRequestMutation();
   const controller = useMultiStepForm<
     SignatureRequestCreateInputI,
     SignatureRequestCreateOutputI
@@ -41,22 +38,8 @@ export function CreateSignatureRequestModal({
     steps,
     defaultValues: defaults,
     onSubmit: async (values) => {
-      try {
-        await createSignatureRequestFn(editionId, {
-          ...values,
-          signatory_title: values.signatory_title || undefined,
-          signatory_user_id: await findActorIdByEmailServerFn({
-            data: { email: values.signatory_email },
-          }),
-        });
-        await onCreated();
-        return true;
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Erro ao criar convite",
-        );
-        return false;
-      }
+      await createRequest.mutateAsync({ editionId, data: values });
+      return true;
     },
     onSubmitSuccess: () => onOpenChange(false),
     resetOnSuccessValues: defaults,

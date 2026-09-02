@@ -179,7 +179,6 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                   }
 
                   await saveMutation.mutateAsync({
-                    eventId,
                     editionId,
                     data: {
                       signatory_name: trimmedName,
@@ -189,8 +188,6 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                       image_url: url,
                     },
                   });
-
-                  toast.success("Assinatura criada com sucesso");
                   void navigate({
                     to: "/admin/events/$eventId/editions/$editionId/signatures",
                     params: { eventId, editionId },

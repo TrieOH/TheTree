@@ -39,6 +39,7 @@ import {
   MIN_BADGE_CANVAS_SIZE_MM,
   MIN_BADGE_CANVAS_SIZE_PX,
 } from "../model";
+import { resizeBadgeDesign } from "../model/resize-design";
 import { BadgeCanvas } from "./badge-canvas";
 import { uploadBadgeAssets } from "./upload-assets";
 
@@ -167,36 +168,12 @@ export function BadgeEditor({
     [],
   );
   const resizeCanvas = (canvas: { width: number; height: number }) => {
-    const previous = draft.design_data.canvas;
     if (
       canvas.width < MIN_BADGE_CANVAS_SIZE_PX ||
       canvas.height < MIN_BADGE_CANVAS_SIZE_PX
     )
       return;
-    const scaleX = canvas.width / previous.width;
-    const scaleY = canvas.height / previous.height;
-    const fontScale = Math.sqrt(scaleX * scaleY);
-    updateDesign({
-      canvas,
-      elements: draft.design_data.elements.map((element) => ({
-        ...element,
-        x: element.x * scaleX,
-        y: element.y * scaleY,
-        width: element.width * scaleX,
-        height: element.height * scaleY,
-        ...(element.type === "text"
-          ? {
-              paragraphs: element.paragraphs.map((paragraph) => ({
-                ...paragraph,
-                runs: paragraph.runs.map((run) => ({
-                  ...run,
-                  fontSize: Math.max(6, Math.round(run.fontSize * fontScale)),
-                })),
-              })),
-            }
-          : {}),
-      })) as BadgeElement[],
-    });
+    updateDesign(resizeBadgeDesign(draft.design_data, canvas));
   };
   const textAdapter = useMemo(
     () => ({
@@ -244,7 +221,7 @@ export function BadgeEditor({
           params: { eventId, editionId },
         });
       if (templateId && !duplicate)
-        updateMutation.mutate({ templateId, data, editionId }, { onSuccess });
+        updateMutation.mutate({ templateId, data }, { onSuccess });
       else createMutation.mutate({ editionId, data }, { onSuccess });
     } catch {
       toast.error("Não foi possível enviar as imagens do crachá");

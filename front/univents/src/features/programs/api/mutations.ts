@@ -19,6 +19,12 @@ import {
   patchProgramFn,
   registerOccurrenceFn,
 } from ".";
+import {
+  removeOccurrenceCaches,
+  removeProgramCaches,
+  syncOccurrenceCache,
+  syncProgramCache,
+} from "./cache";
 import { programKeys } from "./query-keys";
 
 export function useProgramMutation(editionId: string) {
@@ -31,8 +37,8 @@ export function useProgramMutation(editionId: string) {
       id?: string;
       data: ProgramCreateInput | ProgramCreateOutput;
     }) => (id ? patchProgramFn(id, data) : createProgramFn(editionId, data)),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
+    onSuccess: (program) => {
+      syncProgramCache(qc, program);
       toast.success("Programa salvo");
     },
     onError: (error) =>
@@ -71,15 +77,12 @@ export function useCheckpointCheckInMutation(occurrenceId: string) {
   });
 }
 
-export function useDeleteProgramMutation(editionId: string) {
+export function useDeleteProgramMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteProgramFn,
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: programKeys.byEdition(editionId) });
-      void qc.invalidateQueries({
-        queryKey: programKeys.occurrences(editionId),
-      });
+    onSuccess: (program) => {
+      removeProgramCaches(qc, program);
       toast.success("Programa excluído");
     },
     onError: (error) =>
@@ -89,7 +92,7 @@ export function useDeleteProgramMutation(editionId: string) {
   });
 }
 
-export function useOccurrenceMutation(editionId: string) {
+export function useOccurrenceMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -106,10 +109,8 @@ export function useOccurrenceMutation(editionId: string) {
         throw new Error("programId é obrigatório para criar uma ocorrência");
       return createOccurrenceFn(programId, data);
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({
-        queryKey: programKeys.occurrences(editionId),
-      });
+    onSuccess: (occurrence) => {
+      syncOccurrenceCache(qc, occurrence);
       toast.success("Ocorrência salva");
     },
     onError: (error) =>
@@ -119,14 +120,12 @@ export function useOccurrenceMutation(editionId: string) {
   });
 }
 
-export function useDeleteOccurrenceMutation(editionId: string) {
+export function useDeleteOccurrenceMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteOccurrenceFn,
-    onSuccess: () => {
-      void qc.invalidateQueries({
-        queryKey: programKeys.occurrences(editionId),
-      });
+    onSuccess: (occurrence) => {
+      removeOccurrenceCaches(qc, occurrence);
       toast.success("Ocorrência excluída");
     },
     onError: (error) =>

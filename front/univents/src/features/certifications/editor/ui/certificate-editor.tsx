@@ -32,7 +32,7 @@ export function CertificateEditor({
   duplicate = false,
 }: CertificateEditorProps) {
   const { data: signatures = [] } = useQuery(
-    allSignaturesQueryOptions(eventId, editionId),
+    allSignaturesQueryOptions(editionId),
   );
   const templateQuery = useQuery({
     ...certificationTemplateQueryOptions(templateId ?? ""),
@@ -80,7 +80,7 @@ export function CertificateEditor({
       });
     if (templateId && !duplicate)
       updateTemplate.mutate({ templateId, data }, { onSuccess });
-    else createTemplate.mutate({ eventId, editionId, data }, { onSuccess });
+    else createTemplate.mutate({ editionId, data }, { onSuccess });
   }
 
   return (

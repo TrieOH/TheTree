@@ -6,8 +6,8 @@ import {
 } from "@/features/upload-queue";
 import { getContext } from "@/integrations/tanstack-query/root-provider";
 import type { ProgramI } from "../model";
+import { syncProgramCache } from "./cache";
 import { patchProgramFn } from "./index";
-import { programKeys } from "./query-keys";
 
 registerUploadAssociationHandler("program-image", async (task, url) => {
   const editionId = task.association?.input?.editionId;
@@ -32,8 +32,5 @@ registerUploadAssociationHandler("program-image", async (task, url) => {
     price: program.price,
     banner_url: url,
   });
-  getContext().queryClient.setQueryData<ProgramI[]>(
-    programKeys.byEdition(editionId),
-    (old = []) => old.map((item) => (item.id === updated.id ? updated : item)),
-  );
+  syncProgramCache(getContext().queryClient, updated);
 });

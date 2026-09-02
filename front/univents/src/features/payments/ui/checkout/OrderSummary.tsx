@@ -4,6 +4,7 @@ import { Package } from "lucide-react";
 import { useMemo } from "react";
 import type { ReservedItemI } from "@/features/products/model";
 import type { CartItem } from "@/features/products/model/cart";
+import { formatPrice } from "@/shared/lib/money";
 
 interface OrderSummaryProps {
   items: (CartItem | ReservedItemI)[];
@@ -26,14 +27,6 @@ function normalizeItem(item: CartItem | ReservedItemI): NormalizedItem {
     quantity: item.quantity,
     price_cents: item.price_cents,
   };
-}
-
-function formatCurrency(cents: number) {
-  if (cents === 0) return "Gratuito";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(cents / 100);
 }
 
 export function OrderSummary({
@@ -81,11 +74,11 @@ export function OrderSummary({
                   {item.name}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatCurrency(item.price_cents)} por unidade
+                  {formatPrice(item.price_cents)} por unidade
                 </p>
               </div>
               <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-                {formatCurrency(subtotal)}
+                {formatPrice(subtotal)}
               </span>
             </div>
           );
@@ -103,7 +96,7 @@ export function OrderSummary({
           </p>
         </div>
         <span className="text-2xl font-bold text-primary tabular-nums">
-          {formatCurrency(total)}
+          {formatPrice(total)}
         </span>
       </div>
     </div>

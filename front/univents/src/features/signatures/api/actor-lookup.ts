@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createIdentityXAccessClient } from "@trieoh/identityx-access-sdk-ts";
 import { z } from "zod";
 import { env } from "@/env";
+import { preventResponseCaching } from "@/shared/lib/http-cache";
 
 const identityXAccessClient = createIdentityXAccessClient({
   baseURL: env.VITE_AUTH_API_URL,
@@ -11,6 +12,7 @@ const identityXAccessClient = createIdentityXAccessClient({
 export const findActorIdByEmailServerFn = createServerFn({ method: "GET" })
   .validator(z.object({ email: z.email() }))
   .handler(async ({ data }) => {
+    preventResponseCaching();
     const result = await identityXAccessClient.actors.getByEmail(
       env.VITE_TRIEOH_AUTH_PROJECT_ID,
       data.email,

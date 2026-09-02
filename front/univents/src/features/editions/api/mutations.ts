@@ -1,12 +1,8 @@
-import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/shared/lib/errors";
-import type {
-  EditionCreateOutputI,
-  EditionI,
-  EditionPatchOutputI,
-} from "../model";
+import type { EditionCreateOutputI, EditionPatchOutputI } from "../model";
+import { syncEditionCaches } from "./cache";
 import { createEditionFn, patchEditionFn, publishEditionFn } from "./index";
 import { editionKeys } from "./query-keys";
 
@@ -25,32 +21,6 @@ type PublishEditionInput = {
   eventId: string;
   editionId: string;
 };
-
-function upsertById(editions: EditionI[] | undefined, edition: EditionI) {
-  const list = editions ?? [];
-  const index = list.findIndex((item) => item.id === edition.id);
-
-  if (index === -1) return [...list, edition];
-
-  const next = [...list];
-  next[index] = edition;
-  return next;
-}
-
-function syncEditionCaches(queryClient: QueryClient, edition: EditionI) {
-  queryClient.setQueryData<EditionI[]>(
-    editionKeys.adminListByEvent(edition.event_id),
-    (old) => upsertById(old, edition),
-  );
-
-  queryClient.setQueryData<EditionI[]>(
-    editionKeys.publicListByEvent(edition.event_id),
-    (old) =>
-      edition.is_draft
-        ? (old ?? []).filter((item) => item.id !== edition.id)
-        : upsertById(old, edition),
-  );
-}
 
 export function useCreateEditionMutation() {
   const queryClient = useQueryClient();

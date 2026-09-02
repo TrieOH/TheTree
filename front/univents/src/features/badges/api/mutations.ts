@@ -7,7 +7,7 @@ import {
   deleteBadgeTemplateFn,
   updateBadgeTemplateFn,
 } from ".";
-import { badgeKeys } from "./query-keys";
+import { removeBadgeTemplateCache, syncBadgeTemplateCache } from "./cache";
 
 export function useCreateBadgeTemplateMutation() {
   const client = useQueryClient();
@@ -19,10 +19,8 @@ export function useCreateBadgeTemplateMutation() {
       editionId: string;
       data: BadgeTemplateCreate;
     }) => createBadgeTemplateFn(editionId, data),
-    onSuccess: (_, { editionId }) => {
-      void client.invalidateQueries({
-        queryKey: badgeKeys.byEdition(editionId),
-      });
+    onSuccess: (template) => {
+      syncBadgeTemplateCache(client, template);
       toast.success("Template de crachá criado");
     },
     onError: (error) =>
@@ -38,14 +36,10 @@ export function useUpdateBadgeTemplateMutation() {
       data,
     }: {
       templateId: string;
-      editionId: string;
       data: BadgeTemplateCreate;
     }) => updateBadgeTemplateFn(templateId, data),
-    onSuccess: (_, { editionId, templateId }) => {
-      void client.invalidateQueries({
-        queryKey: badgeKeys.byEdition(editionId),
-      });
-      void client.invalidateQueries({ queryKey: badgeKeys.detail(templateId) });
+    onSuccess: (template) => {
+      syncBadgeTemplateCache(client, template);
       toast.success("Template de crachá atualizado");
     },
     onError: (error) =>
@@ -58,10 +52,10 @@ export function useUpdateBadgeTemplateMutation() {
 export function useDeleteBadgeTemplateMutation() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({ templateId }: { templateId: string }) =>
+    mutationFn: ({ templateId }: { editionId: string; templateId: string }) =>
       deleteBadgeTemplateFn(templateId),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: badgeKeys.all });
+    onSuccess: (_, { editionId, templateId }) => {
+      removeBadgeTemplateCache(client, editionId, templateId);
       toast.success("Template excluído");
     },
     onError: (error) =>

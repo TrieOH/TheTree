@@ -4,7 +4,6 @@ import type { SortState } from "@trieoh/ui-base";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
 import { UserPlus, Users } from "lucide-react";
 import { useState } from "react";
-import { getActorEmailsServerFn } from "@/features/events/api/actor-emails";
 import {
   allEventMembersQueryOptions,
   type EventMemberWithEmailI,
@@ -17,6 +16,7 @@ import type {
   EventMemberCreateOutput,
   EventMemberRole,
 } from "@/features/events/model/member";
+import { getActorEmailsServerFn } from "@/features/events/server";
 import { AdminEventMemberCard } from "@/features/events/ui/AdminEventMemberCard";
 import { ManageEventMemberModal } from "@/features/events/ui/ManageEventMemberModal";
 import { RemoveEventMemberModal } from "@/features/events/ui/RemoveEventMemberModal";

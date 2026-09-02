@@ -7,6 +7,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { useState } from "react";
+import { formatPrice } from "@/shared/lib/money";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import {
@@ -16,15 +17,6 @@ import {
 } from "@/shared/ui/shadcn/tooltip";
 import { useCart } from "../hooks/use-cart";
 import type { ProductI, VariantI } from "../model";
-
-function formatPrice(price: number): string {
-  if (price === 0) return "Gratuito";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2,
-  }).format(price / 100);
-}
 
 interface ProductCardCompactProps {
   product: ProductI & { name?: string };

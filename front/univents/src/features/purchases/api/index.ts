@@ -1,4 +1,4 @@
-import { queryOptions, useMutation } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { orvalData } from "@trieoh/api-client";
 import {
@@ -45,22 +45,6 @@ export const createCheckoutFn = createClientOnlyFn(
     createEditionCheckout(editionId, data).then(orvalData<CheckoutResult>),
 );
 
-export function useCreateCheckoutMutation() {
-  return useMutation({
-    mutationFn: ({
-      editionId,
-      data,
-    }: {
-      editionId: string;
-      data: CreateCheckoutRequest;
-    }) => createCheckoutFn(editionId, data),
-  });
-}
-
-export function useRefundPurchaseMutation() {
-  return useMutation({ mutationFn: refundPurchaseFn });
-}
-
 export const checkoutQueryOptions = (purchaseId: string) =>
   queryOptions({
     queryKey: purchaseQueryKeys.detail(purchaseId),
@@ -69,7 +53,7 @@ export const checkoutQueryOptions = (purchaseId: string) =>
 
 export const myPurchasesQueryOptions = () =>
   queryOptions({
-    queryKey: purchaseQueryKeys.all,
+    queryKey: purchaseQueryKeys.mine(),
     queryFn: listMyPurchasesFn,
   });
 
