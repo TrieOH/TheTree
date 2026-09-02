@@ -115,7 +115,7 @@ func NewOperations(
 		Programs:    NewPrograms(r.Events, r.Editions, r.Programs, r.Occurrences, r.Registrations, r.TicketTypes, r.Programs, authzSvc, notifier, tx),
 		Badges:      badgesOps,
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),
-		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, authzSvc),
+		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, riverClient, authzSvc),
 		Payments:    NewPayments(r.Events, payssageClient, authzSvc, platformWalletID),
 		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
 		Checkouts:   NewCheckouts(r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, payssageClient, payssageClient, platformWalletID, wsOps, checkouts.NewSDKActorResolver(idxClient.Actors), authzSvc),

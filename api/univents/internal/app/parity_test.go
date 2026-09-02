@@ -57,6 +57,9 @@ func (stubStrict) GetCertification(_ context.Context, _ openapi.GetCertification
 func (stubStrict) InvalidateCertification(_ context.Context, _ openapi.InvalidateCertificationRequestObject) (openapi.InvalidateCertificationResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) EmitProgramCertifications(_ context.Context, _ openapi.EmitProgramCertificationsRequestObject) (openapi.EmitProgramCertificationsResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) ListBadgeTemplates(_ context.Context, _ openapi.ListBadgeTemplatesRequestObject) (openapi.ListBadgeTemplatesResponseObject, error) {
 	return nil, errStub
 }
