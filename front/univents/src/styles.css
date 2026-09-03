@@ -135,6 +135,42 @@ svg.ts-chart:focus-visible {
   }
 }
 
+:root.univents-easter-egg {
+  animation: easter-egg-invert 6s ease-in-out infinite alternate;
+}
+
+::view-transition-old(root) {
+  animation: 900ms ease-in both easter-egg-fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 900ms ease-out both easter-egg-fade-in;
+}
+
+@keyframes easter-egg-fade-out {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes easter-egg-fade-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes easter-egg-invert {
+  from {
+    filter: invert(0);
+  }
+
+  to {
+    filter: invert(1);
+  }
+}
+
 * {
   box-sizing: border-box;
 }

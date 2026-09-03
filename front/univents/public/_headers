@@ -2,3 +2,7 @@
 # Worker-served chunks (/assets/*.js, *.css) are handled in server.ts instead.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The slide deck has unhashed assets and can be updated independently.
+/easter-egg-slide/*
+  Cache-Control: public, max-age=3600, must-revalidate
