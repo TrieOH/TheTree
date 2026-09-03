@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { z } from "zod";
+import { useHomeEasterEgg } from "@/features/home-easter-egg/use-home-easter-egg";
 import { cn } from "@/shared/lib/utils";
 import { Logo } from "@/shared/ui/logo";
 import { Footer } from "@/widgets/landing/ui/Footer";
@@ -24,6 +25,9 @@ function Index() {
   const navigate = Route.useNavigate();
   const isAuthenticated =
     Route.useRouteContext().auth?.isAuthenticated ?? false;
+  const handleLogoClick = useHomeEasterEgg(() => {
+    void navigate({ to: "/comparative" });
+  });
 
   const setMode = (mode: Mode) => {
     if (mode === as) return;
@@ -45,7 +49,12 @@ function Index() {
         <div className="pb-4 md:pb-10">
           <div className="max-w-5xl mx-auto flex flex-col items-center">
             <div className="mb-8 md:mb-12 mt-4 md:mt-8 w-32 md:w-48">
-              <Logo variant="complete" />
+              <Logo
+                variant="complete"
+                className="select-none"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleLogoClick}
+              />
             </div>
             <ModeSelector
               current={as}
