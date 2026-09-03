@@ -66,33 +66,25 @@ type TokenService struct {
 }
 
 func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, error) {
-	s.mu.RLock()
-	cached := s.jwks
-	lastUpdated := s.lastUpdated
-	s.mu.RUnlock()
+	if !forceRefresh {
+		s.mu.RLock()
+		cached := s.jwks
+		lastUpdated := s.lastUpdated
+		s.mu.RUnlock()
 
-	cacheValid := cached != nil && time.Since(lastUpdated) < s.cacheTTL
-	inCooldown := time.Since(lastUpdated) < 5*time.Minute
-
-	if cacheValid && !forceRefresh {
-		return cached, nil
-	}
-	if forceRefresh && inCooldown && cached != nil {
-		return cached, nil
+		if cached != nil && time.Since(lastUpdated) < s.cacheTTL {
+			return cached, nil
+		}
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Re-check with write lock (another goroutine may have updated).
-	cacheValid = s.jwks != nil && time.Since(s.lastUpdated) < s.cacheTTL
-	inCooldown = time.Since(s.lastUpdated) < 5*time.Minute
-
-	if cacheValid && !forceRefresh {
-		return s.jwks, nil
-	}
-	if forceRefresh && inCooldown && s.jwks != nil {
-		return s.jwks, nil
+	if !forceRefresh {
+		// Re-check with write lock (another goroutine may have updated).
+		if s.jwks != nil && time.Since(s.lastUpdated) < s.cacheTTL {
+			return s.jwks, nil
+		}
 	}
 
 	var res JWKS
@@ -207,6 +199,18 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 				return s.decodeKey(key)
 			}
 		}
+
+		// Not in cache — try a forced refresh once.
+		jwks, err = s.GetJWKS(ctx, true)
+		if err != nil {
+			return nil, err
+		}
+		for _, key := range jwks.Keys {
+			if key.Kid == kid {
+				return s.decodeKey(key)
+			}
+		}
+
 		return nil, &KeyNotFoundError{Kid: kid}
 	}
 
