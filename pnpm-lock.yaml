@@ -616,9 +616,6 @@ importers:
       '@mercadopago/sdk-js':
         specifier: ^0.0.3
         version: 0.0.3
-      '@microsoft/fetch-event-source':
-        specifier: ^2.0.1
-        version: 2.0.1
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.13.11(typescript@7.0.2)(zod@4.4.3)
@@ -1951,9 +1948,6 @@ packages:
 
   '@mercadopago/sdk-js@0.0.3':
     resolution: {integrity: sha512-kO48DNLHdfFAp3on12nuKdqNlEmw1x3+nM6wLd04BdWOXoFcAhkNMQV3AyUIanXdO/bB/dENakdacLT29297EQ==}
-
-  '@microsoft/fetch-event-source@2.0.1':
-    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
 
   '@napi-rs/wasm-runtime@1.1.4':
     resolution: {integrity: sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow==}
@@ -6913,8 +6907,6 @@ snapshots:
       react: 19.2.7
 
   '@mercadopago/sdk-js@0.0.3': {}
-
-  '@microsoft/fetch-event-source@2.0.1': {}
 
   '@napi-rs/wasm-runtime@1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
     dependencies:
