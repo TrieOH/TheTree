@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<!--
+  TrieOH — “Como a TrieOH nasceu” · apresentação web do Univents
+  --------------------------------------------------------------
+  HTML puro + CSS + ~40 linhas de JS. Sem framework, sem build, sem rede:
+  publicada junto ao front do Univents em /easter-egg-slide/.
+
+  Estrutura p/ o front dev portar depois:
+    · cada <article class="slide"> é um slide (a ordem no HTML é a ordem da talk)
+    · navegação = slides.js (setas, espaço, click nos botões)
+    · tokens de cor no :root do styles.css
+  Fontes dos números: git log dos repos reais (SCTI-2024 · SCTI-2025-Frontend
+  · SCTI-2025-Backend · SCTI-Web · TheTree). Links de contato: EDITAR antes de falar.
+-->
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>O Poder da Ambição — Sophia & Marcos</title>
+  <link rel="stylesheet" href="styles.css?v=3" />
+</head>
+
+<body>
+
+  <div class="deck" id="deck">
+    <article class="slide cover">
+
+      <div class="brand">
+        <span class="brand-mark"><svg viewBox="0 0 519 504" fill="none">
+            <path d="M259 31C259 153.055 160.055 252 38 252C38 129.945 136.945 31 259 31Z" />
+            <path d="M480 252C480 374.055 381.055 473 259 473C259 350.945 357.945 252 480 252Z" />
+            <path d="M480 31C480 153.055 381.055 252 259 252V31H480Z" />
+            <path d="M259 473H38C38 350.945 136.945 252 259 252V473Z" />
+            <ellipse cx="54.5" cy="53" rx="54.5" ry="53" />
+            <ellipse cx="464.5" cy="451" rx="54.5" ry="53" />
+          </svg></span>
+        <span class="brand-name">TrieOH</span>
+      </div>
+      <div class="cover-center">
+        <p class="kicker">uma história em quatro atos</p>
+        <h1>O Poder da <em>Ambição</em></h1>
+        <p class="lede">da SCTI a uma <em>Startup</em><br />e como a ambição cresce quando você <em>faz</em>.</p>
+      </div>
+      <div class="cover-foot">
+        <span class="mono">Sophia Hoffmann &amp; Marcos Dias</span>
+        <span class="dot">·</span>
+        <span class="mono dim">estudantes da UENF · comissão das SCTIs</span>
+      </div>
+    </article>
+    <article class="slide about">
+      <h2>Quem somos nós</h2>
+      <div class="whoami">
+        <figure class="person">
+          <img class="pfp" src="people/mintzyg.png" alt="Sophia Hoffmann" />
+          <figcaption class="pname">Sophia Hoffmann</figcaption>
+        </figure>
+        <figure class="person">
+          <img class="pfp" src="people/soraasc.png" alt="Marcos Dias" />
+          <figcaption class="pname">Marcos Dias</figcaption>
+        </figure>
+      </div>
+    </article>
+    <article class="slide from">
+      <div class="fmid">
+        <p class="fato">Ato I</p>
+        <h2 class="ftitle">De onde viemos</h2>
+        <p class="fbig"><span>SCTI</span> <span class="fyear">2024</span></p>
+        <p class="fsub">sem experiência e norte</p>
+      </div>
+    </article>
+    <article class="slide split">
+      <div class="col-l">
+        <header class="shead">
+          <p class="kicker">mar → set 2024</p>
+          <h2>A SCTI 2024: um site,<br />feito por alunos</h2>
+        </header>
+        <ul class="facts">
+          <li><span class="mono num">1</span> repositório · Go puro, HTML no servidor, sem framework de front-end</li>
+          <li><span class="mono num">352</span> commits · alunos da UENF · código aberto (MIT)</li>
+          <li>visual retrô-pixel <span class="mono">“WELCOME PLAYER 1”</span> desenhado à mão, sem template</li>
+        </ul>
+        <div class="callout">Ninguém ali sabia fazer aquele sistema “direito”. A gente aprendeu fazendo, e a semana
+          aconteceu do mesmo jeito.</div>
+      </div>
+      <div class="col-r">
+        <figure class="mock">
+          <figcaption class="mbar">
+            <span class="m-dots"><i></i><i></i><i></i></span>
+            <span class="fav fav-24"></span>
+            <span class="murl mono">github.com/cciuenf/SCTI-2024</span>
+          </figcaption>
+          <div class="shot"><img src="era/scti-2024-home.png"
+              alt="Home da SCTI 2024 — render real do código original (retrô espacial, WELCOME PLAYER 1)" /></div>
+          <figcaption class="mnote mono">render real do código: index.gohtml + home.css · repo SCTI-2024</figcaption>
+        </figure>
+      </div>
+    </article>
+    <article class="slide from amb">
+      <div class="fmid">
+        <p class="fato">Ato II</p>
+        <p class="abig">A <span class="fhi">Ambição</span> Cresce</p>
+        <p class="sub">Vamos perder emprego pra <span class="fhi">IA</span></p>
+      </div>
+    </article>
+    <article class="slide from doubt">
+      <div class="fmid">
+        <p class="d1">Vocês são <span class="fhi">malucos</span>.</p>
+        <p class="d2">A <span class="fhi">IA</span> faz muito melhor</p>
+        <p class="dsub">mas não escutamos nada disso</p>
+      </div>
+    </article>
+    <article class="slide split">
+      <div class="col-l">
+        <header class="shead">
+          <p class="kicker">out 2024 → set 2025</p>
+          <h2>A SCTI 2025:<br />virou um sistema</h2>
+        </header>
+        <ul class="facts">
+          <li><span class="mono num">1</span> VPS · <span class="mono num">3</span> repositórios · <span
+              class="mono num">633</span> commits</li>
+          <li><span class="mono num">245</span> commits no backend: Go + Postgres · JWT + refresh · verificação de conta
+            · CI</li>
+          <li><span class="mono num">369</span> commits no front-end: Next.js + Tailwind · carrosséis, dashboards,
+            perfis, equipe</li>
+          <li><span class="mono num">19</span> commits no SCTI-Web: Nginx · HTTPS (Certbot) · docker-compose ·
+            Grafana/Prometheus</li>
+          <li>dinheiro real passou pelo nosso código integrando <strong>Mercado Pago</strong></li>
+          <li>patrocinadores reais (<strong>RocketSeat</strong> · Alura · Código de Ouro) · comissão de ~15 alunos</li>
+        </ul>
+        <div class="callout">Dessa vez tinha dinheiro real dentro do sistema, patrocinador de verdade e 120
+          participantes olhando. A régua subiu e a SCTI 2025 rodou em cima do nosso código.</div>
+        <p class="nobody">E <span class="fhi">ninguém</span> pediu</p>
+      </div>
+      <div class="col-r">
+        <figure class="mock">
+          <figcaption class="mbar">
+            <span class="m-dots"><i></i><i></i><i></i></span>
+            <span class="fav fav-25"></span>
+            <span class="murl mono">github.com/cciuenf/SCTI-Web</span>
+          </figcaption>
+          <div class="shot"><img src="era/scti-2025-home.png"
+              alt="Home da SCTI 2025 — reconstruída com os assets reais do repo (navy + SCTI.png)" /></div>
+          <figcaption class="mnote mono">assets &amp; tokens reais do front · SCTI.png, oklch navy, League Spartan
+          </figcaption>
+        </figure>
+      </div>
+    </article>
+    <article class="slide from amb amb3">
+      <div class="fmid">
+        <p class="fato">Ato III</p>
+        <p class="abig">A Ambição <span class="fhi">Cresce</span></p>
+        <p class="sub">O começo do <span class="fhi">reconhecimento</span></p>
+      </div>
+    </article>
+    <article class="slide bridge via">
+      <p class="kicker viak">Set 25 <span class="viarr">→</span> <b class="fhi">AGORA</b></p>
+      <p class="vl1">A SCTI acabou em setembro de 2025.</p>
+      <p class="vl2">Sobrou o software e veio a <span class="fhi">pergunta</span></p>
+      <p class="vq">E se isso virasse produto?</p>
+
+      <footer class="stamp">A gente não esperou convite nem investidor.<br />No último dia do evento, o primeiro commit
+        da <span class="fhi">?????</span> foi feito.</footer>
+    </article>
+    <article class="slide from reveal">
+      <div class="fmid">
+        <!-- ============================================================
+           LOGO: TROCAR AQUI pela vectorizada (irmã) quando chegar.
+           Substitua o <img> (ou o .logo-ph inteiro) pelo svg final.
+           ============================================================ -->
+        <div class="logo-ph">
+          <img src="logo-trieoh.svg" alt="Logo TrieOH" />
+        </div>
+        <h1 class="cname">TrieOH</h1>
+      </div>
+    </article>
+    <article class="slide today">
+      <header class="shead">
+        <p class="kicker">set 2025 → hoje</p>
+        <h2>TrieOH em números</h2>
+      </header>
+      <div class="sumline">
+        <span class="si"><b class="n">1</b> VPS</span>
+        <span class="si"><b class="n">4</b> Produtos</span>
+        <span class="si"><b class="n">2.917</b> commits</span>
+      </div>
+      <div class="cross">
+        <div class="cell"><img class="clogo" src="era/prod/logo-univents.svg" alt="" /><span
+            class="cname2">Univents</span></div>
+        <div class="cell"><img class="clogo" src="era/prod/logo-identityx.png" alt="" /><span
+            class="cname2">IdentityX</span></div>
+        <div class="cell"><img class="clogo" src="era/prod/logo-payssage.png" alt="" /><span
+            class="cname2">Payssage</span></div>
+        <div class="cell"><img class="clogo" src="era/prod/logo-informd.png" alt="" /><span
+            class="cname2">Informd</span></div>
+      </div>
+    </article>
+    <article class="slide from nite">
+      <div class="fmid">
+        <p class="nite1">E da noite pro dia.</p>
+        <p class="nite2">Param de te chamar de <span class="fhi">malucos</span>.</p>
+        <div class="vs">
+          <div class="col">
+            <p class="h">SCTI 24</p>
+            <p class="v">13</p>
+            <p class="l">features</p>
+          </div>
+          <div class="col">
+            <p class="h">SCTI 25</p>
+            <p class="v">25</p>
+            <p class="l">features</p>
+          </div>
+          <div class="col me">
+            <p class="h">Univents</p>
+            <p class="v">70<span class="up" aria-hidden="true"><svg viewBox="0 0 20 100">
+                  <line x1="10" y1="97" x2="10" y2="13" stroke="#7FD086" stroke-width="2.2" stroke-linecap="round" />
+                  <polygon points="10,3 1.5,25 18.5,25" fill="#7FD086" />
+                </svg></span></p>
+            <p class="l">features</p>
+          </div>
+          <div class="col rival">
+            <p class="h">Even3</p>
+            <p class="v">24</p>
+            <p class="l">features</p>
+          </div>
+          <span class="wall w2" aria-hidden="true"><svg viewBox="0 0 150 50">
+              <line x1="12" y1="25" x2="118" y2="25" stroke="#E28413" stroke-width="3" />
+              <polygon points="136,25 116,16 116,34" fill="#E28413" />
+            </svg></span>
+          <span class="wall" aria-hidden="true"><svg viewBox="0 0 150 50">
+              <line x1="12" y1="25" x2="118" y2="25" stroke="#E28413" stroke-width="3" />
+              <polygon points="136,25 116,16 116,34" fill="#E28413" />
+            </svg></span>
+        </div>
+        <p class="nobody">E <span class="fhi">ninguém</span> pediu</p>
+      </div>
+    </article>
+    <article class="slide from grow">
+      <div class="fmid">
+        <p class="grow-t">Mas só crescer a ambição<br />não melhora o produto.</p>
+        <p class="grow-s">Sua fome de <span class="fhi">aprender</span> e <span class="fhi">adaptar</span> tem que
+          crescer junto</p>
+      </div>
+    </article>
+    <article class="slide split iaplan">
+      <div class="col-l">
+        <h2 class="ia-title">Nós decidimos não deixar a IA nos <span class="fhi">assustar</span></h2>
+        <ul class="facts iab">
+          <li>Agents de <b>Review</b></li>
+          <li>Agents de <b>Security Audit</b></li>
+          <li><b>Fast Prototyping</b></li>
+          <li><b>Incident Investigation</b></li>
+        </ul>
+        <p class="ia-end">E o código ainda <span class="fhi">100%</span> em nossas mãos</p>
+      </div>
+      <div class="col-r">
+        <img class="dsimg" src="deepseek.png" alt="DeepSeek" />
+      </div>
+    </article>
+    <article class="slide soup">
+      <p class="soup-t">E claro, não deixamos de <span class="fhi">aprender</span></p>
+      <div class="twlines">
+        <p class="twline"><span class="tword">OpenAPI</span> <span class="tword">Postgres</span> <span
+            class="tword">Docker</span> <span class="tword tw-ac">Dagger</span></p>
+        <p class="twline"><span class="tword">TestContainers</span> <span class="tword tw-ac">jsonSchema</span> <span
+            class="tword">Tracing</span> <span class="tword">BFF</span></p>
+        <p class="twline"><span class="tword">CF Workers</span> <span class="tword">Caddy</span> <span
+            class="tword tw-ac">PostHog</span> <span class="tword">Git Hosting</span></p>
+        <p class="twline"><span class="tword">Trivy</span> <span class="tword">StyleX</span> <span
+            class="tword tw-ac">TanStack</span></p>
+      </div>
+      <p class="soup-end">E <span class="fhi">MUITO</span> mais</p>
+    </article>
+    <article class="slide from pay">
+      <div class="fmid">
+        <p class="pay-big">Construir de verdade<br />paga em <span class="fhi">dobro</span></p>
+        <p class="pay-sub">sem medo de aprender · sem medo do mercado</p>
+        <div class="pay-band">
+          <img class="cit" src="cit.png" alt="CI&T" />
+          <p class="pay-line">Sophia · <b>estagiária na CI&T</b></p>
+        </div>
+        <div class="motive">
+          <p class="mot-tag">Motivo da contratação:</p>
+          <p class="mot-l1">por causa da <span class="fhi">TrieOH</span>, nunca nos deixamos ficar para trás:</p>
+          <p class="mot-l2">sempre aprendendo, em IA ou em qualquer tech</p>
+          <p class="mot-l3">e não deixamos os medos do mercado nos atrasar</p>
+        </div>
+      </div>
+    </article>
+    <article class="slide a4">
+      <div class="a4-in">
+        <p class="a4-tag">Ato 4</p>
+        <div class="a4-line">
+          <span class="a4-a">A ambição </span><span class="a4-g">cresce<span class="a4-c">Cresce</span></span>
+        </div>
+        <p class="a4-sub">(A diversão é o mais importante)</p>
+      </div>
+    </article>
+    <article class="slide from enjoy">
+      <div class="fmid">
+        <p class="e1">Nada disso seria possível se</p>
+        <p class="e2">não estivéssemos nos <span class="fhi">divertindo no processo</span></p>
+        <div class="epair">
+          <p class="e3">Então se você não gosta, não se force</p>
+          <p class="e4"><span class="fhi">ache algo que gosta</span></p>
+        </div>
+      </div>
+    </article>
+    <article class="slide from nexts">
+      <div class="fmid">
+        <p class="nx-t">Vem mais por aí</p>
+        <p class="nx-s">Novos serviços</p>
+        <div class="tri">
+          <span class="tri-n ta">WSPR</span>
+          <span class="tri-n tb">Pong</span>
+          <span class="tri-n tc">Warden</span>
+        </div>
+      </div>
+    </article>
+    <article class="slide from flows">
+      <div class="fmid">
+        <p class="nx-t">Vem mais por aí</p>
+        <p class="fl-l">Novos fluxos</p>
+        <p class="fl-l">Novas Features</p>
+        <p class="fl-l">Possíveis investidores</p>
+      </div>
+    </article>
+    <article class="slide from who">
+      <div class="fmid">
+        <p class="wq">E quem sabe?</p>
+        <p class="wy">VOCÊ</p>
+      </div>
+    </article>
+    <article class="slide bridge ct">
+      <blockquote class="bigq">“E a sua próxima ideia,<br /><span class="fhi">sai quando?</span>”</blockquote>
+      <p class="ct-sub">Comecem pequeno. Entreguem de verdade.<br />A ambição de vocês sobe sozinha, do mesmo jeito que
+        subiu a nossa.</p>
+    </article>
+    <article class="slide thanks2">
+      <header class="th-top">
+        <span class="th-logo"><img src="logo-trieoh.svg" alt="" /></span>
+        <span class="th-name">TrieOH</span>
+      </header>
+      <div class="th-mid">
+        <h1>Perguntas?</h1>
+        <p class="th-sub">Discussão <span class="fhi">Aberta</span>!</p>
+        <div class="peeps">
+          <div class="peep">
+            <img class="av" src="people/mintzyg.png" alt="Sophia Hoffmann" />
+            <span class="pn">Sophia</span>
+            <div class="plinks">
+              <a class="plk" href="https://www.linkedin.com/in/sophia-hoffmann-mintzy/" target="_blank"
+                rel="noopener"><img class="lin" src="icons/linkedin.svg" alt="LinkedIn" /> sophia-hoffmann-mintzy</a>
+              <a class="plk" href="https://github.com/mintzyg" target="_blank" rel="noopener"><img
+                  src="icons/github.svg" alt="GitHub" /> mintzyg</a>
+            </div>
+          </div>
+          <div class="peep">
+            <img class="av" src="people/soraasc.png" alt="Marcos Dias" />
+            <span class="pn">Marcos</span>
+            <div class="plinks">
+              <a class="plk" href="https://www.linkedin.com/in/marcos-dias-f/" target="_blank" rel="noopener"><img
+                  class="lin" src="icons/linkedin.svg" alt="LinkedIn" /> marcos-dias-f</a>
+              <a class="plk" href="https://github.com/soraasc" target="_blank" rel="noopener"><img
+                  src="icons/github.svg" alt="GitHub" /> soraasc</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="th-foot">
+        <img class="uv" src="logo-univents-full.svg" alt="Univents" />
+      </footer>
+      <p class="mono dim small source">números da talk: contados dos repositórios reais (SCTI-2024 ·
+        SCTI-2025-Frontend/Backend · SCTI-Web · TheTree)</p>
+    </article>
+  </div>
+
+  <!-- chrome -->
+  <div class="chrome">
+    <div class="chrome-left">
+      <span class="brand-mark mini"><svg viewBox="0 0 519 504" fill="none">
+          <path d="M259 31C259 153.055 160.055 252 38 252C38 129.945 136.945 31 259 31Z" />
+          <path d="M480 252C480 374.055 381.055 473 259 473C259 350.945 357.945 252 480 252Z" />
+          <path d="M480 31C480 153.055 381.055 252 259 252V31H480Z" />
+          <path d="M259 473H38C38 350.945 136.945 252 259 252V473Z" />
+          <ellipse cx="54.5" cy="53" rx="54.5" ry="53" />
+          <ellipse cx="464.5" cy="451" rx="54.5" ry="53" />
+        </svg></span>
+      <span class="chrome-name">O Poder da Ambição · Sophia &amp; Marcos</span>
+    </div>
+    <div class="chrome-right">
+      <span class="counter mono"><b id="cur">01</b> / <span id="tot">12</span></span>
+      <button id="prev" class="nav-btn" aria-label="anterior">←</button>
+      <button id="next" class="nav-btn" aria-label="próximo">→</button>
+    </div>
+  </div>
+  <div class="hint mono">← → navegar · F tela cheia · Esc sair</div>
+
+  <script src="slides.js"></script>
+</body>
+
+</html>

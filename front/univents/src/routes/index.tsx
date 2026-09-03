@@ -26,7 +26,7 @@ function Index() {
   const isAuthenticated =
     Route.useRouteContext().auth?.isAuthenticated ?? false;
   const handleLogoClick = useHomeEasterEgg(() => {
-    void navigate({ to: "/comparative" });
+    window.location.assign("/easter-egg-slide/");
   });
 
   const setMode = (mode: Mode) => {
