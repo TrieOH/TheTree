@@ -58,6 +58,7 @@ function InitialProfileSetup() {
             photo,
             "profiles/images",
             crypto.randomUUID(),
+            256,
           )
         : undefined;
       const profile = withProfileTimestamps({}, {

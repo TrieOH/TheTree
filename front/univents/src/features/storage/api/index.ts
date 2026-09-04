@@ -21,7 +21,7 @@ export class StorageImageError extends Error {
   }
 }
 
-async function resizeImageForModeration(file: File): Promise<File> {
+async function resizeImage(file: File, maxEdge: number): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
   if (typeof createImageBitmap !== "function") return file;
@@ -29,10 +29,7 @@ async function resizeImageForModeration(file: File): Promise<File> {
 
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(
-      1,
-      MODERATION_MAX_EDGE / Math.max(bitmap.width, bitmap.height),
-    );
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const targetWidth = Math.max(1, Math.round(bitmap.width * scale));
     const targetHeight = Math.max(1, Math.round(bitmap.height * scale));
 
@@ -82,6 +79,7 @@ export async function preprocessImageUpload(
   file: File,
   path?: string,
   idempotencyKey?: string,
+  maxUploadEdge?: number,
 ): Promise<string> {
   return withSpan("action:image-preprocess", async () => {
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
@@ -92,10 +90,13 @@ export async function preprocessImageUpload(
       );
     }
 
-    const moderationFile = await resizeImageForModeration(file);
+    const uploadFile = maxUploadEdge
+      ? await resizeImage(file, maxUploadEdge)
+      : file;
+    const moderationFile = await resizeImage(uploadFile, MODERATION_MAX_EDGE);
     const formData = new FormData();
-    formData.append("file", file);
-    if (moderationFile !== file) {
+    formData.append("file", uploadFile);
+    if (moderationFile !== uploadFile) {
       formData.append("moderationFile", moderationFile);
     }
     if (path) formData.append("path", path);
