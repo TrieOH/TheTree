@@ -41,6 +41,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: env.VITE_APP_TITLE ?? "Univents" },
       {
+        name: "description",
+        content:
+          "Descubra eventos, acompanhe programações e compre ingressos com a Univents.",
+      },
+      {
         name: "apple-mobile-web-app-title",
         content: env.VITE_APP_TITLE ?? "Univents",
       },
