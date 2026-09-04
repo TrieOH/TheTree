@@ -51,7 +51,10 @@ export function Logo({
     <img
       src={getSrc(v)}
       alt="Univents"
+      width={v === "complete" ? 560 : 519}
+      height={v === "complete" ? 663 : 504}
       loading={loading}
+      fetchPriority={priority ? "high" : "auto"}
       className={cn(
         "w-full h-auto object-contain",
         variantClassName,

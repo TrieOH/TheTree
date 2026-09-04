@@ -124,6 +124,8 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                         undefined
                       }
                       alt=""
+                      width={56}
+                      height={56}
                       className="size-14 rounded-xl object-cover"
                     />
                   ) : (
@@ -212,12 +214,16 @@ export default function CheckoutPage({ purchase }: { purchase: Purchase }) {
                     <img
                       src={`data:image/png;base64,${purchase.qr_code_base64}`}
                       alt="QR Code Pix"
+                      width={176}
+                      height={176}
                       className="size-full"
                     />
                   ) : qrImage ? (
                     <img
                       src={qrImage}
                       alt="QR Code Pix"
+                      width={176}
+                      height={176}
                       className="size-full"
                     />
                   ) : (

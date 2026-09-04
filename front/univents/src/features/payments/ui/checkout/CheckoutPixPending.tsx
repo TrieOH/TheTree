@@ -36,6 +36,8 @@ export default function CheckoutPixPending({
         <img
           src={`data:image/png;base64,${qrCodeBase64}`}
           alt="QR Code Pix"
+          width={192}
+          height={192}
           className="w-48 h-48"
         />
       </div>

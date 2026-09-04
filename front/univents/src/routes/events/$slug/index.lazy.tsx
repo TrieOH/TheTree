@@ -116,6 +116,8 @@ function RouteComponent() {
                 <img
                   src={visuals.logo_url}
                   alt={event.full_name}
+                  width={160}
+                  height={160}
                   className="aspect-square h-37.5 w-37.5 rounded-full border-4 border-accent bg-muted object-cover shadow-lg sm:h-40 sm:w-40"
                 />
               </div>

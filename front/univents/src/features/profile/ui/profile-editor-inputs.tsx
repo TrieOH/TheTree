@@ -130,6 +130,8 @@ export function SchemaInput({
             <img
               src={socialIconSources[fieldName]}
               alt={`${fieldLabel(fieldName, field)} — ícone`}
+              width={16}
+              height={16}
               className={cn(
                 "size-4 object-contain",
                 !["youtube", "bluesky", "linkedin"].includes(fieldName) &&

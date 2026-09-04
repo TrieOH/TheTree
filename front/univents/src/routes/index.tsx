@@ -51,6 +51,7 @@ function Index() {
             <div className="mb-8 md:mb-12 mt-4 md:mt-8 w-32 md:w-48">
               <Logo
                 variant="complete"
+                priority
                 className="select-none"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={handleLogoClick}

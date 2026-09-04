@@ -359,6 +359,8 @@ function SocialIcon({ network }: { network: string }) {
     <img
       src={src}
       alt={`${capitalize(network)} — ícone`}
+      width={16}
+      height={16}
       className={`size-4 object-contain${preserveColors ? "" : " dark:invert"}`}
     />
   ) : (
