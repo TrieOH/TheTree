@@ -102,6 +102,7 @@ jobs:
           VITE_APP_TITLE: ${{ vars.UNIVENTS_APP_TITLE }}
           VITE_API_URL: ${{ vars.UNIVENTS_API_URL }}
           VITE_AUTH_API_URL: ${{ vars.UNIVENTS_AUTH_API_URL }}
+          VITE_STORAGE_URL: ${{ vars.UNIVENTS_STORAGE_URL }}
           VITE_POSTHOG_KEY: ${{ secrets.UNIVENTS_POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ vars.UNIVENTS_POSTHOG_HOST }}
           VITE_TRACING_ENABLED: ${{ vars.UNIVENTS_TRACING_ENABLED }}

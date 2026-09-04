@@ -52,6 +52,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { name: "mobile-web-app-capable", content: "yes" },
     ],
     links: [
+      {
+        rel: "preconnect",
+        href: new URL(env.VITE_STORAGE_URL).origin,
+        crossOrigin: "anonymous",
+      },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/site.webmanifest" },
       { rel: "icon", href: "/favicon.svg?v=2", type: "image/svg+xml" },
