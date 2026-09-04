@@ -83,6 +83,7 @@ catalog:
 
 overrides:
   browserslist: 4.28.7
+  fflate: 0.8.3
   dompurify: 3.4.13
   js-yaml: 4.3.1
   nanoid: 3.3.18
