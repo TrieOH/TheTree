@@ -276,7 +276,6 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
 
     const resolution = await refresh;
     if (resolution.success) await current.update({ tokens: resolution.tokens });
-    else if (resolution.sessionInvalid) await current.clear();
     return resolution;
   }
 
@@ -483,13 +482,23 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
       const targetBaseURL = input.target === "identityx"
         ? config.identityX.baseURL
         : config.apiBaseURL;
-      const response = await observedFetch(
-        input.target === "identityx" ? "identityXRequest" : "apiRequest",
-        joinURL(targetBaseURL, input.path), {
-        method,
-        headers,
-        body: input.body === undefined ? undefined : JSON.stringify(input.body),
-      });
+      const operation = input.target === "identityx"
+        ? "identityXRequest"
+        : "apiRequest";
+      const send = () =>
+        observedFetch(operation, joinURL(targetBaseURL, input.path), {
+          method,
+          headers,
+          body: input.body === undefined ? undefined : JSON.stringify(input.body),
+        });
+
+      let response = await send();
+      if (response.status === 401 && resolution.success) {
+        const refreshed = await refreshTokens();
+        if (!refreshed.success) return refreshed.error;
+        headers.set("Authorization", `Bearer ${refreshed.tokens.access_token}`);
+        response = await send();
+      }
       return normalize(response, await readEnvelope<T>(response));
     },
   };
