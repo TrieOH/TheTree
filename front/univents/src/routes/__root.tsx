@@ -7,15 +7,13 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { AuthContextUpdater } from "@trieoh/front-core";
-import type { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { AuthProvider } from "@trieoh/identityx-sdk-ts/react";
+import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { ThemeProvider } from "next-themes";
+import { lazy, Suspense } from "react";
 import { env } from "@/env";
 import { requireConfiguredProfile } from "@/features/auths/lib/route-guard";
 import { VerifiedEmailGuard } from "@/features/auths/ui/verified-email-guard";
-import { UploadQueueProvider } from "@/features/upload-queue/ui/upload-queue-provider";
-import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
 import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
@@ -25,6 +23,10 @@ import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { Provider as TanStackQueryProvider } from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
+
+const UploadQueueRuntime = lazy(
+  () => import("@/features/upload-queue/ui/upload-queue-runtime"),
+);
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -79,11 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             >
               <PostHogProvider>
                 <AuthContextUpdater>
-                  <UploadQueueProvider>
-                    <VerifiedEmailGuard>{children}</VerifiedEmailGuard>
-                    <NavigationDock className="print:hidden" />
-                    <OverlayScrollbar />
-                  </UploadQueueProvider>
+                  <AppRuntime>{children}</AppRuntime>
                   <TanStackDevtools
                     config={{
                       position: "bottom-right",
@@ -105,5 +103,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function AppRuntime({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <>
+      <VerifiedEmailGuard>{children}</VerifiedEmailGuard>
+      {isAuthenticated && (
+        <Suspense>
+          <UploadQueueRuntime />
+        </Suspense>
+      )}
+      <NavigationDock className="print:hidden" />
+      <OverlayScrollbar />
+    </>
   );
 }
