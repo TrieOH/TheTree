@@ -19,7 +19,6 @@ import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
 import { OverlayScrollbar } from "@/widgets/ui/overlay-scrollbar";
 import { identityXAuthAdapter } from "../integrations/auth/adapter";
-import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { Provider as TanStackQueryProvider } from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
@@ -27,6 +26,7 @@ import appCss from "../styles.css?url";
 const UploadQueueRuntime = lazy(
   () => import("@/features/upload-queue/ui/upload-queue-runtime"),
 );
+const PostHogRuntime = lazy(() => import("../integrations/posthog/provider"));
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -79,23 +79,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 </div>
               }
             >
-              <PostHogProvider>
-                <AuthContextUpdater>
-                  <AppRuntime>{children}</AppRuntime>
-                  <TanStackDevtools
-                    config={{
-                      position: "bottom-right",
-                    }}
-                    plugins={[
-                      {
-                        name: "Tanstack Router",
-                        render: <TanStackRouterDevtoolsPanel />,
-                      },
-                      TanStackQueryDevtools,
-                    ]}
-                  />
-                </AuthContextUpdater>
-              </PostHogProvider>
+              <AuthContextUpdater>
+                <Suspense>
+                  <PostHogRuntime>{null}</PostHogRuntime>
+                </Suspense>
+                <AppRuntime>{children}</AppRuntime>
+                <TanStackDevtools
+                  config={{
+                    position: "bottom-right",
+                  }}
+                  plugins={[
+                    {
+                      name: "Tanstack Router",
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                    TanStackQueryDevtools,
+                  ]}
+                />
+              </AuthContextUpdater>
             </AuthProvider>
           </ThemeProvider>
         </TanStackQueryProvider>
