@@ -143,7 +143,10 @@ async function putFileToStorage(
   const res = await aws.fetch(uploadUrl.toString(), {
     method: "PUT",
     body: file,
-    headers: { "Content-Type": file.type },
+    headers: {
+      "Content-Type": file.type,
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
   });
 
   if (!res.ok) {
