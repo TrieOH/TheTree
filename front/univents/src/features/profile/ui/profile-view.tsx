@@ -2,7 +2,9 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
+import { CardSkeleton, CardsGridSkeleton } from "@trieoh/ui-base";
 import { Globe, Mail } from "lucide-react";
+import { lazy, Suspense } from "react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import {
   type BadgeProfileBadge,
@@ -10,10 +12,8 @@ import {
 } from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { BadgePreview } from "@/features/badges/ui/badge-preview";
-import { UserCertificationsSection } from "@/features/certifications/ui/UserCertificationsSection";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
-import { PurchasesContent } from "@/features/purchases/ui/purchases-content";
 import { cn } from "@/shared/lib/utils";
 import blueskyIcon from "@/shared/ui/social-icons/assets/bluesky.svg";
 import discordIcon from "@/shared/ui/social-icons/assets/discord.svg";
@@ -36,6 +36,19 @@ import {
   MissingPublicProfile,
   ProfileSkeleton,
 } from "./profile-view-state";
+
+const UserCertificationsSection = lazy(() =>
+  import("@/features/certifications/ui/UserCertificationsSection").then(
+    ({ UserCertificationsSection }) => ({
+      default: UserCertificationsSection,
+    }),
+  ),
+);
+const PurchasesContent = lazy(() =>
+  import("@/features/purchases/ui/purchases-content").then(
+    ({ PurchasesContent }) => ({ default: PurchasesContent }),
+  ),
+);
 
 export interface ProfileViewProps {
   actorId?: string;
@@ -74,12 +87,19 @@ export function ProfileView({
     },
   });
   const result = profileQuery.data;
-  const { data: badges } = useQuery(
-    userBadgesQueryOptions(result?.actor_id ?? ""),
-  );
-  const { data: events = [] } = useQuery(allPublicEventsQueryOptions());
+  const { data: badges } = useQuery({
+    ...userBadgesQueryOptions(result?.actor_id ?? ""),
+    enabled: activeTab === "badges" && Boolean(result?.actor_id),
+  });
+  const { data: events = [] } = useQuery({
+    ...allPublicEventsQueryOptions(),
+    enabled: activeTab === "badges",
+  });
   const editionQueries = useQueries({
-    queries: events.map((event) => allPublicEditionsQueryOptions(event.id)),
+    queries:
+      activeTab === "badges"
+        ? events.map((event) => allPublicEditionsQueryOptions(event.id))
+        : [],
   });
   const editionLocations = new Map(
     editionQueries
@@ -137,13 +157,17 @@ export function ProfileView({
         </div>
       ) : activeTab === "certificates" && isOwnProfile ? (
         <div className="mx-auto mt-5 max-w-7xl px-4">
-          <UserCertificationsSection
-            participantName={profile.preferredName || profile.legalName || ""}
-          />
+          <Suspense fallback={<TabLoading />}>
+            <UserCertificationsSection
+              participantName={profile.preferredName || profile.legalName || ""}
+            />
+          </Suspense>
         </div>
       ) : activeTab === "purchases" ? (
         <div className="mx-auto mt-4 max-w-7xl px-4">
-          <PurchasesContent />
+          <Suspense fallback={<TabLoading />}>
+            <PurchasesContent />
+          </Suspense>
         </div>
       ) : (
         <div className="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:mt-5 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
@@ -242,6 +266,24 @@ export function ProfileView({
         </div>
       )}
     </main>
+  );
+}
+
+function TabLoading() {
+  return (
+    <CardsGridSkeleton
+      count={3}
+      columns={3}
+      renderItem={() => (
+        <CardSkeleton
+          mediaClassName="aspect-[1.35]"
+          showBadge={false}
+          showAction={false}
+          showDescription={false}
+          rows={0}
+        />
+      )}
+    />
   );
 }
 

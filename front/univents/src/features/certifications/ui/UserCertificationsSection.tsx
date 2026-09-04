@@ -1,12 +1,12 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { CardSkeleton, CardsGridSkeleton, EmptyState } from "@trieoh/ui-base";
 import { FileCheck2 } from "lucide-react";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { programsQueryOptions } from "@/features/programs/api";
 import type { ProgramI } from "@/features/programs/model";
-import { Skeleton } from "@/shared/ui/shadcn/skeleton";
 import {
   certificationsByUserQueryOptions,
   certificationTemplateQueryOptions,
@@ -34,25 +34,29 @@ export function UserCertificationsSection({
 
   if (certifications.isLoading) {
     return (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((item) => (
-          <Skeleton key={item} className="aspect-[1.35] rounded-xl" />
-        ))}
-      </div>
+      <CardsGridSkeleton
+        count={3}
+        columns={3}
+        renderItem={() => (
+          <CardSkeleton
+            mediaClassName="aspect-[1.35]"
+            showBadge={false}
+            showAction={false}
+            showDescription={false}
+            rows={0}
+          />
+        )}
+      />
     );
   }
 
   if (!certifications.data?.length) {
     return (
-      <div className="grid min-h-64 place-items-center rounded-xl border border-dashed bg-card/40 p-8 text-center">
-        <div>
-          <FileCheck2 className="mx-auto size-9 text-muted-foreground" />
-          <h2 className="mt-3 font-semibold">Nenhum certificado emitido</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Seus certificados aparecerão aqui quando forem liberados.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={FileCheck2}
+        title="Nenhum certificado emitido"
+        description="Seus certificados aparecerão aqui quando forem liberados."
+      />
     );
   }
 
