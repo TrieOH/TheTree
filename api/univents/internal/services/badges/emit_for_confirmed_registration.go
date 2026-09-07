@@ -2,6 +2,7 @@ package badges
 
 import (
 	"context"
+	"lib/database"
 	"lib/telemetry"
 	"univents/models"
 
@@ -48,8 +49,11 @@ func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrat
 	}
 
 	if emission.EmailSentAt == nil {
-		//nolint:gosec // context.WithoutCancel detaches cancellation while preserving values
-		go o.sendBadgeEmail(context.WithoutCancel(ctx), reg, emission)
+		//nolint:gosec // Detach cancellation AND the caller's transaction before
+		// going async: WithoutCancel alone preserves TxKeyValue, so the email
+		// goroutine's DB reads would share the caller's tx connection and race
+		// it (pgx "conn busy" / SQLSTATE 08P01). The email only needs pool reads.
+		go o.sendBadgeEmail(database.WithoutTx(context.WithoutCancel(ctx)), reg, emission)
 	}
 	return emission, nil
 }
