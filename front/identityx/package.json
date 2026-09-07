@@ -26,7 +26,7 @@
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-api": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",
-    "@trieoh/identityx-sdk-ts-react": "workspace:*",
+    "@trieoh/identityx-sdk-ts-react": "catalog:",
     "@trieoh/shared-utils": "workspace:*",
     "@trieoh/ui-base": "workspace:*",
     "class-variance-authority": "catalog:",

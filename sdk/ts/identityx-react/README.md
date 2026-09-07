@@ -1,33 +1,21 @@
-# IdentityX SDK - Typescript
+# IdentityX SDK — React
 
-SDK for integrating with the TrieOH authentication ecosystem.
+React bindings and ready-to-use authentication components for IdentityX.
+The framework-agnostic client is provided by the peer package
+`@trieoh/identityx-sdk-ts`.
 
 ## Installation
 
 ```bash
-npm install @trieoh/identityx-sdk-ts
-# or
-yarn add @trieoh/identityx-sdk-ts
-# or
-bun add @trieoh/identityx-sdk-ts
+npm install @trieoh/identityx-sdk-ts-react @trieoh/identityx-sdk-ts
 ```
 
-## Configuration (Vite / React)
-
-To use the SDK in a React project (Vite, Next.js, or CRA), wrap your application with `AuthProvider`.
-
-### Option 1: Environment Variables (Recommended)
-
-The SDK automatically looks for these variables:
-
-- `VITE_TRIEOH_AUTH_PROJECT_ID` (Vite)
-- `NEXT_PUBLIC_TRIEOH_AUTH_PROJECT_ID` (Next.js)
-- `PUBLIC_TRIEOH_AUTH_PROJECT_ID` (General)
+## Provider
 
 ```tsx
-import { AuthProvider } from '@trieoh/identityx-sdk-ts-react';
+import { AuthProvider } from "@trieoh/identityx-sdk-ts-react";
 
-function App() {
+export function App() {
   return (
     <AuthProvider>
       <YourRoutes />
@@ -36,102 +24,45 @@ function App() {
 }
 ```
 
-### Option 2: Passing via Props
+The provider reads `VITE_TRIEOH_AUTH_PROJECT_ID`,
+`NEXT_PUBLIC_TRIEOH_AUTH_PROJECT_ID` or `PUBLIC_TRIEOH_AUTH_PROJECT_ID`.
+Configuration can also be set through the base SDK:
 
-Useful if you load the project ID dynamically or want to avoid environment issues.
+```ts
+import { configure } from "@trieoh/identityx-sdk-ts";
 
-```tsx
-<AuthProvider projectId="your-project-id-here">
-  <YourApp />
-</AuthProvider>
+configure({ PROJECT_ID: "your-project-id" });
 ```
 
-### Option 3: Global Configuration via Code
+## Components and hooks
 
 ```tsx
-import { configure } from '@trieoh/identityx-sdk-ts';
-
-configure({
-  PROJECT_ID: 'your-id',
-  BASE_URL: 'https://your-api.com'
-});
-```
-
-## Components
-
-The SDK provides ready-to-use components:
-
-```tsx
-import { SignIn, SignUp } from '@trieoh/identityx-sdk-ts-react';
-
-// Example usage
-const LoginPage = () => <SignIn />;
-const RegisterPage = () => <SignUp />;
-```
-
-## Hooks
-
-You can access the authentication state anywhere in your application:
-
-```tsx
-import { useAuth } from '@trieoh/identityx-sdk-ts-react';
+import {
+  ModernAuth,
+  SignIn,
+  SignUp,
+  useAuth,
+} from "@trieoh/identityx-sdk-ts-react";
 
 function Header() {
   const { isAuthenticated, auth } = useAuth();
 
-  return (
-    <nav>
-      {isAuthenticated ? (
-        <button onClick={() => auth.logout()}>Logout</button>
-      ) : (
-        <span>Not logged in</span>
-      )}
-    </nav>
-  );
+  return isAuthenticated ? (
+    <button onClick={() => auth.logout()}>Logout</button>
+  ) : null;
+}
+
+function LoginPage() {
+  return <ModernAuth />;
 }
 ```
+
+All components require `AuthProvider`. The package also exports password
+recovery, verification and logout components.
 
 ## Server-managed sessions
 
-The default provider stores tokens in browser storage for compatibility with
-client-only applications. Applications with a server runtime can replace the
-auth transport and keep tokens out of browser JavaScript:
-
-```tsx
-import {
-  AuthProvider,
-  type AuthProviderAdapter,
-} from "@trieoh/identityx-sdk-ts-react";
-import { createServerAuthService, restoreServerSession } from "./auth.server";
-
-const adapter: AuthProviderAdapter = {
-  restoreSession: restoreServerSession,
-  createAuth: ({ callbacks, setAuthenticated }) =>
-    createServerAuthService({ callbacks, setAuthenticated }),
-};
-
-export function App() {
-  return (
-    <AuthProvider adapter={adapter}>
-      <YourRoutes />
-    </AuthProvider>
-  );
-}
-```
-
-For TanStack Start, `restoreServerSession` and the methods returned by
-`createServerAuthService` can call server functions. Login and refresh should
-happen on the server, and their IdentityX token responses must not be returned
-to the browser. Prefer an opaque session cookie backed by server-side storage:
-
-- `HttpOnly`
-- `Secure` in production
-- `SameSite=Lax` (or stricter where possible)
-- `Path=/`
-
-State-changing server functions must also validate the request origin or use a
-CSRF token. The adapter's `setAuthenticated` callback updates the React auth
-state after server-side login/logout; `callbacks` preserves the standard
-`AuthProvider` lifecycle callbacks.
-
----
+For server runtimes such as TanStack Start, implement an
+`AuthProviderAdapter` that restores the session and creates the auth service
+through server functions. Keep IdentityX tokens server-side and prefer an
+opaque `HttpOnly`, `Secure`, `SameSite` session cookie.

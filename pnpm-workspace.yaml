@@ -6,6 +6,7 @@ packages:
 catalog:
   # === @trieoh ===
   '@trieoh/identityx-sdk-ts': ^0.15.5
+  '@trieoh/identityx-sdk-ts-react': ^0.15.5
   '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -96,6 +97,7 @@ overrides:
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@trieoh/identityx-sdk-ts'
+  - '@trieoh/identityx-sdk-ts-react'
   - '@trieoh/identityx-access-sdk-ts'
   - 'shiki'
   - '@shikijs/*'

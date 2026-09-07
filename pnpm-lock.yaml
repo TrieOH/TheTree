@@ -99,6 +99,9 @@ catalogs:
     '@trieoh/identityx-sdk-ts':
       specifier: ^0.15.5
       version: 0.15.5
+    '@trieoh/identityx-sdk-ts-react':
+      specifier: ^0.15.5
+      version: 0.15.5
     '@types/d3-scale':
       specifier: ^4.0.9
       version: 4.0.9
@@ -240,8 +243,8 @@ importers:
         specifier: 'catalog:'
         version: 0.15.5
       '@trieoh/identityx-sdk-ts-react':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-react
+        specifier: 'catalog:'
+        version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/shared-utils':
         specifier: workspace:*
         version: link:../../lib/ts/shared-utils
@@ -367,8 +370,8 @@ importers:
         specifier: 'catalog:'
         version: 0.15.5
       '@trieoh/identityx-sdk-ts-react':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-react
+        specifier: 'catalog:'
+        version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/informd-models':
         specifier: workspace:*
         version: link:../../lib/ts/informd
@@ -500,8 +503,8 @@ importers:
         specifier: 'catalog:'
         version: 0.15.5
       '@trieoh/identityx-sdk-ts-react':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-react
+        specifier: 'catalog:'
+        version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/payssage-models':
         specifier: workspace:*
         version: link:../../lib/ts/payssage
@@ -684,8 +687,8 @@ importers:
         specifier: 'catalog:'
         version: 0.15.5
       '@trieoh/identityx-sdk-ts-react':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-react
+        specifier: 'catalog:'
+        version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/ui-base':
         specifier: workspace:*
         version: link:../../lib/ts/ui-base
@@ -874,8 +877,8 @@ importers:
         specifier: 'catalog:'
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/identityx-sdk-ts-react':
-        specifier: workspace:*
-        version: link:../../../sdk/ts/identityx-react
+        specifier: 'catalog:'
+        version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       posthog-js:
         specifier: 'catalog:'
         version: 1.418.6
@@ -3431,6 +3434,11 @@ packages:
 
   '@trieoh/identityx-access-sdk-ts@0.1.7':
     resolution: {integrity: sha512-rzF9ZImPjgLimrnMZb1/ZZH42nRC5JdvgZ+99/hTklvug7T/Z7Qi7jtpol1ofV70FUQHJLirQW7JAhX+yEGmwA==}
+
+  '@trieoh/identityx-sdk-ts-react@0.15.5':
+    resolution: {integrity: sha512-FZi+xeY1rhvrRSbL8KXeD9m0tD57gex4FSP/e2+y4C3h7cAu6BF6Akz4aZZt0459ACjuoYC0UrerUWlEkALuyA==}
+    peerDependencies:
+      react: ^19.2.0
 
   '@trieoh/identityx-sdk-ts@0.15.5':
     resolution: {integrity: sha512-Bie7qchdbVohReXYrrgd/2Xyk+qEkxnzcKuyujPKc0X+FeXQQAlKtb2/IQxgCQWpkABkJVngBEQhjDnYaE7d2w==}
@@ -7678,6 +7686,24 @@ snapshots:
   '@trieoh/identityx-access-sdk-ts@0.1.7':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
+
+  '@trieoh/identityx-sdk-ts-react@0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@hookform/resolvers': 5.4.0(react-hook-form@7.80.0(react@19.2.7))
+      '@trieoh/envoy-fetch-ts': 0.1.5
+      '@trieoh/identityx-sdk-ts': 0.15.5
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      lucide-react: 1.21.0(react@19.2.7)
+      motion: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+      react-hook-form: 7.80.0(react@19.2.7)
+      sonner: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      tailwind-merge: 3.6.0
+      zod: 4.4.3
+    transitivePeerDependencies:
+      - '@emotion/is-prop-valid'
+      - react-dom
 
   '@trieoh/identityx-sdk-ts@0.15.5':
     dependencies:
