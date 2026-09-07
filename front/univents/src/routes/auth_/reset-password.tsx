@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ModernResetPassword } from "@trieoh/identityx-sdk-ts/react";
+import { ModernResetPassword } from "@trieoh/identityx-sdk-ts-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AuthActionPage } from "@/features/auths/ui/auth-action-page";

@@ -1,4 +1,4 @@
-import { BasicInputField } from "@trieoh/identityx-sdk-ts/react";
+import { BasicInputField } from "@trieoh/identityx-sdk-ts-react";
 import { useFieldContext } from "@/shared/lib/forms";
 import type { RuleStatus } from "./types";
 

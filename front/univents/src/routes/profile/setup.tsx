@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ProfileData } from "@trieoh/identityx-sdk-ts";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Save, UserPen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

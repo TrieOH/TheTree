@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ModernVerifyEmail } from "@trieoh/identityx-sdk-ts/react";
+import { ModernVerifyEmail } from "@trieoh/identityx-sdk-ts-react";
 import { z } from "zod";
 import { AuthActionPage } from "@/features/auth/ui/auth-action-page";
 

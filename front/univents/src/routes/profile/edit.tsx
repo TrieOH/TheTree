@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ProfileData } from "@trieoh/identityx-sdk-ts";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { requireAuth } from "@/features/auths/lib/route-guard";

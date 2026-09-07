@@ -25,7 +25,7 @@ The SDK automatically looks for these variables:
 - `PUBLIC_TRIEOH_AUTH_PROJECT_ID` (General)
 
 ```tsx
-import { AuthProvider } from '@trieoh/identityx-sdk-ts/react';
+import { AuthProvider } from '@trieoh/identityx-sdk-ts-react';
 
 function App() {
   return (
@@ -62,7 +62,7 @@ configure({
 The SDK provides ready-to-use components:
 
 ```tsx
-import { SignIn, SignUp } from '@trieoh/identityx-sdk-ts/react';
+import { SignIn, SignUp } from '@trieoh/identityx-sdk-ts-react';
 
 // Example usage
 const LoginPage = () => <SignIn />;
@@ -74,7 +74,7 @@ const RegisterPage = () => <SignUp />;
 You can access the authentication state anywhere in your application:
 
 ```tsx
-import { useAuth } from '@trieoh/identityx-sdk-ts/react';
+import { useAuth } from '@trieoh/identityx-sdk-ts-react';
 
 function Header() {
   const { isAuthenticated, auth } = useAuth();
@@ -101,7 +101,7 @@ auth transport and keep tokens out of browser JavaScript:
 import {
   AuthProvider,
   type AuthProviderAdapter,
-} from "@trieoh/identityx-sdk-ts/react";
+} from "@trieoh/identityx-sdk-ts-react";
 import { createServerAuthService, restoreServerSession } from "./auth.server";
 
 const adapter: AuthProviderAdapter = {

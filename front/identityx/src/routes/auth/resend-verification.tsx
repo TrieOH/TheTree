@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ModernResendVerification } from "@trieoh/identityx-sdk-ts/react";
+import { ModernResendVerification } from "@trieoh/identityx-sdk-ts-react";
 import { AuthActionPage } from "@/features/auth/ui/auth-action-page";
 
 export const Route = createFileRoute("/auth/resend-verification")({

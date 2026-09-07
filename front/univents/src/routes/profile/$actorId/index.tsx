@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { useCallback } from "react";
 import { z } from "zod";
 import { ProfileView } from "@/features/profile/ui/profile-view";

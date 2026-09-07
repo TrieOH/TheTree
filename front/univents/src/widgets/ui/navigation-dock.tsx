@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import type { LucideIcon } from "lucide-react";
 import { Calendar, Home, LayoutGrid, LogIn, LogOut, User } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";

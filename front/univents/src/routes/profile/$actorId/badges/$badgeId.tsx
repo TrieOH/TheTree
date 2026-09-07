@@ -1,7 +1,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryError } from "@trieoh/front-core";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { ArrowLeft } from "lucide-react";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import { badgeDesignSchema } from "@/features/badges/model";

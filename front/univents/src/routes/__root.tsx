@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { AuthContextUpdater } from "@trieoh/front-core";
-import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { ThemeProvider } from "next-themes";
 import { lazy, Suspense } from "react";

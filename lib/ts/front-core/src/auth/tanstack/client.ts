@@ -1,5 +1,5 @@
 import { createDefaultFetchClient, type DefaultFetchResult } from "@trieoh/envoy-fetch-ts";
-import type { AuthProviderAdapter, AuthService } from "@trieoh/identityx-sdk-ts/react";
+import type { AuthProviderAdapter, AuthService } from "@trieoh/identityx-sdk-ts-react";
 import { createFetcher, type ApiResponse } from "@trieoh/identityx-sdk-ts";
 import type { AuthTokens } from "@trieoh/identityx-sdk-ts";
 import type {

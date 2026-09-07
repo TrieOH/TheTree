@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import type { ReactNode } from "react";
 import { useLayoutEffect } from "react";
 

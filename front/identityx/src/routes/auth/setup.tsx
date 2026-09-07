@@ -3,7 +3,7 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { ModernSetup } from "@trieoh/identityx-sdk-ts/react";
+import { ModernSetup } from "@trieoh/identityx-sdk-ts-react";
 import { toast } from "sonner";
 import { requireSetupNotDone } from "@/features/auth/lib/route-guard";
 
