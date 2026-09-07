@@ -41,6 +41,7 @@
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-access-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts-react": "workspace:*",
     "@trieoh/ui-base": "workspace:*",
     "@trieoh/univents-api": "workspace:*",
     "aws4fetch": "^1.0.20",

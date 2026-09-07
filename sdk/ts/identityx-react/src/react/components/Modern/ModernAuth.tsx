@@ -4,7 +4,7 @@ import { ModernSignIn } from './ModernSignIn';
 import { ModernSignUp } from './ModernSignUp';
 import { ModernForgotPassword } from './ModernForgotPassword';
 import { AuthLayout } from './Shared/AuthLayout';
-import { OAuthProviderI } from '../../../types/common-types';
+import type { OAuthProviderI } from '@trieoh/identityx-sdk-ts';
 
 export type AuthView = "signin" | "signup" | "forgot-password";
 

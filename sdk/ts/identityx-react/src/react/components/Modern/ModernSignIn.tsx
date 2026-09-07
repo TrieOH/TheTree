@@ -10,7 +10,7 @@ import FormError from './Shared/FormError';
 import { Button } from './Shared/Button';
 import { OAuthDivider } from './Shared/OAuthDivider';
 import { OAuthProviderButton } from './Shared/OAuthProviderButton';
-import { OAuthProviderI } from '../../../types/common-types';
+import type { OAuthProviderI } from '@trieoh/identityx-sdk-ts';
 
 const loginSchema = z.object({
   email: z.email("E-mail inválido"),

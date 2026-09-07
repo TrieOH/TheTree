@@ -29,6 +29,7 @@
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts-react": "workspace:*",
     "@trieoh/envoy-fetch-ts": "catalog:",
     "posthog-js": "catalog:",
     "react": "catalog:",

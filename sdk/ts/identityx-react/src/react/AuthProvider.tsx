@@ -7,18 +7,18 @@ import {
   useRef,
   useSyncExternalStore
 } from "react";
-import { Api } from "../core/api";
+import { Api } from "@trieoh/identityx-sdk-ts";
 import {
   createAuthService,
   type AuthCallbacks,
   type AuthService,
-} from "../core/services";
-import { getTokenClaims, isRefreshSessionExpired } from "../utils/token-utils";
-import { validateProjectKey } from "../utils/env-validator";
-import { configure } from "../core/env";
-import { authStore } from "../store/auth-store";
+} from "@trieoh/identityx-sdk-ts";
+import { getTokenClaims, isRefreshSessionExpired } from "@trieoh/identityx-sdk-ts";
+import { validateProjectKey } from "@trieoh/identityx-sdk-ts";
+import { configure } from "@trieoh/identityx-sdk-ts";
+import { authStore } from "@trieoh/identityx-sdk-ts";
 import { logger, type DefaultFetchClientConfig } from "@trieoh/envoy-fetch-ts";
-import type { AuthTokenClaims, TokenSubject } from "../types/token-types";
+import type { AuthTokenClaims, TokenSubject } from "@trieoh/identityx-sdk-ts";
 
 type AuthContextType = {
   auth: AuthService;

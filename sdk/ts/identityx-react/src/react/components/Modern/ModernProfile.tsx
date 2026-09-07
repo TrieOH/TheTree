@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { JsonSchemaProperty, ProfileData } from "../../../types/auth-types";
-import type { JsonValue } from "../../../types/token-types";
+import type { JsonSchemaProperty, ProfileData } from "@trieoh/identityx-sdk-ts";
+import type { JsonValue } from "@trieoh/identityx-sdk-ts";
 import { useAuth } from "../../AuthProvider";
 import { Button } from "./Shared/Button";
 

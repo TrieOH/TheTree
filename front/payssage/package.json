@@ -31,6 +31,7 @@
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-access-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts-react": "workspace:*",
     "@trieoh/payssage-models": "workspace:*",
     "@trieoh/shared-utils": "workspace:*",
     "@trieoh/ui-base": "workspace:*",

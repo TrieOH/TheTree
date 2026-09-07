@@ -1,4 +1,4 @@
-import { OAuthProviderI } from "../../../../types/common-types";
+import type { OAuthProviderI } from "@trieoh/identityx-sdk-ts";
 import { cn } from "../../../../utils/cn";
 
 interface OAuthProviderButtonProps {
