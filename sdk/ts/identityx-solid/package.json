@@ -1,0 +1,37 @@
+{
+  "name": "@trieoh/identityx-sdk-ts-solid",
+  "version": "0.15.5",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./styles.css": "./dist/solid/components/tailwind.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm exec tsup && pnpm exec tsc -p tsconfig.types.json && mkdir -p dist/solid/components && cp src/solid/components/tailwind.css dist/solid/components/tailwind.css",
+    "clean": "rm -rf dist",
+    "typecheck": "pnpm exec tsc -p . --noEmit"
+  },
+  "peerDependencies": {
+    "@solidjs/web": "catalog:",
+    "solid-js": "catalog:"
+  },
+  "dependencies": {
+    "@trieoh/envoy-fetch-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "catalog:"
+  },
+  "devDependencies": {
+    "@solidjs/web": "catalog:",
+    "@types/node": "catalog:",
+    "solid-js": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

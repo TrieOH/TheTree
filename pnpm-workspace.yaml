@@ -7,6 +7,8 @@ catalog:
   # === @trieoh ===
   '@trieoh/identityx-sdk-ts': ^0.15.5
   '@trieoh/identityx-sdk-ts-react': ^0.15.5
+  solid-js: 2.0.0-rc.6
+  '@solidjs/web': 2.0.0-rc.6
   '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -43,6 +45,7 @@ catalog:
   # === Animations & Icons ===
   motion: ^12.40.0
   lucide-react: ^1.18.0
+  lucide-solid: ^1.41.0
 
   # === Validation ===
   zod: ^4.4.3
