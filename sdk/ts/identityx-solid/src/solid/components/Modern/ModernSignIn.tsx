@@ -1,7 +1,9 @@
 import { createSignal, onSettled } from "solid-js";
 import { useAuth } from "../../AuthProvider";
 import { FormError, FormInput, OAuthDivider, Button } from "./Shared";
+import { OAuthProviderButton } from "./Shared/OAuthProviderButton";
 import type { OAuthProviderI } from "@trieoh/identityx-sdk-ts";
+import { ArrowRight, Loader2 } from "./Shared/Icons";
 
 export interface ModernSignInProps {
   onSuccess?: (message?: string) => Promise<void>;
@@ -18,30 +20,21 @@ export function ModernSignIn(props: ModernSignInProps) {
   const [emailError, setEmailError] = createSignal("");
   const [passwordError, setPasswordError] = createSignal("");
   const [loading, setLoading] = createSignal(false);
-  const [oauthLoading, setOauthLoading] = createSignal<OAuthProviderI | null>(
-    null,
-  );
-  const [providers, setProviders] = createSignal<OAuthProviderI[]>(
-    props.providers ?? [],
-  );
+  const [oauthLoading, setOauthLoading] = createSignal<OAuthProviderI | null>(null);
+  const [providers, setProviders] = createSignal<OAuthProviderI[]>(props.providers ?? []);
 
   onSettled(() => {
     if (props.providers) return;
-    void auth
-      .getOAuthProviders()
-      .then((result) => {
-        if (result.success) {
-          setProviders(
-            result.data
-              .map(({ provider }) => provider)
-              .filter(
-                (provider): provider is OAuthProviderI =>
-                  provider === "google" || provider === "github",
-              ),
-          );
-        }
-      })
-      .catch(() => undefined);
+    let cancelled = false;
+    auth.getOAuthProviders().then((res) => {
+      if (!cancelled && res.success) {
+        setProviders(
+          res.data
+            .map(({ provider }) => provider)
+            .filter((provider): provider is OAuthProviderI => provider === "google" || provider === "github"),
+        );
+      }
+    }).catch(() => {});
   });
 
   const submit = async (event: SubmitEvent) => {
@@ -54,6 +47,8 @@ export function ModernSignIn(props: ModernSignInProps) {
       const result = await auth.login(email(), password());
       if (result.success) await props.onSuccess?.(result.message);
       else await props.onFailed?.(result.message, result.trace);
+    } catch {
+      await props.onFailed?.("Ocorreu um erro inesperado");
     } finally {
       setLoading(false);
     }
@@ -74,66 +69,73 @@ export function ModernSignIn(props: ModernSignInProps) {
   };
 
   return (
-    <form onSubmit={submit} class="w-full flex flex-col gap-4">
-      <FormInput
-        label="E-mail"
-        name="email"
-        type="email"
-        value={email()}
-        autocomplete="email"
-        onInput={(event) => setEmail(event.currentTarget.value)}
-      />
-      <FormError message={emailError()} />
-      <FormInput
-        label="Senha"
-        name="password"
-        type="password"
-        value={password()}
-        autocomplete="current-password"
-        onInput={(event) => setPassword(event.currentTarget.value)}
-      />
-      <FormError message={passwordError()} />
+    <form onSubmit={submit} class="space-y-4">
+      <div class="space-y-1">
+        <FormInput
+          label="E-mail"
+          name="email"
+          type="email"
+          value={email()}
+          autocomplete="email"
+          error={!!emailError()}
+          onInput={(event) => setEmail(event.currentTarget.value)}
+        />
+        <FormError message={emailError()} />
+      </div>
+
+      <div class="space-y-1">
+        <FormInput
+          label="Senha"
+          name="password"
+          type="password"
+          value={password()}
+          autocomplete="current-password"
+          error={!!passwordError()}
+          onInput={(event) => setPassword(event.currentTarget.value)}
+        />
+        <FormError message={passwordError()} />
+      </div>
+
       {props.forgotPasswordRedirect && (
-        <button
-          type="button"
-          onClick={props.forgotPasswordRedirect}
-          class="self-end text-xs text-primary hover:underline"
-        >
-          Esqueceu sua senha?
-        </button>
+        <div class="flex justify-end">
+          <button
+            type="button"
+            onClick={props.forgotPasswordRedirect}
+            class="text-xs text-primary hover:underline font-medium"
+          >
+            Esqueceu a senha?
+          </button>
+        </div>
       )}
-      <Button type="submit" disabled={loading()} class="h-12 px-4">
-        {loading() ? "Entrando..." : "Entrar"}
+
+      <Button
+        type="submit"
+        disabled={loading()}
+        class="w-full flex items-center justify-center gap-2"
+      >
+        {loading() ? (
+          <Loader2 class="w-5 h-5 animate-spin" />
+        ) : (
+          <>
+            Entrar
+            <ArrowRight class="w-4 h-4" />
+          </>
+        )}
       </Button>
+
       {providers().length > 0 && (
         <>
           <OAuthDivider />
-          {providers().map((provider) => (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={oauthLoading() !== null}
-              onClick={() => void loginWithProvider(provider)}
-              class="h-12"
-            >
-              {oauthLoading() === provider
-                ? "Conectando..."
-                : `Continuar com ${provider === "github" ? "GitHub" : "Google"}`}
-            </Button>
-          ))}
+          <div class="flex flex-col gap-2">
+            {providers().map((provider) => (
+              <OAuthProviderButton
+                provider={provider}
+                onClick={() => loginWithProvider(provider)}
+                isLoading={oauthLoading() === provider}
+              />
+            ))}
+          </div>
         </>
-      )}
-      {props.signUpRedirect && (
-        <p class="text-center text-sm text-muted-foreground">
-          Ainda não tem uma conta?{" "}
-          <button
-            type="button"
-            onClick={props.signUpRedirect}
-            class="text-primary font-semibold hover:underline"
-          >
-            Cadastre-se
-          </button>
-        </p>
       )}
     </form>
   );

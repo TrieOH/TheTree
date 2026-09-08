@@ -15,6 +15,11 @@ interface IdentityXSessionData {
   tokens: AuthTokens;
 }
 
+interface TanStackIdentityXBffRuntime {
+  getRequest?: () => Request;
+  useSession?: () => Promise<any>;
+}
+
 type TokenResolution =
   | { success: true; tokens: AuthTokens }
   | { success: false; error: ServerAuthResult; sessionInvalid: boolean };
@@ -42,6 +47,7 @@ export interface TanStackIdentityXBffConfig {
     maxAge?: number;
     secure?: boolean;
   };
+  runtime?: TanStackIdentityXBffRuntime;
   apiBaseURL: string;
   observability?: {
     log?: (event: IdentityXTransportLogEvent) => void;
@@ -127,7 +133,7 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
     },
   };
 
-  const session = () => useSession<IdentityXSessionData>(sessionConfig);
+  const session = () => config.runtime?.useSession?.() ?? useSession<IdentityXSessionData>(sessionConfig);
   const refreshes = new Map<string, Promise<TokenResolution>>();
 
   const observedFetch = async (
@@ -444,7 +450,7 @@ export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
         return { success: false, code: 400, message: "Invalid service path" };
       }
 
-      const request = getRequest();
+      const request = config.runtime?.getRequest?.() ?? getRequest();
       const method = (input.method ?? "GET").toUpperCase();
       if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
         const origin = request.headers.get("Origin");

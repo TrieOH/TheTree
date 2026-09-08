@@ -24,6 +24,11 @@ vi.mock("@tanstack/react-start/server", () => ({
 
 import { createTanStackIdentityXBff } from "@trieoh/front-core/auth/tanstack/server";
 
+const runtime = {
+  getRequest: () => new Request("https://univents.test/_server"),
+  useSession: () => Promise.resolve(session),
+};
+
 describe("IdentityX BFF token refresh", () => {
   beforeEach(() => {
     session.data = {
@@ -74,6 +79,7 @@ describe("IdentityX BFF token refresh", () => {
       identityX: { baseURL: "https://identityx.test" },
       session: { password: "a".repeat(32) },
       apiBaseURL: "https://univents-api.test",
+      runtime,
     });
 
     const results = await Promise.all([
@@ -122,6 +128,7 @@ describe("IdentityX BFF token refresh", () => {
       identityX: { baseURL: "https://identityx.test" },
       session: { password: "a".repeat(32) },
       apiBaseURL: "https://univents-api.test",
+      runtime,
     };
     const firstBff = createTanStackIdentityXBff(config);
     const secondBff = createTanStackIdentityXBff(config);
@@ -172,6 +179,7 @@ describe("IdentityX BFF token refresh", () => {
       identityX: { baseURL: "https://identityx.test" },
       session: { password: "a".repeat(32) },
       apiBaseURL: "https://univents-api.test",
+      runtime,
     });
 
     const result = await bff.request({ path: "/events/joined" });
@@ -214,6 +222,7 @@ describe("IdentityX BFF token refresh", () => {
       identityX: { baseURL: "https://identityx.test" },
       session: { password: "a".repeat(32) },
       apiBaseURL: "https://univents-api.test",
+      runtime,
     });
 
     const result = await bff.request({ path: "/events/joined" });
