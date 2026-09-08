@@ -61,7 +61,9 @@ export function ModernResetPassword(props: ModernResetPasswordProps) {
         <div class="space-y-1">
           <FormInput
             label="Nova senha"
+            name="newPassword"
             type="password"
+            autocomplete="new-password"
             value={password()}
             onInput={(e) => setPassword(e.currentTarget.value)}
           />
@@ -69,7 +71,9 @@ export function ModernResetPassword(props: ModernResetPasswordProps) {
         <div class="space-y-1">
           <FormInput
             label="Confirmar senha"
+            name="confirmPassword"
             type="password"
+            autocomplete="new-password"
             value={confirm()}
             onInput={(e) => setConfirm(e.currentTarget.value)}
           />

@@ -44,35 +44,38 @@ export function ModernSignUp(props: ModernSignUpProps) {
       <div class="space-y-1">
         <FormInput
           label="E-mail"
+          name="email"
           type="email"
           autocomplete="email"
           value={email()}
           error={!!emailError()}
           onInput={(e) => setEmail(e.currentTarget.value)}
         />
-        <FormError message={emailError()} />
+        <FormError id="email-error" message={emailError()} />
       </div>
       <div class="space-y-1">
         <FormInput
           label="Senha"
+          name="password"
           type="password"
           autocomplete="new-password"
           value={password()}
           error={!!passwordError()}
           onInput={(e) => setPassword(e.currentTarget.value)}
         />
-        <FormError message={passwordError()} />
+        <FormError id="password-error" message={passwordError()} />
       </div>
       <div class="space-y-1">
         <FormInput
           label="Confirmar senha"
+          name="confirmPassword"
           type="password"
           autocomplete="new-password"
           value={confirm()}
           error={!!confirmError()}
           onInput={(e) => setConfirm(e.currentTarget.value)}
         />
-        <FormError message={confirmError()} />
+        <FormError id="confirmPassword-error" message={confirmError()} />
       </div>
 
       <Button

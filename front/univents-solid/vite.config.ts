@@ -6,6 +6,7 @@ import Icons from 'unplugin-icons/vite';
 
 export default defineConfig({
   resolve: {
+    tsconfigPaths: true,
     alias: {
       '@trieoh/identityx-sdk-ts-solid/styles.css': new URL('../../sdk/ts/identityx-solid/src/solid/components/tailwind.css', import.meta.url).pathname,
       '@trieoh/identityx-sdk-ts-solid': new URL('../../sdk/ts/identityx-solid/src/index.ts', import.meta.url).pathname,

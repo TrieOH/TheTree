@@ -47,6 +47,7 @@ export function ModernSetup(props: ModernSetupProps) {
         <div class="space-y-1">
           <FormInput
             label="E-mail do Administrador"
+            name="email"
             type="email"
             autocomplete="email"
             value={email()}
@@ -56,7 +57,9 @@ export function ModernSetup(props: ModernSetupProps) {
         <div class="space-y-1">
           <FormInput
             label="Senha (Mín. 8 caracteres)"
+            name="password"
             type="password"
+            autocomplete="new-password"
             value={password()}
             onInput={(e) => setPassword(e.currentTarget.value)}
           />

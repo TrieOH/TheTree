@@ -839,9 +839,15 @@ importers:
       '@solidjs/web':
         specifier: ^2.0.0-rc.6
         version: 2.0.0-rc.6(solid-js@2.0.0-rc.6)
+      '@tanstack/query-core':
+        specifier: 5.101.4
+        version: 5.101.4
       '@tanstack/solid-router':
         specifier: ^2.0.0-rc.6
         version: 2.0.0-rc.6(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
+      '@trieoh/front-core':
+        specifier: 'workspace:'
+        version: link:../../lib/ts/front-core
       '@trieoh/identityx-sdk-ts-solid':
         specifier: 'workspace:'
         version: link:../../sdk/ts/identityx-solid
@@ -936,15 +942,24 @@ importers:
       '@opentelemetry/semantic-conventions':
         specifier: 'catalog:'
         version: 1.43.0
+      '@tanstack/query-core':
+        specifier: 5.101.4
+        version: 5.101.4
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.4(react@19.2.7)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@tanstack/solid-router':
+        specifier: ^2.0.0-rc.6
+        version: 2.0.0-rc.6(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@trieoh/identityx-sdk-ts-solid':
+        specifier: 'workspace:'
+        version: link:../../../sdk/ts/identityx-solid
       posthog-js:
         specifier: 'catalog:'
         version: 1.418.6
@@ -954,6 +969,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.7(react@19.2.7)
+      solid-js:
+        specifier: 'catalog:'
+        version: 2.0.0-rc.6
       sonner:
         specifier: 'catalog:'
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

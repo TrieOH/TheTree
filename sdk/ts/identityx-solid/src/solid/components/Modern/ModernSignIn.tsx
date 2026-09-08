@@ -80,7 +80,7 @@ export function ModernSignIn(props: ModernSignInProps) {
           error={!!emailError()}
           onInput={(event) => setEmail(event.currentTarget.value)}
         />
-        <FormError message={emailError()} />
+        <FormError id="email-error" message={emailError()} />
       </div>
 
       <div class="space-y-1">
@@ -93,7 +93,7 @@ export function ModernSignIn(props: ModernSignInProps) {
           error={!!passwordError()}
           onInput={(event) => setPassword(event.currentTarget.value)}
         />
-        <FormError message={passwordError()} />
+        <FormError id="password-error" message={passwordError()} />
       </div>
 
       {props.forgotPasswordRedirect && (

@@ -25,13 +25,16 @@ export function FormInput(props: FormInputProps) {
     <div class={`w-full font-body group relative ${props.class ?? ""}`}>
       <input
         id={id()}
-        name={props.name}
-        type={isPassword() && !visible() ? "password" : (props.type ?? "text")}
+        name={props.name ?? id()}
+        aria-invalid={props.error ? "true" : undefined}
+        aria-describedby={props.error ? `${id()}-error` : undefined}
+        type={isPassword() ? (visible() ? "text" : "password") : (props.type ?? "text")}
         value={props.value ?? ""}
         autocomplete={props.autocomplete ?? (isPassword() ? "new-password" : undefined)}
         placeholder=" "
         onInput={props.onInput}
-        class={`peer h-13 w-full rounded-sm text-sm text-foreground outline-none border border-secondary/20 bg-muted/40 transition-all duration-200 placeholder:text-transparent focus-visible:ring-0 focus:bg-muted/60 px-3.5 pt-4 pb-1 ${isPassword() ? "pr-10" : ""} ${props.error ? "bg-destructive/5 ring-1 ring-destructive/20 border-destructive/50" : ""}`}
+        class={`peer h-13 w-full rounded-sm text-sm text-foreground selection:bg-primary/20 selection:text-foreground outline-none border border-secondary/20 bg-muted/40 transition-all duration-200 placeholder:text-transparent focus-visible:ring-0 focus:bg-muted/60 px-3.5 pt-4 pb-1 ${isPassword() ? "pr-10" : ""} ${props.error ? "ring-1 ring-destructive/20 border-destructive/50" : ""}`}
+        style={props.error ? { "background-color": "color-mix(in oklab, var(--color-destructive) 5%, transparent)" } : undefined}
         {...rest}
       />
       <label

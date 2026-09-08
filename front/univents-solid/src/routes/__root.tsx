@@ -1,4 +1,7 @@
 import { HeadContent, Outlet, createRootRoute } from '@tanstack/solid-router';
+import { OverlayScrollbar } from "@/widgets/ui/OverlayScrollbar";
+import { AuthContextUpdater } from '@trieoh/front-core/solid';
+import { Toaster } from '@/shared/ui/toast';
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
@@ -8,7 +11,11 @@ export const Route = createRootRoute({
   component: () => (
     <>
       <HeadContent />
-      <Outlet />
+      <AuthContextUpdater>
+        <Outlet />
+      </AuthContextUpdater>
+      <OverlayScrollbar />
+      <Toaster />
     </>
   ),
   notFoundComponent: () => (
@@ -21,6 +28,12 @@ export const Route = createRootRoute({
         </a>{' '}
         to learn how to build Solid apps.
       </p>
+    </main>
+  ),
+  errorComponent: (props) => (
+    <main>
+      <h1>Algo deu errado</h1>
+      <p>{props.error instanceof Error ? props.error.message : 'Erro inesperado.'}</p>
     </main>
   ),
 });

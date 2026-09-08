@@ -45,12 +45,14 @@ export function ModernForgotPassword(props: ModernForgotPasswordProps) {
       <div class="space-y-1">
         <FormInput
           label="E-mail"
+          name="email"
           type="email"
           autocomplete="email"
           value={email()}
+          error={!!error()}
           onInput={(e) => setEmail(e.currentTarget.value)}
         />
-        <FormError message={error()} />
+        <FormError id="email-error" message={error()} />
       </div>
       
       <Button

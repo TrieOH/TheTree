@@ -1,8 +1,12 @@
 @import "tailwindcss";
 @layer theme, base, components, utilities;
 
+/* SDK theme tokens — uses standard names with fallbacks to allow project overrides. */
 @theme {
   --font-sans: var(--font-sans, "Inter", sans-serif);
+
+  /* Standard theme tokens with fallbacks.
+    Uses var(--variable, fallback) pattern common in Shadcn-like projects. */
   --color-background: var(--background, oklch(0.9702 0 0));
   --color-foreground: var(--foreground, oklch(0.1944 0.0051 248.09));
   --color-primary: var(--primary, oklch(0.7975 0.1018 262.7));
@@ -10,38 +14,24 @@
   --color-secondary: var(--secondary, oklch(0.1139 0.0789 264.05));
   --color-secondary-foreground: var(--secondary-foreground, oklch(0.9702 0 0));
   --color-muted: var(--muted, oklch(0.9569 0.0026 248.09));
-  --color-destructive: var(--destructive, oklch(0.6373 0.1718 28.92));
   --color-muted-foreground: var(--muted-foreground, oklch(0.5278 0 0));
   --color-border: var(--border, oklch(0.869 0.0093 248.09));
   --color-input: var(--input, oklch(0.9145 0.0062 248.09));
+  --color-destructive: var(--destructive, oklch(0.6373 0.1718 28.92));
   --color-destructive-foreground: var(--destructive-foreground, oklch(0.9851 0 0));
   --color-ring: var(--ring, oklch(0.7975 0.1018 262.7));
   --color-accent: var(--accent, oklch(0.9326 0.0313 262.7));
   --color-accent-foreground: var(--accent-foreground, oklch(0.1944 0.0051 248.09));
+
   --radius-sm: calc(var(--radius, 0.625rem) - 4px);
   --radius-md: calc(var(--radius, 0.625rem) - 2px);
   --radius-lg: var(--radius, 0.625rem);
   --radius-full: 9999px;
-
-  @keyframes shine { 0% { left: -150%; } 100% { left: 150%; } }
 }
 
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
-  }
-}
-
-@utility button-loading {
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -150%;
-    width: 150%;
-    height: 100%;
-    background: linear-gradient(120deg, transparent 0%, color-mix(in oklab, var(--color-foreground) 40%, white 15%) 40%, transparent 80%);
-    animation: shine 1.5s infinite;
   }
 }
