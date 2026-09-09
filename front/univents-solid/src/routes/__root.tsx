@@ -2,6 +2,7 @@ import { HeadContent, Outlet, createRootRoute } from '@tanstack/solid-router';
 import { OverlayScrollbar } from "@/widgets/ui/OverlayScrollbar";
 import { AuthContextUpdater } from '@trieoh/front-core/solid';
 import { Toaster } from '@/shared/ui/toast';
+import { NavigationDock } from '@/widgets/ui/NavigationDock';
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
@@ -12,9 +13,12 @@ export const Route = createRootRoute({
     <>
       <HeadContent />
       <AuthContextUpdater>
-        <Outlet />
+        <main id="main-content" tabindex="-1">
+          <Outlet />
+        </main>
       </AuthContextUpdater>
       <OverlayScrollbar />
+      <NavigationDock />
       <Toaster />
     </>
   ),

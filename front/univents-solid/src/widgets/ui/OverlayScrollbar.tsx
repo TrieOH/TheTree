@@ -8,8 +8,7 @@ const MIN_THUMB_HEIGHT = 32;
 const TRACK_PADDING = 4;
 
 export const OverlayScrollbar: Component = () => {
-  let trackRef!: HTMLDivElement;
-  let thumbRef!: HTMLDivElement;
+  let thumbRef: HTMLDivElement | undefined;
 
   const [visible, setVisible] = createSignal(false);
 
@@ -36,6 +35,7 @@ export const OverlayScrollbar: Component = () => {
           ? Math.min(1, Math.max(0, window.scrollY / maxScroll))
           : 0;
 
+      if (!thumbRef) return;
       thumbRef.style.transform = `translate3d(0, ${TRACK_PADDING + progress * maxTop
         }px, 0)`;
 
@@ -70,7 +70,7 @@ export const OverlayScrollbar: Component = () => {
 
       setVisible(isVisible);
 
-      thumbRef.style.height = `${thumbHeight}px`;
+      if (thumbRef) thumbRef.style.height = `${thumbHeight}px`;
 
       applyPosition();
     };
@@ -217,7 +217,7 @@ export const OverlayScrollbar: Component = () => {
     event.preventDefault();
     event.stopPropagation();
 
-    thumbRef.setPointerCapture(event.pointerId);
+    thumbRef?.setPointerCapture(event.pointerId);
 
     document.body.style.userSelect = "none";
 
@@ -306,7 +306,6 @@ export const OverlayScrollbar: Component = () => {
 
   return (
     <div
-      ref={trackRef}
       class="pointer-events-auto fixed inset-y-0 right-0 z-40 hidden w-3 md:block"
       style={{
         display: visible() ? "block" : "none",
@@ -314,7 +313,7 @@ export const OverlayScrollbar: Component = () => {
       onPointerDown={handleTrackPointerDown}
     >
       <div
-        ref={thumbRef}
+      ref={(element) => { thumbRef = element; }}
         role="scrollbar"
         tabindex={0}
         aria-label="Rolagem da página"

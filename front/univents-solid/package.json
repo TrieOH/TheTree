@@ -8,14 +8,16 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "test": "vitest",
-    "lint": "oxlint src"
+    "test": "vitest --passWithNoTests",
+    "check": "oxlint src",
+    "lint": "oxlint src",
+    "tsc": "tsc --noEmit"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.129",
     "@solidjs/diagnostics": "^2.0.0-rc.6",
     "@solidjs/testing-library": "^1.0.0-beta.3",
     "@solidjs/vite-plugin": "^3.0.0-next.38",
-    "@iconify-json/lucide": "^1.2.129",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "1.168.35",
     "@testing-library/jest-dom": "^6.6.3",

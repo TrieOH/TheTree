@@ -1,5 +1,5 @@
 import type { JSX } from '@solidjs/web';
-import { For, Show, createSignal, onSettled } from 'solid-js';
+import { For, Show, createSignal, onSettled, untrack } from 'solid-js';
 import { Portal } from '@solidjs/web';
 import AlertTriangle from '~icons/lucide/triangle-alert';
 import Check from '~icons/lucide/check';
@@ -134,7 +134,7 @@ function pushToast(title: string, type: ToastType, options: ToastOptions = {}): 
 }
 
 /* ------------------------------------------------------------------ */
-/*  Public API: toast(...)                                            */
+/*  Public API: toast(...)                                              */
 /* ------------------------------------------------------------------ */
 
 export interface ToastFn {
@@ -157,20 +157,22 @@ export interface ToastFn {
   ) => Promise<T>;
 }
 
-const toastFn = ((input: string | ToastPayload, options?: ToastOptions) => {
-  if (typeof input === 'string') {
-    return pushToast(input, options?.type ?? 'default', options);
-  }
-  const { message, ...rest } = input;
-  return pushToast(message, rest.type ?? 'default', rest);
-}) as ToastFn;
+const toastFn = ((input: string | ToastPayload, options?: ToastOptions) =>
+  untrack(() => {
+    if (typeof input === 'string') {
+      return pushToast(input, options?.type ?? 'default', options);
+    }
+    const { message, ...rest } = input;
+    return pushToast(message, rest.type ?? 'default', rest);
+  })) as ToastFn;
 
-toastFn.success = (message, options) => pushToast(message, 'success', options);
-toastFn.error = (message, options) => pushToast(message, 'error', options);
-toastFn.warning = (message, options) => pushToast(message, 'warning', options);
-toastFn.info = (message, options) => pushToast(message, 'info', options);
-toastFn.message = (message, options) => pushToast(message, 'default', options);
-toastFn.loading = (message, options) => pushToast(message, 'loading', { duration: Infinity, ...options });
+toastFn.success = (message, options) => untrack(() => pushToast(message, 'success', options));
+toastFn.error = (message, options) => untrack(() => pushToast(message, 'error', options));
+toastFn.warning = (message, options) => untrack(() => pushToast(message, 'warning', options));
+toastFn.info = (message, options) => untrack(() => pushToast(message, 'info', options));
+toastFn.message = (message, options) => untrack(() => pushToast(message, 'default', options));
+toastFn.loading = (message, options) =>
+  untrack(() => pushToast(message, 'loading', { duration: Infinity, ...options }));
 
 toastFn.dismiss = (id) => {
   if (id === undefined) {
@@ -181,16 +183,16 @@ toastFn.dismiss = (id) => {
 };
 
 toastFn.promise = (promise, messages, options) => {
-  const id = pushToast(messages.loading, 'loading', { duration: Infinity, ...options });
+  const initialId = untrack(() => pushToast(messages.loading, 'loading', { duration: Infinity, ...options }));
 
   promise
     .then((data) => {
       const text = typeof messages.success === 'function' ? messages.success(data) : messages.success;
-      pushToast(text, 'success', { ...options, id });
+      untrack(() => pushToast(text, 'success', { ...options, id: initialId }));
     })
     .catch((error: unknown) => {
       const text = typeof messages.error === 'function' ? messages.error(error) : messages.error;
-      pushToast(text, 'error', { ...options, id });
+      untrack(() => pushToast(text, 'error', { ...options, id: initialId }));
     });
 
   return promise;
@@ -226,6 +228,8 @@ type ToastItemProps = {
 };
 
 function ToastItem(props: ToastItemProps) {
+  const toast = untrack(() => props.toast);
+
   const [mounted, setMounted] = createSignal(false);
   const [leaving, setLeaving] = createSignal(false);
   const [dragging, setDragging] = createSignal(false);
@@ -234,7 +238,7 @@ function ToastItem(props: ToastItemProps) {
 
   let ref: HTMLDivElement | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let remaining = props.toast.duration;
+  let remaining = toast.duration;
   let startedAt = 0;
   let pointerStartX = 0;
   let pointerStartY = 0;
@@ -243,7 +247,7 @@ function ToastItem(props: ToastItemProps) {
     if (!Number.isFinite(remaining) || remaining <= 0) return;
     startedAt = Date.now();
     timer = setTimeout(() => {
-      props.toast.onAutoClose?.();
+      toast.onAutoClose?.();
       close();
     }, remaining);
   };
@@ -264,36 +268,36 @@ function ToastItem(props: ToastItemProps) {
     if (leaving()) return;
     if (timer !== undefined) clearTimeout(timer);
     setLeaving(true);
-    props.toast.onDismiss?.();
-    setTimeout(() => removeToast(props.toast.id), EXIT_ANIMATION_MS);
+    toast.onDismiss?.();
+    setTimeout(() => removeToast(toast.id), EXIT_ANIMATION_MS);
   }
 
-  closeHandlers.set(props.toast.id, close);
+  untrack(() => closeHandlers.set(toast.id, close));
 
   onSettled(() => {
     requestAnimationFrame(() => setMounted(true));
-    if (Number.isFinite(props.toast.duration)) startTimer();
+    if (Number.isFinite(toast.duration)) startTimer();
 
     let observer: ResizeObserver | undefined;
     if (ref) {
-      setHeight(props.toast.id, ref.getBoundingClientRect().height);
+      setHeight(toast.id, ref.getBoundingClientRect().height);
       observer = new ResizeObserver((entries) => {
         const entry = entries[0];
-        if (entry) setHeight(props.toast.id, entry.target.getBoundingClientRect().height);
+        if (entry) setHeight(toast.id, entry.target.getBoundingClientRect().height);
       });
       observer.observe(ref);
     }
 
     return () => {
-      closeHandlers.delete(props.toast.id);
+      closeHandlers.delete(toast.id);
       if (timer !== undefined) clearTimeout(timer);
       observer?.disconnect();
-      clearHeight(props.toast.id);
+      clearHeight(toast.id);
     };
   });
 
   function onPointerDown(event: PointerEvent) {
-    if (!props.toast.dismissible) return;
+    if (!toast.dismissible) return;
     if ((event.target as HTMLElement).closest('button')) return;
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     pointerStartX = event.clientX;
@@ -314,7 +318,7 @@ function ToastItem(props: ToastItemProps) {
 
     const dx = dragX();
     const dy = dragY();
-    const pos = props.toast.position;
+    const pos = toast.position;
     const pushedTowardEdge = pos.startsWith('top') ? dy < -SWIPE_THRESHOLD : pos.startsWith('bottom') ? dy > SWIPE_THRESHOLD : false;
 
     if (Math.abs(dx) > SWIPE_THRESHOLD || pushedTowardEdge) {
@@ -327,7 +331,7 @@ function ToastItem(props: ToastItemProps) {
   }
 
   const enterOffset = () => {
-    const pos = props.toast.position;
+    const pos = toast.position;
     if (pos.endsWith('right')) return { x: 90, y: 0 };
     if (pos.endsWith('left')) return { x: -90, y: 0 };
     return { x: 0, y: pos.startsWith('top') ? -24 : 24 };
@@ -379,12 +383,12 @@ function ToastItem(props: ToastItemProps) {
     };
   };
 
-  const iconMeta = () => (props.toast.type === 'default' ? undefined : ICON_STYLE[props.toast.type]);
+  const iconMeta = () => (toast.type === 'default' ? undefined : ICON_STYLE[toast.type]);
 
   return (
     <div
-      ref={ref}
-      role={props.toast.type === 'error' || props.toast.type === 'warning' ? 'alert' : 'status'}
+      ref={(element) => { ref = element; }}
+      role={toast.type === 'error' || toast.type === 'warning' ? 'alert' : 'status'}
       aria-live="polite"
       style={style()}
       onPointerDown={onPointerDown}
@@ -404,18 +408,18 @@ function ToastItem(props: ToastItemProps) {
       </Show>
 
       <div class="min-w-0 flex-1">
-        <p class="font-medium leading-snug">{props.toast.title}</p>
-        <Show when={props.toast.description}>
-          <p class="mt-0.5 text-xs leading-snug text-muted-foreground">{props.toast.description}</p>
+        <p class="font-medium leading-snug">{toast.title}</p>
+        <Show when={toast.description}>
+          <p class="mt-0.5 text-xs leading-snug text-muted-foreground">{toast.description}</p>
         </Show>
-        <Show when={props.toast.action || props.toast.cancel}>
+        <Show when={toast.action || toast.cancel}>
           <div class="mt-2.5 flex gap-2">
-            <Show when={props.toast.action}>
+            <Show when={toast.action}>
               {(action) => (
                 <button
                   type="button"
                   onClick={() => {
-                    action().onClick(props.toast.id);
+                    action().onClick(toast.id);
                     close();
                   }}
                   class="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
@@ -424,12 +428,12 @@ function ToastItem(props: ToastItemProps) {
                 </button>
               )}
             </Show>
-            <Show when={props.toast.cancel}>
+            <Show when={toast.cancel}>
               {(cancel) => (
                 <button
                   type="button"
                   onClick={() => {
-                    cancel().onClick(props.toast.id);
+                    cancel().onClick(toast.id);
                     close();
                   }}
                   class="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted"
@@ -442,7 +446,7 @@ function ToastItem(props: ToastItemProps) {
         </Show>
       </div>
 
-      <Show when={props.toast.dismissible}>
+      <Show when={toast.dismissible}>
         <button
           type="button"
           aria-label="Fechar notificação"
@@ -475,6 +479,8 @@ const POSITION_CLASS: Record<ToastPosition, string> = {
 };
 
 function PositionGroup(props: { position: ToastPosition; items: () => ToastRecord[] }) {
+  const position = untrack(() => props.position);
+
   const [hovered, setHovered] = createSignal(false);
   const [coarsePointer, setCoarsePointer] = createSignal(false);
 
@@ -486,7 +492,7 @@ function PositionGroup(props: { position: ToastPosition; items: () => ToastRecor
 
   // Touch devices have no hover, so keep the stack expanded.
   const expanded = () => hovered() || coarsePointer();
-  const edge: 'top' | 'bottom' = props.position.startsWith('top') ? 'top' : 'bottom';
+  const edge: 'top' | 'bottom' = position.startsWith('top') ? 'top' : 'bottom';
 
   // Newest first; index 0 is closest to the screen edge.
   const ordered = () => [...props.items()].reverse();
@@ -501,7 +507,9 @@ function PositionGroup(props: { position: ToastPosition; items: () => ToastRecor
   const totalHeight = () => {
     const list = ordered();
     if (!list.length) return 0;
-    return list.reduce((sum, item) => sum + heightOf(item.id), 0) + STACK_GAP * (list.length - 1);
+    let sum = 0;
+    for (const item of list) sum += heightOf(item.id);
+    return sum + STACK_GAP * (list.length - 1);
   };
 
   const offsetFor = (index: number) => {
@@ -517,7 +525,7 @@ function PositionGroup(props: { position: ToastPosition; items: () => ToastRecor
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ height: `${expanded() ? totalHeight() : frontHeight()}px`, transition: 'height 220ms ease' }}
-      class={`pointer-events-none fixed z-100 w-[calc(100%-1.5rem)] max-w-sm ${POSITION_CLASS[props.position]}`}
+      class={`pointer-events-none fixed z-100 w-[calc(100%-1.5rem)] max-w-sm ${POSITION_CLASS[position]}`}
     >
       <For each={ordered()}>
         {(item, index) => (
@@ -550,7 +558,8 @@ const POSITIONS: ToastPosition[] = [
 ];
 
 export function Toaster(props: { position?: ToastPosition }) {
-  if (props.position) defaultPosition = props.position;
+  const initialPosition = untrack(() => props.position);
+  if (initialPosition) defaultPosition = initialPosition;
 
   const atPosition = (position: ToastPosition) => () => toasts().filter((item) => item.position === position);
 

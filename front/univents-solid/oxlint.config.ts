@@ -5,5 +5,9 @@ export default defineConfig({
   jsPlugins: ['eslint-plugin-solid'],
   ignorePatterns: ['**/*.gen.*', 'dist'],
   settings: solidV2.settings,
-  rules: solidV2.rules,
+  "rules": {
+    "solid/reactivity": "warn",
+    "solid/no-destructure": "error",
+    "solid/jsx-no-undef": "error"
+  },
 });
