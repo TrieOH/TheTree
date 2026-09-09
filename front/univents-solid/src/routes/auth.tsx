@@ -31,7 +31,7 @@ function AuthPage() {
     const redirectTo = search().redirect;
     const destination = redirectTo || readAuthReturnTo(localStorage) || '/profile';
     if (redirectTo) storeAuthReturnTo(localStorage, redirectTo);
-    if (await completeLogin(destination, message)) {
+    if (await completeLogin(destination, message || 'Login realizado com sucesso!')) {
       if (!auth.profile()?.verified_at) {
         toast({ type: 'error', message: 'Seu e-mail ainda não foi verificado.' });
       }

@@ -1,6 +1,15 @@
 import { useLocation, useNavigate } from '@tanstack/solid-router';
 import { useAuth } from '@trieoh/identityx-sdk-ts-solid';
-import { For, createMemo, createSignal, onSettled } from 'solid-js';
+import { Dynamic } from '@solidjs/web';
+import {
+  animate,
+  mapValue,
+  motionValue,
+  springValue,
+  styleEffect,
+  transformValue,
+} from 'motion';
+import { For, createEffect, createMemo, onCleanup, onSettled, untrack } from 'solid-js';
 
 import CalendarIcon from '~icons/lucide/calendar';
 import HomeIcon from '~icons/lucide/home';
@@ -11,11 +20,13 @@ import UserIcon from '~icons/lucide/user';
 
 import { useSessionActions } from '@/features/auths/hooks/use-session-actions';
 import { isAuthOnlyPath } from '@/features/auths/lib/auth-path';
+import { Tooltip } from '@/shared/ui/Tooltip';
 
 const cn = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(' ');
 
 type IconComponent = () => ReturnType<typeof HomeIcon>;
+type NumericMotionValue = ReturnType<typeof motionValue<number>>;
 
 const asIcon = (icon: typeof HomeIcon): IconComponent =>
   icon as unknown as IconComponent;
@@ -42,24 +53,12 @@ interface NavigationDockProps {
 }
 
 const getNavItems = (
-  actions: {
-    logout: () => Promise<void>;
-  },
+  actions: { logout: () => Promise<void> },
   isAuthenticated: boolean,
 ): NavItemType[] =>
   [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: Home,
-      href: '/',
-    },
-    {
-      id: 'events',
-      label: 'Evento',
-      icon: Calendar,
-      href: '/events',
-    },
+    { id: 'home', label: 'Home', icon: Home, href: '/' },
+    { id: 'events', label: 'Evento', icon: Calendar, href: '/events' },
     {
       id: 'admin',
       label: 'Admin',
@@ -89,132 +88,186 @@ const getNavItems = (
       hideIfAuthenticated: true,
     },
   ].filter((item) => {
-    if (item.authRequired && !isAuthenticated) {
-      return false;
-    }
-
-    if (item.hideIfAuthenticated && isAuthenticated) {
-      return false;
-    }
-
+    if (item.authRequired && !isAuthenticated) return false;
+    if (item.hideIfAuthenticated && isAuthenticated) return false;
     return true;
   });
 
-/* ------------------------------------------------------------------ */
-/* Desktop item                                                        */
-/* ------------------------------------------------------------------ */
+const playPressIn = (element: HTMLElement, pressedScale: number) =>
+  animate(
+    element,
+    { scale: pressedScale },
+    {
+      duration: 0.14,
+      ease: 'easeOut',
+    },
+  );
+
+const playPressOut = (element: HTMLElement) =>
+  animate(
+    element,
+    { scale: 1 },
+    {
+      duration: 0.28,
+      ease: 'easeOut',
+    },
+  );
+
 
 function DesktopNavItem(props: {
   item: NavItemType;
   isActive: boolean;
   isAdmin: boolean;
   onClick: () => void;
-
-  /*
-   * Passamos accessors simples em vez de depender
-   * de tipos internos do Solid.
-   */
-  mouseX: () => number;
-  isDockHovered: () => boolean;
+  mouseX: NumericMotionValue;
 }) {
-  let ref: HTMLButtonElement | undefined;
+  let buttonRef: HTMLButtonElement | undefined;
+  let iconRef: HTMLDivElement | undefined;
+  let ringRef: HTMLDivElement | undefined;
+  let tapAnimation: ReturnType<typeof animate> | undefined;
+  const icon = untrack(() => props.item.icon);
+  const mouseX = untrack(() => props.mouseX);
 
-  const Icon = props.item.icon;
+  const distance = transformValue(() => {
+    const pointerX = mouseX.get();
 
-  /*
-   * Mede a distância entre o cursor e o centro do botão.
-   *
-   * 0 px      -> influência máxima
-   * >= 130 px -> sem influência
-   */
-  const influence = createMemo(() => {
-    if (!props.isDockHovered() || !ref) {
-      return 0;
-    }
+    if (pointerX <= -999) return -1000;
 
-    const bounds = ref.getBoundingClientRect();
-    const center = bounds.left + bounds.width / 2;
+    const bounds = buttonRef?.getBoundingClientRect();
+    if (!bounds) return -1000;
 
-    const distance = Math.abs(props.mouseX() - center);
-
-    return Math.max(0, 1 - distance / 130);
+    return pointerX - (bounds.x + bounds.width / 2);
   });
 
-  const size = createMemo(() => 40 + influence() * 16);
+  const sizeRaw = mapValue(distance, [-130, 0, 130], [40, 56, 40]);
+  const size = springValue(sizeRaw, {
+    mass: 0.08,
+    stiffness: 200,
+    damping: 18,
+  });
 
-  const iconSize = createMemo(() => 16 + influence() * 6);
+  const iconSizeRaw = mapValue(distance, [-130, 0, 130], [16, 22, 16]);
+  const iconSize = springValue(iconSizeRaw, {
+    mass: 0.08,
+    stiffness: 200,
+    damping: 18,
+  });
+
+  const activeTarget = motionValue(0);
+  const activeSpring = springValue(activeTarget, {
+    stiffness: 400,
+    damping: 30,
+  });
+  const ringScale = mapValue(activeSpring, [0, 1], [0.5, 1], {
+    clamp: false,
+  });
+
+  createEffect(
+    () => props.isActive,
+    (isActive) => {
+      activeTarget.set(isActive ? 1 : 0);
+    },
+  );
+
+  onSettled(() => {
+    if (!buttonRef || !iconRef || !ringRef) return;
+
+    const cancelButton = styleEffect(buttonRef, {
+      width: size,
+      height: size,
+    });
+
+    const cancelIcon = styleEffect(iconRef, {
+      width: iconSize,
+      height: iconSize,
+    });
+
+    const cancelRing = styleEffect(ringRef, {
+      opacity: activeSpring,
+      scale: ringScale,
+    });
+
+    return () => {
+      tapAnimation?.stop();
+      cancelButton();
+      cancelIcon();
+      cancelRing();
+    };
+  });
 
   return (
-    <button
-      ref={ref}
-      type="button"
+    <Tooltip label={props.item.label}>
+      <button
+        ref={(element) => { buttonRef = element; }}
+        type="button"
+        onPointerDown={() => {
+          if (!buttonRef) return;
+
+        tapAnimation?.stop();
+          tapAnimation = playPressIn(buttonRef, 0.84);
+        }}
+        onPointerLeave={() => {
+          if (!buttonRef) return;
+        tapAnimation?.stop();
+          tapAnimation = playPressOut(buttonRef);
+        }}
+        onPointerUp={() => {
+          if (!buttonRef) return;
+
+          tapAnimation?.stop();
+          tapAnimation = playPressOut(buttonRef);
+
+        }}
+        onPointerCancel={() => {
+          if (!buttonRef) return;
+
+          tapAnimation?.stop();
+          tapAnimation = playPressOut(buttonRef);
+
+        }}
       onClick={() => props.onClick()}
-      title={props.item.label}
-      aria-label={props.item.label}
-      aria-current={props.isActive ? 'page' : undefined}
-      style={{
-        width: `${size()}px`,
-        height: `${size()}px`,
-      }}
-      class={cn(
-        'relative flex shrink-0 items-center justify-center rounded-full outline-none',
-
-        /*
-         * Substituição do spring do Motion.
-         */
-        'transition-[width,height,background-color,color,transform,box-shadow] duration-150 ease-out',
-
-        'active:scale-[0.88]',
-
-        props.isActive
-          ? props.isAdmin
-            ? 'bg-accent text-accent-foreground shadow-lg shadow-accent/30'
-            : 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
-          : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
-      )}
-    >
-      {/* Ring do item ativo */}
-      <div
-        class={cn(
-          'pointer-events-none absolute inset-0 rounded-full',
-          'ring-2 ring-offset-2 ring-offset-background',
-          'transition-[opacity,transform] duration-200 ease-out',
-
-          props.isAdmin ? 'ring-accent' : 'ring-primary',
-
-          props.isActive
-            ? 'scale-100 opacity-100'
-            : 'scale-50 opacity-0',
-        )}
-      />
-
-      {/*
-       * Não passamos width/style diretamente para Icon.
-       *
-       * Assim não dependemos da tipagem do unplugin-icons.
-       * O SVG ocupa 100% do wrapper.
-       */}
-      <div
+        aria-label={props.item.label}
+        aria-current={props.isActive ? 'page' : undefined}
         style={{
-          width: `${iconSize()}px`,
-          height: `${iconSize()}px`,
-          'stroke-width': props.isActive ? '2.5' : '2',
+          width: '40px',
+          height: '40px',
         }}
         class={cn(
-          'flex items-center justify-center',
-          'transition-[width,height] duration-150 ease-out',
-          '[&>svg]:h-full [&>svg]:w-full',
+          'relative flex shrink-0 items-center justify-center rounded-full outline-none',
+          'transition-[background-color,color] duration-200 ease-out',
+          props.isActive
+            ? props.isAdmin
+              ? 'bg-accent text-accent-foreground shadow-lg shadow-accent/30'
+              : 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
         )}
       >
-        <Icon />
-      </div>
-    </button>
+        <div
+          ref={(element) => { ringRef = element; }}
+          class={cn(
+            'pointer-events-none absolute inset-0 rounded-full',
+            'ring-2 ring-offset-2 ring-offset-background',
+            props.isAdmin ? 'ring-accent' : 'ring-primary',
+          )}
+          style={{ opacity: '0', transform: 'scale(0.5)' }}
+        />
+
+        <div
+          ref={(element) => { iconRef = element; }}
+          style={{
+            width: '16px',
+            height: '16px',
+            'stroke-width': props.isActive ? '2.5' : '2',
+          }}
+          class="flex items-center justify-center [&>svg]:h-full [&>svg]:w-full"
+        >
+          <Dynamic component={icon} />
+        </div>
+      </button>
+    </Tooltip>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Mobile item                                                         */
-/* ------------------------------------------------------------------ */
 
 function MobileNavItem(props: {
   item: NavItemType;
@@ -222,129 +275,140 @@ function MobileNavItem(props: {
   isAdmin: boolean;
   onClick: () => void;
 }) {
-  const Icon = props.item.icon;
+  let buttonRef: HTMLButtonElement | undefined;
+  let iconRef: HTMLDivElement | undefined;
+  let tapAnimation: ReturnType<typeof animate> | undefined;
+
+  const icon = untrack(() => props.item.icon);
+
+  const iconTarget = motionValue(
+    untrack(() => (props.isActive ? 1 : 0)),
+  );
+  const iconActive = springValue(iconTarget, {
+    stiffness: 400,
+    damping: 25,
+  });
+  const iconScale = mapValue(iconActive, [0, 1], [1, 1.1], {
+    clamp: false,
+  });
+  const iconY = mapValue(iconActive, [0, 1], [0, -1], {
+    clamp: false,
+  });
+
+  createEffect(
+    () => props.isActive,
+    (isActive) => {
+      const next = isActive ? 1 : 0;
+      iconTarget.set(next);
+    },
+  );
+
+  onSettled(() => {
+    const cancelIcon = styleEffect(iconRef, {
+      scale: iconScale,
+      y: iconY,
+    });
+
+    return () => {
+      tapAnimation?.stop();
+      cancelIcon();
+    };
+  });
 
   return (
-    <button
-      type="button"
-      onClick={() => props.onClick()}
-      title={props.item.label}
-      aria-label={props.item.label}
-      aria-current={props.isActive ? 'page' : undefined}
-      class={cn(
-        'relative flex flex-1 flex-col items-center justify-center gap-1.5 py-3 outline-none',
-        'transition-[color,transform] duration-200',
-        'active:scale-95',
+    <Tooltip label={props.item.label}>
+      <button
+        ref={(element) => { buttonRef = element; }}
+        type="button"
+        onPointerDown={() => {
+          if (!buttonRef) return;
 
-        props.isActive
-          ? props.isAdmin
-            ? 'text-accent'
-            : 'text-primary'
-          : 'text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {/* Indicador superior */}
-      <div class="absolute top-0 left-1/2 -translate-x-1/2">
-        <div
-          class={cn(
-            'h-1 rounded-b-full',
-            'transition-[width,opacity] duration-200 ease-out',
-
-            props.isAdmin ? 'bg-accent' : 'bg-primary',
-
-            props.isActive
-              ? 'w-8 opacity-100'
-              : 'w-0 opacity-0',
-          )}
-        />
-      </div>
-
-      {/* Ícone */}
-      <div
-        style={{
-          'stroke-width': props.isActive ? '2.4' : '2',
+          tapAnimation?.stop();
+          tapAnimation = playPressIn(buttonRef, 0.9);
         }}
+        onPointerUp={() => {
+          if (!buttonRef) return;
+
+          tapAnimation?.stop();
+          tapAnimation = playPressOut(buttonRef);
+
+        }}
+        onPointerCancel={() => {
+          if (!buttonRef) return;
+
+          tapAnimation?.stop();
+          tapAnimation = playPressOut(buttonRef);
+
+        }}
+        onClick={() => props.onClick()}
+        aria-label={props.item.label}
+        aria-current={props.isActive ? 'page' : undefined}
         class={cn(
-          'h-5.5 w-5.5',
-          'transition-transform duration-200 ease-out',
-          '[&>svg]:h-full [&>svg]:w-full',
-
-          props.isActive
-            ? '-translate-y-px scale-110'
-            : 'translate-y-0 scale-100',
-        )}
-      >
-        <Icon />
-      </div>
-
-      <span
-        class={cn(
-          'text-[10px] font-medium tracking-tight',
-          'transition-colors duration-200',
-
+          'relative flex flex-1 flex-col items-center justify-center gap-1.5 py-3 outline-none',
+          'transition-colors duration-200 ease-out',
           props.isActive
             ? props.isAdmin
               ? 'text-accent'
               : 'text-primary'
-            : 'text-muted-foreground',
+            : 'text-muted-foreground hover:text-foreground',
         )}
       >
-        {props.item.label}
-      </span>
-    </button>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2">
+          <div
+            class={cn(
+              'h-1 rounded-b-full transition-[width,opacity] duration-200 ease-out',
+              props.isAdmin ? 'bg-accent' : 'bg-primary',
+            )}
+            style={{
+              width: props.isActive ? '32px' : '0px',
+              opacity: props.isActive ? '1' : '0',
+            }}
+          />
+        </div>
+
+        <div
+          ref={(element) => { iconRef = element; }}
+          class="h-5.5 w-5.5 [&>svg]:h-full [&>svg]:w-full"
+          style={{
+            'stroke-width': props.isActive ? '2.4' : '2',
+          }}
+        >
+          <Dynamic component={icon} />
+        </div>
+
+        <span
+          class={cn(
+            'text-[10px] font-medium tracking-tight transition-colors duration-200',
+            props.isActive
+              ? props.isAdmin
+                ? 'text-accent'
+                : 'text-primary'
+              : 'text-muted-foreground',
+          )}
+        >
+          {props.item.label}
+        </span>
+      </button>
+    </Tooltip>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Navigation Dock                                                     */
-/* ------------------------------------------------------------------ */
 
 export function NavigationDock(props: NavigationDockProps) {
+  let desktopDockRef: HTMLDivElement | undefined;
+  let mobileDockRef: HTMLDivElement | undefined;
+
   const { logoutTo } = useSessionActions();
-
-  /*
-   * SDK IdentityX:
-   *
-   * isAuthenticated é Accessor.
-   *
-   * CORRETO:
-   * isAuthenticated()
-   */
   const { isAuthenticated } = useAuth();
-
-  /*
-   * TanStack Solid Router:
-   *
-   * useLocation() também retorna Accessor.
-   *
-   * CORRETO:
-   * location().pathname
-   */
   const location = useLocation();
-
   const navigate = useNavigate();
 
-  /*
-   * Centralizamos pathname para evitar repetir location().
-   */
   const pathname = () => location().pathname;
-
   const locked = () => pathname() === '/profile/setup';
-
   const logoutDestination = () =>
-    isAuthOnlyPath(pathname())
-      ? '/'
-      : location().href;
+    isAuthOnlyPath(pathname()) ? '/' : location().href;
+  const isAdmin = () => pathname().startsWith('/admin');
 
-  const isAdmin = () =>
-    pathname().startsWith('/admin');
-
-  /*
-   * Recalcula somente quando isAuthenticated() mudar.
-   *
-   * Login/logout atualizam authStore e o SDK invalida
-   * esse memo automaticamente.
-   */
   const navItems = createMemo(() =>
     getNavItems(
       {
@@ -356,108 +420,34 @@ export function NavigationDock(props: NavigationDockProps) {
     ),
   );
 
-  /*
-   * Item ativo também é derivado de forma reativa.
-   */
   const activeId = createMemo(() => {
     const path = pathname();
 
-    const activeItem = [...navItems()]
-      .reverse()
-      .find((item) => {
-        if (!item.href) {
-          return false;
-        }
-
-        if (item.href === '/') {
-          return path === '/';
-        }
-
-        return path.startsWith(item.href);
-      });
+    const activeItem = [...navItems()].reverse().find((item) => {
+      if (!item.href) return false;
+      if (item.href === '/') return path === '/';
+      return path.startsWith(item.href);
+    });
 
     return activeItem?.id ?? '';
   });
 
   const handleNavigate = (item: NavItemType) => {
-    /*
-     * Durante profile/setup impedimos navegação normal,
-     * mas ainda permitimos logout.
-     */
-    if (locked() && !item.onClick) {
-      return;
-    }
+    if (locked() && !item.onClick) return;
 
     if (item.onClick) {
       void item.onClick();
       return;
     }
 
-    if (!item.href) {
-      return;
-    }
-
-    if (pathname() === item.href) {
-      return;
-    }
+    if (!item.href || pathname() === item.href) return;
 
     void navigate({
       to: item.href as never,
     });
   };
 
-  /* ---------------------------------------------------------------- */
-  /* Dock magnético                                                     */
-  /* ---------------------------------------------------------------- */
-
-  const [mouseX, setMouseX] = createSignal(0);
-  const [isDockHovered, setIsDockHovered] = createSignal(false);
-
-  let mouseFrame: number | undefined;
-
-  const handleMouseMove = (event: MouseEvent) => {
-    const clientX = event.clientX;
-
-    if (mouseFrame !== undefined) {
-      cancelAnimationFrame(mouseFrame);
-    }
-
-    mouseFrame = requestAnimationFrame(() => {
-      setMouseX(clientX);
-      mouseFrame = undefined;
-    });
-  };
-
-  /* ---------------------------------------------------------------- */
-  /* Entrada do dock — Solid 2                                         */
-  /* ---------------------------------------------------------------- */
-
-  const [settled, setSettled] = createSignal(false);
-
-  /*
-   * Solid 2:
-   *
-   * onMount -> onSettled
-   *
-   * Além disso, onSettled pode retornar cleanup.
-   */
-  onSettled(() => {
-    const frame = requestAnimationFrame(() => {
-      setSettled(true);
-    });
-
-    return () => {
-      cancelAnimationFrame(frame);
-
-      if (mouseFrame !== undefined) {
-        cancelAnimationFrame(mouseFrame);
-      }
-    };
-  });
-
-  /* ---------------------------------------------------------------- */
-  /* Rotas em que o dock deve desaparecer                              */
-  /* ---------------------------------------------------------------- */
+  const mouseX = motionValue(-1000);
 
   const hidden = createMemo(() => {
     const path = pathname();
@@ -466,61 +456,92 @@ export function NavigationDock(props: NavigationDockProps) {
       path.endsWith('/certifications/editor') ||
       path.endsWith('/badges/editor') ||
       path.includes('/badges/') ||
-      (path.includes('/occurrences/') &&
-        path.endsWith('/draw')) ||
+      (path.includes('/occurrences/') && path.endsWith('/draw')) ||
       path === '/profile/edit'
     );
+  });
+
+  onSettled(() => {
+    const animations: Array<{ stop: () => void }> = [];
+
+    if (desktopDockRef) {
+      animations.push(
+        animate(
+          desktopDockRef,
+          {
+            y: [20, 0],
+            opacity: [0, 1],
+            filter: ['blur(10px)', 'blur(0px)'],
+          },
+          {
+            type: 'spring',
+            stiffness: 260,
+            damping: 24,
+            delay: 0.05,
+          },
+        ),
+      );
+    }
+
+    if (mobileDockRef) {
+      animations.push(
+        animate(
+          mobileDockRef,
+          {
+            y: [20, 0],
+            opacity: [0, 1],
+          },
+          {
+            type: 'spring',
+            stiffness: 260,
+            damping: 24,
+          },
+        ),
+      );
+    }
+
+    return () => {
+      for (const animation of animations) animation.stop();
+    };
+  });
+
+  onCleanup(() => {
+    mouseX.set(-1000);
   });
 
   return (
     <>
       {!hidden() && navItems().length > 0 && (
         <>
-          {/* ---------------------------------------------------------- */}
-          {/* Desktop                                                    */}
-          {/* ---------------------------------------------------------- */}
-
           <nav
             class={cn(
               'fixed bottom-8 left-1/2 z-50',
               'hidden -translate-x-1/2 md:flex',
               props.className,
             )}
-            onMouseEnter={() => {
-              setIsDockHovered(true);
+            onPointerEnter={(event) => {
+              mouseX.set(event.clientX);
             }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => {
-              setIsDockHovered(false);
+            onPointerMove={(event) => {
+              mouseX.set(event.clientX);
+            }}
+            onPointerLeave={() => {
+              mouseX.set(-1000);
             }}
           >
             <div
+              ref={(element) => { desktopDockRef = element; }}
               class={cn(
-                'flex items-center gap-2',
-                'rounded-full border',
+                'flex items-center gap-2 rounded-full border',
                 'bg-background/80 px-3 py-3',
-                'shadow-lg shadow-black/5',
-                'backdrop-blur-2xl',
-
-                /*
-                 * Substitui:
-                 *
-                 * initial
-                 * animate
-                 * transition
-                 *
-                 * do motion/solid.
-                 */
-                'transition-[transform,opacity,filter] duration-300 ease-out',
-
-                settled()
-                  ? 'translate-y-0 opacity-100 blur-0'
-                  : 'translate-y-5 opacity-0 blur-[10px]',
-
-                isAdmin()
-                  ? 'border-accent/20'
-                  : 'border-border/60',
+                'shadow-lg shadow-black/5 backdrop-blur-2xl',
+                isAdmin() ? 'border-accent/20' : 'border-border/60',
               )}
+              style={{
+                transform: 'translateY(20px)',
+                opacity: '0',
+                filter: 'blur(10px)',
+              }}
             >
               <For each={navItems()}>
                 {(item) => (
@@ -528,20 +549,13 @@ export function NavigationDock(props: NavigationDockProps) {
                     item={item}
                     isActive={activeId() === item.id}
                     isAdmin={isAdmin()}
-                    onClick={() => {
-                      handleNavigate(item);
-                    }}
+                    onClick={() => handleNavigate(item)}
                     mouseX={mouseX}
-                    isDockHovered={isDockHovered}
                   />
                 )}
               </For>
             </div>
           </nav>
-
-          {/* ---------------------------------------------------------- */}
-          {/* Mobile                                                     */}
-          {/* ---------------------------------------------------------- */}
 
           <nav
             class={cn(
@@ -550,22 +564,17 @@ export function NavigationDock(props: NavigationDockProps) {
             )}
           >
             <div
+              ref={(element) => { mobileDockRef = element; }}
               class={cn(
                 'flex items-stretch justify-around',
-                'border-t bg-background/90',
-                'px-2 pb-safe',
+                'border-t bg-background/90 px-2 pb-safe',
                 'backdrop-blur-2xl',
-
-                'transition-[transform,opacity] duration-300 ease-out',
-
-                settled()
-                  ? 'translate-y-0 opacity-100'
-                  : 'translate-y-5 opacity-0',
-
-                isAdmin()
-                  ? 'border-accent/30'
-                  : 'border-border/40',
+                isAdmin() ? 'border-accent/30' : 'border-border/40',
               )}
+              style={{
+                transform: 'translateY(20px)',
+                opacity: '0',
+              }}
             >
               <For each={navItems()}>
                 {(item) => (
@@ -573,9 +582,7 @@ export function NavigationDock(props: NavigationDockProps) {
                     item={item}
                     isActive={activeId() === item.id}
                     isAdmin={isAdmin()}
-                    onClick={() => {
-                      handleNavigate(item);
-                    }}
+                    onClick={() => handleNavigate(item)}
                   />
                 )}
               </For>

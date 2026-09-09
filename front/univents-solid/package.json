@@ -35,6 +35,7 @@
     "@tanstack/solid-router": "^2.0.0-rc.6",
     "@trieoh/front-core": "workspace:",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
+    "motion": "catalog:",
     "solid-js": "^2.0.0-rc.6",
     "unplugin-icons": "^22.1.0",
     "zod": "catalog:"
