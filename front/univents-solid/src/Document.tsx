@@ -27,7 +27,7 @@ export default function Document(props: ParentProps) {
         <title>Univents</title>
         <HydrationScript />
       </head>
-      <body class="min-w-[320px] antialiased">
+      <body class="min-w-[320px] antialiased wrap:anywhere">
         <a class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-background focus:px-4 focus:py-2" href="#main-content">
           Pular para o conteúdo principal
         </a>
