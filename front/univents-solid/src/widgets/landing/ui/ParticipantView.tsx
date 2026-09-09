@@ -1,7 +1,12 @@
 import { useNavigate, useRouter } from "@tanstack/solid-router";
-import { For } from "solid-js";
+import { For, Loading, Show, createMemo } from "solid-js";
+import { useQueryClient } from "@trieoh/front-core/solid";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
+import type { EventI } from "@/features/events/model";
 import { FAQSection, type FAQItem } from "./FAQSection";
+import { EventCard } from "./EventCard";
 import { Reveal } from "@/shared/ui/Reveal";
+
 const features = [
   [
     "Encontre eventos facilmente",
@@ -28,6 +33,7 @@ const features = [
     "Se o evento for cancelado, você recebe o reembolso automaticamente na sua conta.",
   ],
 ];
+
 const steps = [
   [
     "01",
@@ -45,6 +51,7 @@ const steps = [
     "Apresente seu QR Code na entrada e curta o evento sem preocupação.",
   ],
 ];
+
 const faqs: FAQItem[] = [
   {
     question: "Como funciona a taxa sobre vendas?",
@@ -77,14 +84,22 @@ const faqs: FAQItem[] = [
       "Sim. Oferecemos app de check-in com leitura de QR Code, lista de convidados offline e controle de entrada em tempo real.",
   },
 ];
+
 export function ParticipantView() {
   const navigate = useNavigate();
   const router = useRouter();
   const authenticated = () =>
     (router.options.context as { auth?: { isAuthenticated: boolean } }).auth
       ?.isAuthenticated === true;
+
   const go = () =>
     void navigate({ to: authenticated() ? "/events" : "/auth" } as never);
+
+  const queryClient = useQueryClient();
+  const events = createMemo(() =>
+    queryClient.fetchQuery<EventI[]>(allPublicEventsQueryOptions()),
+  );
+
   return (
     <Reveal>
       <div class="mx-auto max-w-5xl space-y-20 md:space-y-32">
@@ -115,9 +130,34 @@ export function ParticipantView() {
               começar sem ruído.
             </p>
           </div>
-          <div class="rounded-2xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
-            Assim que novos eventos forem publicados, eles aparecem aqui.
-          </div>
+          <Loading
+            fallback={
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <For each={[1, 2, 3, 4]}>
+                  {() => (
+                    <div class="aspect-4/3 animate-pulse rounded-2xl bg-muted" />
+                  )}
+                </For>
+              </div>
+            }
+          >
+            <Show
+              when={events().length > 0}
+              fallback={
+                <div class="rounded-2xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
+                  Assim que novos eventos forem publicados, eles aparecem aqui.
+                </div>
+              }
+            >
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <For each={events().slice(0, 4)}>
+                  {(event, index) => (
+                    <EventCard event={event} index={index()} />
+                  )}
+                </For>
+              </div>
+            </Show>
+          </Loading>
         </section>
         <section class="space-y-8 md:space-y-12">
           <div class="space-y-2 text-center">

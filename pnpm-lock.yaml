@@ -845,12 +845,18 @@ importers:
       '@tanstack/solid-router':
         specifier: ^2.0.0-rc.6
         version: 2.0.0-rc.6(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
+      '@trieoh/api-client':
+        specifier: workspace:*
+        version: link:../../lib/ts/api-client
       '@trieoh/front-core':
         specifier: 'workspace:'
         version: link:../../lib/ts/front-core
       '@trieoh/identityx-sdk-ts-solid':
         specifier: 'workspace:'
         version: link:../../sdk/ts/identityx-solid
+      '@trieoh/univents-api':
+        specifier: workspace:*
+        version: link:../../lib/ts/univents
       motion:
         specifier: 'catalog:'
         version: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

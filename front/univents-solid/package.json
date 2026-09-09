@@ -30,11 +30,13 @@
     "vitest": "^4.0.0"
   },
   "dependencies": {
+    "@trieoh/api-client": "workspace:*",
     "@solidjs/web": "^2.0.0-rc.6",
     "@tanstack/query-core": "catalog:",
     "@tanstack/solid-router": "^2.0.0-rc.6",
     "@trieoh/front-core": "workspace:",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
+    "@trieoh/univents-api": "workspace:*",
     "motion": "catalog:",
     "solid-js": "^2.0.0-rc.6",
     "unplugin-icons": "^22.1.0",
