@@ -394,7 +394,7 @@ jobs:
 
       - name: Promote identityx to production
         if: ${{ env.ARTIFACT == 'identityx-ui' }}
-        run: pnpm -F identityx exec wrangler versions deploy --version-id "${{ steps.identityx.outputs.worker_version_id }}"
+        run: pnpm -F identityx exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -419,7 +419,7 @@ jobs:
 
       - name: Promote informd to production
         if: ${{ env.ARTIFACT == 'informd-ui' }}
-        run: pnpm -F informd exec wrangler versions deploy --version-id "${{ steps.informd.outputs.worker_version_id }}"
+        run: pnpm -F informd exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -446,7 +446,7 @@ jobs:
 
       - name: Promote payssage to production
         if: ${{ env.ARTIFACT == 'payssage-ui' }}
-        run: pnpm -F payssage exec wrangler versions deploy --version-id "${{ steps.payssage.outputs.worker_version_id }}"
+        run: pnpm -F payssage exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -473,7 +473,7 @@ jobs:
 
       - name: Promote univents to production
         if: ${{ env.ARTIFACT == 'univents-ui' }}
-        run: pnpm -F univents exec wrangler versions deploy --version-id "${{ steps.univents.outputs.worker_version_id }}"
+        run: pnpm -F univents exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
