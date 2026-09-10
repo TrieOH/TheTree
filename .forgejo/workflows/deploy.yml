@@ -224,12 +224,16 @@ jobs:
       VERSION: ${{ needs.parse.outputs.version }}
       DIGEST: ${{ needs.publish.outputs.digest }}
     steps:
-      - name: Clone deploy repo
+      - name: Clone deploy repo (SSH, deploy key)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
         run: |
           set -euo pipefail
-          git clone --depth 1 \
-            "https://${{ secrets.DEPLOY_REPO_USER }}:${{ secrets.DEPLOY_REPO_TOKEN }}@ssh.trieoh.com/TrieOH/deploy.git" \
-            deploy-repo
+          install -m 600 /dev/null /tmp/deploy_repo_key
+          echo "$SSH_KEY" > /tmp/deploy_repo_key
+          trap 'rm -f /tmp/deploy_repo_key' EXIT
+          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
+          git clone --depth 1 git@ssh.trieoh.com:TrieOH/deploy.git deploy-repo
           cd deploy-repo
           git config user.name  "${{ vars.RELEASE_BOT_NAME }}"
           git config user.email "${{ vars.RELEASE_BOT_EMAIL }}"
@@ -245,11 +249,18 @@ jobs:
           git diff --exit-code --quiet && { echo "compose.yml unchanged — digest already pinned"; exit 0; }
 
       - name: Commit & push ledger entry
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
         run: |
+          set -euo pipefail
+          install -m 600 /dev/null /tmp/deploy_repo_key
+          echo "$SSH_KEY" > /tmp/deploy_repo_key
+          trap 'rm -f /tmp/deploy_repo_key' EXIT
           cd deploy-repo
           git add thetree/compose.yml
           git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: git.trieoh.com/trieoh/${ARTIFACT}@${DIGEST}"
-          git push origin main
+          GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key" \
+            git push origin main
           echo "[ledger] release: ${ARTIFACT} ${VERSION} → TrieOH/deploy main (rollout workflow picks it up)"
 
   publish:
