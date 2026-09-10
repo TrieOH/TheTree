@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"lib/crypto"
+	"lib/database"
 	"lib/email"
 	"lib/telemetry"
 	"os"
@@ -223,8 +224,10 @@ func (w *grantCertsDeps) emitCerts(ctx context.Context, editionID uuid.UUID, tem
 			continue
 		}
 
-		//nolint:gosec // context.WithoutCancel is safe — it detaches cancellation while preserving values
-		go w.sendCertEmail(context.WithoutCancel(ctx), cert, templateName, a.AttendeeEmail, a.AttendeeName)
+		//nolint:gosec // Detach cancellation AND the caller's transaction before
+		// going async: the email goroutine's reads must fall back to the pool,
+		// never share the caller's tx connection (pgx "conn busy" race).
+		go w.sendCertEmail(database.WithoutTx(context.WithoutCancel(ctx)), cert, templateName, a.AttendeeEmail, a.AttendeeName)
 	}
 
 	return errors
