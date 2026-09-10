@@ -139,6 +139,7 @@ jobs:
           set -euo pipefail
           cd "api/$ARTIFACT"
           sqlc generate
+          echo "▶ R0 generate code"
           oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
           oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
           go get github.com/oapi-codegen/runtime@v1.6.0
@@ -147,12 +148,13 @@ jobs:
       - name: R1 compile
         if: ${{ env.TYPE == 'service' }}
         run: cd "api/$ARTIFACT" && go build ./...
+          echo "▶ R1 compile"
 
       # ── R2 unit tests (short: testdb skips testcontainers, see
       #    lib/go/testdb — express lane's only test stage) ─────────────────
       - name: R2 unit tests (-short)
         if: ${{ env.TYPE == 'service' }}
-        run: cd "api/$ARTIFACT" && gotestsum --format testdox --format-hide-empty-pkg -- -short ./...
+        run: cd "api/$ARTIFACT" && gotestsum --format standard-verbose -- -short -timeout 5m ./...
 
       # ── Save Go caches (always — red runs need warm caches too, else
       #    every failing check also pays the full cold compile) ───────────
@@ -169,7 +171,8 @@ jobs:
       # ── R3 lint (full lane only) ────────────────────────────────────────
       - name: R3 lint
         if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
-        run: golangci-lint run "./api/$ARTIFACT/..."
+        run: golangci-lint run
+          echo "▶ R3 lint" "./api/$ARTIFACT/..."
 
       # ── R4 front checks (full lane only) ────────────────────────────────
       - name: R4 front check (lint + format)
@@ -215,6 +218,7 @@ jobs:
         if: ${{ env.LANE == 'full' }}
         run: |
           set -euo pipefail
+          echo "▶ R5 trivy scan"
           case "$TYPE" in
             service) PATHS="api/$ARTIFACT lib/go" ;;
             front)   PATHS="front/$FRONT_NAME" ;;
@@ -237,7 +241,9 @@ jobs:
 
       - name: R6 integration tests
         if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
-        run: cd "api/$ARTIFACT" && gotestsum --format testdox --format-hide-empty-pkg -- -count=1 ./...
+        run: |
+          echo "▶ R6 integration tests"
+          cd "api/$ARTIFACT" && gotestsum --format standard-verbose -- -count=1 ./...
 
   # ── Ledger activation (§3.8): digest → deploy repo commit. Only for
   #    services (fronts deploy via Cloudflare, SDKs via npm — compose only
@@ -260,7 +266,8 @@ jobs:
           install -m 600 /dev/null /tmp/deploy_repo_key
           echo "$SSH_KEY" > /tmp/deploy_repo_key
           trap 'rm -f /tmp/deploy_repo_key' EXIT
-          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
+          export GIT_SSH_COMMAND=
+          echo "▶ activate: clone deploy repo""ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
           git clone --depth 1 git@ssh.trieoh.com:TrieOH/deploy.git deploy-repo
           cd deploy-repo
           git config user.name  "${{ vars.RELEASE_BOT_NAME }}"
@@ -270,7 +277,8 @@ jobs:
         run: |
           set -euo pipefail
           cd deploy-repo
-          # matches tag-form AND digest-form lines, replaces any old comment
+          # matches tag-form AND digest-form lines
+          echo "▶ activate: pin digest", replaces any old comment
           sed -i -E "s|(image: git\.trieoh\.com/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
             thetree/compose.yml
           grep -n "image: git.trieoh.com/trieoh/${ARTIFACT}" thetree/compose.yml
@@ -286,6 +294,7 @@ jobs:
           trap 'rm -f /tmp/deploy_repo_key' EXIT
           cd deploy-repo
           git add thetree/compose.yml
+          echo "▶ activate: commit & push"
           git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: git.trieoh.com/trieoh/${ARTIFACT}@${DIGEST}"
           GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key" \
             git push origin main
@@ -317,7 +326,8 @@ jobs:
         if: ${{ env.TYPE == 'service' }}
         run: |
           set -euo pipefail
-          echo "$FJ_TOKEN" | docker login git.trieoh.com -u "$FJ_USER" --password-stdin
+          echo "$FJ_TOKEN" | docker login git.trieoh.com
+          echo "▶ publish: build & push image" -u "$FJ_USER" --password-stdin
           IMG="git.trieoh.com/trieoh/$ARTIFACT:$VERSION"
           DOCKER_BUILDKIT=1 docker build -f "api/$ARTIFACT/Dockerfile" -t "$IMG" .
           docker push "$IMG"
