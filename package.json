@@ -15,9 +15,11 @@
     "deploy": "pnpm -r deploy",
     "typegen": "pnpm -r cf-typegen",
     "orval": "orval",
+    "prepare": "husky",
     "clean": "pnpm -r exec rm -rf dist .turbo node_modules"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "orval": "^8.23.0"
   }
 }

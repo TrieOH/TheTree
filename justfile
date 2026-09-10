@@ -64,10 +64,11 @@ test +NAME="":
       *)         gotestsum --format testdox --format-hide-empty-pkg ./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;
     esac
 
-# Install the Go dev tools (golangci-lint, gotestsum) and trivy, pinned to
-# the same versions CI uses. go install puts binaries in $(go env GOPATH)/bin
-# and trivy goes to ~/.local/bin — if `just test` / `just lint` / the
-# pre-push trivy check report "command not found", add them to PATH:
+# Install the Go dev tools (golangci-lint, gotestsum, gitleaks) and trivy,
+# pinned to the same versions CI uses. go install puts binaries in
+# $(go env GOPATH)/bin and trivy goes to ~/.local/bin — if `just test` /
+# `just lint` / the pre-commit gitleaks scan report "command not found", add
+# them to PATH:
 #
 #   export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"
 setup:
@@ -75,6 +76,7 @@ setup:
     set -euo pipefail
     go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
     go install gotest.tools/gotestsum@v1.13.0
+    go install github.com/zricethezav/gitleaks/v8@v8.30.1
     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
         | sh -s -- -b "$HOME/.local/bin" v0.74.0
     echo "installed into $(go env GOPATH)/bin and $HOME/.local/bin"
