@@ -14,11 +14,13 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as CheckoutsPurchaseIdRouteImport } from './routes/checkouts/$purchaseId'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
+import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
 import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
 import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
@@ -48,6 +50,11 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutsPurchaseIdRoute = CheckoutsPurchaseIdRouteImport.update({
+  id: '/checkouts/$purchaseId',
+  path: '/checkouts/$purchaseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -73,6 +80,11 @@ const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   path: '/events/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsSlugCheckoutRoute = EventsSlugCheckoutRouteImport.update({
+  id: '/events/$slug/checkout',
+  path: '/events/$slug/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
   id: '/events/$slug/programs',
   path: '/events/$slug/programs',
@@ -95,10 +107,12 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
@@ -110,10 +124,12 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug': typeof EventsSlugIndexRoute
@@ -126,10 +142,12 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
@@ -143,10 +161,12 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
     | '/events/'
     | '/profile/'
+    | '/events/$slug/checkout'
     | '/events/$slug/programs'
     | '/events/$slug/store'
     | '/events/$slug/'
@@ -158,10 +178,12 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
     | '/events'
     | '/profile'
+    | '/events/$slug/checkout'
     | '/events/$slug/programs'
     | '/events/$slug/store'
     | '/events/$slug'
@@ -173,10 +195,12 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
     | '/events/'
     | '/profile/'
+    | '/events/$slug/checkout'
     | '/events/$slug/programs'
     | '/events/$slug/store'
     | '/events/$slug/'
@@ -189,10 +213,12 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  CheckoutsPurchaseIdRoute: typeof CheckoutsPurchaseIdRoute
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
+  EventsSlugCheckoutRoute: typeof EventsSlugCheckoutRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugStoreRoute: typeof EventsSlugStoreRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
@@ -236,6 +262,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkouts/$purchaseId': {
+      id: '/checkouts/$purchaseId'
+      path: '/checkouts/$purchaseId'
+      fullPath: '/checkouts/$purchaseId'
+      preLoaderRoute: typeof CheckoutsPurchaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/': {
       id: '/events/'
       path: '/events'
@@ -271,6 +304,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof EventsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$slug/checkout': {
+      id: '/events/$slug/checkout'
+      path: '/events/$slug/checkout'
+      fullPath: '/events/$slug/checkout'
+      preLoaderRoute: typeof EventsSlugCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$slug/programs': {
       id: '/events/$slug/programs'
       path: '/events/$slug/programs'
@@ -301,10 +341,12 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  CheckoutsPurchaseIdRoute: CheckoutsPurchaseIdRoute,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
   EventsIndexRoute: EventsIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
+  EventsSlugCheckoutRoute: EventsSlugCheckoutRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugStoreRoute: EventsSlugStoreRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,

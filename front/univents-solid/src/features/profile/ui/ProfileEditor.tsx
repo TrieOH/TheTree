@@ -19,6 +19,7 @@ import SaveIcon from "~icons/lucide/save";
 import { toast } from "@/shared/ui/toast";
 import { Combobox } from "@/shared/ui/Combobox";
 import { ProfileImageInput } from "./ProfileImageInput";
+import { uploadProfileImage } from "@/features/storage/api";
 import {
   asUniventsProfile,
   socialHref,
@@ -49,7 +50,7 @@ export function ProfileEditor(props: {
   load: () => Promise<{
     profile: {
       success: boolean;
-      data?: { handle?: string | null; profile?: Record<string, unknown> };
+      data?: { handle?: string | null; pfp_url?: string | null; profile?: Record<string, unknown> };
       message?: string;
     };
   }>;
@@ -64,6 +65,7 @@ export function ProfileEditor(props: {
   const [handle, setHandle] = createSignal("");
   const [loading, setLoading] = createSignal(true);
   const [saving, setSaving] = createSignal(false);
+  const [pendingImages, setPendingImages] = createSignal<Partial<Record<"pfpUrl" | "bannerUrl", File>>>({});
   const [error, setError] = createSignal<string>();
 
   onSettled(() => {
@@ -76,7 +78,12 @@ export function ProfileEditor(props: {
           );
           return;
         }
-        setProfile(asUniventsProfile(result.profile.data.profile ?? {}));
+        setProfile(asUniventsProfile({
+          ...result.profile.data.profile,
+          ...(result.profile.data.pfp_url !== undefined && {
+            pfpUrl: result.profile.data.pfp_url,
+          }),
+        }));
         setHandle(result.profile.data.handle ?? "");
       })
       .catch((cause) =>
@@ -95,13 +102,22 @@ export function ProfileEditor(props: {
     event.preventDefault();
     setSaving(true);
     try {
+      const nextProfile = untrack(() => ({ ...profile() }));
+      const uploads = untrack(() => Object.entries(pendingImages())) as ["pfpUrl" | "bannerUrl", File][];
+      const results = await Promise.allSettled(uploads.map(async ([field, file]) => [field, await uploadProfileImage(file, field)] as const));
+      const failed: string[] = [];
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") nextProfile[result.value[0]] = result.value[1];
+        else failed.push(uploads[index]?.[0] === "pfpUrl" ? "foto" : "banner");
+      });
       const result = await props.save(
-        profile(),
+        nextProfile,
         handle().trim().replace(/^@/, ""),
       );
       if (!result.success)
         throw new Error(result.message ?? "Não foi possível salvar o perfil.");
       toast.success("Perfil atualizado");
+      if (failed.length) toast.warning(`Perfil salvo, mas falhou o upload de: ${failed.join(" e ")}.`);
       props.onSaved();
     } catch (cause) {
       toast.error(
@@ -134,7 +150,7 @@ export function ProfileEditor(props: {
                 label="Banner"
                 currentUrl={profile().bannerUrl}
                 variant="banner"
-                onSelect={() => undefined}
+                onSelect={(file) => setPendingImages((value) => ({ ...value, bannerUrl: file }))}
               />
               <button
                 type="button"
@@ -152,7 +168,7 @@ export function ProfileEditor(props: {
                     label="Foto do perfil"
                     currentUrl={profile().pfpUrl}
                     variant="avatar"
-                    onSelect={() => undefined}
+                    onSelect={(file) => setPendingImages((value) => ({ ...value, pfpUrl: file }))}
                   />
                 </div>
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -224,6 +240,12 @@ export function ProfileEditor(props: {
                     label="Website"
                     value={profile().website ?? ""}
                     onInput={(value) => update("website", value)}
+                    onBlur={(value) => {
+                      const trimmed = value.trim();
+                      if (trimmed && !/^https?:\/\//i.test(trimmed)) {
+                        update("website", `https://${trimmed}`);
+                      }
+                    }}
                     placeholder="https://seusite.com"
                     type="url"
                   />
@@ -232,6 +254,7 @@ export function ProfileEditor(props: {
                     value={profile().contactEmail ?? ""}
                     onInput={(value) => update("contactEmail", value)}
                     placeholder="voce@exemplo.com"
+                    type="email"
                     autocomplete="email"
                   />
                 </div>
@@ -303,9 +326,10 @@ function Field(props: {
   label: string;
   value: string;
   onInput: (value: string) => void;
+  onBlur?: (value: string) => void;
   placeholder?: string;
   autocomplete?: string;
-  type?: "text" | "url";
+  type?: "text" | "url" | "email";
 }) {
   return (
     <label class="block space-y-2.5 text-sm font-medium">
@@ -316,6 +340,7 @@ function Field(props: {
         placeholder={props.placeholder}
         autocomplete={props.autocomplete}
         onInput={(event) => props.onInput(event.currentTarget.value)}
+        onBlur={(event) => props.onBlur?.(event.currentTarget.value)}
         class="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary"
       />
     </label>

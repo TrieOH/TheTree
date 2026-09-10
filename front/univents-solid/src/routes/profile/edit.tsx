@@ -5,6 +5,7 @@ import { ProfileEditor } from "@/features/profile/ui/ProfileEditor";
 
 export const Route = createFileRoute("/profile/edit")({
   beforeLoad: requireAuth,
+  head: () => ({ meta: [{ title: "Editar perfil - Univents" }] }),
   component: EditProfilePage,
 });
 
@@ -18,22 +19,24 @@ function EditProfilePage() {
     <ProfileEditor
       load={() =>
         actorId
-          ? auth.getActorProfile(actorId).then((profile) => ({ profile }))
+          ? Promise.all([auth.getProfileSchema(), auth.getActorProfile(actorId)]).then(([, profile]) => ({ profile }))
           : Promise.resolve({
             profile: { success: false, message: "Usuário não autenticado" },
           })
       }
-      save={(profile, handle) =>
-        actorId
+      save={(profile, handle) => {
+        const { pfpUrl, ...data } = profile;
+        return actorId
           ? auth.upsertActorProfile(actorId, {
             handle,
-            profile: profile as never,
+            pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
+            profile: data as never,
           })
           : Promise.resolve({
             success: false,
             message: "Usuário não autenticado",
-          })
-      }
+          });
+      }}
       onCancel={finish}
       onSaved={finish}
     />

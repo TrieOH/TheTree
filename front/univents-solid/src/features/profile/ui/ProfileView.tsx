@@ -10,7 +10,6 @@ import type { JSX } from "@solidjs/web";
 import { useQueryClient } from "@trieoh/front-core/solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
-import { myPurchasesQueryOptions } from "@/features/purchases/api";
 import GlobeIcon from "~icons/lucide/globe";
 import MailIcon from "~icons/lucide/mail";
 import GithubIcon from "~icons/lucide/github";
@@ -26,6 +25,7 @@ import {
 } from "../model/profile-data";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileCollectionItem } from "./ProfileCollectionItem";
+import { PurchasesContent } from "@/features/purchases/ui/PurchasesContent";
 
 const Globe = GlobeIcon as unknown as () => JSX.Element;
 const Mail = MailIcon as unknown as () => JSX.Element;
@@ -41,6 +41,7 @@ type ProfileResponse = {
   data?: {
     actor_id?: string;
     handle?: string | null;
+    pfp_url?: string | null;
     profile?: Record<string, unknown>;
   };
   message?: string;
@@ -72,7 +73,11 @@ export function ProfileView(props: ProfileViewProps) {
         fallback={<main class="p-12 text-center">Perfil não encontrado.</main>}
       >
         {(response) => {
-          const profile = asUniventsProfile(response().data?.profile ?? {});
+          const data = response().data;
+          const profile = asUniventsProfile({
+            ...data?.profile,
+            ...(data?.pfp_url !== undefined && { pfpUrl: data.pfp_url }),
+          });
           const name = profileDisplayName(profile);
           const own =
             props.ownProfile ||
@@ -215,7 +220,7 @@ function ProfileTabContent(props: {
     if (tab === "certificates") {
       return props.queryClient.fetchQuery(myCertificationsQueryOptions());
     }
-    return props.queryClient.fetchQuery(myPurchasesQueryOptions());
+    return [];
   });
 
   return (
@@ -236,25 +241,22 @@ function CollectionCard(props: { tab: Exclude<Tab, "about">; data: unknown }) {
         : "Compras";
   const items = () => {
     const data = props.data;
-    return Array.isArray(data)
-      ? data
-      : data && typeof data === "object"
-        ? Object.values(data as Record<string, unknown>).flatMap((value) =>
-          Array.isArray(value) ? value : [],
-        )
-        : [];
+    const collect = (value: unknown): unknown[] =>
+      Array.isArray(value)
+        ? value
+        : value && typeof value === "object"
+          ? Object.values(value as Record<string, unknown>).flatMap(collect)
+          : [];
+    return collect(data);
   };
   return (
-    <div class="mx-auto mt-5 max-w-7xl px-4">
+    <div class="mx-auto mt-4 max-w-7xl px-4">
       <Card title={title()}>
-        <Show
-          when={items().length > 0}
-          fallback={
-            <EmptyState
-              message={`Nenhum item em ${title().toLowerCase()} ainda.`}
-            />
-          }
-        >
+        <Show when={props.tab === "purchases"}>
+          <PurchasesContent />
+        </Show>
+        {/* TODO: I need to change this(one component for each) */}
+        <Show when={props.tab !== "purchases"}>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {items().map((item) => (
               <ProfileCollectionItem tab={props.tab} item={item} />

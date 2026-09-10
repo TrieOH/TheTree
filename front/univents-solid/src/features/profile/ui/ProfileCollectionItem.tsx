@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
-import { untrack } from "solid-js";
+import { Show, untrack } from "solid-js";
+import { Link } from "@tanstack/solid-router";
 import BadgeIcon from "~icons/lucide/badge";
 import FileCheckIcon from "~icons/lucide/file-check-2";
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
@@ -19,8 +20,15 @@ export function ProfileCollectionItem(props: { tab: Tab; item: unknown }) {
     rawItem && typeof rawItem === "object"
       ? (rawItem as Record<string, unknown>)
       : {};
-  const title = String(item.name ?? item.title ?? item.edition_name ?? "Item");
-  const description = item.description ?? item.status ?? item.event_name;
+  const title = String(
+    item.template_name ?? item.name ?? item.title ?? item.edition_name ??
+    (tab === "purchases" ? "Pedido" : tab === "certificates" ? "Certificado" : "Crachá"),
+  );
+  const amount = typeof item.total_cents === "number"
+    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: String(item.currency ?? "BRL") }).format(item.total_cents / 100)
+    : undefined;
+  const description = amount ?? item.description ?? item.status ?? item.event_name ??
+    (typeof item.issued_at === "string" ? `Emitido em ${new Date(item.issued_at).toLocaleDateString("pt-BR")}` : undefined);
   const image = typeof item.image === "string" ? item.image : undefined;
   const Icon =
     tab === "badges" ? Badge : tab === "certificates" ? FileCheck : ShoppingBag;
@@ -43,6 +51,15 @@ export function ProfileCollectionItem(props: { tab: Tab; item: unknown }) {
           )}
         </div>
       </div>
+      <Show when={tab === "purchases" && typeof item.purchase_id === "string"}>
+        <Link
+          to="/checkouts/$purchaseId"
+          params={{ purchaseId: String(item.purchase_id) }}
+          class="mx-4 mb-4 flex h-9 items-center justify-center rounded-md border border-border text-sm font-medium hover:bg-muted"
+        >
+          Ver pedido
+        </Link>
+      </Show>
     </article>
   );
 }

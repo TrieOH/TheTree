@@ -203,12 +203,12 @@ function DesktopNavItem(props: {
         onPointerDown={() => {
           if (!buttonRef) return;
 
-        tapAnimation?.stop();
+          tapAnimation?.stop();
           tapAnimation = playPressIn(buttonRef, 0.84);
         }}
         onPointerLeave={() => {
           if (!buttonRef) return;
-        tapAnimation?.stop();
+          tapAnimation?.stop();
           tapAnimation = playPressOut(buttonRef);
         }}
         onPointerUp={() => {
@@ -225,7 +225,7 @@ function DesktopNavItem(props: {
           tapAnimation = playPressOut(buttonRef);
 
         }}
-      onClick={() => props.onClick()}
+        onClick={() => props.onClick()}
         aria-label={props.item.label}
         aria-current={props.isActive ? 'page' : undefined}
         style={{
@@ -461,53 +461,50 @@ export function NavigationDock(props: NavigationDockProps) {
     );
   });
 
-  onSettled(() => {
-    const animations: Array<{ stop: () => void }> = [];
-
-    if (desktopDockRef) {
-      animations.push(
-        animate(
-          desktopDockRef,
-          {
-            y: [20, 0],
-            opacity: [0, 1],
-            filter: ['blur(10px)', 'blur(0px)'],
-          },
-          {
-            type: 'spring',
-            stiffness: 260,
-            damping: 24,
-            delay: 0.05,
-          },
-        ),
-      );
-    }
-
-    if (mobileDockRef) {
-      animations.push(
-        animate(
-          mobileDockRef,
-          {
-            y: [20, 0],
-            opacity: [0, 1],
-          },
-          {
-            type: 'spring',
-            stiffness: 260,
-            damping: 24,
-          },
-        ),
-      );
-    }
-
-    return () => {
-      for (const animation of animations) animation.stop();
-    };
-  });
-
   onCleanup(() => {
     mouseX.set(-1000);
   });
+
+  createEffect(
+    () => !hidden() && navItems().length > 0,
+    (visible, wasVisible) => {
+      if (!visible || wasVisible) return;
+
+      queueMicrotask(() => {
+        if (desktopDockRef) {
+          animate(
+            desktopDockRef,
+            {
+              y: [20, 0],
+              opacity: [0, 1],
+              filter: ['blur(10px)', 'blur(0px)'],
+            },
+            {
+              type: 'spring',
+              stiffness: 260,
+              damping: 24,
+              delay: 0.05,
+            },
+          );
+        }
+
+        if (mobileDockRef) {
+          animate(
+            mobileDockRef,
+            {
+              y: [20, 0],
+              opacity: [0, 1],
+            },
+            {
+              type: 'spring',
+              stiffness: 260,
+              damping: 24,
+            },
+          );
+        }
+      });
+    },
+  );
 
   return (
     <>

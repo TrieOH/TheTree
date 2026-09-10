@@ -8,12 +8,19 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "test": "vitest --passWithNoTests",
-    "check": "oxlint src",
-    "lint": "oxlint src",
-    "tsc": "tsc --noEmit"
+    "test": "pnpm test:workers && pnpm test:ui",
+    "test:workers": "vitest run --config vitest.workers.config.ts",
+    "test:ui": "vitest run --config vite.config.ts --passWithNoTests",
+    "test:watch": "vitest --config vite.config.ts --passWithNoTests",
+    "check": "oxlint src tests",
+    "lint": "oxlint src tests",
+    "tsc": "tsc --noEmit",
+    "deploy": "pnpm build && wrangler deploy --config wrangler.jsonc",
+    "cf-typegen": "wrangler types"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "catalog:",
+    "@cloudflare/vitest-plugin": "1.1.6",
     "@iconify-json/lucide": "^1.2.129",
     "@iconify-json/simple-icons": "^1.2.95",
     "@solidjs/diagnostics": "^2.0.0-rc.6",
@@ -22,13 +29,16 @@
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "1.168.35",
     "@testing-library/jest-dom": "^6.6.3",
+    "@types/node": "catalog:",
+    "@types/qrcode": "^1.5.6",
     "eslint-plugin-solid": "~0.17.0",
     "jsdom": "^25.0.1",
     "oxlint": "~1.79.0",
     "tailwindcss": "catalog:",
     "typescript": "^5.9.2",
     "vite": "^8.1.5",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "wrangler": "catalog:"
   },
   "dependencies": {
     "@solidjs/web": "^2.0.0-rc.6",
@@ -38,7 +48,9 @@
     "@trieoh/front-core": "workspace:",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "@trieoh/univents-api": "workspace:*",
+    "aws4fetch": "^1.0.20",
     "motion": "catalog:",
+    "qrcode": "^1.5.4",
     "solid-js": "^2.0.0-rc.6",
     "unplugin-icons": "^22.1.0",
     "zod": "catalog:"

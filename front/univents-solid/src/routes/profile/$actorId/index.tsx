@@ -4,11 +4,26 @@ import { createMemo } from 'solid-js';
 import z from 'zod'
 import { ProfileView } from "@/features/profile/ui/ProfileView";
 
+const PROFILE_TAB_TITLES: Record<string, string> = {
+  about: "Perfil",
+  badges: "Crachás",
+  certificates: "Certificados",
+  purchases: "Compras",
+};
+
 export const Route = createFileRoute('/profile/$actorId/')({
   validateSearch: z.object({
     tab: z
       .enum(["about", "badges", "certificates", "purchases"])
       .catch("about"),
+  }),
+  // `head` receives the match, so changing the tab changes the title too.
+  head: ({ match, params }) => ({
+    meta: [
+      {
+        title: `${PROFILE_TAB_TITLES[match.search.tab] ?? "Perfil"} de ${params.actorId} - Univents`,
+      },
+    ],
   }),
   component: RouteComponent,
 })

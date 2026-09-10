@@ -12,3 +12,10 @@ minimumReleaseAgeExclude:
   - solid-js
   - '@solidjs/*'
   - '@tanstack/solid-router@2.0.0-rc.5 || 2.0.0-rc.6'
+
+# This file makes the package its own workspace root, so `catalog:` entries in
+# package.json (resolved by the repo root) are invisible here. pnpm's pre-run
+# dependency check would then run an install in this directory and fail with
+# ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC, breaking every `pnpm <script>` run
+# from here. The root owns installs anyway, so skip that check.
+verifyDepsBeforeRun: false

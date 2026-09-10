@@ -1,6 +1,7 @@
 import { orvalData } from "@trieoh/api-client";
 import {
   deregisterOccurrence,
+  getOccurrence,
   listEditionOccurrences,
   listEditionPrograms,
   listMyParticipations,
@@ -25,6 +26,14 @@ export const occurrencesQueryOptions = (editionId: string) => ({
   queryFn: () =>
     listEditionOccurrences(editionId, { public: true }).then(
       orvalData<ProgramOccurrence[]>,
+    ),
+});
+
+export const occurrenceQueryOptions = (occurrenceId: string) => ({
+  queryKey: programKeys.occurrence(occurrenceId),
+  queryFn: () =>
+    getOccurrence(occurrenceId, { public: true }).then(
+      orvalData<ProgramOccurrence>,
     ),
 });
 
