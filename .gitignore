@@ -60,3 +60,5 @@ api/**/docs/
 # 🤖 AGENTS
 # =============================================================
 .pi-subagents
+# transient planning docs (never committed)
+docs/plans/

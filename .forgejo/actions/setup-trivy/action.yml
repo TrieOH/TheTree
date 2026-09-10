@@ -1,0 +1,68 @@
+name: Setup Trivy
+description: >
+  Pinned trivy binary + CVE database with a rolling daily cache (restore-keys
+  falls back to the previous day's DB, so freshness survives cache misses).
+  Adds ~/.local/bin to PATH — same location `just setup` uses on dev machines.
+  Self-reports as `[cache] setup-trivy: bin HIT|MISS ... db HIT|MISS ...`.
+inputs:
+  version:
+    description: trivy version (with leading v — keep in sync with justfile setup)
+    required: false
+    default: "v0.74.0"
+runs:
+  using: composite
+  steps:
+    - name: Compute rolling DB cache key
+      id: dbkey
+      shell: bash
+      run: echo "key=trivy-db-${{ inputs.version }}-$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore trivy binary
+      id: bincache
+      uses: https://code.forgejo.org/actions/cache/restore@v4
+      with:
+        # cache the directory — cache save does `tar -C <path> .`, needs a dir
+        path: ~/.local/bin
+        key: trivy-bin-${{ inputs.version }}-linux-amd64
+
+    - name: Install binary (cache miss)
+      if: steps.bincache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sh -s -- -b "$HOME/.local/bin" ${{ inputs.version }}
+
+    - name: Add to PATH
+      shell: bash
+      run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Save binary (inline — content is complete here; never break the pipeline over a cache)
+      if: steps.bincache.outputs.cache-hit != 'true'
+      uses: https://code.forgejo.org/actions/cache/save@v4
+      with:
+        path: ~/.local/bin
+        key: trivy-bin-${{ inputs.version }}-linux-amd64
+      continue-on-error: true
+
+    - name: Restore CVE database (rolling)
+      id: dbcache
+      uses: https://code.forgejo.org/actions/cache@v4
+      with:
+        path: ~/.cache/trivy
+        key: ${{ steps.dbkey.outputs.key }}
+        restore-keys: trivy-db-${{ inputs.version }}-
+
+    - name: Report + smoke test
+      shell: bash
+      run: |
+        if [ "${{ steps.bincache.outputs.cache-hit }}" = "true" ]; then
+          echo "[cache] setup-trivy: bin HIT key=trivy-bin-${{ inputs.version }}-linux-amd64"
+        else
+          echo "[cache] setup-trivy: bin MISS key=trivy-bin-${{ inputs.version }}-linux-amd64 → installed fresh"
+        fi
+        if [ "${{ steps.dbcache.outputs.cache-hit }}" = "true" ]; then
+          echo "[cache] setup-trivy: db HIT key=${{ steps.dbkey.outputs.key }}"
+        else
+          echo "[cache] setup-trivy: db MISS (restored previous day if any) key=${{ steps.dbkey.outputs.key }} → will refresh db"
+        fi
+        trivy --version
