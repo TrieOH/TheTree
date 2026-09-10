@@ -11,7 +11,7 @@ inputs:
   pnpm-version:
     description: pnpm version
     required: false
-    default: "10"
+    default: "11.26.0"
   install:
     description: "run `pnpm install --frozen-lockfile` after cache restore (true/false)"
     required: false
@@ -39,7 +39,7 @@ runs:
       uses: https://code.forgejo.org/actions/cache@v1
       with:
         path: ${{ steps.store.outputs.dir }}
-        key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        key: pnpm-store-${{ inputs.pnpm-version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
 
     - name: Install dependencies
       if: inputs.install == 'true'
@@ -49,7 +49,7 @@ runs:
     - name: Report + smoke test
       shell: bash
       run: |
-        KEY="pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}"
+        KEY="pnpm-store-${{ inputs.pnpm-version }}-${{ hashFiles('**/pnpm-lock.yaml') }}"
         if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
           echo "[cache] setup-node: HIT key=$KEY"
         else
