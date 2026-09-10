@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Check, Copy, Key, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";

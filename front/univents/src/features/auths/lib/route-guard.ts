@@ -4,7 +4,7 @@ import {
   requireAuth as requireAuthCore,
   requireGuest as requireGuestCore,
 } from "@trieoh/front-core";
-import type { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import type { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { profileKeys } from "@/features/profile/api/query-keys";
 
 type AuthGuardArgs = Parameters<typeof requireAuthCore>[0];

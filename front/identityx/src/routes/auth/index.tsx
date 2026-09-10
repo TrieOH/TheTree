@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ModernAuth } from "@trieoh/identityx-sdk-ts/react";
+import { ModernAuth } from "@trieoh/identityx-sdk-ts-react";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import z from "zod";

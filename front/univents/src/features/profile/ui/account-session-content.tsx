@@ -1,4 +1,4 @@
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { CheckCircle2, Fingerprint, Mail, MailWarning } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useUploadQueue } from "../hooks/use-upload-queue";

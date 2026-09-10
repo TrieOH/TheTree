@@ -8,7 +8,10 @@ vi.mock("@trieoh/front-core/tracing/browser", () => ({
   withSpan: async <T>(_name: string, fn: () => Promise<T> | T) => fn(),
 }));
 
-import { createTanStackServerProxyFetchers } from "@trieoh/front-core/auth/tanstack/client";
+import {
+  createTanStackIdentityXIntegration,
+  createTanStackServerProxyFetchers,
+} from "@trieoh/front-core/auth/tanstack/client";
 
 describe("BFF trace propagation", () => {
   it("adds the browser traceparent to proxy requests", async () => {
@@ -62,5 +65,38 @@ describe("BFF trace propagation", () => {
         },
       },
     });
+  });
+});
+
+describe("BFF session synchronization", () => {
+  it("marks the browser session unauthenticated when an API request returns 401", async () => {
+    const proxy = vi.fn().mockResolvedValue({
+      success: false,
+      code: 401,
+      error_id: "SESSION_MISSING",
+      message: "Session expired",
+    });
+    const integration = createTanStackIdentityXIntegration({
+      login: vi.fn(),
+      logout: vi.fn(),
+      refresh: vi.fn(),
+      restore: vi.fn(),
+      request: proxy,
+    });
+    const setAuthenticated = vi.fn();
+    const setProfile = vi.fn();
+
+    integration.authAdapter?.createAuth({
+      callbacks: {},
+      defaultAuth: {} as never,
+      getProfile: () => null,
+      setProfile,
+      setAuthenticated,
+    });
+
+    await integration.authFetcher.get("/events/joined");
+
+    expect(setProfile).toHaveBeenCalledWith(null);
+    expect(setAuthenticated).toHaveBeenCalledWith(false);
   });
 });

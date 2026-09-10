@@ -1,4 +1,4 @@
-import { useAuth } from "@trieoh/identityx-sdk-ts/react"
+import { useAuth } from "@trieoh/identityx-sdk-ts-react"
 import posthog from "posthog-js"
 import { PostHogProvider as BasePostHogProvider } from "posthog-js/react"
 import { useEffect, type ReactNode } from "react"

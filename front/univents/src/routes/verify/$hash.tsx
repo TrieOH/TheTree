@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { BadgeCheck, FileX2, Loader2 } from "lucide-react";
 import type { RefObject } from "react";
 import { useMemo, useRef } from "react";

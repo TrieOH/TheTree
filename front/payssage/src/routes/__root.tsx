@@ -7,8 +7,8 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { AuthContextUpdater } from "@trieoh/front-core";
-import type { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { AuthProvider } from "@trieoh/identityx-sdk-ts/react";
+import type { useAuth } from "@trieoh/identityx-sdk-ts-react";
+import { AuthProvider } from "@trieoh/identityx-sdk-ts-react";
 import { env } from "#/env";
 import { Toaster } from "#/shared/ui/shadcn/sonner";
 import PostHogProvider from "../app/integrations/posthog/provider";

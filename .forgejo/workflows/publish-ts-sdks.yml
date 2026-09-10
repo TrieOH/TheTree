@@ -3,7 +3,7 @@ name: Publish TS SDKs
 on:
   push:
     tags:
-      - '*-sdk-ts/v*'
+      - '*-sdk-ts*/v*'
 
 permissions:
   contents: read
@@ -22,9 +22,9 @@ jobs:
         id: tag
         run: |
           TAG="${{ github.ref_name }}"
-          # Expected format: identityx-sdk-ts/v0.11.9
-          SDK_NAME="${TAG%%/*}"
-          SDK_NAME="${SDK_NAME%-sdk-ts}"
+          # Expected formats: identityx-sdk-ts/v0.15.5 or identityx-sdk-ts-react/v0.15.5
+          SDK_TAG="${TAG%%/*}"
+          SDK_NAME="${SDK_TAG/-sdk-ts/}"
 
           VERSION="${TAG##*/}"
           VERSION="${VERSION#v}"
@@ -66,6 +66,7 @@ jobs:
           echo "Package: $PKG_NAME"
           echo "Package Version: $PKG_VERSION"
           echo "Tag Version: $TAG_VERSION"
+          echo "package_name=$PKG_NAME" >> $GITHUB_OUTPUT
 
           if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
             echo "::error::Version mismatch! Tag version is $TAG_VERSION but package.json version is $PKG_VERSION"
@@ -87,7 +88,7 @@ jobs:
 
       - name: Build
         if: steps.check.outputs.skip != 'true'
-        run: pnpm --filter "@trieoh/${{ steps.tag.outputs.sdk_name }}-sdk-ts" build
+        run: pnpm --filter "${{ steps.check.outputs.package_name }}" build
 
       - name: Publish to NPM
         if: steps.check.outputs.skip != 'true'

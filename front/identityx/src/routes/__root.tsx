@@ -5,7 +5,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { AuthContextUpdater } from "@trieoh/front-core";
-import { AuthProvider, type useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { AuthProvider, type useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { PHProvider } from "@/app/providers/posthog/RootProvider";
 import { Provider as TanStackQueryProvider } from "@/app/providers/tanstack-query/RootProvider";

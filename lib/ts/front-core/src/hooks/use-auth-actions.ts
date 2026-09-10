@@ -1,6 +1,6 @@
 import { useNavigate, useRouter } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
-import { useAuth } from "@trieoh/identityx-sdk-ts/react"
+import { useAuth } from "@trieoh/identityx-sdk-ts-react"
 import { toast } from "sonner"
 
 /**

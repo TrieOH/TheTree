@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ModernForgotPassword } from "@trieoh/identityx-sdk-ts/react";
+import { ModernForgotPassword } from "@trieoh/identityx-sdk-ts-react";
 import { AuthActionPage } from "@/features/auth/ui/auth-action-page";
 
 export const Route = createFileRoute("/auth/forgot-password")({

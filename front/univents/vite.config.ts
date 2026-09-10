@@ -4,6 +4,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
+import type { PluginOption } from 'vite'
 
 import babel from '@rolldown/plugin-babel'
 
@@ -24,7 +25,7 @@ const config = defineConfig(() => {
       },
       tanstackStart(),
       viteReact(),
-    ],
+    ] as PluginOption[],
     build: {
       chunkSizeWarningLimit: 1000,
     }

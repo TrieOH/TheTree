@@ -25,23 +25,26 @@ export function ProfileHeader({
   activeTab,
   onTabChange,
 }: ProfileHeaderProps) {
-  const bannerStyle = profile.bannerUrl
-    ? {
-        backgroundImage: `url(${profile.bannerUrl})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }
-    : undefined;
-
   return (
     <section className="relative w-full border-b border-border bg-card shadow-md">
       <div
         className={cn(
-          "h-40 w-full bg-background bg-linear-to-br",
+          "h-40 w-full overflow-hidden bg-background bg-linear-to-br",
           "from-primary/40 via-primary/15 to-muted sm:h-48 md:h-56",
         )}
-        style={bannerStyle}
-      />
+      >
+        {profile.bannerUrl && (
+          <img
+            src={profile.bannerUrl}
+            alt=""
+            width={1600}
+            height={448}
+            loading="eager"
+            fetchPriority="high"
+            className="size-full object-cover object-center"
+          />
+        )}
+      </div>
 
       <div className="md:hidden">
         {ownProfile && (

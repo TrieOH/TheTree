@@ -1,5 +1,5 @@
 import { createDefaultFetchClient, type DefaultFetchResult } from "@trieoh/envoy-fetch-ts";
-import type { AuthProviderAdapter, AuthService } from "@trieoh/identityx-sdk-ts/react";
+import type { AuthProviderAdapter, AuthService } from "@trieoh/identityx-sdk-ts-react";
 import { createFetcher, type ApiResponse } from "@trieoh/identityx-sdk-ts";
 import type { AuthTokens } from "@trieoh/identityx-sdk-ts";
 import type {
@@ -332,10 +332,26 @@ export function createTanStackIdentityXIntegration(
     };
   }
 
-  const fetchers = createTanStackServerProxyFetchers(functions.request, options);
+  let invalidateSession = () => undefined;
+  const baseAuthAdapter = createTanStackIdentityXAuthProviderAdapter(functions, options);
+  const authAdapter: AuthProviderAdapter = {
+    createAuth(context) {
+      invalidateSession = () => {
+        context.setProfile(null);
+        context.setAuthenticated(false);
+      };
+      return baseAuthAdapter.createAuth(context);
+    },
+    restoreSession: baseAuthAdapter.restoreSession,
+  };
+  const fetchers = createTanStackServerProxyFetchers(
+    functions.request,
+    options,
+    () => invalidateSession(),
+  );
   return {
     mode: "bff" as const,
-    authAdapter: createTanStackIdentityXAuthProviderAdapter(functions, options),
+    authAdapter,
     ...fetchers,
   };
 }
@@ -365,6 +381,7 @@ function defaultTransportLogger(event: IdentityXTransportLogEvent): void {
 export function createTanStackServerProxyFetchers(
   proxy: ServerFunction<ServerProxyRequest, ServerProxyResult>,
   options: TanStackIdentityXClientOptions = {},
+  onSessionInvalid: () => void = () => undefined,
 ) {
   const adapter = async (url: string, init?: RequestInit): Promise<Response> => {
     const started = performance.now();
@@ -413,6 +430,7 @@ export function createTanStackServerProxyFetchers(
       );
       return response;
     });
+    if (result.code === 401) onSessionInvalid();
     const event: IdentityXTransportLogEvent = {
       layer: "bff-client",
       operation: "apiRequest",

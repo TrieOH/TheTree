@@ -5,6 +5,12 @@ export {
   createQueryFetcher
 } from "./core/api";
 export { configure } from "./core/env";
+export { Api } from "./core/api";
+export { createAuthService } from "./core/services";
+export type { AuthCallbacks, AuthService } from "./core/services";
+export { authStore } from "./store/auth-store";
+export { clearAuthTokens, getStoredRefreshToken, getTokenClaims, getUserInfo, isRefreshSessionExpired, saveAuthSession } from "./utils/token-utils";
+export { validateProjectKey } from "./utils/env-validator";
 export { FetchClientError as ApiError } from "@trieoh/envoy-fetch-ts";
 export type {
   ActorType,
@@ -23,3 +29,4 @@ export type {
   UpsertProfileRequest,
   UpsertProfileSchemaRequest,
 } from "./types/auth-types";
+export type { OAuthProviderI } from "./types/common-types";

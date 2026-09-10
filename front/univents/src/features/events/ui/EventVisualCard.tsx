@@ -81,6 +81,7 @@ export function EventVisualCard({ event }: { event: EventI }) {
   });
 
   useEffect(() => {
+    const toastId = `event-image-${event.id}`;
     if (
       tasks.some(
         (task) =>
@@ -90,10 +91,14 @@ export function EventVisualCard({ event }: { event: EventI }) {
       )
     )
       toast.loading("Enviando imagem do evento…", {
-        id: `event-image-${event.id}`,
+        id: toastId,
         duration: Infinity,
       });
-    else toast.dismiss(`event-image-${event.id}`);
+    else toast.dismiss(toastId);
+
+    return () => {
+      toast.dismiss(toastId);
+    };
   }, [event.id, tasks]);
 
   const input = (

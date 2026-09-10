@@ -34,6 +34,8 @@ export default function NotFound() {
             <img
               src="/images/lagoon-5.svg"
               alt="404 Lagoon"
+              width={1200}
+              height={630}
               className="w-full h-full object-cover opacity-80 dark:opacity-60 transition-all duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px]">

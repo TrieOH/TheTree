@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { CardSkeleton, CardsGridSkeleton, EmptyState } from "@trieoh/ui-base";
 import { ShoppingBag } from "lucide-react";
 import { myPurchasesQueryOptions } from "../api";
 import { resolvePurchaseCatalog } from "../api/purchase-catalog";
@@ -65,19 +66,32 @@ export function PurchasesContent() {
   }));
 
   if (isPending) {
-    return <p className="text-sm text-muted-foreground">Carregando compras…</p>;
+    return (
+      <CardsGridSkeleton
+        count={2}
+        columns={2}
+        renderItem={() => (
+          <CardSkeleton mediaClassName="hidden" showBadge={false} />
+        )}
+      />
+    );
   }
 
   if (error || orders.length === 0) {
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center border border-dashed border-border text-center">
-        <ShoppingBag className="mb-3 size-10 text-muted-foreground" />
-        <p className="font-medium">
-          {error
-            ? "Não foi possível carregar suas compras."
-            : "Você ainda não possui compras."}
-        </p>
-      </div>
+      <EmptyState
+        icon={ShoppingBag}
+        title={
+          error
+            ? "Não foi possível carregar suas compras"
+            : "Você ainda não possui compras"
+        }
+        description={
+          error
+            ? "Tente novamente em alguns instantes."
+            : "Quando você adquirir ingressos ou produtos, eles aparecerão aqui."
+        }
+      />
     );
   }
   return (

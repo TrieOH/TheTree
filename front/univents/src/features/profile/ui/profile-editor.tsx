@@ -172,6 +172,7 @@ export function ProfileEditor({
                   file,
                   "profiles/images",
                   crypto.randomUUID(),
+                  field === "pfpUrl" ? 256 : undefined,
                 ),
               })),
             );

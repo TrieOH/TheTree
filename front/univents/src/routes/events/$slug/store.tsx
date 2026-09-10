@@ -1,6 +1,6 @@
 import { useQueries, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAuth } from "@trieoh/identityx-sdk-ts/react";
+import { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { activeEditionQueryOptions } from "@/features/editions/api";

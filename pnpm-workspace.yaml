@@ -5,7 +5,10 @@ packages:
 
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.15.1
+  '@trieoh/identityx-sdk-ts': ^0.15.5
+  '@trieoh/identityx-sdk-ts-react': ^0.15.5
+  solid-js: 2.0.0-rc.6
+  '@solidjs/web': 2.0.0-rc.6
   '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -42,6 +45,7 @@ catalog:
   # === Animations & Icons ===
   motion: ^12.40.0
   lucide-react: ^1.18.0
+  lucide-solid: ^1.41.0
 
   # === Validation ===
   zod: ^4.4.3
@@ -83,18 +87,19 @@ catalog:
 
 overrides:
   browserslist: 4.28.7
+  fflate: 0.8.3
   dompurify: 3.4.13
   js-yaml: 4.3.1
   nanoid: 3.3.18
   esbuild: ">=0.28.1"
   "@opentelemetry/core": ">=2.8.0"
   "@tanstack/query-core": "5.101.4"
-  "@tanstack/router-core": "1.171.15"
   postcss: ">=8.5.23"
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@trieoh/identityx-sdk-ts'
+  - '@trieoh/identityx-sdk-ts-react'
   - '@trieoh/identityx-access-sdk-ts'
   - 'shiki'
   - '@shikijs/*'
@@ -119,6 +124,8 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   workerd: true
+patchedDependencies:
+  '@tanstack/solid-router@2.0.0-rc.6': patches/@tanstack__solid-router@2.0.0-rc.6.patch
 
 pnpm:
   overrides:

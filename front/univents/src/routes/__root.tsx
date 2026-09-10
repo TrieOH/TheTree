@@ -7,24 +7,26 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { AuthContextUpdater } from "@trieoh/front-core";
-import type { useAuth } from "@trieoh/identityx-sdk-ts/react";
-import { AuthProvider } from "@trieoh/identityx-sdk-ts/react";
+import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Toaster } from "@trieoh/ui-base/shadcn/sonner";
 import { ThemeProvider } from "next-themes";
+import { lazy, Suspense } from "react";
 import { env } from "@/env";
 import { requireConfiguredProfile } from "@/features/auths/lib/route-guard";
 import { VerifiedEmailGuard } from "@/features/auths/ui/verified-email-guard";
-import { UploadQueueProvider } from "@/features/upload-queue/ui/upload-queue-provider";
-import "@/features/upload-queue/associations";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
 import NotFound from "@/widgets/feedback/ui/NotFound";
 import { NavigationDock } from "@/widgets/ui/navigation-dock";
 import { OverlayScrollbar } from "@/widgets/ui/overlay-scrollbar";
 import { identityXAuthAdapter } from "../integrations/auth/adapter";
-import PostHogProvider from "../integrations/posthog/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { Provider as TanStackQueryProvider } from "../integrations/tanstack-query/root-provider";
 import appCss from "../styles.css?url";
+
+const UploadQueueRuntime = lazy(
+  () => import("@/features/upload-queue/ui/upload-queue-runtime"),
+);
+const PostHogRuntime = lazy(() => import("../integrations/posthog/provider"));
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -39,12 +41,22 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: env.VITE_APP_TITLE ?? "Univents" },
       {
+        name: "description",
+        content:
+          "Descubra eventos, acompanhe programações e compre ingressos com a Univents.",
+      },
+      {
         name: "apple-mobile-web-app-title",
         content: env.VITE_APP_TITLE ?? "Univents",
       },
       { name: "mobile-web-app-capable", content: "yes" },
     ],
     links: [
+      {
+        rel: "preconnect",
+        href: new URL(env.VITE_STORAGE_URL).origin,
+        crossOrigin: "anonymous",
+      },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/site.webmanifest" },
       { rel: "icon", href: "/favicon.svg?v=2", type: "image/svg+xml" },
@@ -77,27 +89,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 </div>
               }
             >
-              <PostHogProvider>
-                <AuthContextUpdater>
-                  <UploadQueueProvider>
-                    <VerifiedEmailGuard>{children}</VerifiedEmailGuard>
-                    <NavigationDock className="print:hidden" />
-                    <OverlayScrollbar />
-                  </UploadQueueProvider>
-                  <TanStackDevtools
-                    config={{
-                      position: "bottom-right",
-                    }}
-                    plugins={[
-                      {
-                        name: "Tanstack Router",
-                        render: <TanStackRouterDevtoolsPanel />,
-                      },
-                      TanStackQueryDevtools,
-                    ]}
-                  />
-                </AuthContextUpdater>
-              </PostHogProvider>
+              <AuthContextUpdater>
+                <Suspense>
+                  <PostHogRuntime>{null}</PostHogRuntime>
+                </Suspense>
+                <AppRuntime>{children}</AppRuntime>
+                <TanStackDevtools
+                  config={{
+                    position: "bottom-right",
+                  }}
+                  plugins={[
+                    {
+                      name: "Tanstack Router",
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                    TanStackQueryDevtools,
+                  ]}
+                />
+              </AuthContextUpdater>
             </AuthProvider>
           </ThemeProvider>
         </TanStackQueryProvider>
@@ -105,5 +114,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function AppRuntime({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <>
+      <VerifiedEmailGuard>{children}</VerifiedEmailGuard>
+      {isAuthenticated && (
+        <Suspense>
+          <UploadQueueRuntime />
+        </Suspense>
+      )}
+      <NavigationDock className="print:hidden" />
+      <OverlayScrollbar />
+    </>
   );
 }

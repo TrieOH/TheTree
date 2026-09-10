@@ -52,6 +52,8 @@ function LineItem({
         <img
           src={image}
           alt=""
+          width={64}
+          height={64}
           className="size-14 shrink-0 rounded-xl object-cover sm:size-16"
         />
       ) : (

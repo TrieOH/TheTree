@@ -1,94 +1,165 @@
-import { useEffect, useState } from "react";
-
-interface ScrollbarState {
-  visible: boolean;
-  top: number;
-  height: number;
-  trackHeight: number;
-}
+import { useEffect, useRef } from "react";
 
 const MIN_THUMB_HEIGHT = 32;
+const TRACK_PADDING = 4;
 
 export function OverlayScrollbar() {
-  const [state, setState] = useState<ScrollbarState>({
-    visible: false,
-    top: 0,
-    height: 0,
+  const trackRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
+  const metrics = useRef({
     trackHeight: 0,
+    thumbHeight: 0,
+    maxScroll: 0,
   });
 
   useEffect(() => {
-    const root = document.documentElement;
     const desktop = window.matchMedia("(hover: hover) and (pointer: fine)");
-    if (!desktop.matches) return;
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
 
-    root.classList.add("overlay-scrollbar");
+    if (!track || !thumb) return;
+
     let frame = 0;
+    let scrollScheduled = false;
+    let observer: ResizeObserver | null = null;
+    let active = false;
 
-    const update = () => {
-      cancelAnimationFrame(frame);
+    const applyPosition = () => {
+      const { trackHeight, thumbHeight, maxScroll } = metrics.current;
+      const maxTop = Math.max(0, trackHeight - thumbHeight);
+      const progress =
+        maxScroll > 0
+          ? Math.min(1, Math.max(0, window.scrollY / maxScroll))
+          : 0;
+
+      thumb.style.transform = `translate3d(0, ${
+        TRACK_PADDING + progress * maxTop
+      }px, 0)`;
+
+      thumb.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
+    };
+
+    const measure = () => {
+      const root = document.documentElement;
+      const trackHeight = window.innerHeight - TRACK_PADDING * 2;
+      const contentHeight = root.scrollHeight;
+      const maxScroll = Math.max(0, contentHeight - window.innerHeight);
+      const visible = maxScroll > 0;
+
+      const thumbHeight = visible
+        ? Math.max(
+            MIN_THUMB_HEIGHT,
+            (window.innerHeight / contentHeight) * trackHeight,
+          )
+        : 0;
+
+      metrics.current = {
+        trackHeight,
+        thumbHeight,
+        maxScroll,
+      };
+
+      track.style.display = visible ? "block" : "none";
+      thumb.style.height = `${thumbHeight}px`;
+
+      applyPosition();
+    };
+
+    const onScroll = () => {
+      if (scrollScheduled) return;
+
+      scrollScheduled = true;
+
       frame = requestAnimationFrame(() => {
-        const trackHeight = window.innerHeight - 8;
-        const contentHeight = root.scrollHeight;
-        const visible = contentHeight > window.innerHeight;
-        const height = Math.max(
-          MIN_THUMB_HEIGHT,
-          (window.innerHeight / contentHeight) * trackHeight,
-        );
-        const maxTop = trackHeight - height;
-        const maxScroll = contentHeight - window.innerHeight;
-        setState({
-          visible,
-          top: maxScroll ? (window.scrollY / maxScroll) * maxTop + 4 : 4,
-          height,
-          trackHeight,
-        });
+        applyPosition();
+        scrollScheduled = false;
       });
     };
 
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    const observer = new ResizeObserver(update);
-    observer.observe(document.body);
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+
+    const enable = () => {
+      if (active) return;
+      active = true;
+
+      document.documentElement.classList.add("overlay-scrollbar");
+      measure();
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onResize);
+
+      observer = new ResizeObserver(onResize);
+      observer.observe(document.body);
+    };
+
+    const disable = () => {
+      if (!active) return;
+      active = false;
+
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      observer = null;
+
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+
+      document.documentElement.classList.remove("overlay-scrollbar");
+      track.style.display = "none";
+    };
+
+    const onMediaChange = () => {
+      if (desktop.matches) enable();
+      else disable();
+    };
+
+    if (desktop.matches) enable();
+    desktop.addEventListener("change", onMediaChange);
 
     return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-      root.classList.remove("overlay-scrollbar");
+      desktop.removeEventListener("change", onMediaChange);
+      disable();
     };
   }, []);
 
-  if (!state.visible) return null;
-
   const move = (clientY: number) => {
-    const maxTop = state.trackHeight - state.height;
-    const maxScroll =
-      document.documentElement.scrollHeight - window.innerHeight;
+    const { trackHeight, thumbHeight, maxScroll } = metrics.current;
+    if (maxScroll <= 0) return;
+
+    const maxTop = Math.max(0, trackHeight - thumbHeight);
+
     const nextTop = Math.max(
-      4,
-      Math.min(clientY - state.height / 2, maxTop + 4),
+      TRACK_PADDING,
+      Math.min(clientY - thumbHeight / 2, maxTop + TRACK_PADDING),
     );
+
+    const progress = maxTop > 0 ? (nextTop - TRACK_PADDING) / maxTop : 0;
+
     window.scrollTo({
-      top: ((nextTop - 4) / maxTop) * maxScroll,
+      top: progress * maxScroll,
       behavior: "auto",
     });
   };
 
   return (
     <div
+      ref={trackRef}
       className="pointer-events-auto fixed inset-y-0 right-0 z-40 hidden w-3 md:block"
+      style={{ display: "none" }}
       onPointerDown={(event) => {
         if (event.target !== event.currentTarget) return;
-        const maxTop = state.trackHeight - state.height;
-        const maxScroll =
-          document.documentElement.scrollHeight - window.innerHeight;
+
+        const { trackHeight, thumbHeight, maxScroll } = metrics.current;
+        if (maxScroll <= 0) return;
+
+        const maxTop = Math.max(0, trackHeight - thumbHeight);
         const targetTop = Math.max(
           0,
-          Math.min(event.clientY - state.height / 2, maxTop),
+          Math.min(event.clientY - thumbHeight / 2, maxTop),
         );
+
         window.scrollTo({
           top: maxTop ? (targetTop / maxTop) * maxScroll : 0,
           behavior: "smooth",
@@ -96,6 +167,7 @@ export function OverlayScrollbar() {
       }}
     >
       <div
+        ref={thumbRef}
         role="scrollbar"
         tabIndex={0}
         aria-label="Rolagem da página"
@@ -103,13 +175,8 @@ export function OverlayScrollbar() {
         aria-controls="root"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(
-          (window.scrollY /
-            (document.documentElement.scrollHeight - window.innerHeight)) *
-            100,
-        )}
-        className="pointer-events-auto absolute right-0.5 w-2 cursor-grab select-none rounded-full bg-primary/45 shadow-sm shadow-primary/20 outline-none transition-colors duration-200 hover:bg-primary/75 focus-visible:bg-primary/75 active:cursor-grabbing"
-        style={{ top: state.top, height: state.height }}
+        aria-valuenow={0}
+        className="pointer-events-auto absolute right-0.5 w-2 cursor-grab select-none rounded-full bg-primary/45 shadow-sm shadow-primary/20 outline-none transition-colors duration-200 hover:bg-primary/75 focus-visible:bg-primary/75 active:cursor-grabbing will-change-transform"
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") {
             event.preventDefault();
@@ -133,25 +200,33 @@ export function OverlayScrollbar() {
           }
           if (event.key === "End") {
             event.preventDefault();
-            window.scrollTo({ top: document.documentElement.scrollHeight });
+            window.scrollTo({
+              top: document.documentElement.scrollHeight,
+            });
           }
         }}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
+
           event.preventDefault();
           event.stopPropagation();
           event.currentTarget.setPointerCapture(event.pointerId);
           document.body.style.userSelect = "none";
-          const movePointer = (moveEvent: PointerEvent) =>
+
+          const movePointer = (moveEvent: PointerEvent) => {
             move(moveEvent.clientY);
+          };
+
           const stop = () => {
             window.removeEventListener("pointermove", movePointer);
             window.removeEventListener("pointerup", stop);
+            window.removeEventListener("pointercancel", stop);
             document.body.style.removeProperty("user-select");
-            event.currentTarget.releasePointerCapture(event.pointerId);
           };
+
           window.addEventListener("pointermove", movePointer);
           window.addEventListener("pointerup", stop);
+          window.addEventListener("pointercancel", stop);
         }}
       />
     </div>
