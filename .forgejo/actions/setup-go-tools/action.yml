@@ -19,9 +19,9 @@ inputs:
     required: false
     default: "2.12.2"
   gotestsum-version:
-    description: gotestsum version (no leading v)
+    description: gotestsum version (WITH leading v — go install needs it)
     required: false
-    default: "1.13.0"
+    default: "v1.13.0"
 runs:
   using: composite
   steps:

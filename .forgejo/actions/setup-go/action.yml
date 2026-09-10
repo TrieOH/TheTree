@@ -16,20 +16,20 @@ runs:
       uses: https://github.com/actions/setup-go@v5
       with:
         go-version: ${{ inputs.go-version }}
+        cache: false # built-in cache wants a root go.sum (warning); we cache explicitly below
 
-    - name: Restore module + build caches
+    - name: Restore module cache
       id: cache
       uses: https://code.forgejo.org/actions/cache@v1
       with:
-        path: |
-          ~/go/pkg/mod
-          ~/.cache/go-build
-        key: go-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}
+        # single path — this cache@v1 treats multiline path: as one literal string
+        path: ~/go/pkg/mod
+        key: go-mod-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}
 
     - name: Report
       shell: bash
       run: |
-        KEY="go-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}"
+        KEY="go-mod-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}"
         if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
           echo "[cache] setup-go: HIT key=$KEY"
         else
