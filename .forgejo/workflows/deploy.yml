@@ -136,10 +136,10 @@ jobs:
       - name: R0 generate code
         if: ${{ env.TYPE == 'service' }}
         run: |
+          echo "▶ R0 generate code"
           set -euo pipefail
           cd "api/$ARTIFACT"
           sqlc generate
-          echo "▶ R0 generate code"
           oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
           oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
           go get github.com/oapi-codegen/runtime@v1.6.0
@@ -147,8 +147,9 @@ jobs:
       # ── R1 compile ──────────────────────────────────────────────────────
       - name: R1 compile
         if: ${{ env.TYPE == 'service' }}
-        run: cd "api/$ARTIFACT" && go build ./...
+        run: |
           echo "▶ R1 compile"
+          cd "api/$ARTIFACT" && go build ./...
 
       # ── R2 unit tests (short: testdb skips testcontainers, see
       #    lib/go/testdb — express lane's only test stage) ─────────────────
@@ -173,8 +174,9 @@ jobs:
       # ── R3 lint (full lane only) ────────────────────────────────────────
       - name: R3 lint
         if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
-        run: golangci-lint run
-          echo "▶ R3 lint" "./api/$ARTIFACT/..."
+        run: |
+          echo "▶ R3 lint"
+          golangci-lint run "./api/$ARTIFACT/..."
 
       # ── R4 front checks (full lane only) ────────────────────────────────
       - name: R4 front check (lint + format)
