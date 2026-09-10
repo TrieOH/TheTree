@@ -20,9 +20,10 @@ runs:
 
     - name: Restore module cache
       id: cache
-      uses: https://code.forgejo.org/actions/cache@v1
+      uses: https://code.forgejo.org/actions/cache@v4
       with:
-        # single path — this cache@v1 treats multiline path: as one literal string
+        # single path — keep it one dir; content fills during R0–R2, so the
+        # combined action's post-save is the correct save moment
         path: ~/go/pkg/mod
         key: go-mod-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}
 

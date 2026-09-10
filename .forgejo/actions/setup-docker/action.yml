@@ -29,6 +29,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        mkdir -p /opt/docker-cli
         curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${{ inputs.version }}.tgz" -o /tmp/docker.tgz
         tar -xzf /tmp/docker.tgz -C /tmp docker/docker
         install -m 0755 /tmp/docker/docker /opt/docker-cli/docker

@@ -46,7 +46,7 @@ runs:
 
     - name: Restore CVE database (rolling)
       id: dbcache
-      uses: https://code.forgejo.org/actions/cache@v1
+      uses: https://code.forgejo.org/actions/cache@v4
       with:
         path: ~/.cache/trivy
         key: ${{ steps.dbkey.outputs.key }}
