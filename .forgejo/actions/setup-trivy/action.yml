@@ -21,7 +21,8 @@ runs:
       id: bincache
       uses: https://code.forgejo.org/actions/cache@v1
       with:
-        path: ~/.local/bin/trivy
+        # cache the directory — cache@v1 save does `tar -C <path> .`, needs a dir
+        path: ~/.local/bin
         key: trivy-bin-${{ inputs.version }}-linux-amd64
 
     - name: Install binary (cache miss)

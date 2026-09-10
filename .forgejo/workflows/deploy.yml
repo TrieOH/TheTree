@@ -198,10 +198,15 @@ jobs:
             front)   PATHS="front/$FRONT_NAME" ;;
             sdk)     PATHS="sdk/ts/$SDK_NAME" ;;
           esac
-          trivy fs --skip-version-check \
-            --severity LOW,MEDIUM,HIGH,CRITICAL \
-            --scanners vuln,secret,misconfig \
-            --exit-code 1 $PATHS
+          rc=0
+          for p in $PATHS; do
+            echo "[trivy] scanning $p"
+            trivy fs --skip-version-check \
+              --severity LOW,MEDIUM,HIGH,CRITICAL \
+              --scanners vuln,secret,misconfig \
+              --exit-code 1 "$p" || rc=1
+          done
+          exit $rc
 
       # ── R6 integration tests (services, full lane, slowest — last) ──────
       - name: Setup Docker
