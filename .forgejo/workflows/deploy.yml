@@ -116,6 +116,7 @@ jobs:
 
       # ── Go toolchain (services) ────────────────────────────────────────
       - name: Setup Go
+        id: setup-go
         if: ${{ env.TYPE == 'service' }}
         uses: ./.forgejo/actions/setup-go
 
@@ -152,6 +153,18 @@ jobs:
       - name: R2 unit tests (-short)
         if: ${{ env.TYPE == 'service' }}
         run: cd "api/$ARTIFACT" && gotestsum --format testdox --format-hide-empty-pkg -- -short ./...
+
+      # ── Save Go caches (always — red runs need warm caches too, else
+      #    every failing check also pays the full cold compile) ───────────
+      - name: Save Go caches
+        if: ${{ always() && env.TYPE == 'service' }}
+        uses: https://code.forgejo.org/actions/cache/save@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ steps.setup-go.outputs.cache-key }}
+        continue-on-error: true
 
       # ── R3 lint (full lane only) ────────────────────────────────────────
       - name: R3 lint
