@@ -19,9 +19,9 @@ runs:
 
     - name: Restore trivy binary
       id: bincache
-      uses: https://code.forgejo.org/actions/cache@v1
+      uses: https://code.forgejo.org/actions/cache/restore@v4
       with:
-        # cache the directory — cache@v1 save does `tar -C <path> .`, needs a dir
+        # cache the directory — cache save does `tar -C <path> .`, needs a dir
         path: ~/.local/bin
         key: trivy-bin-${{ inputs.version }}-linux-amd64
 
@@ -35,6 +35,14 @@ runs:
     - name: Add to PATH
       shell: bash
       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Save binary (inline — content is complete here; never break the pipeline over a cache)
+      if: steps.bincache.outputs.cache-hit != 'true'
+      uses: https://code.forgejo.org/actions/cache/save@v4
+      with:
+        path: ~/.local/bin
+        key: trivy-bin-${{ inputs.version }}-linux-amd64
+      continue-on-error: true
 
     - name: Restore CVE database (rolling)
       id: dbcache

@@ -33,7 +33,7 @@ runs:
 
     - name: Restore tools
       id: cache
-      uses: https://code.forgejo.org/actions/cache@v1
+      uses: https://code.forgejo.org/actions/cache/restore@v4
       with:
         path: ~/.local/thetree-tools
         key: ${{ steps.key.outputs.key }}
@@ -59,6 +59,14 @@ runs:
     - name: Add to PATH
       shell: bash
       run: echo "$HOME/.local/thetree-tools/bin" >> "$GITHUB_PATH"
+
+    - name: Save tools (inline — content is complete here; never break the pipeline over a cache)
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: https://code.forgejo.org/actions/cache/save@v4
+      with:
+        path: ~/.local/thetree-tools
+        key: ${{ steps.key.outputs.key }}
+      continue-on-error: true
 
     - name: Report + smoke test
       shell: bash
