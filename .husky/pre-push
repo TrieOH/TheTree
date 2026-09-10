@@ -1,0 +1,103 @@
+#!/bin/sh
+# pre-push — branch naming + pushed-range scope validation (plan §3.7).
+#
+#   branch name:  SCOPE/ACTION/NAME   (SCOPE must be a discovered scope)
+#   range check:  the closest common ancestor of every change being pushed
+#                 must equal the branch's scope.
+#
+# No trivy here (Q2): the deploy lane owns security scanning. The per-commit
+# gitleaks scan in pre-commit covers secrets.
+
+set -eu
+
+ENGINE_TMP=$(mktemp -d "${TMPDIR:-/tmp}/thetree-prepush.XXXXXX")
+trap 'rm -rf "$ENGINE_TMP"' EXIT
+. "$(dirname "$0")/lib/engine.sh"
+
+ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
+ZERO=0000000000000000000000000000000000000000
+
+read -r local_ref local_oid remote_ref remote_oid
+
+# branch deletion — nothing to validate
+[ "${local_oid:-}" = "$ZERO" ] && exit 0
+[ -z "${local_ref:-}" ] && exit 0
+
+branch=${local_ref#refs/heads/}
+# tag push — the deploy lane's business, not ours
+[ "$branch" = "$local_ref" ] && exit 0
+
+if [ "$branch" = "main" ]; then
+    echo "✓ push to main — no validation (zero-CI dev lane)"
+    exit 0
+fi
+
+# --- branch naming -----------------------------------------------------------
+
+if ! printf '%s\n' "$branch" | grep -Eq "^[A-Za-z0-9][A-Za-z0-9-]*/($ACTIONS)/[a-z0-9][a-z0-9-]*$"; then
+    printf '\n'
+    printf '❌ Invalid branch name: %s\n' "$branch"
+    printf '\n'
+    printf 'Expected:\n'
+    printf '  SCOPE/ACTION/NAME\n'
+    printf '\n'
+    printf 'Actions:\n'
+    printf '  feat fix refactor perf style docs test build ci chore revert\n'
+    printf '\n'
+    printf 'Examples:\n'
+    printf '  payssage/feat/add-invoice-generation\n'
+    printf '  univents-ui/fix/login-validation\n'
+    printf '  sdk-go-Payssage/feat/add-webhooks\n'
+    printf '  lib-go/refactor/http-client\n'
+    printf '\n'
+    exit 1
+fi
+
+scope=${branch%%/*}
+
+if ! engine_valid_scope "$scope"; then
+    printf '\n'
+    printf '❌ Invalid branch scope: %s\n' "$scope"
+    printf '\n'
+    printf 'Scopes are discovered from the repo layout. Currently valid:\n'
+    engine_all_scopes
+    printf '\n'
+    exit 1
+fi
+
+# --- pushed range must belong to the branch scope ----------------------------
+#
+# Cumulative, not incremental: the range is merge-base(origin/main, HEAD)..HEAD
+# — the branch's entire content — revalidated on every push. Validating only
+# the new increment would let a branch named for its union fail (or pass)
+# depending on how the work happened to be split into pushes.
+
+base=$(git merge-base origin/main "$local_oid" 2>/dev/null || true)
+if [ -z "$base" ]; then
+    printf '  ⚠ no common base with origin/main — skipping range scope validation\n'
+    exit 0
+fi
+
+git diff --name-only "$base" "$local_oid" >"$ENGINE_TMP/range" || true
+
+if [ -s "$ENGINE_TMP/range" ]; then
+    correct=$(engine_scope "$ENGINE_TMP/range")
+
+    if [ "$scope" != "$correct" ]; then
+        printf '\n'
+        printf '❌ Branch scope "%s" does not cover the pushed range.\n' "$scope"
+        printf '\n'
+        printf 'Pushed files and the scope each belongs to:\n'
+        engine_offenders "$ENGINE_TMP/range"
+        printf '\n'
+        printf 'Closest common ancestor: %s\n' "$correct"
+        printf 'Fix the branch name (git branch -m) or land the out-of-scope\n'
+        printf 'changes separately.\n'
+        printf '\n'
+        exit 1
+    fi
+
+    printf '✓ Branch: %s — pushed range matches scope (%s)\n' "$branch" "$scope"
+else
+    printf '✓ Branch: %s — nothing new to validate\n' "$branch"
+fi
