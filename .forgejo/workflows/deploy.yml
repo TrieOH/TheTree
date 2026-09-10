@@ -226,8 +226,8 @@ jobs:
           echo "▶ R5 trivy scan"
           case "$TYPE" in
             service) PATHS="api/$ARTIFACT lib/go" ;;
-            front)   PATHS="front/$FRONT_NAME" ;;
-            sdk)     PATHS="sdk/ts/$SDK_NAME" ;;
+            front)   PATHS="front/$FRONT_NAME pnpm-lock.yaml" ;;  # lockfile lives at root — the app dir alone has zero scannable dep files
+            sdk)     PATHS="sdk/ts/$SDK_NAME pnpm-lock.yaml" ;;
           esac
           rc=0
           for p in $PATHS; do
