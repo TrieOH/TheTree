@@ -251,8 +251,14 @@ engine_all_scopes() {
 #   Prints "  <file>  →  <scope>" for each file (Q14: the hook says why).
 engine_offenders() {
     list=$1
-    engine_classify_all "$list"
-    while IFS="$(printf '\t')" read -r cat member scope; do
-        printf '  %s  →  %s\n' "$member" "$scope"
-    done <"$ENGINE_TMP/classes"
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        line=$(engine_classify "$f")
+        if [ -n "$line" ]; then
+            scope=$(printf '%s\n' "$line" | cut -f3)
+        else
+            scope=root   # file at a category root (e.g. api/ itself)
+        fi
+        printf '  %s  →  %s\n' "$f" "$scope"
+    done <"$list"
 }
