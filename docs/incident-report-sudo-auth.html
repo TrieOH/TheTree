@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório de Incidente — autenticação sudo falhando com senha correta (2026-09-06)</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-2: #131313;
+    --bg-3: #1c1c1c;
+    --text: #f5f5f5;
+    --text-dim: #b3b3b3;
+    --orange: #ff8c1a;
+    --orange-soft: #ffb35c;
+    --border: #2c2c2c;
+    --ok: #4ade80;
+    --warn: #facc15;
+    --future: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+  header {
+    border-bottom: 2px solid var(--orange);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  .kicker {
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  h1 { font-size: 27px; margin: 0 0 10px; }
+  .meta { color: var(--text-dim); font-size: 14px; }
+  .meta b { color: var(--text); }
+  h2 {
+    color: var(--orange);
+    font-size: 19px;
+    margin: 44px 0 14px;
+    padding-left: 12px;
+    border-left: 4px solid var(--orange);
+  }
+  h3 { color: var(--orange-soft); font-size: 15px; margin: 24px 0 8px; }
+  p, li { color: var(--text); }
+  a { color: var(--orange); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 12px 0 20px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--bg-3); color: var(--orange-soft); font-weight: 600; }
+  td.hl { color: var(--orange); font-weight: 700; }
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 12px 0;
+  }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--bg-3);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--orange-soft);
+  }
+  pre {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-right: 6px;
+  }
+  .b-ok { background: rgba(74,222,128,.15); color: var(--ok); border: 1px solid var(--ok); }
+  .b-future { background: rgba(148,163,184,.12); color: var(--future); border: 1px solid var(--future); }
+  .b-open { background: rgba(250,204,21,.12); color: var(--warn); border: 1px solid var(--warn); }
+  .action { border-left: 3px solid var(--orange); padding: 10px 14px; margin: 10px 0; background: var(--bg-2); border-radius: 0 8px 8px 0; }
+  .action p { margin: 4px 0; }
+  .action .title { font-weight: 700; color: var(--text); }
+  .foot {
+    margin-top: 56px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .big { font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Relatório de Incidente</p>
+  <h1>Autenticação <code>sudo</code>/<code>su</code>/<code>passwd</code> rejeitando senha correta — CachyOS (workstation pessoal)</h1>
+  <p class="meta">
+    <b>Data:</b> 2026-09-06, 12:09–12:39 (−03) &nbsp;·&nbsp;
+    <b>Severidade:</b> média (perda de privilégios admin em máquina local; sem perda de dados) &nbsp;·&nbsp;
+    <b>Status:</b> <span style="color:var(--ok)">Resolvido no host</span> (workaround aplicado) — causa raiz upstream <span style="color:var(--warn)">em aberto</span>
+  </p>
+</header>
+
+<h2>Resumo</h2>
+<p class="big">
+Em 2026-09-06, o usuário tentou <code>pacman -Syu</code> e o <code>sudo</code> passou a rejeitar a senha
+(<b>correta</b> — verificada byte a byte contra o hash <code>$y$</code>/yescrypt em <code>/etc/shadow</code>, inalterado desde 2026-05-24),
+com <code>3 tentativas incorretas</code> e entradas de log <code>pam_unix(sudo:auth): conversation failed</code> +
+<code>auth could not identify password</code>. O mesmo comportamento afetou <code>su</code> e a verificação de
+senha atual do <code>passwd</code>. O login gráfico continuava funcionando. A causa: um defeito latente na cadeia
+PAM padrão do <code>pambase</code> (<code>auth [success=1 default=bad] pam_unix.so</code>), que nesta máquina
+dispara <b>PAM_BAD_JUMP</b> quando o <code>pam_unix</code> autentica com sucesso — a senha nunca chegava a ser o problema.
+Correção aplicada: trocar o controle da linha do <code>pam_unix</code> para <code>required</code> (comportamento
+equivalente, sem o salto quebrado). Verificado: senha correta aceita, senha errada rejeitada, <code>su</code> e
+<code>passwd</code> voltaram a funcionar.
+</p>
+
+<div class="card">
+  <b style="color:var(--orange)">Por que aconteceu — em uma frase:</b>
+  <p style="margin:6px 0 0">
+  A configuração PAM padrão do Arch/CachyOS usa o controle <code>[success=1 default=bad]</code> na linha do
+  <code>pam_unix</code>; em combinação com a pilha/libpam desta máquina, um <code>pam_unix</code> bem-sucedido faz o
+  libpam executar um salto inválido na pilha (<code>bad jump in stack</code>) → a autenticação falha antes da
+  comparação de senha, mascarada como "senha incorreta". O mesmo padrão de sintoma é um problema
+  <b>recorrente e sem causa raiz publicada no ecossistema CachyOS</b> desde ~set/2025.
+  </p>
+</div>
+
+<h2>Linha do tempo (fuso −03, evidências do host)</h2>
+<table>
+  <tr><th>Quando</th><th>Evento</th></tr>
+  <tr><td>2026-05-23/24</td><td>Instalação do CachyOS; senha definida (campo <code>lastchg</code> de <code>/etc/shadow</code> = 24/05); hash yescrypt <code>$y$…</code></td></tr>
+  <tr><td>2026-06-26 22:04</td><td><code>-Syu</code>: <code>pambase 20250719 → 20260616</code> (desativa/comenta o <code>pam_faillock</code>; linha do <code>pam_unix</code> permanece <code>[success=1 default=bad]</code>), <code>sudo</code> e <code>shadow</code> atualizados</td></tr>
+  <tr><td>2026-07-25</td><td><code>systemd 261.2-1</code> (novo <code>pam_systemd_home.so</code>, datado 23/07)</td></tr>
+  <tr><td>2026-08-19 23:40–23:43</td><td><b>sudo OK</b> — <code>pacman -S tailscale</code> executado e instalado (pacman.log)</td></tr>
+  <tr><td>2026-08-25 18:17–18:25</td><td><b>sudo OK</b> — <code>yay -S osu-lazer-bin</code> (sudo interno instalou osu-mime/osu-lazer)</td></tr>
+  <tr><td>2026-08-26 14:01</td><td><b>sudo OK</b> — <code>sudo chown -R … ~/.cache/trivy</code> (histórico fish)</td></tr>
+  <tr><td>2026-09-01 → 05</td><td>Sem uso de sudo (journal do boot −1 sem entradas <code>sudo</code>/<code>su</code>/<code>passwd</code>); nenhuma mudança de pacote entre 26/08 e 06/09 (pacman.log vazio)</td></tr>
+  <tr><td>2026-09-06 11:59</td><td>Boot da máquina</td></tr>
+  <tr><td>12:01</td><td>Login gráfico via <code>plasmalogin</code> (KDE) — OK</td></tr>
+  <tr><td>12:09–12:12</td><td class="hl"><b>sudo falha</b> (<code>pacman -Syu</code>, <code>echo ok</code>): <code>conversation failed</code> + <code>auth could not identify password for [sophia]</code> + contagem de tentativas</td></tr>
+  <tr><td>12:10</td><td><code>passwd</code> — verificação da senha atual falha (chauthtok <code>conversation failed</code>)</td></tr>
+  <tr><td>12:15–12:37</td><td>Diagnóstico (crypt vs hash, bissecção da cadeia PAM, logs de debug do sudo/libpam)</td></tr>
+  <tr><td>~12:38</td><td class="hl">Correção aplicada em <code>/etc/pam.d/system-auth</code> (controle → <code>required</code>) + verificação</td></tr>
+  <tr><td>12:39</td><td><b>sudo OK</b> — <code>sudo id -u</code> → 0; senha errada continua rejeitada</td></tr>
+</table>
+
+<h2>Fatos-chave</h2>
+<ul>
+  <li><b>A senha estava certa.</b> <code>crypt(senha, hash)</code> confere contra <code>libcrypt.so.1</code> e <code>libcrypt.so.2</code> do host (a .so.2 é a que o <code>pam_unix.so</code> carrega, via <code>ldd</code>). Variantes (caixa, espaço, dígito) não conferem.</li>
+  <li><b>Nunca foi "senha incorreta".</b> Todos os logs de falha mostram <code>pam_unix(sudo:auth): conversation failed</code> + <code>auth could not identify password</code> (mensagem do libpam quando <code>pam_get_authtok()</code> falha) — nunca o clássico <code>authentication failure</code> por senha errada (visto apenas num teste-controle com senha deliberadamente errada).</li>
+  <li><b>Mecanismo confirmado por bissecção:</b> com a MESMA senha e mesmos argumentos, <code>auth required pam_unix.so</code> → sucesso em ~60 ms; <code>auth [success=1 default=bad] pam_unix.so</code> → falha em ~2 s (o atraso de 2 s é o <code>pam_fail_delay</code> de 2.000.000 µs que o pam_unix registra). Determinístico (3/3 × 3/3).</li>
+  <li><b>Log do libpam:</b> <code>PAM bad jump in stack</code> (<code>libpam/pam_dispatch.c</code>: salto <code>success=N</code> além do fim da pilha = "erro de sintaxe" na visão do libpam) — 5 ocorrências nos testes.</li>
+  <li><b>Verificação real é delegada ao helper setuid <code>/usr/sbin/unix_chkpwd</code></b> (pam_unix com ruid≠0 sempre usa o helper para usuários com shadow); o helper funciona — a prova é a config <code>required</code> autenticando com sucesso.</li>
+  <li><b>Configuração inalterada desde a instalação:</b> a linha <code>[success=1 default=bad] pam_unix.so try_first_pass nullok</code> existe no system-auth desde o <code>pambase 20250719</code> (pacote antigo ainda em <code>/var/cache/pacman/pkg</code>); a atualização de jun/2026 só comentou o <code>pam_faillock</code>. Nenhum arquivo da pilha de auth mudou entre 26/08 (último sudo OK) e 06/09.</li>
+</ul>
+
+<h2>Causa raiz</h2>
+<ol>
+  <li><b>Defeito latente na cadeia padrão:</b> <code>[success=1 default=bad]</code> na linha do <code>pam_unix</code> (config padrão Arch/CachyOS, em <code>/etc/pam.d/system-auth</code> via include) dispara <code>PAM_BAD_JUMP</code> quando o <code>pam_unix</code> retorna sucesso. O controle <code>required</code> (funcionalmente equivalente para um módulo de auth único) elimina o salto e funciona.</li>
+  <li><b>Por que "do nada":</b> entre 26/08 (sudo funcionando) e 06/09 (sudo falhando) <b>não houve nenhuma mudança de pacote, de configuração ou de senha</b> (mtimes e pacman.log verificados). O flip aconteceu entre boots/sessões — consistente com um componente de estado de execução (provável interação com <code>pam_systemd_home.so</code>/D-Bus — hoje o módulo tenta ativar <code>org.freedesktop.home1</code> e falha com <code>unknown unit</code>). O usuário só percebeu porque não usou <code>sudo</code> entre 26/08 e 06/09 (11 dias).</li>
+  <li><b>Padrão conhecido no ecossistema:</b> mesmo par de mensagens de log e mesmo sintoma ("senha correta rejeitada no sudo/login, só reiniciar resolve") é reportado no fórum CachyOS desde ~set/2025, ainda sem causa raiz publicada: threads <a href="https://discuss.cachyos.org/t/password-the-correct-one-doesnt-work-randomly-after-fresh-install-after-an-update-and-even-when-witthin-a-logged-in-session-in-terminal-and-frequently/15747">15747</a> (34 posts, aberta até ago/2026), <a href="https://discuss.cachyos.org/t/sudo-password-stops-working-suddenly/24377">24377</a>, <a href="https://discuss.cachyos.org/t/sudo-password-failure-loop-despite-correct-credentials-and-working-root-login/30370">30370</a>, <a href="https://discuss.cachyos.org/t/cant-install-updates-password-is-always-incorrect-even-though-its-correct/26855">26855</a>. A staff só sugeria <code>faillock --reset</code> (não é o caso aqui — faillock está comentado no system-auth). Diferente da maioria dos relatos (transitório, resolvido com reboot), <b>nesta máquina a falha persistiu após reboot</b> — é determinística contra a configuração.</li>
+</ol>
+
+<h2>Trilha de evidências</h2>
+<ul>
+  <li><code>journalctl _COMM=sudo</code>: falhas do usuário 12:09–12:12 (boot atual); zero entradas sudo no boot anterior (−1); nenhum sucesso sudo no journal retido (último sucesso comprovado: 26/08 via histórico + pacman.log)</li>
+  <li>Teste controlado via stdin/askpass (sem teclado/layout no caminho): senha correta rejeitada na config padrão; aceita com <code>required</code></li>
+  <li>Bissecção da cadeia (A/B/C/D + X/Y, 3× cada): controle <code>[success=1 default=bad]</code> = gatilho isolado</li>
+  <li><code>pam_unix_auth.c</code>/<code>support.c</code> (linux-pam v1.7.2): semântica de <code>auth could not identify password</code>, <code>pam_fail_delay</code> 2 s, delegação ao <code>unix_chkpwd</code>; <code>libpam/pam_dispatch.c</code>: lógica do salto e <code>bad jump in stack</code></li>
+  <li><code>diff</code> pambase 20250719 (cache pacman) vs 20260616: estrutura de auth idêntica; mudança = faillock comentado</li>
+  <li>Fórum CachyOS (threads acima): mesmo padrão de sintoma recorrente</li>
+</ul>
+
+<h2>Itens de ação</h2>
+
+<div class="action">
+  <p><span class="badge b-ok">Aplicado</span><span class="title">Workaround no host — <code>/etc/pam.d/system-auth</code></span></p>
+  <p>Linha do <code>pam_unix</code> (auth) alterada de <code>[success=1 default=bad]</code> para <code>required</code>. Backup do original em <code>/etc/pam.d/system-auth.pi.bak2</code>. Reverter quando quiser: <code>sudo cp /etc/pam.d/system-auth.pi.bak2 /etc/pam.d/system-auth</code>. Se um futuro <code>pambase</code> reescrever o arquivo, o pacman avisará sobre o arquivo modificado — manter a versão local ou reaplicar a linha.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-ok">Aplicado</span><span class="title">Restauração e verificação</span></p>
+  <p>Senha restaurada para a senha de trabalho do usuário após testes (o teste do <code>passwd</code> chegou a alterá-la; revertido). Verificado: <code>sudo</code> com senha correta → OK; senha errada → rejeitada; <code>su sophia</code> → OK; <code>passwd</code> (troca de senha) → OK.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Recomendado</span><span class="title">Concluir a atualização do sistema</span></p>
+  <p>O sistema está ~1 mês defasado (apenas <code>glibc 2.44+r24</code> pendente entre pacotes de auth; muitas atualizações no geral). <b>Não</b> corrige este bug (não há <code>pam</code>/<code>pambase</code> mais novos no repo), mas é boa higiene: <code>sudo pacman -Syu</code> e reiniciar.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Recomendado</span><span class="title">Trocar a senha após a atualização</span></p>
+  <p>A senha foi compartilhada em texto puro durante o diagnóstico. Após o <code>-Syu</code>, definir uma senha nova (<code>passwd</code>, agora funcional) e sincronizar a senha do KDE Wallet para evitar prompt no login.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-open">Em aberto</span><span class="title">Reportar upstream (CachyOS)</span></p>
+  <p>Este é um caso determinístico e bem documentado de um problema recorrente e sem causa raiz no CachyOS (múltiplas threads desde set/2025). Vale abrir issue no rastreador do CachyOS (github.com/CachyOS) com o repro mínimo: senha correta + cadeia padrão + controle <code>[success=1 default=bad]</code> → <code>PAM_BAD_JUMP</code>; <code>required</code> → OK; bissecção A/B/C/D. Se o CachyOS confirmar o defeito no libpam/dispatch, encaminhar ao linux-pam. Incluir o contexto <code>pam_systemd_home</code>/D-Bus (<code>unknown unit</code> para <code>org.freedesktop.home1</code>) e o grupo <code>nopasswdlogin</code> da conta.</p>
+</div>
+
+<div class="action">
+  <p><span class="badge b-future">Investigação pendente</span><span class="title">Gatilho exato do flip (26/08 → 06/09)</span></p>
+  <p>Não totalmente determinado: nenhuma mudança de pacote/config/senha no período; hipótese principal é estado de execução na fronteira boot/sessão (D-Bus/systemd-homed/sessão KDE) expondo o defeito latente da cadeia. Para fechar: reproduzir num boot limpo com <code>systemd-homed</code> ativo, e/ou comparar o comportamento do módulo <code>pam_systemd_home</code> com <code>systemd 261.1</code> vs <code>261.2</code>.</p>
+</div>
+
+<div class="foot">
+  Produzido em 2026-09-06 · Evidências: journald, pacman.log, histórico fish, mtimes de arquivos, cache de pacotes (diff pambase),
+  fontes linux-pam v1.7.2, testes controlados (stdin/askpass/bissecção), fórum CachyOS ·
+  Host: <b>garden</b> — CachyOS, KDE Plasma (plasmalogin), kernel atual; usuário <code>sophia</code> (wheel, nopasswdlogin, docker)
+</div>
+
+</div>
+</body>
+</html>

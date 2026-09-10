@@ -49,10 +49,9 @@ import (
 // and the truncate in t.Cleanup would otherwise block on their locks).
 //
 // When no Docker daemon is reachable the test is SKIPPED rather than
-// failed (testcontainers.SkipIfProviderIsNotHealthy): dagger CI runs
-// `go test` inside a container with no docker access, so the unit tests
-// still run there while the integration tests are executed on the runner
-// by the CI workflow (see .forgejo/workflows/ci.yml).
+// failed (testcontainers.SkipIfProviderIsNotHealthy): CI unit tests run
+// without docker access, while integration tests execute on the runner
+// (deploy.yml R6).
 func Postgres(tb testing.TB, mPath string) *pgxpool.Pool {
 	tb.Helper()
 

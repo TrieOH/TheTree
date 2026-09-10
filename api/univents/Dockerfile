@@ -5,7 +5,6 @@ COPY --from=tools /go/bin/sqlc /go/bin/sqlc
 COPY --from=tools /go/bin/oapi-codegen /go/bin/oapi-codegen
 # --- Dependency layer ---
 COPY go.work go.work.sum ./
-COPY .dagger/go.mod .dagger/go.sum ./.dagger/
 COPY lib/go/go.mod lib/go/go.sum ./lib/go/
 COPY sdk/go/IdentityX/go.mod sdk/go/IdentityX/go.sum ./sdk/go/IdentityX/
 COPY sdk/go/Payssage/go.mod sdk/go/Payssage/go.sum ./sdk/go/Payssage/

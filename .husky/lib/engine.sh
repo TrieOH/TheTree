@@ -54,7 +54,7 @@ engine_classify() {
             printf 'fronts\tfront/%s\t%s-ui\n' "$name" "$name" ;;
         docs/*|README.md)
             printf 'docs\tdocs\tdocs\n' ;;
-        .husky/*|.forgejo/*|.agents/*|.dagger/*|dagger.json|compose.yml|justfile)
+        .husky/*|.forgejo/*|.agents/*|compose.yml|justfile)
             printf 'infra\tinfra\tinfra\n' ;;
         go.work|go.work.sum|.golangci.yml)
             printf 'root-go\t%s\troot\n' "$f" ;;

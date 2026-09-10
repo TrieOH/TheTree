@@ -14,7 +14,7 @@ single Caddy gateway, with React front-ends deployed to Cloudflare Workers.
 | Frontends | React 19 · TanStack Start · Tailwind v4 | 4 SPAs in `front/`, deploy to Cloudflare Workers |
 | Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval-generated TS clients) | |
 | SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |
-| CI/CD | Forgejo Actions · Dagger (`.dagger/`) | builds + publishes to `git.trieoh.com/trieoh/<svc>` |
+| CI/CD | Forgejo Actions (`deploy.yml`) | tag-gated checks → publish digests to `git.trieoh.com/trieoh/<svc>` → digest-pinned deploys |
 | Dev infra | Docker Compose (`compose.yml`) | postgres, rustfs, mailpit + hot-rebuilt services |
 
 ## Repo layout
@@ -25,7 +25,6 @@ front/<svc>/     # one React SPA per dir
 lib/go/          # shared Go library
 lib/ts/          # orval-generated TS clients (types + TanStack Query hooks)
 sdk/go/ sdk/ts/  # public SDKs
-.dagger/         # Dagger module (ci, lint, test, compile, publish)
 docs/            # CONTEXT.md (domain glossary), adr/, agents/
 ```
 
@@ -110,12 +109,14 @@ Generated code is **not committed** — `internal/openapi/` and
 
 ## Releases & deploys
 
-- **Backends:** tag `*/v*` (e.g. `identityx/v0.35.3`) → `publish.yml` runs
-  Dagger → pushes `git.trieoh.com/trieoh/<svc>:<tag>` (+ `:latest`) to the
-  registry.
-- **Frontends:** `main` + `front/**` changes → `deploy-front.yml` → Cloudflare
-  Workers (wrangler).
-- **TS SDKs:** `publish-ts-sdks.yml` publishes `@trieoh/*` packages.
+- **Backends:** tag `<svc>/v<semver>` (e.g. `payssage/v0.7.10`) → `deploy.yml`:
+  R-chain checks → build once → push `git.trieoh.com/trieoh/<svc>@sha256:…` →
+  ledger commit pins the digest in the deploy repo → VPS `compose pull && up -d`.
+  `-hotfix.N` prereleases skip to compile + unit tests (express lane).
+- **Frontends:** tag `<app>-ui/v<semver>` → `deploy.yml` → Worker version
+  uploaded, then the SAME version promoted to production (build once).
+- **TS SDKs:** tag `<sdk>-sdk-ts/v<semver>` → `deploy.yml` publishes `@trieoh/*`
+  packages (version guard: tag == package.json version).
 - **Prod deploy:** images are consumed by `TrieOH/deploy` (server pulls that
   repo, not this one). Version bumps = a commit in the deploy repo.
 
