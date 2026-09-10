@@ -382,7 +382,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm -F identityx build
-          ID=$(pnpm -F identityx exec wrangler versions upload 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          ID=$(pnpm -F identityx exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
           echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
         env:
           VITE_APP_TITLE: ${{ vars.IDENTITYX_APP_TITLE }}
@@ -405,7 +405,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm -F informd build
-          ID=$(pnpm -F informd exec wrangler versions upload 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          ID=$(pnpm -F informd exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
           echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
         env:
           VITE_APP_TITLE: ${{ vars.INFORMD_APP_TITLE }}
@@ -430,7 +430,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm -F payssage build
-          ID=$(pnpm -F payssage exec wrangler versions upload 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          ID=$(pnpm -F payssage exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
           echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
         env:
           VITE_APP_TITLE: ${{ vars.PAYSSAGE_APP_TITLE }}
@@ -457,7 +457,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm -F univents build
-          ID=$(pnpm -F univents exec wrangler versions upload 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          ID=$(pnpm -F univents exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
           echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
         env:
           VITE_APP_TITLE: ${{ vars.UNIVENTS_APP_TITLE }}

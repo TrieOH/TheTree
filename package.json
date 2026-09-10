@@ -1,6 +1,7 @@
 {
   "name": "thetree",
   "private": true,
+  "packageManager": "pnpm@11.26.0",
   "scripts": {
     "identityx": "pnpm -F identityx",
     "informd": "pnpm -F informd",
