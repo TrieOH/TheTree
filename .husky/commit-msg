@@ -21,6 +21,19 @@ ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
 # regex below — the message text is mandatory
 message=$(head -n 1 "$COMMIT_MSG_FILE" | sed -E 's/[[:space:]]+$//')
 
+# description (body below the subject) is capped at 500 chars — leading and
+# trailing blank lines don't count
+MAX_DESC=500
+desc=$(sed '1d' "$COMMIT_MSG_FILE" | sed '/./,$!d')
+if [ "$(printf '%s' "$desc" | wc -m)" -gt "$MAX_DESC" ]; then
+    printf '\n'
+    printf '❌ Commit description too long: %s chars (max %s).\n' \
+        "$(printf '%s' "$desc" | wc -m)" "$MAX_DESC"
+    printf '   Keep the body short — details belong in the code or the PR.\n'
+    printf '\n'
+    exit 1
+fi
+
 if ! printf '%s\n' "$message" | grep -Eq "^($ACTIONS)\([A-Za-z0-9][A-Za-z0-9-]*\): .+$"; then
     printf '\n'
     printf '❌ Invalid commit message.\n'
