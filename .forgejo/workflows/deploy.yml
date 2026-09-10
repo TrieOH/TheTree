@@ -158,6 +158,8 @@ jobs:
 
       # ── Save Go caches (always — red runs need warm caches too, else
       #    every failing check also pays the full cold compile) ───────────
+      # Key duplicated from setup-go (this runner rejects composite `outputs:`);
+      # keep in sync if the action's key or go-version default changes.
       - name: Save Go caches
         if: ${{ always() && env.TYPE == 'service' }}
         uses: https://code.forgejo.org/actions/cache/save@v4
@@ -165,7 +167,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ steps.setup-go.outputs.cache-key }}
+          key: go-1.26.4-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}
         continue-on-error: true
 
       # ── R3 lint (full lane only) ────────────────────────────────────────

@@ -11,10 +11,6 @@ inputs:
     default: "1.26.4"
 runs:
   using: composite
-  outputs:
-    cache-key:
-      description: exact cache key used (for explicit inline saves in workflows)
-      value: ${{ steps.cache.outputs.cache-primary-key }}
   steps:
     - name: Toolchain
       uses: https://github.com/actions/setup-go@v5
