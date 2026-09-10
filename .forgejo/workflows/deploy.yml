@@ -60,6 +60,7 @@ jobs:
 
           FRONT_NAME=""
           SDK_NAME=""
+          ACTIVATE=false
           case "$TYPE" in
             front)
               FRONT_NAME="${ARTIFACT%-ui}"
@@ -72,6 +73,13 @@ jobs:
               case "$ARTIFACT" in
                 identityx|informd|payssage|univents) ;;
                 *) echo "::error::unknown service '$ARTIFACT'"; exit 1 ;;
+              esac
+              # ledger activation only for real releases — sandbox tags must
+              # never touch the deploy repo (decided in shell, not expressions:
+              # this runner has been shown to mis-evaluate !contains())
+              case "$VERSION" in
+                *sandbox*) ;;
+                *) ACTIVATE=true ;;
               esac
               ;;
             sdk)
@@ -86,8 +94,9 @@ jobs:
           echo "lane=$LANE"            >> "$GITHUB_OUTPUT"
           echo "version=$VERSION"      >> "$GITHUB_OUTPUT"
           echo "front_name=$FRONT_NAME" >> "$GITHUB_OUTPUT"
-          echo "sdk_name=$SDK_NAME"    >> "$GITHUB_OUTPUT"
-          echo "[tag] artifact=$ARTIFACT type=$TYPE lane=$LANE version=$VERSION"
+          echo "sdk_name=$SDK_NAME"      >> "$GITHUB_OUTPUT"
+          echo "activate=$ACTIVATE"     >> "$GITHUB_OUTPUT"
+          echo "[tag] artifact=$ARTIFACT type=$TYPE lane=$LANE version=$VERSION activate=$ACTIVATE"
 
   checks:
     needs: parse
@@ -142,7 +151,7 @@ jobs:
       #    lib/go/testdb — express lane's only test stage) ─────────────────
       - name: R2 unit tests (-short)
         if: ${{ env.TYPE == 'service' }}
-        run: cd "api/$ARTIFACT" && gotestsum --format testdox -- -short ./...
+        run: cd "api/$ARTIFACT" && gotestsum --format testdox --format-hide-empty-pkg -- -short ./...
 
       # ── R3 lint (full lane only) ────────────────────────────────────────
       - name: R3 lint
@@ -215,14 +224,15 @@ jobs:
 
       - name: R6 integration tests
         if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
-        run: cd "api/$ARTIFACT" && gotestsum --format testdox -- -count=1 ./...
+        run: cd "api/$ARTIFACT" && gotestsum --format testdox --format-hide-empty-pkg -- -count=1 ./...
 
   # ── Ledger activation (§3.8): digest → deploy repo commit. Only for
   #    services (fronts deploy via Cloudflare, SDKs via npm — compose only
-  #    runs backend images). Sandbox tags never touch the deploy repo.
+  #    runs backend images). Gated by parse's shell-computed 'activate' —
+  #    sandbox tags never touch the deploy repo.
   activate:
     needs: [parse, publish]
-    if: ${{ needs.parse.outputs.type == 'service' && !contains(needs.parse.outputs.version, 'sandbox') }}
+    if: ${{ needs.parse.outputs.activate == 'true' }}
     runs-on: ubuntu-latest
     env:
       ARTIFACT: ${{ needs.parse.outputs.artifact }}
