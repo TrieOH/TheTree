@@ -1,0 +1,59 @@
+name: Setup Node + pnpm
+description: >
+  Node + pnpm toolchain with a cached pnpm store. Optionally runs
+  `pnpm install --frozen-lockfile` (install input). Self-reports as
+  `[cache] setup-node: HIT|MISS key=...`.
+inputs:
+  node-version:
+    description: Node version
+    required: false
+    default: "22"
+  pnpm-version:
+    description: pnpm version
+    required: false
+    default: "10"
+  install:
+    description: "run `pnpm install --frozen-lockfile` after cache restore (true/false)"
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Toolchain
+      uses: https://github.com/actions/setup-node@v7
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: pnpm
+      uses: https://github.com/pnpm/action-setup@v6
+      with:
+        version: ${{ inputs.pnpm-version }}
+
+    - name: Locate pnpm store
+      id: store
+      shell: bash
+      run: echo "dir=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore pnpm store
+      id: cache
+      uses: https://code.forgejo.org/actions/cache@v1
+      with:
+        path: ${{ steps.store.outputs.dir }}
+        key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Report + smoke test
+      shell: bash
+      run: |
+        KEY="pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}"
+        if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
+          echo "[cache] setup-node: HIT key=$KEY"
+        else
+          echo "[cache] setup-node: MISS key=$KEY → cold, will save at end of job"
+        fi
+        node --version
+        pnpm --version
