@@ -69,4 +69,20 @@ check "valid: infra"           "0" "$(engine_valid_scope infra >/dev/null 2>&1; 
 check "invalid: nope"          "1" "$(engine_valid_scope nope >/dev/null 2>&1; echo $?)"
 check "invalid: not-a-scope" "1" "$(engine_valid_scope not-a-scope >/dev/null 2>&1; echo $?)"
 
+# scope list prints scope names, not paths (apis are bare names)
+printf '%s\n' "$(engine_all_scopes)" | grep -q '^  api/' \
+    && { echo "FAIL scope list leaks paths (api/…)"; fail=1; } \
+    || echo "ok   scope list has no api/ paths"
+printf '%s' "$(engine_all_scopes)" | grep -qx '  identityx' \
+    && echo "ok   scope list shows bare api names" \
+    || { echo "FAIL scope list missing bare 'identityx'"; fail=1; }
+
+# commit-msg: the message part is mandatory (empty/blank after the colon)
+for bad in 'feat(payssage):' 'feat(payssage):   '; do
+    printf '%s\n' "$bad" >"$ENGINE_TMP/msg"
+    sh .husky/commit-msg "$ENGINE_TMP/msg" >/dev/null 2>&1 \
+        && { echo "FAIL commit-msg accepted '$bad'"; fail=1; } \
+        || echo "ok   commit-msg rejects '$bad'"
+done
+
 exit $fail

@@ -17,7 +17,9 @@ trap 'rm -rf "$ENGINE_TMP"' EXIT
 
 ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
 
-message=$(head -n 1 "$COMMIT_MSG_FILE")
+# trailing whitespace stripped so a whitespace-only message fails the
+# regex below — the message text is mandatory
+message=$(head -n 1 "$COMMIT_MSG_FILE" | sed -E 's/[[:space:]]+$//')
 
 if ! printf '%s\n' "$message" | grep -Eq "^($ACTIONS)\([A-Za-z0-9][A-Za-z0-9-]*\): .+$"; then
     printf '\n'
@@ -68,4 +70,4 @@ if [ -s "$ENGINE_TMP/staged" ]; then
     fi
 fi
 
-printf '✓ Commit: %s(%s)\n' "$action" "$scope"
+printf '✓ Commit: %s\n' "$message"

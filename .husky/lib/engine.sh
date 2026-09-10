@@ -241,7 +241,7 @@ engine_valid_scope() {
 #   Prints every currently valid scope (for hard-fail messages).
 engine_all_scopes() {
     printf '  root docs infra apis fronts libs lib-go lib-ts libs-ts sdks sdks-go sdks-ts\n'
-    for d in api/*/;  do [ -d "$d" ] && printf '  %s\n' "${d%/}"; done
+    for d in api/*/;  do [ -d "$d" ] && printf '  %s\n' "$(basename "$d")"; done
     for d in front/*/; do [ -d "$d" ] && printf '  %s\n' "$(basename "$d")-ui"; done
     for d in sdk/go/*/; do [ -d "$d" ] && printf '  sdk-go-%s\n' "$(basename "$d")"; done
     for d in sdk/ts/*/; do [ -d "$d" ] && printf '  sdk-ts-%s\n' "$(basename "$d")"; done
