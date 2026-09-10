@@ -1,4 +1,5 @@
-import { HeadContent, Outlet, createRootRoute } from '@tanstack/solid-router';
+import { HeadContent, Outlet, createRootRouteWithContext } from '@tanstack/solid-router';
+import type { RouterSession } from '@trieoh/front-core/solid';
 import { OverlayScrollbar } from "@/widgets/ui/OverlayScrollbar";
 import { AuthContextUpdater } from '@trieoh/front-core/solid';
 import { Toaster } from '@/shared/ui/toast';
@@ -7,7 +8,7 @@ import { NavigationDock } from '@/widgets/ui/NavigationDock';
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
 // declare in their `head` options (titles here).
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ session?: RouterSession }>()({
   head: () => ({ meta: [{ title: 'Univents' }] }),
   component: () => (
     <>

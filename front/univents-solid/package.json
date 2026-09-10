@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.129",
+    "@iconify-json/simple-icons": "^1.2.95",
     "@solidjs/diagnostics": "^2.0.0-rc.6",
     "@solidjs/testing-library": "^1.0.0-beta.3",
     "@solidjs/vite-plugin": "^3.0.0-next.38",
@@ -30,10 +31,10 @@
     "vitest": "^4.0.0"
   },
   "dependencies": {
-    "@trieoh/api-client": "workspace:*",
     "@solidjs/web": "^2.0.0-rc.6",
     "@tanstack/query-core": "catalog:",
     "@tanstack/solid-router": "^2.0.0-rc.6",
+    "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "@trieoh/univents-api": "workspace:*",

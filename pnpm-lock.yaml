@@ -191,7 +191,7 @@ overrides:
   browserslist: 4.28.7
   fflate: 0.8.3
   dompurify: 3.4.13
-  js-yaml: 4.3.2
+  js-yaml: 4.3.1
   nanoid: 3.3.18
   esbuild: '>=0.28.1'
   '@opentelemetry/core': '>=2.8.0'
@@ -879,6 +879,9 @@ importers:
       '@iconify-json/lucide':
         specifier: ^1.2.129
         version: 1.2.130
+      '@iconify-json/simple-icons':
+        specifier: ^1.2.95
+        version: 1.2.95
       '@solidjs/diagnostics':
         specifier: ^2.0.0-rc.6
         version: 2.0.0-rc.6(vitest@4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(jsdom@25.0.1)(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))
@@ -1836,6 +1839,9 @@ packages:
 
   '@iconify-json/lucide@1.2.130':
     resolution: {integrity: sha512-rRH6qHEDEaFMOkRJPbT8fBYPLP/2GHi3Q2+iDyTDuX4l5PT/GMKs6Dn9JkL7cHtCkIWKnyYWopmMlFpNek1Fcw==}
+
+  '@iconify-json/simple-icons@1.2.95':
+    resolution: {integrity: sha512-QwWgcoiL+eNCD38QM0OStFVFoOgDvzeHrcwMAvATvcFl0VvMEtED92qp3K3juS0H6RZ9BGUlgq9mODPwNWkjJg==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -5324,8 +5330,8 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
-  js-yaml@4.3.2:
-    resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
+  js-yaml@4.3.1:
+    resolution: {integrity: sha512-CY6crGq313MX8GkwvB7tzgp99vjQxY1++5y10/BKN/GUfHqWaOGQMNZkBvqSzsZKWk/ijwHlWzzkLulsGHhjWQ==}
     hasBin: true
 
   jsdom@25.0.1:
@@ -7414,6 +7420,10 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@iconify-json/lucide@1.2.130':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/simple-icons@1.2.95':
     dependencies:
       '@iconify/types': 2.0.0
 
@@ -10745,7 +10755,7 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  js-yaml@4.3.2:
+  js-yaml@4.3.1:
     dependencies:
       argparse: 2.0.1
 
@@ -11177,7 +11187,7 @@ snapshots:
       fs-extra: 11.4.0
       get-tsconfig: 4.14.0
       jiti: 2.7.0
-      js-yaml: 4.3.2
+      js-yaml: 4.3.1
       remeda: 2.39.0
       string-argv: 0.3.2
       typedoc: 0.28.20(typescript@7.0.2)
@@ -12306,7 +12316,7 @@ snapshots:
       '@oozcitak/dom': 2.0.2
       '@oozcitak/infra': 2.0.2
       '@oozcitak/util': 10.0.0
-      js-yaml: 4.3.2
+      js-yaml: 4.3.1
 
   xmlchars@2.2.0: {}
 

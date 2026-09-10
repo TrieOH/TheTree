@@ -8,4 +8,4 @@ export {
   useQueryClient,
 } from "./providers/tanstack-query.solid"
 export type { QueryClientConfig } from "./providers/tanstack-query.solid"
-export type { RouterAuth } from "./providers/auth-context.solid"
+export type { RouterSession } from "./providers/auth-context.solid"

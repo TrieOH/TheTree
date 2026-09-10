@@ -15,9 +15,13 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as ProfileConfigRouteImport } from './routes/profile/config'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
 import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
+import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -49,6 +53,21 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileConfigRoute = ProfileConfigRouteImport.update({
+  id: '/profile/config',
+  path: '/profile/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/profile/edit',
+  path: '/profile/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   id: '/events/$slug/',
   path: '/events/$slug/',
@@ -64,6 +83,11 @@ const EventsSlugStoreRoute = EventsSlugStoreRouteImport.update({
   path: '/events/$slug/store',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileActorIdIndexRoute = ProfileActorIdIndexRouteImport.update({
+  id: '/profile/$actorId/',
+  path: '/profile/$actorId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -71,10 +95,14 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/events/': typeof EventsIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/profile/$actorId/': typeof ProfileActorIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,10 +110,14 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/events': typeof EventsIndexRoute
+  '/profile': typeof ProfileIndexRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug': typeof EventsSlugIndexRoute
+  '/profile/$actorId': typeof ProfileActorIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,10 +126,14 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/profile/config': typeof ProfileConfigRoute
+  '/profile/edit': typeof ProfileEditRoute
   '/events/': typeof EventsIndexRoute
+  '/profile/': typeof ProfileIndexRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
+  '/profile/$actorId/': typeof ProfileActorIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,10 +143,14 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/profile/config'
+    | '/profile/edit'
     | '/events/'
+    | '/profile/'
     | '/events/$slug/programs'
     | '/events/$slug/store'
     | '/events/$slug/'
+    | '/profile/$actorId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,10 +158,14 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/profile/config'
+    | '/profile/edit'
     | '/events'
+    | '/profile'
     | '/events/$slug/programs'
     | '/events/$slug/store'
     | '/events/$slug'
+    | '/profile/$actorId'
   id:
     | '__root__'
     | '/'
@@ -129,10 +173,14 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/profile/config'
+    | '/profile/edit'
     | '/events/'
+    | '/profile/'
     | '/events/$slug/programs'
     | '/events/$slug/store'
     | '/events/$slug/'
+    | '/profile/$actorId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -141,10 +189,14 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  ProfileConfigRoute: typeof ProfileConfigRoute
+  ProfileEditRoute: typeof ProfileEditRoute
   EventsIndexRoute: typeof EventsIndexRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
   EventsSlugStoreRoute: typeof EventsSlugStoreRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
+  ProfileActorIdIndexRoute: typeof ProfileActorIdIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -191,6 +243,27 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof EventsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/': {
+      id: '/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/config': {
+      id: '/profile/config'
+      path: '/profile/config'
+      fullPath: '/profile/config'
+      preLoaderRoute: typeof ProfileConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/profile/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$slug/': {
       id: '/events/$slug/'
       path: '/events/$slug'
@@ -212,6 +285,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof EventsSlugStoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/$actorId/': {
+      id: '/profile/$actorId/'
+      path: '/profile/$actorId'
+      fullPath: '/profile/$actorId/'
+      preLoaderRoute: typeof ProfileActorIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -221,10 +301,14 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  ProfileConfigRoute: ProfileConfigRoute,
+  ProfileEditRoute: ProfileEditRoute,
   EventsIndexRoute: EventsIndexRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,
   EventsSlugStoreRoute: EventsSlugStoreRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
+  ProfileActorIdIndexRoute: ProfileActorIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -2,8 +2,8 @@ import { useRouter } from "@tanstack/solid-router"
 import { useAuth, type AuthService } from "@trieoh/identityx-sdk-ts-solid"
 import { createEffect, type ParentProps } from "solid-js"
 
-export type RouterAuth = {
-  auth: AuthService
+export type RouterSession = {
+  service: AuthService
   isAuthenticated: boolean
 }
 
@@ -14,27 +14,27 @@ export function AuthContextUpdater(props: ParentProps) {
 
   createEffect(
     () => {
-      const context = router.options.context as { auth?: RouterAuth }
-      return [auth.auth, auth.isAuthenticated(), context.auth, context] as const
+      const context = router.options.context as { session?: RouterSession }
+      return [auth.auth, auth.isAuthenticated(), context.session, context] as const
     },
     ([authService, isAuthenticated, currentRouterAuth, context]) => {
-      const currentAuth = {
-        auth: authService,
+      const currentSession = {
+        service: authService,
         isAuthenticated,
       }
 
       if (
-        currentRouterAuth?.auth !== currentAuth.auth ||
-        currentRouterAuth?.isAuthenticated !== currentAuth.isAuthenticated
+        currentRouterAuth?.service !== currentSession.service ||
+        currentRouterAuth?.isAuthenticated !== currentSession.isAuthenticated
       ) {
         router.update({
           context: {
             ...context,
-            auth: currentAuth,
+            session: currentSession,
           },
         })
 
-        if (currentRouterAuth?.isAuthenticated !== currentAuth.isAuthenticated) {
+        if (currentRouterAuth?.isAuthenticated !== currentSession.isAuthenticated) {
           setTimeout(() => void router.invalidate(), 0)
         }
       }

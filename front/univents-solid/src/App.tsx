@@ -8,7 +8,8 @@ import {
   TanStackQueryProvider,
   createQueryClient,
 } from "@trieoh/front-core/solid";
-import { AuthProvider, type AuthService } from "@trieoh/identityx-sdk-ts-solid";
+import type { RouterSession } from "@trieoh/front-core/solid";
+import { AuthProvider } from "@trieoh/identityx-sdk-ts-solid";
 import "./App.css";
 
 const { authFetcher, publicFetcher } = createAppFetchers({
@@ -30,9 +31,7 @@ const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
   context: {
-    auth: undefined as
-      | { auth: AuthService; isAuthenticated: boolean }
-      | undefined,
+    session: undefined as RouterSession | undefined,
   },
   defaultPendingComponent: () => <main>Loading…</main>,
 });

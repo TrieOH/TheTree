@@ -1,4 +1,4 @@
-import { createFileRoute, useSearch } from "@tanstack/solid-router";
+import { createFileRoute } from "@tanstack/solid-router";
 import { ModernAuth, useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import {
   readAuthReturnTo,
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const search = useSearch({ from: "/auth" });
+  const search = Route.useSearch();
   const { auth } = useAuth();
   const { completeLogin } = useSessionActions();
 

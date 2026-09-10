@@ -1,4 +1,4 @@
-import { useQueryClient, type RouterAuth } from '@trieoh/front-core/solid';
+import { useQueryClient, type RouterSession } from '@trieoh/front-core/solid';
 import { useNavigate, useRouter } from "@tanstack/solid-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { toast } from '@/shared/ui/toast';
@@ -11,14 +11,14 @@ export function useSessionActions() {
   const router = useRouter();
 
   const updateAuthState = (isAuthenticated: boolean) => {
-    const context = router.options.context as { auth?: RouterAuth };
-    const current = context.auth;
+    const context = router.options.context as { session?: RouterSession };
+    const current = context.session;
     if (!current) return false;
 
     router.update({
       context: {
         ...context,
-        auth: { ...current, isAuthenticated },
+        session: { ...current, isAuthenticated },
       },
     });
     return true;
