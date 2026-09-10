@@ -37,6 +37,7 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
       front-name: ${{ steps.tag.outputs.front_name }}
       sdk-name: ${{ steps.tag.outputs.sdk_name }}
+      activate: ${{ steps.tag.outputs.activate }}
     steps:
       - name: Parse tag
         id: tag
