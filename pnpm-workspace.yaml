@@ -124,3 +124,5 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   workerd: true
+patchedDependencies:
+  '@tanstack/solid-router@2.0.0-rc.6': patches/@tanstack__solid-router@2.0.0-rc.6.patch

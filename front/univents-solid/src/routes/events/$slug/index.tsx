@@ -2,14 +2,21 @@ import { createFileRoute } from "@tanstack/solid-router";
 import { useQueryClient } from "@trieoh/front-core/solid";
 import { Loading, createMemo, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
+import CalendarIcon from "~icons/lucide/calendar";
+import MapPinIcon from "~icons/lucide/map-pin";
 import ShareIcon from "~icons/lucide/share-2";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
 import { ContactSection } from "@/features/events/ui/ContactSection";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
+import type { EditionI } from "@/features/editions/model";
 import { EditionSummaryCard } from "@/features/editions/ui/EditionSummaryCard";
+import { EventCatalog } from "@/features/events/ui/EventCatalog";
+import { EventCart } from "@/features/products/ui/EventCart";
 import { handleShare } from "@/shared/lib/share";
 
+const Calendar = CalendarIcon as unknown as () => JSX.Element;
+const MapPin = MapPinIcon as unknown as () => JSX.Element;
 const Share = ShareIcon as unknown as () => JSX.Element;
 
 export const Route = createFileRoute("/events/$slug/")({
@@ -66,25 +73,19 @@ function EventContent(props: { event: EventI | null }) {
         </div>
       </div>
       <div class="mx-auto max-w-6xl bg-background px-4 pt-24 sm:px-6 sm:pt-28 md:px-8">
-        <h1 class="text-xl font-bold leading-tight text-foreground text-center">
+        <h1 class="text-center text-xl font-bold leading-tight text-foreground min-[300px]:text-2xl sm:text-3xl md:text-4xl">
           {event.full_name}
         </h1>
-        {event.description && (
-          <p class="mx-auto mt-5 border-l-2 border-primary/50 pl-4 text-left text-xs leading-relaxed text-muted-foreground sm:mt-6 md:mx-4!">
-            {event.description}
-          </p>
-        )}
-        <EditionList eventId={event.id} eventSlug={event.slug} />
-        <ContactSection event={event} />
+        <EditionDetails event={event} />
       </div>
     </main>
   );
 }
 
-function EditionList(props: { eventId: string; eventSlug: string }) {
+function EditionDetails(props: { event: EventI }) {
   const queryClient = useQueryClient();
   const editions = createMemo(() =>
-    queryClient.fetchQuery(allPublicEditionsQueryOptions(props.eventId)),
+    queryClient.fetchQuery(allPublicEditionsQueryOptions(props.event.id)),
   );
   return (
     <Loading
@@ -95,34 +96,125 @@ function EditionList(props: { eventId: string; eventSlug: string }) {
         </div>
       }
     >
-      <section class="mt-12 w-full">
-        <div class="mb-5 sm:mb-6">
-          <h2 class="text-2xl font-normal tracking-tight text-primary sm:text-3xl">
-            Outras Edições
-          </h2>
-          <p class="mt-1 text-sm text-muted-foreground sm:text-base">
-            Conheça os próximos eventos ou relembre os destaques das edições
-            anteriores.
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-4">
-          {editions().length > 0 ? (
-            editions().map((edition) => (
-              <EditionSummaryCard edition={edition} />
-            ))
-          ) : (
-            <div class="w-full rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              Nenhuma edição publicada no momento.
+      <EditionBody event={props.event} editions={editions()} />
+    </Loading>
+  );
+}
+
+function EditionBody(props: { event: EventI; editions: EditionI[] }) {
+  const now = Date.now();
+  const editions = untrack(() => props.editions);
+  const sorted = [...editions].sort((a, b) =>
+    a.starts_at.localeCompare(b.starts_at),
+  );
+  const active =
+    sorted.find(
+      (edition) =>
+        new Date(edition.starts_at).getTime() <= now &&
+        new Date(edition.ends_at).getTime() >= now,
+    ) ??
+    sorted.find((edition) => new Date(edition.starts_at).getTime() > now) ??
+    sorted.at(-1);
+  const otherEditions = sorted.filter((edition) => edition.id !== active?.id);
+
+  return (
+    <>
+      {active && (
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:mt-4">
+          <div class="flex items-center gap-1.5 text-muted-foreground">
+            <span class="size-4">
+              <Calendar />
+            </span>
+            <span class="text-xs font-medium min-[300px]:text-sm">
+              {formatDateRange(active.starts_at, active.ends_at)}
+            </span>
+          </div>
+          {active.location_name && (
+            <div class="flex items-center gap-1.5 text-muted-foreground">
+              <span class="size-4">
+                <MapPin />
+              </span>
+              <span class="text-xs font-medium min-[300px]:text-sm">
+                {active.location_name}
+              </span>
             </div>
           )}
         </div>
-        <a
-          class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
-          href={`/events/${props.eventSlug}/editions`}
-        >
-          Ver todas as Edições <span aria-hidden="true">→</span>
-        </a>
-      </section>
-    </Loading>
+      )}
+      {props.event.description && (
+        <p class="mx-auto mt-5 border-l-2 border-primary/50 pl-4 text-left text-xs leading-relaxed text-muted-foreground min-[300px]:text-sm sm:mt-6 sm:text-base md:mx-4!">
+          {props.event.description}
+        </p>
+      )}
+      {active && (
+        <EventCatalog editionId={active.id} eventSlug={props.event.slug} />
+      )}
+      {otherEditions.length > 0 && (
+        <section class="mt-12 w-full">
+          <div class="mb-5 sm:mb-6">
+            <h2 class="text-2xl font-normal tracking-tight text-primary sm:text-3xl">
+              Outras Edições
+            </h2>
+            <p class="mt-1 text-sm text-muted-foreground sm:text-base">
+              Conheça os próximos eventos ou relembre os destaques das edições
+              anteriores.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-4">
+            {otherEditions.slice(0, 5).map((edition) => (
+              <EditionSummaryCard edition={edition} />
+            ))}
+          </div>
+          <a
+            class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
+            href={`/events/${props.event.slug}/editions`}
+          >
+            Ver todas as Edições <span aria-hidden="true">→</span>
+          </a>
+        </section>
+      )}
+      {active?.location_name && (
+        <section class="relative z-0 mt-8 w-full sm:mt-10">
+          <div class="mb-4">
+            <h2 class="text-xl font-semibold text-foreground sm:text-2xl">
+              Local do evento
+            </h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              {active.location_name}
+              {active.location_description
+                ? ` — ${active.location_description}`
+                : ""}
+            </p>
+          </div>
+          <iframe
+            title={`Mapa de ${active.location_name}`}
+            src={`https://www.google.com/maps?q=${encodeURIComponent(
+              [active.location_name, active.location_description]
+                .filter(Boolean)
+                .join(", "),
+            )}&output=embed`}
+            loading="lazy"
+            class="h-80 w-full overflow-hidden rounded-xl border border-border shadow-sm"
+          />
+        </section>
+      )}
+      <ContactSection event={props.event} />
+      {active && (
+        <EventCart
+          editionId={active.id}
+          checkoutHref={`/events/${props.event.slug}/checkout`}
+        />
+      )}
+    </>
   );
+}
+
+function formatDateRange(startsAt: string, endsAt: string) {
+  const format = (value: string) =>
+    new Date(value).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  return `${format(startsAt)} — ${format(endsAt)}`;
 }

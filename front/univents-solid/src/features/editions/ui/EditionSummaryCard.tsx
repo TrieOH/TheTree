@@ -8,7 +8,12 @@ const MapPin = MapPinIcon as unknown as () => JSX.Element;
 const ArrowRight = ArrowRightIcon as unknown as () => JSX.Element;
 
 export function EditionSummaryCard(props: { edition: EditionI }) {
-  const closed = () => new Date(props.edition.ends_at).getTime() < Date.now();
+  const status = () => {
+    const now = Date.now();
+    if (new Date(props.edition.ends_at).getTime() < now) return "closed";
+    if (new Date(props.edition.starts_at).getTime() <= now) return "active";
+    return "future";
+  };
   const date = () =>
     `${new Date(props.edition.starts_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")} – ${new Date(props.edition.ends_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).replace(".", "")}`;
   return (
@@ -34,19 +39,33 @@ export function EditionSummaryCard(props: { edition: EditionI }) {
             {props.edition.name}
           </h3>
           <span
-            class={`inline-block shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide sm:text-[10px] ${closed() ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" : "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"}`}
+            class={`inline-block shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide sm:text-[10px] ${
+              status() === "closed"
+                ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                : status() === "active"
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                  : "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
+            }`}
           >
-            {closed() ? "CLOSED" : "UPCOMING"}
+            {status() === "closed"
+              ? "CLOSED"
+              : status() === "active"
+                ? "LIVE"
+                : "UPCOMING"}
           </span>
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
           <span class="flex items-center gap-1">
-            <Calendar />
+            <span class="size-3.5 [&>svg]:size-3.5">
+              <Calendar />
+            </span>
             <span class="text-[11px] sm:text-xs">{date()}</span>
           </span>
           {props.edition.location_name && (
             <span class="flex min-w-0 items-center gap-1">
-              <MapPin />
+              <span class="size-3.5 [&>svg]:size-3.5">
+                <MapPin />
+              </span>
               <span class="max-w-35 truncate text-[11px] sm:text-xs">
                 {props.edition.location_name}
               </span>
@@ -54,8 +73,14 @@ export function EditionSummaryCard(props: { edition: EditionI }) {
           )}
         </div>
         <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary sm:mt-3 sm:text-sm">
-          {closed() ? "View Archives" : "Learn More"}
-          <ArrowRight />
+          {status() === "closed"
+            ? "View Archives"
+            : status() === "active"
+              ? "Join Now"
+              : "Learn More"}
+          <span class="size-4 [&>svg]:size-4">
+            <ArrowRight />
+          </span>
         </span>
       </div>
     </article>

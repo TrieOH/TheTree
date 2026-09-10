@@ -16,6 +16,8 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
+import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
+import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +54,16 @@ const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   path: '/events/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
+  id: '/events/$slug/programs',
+  path: '/events/$slug/programs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsSlugStoreRoute = EventsSlugStoreRouteImport.update({
+  id: '/events/$slug/store',
+  path: '/events/$slug/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +72,8 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/events/': typeof EventsIndexRoute
+  '/events/$slug/programs': typeof EventsSlugProgramsRoute
+  '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +83,8 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/events': typeof EventsIndexRoute
+  '/events/$slug/programs': typeof EventsSlugProgramsRoute
+  '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug': typeof EventsSlugIndexRoute
 }
 export interface FileRoutesById {
@@ -79,6 +95,8 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/events/': typeof EventsIndexRoute
+  '/events/$slug/programs': typeof EventsSlugProgramsRoute
+  '/events/$slug/store': typeof EventsSlugStoreRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +108,8 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/events/'
+    | '/events/$slug/programs'
+    | '/events/$slug/store'
     | '/events/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +119,8 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/events'
+    | '/events/$slug/programs'
+    | '/events/$slug/store'
     | '/events/$slug'
   id:
     | '__root__'
@@ -108,6 +130,8 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/events/'
+    | '/events/$slug/programs'
+    | '/events/$slug/store'
     | '/events/$slug/'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +142,8 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   EventsIndexRoute: typeof EventsIndexRoute
+  EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
+  EventsSlugStoreRoute: typeof EventsSlugStoreRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
 }
 
@@ -172,6 +198,20 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof EventsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$slug/programs': {
+      id: '/events/$slug/programs'
+      path: '/events/$slug/programs'
+      fullPath: '/events/$slug/programs'
+      preLoaderRoute: typeof EventsSlugProgramsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$slug/store': {
+      id: '/events/$slug/store'
+      path: '/events/$slug/store'
+      fullPath: '/events/$slug/store'
+      preLoaderRoute: typeof EventsSlugStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,6 +222,8 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   EventsIndexRoute: EventsIndexRoute,
+  EventsSlugProgramsRoute: EventsSlugProgramsRoute,
+  EventsSlugStoreRoute: EventsSlugStoreRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
 }
 export const routeTree = rootRouteImport

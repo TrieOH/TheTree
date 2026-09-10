@@ -11,12 +11,13 @@ import {
 import { AuthProvider, type AuthService } from "@trieoh/identityx-sdk-ts-solid";
 import "./App.css";
 
-const { publicFetcher } = createAppFetchers({
+const { authFetcher, publicFetcher } = createAppFetchers({
   apiURL: import.meta.env.VITE_API_URL ?? "http://localhost:8081",
   authAPIURL: import.meta.env.VITE_AUTH_API_URL,
 });
 configureApiClient({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8081",
+  transport: createOrvalTransport(authFetcher),
   publicTransport: createOrvalTransport(publicFetcher),
 });
 
@@ -27,6 +28,7 @@ import { routeTree } from "./routeTree.gen";
 
 const router = createRouter({
   routeTree,
+  defaultPreload: 'intent',
   context: {
     auth: undefined as
       | { auth: AuthService; isAuthenticated: boolean }

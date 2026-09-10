@@ -1,0 +1,74 @@
+diff --git a/dist/cjs/link.cjs b/dist/cjs/link.cjs
+index 34432c10fd0f8fa8b3a65c9e2f437ff4640e5b4d..7e49f0555b0288167225ba20fcf8e18101b3b94b 100644
+--- a/dist/cjs/link.cjs
++++ b/dist/cjs/link.cjs
+@@ -184,11 +184,11 @@ function useLinkProps(options) {
+ 		}
+ 	};
+ 	const handleTouchStart = () => {
+-		if (preload() !== "intent") return;
++		if (Solid.untrack(preload) !== "intent") return;
+ 		doPreload();
+ 	};
+ 	const handleLeave = () => {
+-		if (preload() === "intent") cancelPreload(ref);
++		if (Solid.untrack(preload) === "intent") cancelPreload(ref);
+ 	};
+ 	const simpleStyling = solid_js.createMemo(() => activeProps() === STATIC_ACTIVE_PROPS_GET && inactiveProps() === STATIC_INACTIVE_PROPS_GET && local.class === void 0 && local.style === void 0, { lazy: true });
+ 	const onClick = createComposedHandler(() => local.onClick, handleClick);
+diff --git a/dist/esm/link.js b/dist/esm/link.js
+index e4f8ce27bea1b78b58252798c207a9cb189b9e71..d1f50e86412f8f0806ce7f4d7c7518ba6bc2f74d 100644
+--- a/dist/esm/link.js
++++ b/dist/esm/link.js
+@@ -182,11 +182,11 @@ function useLinkProps(options) {
+ 		}
+ 	};
+ 	const handleTouchStart = () => {
+-		if (preload() !== "intent") return;
++		if (Solid.untrack(preload) !== "intent") return;
+ 		doPreload();
+ 	};
+ 	const handleLeave = () => {
+-		if (preload() === "intent") cancelPreload(ref);
++		if (Solid.untrack(preload) === "intent") cancelPreload(ref);
+ 	};
+ 	const simpleStyling = Solid.createMemo(() => activeProps() === STATIC_ACTIVE_PROPS_GET && inactiveProps() === STATIC_INACTIVE_PROPS_GET && local.class === void 0 && local.style === void 0, { lazy: true });
+ 	const onClick = createComposedHandler(() => local.onClick, handleClick);
+diff --git a/dist/source/link.jsx b/dist/source/link.jsx
+index ba835952afaed893b15b7f8157acf5a6a21d8a32..228e4d7344c6769ca766174f731ecd6eb6d3378f 100644
+--- a/dist/source/link.jsx
++++ b/dist/source/link.jsx
+@@ -252,12 +252,12 @@ export function useLinkProps(options) {
+         }
+     };
+     const handleTouchStart = () => {
+-        if (preload() !== 'intent')
++        if (Solid.untrack(preload) !== 'intent')
+             return;
+         doPreload();
+     };
+     const handleLeave = () => {
+-        if (preload() === 'intent') {
++        if (Solid.untrack(preload) === 'intent') {
+             cancelPreload(ref);
+         }
+     };
+diff --git a/src/link.tsx b/src/link.tsx
+index c5d3691672b4c5eb22bbf6433117b8dddd204988..3feb27aa26bade522ce72b6daf8b57b471848b9e 100644
+--- a/src/link.tsx
++++ b/src/link.tsx
+@@ -398,12 +398,12 @@ export function useLinkProps<
+   }
+ 
+   const handleTouchStart = () => {
+-    if (preload() !== 'intent') return
++    if (Solid.untrack(preload) !== 'intent') return
+     doPreload()
+   }
+ 
+   const handleLeave = () => {
+-    if (preload() === 'intent') {
++    if (Solid.untrack(preload) === 'intent') {
+       cancelPreload(ref)
+     }
+   }

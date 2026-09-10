@@ -198,6 +198,9 @@ overrides:
   '@tanstack/query-core': 5.101.4
   postcss: '>=8.5.23'
 
+patchedDependencies:
+  '@tanstack/solid-router@2.0.0-rc.6': dc47a312931b257665857d018f52bb699892d2539591af2a03a5053bbf2a30d4
+
 importers:
 
   .:
@@ -844,7 +847,7 @@ importers:
         version: 5.101.4
       '@tanstack/solid-router':
         specifier: ^2.0.0-rc.6
-        version: 2.0.0-rc.6(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
+        version: 2.0.0-rc.6(patch_hash=dc47a312931b257665857d018f52bb699892d2539591af2a03a5053bbf2a30d4)(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
       '@trieoh/api-client':
         specifier: workspace:*
         version: link:../../lib/ts/api-client
@@ -965,7 +968,7 @@ importers:
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/solid-router':
         specifier: ^2.0.0-rc.6
-        version: 2.0.0-rc.6(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
+        version: 2.0.0-rc.6(patch_hash=dc47a312931b257665857d018f52bb699892d2539591af2a03a5053bbf2a30d4)(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -9200,7 +9203,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/solid-router@2.0.0-rc.6(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)':
+  '@tanstack/solid-router@2.0.0-rc.6(patch_hash=dc47a312931b257665857d018f52bb699892d2539591af2a03a5053bbf2a30d4)(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)':
     dependencies:
       '@solid-devtools/logger': 0.9.11(solid-js@2.0.0-rc.6)
       '@solid-primitives/refs': 1.1.4(solid-js@2.0.0-rc.6)
