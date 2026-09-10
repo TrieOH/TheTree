@@ -110,11 +110,10 @@ run_ts() {
     for s in check tsc typecheck test; do
         if [ -f "$dir/package.json" ] && has_script "$dir" "$s"; then
             echo "pnpm -C $dir run $s" >>"$log"
-            # verify-deps-before-run=false: hooks check, they never install —
-            # a stale node_modules must fail loudly, not mutate mid-commit
-            # (also sidesteps front/univents-solid's uninstallable catalog
-            # specs — pre-existing drift, owned by that app's setup)
-            if ! pnpm --config.verify-deps-before-run=false -C "$dir" run "$s" >>"$log" 2>&1; then
+            # pnpm's verify-deps-before-run stays at its default: a stale
+            # workspace is auto-installed before the script runs — the hook
+            # forces correctness; --no-verify is the only opt-out
+            if ! pnpm -C "$dir" run "$s" >>"$log" 2>&1; then
                 rc=1
                 break
             fi
