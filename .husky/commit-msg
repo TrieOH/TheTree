@@ -23,7 +23,7 @@ message=$(head -n 1 "$COMMIT_MSG_FILE" | sed -E 's/[[:space:]]+$//')
 
 # description (body below the subject) is capped at 500 chars — leading and
 # trailing blank lines don't count
-MAX_DESC=500
+MAX_DESC=250
 desc=$(sed '1d' "$COMMIT_MSG_FILE" | sed '/./,$!d')
 if [ "$(printf '%s' "$desc" | wc -m)" -gt "$MAX_DESC" ]; then
     printf '\n'

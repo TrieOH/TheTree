@@ -86,13 +86,13 @@ for bad in 'feat(payssage):' 'feat(payssage):   '; do
 done
 
 # description (body) is capped at 500 chars
-printf 'feat(payssage): x\n\n' >"$ENGINE_TMP/msg"; head -c 499 /dev/zero | tr '\0' A >>"$ENGINE_TMP/msg"; printf '\n' >>"$ENGINE_TMP/msg"
+printf 'feat(payssage): x\n\n' >"$ENGINE_TMP/msg"; head -c 249 /dev/zero | tr '\0' A >>"$ENGINE_TMP/msg"; printf '\n' >>"$ENGINE_TMP/msg"
 sh .husky/commit-msg "$ENGINE_TMP/msg" >/dev/null 2>&1 \
-    && echo "ok   commit-msg accepts 499-char description" \
-    || { echo "FAIL commit-msg rejected 499-char description"; fail=1; }
-printf 'feat(payssage): x\n\n' >"$ENGINE_TMP/msg"; head -c 501 /dev/zero | tr '\0' A >>"$ENGINE_TMP/msg"; printf '\n' >>"$ENGINE_TMP/msg"
+    && echo "ok   commit-msg accepts 249-char description" \
+    || { echo "FAIL commit-msg rejected 249-char description"; fail=1; }
+printf 'feat(payssage): x\n\n' >"$ENGINE_TMP/msg"; head -c 251 /dev/zero | tr '\0' A >>"$ENGINE_TMP/msg"; printf '\n' >>"$ENGINE_TMP/msg"
 sh .husky/commit-msg "$ENGINE_TMP/msg" >/dev/null 2>&1 \
-    && { echo "FAIL commit-msg accepted 501-char description"; fail=1; } \
-    || echo "ok   commit-msg rejects 501-char description"
+    && { echo "FAIL commit-msg accepted 251-char description"; fail=1; } \
+    || echo "ok   commit-msg rejects 251-char description"
 
 exit $fail
