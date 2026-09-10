@@ -66,15 +66,16 @@ if ! engine_valid_scope "$scope"; then
 fi
 
 # --- pushed range must belong to the branch scope ----------------------------
+#
+# Cumulative, not incremental: the range is merge-base(origin/main, HEAD)..HEAD
+# — the branch's entire content — revalidated on every push. Validating only
+# the new increment would let a branch named for its union fail (or pass)
+# depending on how the work happened to be split into pushes.
 
-if [ "${remote_oid:-}" = "$ZERO" ]; then
-    base=$(git merge-base origin/main "$local_oid" 2>/dev/null || true)
-    if [ -z "$base" ]; then
-        printf '  ⚠ new branch with no origin/main base — skipping range scope validation\n'
-        exit 0
-    fi
-else
-    base=$remote_oid
+base=$(git merge-base origin/main "$local_oid" 2>/dev/null || true)
+if [ -z "$base" ]; then
+    printf '  ⚠ no common base with origin/main — skipping range scope validation\n'
+    exit 0
 fi
 
 git diff --name-only "$base" "$local_oid" >"$ENGINE_TMP/range" || true
