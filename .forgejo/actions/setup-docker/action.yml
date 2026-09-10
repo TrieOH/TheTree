@@ -17,9 +17,12 @@ runs:
   steps:
     - name: Restore docker CLI from cache
       id: cache
-      uses: https://code.forgejo.org/actions/cache@v1
+      uses: https://code.forgejo.org/actions/cache/restore@v4
       with:
-        path: /usr/local/bin/docker
+        # cache a dedicated DIRECTORY — cache save does `tar -C <path> .`,
+        # which fails with "Not a directory" when path is the binary file
+        # itself (seen in sandbox runs)
+        path: /opt/docker-cli
         key: docker-cli-${{ inputs.version }}
     - name: Install pinned docker CLI (cache miss)
       if: steps.cache.outputs.cache-hit != 'true'
@@ -28,8 +31,18 @@ runs:
         set -euo pipefail
         curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${{ inputs.version }}.tgz" -o /tmp/docker.tgz
         tar -xzf /tmp/docker.tgz -C /tmp docker/docker
-        install -m 0755 /tmp/docker/docker /usr/local/bin/docker
+        install -m 0755 /tmp/docker/docker /opt/docker-cli/docker
         rm -f /tmp/docker.tgz
+    - name: Add to PATH
+      shell: bash
+      run: echo "/opt/docker-cli" >> "$GITHUB_PATH"
+    - name: Save docker CLI (inline — never break the pipeline over a cache)
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: https://code.forgejo.org/actions/cache/save@v4
+      with:
+        path: /opt/docker-cli
+        key: docker-cli-${{ inputs.version }}
+      continue-on-error: true
     - name: Smoke test
       shell: bash
       run: docker version --format '{{.Client.Version}}'
