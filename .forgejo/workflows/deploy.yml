@@ -212,9 +212,51 @@ jobs:
         if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
         run: cd "api/$ARTIFACT" && gotestsum --format testdox -- -count=1 ./...
 
+  # ── Ledger activation (§3.8): digest → deploy repo commit. Only for
+  #    services (fronts deploy via Cloudflare, SDKs via npm — compose only
+  #    runs backend images). Sandbox tags never touch the deploy repo.
+  activate:
+    needs: [parse, publish]
+    if: ${{ needs.parse.outputs.type == 'service' && !contains(needs.parse.outputs.version, 'sandbox') }}
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACT: ${{ needs.parse.outputs.artifact }}
+      VERSION: ${{ needs.parse.outputs.version }}
+      DIGEST: ${{ needs.publish.outputs.digest }}
+    steps:
+      - name: Clone deploy repo
+        run: |
+          set -euo pipefail
+          git clone --depth 1 \
+            "https://${{ secrets.DEPLOY_REPO_USER }}:${{ secrets.DEPLOY_REPO_TOKEN }}@ssh.trieoh.com/TrieOH/deploy.git" \
+            deploy-repo
+          cd deploy-repo
+          git config user.name  "${{ vars.RELEASE_BOT_NAME }}"
+          git config user.email "${{ vars.RELEASE_BOT_EMAIL }}"
+
+      - name: Pin digest in compose.yml
+        run: |
+          set -euo pipefail
+          cd deploy-repo
+          # matches tag-form AND digest-form lines, replaces any old comment
+          sed -i -E "s|(image: git\.trieoh\.com/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
+            thetree/compose.yml
+          grep -n "image: git.trieoh.com/trieoh/${ARTIFACT}" thetree/compose.yml
+          git diff --exit-code --quiet && { echo "compose.yml unchanged — digest already pinned"; exit 0; }
+
+      - name: Commit & push ledger entry
+        run: |
+          cd deploy-repo
+          git add thetree/compose.yml
+          git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: git.trieoh.com/trieoh/${ARTIFACT}@${DIGEST}"
+          git push origin main
+          echo "[ledger] release: ${ARTIFACT} ${VERSION} → TrieOH/deploy main (rollout workflow picks it up)"
+
   publish:
     needs: [parse, checks]
     runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.img.outputs.digest }}
     env:
       ARTIFACT: ${{ needs.parse.outputs.artifact }}
       TYPE: ${{ needs.parse.outputs.type }}
