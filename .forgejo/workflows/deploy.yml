@@ -283,11 +283,18 @@ jobs:
           echo "▶ activate: pin digest"
           set -euo pipefail
           cd deploy-repo
+          # normalize defensively: accept either bare digest or full ref from publish
+          DIGEST="${DIGEST##*@}"
           # matches tag-form AND digest-form lines, replaces any old comment
           sed -i -E "s|(image: git\.trieoh\.com/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
             thetree/compose.yml
           grep -n "image: git.trieoh.com/trieoh/${ARTIFACT}" thetree/compose.yml
-          git diff --exit-code --quiet && { echo "compose.yml unchanged — digest already pinned"; exit 0; }
+          # early-exit ONLY when unchanged; a diff is the normal path — don't let
+          # a bare 'A && B' list poison set -e (that killed run 715)
+          if git diff --exit-code --quiet; then
+            echo "compose.yml unchanged — digest already pinned"
+            exit 0
+          fi
 
       - name: Commit & push ledger entry
         env:
@@ -337,6 +344,9 @@ jobs:
           DOCKER_BUILDKIT=1 docker build -f "api/$ARTIFACT/Dockerfile" -t "$IMG" .
           docker push "$IMG"
           DIGEST=$(docker image inspect "$IMG" --format '{{index .RepoDigests 0}}')
+          # RepoDigests entries are full refs (registry/repo@sha256:…) — keep the
+          # bare digest only, that's the §3.8 contract (activate re-attaches the ref)
+          DIGEST="${DIGEST##*@}"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "[release] pushed $IMG → $DIGEST"
         env:
