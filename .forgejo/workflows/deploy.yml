@@ -266,12 +266,12 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
         run: |
+          echo "▶ activate: clone deploy repo"
           set -euo pipefail
           install -m 600 /dev/null /tmp/deploy_repo_key
           echo "$SSH_KEY" > /tmp/deploy_repo_key
           trap 'rm -f /tmp/deploy_repo_key' EXIT
-          export GIT_SSH_COMMAND=
-          echo "▶ activate: clone deploy repo""ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
+          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
           git clone --depth 1 git@ssh.trieoh.com:TrieOH/deploy.git deploy-repo
           cd deploy-repo
           git config user.name  "${{ vars.RELEASE_BOT_NAME }}"
@@ -279,10 +279,10 @@ jobs:
 
       - name: Pin digest in compose.yml
         run: |
+          echo "▶ activate: pin digest"
           set -euo pipefail
           cd deploy-repo
-          # matches tag-form AND digest-form lines
-          echo "▶ activate: pin digest", replaces any old comment
+          # matches tag-form AND digest-form lines, replaces any old comment
           sed -i -E "s|(image: git\.trieoh\.com/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
             thetree/compose.yml
           grep -n "image: git.trieoh.com/trieoh/${ARTIFACT}" thetree/compose.yml
@@ -329,9 +329,9 @@ jobs:
         id: img
         if: ${{ env.TYPE == 'service' }}
         run: |
+          echo "▶ publish: build & push image"
           set -euo pipefail
-          echo "$FJ_TOKEN" | docker login git.trieoh.com
-          echo "▶ publish: build & push image" -u "$FJ_USER" --password-stdin
+          echo "$FJ_TOKEN" | docker login git.trieoh.com -u "$FJ_USER" --password-stdin
           IMG="git.trieoh.com/trieoh/$ARTIFACT:$VERSION"
           DOCKER_BUILDKIT=1 docker build -f "api/$ARTIFACT/Dockerfile" -t "$IMG" .
           docker push "$IMG"
