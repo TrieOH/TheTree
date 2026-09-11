@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "catalog:",
-    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/envoy-fetch-ts": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",

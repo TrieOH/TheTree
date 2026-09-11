@@ -8,11 +8,11 @@
     ".": "./src/index.ts"
   },
   "peerDependencies": {
-    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/envoy-fetch-ts": "catalog:"
   },
   "devDependencies": {
-    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/envoy-fetch-ts": "catalog:"
   }
 }

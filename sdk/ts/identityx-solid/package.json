@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@trieoh/envoy-fetch-ts": "catalog:",
-    "@trieoh/identityx-sdk-ts": "catalog:"
+    "@trieoh/identityx-sdk-ts": "workspace:*"
   },
   "devDependencies": {
     "@solidjs/web": "catalog:",

@@ -9,7 +9,15 @@
     "./solid": "./src/solid.ts",
     "./auth/tanstack/client": "./src/auth/tanstack/client.ts",
     "./auth/tanstack/server": "./src/auth/tanstack/server.ts",
+    "./auth/bff/core": "./src/auth/bff/core.ts",
+    "./auth/bff/client": "./src/auth/bff/client.ts",
+    "./auth/bff/types": "./src/auth/bff/types.ts",
+    "./auth/bff/constants": "./src/auth/bff/constants.ts",
+    "./auth/bff/handler": "./src/auth/bff/handler.ts",
+    "./auth/bff/operations": "./src/auth/bff/operations.ts",
+    "./auth/bff/cookie-session": "./src/auth/bff/cookie-session.ts",
     "./tracing/browser": "./src/tracing/browser.ts",
+    "./tracing/server": "./src/tracing/server.ts",
     "./tracing/constants": "./src/tracing/constants.ts",
     "./tracing/ingest": "./src/tracing/ingest.ts"
   },
@@ -31,7 +39,7 @@
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "@trieoh/envoy-fetch-ts": "catalog:",
@@ -46,6 +54,6 @@
     "@types/react-dom": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@trieoh/envoy-fetch-ts": "catalog:",
-    "@trieoh/identityx-sdk-ts": "catalog:"
+    "@trieoh/identityx-sdk-ts": "workspace:*"
   }
 }

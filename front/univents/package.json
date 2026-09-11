@@ -41,7 +41,7 @@
     "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-access-sdk-ts": "catalog:",
-    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
     "@trieoh/ui-base": "workspace:*",
     "@trieoh/univents-api": "workspace:*",

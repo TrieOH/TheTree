@@ -8,8 +8,8 @@ import {
   getStoredRefreshToken,
 } from "../utils/token-utils";
 import { env } from "./env";
-import { logger, simpleFetch } from "@trieoh/envoy-fetch-ts";
-import { tokenStore } from "../store/token-store";
+import { logger } from "@trieoh/envoy-fetch-ts";
+import { defaultTokenStore, type TokenStore } from "../store/token-store";
 import type { AuthTokenClaims, AuthTokens } from "../types/token-types";
 
 export interface RequestOptions extends RequestInit {
@@ -22,6 +22,31 @@ interface InterceptorConfig {
   authBaseURL?: string;
   onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   onRefreshFailed?: (error: Error) => void;
+  tokenStore?: TokenStore;
+  /**
+   * Transport for every IdentityX call, refresh included. Inject one to add
+   * tracing, retries or a runtime binding instead of patching `globalThis.fetch`.
+   */
+  fetch?: typeof fetch;
+}
+
+interface RefreshEnvelope {
+  code: number;
+  data?: AuthTokens;
+  message?: string;
+}
+
+async function readRefreshEnvelope(response: Response): Promise<RefreshEnvelope> {
+  try {
+    const body = (await response.json()) as Partial<RefreshEnvelope>;
+    return {
+      code: typeof body.code === "number" ? body.code : response.status,
+      ...(body.data ? { data: body.data } : {}),
+      ...(body.message ? { message: body.message } : {}),
+    };
+  } catch {
+    return { code: response.status, message: response.statusText };
+  }
 }
 
 export class AuthInterceptor {
@@ -31,12 +56,17 @@ export class AuthInterceptor {
   private refreshPromise: Promise<void> | null = null;
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   private onRefreshFailed?: (error: Error) => void;
+  /** Session this interceptor reads and writes. */
+  readonly tokenStore: TokenStore;
+  private readonly fetchImpl: typeof fetch;
 
   constructor(config?: InterceptorConfig) {
     this.baseURL = config?.baseURL || env.BASE_URL;
     this.authBaseURL = config?.authBaseURL || this.baseURL;
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
+    this.tokenStore = config?.tokenStore ?? defaultTokenStore;
+    this.fetchImpl = config?.fetch ?? fetch;
   }
 
   async refreshToken(): Promise<void> {
@@ -46,35 +76,39 @@ export class AuthInterceptor {
     this.refreshPromise = (async () => {
       let shouldClear = false;
       try {
-        const refreshToken = getStoredRefreshToken();
+        const refreshToken = getStoredRefreshToken(this.tokenStore);
         if (!refreshToken) {
           shouldClear = true;
           throw new Error("No refresh token available");
         }
 
-        const res = await simpleFetch<{ code: number; data?: AuthTokens; message?: string }>(
+        const response = await this.fetchImpl(
           joinUrl(this.authBaseURL, "/auth/refresh"),
           {
             method: "POST",
             credentials: "omit",
-            headers: { "Refresh-Token": refreshToken },
+            headers: {
+              "Content-Type": "application/json",
+              "Refresh-Token": refreshToken,
+            },
           }
         );
+        const res = await readRefreshEnvelope(response);
         const isSuccessfulCode = res.code >= 200 && res.code < 300;
         if (!isSuccessfulCode || !res.data || !res.data.access_token) {
           shouldClear = res.code >= 400 && res.code < 500;
           throw new Error(res.message || "Failed to refresh token");
         }
 
-        saveAuthSession(res.data);
+        saveAuthSession(res.data, this.tokenStore);
 
-        const claims = getTokenClaims();
+        const claims = getTokenClaims(this.tokenStore);
         if (claims) this.onTokenRefreshed?.(claims);
 
         logger.log("Token refreshed successfully");
       } catch (error) {
         logger.warn("Failed to refresh token:", error);
-        if (shouldClear) clearAuthTokens();
+        if (shouldClear) clearAuthTokens(this.tokenStore);
         this.onRefreshFailed?.(error as Error);
         throw error;
       } finally {
@@ -87,14 +121,14 @@ export class AuthInterceptor {
   }
 
   async beforeRequest(): Promise<void> {
-    if (isRefreshSessionExpired()) {
-      clearAuthTokens();
+    if (isRefreshSessionExpired(10, this.tokenStore)) {
+      clearAuthTokens(this.tokenStore);
       return;
     }
 
-    const hasAccessToken = !!tokenStore.getAccessToken();
+    const hasAccessToken = !!this.tokenStore.getAccessToken();
 
-    if (!hasAccessToken || isTokenExpiringSoon(30)) {
+    if (!hasAccessToken || isTokenExpiringSoon(30, this.tokenStore)) {
       try {
         await this.refreshToken();
       } catch (error) {
@@ -114,7 +148,7 @@ export class AuthInterceptor {
     const finalUrl = joinUrl(this.baseURL, url);
 
     const executeFetch = async (): Promise<Response> => {
-      const accessToken = tokenStore.getAccessToken();
+      const accessToken = this.tokenStore.getAccessToken();
       const headers = new Headers(options?.headers);
 
       if (shouldAuth && accessToken) {
@@ -124,7 +158,7 @@ export class AuthInterceptor {
         headers.set("Content-Type", "application/json");
       }
 
-      return fetch(finalUrl, {
+      return this.fetchImpl(finalUrl, {
         ...options,
         headers,
         credentials: "omit",
@@ -134,7 +168,7 @@ export class AuthInterceptor {
     let response = await executeFetch();
 
     if (response.status === 401 && shouldAuth && !isRefreshReq) {
-      const hasRefreshToken = !!getStoredRefreshToken();
+      const hasRefreshToken = !!getStoredRefreshToken(this.tokenStore);
 
       if (hasRefreshToken) {
         logger.log("401 detected, attempting token refresh...");

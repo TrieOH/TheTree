@@ -1,8 +1,13 @@
 # IdentityX BFF for TanStack Start
 
-This module implements server-managed IdentityX sessions specifically for
-TanStack Start. Framework-specific integrations for other runtimes should live
-in sibling directories under `auth/`.
+This module is the TanStack Start *binding*: it supplies the runtime pieces the
+BFF needs — an encrypted session cookie (`useSession`) and the incoming request
+(`getRequest`) — and delegates everything else to
+[`createIdentityXBff`](../bff/core.ts), which has no framework imports.
+
+Other runtimes (a Cloudflare Worker, a Node server) should compose the same core
+with their own `BffSession` and `request`, in a sibling directory under `auth/`,
+instead of reimplementing the IdentityX contract.
 
 ## Server configuration
 

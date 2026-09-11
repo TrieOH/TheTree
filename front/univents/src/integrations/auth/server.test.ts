@@ -95,7 +95,7 @@ describe("IdentityX BFF token refresh", () => {
     ]);
   });
 
-  it("does not clear a refreshed session when another BFF loses the refresh race", async () => {
+  it("keeps the session when a refresh is rejected as already rotated", async () => {
     let refreshCalls = 0;
     vi.stubGlobal(
       "fetch",
@@ -124,22 +124,50 @@ describe("IdentityX BFF token refresh", () => {
       }),
     );
 
+    // A second process holding a cookie from before the rotation: it can't share
+    // the in-flight map, it arrives with an already-spent token and loses. The
+    // winner's session must survive that, which means never clearing a session
+    // the loser can't vouch for.
+    const staleSession = {
+      data: {
+        tokens: {
+          access_token: "expired.access.token",
+          refresh_token: "spent.refresh.token",
+          access_expires_at: "2000-01-01T00:00:00.000Z",
+          refresh_expires_at: "2100-01-01T00:00:00.000Z",
+        },
+      },
+      update: vi.fn(async (data: typeof session.data) => {
+        staleSession.data = data;
+      }),
+      clear: vi.fn(async () => {
+        staleSession.data = undefined as never;
+      }),
+    };
+
     const config = {
       identityX: { baseURL: "https://identityx.test" },
       session: { password: "a".repeat(32) },
       apiBaseURL: "https://univents-api.test",
       runtime,
     };
-    const firstBff = createTanStackIdentityXBff(config);
-    const secondBff = createTanStackIdentityXBff(config);
+    const winner = createTanStackIdentityXBff(config);
+    const loser = createTanStackIdentityXBff({
+      ...config,
+      runtime: { ...runtime, useSession: () => Promise.resolve(staleSession) },
+    });
 
-    await Promise.all([
-      firstBff.request({ path: "/events/joined" }),
-      secondBff.request({ path: "/events/joined" }),
+    const [winnerResult, loserResult] = await Promise.all([
+      winner.request({ path: "/events/joined", method: "POST", body: {} }),
+      loser.request({ path: "/events/joined", method: "POST", body: {} }),
     ]);
 
+    expect(winnerResult.success).toBe(true);
+    expect(loserResult.success).toBe(false);
+    expect(loserResult.code).toBe(401);
     expect(refreshCalls).toBe(2);
     expect(session.clear).not.toHaveBeenCalled();
+    expect(staleSession.clear).not.toHaveBeenCalled();
     expect(session.data.tokens.refresh_token).toBe("fresh.refresh.token");
   });
 
