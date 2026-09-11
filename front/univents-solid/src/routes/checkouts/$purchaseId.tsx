@@ -21,9 +21,9 @@ function CheckoutStatusPage() {
   const [checkout, setCheckout] = createSignal<Checkout | null>(null);
   const [status, setStatus] = createSignal<"pending" | "success" | "error">("pending");
 
-  const fetchCheckout = async (bypassCache = false) => {
+  const fetchCheckout = async (purchaseId: string, bypassCache = false) => {
     try {
-      const options = checkoutQueryOptions(params().purchaseId);
+      const options = checkoutQueryOptions(purchaseId);
       const data = await queryClient.fetchQuery(
         bypassCache ? { ...options, staleTime: 0 } : options
       );
@@ -39,9 +39,9 @@ function CheckoutStatusPage() {
 
   createEffect(
     () => params().purchaseId,
-    (_id) => {
+    (purchaseId) => {
       setStatus("pending");
-      fetchCheckout();
+      void fetchCheckout(purchaseId);
     }
   );
 
@@ -55,9 +55,12 @@ function CheckoutStatusPage() {
     }
   );
 
-  usePurchaseSocket(params().purchaseId, () => {
-    fetchCheckout(true);
-  });
+  usePurchaseSocket(
+    () => params().purchaseId,
+    (purchaseId) => {
+      void fetchCheckout(purchaseId, true);
+    },
+  );
 
   return (
     <Switch>

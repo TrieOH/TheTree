@@ -1,9 +1,7 @@
-import {
-  Show,
-  createSignal,
-  onSettled,
-} from "solid-js";
+import { Show, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
+
+import { useTheme } from "@/shared/lib/theme";
 
 import CheckIcon from "~icons/lucide/check";
 import MonitorIcon from "~icons/lucide/monitor";
@@ -27,72 +25,11 @@ const Sun =
 type Theme = "light" | "dark" | "system";
 
 export function AppearancePreferencesContent() {
-  const [theme, setTheme] =
-    createSignal<Theme>("system");
-
-  const applyTheme = (selectedTheme: Theme) => {
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-
-    const shouldUseDark =
-      selectedTheme === "dark" ||
-      (selectedTheme === "system" &&
-        prefersDark);
-
-    document.documentElement.classList.toggle(
-      "dark",
-      shouldUseDark,
-    );
-
-    document.documentElement.classList.toggle(
-      "light",
-      !shouldUseDark,
-    );
-  };
+  const { theme, setTheme } = useTheme();
 
   const chooseTheme = (nextTheme: Theme) => {
     setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    applyTheme(nextTheme);
   };
-
-  onSettled(() => {
-    const storedTheme =
-      localStorage.getItem("theme");
-
-    const initialTheme: Theme =
-      storedTheme === "light" ||
-        storedTheme === "dark" ||
-        storedTheme === "system"
-        ? storedTheme
-        : "system";
-
-    setTheme(initialTheme);
-    applyTheme(initialTheme);
-
-    const mediaQuery = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    );
-
-    const handleSystemThemeChange = () => {
-      if (theme() === "system") {
-        applyTheme("system");
-      }
-    };
-
-    mediaQuery.addEventListener(
-      "change",
-      handleSystemThemeChange,
-    );
-
-    return () => {
-      mediaQuery.removeEventListener(
-        "change",
-        handleSystemThemeChange,
-      );
-    };
-  });
 
   return (
     <div class="min-w-0">
@@ -161,7 +98,7 @@ function ThemeOption(props: {
   children: JSX.Element;
   onClick: () => void;
 }) {
-  const Icon = props.icon;
+  const Icon = untrack(() => props.icon);
 
   return (
     <button
@@ -169,7 +106,7 @@ function ThemeOption(props: {
       aria-pressed={
         props.selected ? "true" : "false"
       }
-      onClick={props.onClick}
+      onClick={() => props.onClick()}
       class={`group relative flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border-2 p-2 text-left transition-all duration-200 sm:block sm:p-0 ${props.selected
         ? "border-primary bg-primary/2.5 shadow-sm shadow-primary/10"
         : "border-border bg-background hover:border-foreground/20 hover:bg-muted/20"

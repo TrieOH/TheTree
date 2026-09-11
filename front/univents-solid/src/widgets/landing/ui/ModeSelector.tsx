@@ -38,6 +38,9 @@ export function ModeSelector(props: {
   };
 
   const changeMode = (mode: Mode) => {
+
+    if (mode === props.current) return;
+
     props.onChange(mode);
     requestAnimationFrame(() => {
       moveIndicator(mode);

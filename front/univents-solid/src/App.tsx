@@ -9,7 +9,9 @@ import {
   createQueryClient,
 } from "@trieoh/front-core/solid";
 import type { RouterSession } from "@trieoh/front-core/solid";
-import { AuthProvider } from "@trieoh/identityx-sdk-ts-solid";
+import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-solid";
+import { untrack } from "solid-js";
+import { ThemeProvider } from "@/shared/lib/theme";
 import "./App.css";
 
 const { authFetcher, publicFetcher } = createAppFetchers({
@@ -26,6 +28,7 @@ configureApiClient({
 // TanStack derives full typesafety for <Link>, params, and loader data
 // from this tree.
 import { routeTree } from "./routeTree.gen";
+import WaveSpinnerLoading from "./shared/ui/loader/WaveSpinnerLoading";
 
 const router = createRouter({
   routeTree,
@@ -49,12 +52,40 @@ declare module "@tanstack/solid-router" {
 export default function App() {
   return (
     <TanStackQueryProvider client={createQueryClient()}>
-      <AuthProvider
-        baseURL={import.meta.env.VITE_AUTH_API_URL}
-        projectId={import.meta.env.VITE_TRIEOH_AUTH_PROJECT_ID}
-      >
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider
+          baseURL={import.meta.env.VITE_AUTH_API_URL}
+          projectId={import.meta.env.VITE_TRIEOH_AUTH_PROJECT_ID}
+          fallback={
+            <div class="h-screen w-screen flex items-center justify-center">
+              <WaveSpinnerLoading text="Carregando..." />
+            </div>
+          }
+        >
+          <RouterHost />
+        </AuthProvider>
+      </ThemeProvider>
     </TanStackQueryProvider>
+  );
+}
+
+// <AuthProvider> only renders its children once the session has settled, so by
+// the time this mounts `isAuthenticated` is final. Seeding it into the router
+// context here makes it visible to the very first `beforeLoad`; otherwise the
+// guards run against `session: undefined` and bounce authenticated users to
+// /auth for a frame before <AuthContextUpdater> catches up.
+function RouterHost() {
+  const auth = useAuth();
+
+  return (
+    <RouterProvider
+      router={router}
+      context={{
+        session: {
+          service: auth.auth,
+          isAuthenticated: untrack(auth.isAuthenticated),
+        },
+      }}
+    />
   );
 }

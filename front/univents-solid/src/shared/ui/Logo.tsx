@@ -1,5 +1,7 @@
 import type { JSX } from '@solidjs/web';
 
+import { useTheme } from '@/shared/lib/theme';
+
 export interface LogoProps extends JSX.HTMLAttributes<HTMLDivElement> {
   variant?: 'complete' | 'icon' | 'responsive';
   theme?: 'light' | 'dark' | 'default' | 'auto';
@@ -10,15 +12,13 @@ export interface LogoProps extends JSX.HTMLAttributes<HTMLDivElement> {
 export default function Logo(props: LogoProps) {
   const variant = () => props.variant ?? 'responsive';
   const theme = () => props.theme ?? 'auto';
+  const { isDark } = useTheme();
+
   const dark = () => {
     if (theme() === 'dark') return true;
     if (theme() === 'light' || theme() === 'default') return false;
-    if (typeof window === 'undefined') return false;
 
-    return (
-      document.documentElement.classList.contains('dark') ||
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    );
+    return isDark();
   };
   const source = (logoVariant: 'complete' | 'icon') => {
     if (theme() === 'default') return `/logo-${logoVariant}-default.svg`;

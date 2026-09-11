@@ -20,6 +20,7 @@ import UserIcon from '~icons/lucide/user';
 
 import { useSessionActions } from '@/features/auths/hooks/use-session-actions';
 import { isAuthOnlyPath } from '@/features/auths/lib/auth-path';
+import { ownProfilePath } from '@/features/profile/lib/own-profile-path';
 import { Tooltip } from '@/shared/ui/Tooltip';
 
 const cn = (...classes: Array<string | false | null | undefined>) =>
@@ -441,6 +442,8 @@ export function NavigationDock(props: NavigationDockProps) {
     }
 
     if (!item.href || pathname() === item.href) return;
+
+    if (item.id === 'profile' && pathname() === ownProfilePath()) return;
 
     void navigate({
       to: item.href as never,

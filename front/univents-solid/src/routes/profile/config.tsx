@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
-import { createSignal, onSettled } from "solid-js";
+import { createSignal, onSettled, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
@@ -189,7 +189,7 @@ function AccordionTitle(props: {
   icon: IconComponent;
   title: string;
 }) {
-  const Icon = props.icon;
+  const Icon = untrack(() => props.icon);
 
   return (
     <span class="flex min-w-0 items-center gap-2">
@@ -209,7 +209,7 @@ function SectionHeading(props: {
   title: string;
   description: string;
 }) {
-  const Icon = props.icon;
+  const Icon = untrack(() => props.icon);
 
   return (
     <div class="mb-4 flex min-w-0 items-center gap-3 border-b border-border pb-4">

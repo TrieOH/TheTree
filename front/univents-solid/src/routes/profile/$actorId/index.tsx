@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/solid-router'
 import { useAuth } from '@trieoh/identityx-sdk-ts-solid';
 import { createMemo } from 'solid-js';
 import z from 'zod'
+import { setOwnProfilePath } from "@/features/profile/lib/own-profile-path";
 import { ProfileView } from "@/features/profile/ui/ProfileView";
 
 const PROFILE_TAB_TITLES: Record<string, string> = {
@@ -63,6 +64,12 @@ function RouteComponent() {
       });
     }
 
+    setOwnProfilePath(
+      response.data?.actor_id && response.data.actor_id === viewerActorId()
+        ? `/profile/${handle ?? identifier}`
+        : null,
+    );
+
     return response;
   };
 
@@ -74,6 +81,9 @@ function RouteComponent() {
       viewerActorId={viewerActorId()}
       activeTab={search().tab}
       onTabChange={(nextTab) => {
+
+        if (nextTab === search().tab) return;
+
         void navigate({
           to: "/profile/$actorId",
           params: {
