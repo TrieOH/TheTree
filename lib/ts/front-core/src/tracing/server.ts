@@ -25,6 +25,18 @@ const randomHex = (bytes: number): string =>
     Math.floor(Math.random() * 256).toString(16).padStart(2, "0"),
   ).join("");
 
+
+let warnedMissingCredentials = false;
+
+function warnMissingCredentials(env: TracesIngestEnv): void {
+  if (warnedMissingCredentials) return;
+  warnedMissingCredentials = true;
+  console.warn(
+    "[tracing] server spans are not being exported: set TRACES_OTLP_USER and " +
+    `TRACES_OTLP_PASSWORD (TRACES_ENABLED=${env.TRACES_ENABLED ?? "unset"})`,
+  );
+}
+
 function attributeValue(value: string | number | boolean) {
   if (typeof value === "number") {
     return Number.isInteger(value)
@@ -50,7 +62,10 @@ export async function emitServerSpan(
 
   const user = env.TRACES_OTLP_USER;
   const password = env.TRACES_OTLP_PASSWORD;
-  if (!user || !password) return;
+  if (!user || !password) {
+    warnMissingCredentials(env);
+    return;
+  }
 
   const match = event.traceparent?.match(TRACEPARENT);
   const traceId = match?.[2] ?? randomHex(16);

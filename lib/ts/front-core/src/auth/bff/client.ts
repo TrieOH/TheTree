@@ -3,7 +3,6 @@ import {
   type DefaultFetchResult,
 } from "@trieoh/envoy-fetch-ts";
 import {
-  createFetcher,
   type ApiResponse,
   type AuthCallbacks,
   type AuthService,
@@ -468,26 +467,6 @@ export function createBffProxyFetchers(
     },
   };
 }
-
-/** IdentityX client used when the app talks to the API without a BFF. */
-export const createDirectFetchers = (config: {
-  apiBaseURL: string;
-  authBaseURL?: string;
-}) => {
-  const authFetcher = createFetcher({
-    baseURL: config.apiBaseURL,
-    authBaseURL: config.authBaseURL,
-  });
-
-  return {
-    authFetcher,
-    authQueryFetcher: async <T>(path: string): Promise<T> => {
-      const result = await authFetcher.get<T>(path);
-      if (!result.success) throw result;
-      return result.data;
-    },
-  };
-};
 
 export type {
   ServerAuthResult,

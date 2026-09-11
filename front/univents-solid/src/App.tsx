@@ -13,6 +13,7 @@ import {
   createQueryClient,
 } from "@trieoh/front-core/solid";
 import type { RouterSession } from "@trieoh/front-core/solid";
+import { initBrowserTracing } from "@trieoh/front-core/tracing/browser";
 import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { untrack } from "solid-js";
 import { bffTransport } from "@/features/auths/api/bff-client";
@@ -20,6 +21,12 @@ import { ThemeProvider } from "@/shared/lib/theme";
 import "./App.css";
 
 const authProjectId = import.meta.env.VITE_TRIEOH_AUTH_PROJECT_ID;
+
+initBrowserTracing(
+  "univents-web",
+  import.meta.env.VITE_TRACING_ENABLED === "true",
+  [import.meta.env.VITE_API_URL].filter((url): url is string => !!url),
+);
 
 // Public traffic goes straight to the API; anything authenticated goes through
 // the BFF.

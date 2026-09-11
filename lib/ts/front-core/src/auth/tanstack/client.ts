@@ -2,7 +2,6 @@ import type { AuthProviderAdapter } from "@trieoh/identityx-sdk-ts-react";
 import {
   createBffAuthAdapter,
   createBffProxyFetchers,
-  createDirectFetchers,
   type BffClientOptions,
   type BffTransport,
 } from "../bff/client";
@@ -40,11 +39,8 @@ export interface IdentityXServerFunctions {
   request?: ServerFunction<ServerProxyRequest, ServerProxyResult>;
 }
 
-export interface TanStackIdentityXClientOptions extends BffClientOptions {
-  mode?: "bff" | "direct";
-  apiBaseURL?: string;
-  authBaseURL?: string;
-}
+/** Kept as a named alias so consumers have one thing to import. */
+export type TanStackIdentityXClientOptions = BffClientOptions;
 
 /**
  * Start-side transport: `{ data }`-shaped server functions behind the neutral
@@ -96,20 +92,6 @@ export function createTanStackIdentityXIntegration(
   },
   options: TanStackIdentityXClientOptions = {},
 ) {
-  if (options.mode === "direct") {
-    if (!options.apiBaseURL) {
-      throw new Error("IdentityX direct transport requires apiBaseURL");
-    }
-    return {
-      mode: "direct" as const,
-      authAdapter: undefined,
-      ...createDirectFetchers({
-        apiBaseURL: options.apiBaseURL,
-        authBaseURL: options.authBaseURL,
-      }),
-    };
-  }
-
   let invalidateSession = () => undefined;
   const baseAuthAdapter = createTanStackIdentityXAuthProviderAdapter(functions, options);
   const authAdapter: AuthProviderAdapter = {
@@ -128,7 +110,6 @@ export function createTanStackIdentityXIntegration(
     () => invalidateSession(),
   );
   return {
-    mode: "bff" as const,
     authAdapter,
     ...fetchers,
   };

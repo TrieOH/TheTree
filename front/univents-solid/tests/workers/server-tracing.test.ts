@@ -92,10 +92,18 @@ describe("server span emission", () => {
   });
 
   it("never throws when tracing is off or the collector is unreachable", async () => {
+    // This case is the first one in the file to reach the missing-credentials
+    // branch; the warning is emitted once per isolate, so keep it here.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const spy = captureSpan();
 
     await emitServerSpan({ name: "bff.login", durationMs: 1 }, { ...env, TRACES_ENABLED: "false" });
+    expect(warn).not.toHaveBeenCalled();
+
     await emitServerSpan({ name: "bff.login", durationMs: 1 }, { TRACES_ENABLED: "true" });
+    // No credentials: the span is dropped, but loudly — and only once.
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain("TRACES_OTLP_USER");
 
     expect(spy).not.toHaveBeenCalled();
 
@@ -105,5 +113,6 @@ describe("server span emission", () => {
     await expect(
       emitServerSpan({ name: "bff.login", durationMs: 1 }, env),
     ).resolves.toBeUndefined();
+    warn.mockRestore();
   });
 });
