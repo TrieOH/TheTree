@@ -101,10 +101,8 @@ function LiveCatalog(props: {
   eventSlug: string;
   catalog: Catalog;
 }) {
-  const { editionId, initialStock } = untrack(() => ({
-    editionId: props.editionId,
-    initialStock: props.catalog.stock,
-  }));
+  const editionId = props.editionId;
+  const initialStock = props.catalog.stock;
 
   const stock = useInventoryStream(editionId, initialStock);
 

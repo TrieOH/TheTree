@@ -89,12 +89,12 @@ function StoreContent(props: {
   initialTab: "tickets" | "products";
   heldTicket: MyTicket | null;
 }) {
-  const { editionId, initialStock, initialTab, eventSlug } = untrack(() => ({
+  const { editionId, initialStock, initialTab, eventSlug } = (() => ({
     editionId: props.edition.id,
     initialStock: props.initialStock,
     initialTab: props.initialTab,
     eventSlug: props.event.slug,
-  }));
+  }))();
   const [tab, setTab] = createSignal(initialTab);
   const stock = useInventoryStream(editionId, initialStock);
   const stockById = createMemo(
@@ -171,24 +171,8 @@ function StoreContent(props: {
       </div>
       <EventCart
         editionId={props.edition.id}
-        checkoutHref={`/events/${props.event.slug}/checkout`}
+        eventSlug={props.event.slug}
       />
     </main>
-  );
-}
-
-function currentEdition(editions: Edition[]) {
-  const now = Date.now();
-  const sorted = [...editions].sort((a, b) =>
-    a.starts_at.localeCompare(b.starts_at),
-  );
-  return (
-    sorted.find(
-      (edition) =>
-        new Date(edition.starts_at).getTime() <= now &&
-        new Date(edition.ends_at).getTime() >= now,
-    ) ??
-    sorted.find((edition) => new Date(edition.starts_at).getTime() > now) ??
-    sorted.at(-1)
   );
 }

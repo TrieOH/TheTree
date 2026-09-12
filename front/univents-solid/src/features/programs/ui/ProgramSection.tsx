@@ -130,6 +130,10 @@ export function ProgramSection(props: {
     />
   );
 
+  if (days.length === 0) {
+    return complete ? <p class="py-10 text-center text-muted-foreground">Nenhuma atividade programada.</p> : null;
+  }
+
   return (
     <section class="w-full py-10">
       {!complete && <div class="mb-8 text-center">
@@ -140,9 +144,7 @@ export function ProgramSection(props: {
           Confira as atividades e checkpoints do evento.
         </p>
       </div>}
-      {days.length === 0 ? (
-        <p class="mt-8 text-muted-foreground">Nenhuma atividade programada.</p>
-      ) : complete ? (
+      {complete ? (
         <Carousel
           items={days}
           itemMinWidth={320}

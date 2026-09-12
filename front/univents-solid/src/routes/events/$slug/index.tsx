@@ -43,7 +43,7 @@ function EventPage() {
 }
 
 function EventContent(props: { event: EventI | null }) {
-  const event = untrack(() => props.event);
+  const event = props.event;
   if (!event) return <div class="p-12 text-center">Evento não encontrado.</div>;
   return (
     <main class="min-h-screen bg-background pb-24">
@@ -97,14 +97,19 @@ function EditionDetails(props: { event: EventI }) {
         </div>
       }
     >
-      <EditionBody event={props.event} editions={editions()} />
+      <Show
+        when={editionsQuery().isSuccess}
+        fallback={<div class="mt-6 grid gap-4 md:grid-cols-2"><div class="h-28 animate-pulse rounded-xl bg-muted" /><div class="h-28 animate-pulse rounded-xl bg-muted" /></div>}
+      >
+        <EditionBody event={props.event} editions={editions()} />
+      </Show>
     </Loading>
   );
 }
 
 function EditionBody(props: { event: EventI; editions: EditionI[] }) {
   const now = Date.now();
-  const editions = untrack(() => props.editions);
+  const editions = props.editions;
   const sorted = [...editions].sort((a, b) =>
     a.starts_at.localeCompare(b.starts_at),
   );
@@ -203,7 +208,7 @@ function EditionBody(props: { event: EventI; editions: EditionI[] }) {
       {active && (
         <EventCart
           editionId={active.id}
-          checkoutHref={`/events/${props.event.slug}/checkout`}
+          eventSlug={props.event.slug}
         />
       )}
     </>
