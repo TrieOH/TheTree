@@ -19,10 +19,8 @@ import {
   ManageEventDialog,
   type ManageEventValues,
 } from "@/features/events/ui/ManageEventDialog";
+import { AdminCreateEventCard } from "@/features/events/ui/AdminCreateEventCard";
 
-// The icon casts are the app's existing convention: `unplugin-icons` resolves
-// the icon at build time and this package only ever sees an element. The props
-// are declared because casting to `() => JSX.Element` drops them.
 const Calendar = CalendarIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
@@ -53,7 +51,6 @@ function AdminEventsPage(): JSX.Element {
       queryClient.fetchQuery(allJoinedEventsQueryOptions()),
     ]);
 
-    // Owned first, then the ones the actor only takes part in, without repeats.
     const seen = new Set<string>();
     return [...owned, ...joined].filter((event) => {
       if (seen.has(event.id)) return false;
@@ -62,8 +59,6 @@ function AdminEventsPage(): JSX.Element {
     });
   });
 
-  // Named instead of inline: an `async` arrow inside JSX trips the
-  // "tracked scope should not be async" diagnostic. The dialog already trims.
   const saveEvent = async (values: ManageEventValues): Promise<boolean> => {
     const current = editing();
     const payload = {
@@ -111,8 +106,6 @@ function AdminEventsPage(): JSX.Element {
         onCreate={() => setCreating(true)}
       />
 
-      {/* Keyed so switching events remounts the form instead of needing a
-          re-seed effect inside it. */}
       <Show when={editing()} keyed fallback={
         <ManageEventDialog
           open={creating()}
@@ -143,8 +136,7 @@ function AdminEventsContent(props: {
   onEdit: (event: EventI) => void;
   onCreate: () => void;
 }): JSX.Element {
-  // Filtering only: sorting and pagination belong to the container, same split
-  // as the React admin screen.
+
   const visible = createMemo(() => {
     const search = props.filter.trim().toLowerCase();
     if (!search) return props.events;
@@ -160,8 +152,12 @@ function AdminEventsContent(props: {
     );
   });
 
-  const createButton = (
-    <Button size="sm" class="gap-2 rounded-sm py-4" onClick={() => props.onCreate()}>
+  const emptyStateAction = (
+    <Button
+      size="sm"
+      class="gap-2 rounded-sm py-4"
+      onClick={() => props.onCreate()}
+    >
       <Plus class="size-4" />
       Novo evento
     </Button>
@@ -172,41 +168,65 @@ function AdminEventsContent(props: {
       items={visible()}
       layout="grid"
       minItemWidth="16rem"
-      maxRows={2}
-      gap="6"
+      maxRows={(columns) => (columns === 1 ? 8 : 2)}
+      gap="2"
       sort={props.sort}
       onSortChange={props.onSortChange}
       sortFields={[
         {
           key: "created_at",
-          label: "Criado em",
+          label: "Data de criação",
+          ascLabel: "Mais antigos primeiro",
+          descLabel: "Mais recentes primeiro",
           comparator: (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime(),
         },
-        { key: "full_name", label: "Nome" },
-        { key: "slug", label: "Slug" },
+        {
+          key: "full_name",
+          label: "Nome",
+          ascLabel: "A → Z",
+          descLabel: "Z → A",
+        },
+        {
+          key: "slug",
+          label: "Slug",
+          ascLabel: "A → Z",
+          descLabel: "Z → A",
+        },
         {
           key: "status",
           label: "Status",
-          comparator: (a, b) => STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status],
+          ascLabel: "Rascunho primeiro",
+          descLabel: "Descontinuado primeiro",
+          comparator: (a, b) =>
+            STATUS_SORT_ORDER[a.status] -
+            STATUS_SORT_ORDER[b.status],
         },
       ]}
       filterValue={props.filter}
       onFilterChange={props.onFilterChange}
       filterPlaceholder="Buscar por nome, slug, sigla ou e-mail..."
       itemLabel="eventos"
-      headerActions={createButton}
       renderItems={(slice, options) => (
-        <For each={slice}>
-          {(event, index) => (
-            <AdminEventCard
-              event={event}
-              index={index()}
-              animate={options.animate}
-              onEdit={props.onEdit}
-            />
-          )}
-        </For>
+        <>
+          <AdminCreateEventCard
+            index={0}
+            animate={options.animate}
+            onCreate={props.onCreate}
+          />
+
+          <For each={slice}>
+            {(event, index) => (
+              <AdminEventCard
+                event={event}
+                index={index() + 1}
+                animate={options.animate}
+                onEdit={props.onEdit}
+              />
+            )}
+          </For>
+        </>
       )}
       emptyState={
         <EmptyState
@@ -215,7 +235,7 @@ function AdminEventsContent(props: {
           eyebrow="Eventos"
           title="Nenhum evento encontrado"
           description="Crie um evento para começar a organizar o dashboard do admin."
-          action={createButton}
+          action={emptyStateAction}
         />
       }
     />

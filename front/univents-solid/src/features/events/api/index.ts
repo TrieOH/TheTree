@@ -30,7 +30,6 @@ export const publicEventBySlugQueryOptions = (slug: string) => ({
   queryFn: () => getPublicEventBySlugFn(slug),
 });
 
-// --- admin -------------------------------------------------------------
 
 const getOwnedEventsFn = async () =>
   listOwnedEvents({ public: false }).then(orvalData<EventI[]>);

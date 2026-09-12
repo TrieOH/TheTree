@@ -152,6 +152,24 @@ describe("PaginatedContainer", () => {
     expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled();
   });
 
+  it("sizes the page from the column count when maxRows is a function", () => {
+    // jsdom has no layout, so the measured column count stays 1 — the branch a
+    // phone hits. Two rows there would be two items, so the caller asks for more.
+    render(() => (
+      <PaginatedContainer
+        items={[{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }, { id: "e" }]}
+        layout="grid"
+        minItemWidth="16rem"
+        maxRows={(columns) => (columns === 1 ? 4 : 2)}
+        itemLabel="eventos"
+        renderItems={(slice) => <ul>{slice.map((item) => <li>{item.id}</li>)}</ul>}
+      />
+    ));
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.getByText(/Mostrando 1–4 de 5 eventos/)).toBeInTheDocument();
+  });
+
   it("shows the empty state instead of an empty grid", () => {
     render(() => (
       <PaginatedContainer
