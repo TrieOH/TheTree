@@ -6,9 +6,11 @@ import {
 } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
+import type { BadgeProfileGroups, Certification } from "@trieoh/univents-api/schemas";
+import { profileKeys } from "@/features/profile/api/query-keys";
 import GlobeIcon from "~icons/lucide/globe";
 import MailIcon from "~icons/lucide/mail";
 import GithubIcon from "~icons/lucide/github";
@@ -59,14 +61,16 @@ export interface ProfileViewProps {
 }
 
 export function ProfileView(props: ProfileViewProps) {
-  const queryClient = useQueryClient();
-  const result = createMemo(async () => {
-    const response = props.actorId
-      ? await props.loadProfile(props.actorId)
-      : undefined;
-
-    return response?.success ? response : null;
-  });
+  const profileQuery = useQuery(() => ({
+    queryKey: profileKeys.detail(props.actorId),
+    enabled: Boolean(props.actorId),
+    queryFn: async () => {
+      if (!props.actorId) return null;
+      const response = await props.loadProfile(props.actorId);
+      return response.success ? response : null;
+    },
+  }));
+  const result = createMemo(() => profileQuery().data);
   return (
     <Loading fallback={<ProfileSkeleton />}>
       <Show when={result()} fallback={<MissingPublicProfile />}>
@@ -105,7 +109,6 @@ export function ProfileView(props: ProfileViewProps) {
                     tab={props.activeTab as Exclude<Tab, "about">}
                     actorId={data()?.actor_id ?? ""}
                     ownProfile={own()}
-                    queryClient={queryClient}
                   />
                 }
               >
@@ -213,21 +216,25 @@ function ProfileTabContent(props: {
   tab: Exclude<Tab, "about">;
   actorId: string;
   ownProfile: boolean;
-  queryClient: ReturnType<typeof useQueryClient>;
 }) {
-  const data = createMemo(async () => {
-    const tab = props.tab;
-    const actorId = props.actorId;
-    const ownProfile = props.ownProfile;
-    if (tab === "badges") {
-      return props.queryClient.fetchQuery(userBadgesQueryOptions(actorId));
-    }
-    if (!ownProfile) return [];
-    if (tab === "certificates") {
-      return props.queryClient.fetchQuery(myCertificationsQueryOptions());
-    }
-    return [];
-  });
+  const query = useQuery<BadgeProfileGroups | Certification[]>(() => ({
+    queryKey: profileKeys.tab(props.tab, props.actorId, props.ownProfile),
+    enabled: props.tab === "badges" || (props.ownProfile && props.tab === "certificates"),
+    queryFn: () => {
+      const tab = props.tab;
+      const actorId = props.actorId;
+      const ownProfile = props.ownProfile;
+      if (tab === "badges") {
+        return userBadgesQueryOptions(actorId).queryFn();
+      }
+      if (!ownProfile) return [];
+      if (tab === "certificates") {
+        return myCertificationsQueryOptions().queryFn();
+      }
+      return [];
+    },
+  }));
+  const data = createMemo(() => query().data);
 
   // Purchases fetch inside <PurchasesContent>, which owns its own skeleton.
   // Wrapping it here would flash a second, differently shaped one first.

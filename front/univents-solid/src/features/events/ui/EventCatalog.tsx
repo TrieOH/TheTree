@@ -1,4 +1,4 @@
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
 import type {
   MyParticipation,
   MyTicket,
@@ -10,13 +10,14 @@ import type {
   TicketType,
 } from "@trieoh/univents-api/schemas";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
-import { Loading, createMemo, untrack } from "solid-js";
+import { Loading, Show, createMemo, untrack } from "solid-js";
 import {
   productsQueryOptions,
   productVariantsQueryOptions,
   storeStockQueryOptions,
 } from "@/features/products/api";
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
+import { eventKeys } from "@/features/events/api/query-keys";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
 import {
   myParticipationsQueryOptions,
@@ -33,56 +34,64 @@ import { TicketsSection } from "@/features/tickets/ui/TicketsSection";
 export function EventCatalog(props: { editionId: string; eventSlug: string }) {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
-  const catalog = createMemo(async () => {
-    const authenticated = isAuthenticated();
-    const [
-      tickets,
-      programs,
-      occurrences,
-      products,
-      stock,
-      heldTicket,
-      participations,
-    ] = await Promise.all([
-      queryClient.fetchQuery(ticketsQueryOptions(props.editionId)),
-      queryClient.fetchQuery(programsQueryOptions(props.editionId)),
-      queryClient.fetchQuery(occurrencesQueryOptions(props.editionId)),
-      queryClient.fetchQuery(productsQueryOptions(props.editionId)),
-      queryClient.fetchQuery(storeStockQueryOptions(props.editionId)),
-      authenticated
-        ? queryClient.fetchQuery(myTicketQueryOptions(props.editionId))
-        : null,
-      authenticated
-        ? queryClient.fetchQuery(myParticipationsQueryOptions(props.editionId))
-        : [],
-    ]);
-    const productsWithVariants = await Promise.all(
-      products.map(async (product) => ({
-        product,
-        variants: await queryClient.fetchQuery(
-          productVariantsQueryOptions(product.id),
-        ),
-      })),
-    );
-    return {
-      tickets,
-      programs,
-      occurrences,
-      productsWithVariants,
-      stock,
-      heldTicket,
-      participations,
-      authenticated,
-    };
-  });
+  const catalogQuery = useQuery(() => ({
+    queryKey: eventKeys.catalog(props.editionId, isAuthenticated()),
+    queryFn: async () => {
+      const authenticated = isAuthenticated();
+      const [
+        tickets,
+        programs,
+        occurrences,
+        products,
+        stock,
+        heldTicket,
+        participations,
+      ] = await Promise.all([
+        queryClient.fetchQuery(ticketsQueryOptions(props.editionId)),
+        queryClient.fetchQuery(programsQueryOptions(props.editionId)),
+        queryClient.fetchQuery(occurrencesQueryOptions(props.editionId)),
+        queryClient.fetchQuery(productsQueryOptions(props.editionId)),
+        queryClient.fetchQuery(storeStockQueryOptions(props.editionId)),
+        authenticated
+          ? queryClient.fetchQuery(myTicketQueryOptions(props.editionId))
+          : null,
+        authenticated
+          ? queryClient.fetchQuery(myParticipationsQueryOptions(props.editionId))
+          : [],
+      ]);
+      const productsWithVariants = await Promise.all(
+        products.map(async (product) => ({
+          product,
+          variants: await queryClient.fetchQuery(
+            productVariantsQueryOptions(product.id),
+          ),
+        })),
+      );
+      return {
+        tickets,
+        programs,
+        occurrences,
+        productsWithVariants,
+        stock,
+        heldTicket,
+        participations,
+        authenticated,
+      };
+    },
+  }));
+  const catalog = createMemo(() => catalogQuery().data);
 
   return (
     <Loading fallback={<CatalogSkeleton />}>
-      <LiveCatalog
-        editionId={props.editionId}
-        eventSlug={props.eventSlug}
-        catalog={catalog()}
-      />
+      <Show when={catalog()}>
+        {(loaded) => (
+          <LiveCatalog
+            editionId={props.editionId}
+            eventSlug={props.eventSlug}
+            catalog={loaded()}
+          />
+        )}
+      </Show>
     </Loading>
   );
 }
@@ -96,7 +105,9 @@ function LiveCatalog(props: {
     editionId: props.editionId,
     initialStock: props.catalog.stock,
   }));
+
   const stock = useInventoryStream(editionId, initialStock);
+
   return (
     <>
       <TicketsSection

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
-import { Loading, createMemo, untrack } from "solid-js";
+import { useQuery } from "@trieoh/front-core-solid";
+import { Loading, Show, createMemo, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
@@ -28,14 +28,17 @@ export const Route = createFileRoute("/events/$slug/")({
 
 function EventPage() {
   const params = Route.useParams();
-  const queryClient = useQueryClient();
-  const event = createMemo(() =>
-    queryClient.fetchQuery(publicEventBySlugQueryOptions(params().slug)),
-  );
+  const eventQuery = useQuery(publicEventBySlugQueryOptions(params().slug));
+  const event = createMemo(() => eventQuery().data);
   return (
-    <Loading fallback={<div class="min-h-screen animate-pulse bg-muted" />}>
-      <EventContent event={event()} />
-    </Loading>
+    <Show
+      when={eventQuery().isSuccess}
+      fallback={<div class="min-h-screen animate-pulse bg-muted" />}
+    >
+      <Show when={event()} fallback={<div class="p-12 text-center">Evento não encontrado.</div>}>
+        {(loaded) => <EventContent event={loaded()} />}
+      </Show>
+    </Show>
   );
 }
 
@@ -83,10 +86,8 @@ function EventContent(props: { event: EventI | null }) {
 }
 
 function EditionDetails(props: { event: EventI }) {
-  const queryClient = useQueryClient();
-  const editions = createMemo(() =>
-    queryClient.fetchQuery(allPublicEditionsQueryOptions(props.event.id)),
-  );
+  const editionsQuery = useQuery(allPublicEditionsQueryOptions(props.event.id));
+  const editions = createMemo(() => editionsQuery().data ?? []);
   return (
     <Loading
       fallback={

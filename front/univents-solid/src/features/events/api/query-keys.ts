@@ -5,6 +5,10 @@ export const eventKeys = {
   /** Events the current actor owns or is a member of (admin list). */
   ownedLists: () => [...eventKeys.lists(), "owned"] as const,
   joinedLists: () => [...eventKeys.lists(), "joined"] as const,
+  catalog: (editionId: string, authenticated: boolean) =>
+    [...eventKeys.all, "catalog", editionId, authenticated] as const,
+  store: (slug: string, authenticated: boolean) =>
+    [...eventKeys.all, "store", slug, authenticated] as const,
   details: () => [...eventKeys.all, "detail"] as const,
   detail: {
     publicBySlug: (slug: string) =>

@@ -6,10 +6,7 @@ import type {
   ProgramParticipationStatus,
 } from "@trieoh/univents-api/schemas";
 import { For, createSignal, untrack } from "solid-js";
-import {
-  deregisterOccurrenceFn,
-  registerOccurrenceFn,
-} from "@/features/programs/api";
+import { useDeregisterOccurrenceMutation, useRegisterOccurrenceMutation } from "@/features/programs/api/mutations";
 import { toast } from "@/shared/ui/toast";
 import { ProgramDayCard } from "./ProgramDayCard";
 import { Carousel } from "@/widgets/carousel/Carousel";
@@ -80,6 +77,8 @@ export function ProgramSection(props: {
     ),
   );
   const [pending, setPending] = createSignal<string>();
+  const registerMutation = useRegisterOccurrenceMutation();
+  const deregisterMutation = useDeregisterOccurrenceMutation();
   const toggle = async (occurrenceId: string, registered: boolean) => {
     if (!authenticated) {
       window.location.href = `/auth?redirect=${encodeURIComponent(
@@ -94,8 +93,8 @@ export function ProgramSection(props: {
     setPending(occurrenceId);
     try {
       const participation = registered
-        ? await deregisterOccurrenceFn(occurrenceId)
-        : await registerOccurrenceFn(occurrenceId);
+        ? await deregisterMutation.mutateAsync({ editionId: props.editionId, occurrenceId })
+        : await registerMutation.mutateAsync({ editionId: props.editionId, occurrenceId });
       setStatuses((current) => {
         const next = new Map(current);
         next.set(occurrenceId, participation.status);

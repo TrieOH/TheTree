@@ -9,12 +9,11 @@ import {
 } from "solid-js";
 import { Link } from "@tanstack/solid-router";
 import type { Purchase } from "@trieoh/univents-api/schemas";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import QRCode from "qrcode";
 
 import { formatMoney } from "@/shared/lib/money";
 import { purchaseCatalogQueryOptions } from "../api";
-import type { PurchaseCatalog } from "../api/purchase-catalog";
 
 import LucideAlertTriangleRaw from "~icons/lucide/alert-triangle";
 import LucideCheckCircle2Raw from "~icons/lucide/check-circle-2";
@@ -83,17 +82,8 @@ const statusCopy = {
 } as const;
 
 export default function CheckoutPage(props: { purchase: Purchase }) {
-  const queryClient = useQueryClient();
-
-  const catalogData = createMemo(() =>
-    queryClient
-      .fetchQuery(purchaseCatalogQueryOptions(props.purchase))
-      .catch((error) => {
-        console.error("Erro ao carregar catálogo da compra:", error);
-
-        return {} as PurchaseCatalog;
-      }),
-  );
+  const catalogQuery = useQuery(purchaseCatalogQueryOptions(props.purchase));
+  const catalogData = () => catalogQuery().data ?? {};
 
   const [copied, setCopied] = createSignal(false);
   const [qrImage, setQrImage] = createSignal<string>();

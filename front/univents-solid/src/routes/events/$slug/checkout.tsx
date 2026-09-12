@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import {
   For,
@@ -9,10 +9,8 @@ import {
   createSignal,
   untrack,
 } from "solid-js";
-import { allPublicEditionsQueryOptions } from "@/features/editions/api";
-import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import { useCart } from "@/features/products/hooks/use-cart";
-import { createCheckout } from "@/features/purchases/api";
+import { useCreateCheckoutMutation } from "@/features/purchases/api/mutations";
 import {
   checkoutRequest,
   type CheckoutPayment,
@@ -20,6 +18,8 @@ import {
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { toast } from "@/shared/ui/toast";
 import { myTicketQueryOptions } from "@/features/tickets/api";
+import { checkoutPageQueryOptions, type CheckoutPageData } from "@/features/purchases/api";
+
 
 export const Route = createFileRoute("/events/$slug/checkout")({
   beforeLoad: requireAuth,
@@ -29,33 +29,11 @@ export const Route = createFileRoute("/events/$slug/checkout")({
 function CheckoutPage() {
   const params = Route.useParams();
   const navigate = Route.useNavigate();
-  const queryClient = useQueryClient();
+  const submitCheckoutMutation = useCreateCheckoutMutation();
   const { auth } = useAuth();
   const [submitting, setSubmitting] = createSignal(false);
-  const data = createMemo(async () => {
-    const event = await queryClient.fetchQuery(
-      publicEventBySlugQueryOptions(params().slug),
-    );
-    if (!event) return null;
-    const editions = await queryClient.fetchQuery(
-      allPublicEditionsQueryOptions(event.id),
-    );
-    const now = Date.now();
-    const sorted = [...editions].sort((a, b) =>
-      a.starts_at.localeCompare(b.starts_at),
-    );
-    const edition =
-      sorted.find(
-        (candidate) =>
-          new Date(candidate.starts_at).getTime() <= now &&
-          new Date(candidate.ends_at).getTime() >= now,
-      ) ??
-      sorted.find((candidate) => new Date(candidate.starts_at).getTime() > now) ??
-      sorted.at(-1);
-    if (!edition) return null;
-    const heldTicket = await queryClient.fetchQuery(myTicketQueryOptions(edition.id));
-    return { event, edition, heldTicket };
-  });
+  const dataQuery = useQuery<CheckoutPageData | null>(() => checkoutPageQueryOptions(params().slug));
+  const data = createMemo(() => dataQuery().data);
   const submitCheckout = async (
     loaded: NonNullable<Awaited<ReturnType<typeof data>>>,
     items: ReturnType<typeof useCart>["items"] extends () => infer T
@@ -71,15 +49,15 @@ function CheckoutPage() {
     }
     setSubmitting(true);
     try {
-      const result = await createCheckout(
-        loaded.edition.id,
-        checkoutRequest(
+      const result = await submitCheckoutMutation.mutateAsync({
+        editionId: loaded.edition.id,
+        data: checkoutRequest(
           items,
           { id: actor.id, email: actor.email },
           payment,
           gift,
         ),
-      );
+      });
       sessionStorage.setItem(
         `purchase-ws:${result.purchase_id}`,
         result.ws_token,
@@ -113,9 +91,9 @@ function CheckoutPage() {
             eventName={loaded().event.full_name}
             slug={loaded().event.slug}
             submitting={submitting()}
-          accountEmail={auth.profile()?.email ?? ""}
-          heldTicket={Boolean(loaded().heldTicket)}
-          paymentsConfigured={Boolean(loaded().event.payssage_public_key)}
+            accountEmail={auth.profile()?.email ?? ""}
+            heldTicket={Boolean(loaded().heldTicket)}
+            paymentsConfigured={Boolean(loaded().event.payssage_public_key)}
             submit={(items, payment, gift) =>
               submitCheckout(loaded(), items, payment, gift)
             }
@@ -171,11 +149,11 @@ function CheckoutForm(props: {
     const payment =
       cart.total() > 0
         ? {
-            method: "pix" as const,
-            email: payerEmail().trim(),
-            identificationType: documentType(),
-            identificationNumber: documentNumber().replace(/\D/g, ""),
-          }
+          method: "pix" as const,
+          email: payerEmail().trim(),
+          identificationType: documentType(),
+          identificationNumber: documentNumber().replace(/\D/g, ""),
+        }
         : undefined;
     void props.submit(
       cart.items(),
@@ -230,11 +208,11 @@ function CheckoutForm(props: {
                 )}
               </For>
             </section>
-              <Show when={hasTicket()}>
-                <section class="rounded-md border border-border bg-card p-5">
-                  <Show when={props.heldTicket && !gift()}>
-                    <p class="mb-4 border-l-2 border-amber-500 bg-amber-500/10 p-3 text-sm text-amber-700">Você já possui um ingresso para esta edição.</p>
-                  </Show>
+            <Show when={hasTicket()}>
+              <section class="rounded-md border border-border bg-card p-5">
+                <Show when={props.heldTicket && !gift()}>
+                  <p class="mb-4 border-l-2 border-amber-500 bg-amber-500/10 p-3 text-sm text-amber-700">Você já possui um ingresso para esta edição.</p>
+                </Show>
                 <button
                   type="button"
                   aria-pressed={gift() ? "true" : "false"}
@@ -320,9 +298,9 @@ function CheckoutForm(props: {
                   />
                 </div>
               </Show>
-                <button
-                  type="button"
-                  disabled={props.submitting || (cart.total() > 0 && !props.paymentsConfigured)}
+              <button
+                type="button"
+                disabled={props.submitting || (cart.total() > 0 && !props.paymentsConfigured)}
                 class="h-12 w-full rounded-md bg-primary font-semibold text-primary-foreground disabled:opacity-50"
                 onClick={finish}
               >
@@ -331,10 +309,10 @@ function CheckoutForm(props: {
                   : cart.total()
                     ? "Gerar QR Code Pix"
                     : "Finalizar pedido gratuito"}
-                </button>
-                <Show when={cart.total() > 0 && !props.paymentsConfigured}>
-                  <p class="text-sm text-destructive">Este evento ainda não configurou o recebimento de pagamentos.</p>
-                </Show>
+              </button>
+              <Show when={cart.total() > 0 && !props.paymentsConfigured}>
+                <p class="text-sm text-destructive">Este evento ainda não configurou o recebimento de pagamentos.</p>
+              </Show>
               <p class="text-center text-xs text-muted-foreground">
                 Pagamento protegido · status em tempo real
               </p>

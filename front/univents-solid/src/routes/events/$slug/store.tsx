@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import type {
   Edition,
@@ -17,21 +17,11 @@ import {
   createSignal,
   untrack,
 } from "solid-js";
-import { allPublicEditionsQueryOptions } from "@/features/editions/api";
-import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
-import {
-  productsQueryOptions,
-  productVariantsQueryOptions,
-  storeStockQueryOptions,
-} from "@/features/products/api";
+import { storePageQueryOptions } from "@/features/products/api";
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductCard } from "@/features/products/ui/ProductCard";
-import {
-  myTicketQueryOptions,
-  ticketsQueryOptions,
-} from "@/features/tickets/api";
 import { TicketCard } from "@/features/tickets/ui/TicketCard";
 
 export const Route = createFileRoute("/events/$slug/store")({
@@ -50,41 +40,12 @@ function StorePage() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
-  const data = createMemo(async () => {
-    const event = await queryClient.fetchQuery(
-      publicEventBySlugQueryOptions(params().slug),
-    );
-    if (!event) return null;
-    const editions = await queryClient.fetchQuery(
-      allPublicEditionsQueryOptions(event.id),
-    );
-    const edition = currentEdition(editions);
-    if (!edition) return { event, edition: null };
-    const [tickets, products, stock, heldTicket] = await Promise.all([
-      queryClient.fetchQuery(ticketsQueryOptions(edition.id)),
-      queryClient.fetchQuery(productsQueryOptions(edition.id)),
-      queryClient.fetchQuery(storeStockQueryOptions(edition.id)),
-      isAuthenticated()
-        ? queryClient.fetchQuery(myTicketQueryOptions(edition.id))
-        : null,
-    ]);
-    const productItems = await Promise.all(
-      products.map(async (product) => ({
-        product,
-        variants: await queryClient.fetchQuery(
-          productVariantsQueryOptions(product.id),
-        ),
-      })),
-    );
-    return {
-      event,
-      edition,
-      tickets,
-      products: productItems,
-      stock,
-      heldTicket,
-    };
-  });
+  const dataQuery = useQuery(() => storePageQueryOptions(
+    params().slug,
+    isAuthenticated(),
+    queryClient,
+  ));
+  const data = createMemo(() => dataQuery().data);
 
   return (
     <Loading fallback={<main class="min-h-screen animate-pulse bg-muted" />}>

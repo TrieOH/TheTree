@@ -11,6 +11,8 @@ export {
   QueryError,
   queryError,
   useQueryClient,
+  useMutation,
+  useQuery,
 } from "./providers/tanstack-query"
 export type { QueryClientConfig } from "./providers/tanstack-query"
 export type { RouterSession } from "./providers/auth-context"

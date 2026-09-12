@@ -1,6 +1,6 @@
 import { createSignal, Switch, Match, createEffect } from "solid-js";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { checkoutQueryOptions } from "@/features/purchases/api";
 import { usePurchaseSocket } from "@/features/purchases/hooks/use-purchase-socket";
@@ -15,33 +15,15 @@ export const Route = createFileRoute("/checkouts/$purchaseId")({
 
 function CheckoutStatusPage() {
   const params = Route.useParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  const [checkout, setCheckout] = createSignal<Checkout | null>(null);
-  const [status, setStatus] = createSignal<"pending" | "success" | "error">("pending");
-
-  const fetchCheckout = async (purchaseId: string, bypassCache = false) => {
-    try {
-      const options = checkoutQueryOptions(purchaseId);
-      const data = await queryClient.fetchQuery(
-        bypassCache ? { ...options, staleTime: 0 } : options
-      );
-
-      if (!data) throw new Error("Checkout não retornado");
-
-      setCheckout(data);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    }
-  };
+  const navigate = Route.useNavigate();
+  const checkoutQuery = useQuery(() => checkoutQueryOptions(params().purchaseId));
+  const checkout = () => checkoutQuery().data;
+  const status = () => checkoutQuery().isError ? "error" : checkoutQuery().isPending ? "pending" : "success";
 
   createEffect(
     () => params().purchaseId,
     (purchaseId) => {
-      setStatus("pending");
-      void fetchCheckout(purchaseId);
+      void purchaseId;
     }
   );
 
@@ -58,7 +40,7 @@ function CheckoutStatusPage() {
   usePurchaseSocket(
     () => params().purchaseId,
     (purchaseId) => {
-      void fetchCheckout(purchaseId, true);
+      void checkoutQuery().refetch();
     },
   );
 

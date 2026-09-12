@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { Button, EmptyState, PaginatedContainer, type SortState } from "@trieoh/ui-solid";
 import { For, Loading, Show, createMemo, createSignal } from "solid-js";
 
@@ -10,9 +10,8 @@ import PlusIcon from "~icons/lucide/plus";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
-  createEventFn,
-  patchEventFn,
 } from "@/features/events/api";
+import { useCreateEventMutation, usePatchEventMutation } from "@/features/events/api/mutations";
 import type { EventI } from "@/features/events/model";
 import { AdminEventCard } from "@/features/events/ui/AdminEventCard";
 import {
@@ -36,7 +35,6 @@ const STATUS_SORT_ORDER: Record<EventI["status"], number> = {
 };
 
 function AdminEventsPage(): JSX.Element {
-  const queryClient = useQueryClient();
   const [filter, setFilter] = createSignal("");
   const [sort, setSort] = createSignal<SortState<EventI>>({
     field: "created_at",
@@ -44,12 +42,15 @@ function AdminEventsPage(): JSX.Element {
   });
   const [editing, setEditing] = createSignal<EventI | null>(null);
   const [creating, setCreating] = createSignal(false);
+  const createMutation = useCreateEventMutation();
+  const patchMutation = usePatchEventMutation();
+  const ownedQuery = useQuery(allOwnEventsQueryOptions());
+  const joinedQuery = useQuery(allJoinedEventsQueryOptions());
 
-  const events = createMemo(async () => {
-    const [owned, joined] = await Promise.all([
-      queryClient.fetchQuery(allOwnEventsQueryOptions()),
-      queryClient.fetchQuery(allJoinedEventsQueryOptions()),
-    ]);
+  const events = createMemo(() => {
+    const owned = ownedQuery().data;
+    const joined = joinedQuery().data;
+    if (!owned || !joined) return [];
 
     const seen = new Set<string>();
     return [...owned, ...joined].filter((event) => {
@@ -70,16 +71,11 @@ function AdminEventsPage(): JSX.Element {
     };
 
     try {
-      if (current) await patchEventFn(current.id, payload);
-      else await createEventFn(payload);
+      if (current) await patchMutation.mutateAsync({ eventId: current.id, data: payload });
+      else await createMutation.mutateAsync(payload);
     } catch {
       return false;
     }
-
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: allOwnEventsQueryOptions().queryKey }),
-      queryClient.invalidateQueries({ queryKey: allJoinedEventsQueryOptions().queryKey }),
-    ]);
 
     setCreating(false);
     setEditing(null);
@@ -241,4 +237,3 @@ function AdminEventsContent(props: {
     />
   );
 }
-

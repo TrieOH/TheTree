@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/solid-router";
 import { For, Loading, Show, createMemo } from "solid-js";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
@@ -93,10 +93,8 @@ export function ParticipantView() {
   const go = () =>
     void navigate({ to: isAuthenticated() ? "/events" : "/auth" } as never);
 
-  const queryClient = useQueryClient();
-  const events = createMemo(() =>
-    queryClient.fetchQuery<EventI[]>(allPublicEventsQueryOptions()),
-  );
+  const eventsQuery = useQuery(allPublicEventsQueryOptions());
+  const events = createMemo(() => eventsQuery().data ?? []);
 
   return (
     <Reveal>

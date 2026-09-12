@@ -1,19 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQueryClient, useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import type { Edition } from "@trieoh/univents-api/schemas";
 import type { JSX } from "@solidjs/web";
 import { Loading, createMemo } from "solid-js";
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
-import { allPublicEditionsQueryOptions } from "@/features/editions/api";
-import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import {
-  myParticipationsQueryOptions,
-  occurrencesQueryOptions,
-  programsQueryOptions,
+  programPageQueryOptions,
 } from "@/features/programs/api";
 import { ProgramSection } from "@/features/programs/ui/ProgramSection";
-import { myTicketQueryOptions } from "@/features/tickets/api";
 
 const ArrowLeft = ArrowLeftIcon as unknown as () => JSX.Element;
 
@@ -26,20 +21,12 @@ function ProgramsPage() {
   const params = Route.useParams();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
-  const data = createMemo(async () => {
-    const event = await queryClient.fetchQuery(publicEventBySlugQueryOptions(params().slug));
-    if (!event) return null;
-    const edition = currentEdition(await queryClient.fetchQuery(allPublicEditionsQueryOptions(event.id)));
-    if (!edition) return { event, edition: null };
-    const authenticated = isAuthenticated();
-    const [programs, occurrences, heldTicket, participations] = await Promise.all([
-      queryClient.fetchQuery(programsQueryOptions(edition.id)),
-      queryClient.fetchQuery(occurrencesQueryOptions(edition.id)),
-      authenticated ? queryClient.fetchQuery(myTicketQueryOptions(edition.id)) : null,
-      authenticated ? queryClient.fetchQuery(myParticipationsQueryOptions(edition.id)) : [],
-    ]);
-    return { event, edition, programs, occurrences, heldTicket, participations, authenticated };
-  });
+  const dataQuery = useQuery(() => programPageQueryOptions(
+    params().slug,
+    isAuthenticated(),
+    queryClient,
+  ));
+  const data = createMemo(() => dataQuery().data);
 
   return (
     <Loading fallback={<main class="min-h-screen animate-pulse bg-muted" />}>

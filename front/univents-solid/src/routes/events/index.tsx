@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { For, Loading, Show, createMemo, createSignal } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import SearchIcon from "~icons/lucide/search";
@@ -19,13 +19,11 @@ export const Route = createFileRoute("/events/")({
 });
 
 function EventsPage() {
-  const queryClient = useQueryClient();
+  const eventsQuery = useQuery(allPublicEventsQueryOptions());
   const [filter, setFilter] = createSignal<"all" | "series">("all");
   const [drawerOpen, setDrawerOpen] = createSignal(false);
 
-  const events = createMemo(() =>
-    queryClient.fetchQuery(allPublicEventsQueryOptions()),
-  );
+  const events = createMemo(() => eventsQuery().data ?? []);
 
   return (
     <Loading

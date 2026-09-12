@@ -2,7 +2,7 @@ import { For, Loading, Show, createMemo } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import type { Purchase } from "@trieoh/univents-api/schemas";
 import { Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { myPurchasesQueryOptions } from "../api";
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
 
@@ -22,8 +22,8 @@ const status: Record<string, [string, string]> = {
 };
 
 export function PurchasesContent() {
-  const queryClient = useQueryClient();
-  const data = createMemo(() => queryClient.fetchQuery(myPurchasesQueryOptions()));
+  const purchasesQuery = useQuery(myPurchasesQueryOptions());
+  const data = createMemo(() => purchasesQuery().data);
 
   return (
     <Loading
