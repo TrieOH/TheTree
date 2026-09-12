@@ -3248,6 +3248,10 @@ components:
           type: string
           nullable: true
           description: Unique handle for the profile. Null when not set.
+        pfp_url:
+          type: string
+          nullable: true
+          description: Profile picture URL, first-class column. Null when not set.
         profile:
           type: object
           description: The profile data, validated against the active profile schema.
