@@ -884,6 +884,9 @@ importers:
       motion:
         specifier: 'catalog:'
         version: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.427.2(@types/react@19.2.17)(react@19.2.7)
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -1065,6 +1068,9 @@ importers:
       '@trieoh/identityx-sdk-ts-solid':
         specifier: 'workspace:'
         version: link:../../../sdk/ts/identityx-solid
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.427.2(@types/react@19.2.17)(react@19.2.7)
       solid-js:
         specifier: 'catalog:'
         version: 2.0.0-rc.6

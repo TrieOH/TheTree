@@ -52,6 +52,7 @@
     "@trieoh/univents-api": "workspace:*",
     "aws4fetch": "^1.0.20",
     "motion": "catalog:",
+    "posthog-js": "catalog:",
     "qrcode": "^1.5.4",
     "solid-js": "^2.0.0-rc.6",
     "unplugin-icons": "^22.1.0",

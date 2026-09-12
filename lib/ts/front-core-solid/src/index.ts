@@ -1,5 +1,10 @@
 export { AuthContextUpdater } from "./providers/auth-context"
 export {
+  AuthenticatedPostHogProvider,
+  PostHogProvider,
+} from "./providers/posthog"
+export type { PostHogConfig } from "./providers/posthog"
+export {
   TanStackQueryProvider,
   QueryClient,
   createQueryClient,

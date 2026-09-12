@@ -9,6 +9,7 @@ import {
   createBffProxyFetchers,
 } from "@trieoh/front-core/auth/bff/client";
 import {
+  AuthenticatedPostHogProvider,
   TanStackQueryProvider,
   createQueryClient,
 } from "@trieoh/front-core-solid";
@@ -89,7 +90,14 @@ export default function App() {
             </div>
           }
         >
-          <RouterHost />
+          <AuthenticatedPostHogProvider
+            config={{
+              key: import.meta.env.VITE_POSTHOG_KEY,
+              host: import.meta.env.VITE_POSTHOG_HOST,
+            }}
+          >
+            <RouterHost />
+          </AuthenticatedPostHogProvider>
         </AuthProvider>
       </ThemeProvider>
     </TanStackQueryProvider>
