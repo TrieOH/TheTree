@@ -87,6 +87,7 @@ catalog:
 
 overrides:
   browserslist: 4.28.7
+  'posthog-js>fflate': ^0.4.9
   fflate: 0.8.3
   dompurify: 3.4.13
   js-yaml: 4.3.2
@@ -126,7 +127,3 @@ allowBuilds:
   workerd: true
 patchedDependencies:
   '@tanstack/solid-router@2.0.0-rc.6': patches/@tanstack__solid-router@2.0.0-rc.6.patch
-
-pnpm:
-  overrides:
-    posthog-js>fflate: ^0.4.9
