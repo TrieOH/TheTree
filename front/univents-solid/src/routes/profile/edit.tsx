@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { ProfileEditor } from "@/features/profile/ui/ProfileEditor";
+import { profileKeys } from "@/features/profile/api/query-keys";
 
 export const Route = createFileRoute("/profile/edit")({
   beforeLoad: requireAuth,
@@ -12,9 +14,12 @@ export const Route = createFileRoute("/profile/edit")({
 function EditProfilePage() {
   const { auth } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const actorId = auth.profile()?.id;
-  const finish = () =>
+  const finish = () => {
+    void queryClient.invalidateQueries({ queryKey: profileKeys.details() });
     void navigate({ to: "/profile", search: { tab: "about" } });
+  };
   return (
     <ProfileEditor
       load={() =>

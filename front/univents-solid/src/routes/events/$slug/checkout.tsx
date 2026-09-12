@@ -93,7 +93,7 @@ function CheckoutPage() {
   return (
     <Loading fallback={<main class="p-12 text-center">Carregando checkout…</main>}>
       <Show
-        when={data()}
+        when={dataQuery().isSuccess && data()}
         fallback={<main class="p-12 text-center">Evento indisponível.</main>}
       >
         {(loaded) => (

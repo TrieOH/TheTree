@@ -73,140 +73,142 @@ export function ProfileView(props: ProfileViewProps) {
   const result = createMemo(() => profileQuery().data);
   return (
     <Loading fallback={<ProfileSkeleton />}>
-      <Show when={result()} fallback={<MissingPublicProfile />}>
-        {(response) => {
-          const data = () => response().data;
-          const profile = createMemo(() =>
-            asUniventsProfile({
-              ...data()?.profile,
-              ...(data()?.pfp_url !== undefined && { pfpUrl: data()?.pfp_url }),
-            }),
-          );
-          const name = () => profileDisplayName(profile());
-          const own = () =>
-            Boolean(
-              props.ownProfile || data()?.actor_id === props.viewerActorId,
+      <Show when={profileQuery().isSuccess} fallback={<ProfileSkeleton />}>
+        <Show when={result()} fallback={<MissingPublicProfile />}>
+          {(response) => {
+            const data = () => response().data;
+            const profile = createMemo(() =>
+              asUniventsProfile({
+                ...data()?.profile,
+                ...(data()?.pfp_url !== undefined && { pfpUrl: data()?.pfp_url }),
+              }),
             );
-          const socials = () =>
-            Object.entries(profile().socials ?? {}).filter(([, value]) =>
-              Boolean(value),
-            ) as [string, string][];
-          return (
-            <main class="min-h-dvh bg-background pb-28">
-              <ProfileHeader
-                profile={profile()}
-                name={name()}
-                profileUrl={`${window.location.origin}/profile/${data()?.handle ?? data()?.actor_id ?? ""}`}
-                handle={data()?.handle ?? undefined}
-                ownProfile={own()}
-                activeTab={props.activeTab}
-                onTabChange={props.onTabChange}
-              />
-              <Show
-                when={props.activeTab === "about"}
-                fallback={
-                  <ProfileTabContent
-                    tab={props.activeTab as Exclude<Tab, "about">}
-                    actorId={data()?.actor_id ?? ""}
-                    ownProfile={own()}
-                  />
-                }
-              >
-                <div class="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
-                  <div class="space-y-5">
-                    <Show when={own() && profileCompleteness(profile()) < 100}>
-                      <Card title="Integridade do Perfil">
-                        <div class="flex items-center justify-between text-sm">
-                          <span>Complete seu perfil</span>
-                          <span class="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-                            {profileCompleteness(profile())}% completo
-                          </span>
-                        </div>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                          <div
-                            class="h-full bg-primary"
-                            style={{
-                              width: `${profileCompleteness(profile())}%`,
-                            }}
-                          />
-                        </div>
-                        <p class="mt-3 text-sm italic text-muted-foreground">
-                          {completenessHint(profile())}
-                        </p>
-                      </Card>
-                    </Show>
-                    <Card title="Sobre mim">
-                      <Show
-                        when={profile().aboutMe}
-                        fallback={
-                          <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
-                        }
-                      >
-                        <p class="whitespace-pre-wrap text-[15px] leading-[1.7] text-muted-foreground">
-                          {profile().aboutMe}
-                        </p>
-                      </Show>
-                    </Card>
-                  </div>
-                  <div class="space-y-5">
-                    <Card title="Idiomas">
-                      <Show
-                        when={profile().languages?.length}
-                        fallback={
-                          <EmptyState message="Adicione idiomas para destacar seu perfil." />
-                        }
-                      >
-                        <div class="flex flex-wrap gap-2">
-                          {profile().languages?.map((item) => (
-                            <span class="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted">
-                              {item}
+            const name = () => profileDisplayName(profile());
+            const own = () =>
+              Boolean(
+                props.ownProfile || data()?.actor_id === props.viewerActorId,
+              );
+            const socials = () =>
+              Object.entries(profile().socials ?? {}).filter(([, value]) =>
+                Boolean(value),
+              ) as [string, string][];
+            return (
+              <main class="min-h-dvh bg-background pb-28">
+                <ProfileHeader
+                  profile={profile()}
+                  name={name()}
+                  profileUrl={`${window.location.origin}/profile/${data()?.handle ?? data()?.actor_id ?? ""}`}
+                  handle={data()?.handle ?? undefined}
+                  ownProfile={own()}
+                  activeTab={props.activeTab}
+                  onTabChange={props.onTabChange}
+                />
+                <Show
+                  when={props.activeTab === "about"}
+                  fallback={
+                    <ProfileTabContent
+                      tab={props.activeTab as Exclude<Tab, "about">}
+                      actorId={data()?.actor_id ?? ""}
+                      ownProfile={own()}
+                    />
+                  }
+                >
+                  <div class="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
+                    <div class="space-y-5">
+                      <Show when={own() && profileCompleteness(profile()) < 100}>
+                        <Card title="Integridade do Perfil">
+                          <div class="flex items-center justify-between text-sm">
+                            <span>Complete seu perfil</span>
+                            <span class="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                              {profileCompleteness(profile())}% completo
                             </span>
-                          ))}
-                        </div>
-                      </Show>
-                    </Card>
-                    <Card title="Contato">
-                      <Show
-                        when={
-                          profile().website ||
-                          profile().contactEmail ||
-                          socials().length
-                        }
-                        fallback={
-                          <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
-                        }
-                      >
-                        <div class="grid grid-cols-2 gap-1">
-                          <Show when={profile().website}>
-                            {(website) => (
-                              <Social href={website()} label="Website" />
-                            )}
-                          </Show>{" "}
-                          <Show when={profile().contactEmail}>
-                            {(email) => (
-                              <Social
-                                href={`mailto:${email()}`}
-                                label="E-mail"
-                              />
-                            )}
-                          </Show>{" "}
-                          {socials().map(([network, value]) => (
-                            <Social
-                              href={socialHref(network, value)}
-                              label={
-                                network[0].toUpperCase() + network.slice(1)
-                              }
+                          </div>
+                          <div class="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                            <div
+                              class="h-full bg-primary"
+                              style={{
+                                width: `${profileCompleteness(profile())}%`,
+                              }}
                             />
-                          ))}
-                        </div>
+                          </div>
+                          <p class="mt-3 text-sm italic text-muted-foreground">
+                            {completenessHint(profile())}
+                          </p>
+                        </Card>
                       </Show>
-                    </Card>
+                      <Card title="Sobre mim">
+                        <Show
+                          when={profile().aboutMe}
+                          fallback={
+                            <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
+                          }
+                        >
+                          <p class="whitespace-pre-wrap text-[15px] leading-[1.7] text-muted-foreground">
+                            {profile().aboutMe}
+                          </p>
+                        </Show>
+                      </Card>
+                    </div>
+                    <div class="space-y-5">
+                      <Card title="Idiomas">
+                        <Show
+                          when={profile().languages?.length}
+                          fallback={
+                            <EmptyState message="Adicione idiomas para destacar seu perfil." />
+                          }
+                        >
+                          <div class="flex flex-wrap gap-2">
+                            {profile().languages?.map((item) => (
+                              <span class="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </Show>
+                      </Card>
+                      <Card title="Contato">
+                        <Show
+                          when={
+                            profile().website ||
+                            profile().contactEmail ||
+                            socials().length
+                          }
+                          fallback={
+                            <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
+                          }
+                        >
+                          <div class="grid grid-cols-2 gap-1">
+                            <Show when={profile().website}>
+                              {(website) => (
+                                <Social href={website()} label="Website" />
+                              )}
+                            </Show>{" "}
+                            <Show when={profile().contactEmail}>
+                              {(email) => (
+                                <Social
+                                  href={`mailto:${email()}`}
+                                  label="E-mail"
+                                />
+                              )}
+                            </Show>{" "}
+                            {socials().map(([network, value]) => (
+                              <Social
+                                href={socialHref(network, value)}
+                                label={
+                                  network[0].toUpperCase() + network.slice(1)
+                                }
+                              />
+                            ))}
+                          </div>
+                        </Show>
+                      </Card>
+                    </div>
                   </div>
-                </div>
-              </Show>
-            </main>
-          );
-        }}
+                </Show>
+              </main>
+            );
+          }}
+        </Show>
       </Show>
     </Loading>
   );

@@ -50,7 +50,7 @@ function StorePage() {
   return (
     <Loading fallback={<main class="min-h-screen animate-pulse bg-muted" />}>
       <Show
-        when={data()}
+        when={dataQuery().isSuccess && data()}
         fallback={<main class="p-12 text-center">Evento não encontrado.</main>}
       >
         {(loaded) => (

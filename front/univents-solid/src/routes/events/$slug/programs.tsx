@@ -31,7 +31,7 @@ function ProgramsPage() {
   return (
     <Loading fallback={<main class="min-h-screen animate-pulse bg-muted" />}>
       {(() => {
-        const loaded = data();
+        const loaded = dataQuery().isSuccess ? data() : null;
         if (!loaded) return <main class="p-12 text-center">Evento não encontrado.</main>;
         if (!loaded.edition) return <main class="p-12 text-center">A programação não está disponível.</main>;
         return (
