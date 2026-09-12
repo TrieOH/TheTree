@@ -41,6 +41,7 @@
     "wrangler": "catalog:"
   },
   "dependencies": {
+    "@mercadopago/sdk-js": "^0.0.3",
     "@solidjs/web": "^2.0.0-rc.6",
     "@tanstack/query-core": "catalog:",
     "@tanstack/solid-router": "^2.0.0-rc.6",
