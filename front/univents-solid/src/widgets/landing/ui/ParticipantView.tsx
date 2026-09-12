@@ -3,7 +3,6 @@ import { For, Loading, Show, createMemo } from "solid-js";
 import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
-import type { EventI } from "@/features/events/model";
 import { FAQSection, type FAQItem } from "./FAQSection";
 import { EventCard } from "./EventCard";
 import { Reveal } from "@/shared/ui/Reveal";

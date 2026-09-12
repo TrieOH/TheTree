@@ -6,6 +6,7 @@ import {
   Loading,
   Show,
   type Component,
+  untrack,
 } from "solid-js";
 import { Link } from "@tanstack/solid-router";
 import type { Purchase } from "@trieoh/univents-api/schemas";
@@ -82,7 +83,7 @@ const statusCopy = {
 } as const;
 
 export default function CheckoutPage(props: { purchase: Purchase }) {
-  const catalogQuery = useQuery(purchaseCatalogQueryOptions(props.purchase));
+  const catalogQuery = useQuery(purchaseCatalogQueryOptions(untrack(() => props.purchase)));
   const catalogData = () => catalogQuery().data ?? {};
 
   const [copied, setCopied] = createSignal(false);

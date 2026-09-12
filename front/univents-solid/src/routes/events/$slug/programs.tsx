@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQueryClient, useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
-import type { Edition } from "@trieoh/univents-api/schemas";
 import type { JSX } from "@solidjs/web";
 import { Loading, createMemo } from "solid-js";
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
@@ -67,12 +66,4 @@ function ProgramsPage() {
       })()}
     </Loading>
   );
-}
-
-function currentEdition(editions: Edition[]) {
-  const now = Date.now();
-  const sorted = [...editions].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-  return sorted.find((edition) => new Date(edition.starts_at).getTime() <= now && new Date(edition.ends_at).getTime() >= now)
-    ?? sorted.find((edition) => new Date(edition.starts_at).getTime() > now)
-    ?? sorted.at(-1);
 }

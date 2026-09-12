@@ -89,12 +89,12 @@ function StoreContent(props: {
   initialTab: "tickets" | "products";
   heldTicket: MyTicket | null;
 }) {
-  const { editionId, initialStock, initialTab, eventSlug } = (() => ({
+  const { editionId, initialStock, initialTab, eventSlug } = untrack(() => ({
     editionId: props.edition.id,
     initialStock: props.initialStock,
     initialTab: props.initialTab,
     eventSlug: props.event.slug,
-  }))();
+  }));
   const [tab, setTab] = createSignal(initialTab);
   const stock = useInventoryStream(editionId, initialStock);
   const stockById = createMemo(

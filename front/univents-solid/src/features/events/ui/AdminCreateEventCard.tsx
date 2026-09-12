@@ -19,7 +19,7 @@ export function AdminCreateEventCard(
     <Reveal delay={(props.index ?? 0) * 0.05} animate={props.animate}>
       <button
         type="button"
-        onClick={props.onCreate}
+        onClick={() => props.onCreate()}
         class="group relative flex w-full min-w-0 items-center gap-3 rounded-xl bg-card p-3 text-left ring-1 ring-border transition-colors hover:ring-foreground/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:text-foreground">

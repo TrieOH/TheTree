@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import {
-  For,
   Loading,
   Show,
   createMemo,

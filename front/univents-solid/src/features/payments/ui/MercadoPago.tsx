@@ -345,7 +345,7 @@ function CreditCardForm(props: {
               onPaymentMethodReceived: (_err, data) => {
                 if (!cancelled) setBrandName(data?.name ?? null);
               },
-              onFetching: (_) => {
+              onFetching: () => {
                 setFetching(true);
                 return () => {
                   setFetching(false);

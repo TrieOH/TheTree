@@ -1,12 +1,11 @@
-import { createSignal, Switch, Match, createEffect } from "solid-js";
-import { createFileRoute, useNavigate } from "@tanstack/solid-router";
+import { Switch, Match, createEffect } from "solid-js";
+import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { checkoutQueryOptions } from "@/features/purchases/api";
 import { usePurchaseSocket } from "@/features/purchases/hooks/use-purchase-socket";
 import CheckoutPage from "@/features/purchases/ui/CheckoutPage";
 import { toast } from "@/shared/ui/toast";
-import type { Checkout } from "@trieoh/univents-api/schemas";
 
 export const Route = createFileRoute("/checkouts/$purchaseId")({
   beforeLoad: requireAuth,
@@ -22,8 +21,7 @@ function CheckoutStatusPage() {
 
   createEffect(
     () => params().purchaseId,
-    (purchaseId) => {
-      void purchaseId;
+    () => {
     }
   );
 
@@ -39,7 +37,7 @@ function CheckoutStatusPage() {
 
   usePurchaseSocket(
     () => params().purchaseId,
-    (purchaseId) => {
+    (_purchaseId) => {
       void checkoutQuery().refetch();
     },
   );

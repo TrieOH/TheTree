@@ -43,7 +43,7 @@ function EventPage() {
 }
 
 function EventContent(props: { event: EventI | null }) {
-  const event = props.event;
+  const event = untrack(() => props.event);
   if (!event) return <div class="p-12 text-center">Evento não encontrado.</div>;
   return (
     <main class="min-h-screen bg-background pb-24">
@@ -86,7 +86,7 @@ function EventContent(props: { event: EventI | null }) {
 }
 
 function EditionDetails(props: { event: EventI }) {
-  const editionsQuery = useQuery(allPublicEditionsQueryOptions(props.event.id));
+  const editionsQuery = useQuery(allPublicEditionsQueryOptions(untrack(() => props.event.id)));
   const editions = createMemo(() => editionsQuery().data ?? []);
   return (
     <Loading
@@ -109,7 +109,7 @@ function EditionDetails(props: { event: EventI }) {
 
 function EditionBody(props: { event: EventI; editions: EditionI[] }) {
   const now = Date.now();
-  const editions = props.editions;
+  const editions = untrack(() => props.editions);
   const sorted = [...editions].sort((a, b) =>
     a.starts_at.localeCompare(b.starts_at),
   );
