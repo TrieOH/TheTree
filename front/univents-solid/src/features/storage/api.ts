@@ -1,15 +1,174 @@
-const allowed = new Set(["image/png", "image/jpeg", "image/webp"]);
+import { Data, Effect } from "effect";
 
-export async function uploadProfileImage(file: File, field: "pfpUrl" | "bannerUrl") {
-  if (!allowed.has(file.type)) throw new Error("Use uma imagem PNG, JPG ou WebP.");
-  if (file.size > 10 * 1024 * 1024) throw new Error("A imagem deve ter no máximo 10 MB.");
-  const data = new FormData();
-  data.append("file", file);
-  data.append("path", "profiles/images");
-  data.append("idempotencyKey", crypto.randomUUID());
-  data.append("field", field);
-  const response = await fetch("/storage/image/preprocess", { method: "POST", body: data });
-  const result = (await response.json().catch(() => ({}))) as { publicUrl?: string; error?: string };
-  if (!response.ok || !result.publicUrl) throw new Error(result.error ?? "A imagem não foi aprovada.");
-  return result.publicUrl;
+export const ALLOWED_IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+] as const;
+
+export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+export class InvalidFileTypeError extends Data.TaggedError("InvalidFileTypeError")<{
+  readonly fileType: string;
+  readonly allowedTypes: readonly string[];
+}> {
+  readonly message = "Use uma imagem PNG, JPG ou WebP.";
+}
+
+export class FileSizeExceededError extends Data.TaggedError("FileSizeExceededError")<{
+  readonly size: number;
+  readonly maxSize: number;
+}> {
+  readonly message = "A imagem deve ter no máximo 10 MB.";
+}
+
+export class StorageUploadNetworkError extends Data.TaggedError("StorageUploadNetworkError")<{
+  readonly cause: unknown;
+  readonly message: string;
+}> {}
+
+export class StorageModerationError extends Data.TaggedError("StorageModerationError")<{
+  readonly reason: string;
+  readonly message: string;
+}> {}
+
+export type StorageError =
+  | InvalidFileTypeError
+  | FileSizeExceededError
+  | StorageUploadNetworkError
+  | StorageModerationError;
+
+export const validateImageFile = (
+  file: File,
+): Effect.Effect<File, InvalidFileTypeError | FileSizeExceededError> =>
+  Effect.gen(function* () {
+    if (
+      !ALLOWED_IMAGE_TYPES.includes(
+        file.type as (typeof ALLOWED_IMAGE_TYPES)[number],
+      )
+    ) {
+      return yield* Effect.fail(
+        new InvalidFileTypeError({
+          fileType: file.type,
+          allowedTypes: ALLOWED_IMAGE_TYPES,
+        }),
+      );
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return yield* Effect.fail(
+        new FileSizeExceededError({
+          size: file.size,
+          maxSize: MAX_IMAGE_SIZE_BYTES,
+        }),
+      );
+    }
+    return file;
+  });
+
+export const validateImageFileSync = (
+  file: File,
+): { ok: true; file: File } | { ok: false; error: string } =>
+  Effect.runSync(
+    Effect.match(validateImageFile(file), {
+      onFailure: (err) => ({ ok: false, error: err.message }),
+      onSuccess: (validFile) => ({ ok: true, file: validFile }),
+    }),
+  );
+
+export const uploadProfileImageEffect = (
+  file: File,
+  field: "pfpUrl" | "bannerUrl",
+): Effect.Effect<string, StorageError> =>
+  Effect.gen(function* () {
+    yield* validateImageFile(file);
+
+    const data = new FormData();
+    data.append("file", file);
+    data.append("path", "profiles/images");
+    data.append("idempotencyKey", crypto.randomUUID());
+    data.append("field", field);
+
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch("/storage/image/preprocess", {
+          method: "POST",
+          body: data,
+        }),
+      catch: (cause) =>
+        new StorageUploadNetworkError({
+          cause,
+          message: "Falha na conexão ao enviar a imagem.",
+        }),
+    });
+
+    const result = yield* Effect.tryPromise({
+      try: () =>
+        response.json().catch(() => ({})) as Promise<{
+          publicUrl?: string;
+          error?: string;
+          approved?: boolean;
+        }>,
+      catch: (cause) =>
+        new StorageUploadNetworkError({
+          cause,
+          message: "Falha ao processar a resposta do servidor de imagens.",
+        }),
+    });
+
+    if (!response.ok || !result.publicUrl) {
+      return yield* Effect.fail(
+        new StorageModerationError({
+          reason: result.error ?? "A imagem não foi aprovada.",
+          message: result.error ?? "A imagem não foi aprovada.",
+        }),
+      );
+    }
+
+    return result.publicUrl;
+  });
+
+export interface UploadBatchResult {
+  readonly uploaded: Partial<Record<"pfpUrl" | "bannerUrl", string>>;
+  readonly failed: Array<"foto" | "banner">;
+}
+
+export const uploadProfileImagesBatchEffect = (
+  uploads: ReadonlyArray<readonly ["pfpUrl" | "bannerUrl", File]>,
+): Effect.Effect<UploadBatchResult> =>
+  Effect.gen(function* () {
+    const tasks = uploads.map(([field, file]) =>
+      uploadProfileImageEffect(file, field).pipe(
+        Effect.match({
+          onFailure: () => ({ success: false as const, field }),
+          onSuccess: (url) => ({ success: true as const, field, url }),
+        }),
+      ),
+    );
+
+    const outcomes = yield* Effect.all(tasks, { concurrency: "unbounded" });
+
+    const uploaded: Partial<Record<"pfpUrl" | "bannerUrl", string>> = {};
+    const failed: Array<"foto" | "banner"> = [];
+
+    for (const outcome of outcomes) {
+      if (outcome.success) {
+        uploaded[outcome.field] = outcome.url;
+      } else {
+        failed.push(outcome.field === "pfpUrl" ? "foto" : "banner");
+      }
+    }
+
+    return { uploaded, failed };
+  });
+
+export const uploadProfileImagesBatch = (
+  uploads: ReadonlyArray<readonly ["pfpUrl" | "bannerUrl", File]>,
+): Promise<UploadBatchResult> =>
+  Effect.runPromise(uploadProfileImagesBatchEffect(uploads));
+
+export async function uploadProfileImage(
+  file: File,
+  field: "pfpUrl" | "bannerUrl",
+): Promise<string> {
+  return Effect.runPromise(uploadProfileImageEffect(file, field));
 }

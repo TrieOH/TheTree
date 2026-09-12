@@ -19,7 +19,7 @@ import SaveIcon from "~icons/lucide/save";
 import { toast } from "@/shared/ui/toast";
 import { Combobox } from "@/shared/ui/Combobox";
 import { ProfileImageInput } from "./ProfileImageInput";
-import { uploadProfileImage } from "@/features/storage/api";
+import { uploadProfileImagesBatch } from "@/features/storage/api";
 import {
   asUniventsProfile,
   socialHref,
@@ -104,12 +104,8 @@ export function ProfileEditor(props: {
     try {
       const nextProfile = untrack(() => ({ ...profile() }));
       const uploads = untrack(() => Object.entries(pendingImages())) as ["pfpUrl" | "bannerUrl", File][];
-      const results = await Promise.allSettled(uploads.map(async ([field, file]) => [field, await uploadProfileImage(file, field)] as const));
-      const failed: string[] = [];
-      results.forEach((result, index) => {
-        if (result.status === "fulfilled") nextProfile[result.value[0]] = result.value[1];
-        else failed.push(uploads[index]?.[0] === "pfpUrl" ? "foto" : "banner");
-      });
+      const { uploaded, failed } = await uploadProfileImagesBatch(uploads);
+      Object.assign(nextProfile, uploaded);
       const result = await props.save(
         nextProfile,
         handle().trim().replace(/^@/, ""),

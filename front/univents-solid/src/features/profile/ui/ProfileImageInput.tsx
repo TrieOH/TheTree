@@ -2,6 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { createSignal, Show } from "solid-js";
 import ImagePlusIcon from "~icons/lucide/image-plus";
 import UploadIcon from "~icons/lucide/upload";
+import { validateImageFileSync } from "@/features/storage/api";
 
 const ImagePlus = ImagePlusIcon as unknown as () => JSX.Element;
 const Upload = UploadIcon as unknown as () => JSX.Element;
@@ -18,10 +19,8 @@ export function ProfileImageInput(props: {
   let dragDepth = 0;
   const select = (file?: File) => {
     if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
-      return setError("Use uma imagem PNG, JPG ou WebP.");
-    if (file.size > 10 * 1024 * 1024)
-      return setError("A imagem deve ter no máximo 10 MB.");
+    const validation = validateImageFileSync(file);
+    if (!validation.ok) return setError(validation.error);
     setError();
     setPreview(URL.createObjectURL(file));
     props.onSelect(file);
