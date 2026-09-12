@@ -1,20 +1,11 @@
-// Providers
-export {
-  AuthenticatedPostHogProvider,
-  PostHogProvider,
-} from "./providers/posthog"
-export type { PostHogConfig } from "./providers/posthog"
-export {
-  TanStackQueryProvider,
-  createQueryClient,
-  QueryError,
-  queryError,
-} from "./providers/tanstack-query"
-export type { QueryClientConfig } from "./providers/tanstack-query"
-export { AuthContextUpdater } from "./providers/auth-context"
-
-// Route guards
-export { requireAuth, requireGuest, requireSetup, requireSetupNotDone } from "./guards/route-guards"
-
-// Hooks
-export { useAuthActions } from "./hooks/use-auth-actions"
+// Framework-free surface. Everything here runs in a Worker, a Node server or a
+// test — the React and Solid bindings live in `@trieoh/front-core-react` and
+// `@trieoh/front-core-solid`.
+//
+// Most consumers import the narrower subpaths (`./auth/bff/core`,
+// `./tracing/ingest`, …) instead of this barrel.
+export * from "./auth/bff/handler";
+export * from "./auth/bff/cookie-session";
+export * from "./tracing/server";
+export * from "./tracing/ingest";
+export * from "./tracing/constants";

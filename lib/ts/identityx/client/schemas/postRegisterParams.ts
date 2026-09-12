@@ -77,8 +77,8 @@
 import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
 
 export type PostRegisterParams = {
-    /**
-     * Project to scope the operation to. Omit for IdentityX itself.
-     */
-    project_id?: ProjectIDQueryParameter;
+/**
+ * Project to scope the operation to. Omit for IdentityX itself.
+ */
+project_id?: ProjectIDQueryParameter;
 };

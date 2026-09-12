@@ -1,4 +1,4 @@
-import { useQueryClient, type RouterSession } from '@trieoh/front-core/solid';
+import { useQueryClient, type RouterSession } from '@trieoh/front-core-solid';
 import { useNavigate, useRouter } from "@tanstack/solid-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { toast } from '@/shared/ui/toast';

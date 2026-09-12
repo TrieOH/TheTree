@@ -1,4 +1,4 @@
-import { createTanStackIdentityXIntegration } from "@trieoh/front-core/auth/tanstack/client";
+import { createTanStackIdentityXIntegration } from "@trieoh/front-core-react";
 import { env } from "@/env";
 import {
   authenticatedProxyServerFn,

@@ -4,7 +4,7 @@ import {
   createBffProxyFetchers,
   type BffClientOptions,
   type BffTransport,
-} from "../bff/client";
+} from "@trieoh/front-core/auth/bff/client";
 import type {
   BffIntrospectResponse,
   ServerAuthResult,

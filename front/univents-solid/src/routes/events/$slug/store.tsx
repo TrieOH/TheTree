@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import type {
   Edition,

@@ -1,6 +1,6 @@
 import { createSignal, Switch, Match, createEffect } from "solid-js";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { checkoutQueryOptions } from "@/features/purchases/api";
 import { usePurchaseSocket } from "@/features/purchases/hooks/use-purchase-socket";

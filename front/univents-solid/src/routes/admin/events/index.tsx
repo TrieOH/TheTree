@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { Button, EmptyState, PaginatedContainer, type SortState } from "@trieoh/ui-solid";
 import { For, Loading, Show, createMemo, createSignal } from "solid-js";
 

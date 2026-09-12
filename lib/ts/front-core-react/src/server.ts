@@ -1,7 +1,7 @@
 import { useSession, getRequest } from "@tanstack/react-start/server";
 import type { AuthTokens } from "@trieoh/identityx-sdk-ts";
-import { createIdentityXBff, type BffSession } from "../bff/core";
-import type { IdentityXTransportLogEvent } from "../bff/types";
+import { createIdentityXBff, type BffSession } from "@trieoh/front-core/auth/bff/core";
+import type { IdentityXTransportLogEvent } from "@trieoh/front-core/auth/bff/types";
 
 interface IdentityXSessionData {
   tokens: AuthTokens;
@@ -81,4 +81,4 @@ export type {
   ServerProxyRequest,
   ServerProxyResult,
   ServerSessionSnapshot,
-} from "../bff/types";
+} from "@trieoh/front-core/auth/bff/types";

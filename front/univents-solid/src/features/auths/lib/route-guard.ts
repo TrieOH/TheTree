@@ -1,5 +1,5 @@
 import { redirect } from '@tanstack/solid-router';
-import type { RouterSession } from '@trieoh/front-core/solid';
+import type { RouterSession } from '@trieoh/front-core-solid';
 
 type GuardArgs = {
   context: { session?: RouterSession };

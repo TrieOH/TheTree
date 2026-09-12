@@ -11,7 +11,7 @@ vi.mock("@trieoh/front-core/tracing/browser", () => ({
 import {
   createTanStackIdentityXIntegration,
   createTanStackServerProxyFetchers,
-} from "@trieoh/front-core/auth/tanstack/client";
+} from "@trieoh/front-core-react";
 
 describe("BFF trace propagation", () => {
   it("adds the browser traceparent to proxy requests", async () => {

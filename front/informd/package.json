@@ -31,6 +31,7 @@
     "@trieoh/api-client": "workspace:*",
     "@trieoh/envoy-fetch-ts": "catalog:",
     "@trieoh/front-core": "workspace:*",
+    "@trieoh/front-core-react": "workspace:*",
     "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
     "@trieoh/informd-models": "workspace:*",

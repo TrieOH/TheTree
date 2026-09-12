@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createTanStackIdentityXBff } from "@trieoh/front-core/auth/tanstack/server";
+import { createTanStackIdentityXBff } from "@trieoh/front-core-react/server";
 import { z } from "zod";
 import { env } from "@/env";
 import { preventResponseCaching } from "@/shared/lib/http-cache";

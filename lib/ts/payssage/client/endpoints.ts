@@ -101,20 +101,6 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
-
 import type {
   AddOrganizationMemberRequest,
   BadRequestResponse,
@@ -150,31 +136,6 @@ import type {
 } from './schemas';
 
 import { customInstance } from '../../api-client/src/orval-mutator';
-import type { ErrorType , BodyType } from '../../api-client/src/orval-mutator';
-type AwaitedInput<T> = PromiseLike<T> | T;
-
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
-  for (const key of Object.keys(query)) {
-    // The explicit queryKey always wins, matching the previous
-    // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
-    Object.defineProperty(result, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => (query as Record<string, unknown>)[key],
-    });
-  }
-  return result;
-};
-
 export type getOpenAPISpecResponse200 = {
   data: string
   status: 200
@@ -215,59 +176,6 @@ export const getOpenAPISpec = async ( options?: Parameters<typeof customInstance
 
 
 
-
-
-export const getGetOpenAPISpecQueryKey = () => {
-    return [
-    `/docs/openapi.yml`
-    ] as const;
-    }
-
-
-export const getGetOpenAPISpecQueryOptions = <TData = Awaited<ReturnType<typeof getOpenAPISpec>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOpenAPISpecQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenAPISpec>>> = ({ signal }) => getOpenAPISpec({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOpenAPISpecQueryResult = NonNullable<Awaited<ReturnType<typeof getOpenAPISpec>>>
-export type GetOpenAPISpecQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Get the OpenAPI specification
- */
-
-export function useGetOpenAPISpec<TData = Awaited<ReturnType<typeof getOpenAPISpec>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOpenAPISpecQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getHealthResponse200 = {
   data: GetHealth200
   status: 200
@@ -302,59 +210,6 @@ export const getHealth = async ( options?: Parameters<typeof customInstance>[1])
 
   }
 );}
-
-
-
-
-
-export const getGetHealthQueryKey = () => {
-    return [
-    `/health`
-    ] as const;
-    }
-
-
-export const getGetHealthQueryOptions = <TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetHealthQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({ signal }) => getHealth({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getHealth>>>
-export type GetHealthQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Health check
- */
-
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetHealthQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -404,59 +259,6 @@ export const listOrganizations = async ( options?: Parameters<typeof customInsta
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationsQueryKey = () => {
-    return [
-    `/organizations`
-    ] as const;
-    }
-
-
-export const getListOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizations>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizations>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizations>>> = ({ signal }) => listOrganizations({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizations>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizations>>>
-export type ListOrganizationsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your organizations
- */
-
-export function useListOrganizations<TData = Awaited<ReturnType<typeof listOrganizations>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizations>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -513,53 +315,6 @@ export const createOrganization = async (createOrganizationRequest: CreateOrgani
 );}
 
 
-
-
-
-export const getCreateOrganizationMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{data: BodyType<CreateOrganizationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{data: BodyType<CreateOrganizationRequest>}, TContext> => {
-
-const mutationKey = ['createOrganization'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOrganization>>, {data: BodyType<CreateOrganizationRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createOrganization(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof createOrganization>>>
-    export type CreateOrganizationMutationBody = BodyType<CreateOrganizationRequest>
-    export type CreateOrganizationMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create an organization
- */
-export const useCreateOrganization = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{data: BodyType<CreateOrganizationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createOrganization>>,
-        TError,
-        {data: BodyType<CreateOrganizationRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateOrganizationMutationOptions(options));
-    }
 
 export type listOrganizationMembersResponse200 = {
   data: OrganizationMember[]
@@ -618,59 +373,6 @@ export const listOrganizationMembers = async (organizationId: string, options?: 
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationMembersQueryKey = (organizationId: string,) => {
-    return [
-    `/organizations/${organizationId}/members`
-    ] as const;
-    }
-
-
-export const getListOrganizationMembersQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationMembersQueryKey(organizationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationMembers>>> = ({ signal }) => listOrganizationMembers(organizationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationMembers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationMembers>>>
-export type ListOrganizationMembersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List organization members
- */
-
-export function useListOrganizationMembers<TData = Awaited<ReturnType<typeof listOrganizationMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationMembersQueryOptions(organizationId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -745,53 +447,6 @@ export const addOrganizationMember = async (organizationId: string,
 
 
 
-
-
-export const getAddOrganizationMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addOrganizationMember>>, TError,{organizationId: string;data: BodyType<AddOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addOrganizationMember>>, TError,{organizationId: string;data: BodyType<AddOrganizationMemberRequest>}, TContext> => {
-
-const mutationKey = ['addOrganizationMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addOrganizationMember>>, {organizationId: string;data: BodyType<AddOrganizationMemberRequest>}> = (props) => {
-          const {organizationId,data} = props ?? {};
-
-          return  addOrganizationMember(organizationId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddOrganizationMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addOrganizationMember>>>
-    export type AddOrganizationMemberMutationBody = BodyType<AddOrganizationMemberRequest>
-    export type AddOrganizationMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Add an organization member
- */
-export const useAddOrganizationMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addOrganizationMember>>, TError,{organizationId: string;data: BodyType<AddOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addOrganizationMember>>,
-        TError,
-        {organizationId: string;data: BodyType<AddOrganizationMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddOrganizationMemberMutationOptions(options));
-    }
-
 export type removeOrganizationMemberResponse200 = {
   data: unknown
   status: 200
@@ -858,53 +513,6 @@ export const removeOrganizationMember = async (organizationId: string,
 
 
 
-
-
-export const getRemoveOrganizationMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationMember>>, TError,{organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationMember>>, TError,{organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeOrganizationMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeOrganizationMember>>, {organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}> = (props) => {
-          const {organizationId,data} = props ?? {};
-
-          return  removeOrganizationMember(organizationId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveOrganizationMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeOrganizationMember>>>
-    export type RemoveOrganizationMemberMutationBody = BodyType<RemoveOrganizationMemberRequest>
-    export type RemoveOrganizationMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Remove an organization member
- */
-export const useRemoveOrganizationMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationMember>>, TError,{organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeOrganizationMember>>,
-        TError,
-        {organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveOrganizationMemberMutationOptions(options));
-    }
-
 export type getOrganizationMemberByIDResponse200 = {
   data: OrganizationMember
   status: 200
@@ -963,62 +571,6 @@ export const getOrganizationMemberByID = async (organizationId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetOrganizationMemberByIDQueryKey = (organizationId: string,
-    memberId: Uuid,) => {
-    return [
-    `/organizations/${organizationId}/member/${memberId}`
-    ] as const;
-    }
-
-
-export const getGetOrganizationMemberByIDQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationMemberByID>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(organizationId: string,
-    memberId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationMemberByID>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationMemberByIDQueryKey(organizationId,memberId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrganizationMemberByID>>> = ({ signal }) => getOrganizationMemberByID(organizationId,memberId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined && memberId !== null && memberId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationMemberByID>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOrganizationMemberByIDQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationMemberByID>>>
-export type GetOrganizationMemberByIDQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get an organization member by ID
- */
-
-export function useGetOrganizationMemberByID<TData = Awaited<ReturnType<typeof getOrganizationMemberByID>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- organizationId: string,
-    memberId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationMemberByID>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOrganizationMemberByIDQueryOptions(organizationId,memberId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1084,62 +636,6 @@ export const getOrganizationMemberByEmail = async (organizationId: string,
 
 
 
-
-
-export const getGetOrganizationMemberByEmailQueryKey = (organizationId: string,
-    memberEmail: string,) => {
-    return [
-    `/organizations/${organizationId}/member/${memberEmail}:by_email`
-    ] as const;
-    }
-
-
-export const getGetOrganizationMemberByEmailQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationMemberByEmail>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(organizationId: string,
-    memberEmail: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationMemberByEmail>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationMemberByEmailQueryKey(organizationId,memberEmail);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrganizationMemberByEmail>>> = ({ signal }) => getOrganizationMemberByEmail(organizationId,memberEmail, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined && memberEmail !== null && memberEmail !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationMemberByEmail>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOrganizationMemberByEmailQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationMemberByEmail>>>
-export type GetOrganizationMemberByEmailQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get an organization member by email
- */
-
-export function useGetOrganizationMemberByEmail<TData = Awaited<ReturnType<typeof getOrganizationMemberByEmail>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- organizationId: string,
-    memberEmail: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationMemberByEmail>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOrganizationMemberByEmailQueryOptions(organizationId,memberEmail,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listWalletsResponse201 = {
   data: Wallet[]
   status: 201
@@ -1188,59 +684,6 @@ export const listWallets = async ( options?: Parameters<typeof customInstance>[1
 
   }
 );}
-
-
-
-
-
-export const getListWalletsQueryKey = () => {
-    return [
-    `/wallets`
-    ] as const;
-    }
-
-
-export const getListWalletsQueryOptions = <TData = Awaited<ReturnType<typeof listWallets>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWallets>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListWalletsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWallets>>> = ({ signal }) => listWallets({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWallets>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListWalletsQueryResult = NonNullable<Awaited<ReturnType<typeof listWallets>>>
-export type ListWalletsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your wallets
- */
-
-export function useListWallets<TData = Awaited<ReturnType<typeof listWallets>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWallets>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListWalletsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1300,53 +743,6 @@ export const createWallet = async (createWalletRequest: CreateWalletRequest, opt
 
 
 
-
-
-export const getCreateWalletMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWallet>>, TError,{data: BodyType<CreateWalletRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createWallet>>, TError,{data: BodyType<CreateWalletRequest>}, TContext> => {
-
-const mutationKey = ['createWallet'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWallet>>, {data: BodyType<CreateWalletRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createWallet(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateWalletMutationResult = NonNullable<Awaited<ReturnType<typeof createWallet>>>
-    export type CreateWalletMutationBody = BodyType<CreateWalletRequest>
-    export type CreateWalletMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a wallet
- */
-export const useCreateWallet = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWallet>>, TError,{data: BodyType<CreateWalletRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createWallet>>,
-        TError,
-        {data: BodyType<CreateWalletRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateWalletMutationOptions(options));
-    }
-
 export type getWalletResponse201 = {
   data: Wallet
   status: 201
@@ -1400,59 +796,6 @@ export const getWallet = async (walletId: string, options?: Parameters<typeof cu
 
   }
 );}
-
-
-
-
-
-export const getGetWalletQueryKey = (walletId: string,) => {
-    return [
-    `/wallets/${walletId}`
-    ] as const;
-    }
-
-
-export const getGetWalletQueryOptions = <TData = Awaited<ReturnType<typeof getWallet>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWallet>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetWalletQueryKey(walletId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWallet>>> = ({ signal }) => getWallet(walletId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: walletId !== null && walletId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWallet>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetWalletQueryResult = NonNullable<Awaited<ReturnType<typeof getWallet>>>
-export type GetWalletQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a wallet by ID
- */
-
-export function useGetWallet<TData = Awaited<ReturnType<typeof getWallet>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWallet>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetWalletQueryOptions(walletId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1522,53 +865,6 @@ export const setWalletFee = async (walletId: string,
 
 
 
-
-
-export const getSetWalletFeeMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWalletFee>>, TError,{walletId: string;data: BodyType<SetFeeBPSRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof setWalletFee>>, TError,{walletId: string;data: BodyType<SetFeeBPSRequest>}, TContext> => {
-
-const mutationKey = ['setWalletFee'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setWalletFee>>, {walletId: string;data: BodyType<SetFeeBPSRequest>}> = (props) => {
-          const {walletId,data} = props ?? {};
-
-          return  setWalletFee(walletId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SetWalletFeeMutationResult = NonNullable<Awaited<ReturnType<typeof setWalletFee>>>
-    export type SetWalletFeeMutationBody = BodyType<SetFeeBPSRequest>
-    export type SetWalletFeeMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Set a wallet's fee
- */
-export const useSetWalletFee = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWalletFee>>, TError,{walletId: string;data: BodyType<SetFeeBPSRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof setWalletFee>>,
-        TError,
-        {walletId: string;data: BodyType<SetFeeBPSRequest>},
-        TContext
-      > => {
-      return useMutation(getSetWalletFeeMutationOptions(options));
-    }
-
 export type setWalletSandboxResponse200 = {
   data: unknown
   status: 200
@@ -1635,53 +931,6 @@ export const setWalletSandbox = async (walletId: string,
 
 
 
-
-
-export const getSetWalletSandboxMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWalletSandbox>>, TError,{walletId: string;data: BodyType<SetSandboxRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof setWalletSandbox>>, TError,{walletId: string;data: BodyType<SetSandboxRequest>}, TContext> => {
-
-const mutationKey = ['setWalletSandbox'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setWalletSandbox>>, {walletId: string;data: BodyType<SetSandboxRequest>}> = (props) => {
-          const {walletId,data} = props ?? {};
-
-          return  setWalletSandbox(walletId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SetWalletSandboxMutationResult = NonNullable<Awaited<ReturnType<typeof setWalletSandbox>>>
-    export type SetWalletSandboxMutationBody = BodyType<SetSandboxRequest>
-    export type SetWalletSandboxMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Set a wallet's sandbox state
- */
-export const useSetWalletSandbox = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWalletSandbox>>, TError,{walletId: string;data: BodyType<SetSandboxRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof setWalletSandbox>>,
-        TError,
-        {walletId: string;data: BodyType<SetSandboxRequest>},
-        TContext
-      > => {
-      return useMutation(getSetWalletSandboxMutationOptions(options));
-    }
-
 export type bindCollectorResponse204 = {
   data: void
   status: 204
@@ -1744,53 +993,6 @@ export const bindCollector = async (walletId: string,
 
 
 
-
-
-export const getBindCollectorMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bindCollector>>, TError,{walletId: string;data: BodyType<BindCollectorRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bindCollector>>, TError,{walletId: string;data: BodyType<BindCollectorRequest>}, TContext> => {
-
-const mutationKey = ['bindCollector'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bindCollector>>, {walletId: string;data: BodyType<BindCollectorRequest>}> = (props) => {
-          const {walletId,data} = props ?? {};
-
-          return  bindCollector(walletId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type BindCollectorMutationResult = NonNullable<Awaited<ReturnType<typeof bindCollector>>>
-    export type BindCollectorMutationBody = BodyType<BindCollectorRequest>
-    export type BindCollectorMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Bind a collector to a wallet
- */
-export const useBindCollector = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bindCollector>>, TError,{walletId: string;data: BodyType<BindCollectorRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof bindCollector>>,
-        TError,
-        {walletId: string;data: BodyType<BindCollectorRequest>},
-        TContext
-      > => {
-      return useMutation(getBindCollectorMutationOptions(options));
-    }
-
 export type unbindCollectorResponse204 = {
   data: void
   status: 204
@@ -1850,53 +1052,6 @@ export const unbindCollector = async (walletId: string, options?: Parameters<typ
 );}
 
 
-
-
-
-export const getUnbindCollectorMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unbindCollector>>, TError,{walletId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof unbindCollector>>, TError,{walletId: string}, TContext> => {
-
-const mutationKey = ['unbindCollector'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unbindCollector>>, {walletId: string}> = (props) => {
-          const {walletId} = props ?? {};
-
-          return  unbindCollector(walletId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UnbindCollectorMutationResult = NonNullable<Awaited<ReturnType<typeof unbindCollector>>>
-
-    export type UnbindCollectorMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Unbind a collector from a wallet
- */
-export const useUnbindCollector = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unbindCollector>>, TError,{walletId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof unbindCollector>>,
-        TError,
-        {walletId: string},
-        TContext
-      > => {
-      return useMutation(getUnbindCollectorMutationOptions(options));
-    }
 
 export type listOrganizationWalletsResponse201 = {
   data: Wallet[]
@@ -1958,59 +1113,6 @@ export const listOrganizationWallets = async (organizationId: string, options?: 
 
 
 
-
-
-export const getListOrganizationWalletsQueryKey = (organizationId: string,) => {
-    return [
-    `/organizations/${organizationId}/wallets`
-    ] as const;
-    }
-
-
-export const getListOrganizationWalletsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationWallets>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationWallets>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationWalletsQueryKey(organizationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationWallets>>> = ({ signal }) => listOrganizationWallets(organizationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationWallets>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationWalletsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationWallets>>>
-export type ListOrganizationWalletsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List organization wallets
- */
-
-export function useListOrganizationWallets<TData = Awaited<ReturnType<typeof listOrganizationWallets>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationWallets>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationWalletsQueryOptions(organizationId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listCollectorsResponse200 = {
   data: Collector[]
   status: 200
@@ -2058,59 +1160,6 @@ export const listCollectors = async ( options?: Parameters<typeof customInstance
 
   }
 );}
-
-
-
-
-
-export const getListCollectorsQueryKey = () => {
-    return [
-    `/collectors`
-    ] as const;
-    }
-
-
-export const getListCollectorsQueryOptions = <TData = Awaited<ReturnType<typeof listCollectors>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCollectors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListCollectorsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCollectors>>> = ({ signal }) => listCollectors({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCollectors>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListCollectorsQueryResult = NonNullable<Awaited<ReturnType<typeof listCollectors>>>
-export type ListCollectorsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your collectors
- */
-
-export function useListCollectors<TData = Awaited<ReturnType<typeof listCollectors>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCollectors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListCollectorsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2165,59 +1214,6 @@ export const getCollector = async (collectorId: Uuid, options?: Parameters<typeo
 
   }
 );}
-
-
-
-
-
-export const getGetCollectorQueryKey = (collectorId: Uuid,) => {
-    return [
-    `/collectors/${collectorId}`
-    ] as const;
-    }
-
-
-export const getGetCollectorQueryOptions = <TData = Awaited<ReturnType<typeof getCollector>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(collectorId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCollector>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetCollectorQueryKey(collectorId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollector>>> = ({ signal }) => getCollector(collectorId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: collectorId !== null && collectorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCollector>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetCollectorQueryResult = NonNullable<Awaited<ReturnType<typeof getCollector>>>
-export type GetCollectorQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a collector by ID
- */
-
-export function useGetCollector<TData = Awaited<ReturnType<typeof getCollector>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- collectorId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCollector>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetCollectorQueryOptions(collectorId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2281,59 +1277,6 @@ export const listOrganizationCollectors = async (organizationId: string, options
 
 
 
-
-
-export const getListOrganizationCollectorsQueryKey = (organizationId: string,) => {
-    return [
-    `/organizations/${organizationId}/collectors`
-    ] as const;
-    }
-
-
-export const getListOrganizationCollectorsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationCollectors>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCollectors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationCollectorsQueryKey(organizationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationCollectors>>> = ({ signal }) => listOrganizationCollectors(organizationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCollectors>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationCollectorsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationCollectors>>>
-export type ListOrganizationCollectorsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List organization collectors
- */
-
-export function useListOrganizationCollectors<TData = Awaited<ReturnType<typeof listOrganizationCollectors>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationCollectors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationCollectorsQueryOptions(organizationId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listWalletSellersResponse200 = {
   data: Seller[]
   status: 200
@@ -2394,59 +1337,6 @@ export const listWalletSellers = async (walletId: string, options?: Parameters<t
 
 
 
-
-
-export const getListWalletSellersQueryKey = (walletId: string,) => {
-    return [
-    `/wallets/${walletId}/sellers`
-    ] as const;
-    }
-
-
-export const getListWalletSellersQueryOptions = <TData = Awaited<ReturnType<typeof listWalletSellers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWalletSellers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListWalletSellersQueryKey(walletId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWalletSellers>>> = ({ signal }) => listWalletSellers(walletId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: walletId !== null && walletId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWalletSellers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListWalletSellersQueryResult = NonNullable<Awaited<ReturnType<typeof listWalletSellers>>>
-export type ListWalletSellersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a wallet's sellers
- */
-
-export function useListWalletSellers<TData = Awaited<ReturnType<typeof listWalletSellers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWalletSellers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListWalletSellersQueryOptions(walletId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listIntentsByProfileResponse200 = {
   data: Intent[]
   status: 200
@@ -2493,59 +1383,6 @@ export const listIntentsByProfile = async ( options?: Parameters<typeof customIn
 
   }
 );}
-
-
-
-
-
-export const getListIntentsByProfileQueryKey = () => {
-    return [
-    `/intents`
-    ] as const;
-    }
-
-
-export const getListIntentsByProfileQueryOptions = <TData = Awaited<ReturnType<typeof listIntentsByProfile>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIntentsByProfile>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListIntentsByProfileQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIntentsByProfile>>> = ({ signal }) => listIntentsByProfile({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIntentsByProfile>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListIntentsByProfileQueryResult = NonNullable<Awaited<ReturnType<typeof listIntentsByProfile>>>
-export type ListIntentsByProfileQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your payment intents
- */
-
-export function useListIntentsByProfile<TData = Awaited<ReturnType<typeof listIntentsByProfile>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIntentsByProfile>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListIntentsByProfileQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2600,59 +1437,6 @@ export const getIntent = async (intentId: string, options?: Parameters<typeof cu
 
   }
 );}
-
-
-
-
-
-export const getGetIntentQueryKey = (intentId: string,) => {
-    return [
-    `/intents/${intentId}`
-    ] as const;
-    }
-
-
-export const getGetIntentQueryOptions = <TData = Awaited<ReturnType<typeof getIntent>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(intentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntent>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetIntentQueryKey(intentId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntent>>> = ({ signal }) => getIntent(intentId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: intentId !== null && intentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntent>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetIntentQueryResult = NonNullable<Awaited<ReturnType<typeof getIntent>>>
-export type GetIntentQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a payment intent
- */
-
-export function useGetIntent<TData = Awaited<ReturnType<typeof getIntent>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- intentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntent>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetIntentQueryOptions(intentId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2716,53 +1500,6 @@ export const cancelIntent = async (intentId: string, options?: Parameters<typeof
 );}
 
 
-
-
-
-export const getCancelIntentMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof cancelIntent>>, TError,{intentId: string}, TContext> => {
-
-const mutationKey = ['cancelIntent'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelIntent>>, {intentId: string}> = (props) => {
-          const {intentId} = props ?? {};
-
-          return  cancelIntent(intentId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CancelIntentMutationResult = NonNullable<Awaited<ReturnType<typeof cancelIntent>>>
-
-    export type CancelIntentMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Cancel a payment intent
- */
-export const useCancelIntent = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof cancelIntent>>,
-        TError,
-        {intentId: string},
-        TContext
-      > => {
-      return useMutation(getCancelIntentMutationOptions(options));
-    }
 
 export type refundIntentResponse200 = {
   data: Intent
@@ -2829,53 +1566,6 @@ export const refundIntent = async (intentId: string, options?: Parameters<typeof
 
 
 
-
-
-export const getRefundIntentMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof refundIntent>>, TError,{intentId: string}, TContext> => {
-
-const mutationKey = ['refundIntent'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundIntent>>, {intentId: string}> = (props) => {
-          const {intentId} = props ?? {};
-
-          return  refundIntent(intentId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RefundIntentMutationResult = NonNullable<Awaited<ReturnType<typeof refundIntent>>>
-
-    export type RefundIntentMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Refund a succeeded payment intent (full refund)
- */
-export const useRefundIntent = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof refundIntent>>,
-        TError,
-        {intentId: string},
-        TContext
-      > => {
-      return useMutation(getRefundIntentMutationOptions(options));
-    }
-
 export type listWalletIntentsResponse200 = {
   data: Intent[]
   status: 200
@@ -2933,59 +1623,6 @@ export const listWalletIntents = async (walletId: string, options?: Parameters<t
 
   }
 );}
-
-
-
-
-
-export const getListWalletIntentsQueryKey = (walletId: string,) => {
-    return [
-    `/wallets/${walletId}/intents`
-    ] as const;
-    }
-
-
-export const getListWalletIntentsQueryOptions = <TData = Awaited<ReturnType<typeof listWalletIntents>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWalletIntents>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListWalletIntentsQueryKey(walletId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWalletIntents>>> = ({ signal }) => listWalletIntents(walletId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: walletId !== null && walletId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWalletIntents>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListWalletIntentsQueryResult = NonNullable<Awaited<ReturnType<typeof listWalletIntents>>>
-export type ListWalletIntentsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a wallet's payment intents
- */
-
-export function useListWalletIntents<TData = Awaited<ReturnType<typeof listWalletIntents>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWalletIntents>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListWalletIntentsQueryOptions(walletId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3059,53 +1696,6 @@ export const checkout = async (walletId: string,
 
 
 
-
-
-export const getCheckoutMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkout>>, TError,{walletId: string;data: BodyType<CreateIntentRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof checkout>>, TError,{walletId: string;data: BodyType<CreateIntentRequest>}, TContext> => {
-
-const mutationKey = ['checkout'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkout>>, {walletId: string;data: BodyType<CreateIntentRequest>}> = (props) => {
-          const {walletId,data} = props ?? {};
-
-          return  checkout(walletId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof checkout>>>
-    export type CheckoutMutationBody = BodyType<CreateIntentRequest>
-    export type CheckoutMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a payment intent (checkout)
- */
-export const useCheckout = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkout>>, TError,{walletId: string;data: BodyType<CreateIntentRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof checkout>>,
-        TError,
-        {walletId: string;data: BodyType<CreateIntentRequest>},
-        TContext
-      > => {
-      return useMutation(getCheckoutMutationOptions(options));
-    }
-
 export type listOrganizationIntentsResponse200 = {
   data: Intent[]
   status: 200
@@ -3163,59 +1753,6 @@ export const listOrganizationIntents = async (organizationId: string, options?: 
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationIntentsQueryKey = (organizationId: string,) => {
-    return [
-    `/organizations/${organizationId}/intents`
-    ] as const;
-    }
-
-
-export const getListOrganizationIntentsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationIntents>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationIntents>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationIntentsQueryKey(organizationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationIntents>>> = ({ signal }) => listOrganizationIntents(organizationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationIntents>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationIntentsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationIntents>>>
-export type ListOrganizationIntentsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List organization payment intents
- */
-
-export function useListOrganizationIntents<TData = Awaited<ReturnType<typeof listOrganizationIntents>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationIntents>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationIntentsQueryOptions(organizationId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3287,53 +1824,6 @@ export const hardCreateIntent = async (hardCreateIntentRequest: HardCreateIntent
 
 
 
-
-
-export const getHardCreateIntentMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof hardCreateIntent>>, TError,{data: BodyType<HardCreateIntentRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof hardCreateIntent>>, TError,{data: BodyType<HardCreateIntentRequest>}, TContext> => {
-
-const mutationKey = ['hardCreateIntent'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof hardCreateIntent>>, {data: BodyType<HardCreateIntentRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  hardCreateIntent(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type HardCreateIntentMutationResult = NonNullable<Awaited<ReturnType<typeof hardCreateIntent>>>
-    export type HardCreateIntentMutationBody = BodyType<HardCreateIntentRequest>
-    export type HardCreateIntentMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create an intent directly (test mode)
- */
-export const useHardCreateIntent = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof hardCreateIntent>>, TError,{data: BodyType<HardCreateIntentRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof hardCreateIntent>>,
-        TError,
-        {data: BodyType<HardCreateIntentRequest>},
-        TContext
-      > => {
-      return useMutation(getHardCreateIntentMutationOptions(options));
-    }
-
 export type testmodeRefundIntentResponse200 = {
   data: Intent
   status: 200
@@ -3401,53 +1891,6 @@ export const testmodeRefundIntent = async (intentId: string, options?: Parameter
 
 
 
-
-
-export const getTestmodeRefundIntentMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testmodeRefundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof testmodeRefundIntent>>, TError,{intentId: string}, TContext> => {
-
-const mutationKey = ['testmodeRefundIntent'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testmodeRefundIntent>>, {intentId: string}> = (props) => {
-          const {intentId} = props ?? {};
-
-          return  testmodeRefundIntent(intentId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type TestmodeRefundIntentMutationResult = NonNullable<Awaited<ReturnType<typeof testmodeRefundIntent>>>
-
-    export type TestmodeRefundIntentMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Refund an intent directly (test mode)
- */
-export const useTestmodeRefundIntent = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testmodeRefundIntent>>, TError,{intentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof testmodeRefundIntent>>,
-        TError,
-        {intentId: string},
-        TContext
-      > => {
-      return useMutation(getTestmodeRefundIntentMutationOptions(options));
-    }
-
 export type connectProviderResponse200 = {
   data: string
   status: 200
@@ -3509,53 +1952,6 @@ export const connectProvider = async (provider: string,
 
 
 
-
-
-export const getConnectProviderMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectProvider>>, TError,{provider: string;data: BodyType<ConnectRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof connectProvider>>, TError,{provider: string;data: BodyType<ConnectRequest>}, TContext> => {
-
-const mutationKey = ['connectProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof connectProvider>>, {provider: string;data: BodyType<ConnectRequest>}> = (props) => {
-          const {provider,data} = props ?? {};
-
-          return  connectProvider(provider,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ConnectProviderMutationResult = NonNullable<Awaited<ReturnType<typeof connectProvider>>>
-    export type ConnectProviderMutationBody = BodyType<ConnectRequest>
-    export type ConnectProviderMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Start a payment-provider OAuth connection
- */
-export const useConnectProvider = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectProvider>>, TError,{provider: string;data: BodyType<ConnectRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof connectProvider>>,
-        TError,
-        {provider: string;data: BodyType<ConnectRequest>},
-        TContext
-      > => {
-      return useMutation(getConnectProviderMutationOptions(options));
-    }
-
 export type providerCallbackResponse200 = {
   data: string
   status: 200
@@ -3610,62 +2006,6 @@ export const providerCallback = async (provider: string,
 
   }
 );}
-
-
-
-
-
-export const getProviderCallbackQueryKey = (provider: string,
-    params?: ProviderCallbackParams,) => {
-    return [
-    `/providers/${provider}/callback`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getProviderCallbackQueryOptions = <TData = Awaited<ReturnType<typeof providerCallback>>, TError = ErrorType<BadRequestResponse>>(provider: string,
-    params: ProviderCallbackParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof providerCallback>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getProviderCallbackQueryKey(provider,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof providerCallback>>> = ({ signal }) => providerCallback(provider,params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: provider !== null && provider !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof providerCallback>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ProviderCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof providerCallback>>>
-export type ProviderCallbackQueryError = ErrorType<BadRequestResponse>
-
-
-/**
- * @summary Payment-provider OAuth callback
- */
-
-export function useProviderCallback<TData = Awaited<ReturnType<typeof providerCallback>>, TError = ErrorType<BadRequestResponse>>(
- provider: string,
-    params: ProviderCallbackParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof providerCallback>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getProviderCallbackQueryOptions(provider,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3729,53 +2069,6 @@ export const revokeProvider = async (provider: string,
 
 
 
-
-
-export const getRevokeProviderMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeProvider>>, TError,{provider: string;data: BodyType<RevokeRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof revokeProvider>>, TError,{provider: string;data: BodyType<RevokeRequest>}, TContext> => {
-
-const mutationKey = ['revokeProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeProvider>>, {provider: string;data: BodyType<RevokeRequest>}> = (props) => {
-          const {provider,data} = props ?? {};
-
-          return  revokeProvider(provider,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RevokeProviderMutationResult = NonNullable<Awaited<ReturnType<typeof revokeProvider>>>
-    export type RevokeProviderMutationBody = BodyType<RevokeRequest>
-    export type RevokeProviderMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Revoke a payment-provider connection
- */
-export const useRevokeProvider = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeProvider>>, TError,{provider: string;data: BodyType<RevokeRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof revokeProvider>>,
-        TError,
-        {provider: string;data: BodyType<RevokeRequest>},
-        TContext
-      > => {
-      return useMutation(getRevokeProviderMutationOptions(options));
-    }
-
 export type receiveWebhookResponse200 = {
   data: unknown
   status: 200
@@ -3832,53 +2125,6 @@ export const receiveWebhook = async (provider: string,
 );}
 
 
-
-
-
-export const getReceiveWebhookMutationOptions = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveWebhook>>, TError,{provider: string;data: BodyType<ReceiveWebhookBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof receiveWebhook>>, TError,{provider: string;data: BodyType<ReceiveWebhookBody>}, TContext> => {
-
-const mutationKey = ['receiveWebhook'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof receiveWebhook>>, {provider: string;data: BodyType<ReceiveWebhookBody>}> = (props) => {
-          const {provider,data} = props ?? {};
-
-          return  receiveWebhook(provider,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ReceiveWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof receiveWebhook>>>
-    export type ReceiveWebhookMutationBody = BodyType<ReceiveWebhookBody>
-    export type ReceiveWebhookMutationError = ErrorType<BadRequestResponse | NotFoundResponse>
-
-    /**
- * @summary Receive a provider webhook
- */
-export const useReceiveWebhook = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveWebhook>>, TError,{provider: string;data: BodyType<ReceiveWebhookBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof receiveWebhook>>,
-        TError,
-        {provider: string;data: BodyType<ReceiveWebhookBody>},
-        TContext
-      > => {
-      return useMutation(getReceiveWebhookMutationOptions(options));
-    }
 
 export type listWebhookEndpointsResponse200 = {
   data: WebhookEndpoint[]
@@ -3937,59 +2183,6 @@ export const listWebhookEndpoints = async (walletId: string, options?: Parameter
 
   }
 );}
-
-
-
-
-
-export const getListWebhookEndpointsQueryKey = (walletId: string,) => {
-    return [
-    `/wallets/${walletId}/webhooks/endpoints`
-    ] as const;
-    }
-
-
-export const getListWebhookEndpointsQueryOptions = <TData = Awaited<ReturnType<typeof listWebhookEndpoints>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWebhookEndpoints>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListWebhookEndpointsQueryKey(walletId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWebhookEndpoints>>> = ({ signal }) => listWebhookEndpoints(walletId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: walletId !== null && walletId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWebhookEndpoints>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListWebhookEndpointsQueryResult = NonNullable<Awaited<ReturnType<typeof listWebhookEndpoints>>>
-export type ListWebhookEndpointsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a wallet's webhook endpoints
- */
-
-export function useListWebhookEndpoints<TData = Awaited<ReturnType<typeof listWebhookEndpoints>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWebhookEndpoints>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListWebhookEndpointsQueryOptions(walletId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4063,53 +2256,6 @@ export const createWebhookEndpoint = async (walletId: string,
 
 
 
-
-
-export const getCreateWebhookEndpointMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWebhookEndpoint>>, TError,{walletId: string;data: BodyType<CreateWebhookEndpointRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createWebhookEndpoint>>, TError,{walletId: string;data: BodyType<CreateWebhookEndpointRequest>}, TContext> => {
-
-const mutationKey = ['createWebhookEndpoint'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWebhookEndpoint>>, {walletId: string;data: BodyType<CreateWebhookEndpointRequest>}> = (props) => {
-          const {walletId,data} = props ?? {};
-
-          return  createWebhookEndpoint(walletId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateWebhookEndpointMutationResult = NonNullable<Awaited<ReturnType<typeof createWebhookEndpoint>>>
-    export type CreateWebhookEndpointMutationBody = BodyType<CreateWebhookEndpointRequest>
-    export type CreateWebhookEndpointMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a webhook endpoint
- */
-export const useCreateWebhookEndpoint = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWebhookEndpoint>>, TError,{walletId: string;data: BodyType<CreateWebhookEndpointRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createWebhookEndpoint>>,
-        TError,
-        {walletId: string;data: BodyType<CreateWebhookEndpointRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateWebhookEndpointMutationOptions(options));
-    }
-
 export type getWebhookEndpointResponse200 = {
   data: WebhookEndpoint
   status: 200
@@ -4161,59 +2307,6 @@ export const getWebhookEndpoint = async (endpointId: string, options?: Parameter
 
   }
 );}
-
-
-
-
-
-export const getGetWebhookEndpointQueryKey = (endpointId: string,) => {
-    return [
-    `/webhooks/endpoints/${endpointId}`
-    ] as const;
-    }
-
-
-export const getGetWebhookEndpointQueryOptions = <TData = Awaited<ReturnType<typeof getWebhookEndpoint>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(endpointId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebhookEndpoint>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetWebhookEndpointQueryKey(endpointId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebhookEndpoint>>> = ({ signal }) => getWebhookEndpoint(endpointId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: endpointId !== null && endpointId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebhookEndpoint>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetWebhookEndpointQueryResult = NonNullable<Awaited<ReturnType<typeof getWebhookEndpoint>>>
-export type GetWebhookEndpointQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a webhook endpoint
- */
-
-export function useGetWebhookEndpoint<TData = Awaited<ReturnType<typeof getWebhookEndpoint>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- endpointId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebhookEndpoint>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetWebhookEndpointQueryOptions(endpointId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4270,53 +2363,6 @@ export const deleteWebhookEndpoint = async (endpointId: string, options?: Parame
 );}
 
 
-
-
-
-export const getDeleteWebhookEndpointMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWebhookEndpoint>>, TError,{endpointId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteWebhookEndpoint>>, TError,{endpointId: string}, TContext> => {
-
-const mutationKey = ['deleteWebhookEndpoint'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWebhookEndpoint>>, {endpointId: string}> = (props) => {
-          const {endpointId} = props ?? {};
-
-          return  deleteWebhookEndpoint(endpointId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteWebhookEndpointMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWebhookEndpoint>>>
-
-    export type DeleteWebhookEndpointMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Delete a webhook endpoint
- */
-export const useDeleteWebhookEndpoint = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWebhookEndpoint>>, TError,{endpointId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteWebhookEndpoint>>,
-        TError,
-        {endpointId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteWebhookEndpointMutationOptions(options));
-    }
 
 export type listWebhookEventsResponse200 = {
   data: WebhookEvent[]
@@ -4378,59 +2424,6 @@ export const listWebhookEvents = async (walletId: string, options?: Parameters<t
 
 
 
-
-
-export const getListWebhookEventsQueryKey = (walletId: string,) => {
-    return [
-    `/wallets/${walletId}/webhooks/events`
-    ] as const;
-    }
-
-
-export const getListWebhookEventsQueryOptions = <TData = Awaited<ReturnType<typeof listWebhookEvents>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWebhookEvents>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListWebhookEventsQueryKey(walletId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWebhookEvents>>> = ({ signal }) => listWebhookEvents(walletId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: walletId !== null && walletId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWebhookEvents>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListWebhookEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listWebhookEvents>>>
-export type ListWebhookEventsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a wallet's webhook events
- */
-
-export function useListWebhookEvents<TData = Awaited<ReturnType<typeof listWebhookEvents>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- walletId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWebhookEvents>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListWebhookEventsQueryOptions(walletId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getWebhookEventResponse200 = {
   data: WebhookEvent
   status: 200
@@ -4483,59 +2476,6 @@ export const getWebhookEvent = async (eventId: Uuid, options?: Parameters<typeof
 
   }
 );}
-
-
-
-
-
-export const getGetWebhookEventQueryKey = (eventId: Uuid,) => {
-    return [
-    `/webhooks/events/${eventId}`
-    ] as const;
-    }
-
-
-export const getGetWebhookEventQueryOptions = <TData = Awaited<ReturnType<typeof getWebhookEvent>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(eventId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebhookEvent>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetWebhookEventQueryKey(eventId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebhookEvent>>> = ({ signal }) => getWebhookEvent(eventId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: eventId !== null && eventId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebhookEvent>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetWebhookEventQueryResult = NonNullable<Awaited<ReturnType<typeof getWebhookEvent>>>
-export type GetWebhookEventQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a webhook event
- */
-
-export function useGetWebhookEvent<TData = Awaited<ReturnType<typeof getWebhookEvent>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- eventId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebhookEvent>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetWebhookEventQueryOptions(eventId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4595,59 +2535,6 @@ export const listWebhookDeliveries = async (endpointId: string, options?: Parame
 
 
 
-
-
-export const getListWebhookDeliveriesQueryKey = (endpointId: string,) => {
-    return [
-    `/webhooks/endpoints/${endpointId}/deliveries`
-    ] as const;
-    }
-
-
-export const getListWebhookDeliveriesQueryOptions = <TData = Awaited<ReturnType<typeof listWebhookDeliveries>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(endpointId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWebhookDeliveries>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListWebhookDeliveriesQueryKey(endpointId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWebhookDeliveries>>> = ({ signal }) => listWebhookDeliveries(endpointId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: endpointId !== null && endpointId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWebhookDeliveries>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListWebhookDeliveriesQueryResult = NonNullable<Awaited<ReturnType<typeof listWebhookDeliveries>>>
-export type ListWebhookDeliveriesQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List an endpoint's deliveries
- */
-
-export function useListWebhookDeliveries<TData = Awaited<ReturnType<typeof listWebhookDeliveries>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- endpointId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWebhookDeliveries>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListWebhookDeliveriesQueryOptions(endpointId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getWebhookDeliveryResponse200 = {
   data: WebhookDelivery
   status: 200
@@ -4700,52 +2587,3 @@ export const getWebhookDelivery = async (deliveryId: Uuid, options?: Parameters<
 
   }
 );}
-
-
-
-
-
-export const getGetWebhookDeliveryQueryKey = (deliveryId: Uuid,) => {
-    return [
-    `/webhooks/deliveries/${deliveryId}`
-    ] as const;
-    }
-
-
-export const getGetWebhookDeliveryQueryOptions = <TData = Awaited<ReturnType<typeof getWebhookDelivery>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(deliveryId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebhookDelivery>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetWebhookDeliveryQueryKey(deliveryId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWebhookDelivery>>> = ({ signal }) => getWebhookDelivery(deliveryId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: deliveryId !== null && deliveryId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWebhookDelivery>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetWebhookDeliveryQueryResult = NonNullable<Awaited<ReturnType<typeof getWebhookDelivery>>>
-export type GetWebhookDeliveryQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a webhook delivery
- */
-
-export function useGetWebhookDelivery<TData = Awaited<ReturnType<typeof getWebhookDelivery>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse>>(
- deliveryId: Uuid, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWebhookDelivery>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetWebhookDeliveryQueryOptions(deliveryId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}

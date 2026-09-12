@@ -9,7 +9,7 @@ import {
 } from "solid-js";
 import { Link } from "@tanstack/solid-router";
 import type { Purchase } from "@trieoh/univents-api/schemas";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import QRCode from "qrcode";
 
 import { formatMoney } from "@/shared/lib/money";

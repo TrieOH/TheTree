@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { ApiError } from "@trieoh/identityx-sdk-ts";
 import type { ReactNode } from "react";
-import { recordCompletedSpan } from "../tracing/browser";
+import { recordCompletedSpan } from "@trieoh/front-core/tracing/browser";
 
 export interface QueryClientConfig {
   /** Stale time in milliseconds (default: 5 minutes). */

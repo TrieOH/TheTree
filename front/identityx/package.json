@@ -24,6 +24,7 @@
     "@tanstack/react-start": "catalog:",
     "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:*",
+    "@trieoh/front-core-react": "workspace:*",
     "@trieoh/identityx-api": "workspace:*",
     "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
@@ -36,6 +37,7 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
     "zod": "catalog:"

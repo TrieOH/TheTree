@@ -6,7 +6,7 @@ import {
 } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
 import GlobeIcon from "~icons/lucide/globe";

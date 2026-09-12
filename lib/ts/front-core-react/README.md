@@ -3,11 +3,12 @@
 This module is the TanStack Start *binding*: it supplies the runtime pieces the
 BFF needs — an encrypted session cookie (`useSession`) and the incoming request
 (`getRequest`) — and delegates everything else to
-[`createIdentityXBff`](../bff/core.ts), which has no framework imports.
+[`createIdentityXBff`](../front-core/src/auth/bff/core.ts), which has no
+framework imports.
 
 Other runtimes (a Cloudflare Worker, a Node server) should compose the same core
-with their own `BffSession` and `request`, in a sibling directory under `auth/`,
-instead of reimplementing the IdentityX contract.
+with their own `BffSession` and `request` — in a `-react` / `-solid` / neutral
+package of their own — instead of reimplementing the IdentityX contract.
 
 ## Server configuration
 
@@ -15,7 +16,7 @@ The consumer provides infrastructure configuration, not IdentityX endpoint
 details. Login, logout and refresh paths, methods and headers are internal.
 
 ```ts
-import { createTanStackIdentityXBff } from "@trieoh/front-core/auth/tanstack/server";
+import { createTanStackIdentityXBff } from "@trieoh/front-core-react/server";
 
 const bff = createTanStackIdentityXBff({
   identityX: {
@@ -61,7 +62,7 @@ only because IdentityX operations have fixed, library-owned contracts.
 import {
   createTanStackIdentityXAuthProviderAdapter,
   createTanStackServerProxyFetchers,
-} from "@trieoh/front-core/auth/tanstack/client";
+} from "@trieoh/front-core-react";
 
 export const authAdapter = createTanStackIdentityXAuthProviderAdapter({
   setup: setupServerFn,

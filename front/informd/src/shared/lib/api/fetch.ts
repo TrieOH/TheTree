@@ -1,5 +1,5 @@
 import { createAppFetchers } from "@trieoh/api-client";
-import { createTanStackServerProxyFetchers } from "@trieoh/front-core/auth/tanstack/client";
+import { createTanStackServerProxyFetchers } from "@trieoh/front-core-react";
 import { env } from "#/env";
 import { authenticatedProxyServerFn } from "#/integrations/auth/server-functions";
 

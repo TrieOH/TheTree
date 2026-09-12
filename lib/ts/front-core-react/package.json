@@ -1,0 +1,41 @@
+{
+  "name": "@trieoh/front-core-react",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "@trieoh/front-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "@trieoh/envoy-fetch-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
+    "@trieoh/identityx-sdk-ts-react": "catalog:",
+    "posthog-js": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "catalog:"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "@trieoh/envoy-fetch-ts": "catalog:",
+    "@trieoh/front-core": "workspace:*",
+    "@trieoh/identityx-sdk-ts": "workspace:*",
+    "@trieoh/identityx-sdk-ts-react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "posthog-js": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "catalog:"
+  }
+}

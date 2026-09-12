@@ -7,8 +7,5 @@
   "exports": {
     ".": "./client/endpoints.ts",
     "./schemas": "./client/schemas/index.ts"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "catalog:"
   }
 }

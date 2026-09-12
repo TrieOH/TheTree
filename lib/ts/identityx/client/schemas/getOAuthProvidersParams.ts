@@ -77,8 +77,8 @@
 import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
 
 export type GetOAuthProvidersParams = {
-    /**
-     * Project to scope the operation to. Omit for IdentityX itself.
-     */
-    project_id?: ProjectIDQueryParameter;
+/**
+ * Project to scope the operation to. Omit for IdentityX itself.
+ */
+project_id?: ProjectIDQueryParameter;
 };

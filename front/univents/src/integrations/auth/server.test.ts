@@ -22,7 +22,7 @@ vi.mock("@tanstack/react-start/server", () => ({
   useSession: () => Promise.resolve(session),
 }));
 
-import { createTanStackIdentityXBff } from "@trieoh/front-core/auth/tanstack/server";
+import { createTanStackIdentityXBff } from "@trieoh/front-core-react/server";
 
 const runtime = {
   getRequest: () => new Request("https://univents.test/_server"),

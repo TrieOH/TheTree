@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { Loading, createMemo, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import CalendarIcon from "~icons/lucide/calendar";

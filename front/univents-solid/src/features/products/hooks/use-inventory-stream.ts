@@ -1,4 +1,4 @@
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import type { StoreStockItem } from "@trieoh/univents-api/schemas";
 import { createSignal, onSettled } from "solid-js";
 import { cart } from "../model/cart";

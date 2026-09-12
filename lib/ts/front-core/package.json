@@ -6,9 +6,6 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./solid": "./src/solid.ts",
-    "./auth/tanstack/client": "./src/auth/tanstack/client.ts",
-    "./auth/tanstack/server": "./src/auth/tanstack/server.ts",
     "./auth/bff/core": "./src/auth/bff/core.ts",
     "./auth/bff/client": "./src/auth/bff/client.ts",
     "./auth/bff/types": "./src/auth/bff/types.ts",
@@ -30,29 +27,13 @@
     "@opentelemetry/semantic-conventions": "catalog:",
     "@opentelemetry/instrumentation": "catalog:",
     "@opentelemetry/instrumentation-fetch": "catalog:",
-    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
-    "@opentelemetry/otlp-transformer": "catalog:",
-    "@tanstack/query-core": "catalog:"
+    "@opentelemetry/otlp-transformer": "catalog:"
   },
   "peerDependencies": {
-    "@tanstack/solid-router": "^2.0.0-rc.6",
-    "@tanstack/react-query": "catalog:",
-    "@tanstack/react-router": "catalog:",
-    "@tanstack/react-start": "catalog:",
-    "@trieoh/identityx-sdk-ts": "workspace:*",
-    "@trieoh/identityx-sdk-ts-react": "catalog:",
-    "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "@trieoh/envoy-fetch-ts": "catalog:",
-    "posthog-js": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "solid-js": "catalog:",
-    "sonner": "catalog:"
+    "@trieoh/identityx-sdk-ts": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "@tanstack/react-start": "catalog:",
     "@trieoh/envoy-fetch-ts": "catalog:",
     "@trieoh/identityx-sdk-ts": "workspace:*"
   }

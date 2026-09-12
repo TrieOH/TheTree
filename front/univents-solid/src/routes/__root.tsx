@@ -1,7 +1,7 @@
 import { HeadContent, Outlet, createRootRouteWithContext } from '@tanstack/solid-router';
-import type { RouterSession } from '@trieoh/front-core/solid';
+import type { RouterSession } from '@trieoh/front-core-solid';
 import { OverlayScrollbar } from "@/widgets/ui/OverlayScrollbar";
-import { AuthContextUpdater } from '@trieoh/front-core/solid';
+import { AuthContextUpdater } from '@trieoh/front-core-solid';
 import { Toaster } from '@/shared/ui/toast';
 import { NavigationDock } from '@/widgets/ui/NavigationDock';
 

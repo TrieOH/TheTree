@@ -13,10 +13,10 @@
  * The name already says which framework a package is for; this makes the
  * manifest agree with the name, on every commit.
  *
- * Hard errors are reserved for `dependencies`/`optionalDependencies`, because
- * those are what a consumer installs transitively. Framework packages in
- * `devDependencies` (tests, storybook) or `peerDependencies` (the correct place
- * for a library) are reported as warnings.
+ * Hard errors are reserved for what a consumer actually installs: `dependencies`,
+ * `optionalDependencies` and `peerDependencies` (npm and pnpm auto-install peers,
+ * so those reach consumers too). Framework packages in `devDependencies` — tests,
+ * storybook — never ship, so they are ignored when resolving the contract.
  *
  * Usage: node tools/check-package-boundaries.mjs [--quiet]
  */
@@ -53,11 +53,27 @@ function workspaceDirs() {
   const start = lines.findIndex((line) => /^packages:\s*$/.test(line));
   const patterns = [];
 
-  for (let index = start + 1; start !== -1 && index < lines.length; index += 1) {
+  if (start === -1) {
+    fail("pnpm-workspace.yaml has no `packages:` block — cannot find the workspace packages");
+  }
+
+  for (let index = start + 1; index < lines.length; index += 1) {
     const line = lines[index];
     if (/^\S/.test(line)) break; // next top-level key
-    const match = line.match(/^\s*-\s*'([^']+)'/);
-    if (match) patterns.push(match[1]);
+
+    const entry = line.match(/^\s*-\s*(.+?)\s*$/)?.[1];
+    if (!entry) continue;
+
+    // `- 'front/*'`, `- "front/*"`, `- front/*` and `- front/* # comment`.
+    const pattern = /^['"]/.test(entry)
+      ? entry.slice(1, entry.lastIndexOf(entry[0]))
+      : entry.split(/\s+#/)[0].trim();
+
+    if (pattern && !pattern.startsWith("!")) patterns.push(pattern);
+  }
+
+  if (patterns.length === 0) {
+    fail("could not read any workspace pattern from `packages:` — check the syntax");
   }
 
   const dirs = [];
@@ -89,6 +105,13 @@ function readManifest(dir) {
   }
 }
 
+/** Fatal: the check cannot do its job, so it must not report success. */
+function fail(message) {
+  console.error(`\npackage boundaries: ${message}`);
+  console.error("Refusing to report success — fix the workspace config or the checker.\n");
+  process.exit(1);
+}
+
 function matches(dep, regex) {
   if (regex.test(dep)) return true;
   // Scoped names: a React package may be pulled in as `@scope/react-foo`.
@@ -104,12 +127,21 @@ for (const dir of workspaceDirs()) {
   if (manifest?.name) packages.set(manifest.name, { dir, manifest });
 }
 
-const MANIFEST_SECTIONS = [
-  "dependencies",
-  "optionalDependencies",
-  "peerDependencies",
-  "devDependencies",
-];
+if (packages.size === 0) {
+  fail("found no packages in the workspace globs — the patterns are probably wrong");
+}
+
+/**
+ * Sections that decide a package's framework contract. `dependencies` and
+ * `optionalDependencies` are what a consumer installs; `peerDependencies` are
+ * auto-installed by npm and pnpm, so they reach consumers as well.
+ *
+ * `devDependencies` are deliberately absent: a neutral library is allowed to use
+ * React to test itself, and that React never reaches anyone. The full list is
+ * still used to decide whether something is a library at all.
+ */
+const CONTRACT_SECTIONS = ["dependencies", "optionalDependencies", "peerDependencies"];
+const MANIFEST_SECTIONS = [...CONTRACT_SECTIONS, "devDependencies"];
 
 /** Framework a dependency belongs to: a workspace package answers for itself. */
 const depFramework = (dep) => {
@@ -145,7 +177,7 @@ for (let pass = 0; pass < 5; pass += 1) {
 
   for (const entry of packages.values()) {
     const used = [];
-    for (const section of MANIFEST_SECTIONS) {
+    for (const section of CONTRACT_SECTIONS) {
       for (const dep of Object.keys(entry.manifest[section] ?? {})) {
         const framework = depFramework(dep);
         if (framework !== "neutral") used.push({ dep, section, framework });

@@ -96,8 +96,9 @@ generate +SERVICES="identityx informd payssage univents":
     just generate-oapi {{SERVICES}}
     just generate-orval
 
-# Generate TypeScript API clients + TanStack Query hooks into
-# lib/ts/<svc>/client via orval (one entry per backend in orval.config.ts).
+# Generate framework-free TypeScript API clients (plain fetch functions +
+# spec types) into lib/ts/<svc>/client via orval (one entry per backend in
+# orval.config.ts).
 # Runs for all four services regardless of {{SERVICES}}.
 generate-orval:
     pnpm orval

@@ -12,7 +12,7 @@ single Caddy gateway, with React front-ends deployed to Cloudflare Workers.
 |---|---|---|
 | Backends | Go 1.26 · chi · sqlc · goose · river | 4 microservices in `api/` |
 | Frontends | React 19 · TanStack Start · Tailwind v4 | 4 SPAs in `front/`, deploy to Cloudflare Workers |
-| Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval-generated TS clients) | |
+| Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval TS clients, `ui-*`, `front-core*`) | framework-free by default, see *Package boundaries* |
 | SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |
 | CI/CD | Forgejo Actions · Dagger (`.dagger/`) | builds + publishes to `git.trieoh.com/trieoh/<svc>` |
 | Dev infra | Docker Compose (`compose.yml`) | postgres, rustfs, mailpit + hot-rebuilt services |
@@ -23,11 +23,29 @@ single Caddy gateway, with React front-ends deployed to Cloudflare Workers.
 api/<svc>/       # one Go service per dir (cmd/, internal/, db/, api-spec.yml)
 front/<svc>/     # one React SPA per dir
 lib/go/          # shared Go library
-lib/ts/          # orval-generated TS clients (types + TanStack Query hooks)
+lib/ts/          # shared TS packages: orval clients, ui-react/ui-solid,
+                 # front-core (+ -react / -solid bindings)
 sdk/go/ sdk/ts/  # public SDKs
 .dagger/         # Dagger module (ci, lint, test, compile, publish)
 docs/            # CONTEXT.md (domain glossary), adr/, agents/
 ```
+
+### Package boundaries
+
+Every workspace package declares its framework in its **name**:
+
+| Suffix | Meaning | Examples |
+|---|---|---|
+| *(none)* | framework-free — React/Solid must not appear in `dependencies` | `@trieoh/front-core`, `@trieoh/univents-api`, `@trieoh/api-client` |
+| `-react` | React only | `@trieoh/ui-react`, `@trieoh/front-core-react` |
+| `-solid` | Solid only | `@trieoh/ui-solid`, `@trieoh/front-core-solid` |
+
+This is what keeps the Solid app from pulling React in (and vice versa): the
+React bindings live in `front-core-react`, the Solid ones in `front-core-solid`,
+and the shared logic in the neutral `front-core`. `pnpm check:boundaries` (a
+plain `node` script, also wired into the pre-commit hook and CI) fails the build
+when a package imports across that line.
+
 
 ## Prereqs
 
@@ -96,17 +114,20 @@ Dev ports: postgres `5432` · rustfs `9000/9001` · backends `8080`–`8083`
 | Lint (Go) | `just lint` or `just lint <svc>` |
 | Frontend typecheck | `pnpm -r tsc` |
 | Frontend lint/format | `pnpm -r lint` / `pnpm -r format` |
+| Package boundary check | `pnpm check:boundaries` |
 | Bump Go deps | `just goup` |
 
 ## Codegen (run after changing specs/models)
 
 ```bash
 just generate-oapi     # oapi-codegen: api-spec.yml → internal/openapi bindings
-just generate-orval    # orval: TS client + TanStack Query hooks in lib/ts/<svc>/client
+just generate-orval    # orval: framework-free TS client in lib/ts/<svc>/client
 ```
 
-Generated code is **not committed** — `internal/openapi/` and
-`lib/ts/<svc>/client/` are gitignored and regenerated in CI/builds.
+Generated code is **partly committed**: `internal/openapi/` is gitignored and
+regenerated in CI/builds, while the orval TS clients under
+`lib/ts/<svc>/client/` **are** committed — after regenerating, run
+`pnpm -r tsc` (and `node tools/check-package-boundaries.mjs`) before committing.
 
 ## Releases & deploys
 

@@ -2,7 +2,7 @@ import { For, Loading, Show, createMemo } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import type { Purchase } from "@trieoh/univents-api/schemas";
 import { Link } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { myPurchasesQueryOptions } from "../api";
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
 

@@ -1,4 +1,4 @@
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import type {
   MyParticipation,
   MyTicket,

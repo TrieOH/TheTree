@@ -4,7 +4,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { AuthContextUpdater } from "@trieoh/front-core";
+import { AuthContextUpdater } from "@trieoh/front-core-react";
 import { AuthProvider, type useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Toaster } from "@trieoh/ui-react/shadcn/sonner";
 import { PHProvider } from "@/app/providers/posthog/RootProvider";

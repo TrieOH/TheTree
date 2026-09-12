@@ -6,7 +6,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { AuthContextUpdater } from "@trieoh/front-core";
+import { AuthContextUpdater } from "@trieoh/front-core-react";
 import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { Toaster } from "@trieoh/ui-react/shadcn/sonner";
 import { ThemeProvider } from "next-themes";

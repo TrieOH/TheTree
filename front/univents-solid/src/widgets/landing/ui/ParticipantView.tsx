@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/solid-router";
 import { For, Loading, Show, createMemo } from "solid-js";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQueryClient } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";

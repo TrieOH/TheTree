@@ -11,8 +11,8 @@ import {
 import {
   TanStackQueryProvider,
   createQueryClient,
-} from "@trieoh/front-core/solid";
-import type { RouterSession } from "@trieoh/front-core/solid";
+} from "@trieoh/front-core-solid";
+import type { RouterSession } from "@trieoh/front-core-solid";
 import { initBrowserTracing } from "@trieoh/front-core/tracing/browser";
 import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { untrack } from "solid-js";

@@ -130,7 +130,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
   createTanStackIdentityXBff,
   type ServerProxyRequest,
-} from "@trieoh/front-core/auth/tanstack/server";
+} from "@trieoh/front-core-react/server";
 
 const bff = createTanStackIdentityXBff({
   identityX: { baseURL: env.AUTH_API_URL, projectId: env.AUTH_PROJECT_ID },
@@ -159,7 +159,7 @@ export const requestServerFn = createServerFn({ method: "POST" })
 
 ```ts
 import { configureApiClient, createOrvalTransport } from "@trieoh/api-client";
-import { createTanStackIdentityXIntegration } from "@trieoh/front-core/auth/tanstack/client";
+import { createTanStackIdentityXIntegration } from "@trieoh/front-core-react";
 
 const { authAdapter, authFetcher } = createTanStackIdentityXIntegration(
   {
