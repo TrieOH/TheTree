@@ -52,6 +52,7 @@
     "@trieoh/ui-solid": "workspace:*",
     "@trieoh/univents-api": "workspace:*",
     "aws4fetch": "^1.0.20",
+    "effect": "4.0.0-rc.115",
     "motion": "catalog:",
     "posthog-js": "catalog:",
     "qrcode": "^1.5.4",
