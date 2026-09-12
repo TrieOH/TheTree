@@ -46,14 +46,17 @@ const SocialIcons: Record<string, () => JSX.Element> = {
   discord: DiscordIcon as unknown as () => JSX.Element,
 };
 
+type LoadedProfile = {
+  success: boolean;
+  data?: { handle?: string | null; pfp_url?: string | null; profile?: Record<string, unknown> };
+  message?: string;
+};
+
 export function ProfileEditor(props: {
   load: () => Promise<{
-    profile: {
-      success: boolean;
-      data?: { handle?: string | null; pfp_url?: string | null; profile?: Record<string, unknown> };
-      message?: string;
-    };
+    profile: LoadedProfile;
   }>;
+  initialProfile?: LoadedProfile;
   save: (
     profile: Record<string, unknown>,
     handle?: string,
@@ -61,9 +64,15 @@ export function ProfileEditor(props: {
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const [profile, setProfile] = createSignal<UniventsProfile>({});
-  const [handle, setHandle] = createSignal("");
-  const [loading, setLoading] = createSignal(true);
+  const initial = props.initialProfile;
+  const [profile, setProfile] = createSignal<UniventsProfile>(initial?.data?.profile
+    ? asUniventsProfile({
+        ...initial.data.profile,
+        ...(initial.data.pfp_url !== undefined && { pfpUrl: initial.data.pfp_url }),
+      })
+    : {});
+  const [handle, setHandle] = createSignal(initial?.data?.handle ?? "");
+  const [loading, setLoading] = createSignal(!initial?.success || !initial.data);
   const [saving, setSaving] = createSignal(false);
   const [pendingImages, setPendingImages] = createSignal<Partial<Record<"pfpUrl" | "bannerUrl", File>>>({});
   const [error, setError] = createSignal<string>();

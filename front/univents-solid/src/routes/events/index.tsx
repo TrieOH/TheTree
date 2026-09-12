@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { For, Loading, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import SearchIcon from "~icons/lucide/search";
 import SlidersIcon from "~icons/lucide/sliders-horizontal";
@@ -26,7 +26,8 @@ function EventsPage() {
   const events = createMemo(() => eventsQuery().data ?? []);
 
   return (
-    <Loading
+    <Show
+      when={eventsQuery().isSuccess}
       fallback={
         <EventsShell count="...">
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 md:gap-8">
@@ -46,7 +47,7 @@ function EventsPage() {
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
       />
-    </Loading>
+    </Show>
   );
 }
 

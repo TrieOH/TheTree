@@ -10,6 +10,7 @@ import { useQuery } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
 import type { BadgeProfileGroups, Certification } from "@trieoh/univents-api/schemas";
+import { profileQueryOptions } from "@/features/profile/api";
 import { profileKeys } from "@/features/profile/api/query-keys";
 import GlobeIcon from "~icons/lucide/globe";
 import MailIcon from "~icons/lucide/mail";
@@ -62,13 +63,7 @@ export interface ProfileViewProps {
 
 export function ProfileView(props: ProfileViewProps) {
   const profileQuery = useQuery(() => ({
-    queryKey: profileKeys.detail(props.actorId),
-    enabled: Boolean(props.actorId),
-    queryFn: async () => {
-      if (!props.actorId) return null;
-      const response = await props.loadProfile(props.actorId);
-      return response.success ? response : null;
-    },
+    ...profileQueryOptions(props.actorId, props.loadProfile),
   }));
   const result = createMemo(() => profileQuery().data);
   return (
