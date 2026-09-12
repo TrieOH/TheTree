@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Effect, Exit } from "effect";
+import { Effect, Exit, Schedule } from "effect";
 import {
   uploadProfileImage,
   uploadProfileImageEffect,
@@ -81,8 +81,8 @@ describe("uploadProfileImageEffect", () => {
     expect(url).toBe("https://storage.univents.test/profiles/images/avatar.png");
   });
 
-  it("handles moderation rejection or missing publicUrl", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+  it("handles moderation rejection without retrying", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
       new Response(
         JSON.stringify({
           approved: false,
@@ -98,20 +98,60 @@ describe("uploadProfileImageEffect", () => {
     );
 
     expect(Exit.isFailure(exit)).toBe(true);
+    // Moderation rejection is a terminal error and should not be retried
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     await expect(uploadProfileImage(file, "bannerUrl")).rejects.toThrow(
       "Conteúdo não aprovado pela moderação.",
     );
   });
 
-  it("handles network failure gracefully", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Connection reset"));
+  it("retries on transient network errors using Schedule", async () => {
+    let attempts = 0;
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      attempts++;
+      if (attempts < 3) {
+        throw new Error("Network connection reset");
+      }
+      return new Response(
+        JSON.stringify({
+          approved: true,
+          publicUrl: "https://storage.univents.test/recovered.png",
+        }),
+        { status: 200 },
+      );
+    });
 
     const file = new File(["data"], "avatar.jpg", { type: "image/jpeg" });
+    // Use an instant recurs schedule for fast unit testing
+    const instantRetrySchedule = Schedule.recurs(3);
+
+    const url = await Effect.runPromise(
+      uploadProfileImageEffect(file, "pfpUrl", {
+        retrySchedule: instantRetrySchedule,
+      }),
+    );
+
+    expect(url).toBe("https://storage.univents.test/recovered.png");
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("fails after exhausting retry attempts on persistent network errors", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(new Error("Persistent network down"));
+
+    const file = new File(["data"], "avatar.jpg", { type: "image/jpeg" });
+    const instantRetrySchedule = Schedule.recurs(2);
+
     const exit = await Effect.runPromiseExit(
-      uploadProfileImageEffect(file, "pfpUrl"),
+      uploadProfileImageEffect(file, "pfpUrl", {
+        retrySchedule: instantRetrySchedule,
+      }),
     );
 
     expect(Exit.isFailure(exit)).toBe(true);
+    // 1 initial attempt + 2 retries = 3 attempts
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 });
 

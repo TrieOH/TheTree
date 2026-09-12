@@ -1,4 +1,4 @@
-import { Data, Effect } from "effect";
+import { Data, Effect, Schedule } from "effect";
 
 export const ALLOWED_IMAGE_TYPES = [
   "image/png",
@@ -38,6 +38,15 @@ export type StorageError =
   | StorageUploadNetworkError
   | StorageModerationError;
 
+/**
+ * Default retry schedule for transient network failures:
+ * Exponential backoff (starting at 150ms) with jitter, limited to 2 retries (3 attempts total).
+ */
+export const uploadRetrySchedule = Schedule.exponential("150 millis").pipe(
+  Schedule.jittered,
+  Schedule.upTo({ times: 2 }),
+);
+
 export const validateImageFile = (
   file: File,
 ): Effect.Effect<File, InvalidFileTypeError | FileSizeExceededError> =>
@@ -75,56 +84,70 @@ export const validateImageFileSync = (
     }),
   );
 
+export interface UploadOptions {
+  readonly retrySchedule?: Schedule.Schedule<unknown, unknown>;
+}
+
 export const uploadProfileImageEffect = (
   file: File,
   field: "pfpUrl" | "bannerUrl",
+  options?: UploadOptions,
 ): Effect.Effect<string, StorageError> =>
   Effect.gen(function* () {
     yield* validateImageFile(file);
 
-    const data = new FormData();
-    data.append("file", file);
-    data.append("path", "profiles/images");
-    data.append("idempotencyKey", crypto.randomUUID());
-    data.append("field", field);
+    const uploadAttempt = Effect.gen(function* () {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("path", "profiles/images");
+      data.append("idempotencyKey", crypto.randomUUID());
+      data.append("field", field);
 
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch("/storage/image/preprocess", {
-          method: "POST",
-          body: data,
-        }),
-      catch: (cause) =>
-        new StorageUploadNetworkError({
-          cause,
-          message: "Falha na conexão ao enviar a imagem.",
-        }),
+      const response = yield* Effect.tryPromise({
+        try: () =>
+          fetch("/storage/image/preprocess", {
+            method: "POST",
+            body: data,
+          }),
+        catch: (cause) =>
+          new StorageUploadNetworkError({
+            cause,
+            message: "Falha na conexão ao enviar a imagem.",
+          }),
+      });
+
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          response.json().catch(() => ({})) as Promise<{
+            publicUrl?: string;
+            error?: string;
+            approved?: boolean;
+          }>,
+        catch: (cause) =>
+          new StorageUploadNetworkError({
+            cause,
+            message: "Falha ao processar a resposta do servidor de imagens.",
+          }),
+      });
+
+      if (!response.ok || !result.publicUrl) {
+        return yield* Effect.fail(
+          new StorageModerationError({
+            reason: result.error ?? "A imagem não foi aprovada.",
+            message: result.error ?? "A imagem não foi aprovada.",
+          }),
+        );
+      }
+
+      return result.publicUrl;
     });
 
-    const result = yield* Effect.tryPromise({
-      try: () =>
-        response.json().catch(() => ({})) as Promise<{
-          publicUrl?: string;
-          error?: string;
-          approved?: boolean;
-        }>,
-      catch: (cause) =>
-        new StorageUploadNetworkError({
-          cause,
-          message: "Falha ao processar a resposta do servidor de imagens.",
-        }),
+    const schedule = options?.retrySchedule ?? uploadRetrySchedule;
+
+    return yield* Effect.retry(uploadAttempt, {
+      schedule,
+      while: (err) => err._tag === "StorageUploadNetworkError",
     });
-
-    if (!response.ok || !result.publicUrl) {
-      return yield* Effect.fail(
-        new StorageModerationError({
-          reason: result.error ?? "A imagem não foi aprovada.",
-          message: result.error ?? "A imagem não foi aprovada.",
-        }),
-      );
-    }
-
-    return result.publicUrl;
   });
 
 export interface UploadBatchResult {
@@ -134,10 +157,11 @@ export interface UploadBatchResult {
 
 export const uploadProfileImagesBatchEffect = (
   uploads: ReadonlyArray<readonly ["pfpUrl" | "bannerUrl", File]>,
+  options?: UploadOptions,
 ): Effect.Effect<UploadBatchResult> =>
   Effect.gen(function* () {
     const tasks = uploads.map(([field, file]) =>
-      uploadProfileImageEffect(file, field).pipe(
+      uploadProfileImageEffect(file, field, options).pipe(
         Effect.match({
           onFailure: () => ({ success: false as const, field }),
           onSuccess: (url) => ({ success: true as const, field, url }),
@@ -163,12 +187,14 @@ export const uploadProfileImagesBatchEffect = (
 
 export const uploadProfileImagesBatch = (
   uploads: ReadonlyArray<readonly ["pfpUrl" | "bannerUrl", File]>,
+  options?: UploadOptions,
 ): Promise<UploadBatchResult> =>
-  Effect.runPromise(uploadProfileImagesBatchEffect(uploads));
+  Effect.runPromise(uploadProfileImagesBatchEffect(uploads, options));
 
 export async function uploadProfileImage(
   file: File,
   field: "pfpUrl" | "bannerUrl",
+  options?: UploadOptions,
 ): Promise<string> {
-  return Effect.runPromise(uploadProfileImageEffect(file, field));
+  return Effect.runPromise(uploadProfileImageEffect(file, field, options));
 }
