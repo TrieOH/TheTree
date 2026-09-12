@@ -1,3 +1,4 @@
+import { appSessionStorage } from "@/shared/lib/browser-storage";
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
@@ -72,7 +73,7 @@ function CheckoutPage() {
         editionId: loaded.edition.id,
         data: checkoutRequest(items, { id: actor.id, email: actor.email }, payment, gift),
       });
-      sessionStorage.setItem(`purchase-ws:${result.purchase_id}`, result.ws_token);
+      appSessionStorage.set(`purchase-ws:${result.purchase_id}`, result.ws_token);
       useCart(loaded.edition.id).clear();
       await navigate({
         to: "/checkouts/$purchaseId",

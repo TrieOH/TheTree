@@ -45,6 +45,11 @@ export default defineConfig(({ command, mode }) => ({
   },
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        url: "http://localhost:3000",
+      },
+    },
     globals: false,
     setupFiles: ["./tests/ui/setup.ts"],
     isolate: false,
