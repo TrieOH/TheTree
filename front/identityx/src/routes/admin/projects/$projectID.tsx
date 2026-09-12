@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { LayoutContext } from "@trieoh/ui-base";
+import { LayoutContext } from "@trieoh/ui-react";
 import {
   Component,
   Fingerprint,

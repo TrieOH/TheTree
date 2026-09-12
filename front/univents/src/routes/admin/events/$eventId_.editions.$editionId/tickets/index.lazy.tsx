@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import type { SortState } from "@trieoh/ui-base";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import type { SortState } from "@trieoh/ui-react";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import { Plus, Ticket } from "lucide-react";
 import { useState } from "react";
 import { allTicketsQueryOptions } from "@/features/tickets/api";

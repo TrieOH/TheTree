@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import {
   BadgeCheck,
   CalendarClock,

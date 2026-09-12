@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import type { SortState } from "@trieoh/ui-base";
-import { PaginatedContainer } from "@trieoh/ui-base";
+import type { SortState } from "@trieoh/ui-react";
+import { PaginatedContainer } from "@trieoh/ui-react";
 import type { EditionPurchase } from "@trieoh/univents-api/schemas";
 import { ShoppingBag } from "lucide-react";
 import { useMemo, useState } from "react";

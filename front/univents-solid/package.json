@@ -47,6 +47,7 @@
     "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
+    "@trieoh/ui-solid": "workspace:*",
     "@trieoh/univents-api": "workspace:*",
     "aws4fetch": "^1.0.20",
     "motion": "catalog:",

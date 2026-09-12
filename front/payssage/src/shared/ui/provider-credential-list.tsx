@@ -1,6 +1,6 @@
 import type { QueryKey } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { PaginatedContainer } from "@trieoh/ui-base";
+import { PaginatedContainer } from "@trieoh/ui-react";
 import { CalendarDays, Check, Copy, ShieldOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

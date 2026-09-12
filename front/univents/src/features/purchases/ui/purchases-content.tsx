@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CardSkeleton, CardsGridSkeleton, EmptyState } from "@trieoh/ui-base";
+import { CardSkeleton, CardsGridSkeleton, EmptyState } from "@trieoh/ui-react";
 import { ShoppingBag } from "lucide-react";
 import { myPurchasesQueryOptions } from "../api";
 import { resolvePurchaseCatalog } from "../api/purchase-catalog";

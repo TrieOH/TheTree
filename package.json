@@ -15,6 +15,7 @@
     "deploy": "pnpm -r deploy",
     "typegen": "pnpm -r cf-typegen",
     "orval": "orval",
+    "check:boundaries": "node tools/check-package-boundaries.mjs",
     "clean": "pnpm -r exec rm -rf dist .turbo node_modules",
     "prepare": "husky"
   },

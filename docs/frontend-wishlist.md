@@ -1,13 +1,13 @@
 # Frontend DX Wishlist
 
-Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree` — `front/{identityx,informd,payssage,univents}` · `lib/ts/{api-client,front-core,ui-base,shared-utils}` · pnpm workspace. Owner: **frontend developer**.
+Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree` — `front/{identityx,informd,payssage,univents}` · `lib/ts/{api-client,front-core,ui-react,shared-utils}` · pnpm workspace. Owner: **frontend developer**.
 
 Evidence-based: every item cites the actual files. The stack is strong (pnpm catalog, TanStack Start, Tailwind v4, shared `@trieoh/*` packages consumed by all 4 apps) — the gaps are testing, copied components, and config drift.
 
 | # | Item | Effort | Evidence |
 |---|------|--------|----------|
 | 1 | Vitest + component tests for all 4 apps | M | 4 tests total, all univents, zero component tests; msw provisioned but unused |
-| 2 | Move shadcn/ui components into `@trieoh/ui-base` | M | dropdown/dialog/context-menu/breadcrumb ×4, button/card/badge/input ×3, `lib/utils.ts` + `lib/api/fetch.ts` ×4 |
+| 2 | Move shadcn/ui components into `@trieoh/ui-react` | M | dropdown/dialog/context-menu/breadcrumb ×4, button/card/badge/input ×3, `lib/utils.ts` + `lib/api/fetch.ts` ×4 |
 | 3 | Shared t3-env schema in `front-core` | S | 4 `env.ts` = 285 lines; same vars repeated |
 | 4 | Shared tsconfig base | S | 4 standalone configs, zero use `extends` |
 | 5 | Unify biome configs | XS | 2 variants: identityx `useIgnoreFile:false`, others + `noExplicitAny` |
@@ -15,7 +15,7 @@ Evidence-based: every item cites the actual files. The stack is strong (pnpm cat
 | 7 | Pin `latest` catalog entries | XS | `@tanstack/eslint-config: latest`, `@tanstack/devtools-vite: latest` |
 | 8 | Remove unused `msw` from workspace trust config | XS | In `onlyBuiltDependencies`/`allowBuilds`, zero usage |
 | 9 | Standardize the app skeleton (optional) | S | `server.ts` only in 2/4 apps, `tracing/` only in univents |
-| 10 | Component gallery (optional) | M | No storybook; a kitchen-sink route in ui-base instead |
+| 10 | Component gallery (optional) | M | No storybook; a kitchen-sink route in ui-react instead |
 
 ---
 
@@ -27,11 +27,11 @@ Evidence-based: every item cites the actual files. The stack is strong (pnpm cat
 
 **Effort.** M.
 
-### 2. Move shadcn/ui components into `@trieoh/ui-base`
+### 2. Move shadcn/ui components into `@trieoh/ui-react`
 
-**Problem.** The shadcn/ui components were copied **per app** instead of shared: `dropdown-menu`, `dialog`, `context-menu`, `breadcrumb` ×4; `button`, `card`, `badge`, `input`, `label`, `sonner` ×3; plus `shared/lib/utils.ts` and `shared/lib/api/fetch.ts` in all 4. `@trieoh/ui-base` already exists and is consumed by all 4 apps — it's the natural home. A theme or component fix today means editing the same file 3–4 times (or silently letting them drift).
+**Problem.** The shadcn/ui components were copied **per app** instead of shared: `dropdown-menu`, `dialog`, `context-menu`, `breadcrumb` ×4; `button`, `card`, `badge`, `input`, `label`, `sonner` ×3; plus `shared/lib/utils.ts` and `shared/lib/api/fetch.ts` in all 4. `@trieoh/ui-react` already exists and is consumed by all 4 apps — it's the natural home. A theme or component fix today means editing the same file 3–4 times (or silently letting them drift).
 
-**Fix.** Diff the copies across apps first (shadcn files get customized per-app — merge the intentional deltas), then move the shared set into `ui-base` (re-exporting `cn`, `lib/utils`). Apps import from `@trieoh/ui-base`; per-app overrides stay local. One place to fix, one place to upgrade shadcn.
+**Fix.** Diff the copies across apps first (shadcn files get customized per-app — merge the intentional deltas), then move the shared set into `ui-react` (re-exporting `cn`, `lib/utils`). Apps import from `@trieoh/ui-react`; per-app overrides stay local. One place to fix, one place to upgrade shadcn.
 
 **Effort.** M. Biggest DRY win on the frontend side.
 
@@ -99,7 +99,7 @@ Recommend the first (commit + CI diff check) — the generated client is the con
 
 **Problem.** No storybook — component development happens against real pages, which means exercising a component requires navigating to its page.
 
-**Fix.** Skip Storybook (heavy for solo); a **kitchen-sink route** in ui-base (or one app) that renders every `ui-base` component with variants. Cheap, serves as both gallery and the visual smoke test #1 can assert on.
+**Fix.** Skip Storybook (heavy for solo); a **kitchen-sink route** in ui-react (or one app) that renders every `ui-react` component with variants. Cheap, serves as both gallery and the visual smoke test #1 can assert on.
 
 **Effort.** M. Optional — do only if component churn starts to hurt.
 
@@ -109,13 +109,13 @@ Recommend the first (commit + CI diff check) — the generated client is the con
 
 - **e2e against staging** — backend wishlist #16 (Playwright); this list is unit/component-level.
 - **Visual regression testing** — overkill solo until #1 exists.
-- **Per-app theme divergence** — a real issue, but it's design work, not DX; #2 (ui-base) is the mechanical prerequisite.
+- **Per-app theme divergence** — a real issue, but it's design work, not DX; #2 (ui-react) is the mechanical prerequisite.
 
 ## Suggested order
 
 1. **XS cleanups:** #6 orval lie (decision + CI diff step), #7 pin `latest`, #8 msw trust removal, #5 biome unify.
 2. **#4 tsconfig base** — unblocks #1's vitest config and #3's aliases.
 3. **#3 shared env schema** — rides the same "front-core owns the common" wave as #4.
-4. **#2 shadcn → ui-base** — biggest DRY win; diff the copies first.
+4. **#2 shadcn → ui-react** — biggest DRY win; diff the copies first.
 5. **#1 vitest + component tests** — the biggest gap; build on 2–4.
 6. **#9 / #10** — optional, whenever.

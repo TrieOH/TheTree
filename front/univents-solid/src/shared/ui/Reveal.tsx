@@ -1,10 +1,17 @@
 import { animate } from "motion/mini";
 import type { JSX } from "@solidjs/web";
+import { untrack } from "solid-js";
 
 export function Reveal(props: {
   children: JSX.Element;
   direction?: "up" | "left" | "right";
   delay?: number;
+  /**
+   * `false` mounts the content already visible. Lists that re-slice on resize
+   * pass it for the rows that appear because of the new width, so a settled
+   * layout does not replay the entrance animation.
+   */
+  animate?: boolean;
 }) {
   let element!: HTMLDivElement;
   const offset = () =>
@@ -41,6 +48,7 @@ export function Reveal(props: {
     <div
       ref={(value) => {
         element = value;
+        if (untrack(() => props.animate) === false) return;
         requestAnimationFrame(reveal);
       }}
     >

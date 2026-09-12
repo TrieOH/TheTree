@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { CardSkeleton, CardsGridSkeleton, EmptyState } from "@trieoh/ui-base";
+import { CardSkeleton, CardsGridSkeleton, EmptyState } from "@trieoh/ui-react";
 import { FileCheck2 } from "lucide-react";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";

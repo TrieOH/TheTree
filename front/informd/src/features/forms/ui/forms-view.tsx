@@ -1,5 +1,5 @@
 import { FormStatusArchived } from "@trieoh/informd-models";
-import { PaginatedContainer } from "@trieoh/ui-base";
+import { PaginatedContainer } from "@trieoh/ui-react";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { FormCreateI, FormI } from "#/features/forms/model";

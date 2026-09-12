@@ -2,7 +2,7 @@ import {
   ChartCard,
   DashboardBarList,
   DashboardStatCard,
-} from "@trieoh/ui-base";
+} from "@trieoh/ui-react";
 import {
   CalendarRange,
   CircleAlert,

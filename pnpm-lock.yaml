@@ -253,9 +253,9 @@ importers:
       '@trieoh/shared-utils':
         specifier: workspace:*
         version: link:../../lib/ts/shared-utils
-      '@trieoh/ui-base':
+      '@trieoh/ui-react':
         specifier: workspace:*
-        version: link:../../lib/ts/ui-base
+        version: link:../../lib/ts/ui-react
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -380,9 +380,9 @@ importers:
       '@trieoh/informd-models':
         specifier: workspace:*
         version: link:../../lib/ts/informd
-      '@trieoh/ui-base':
+      '@trieoh/ui-react':
         specifier: workspace:*
-        version: link:../../lib/ts/ui-base
+        version: link:../../lib/ts/ui-react
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -516,9 +516,9 @@ importers:
       '@trieoh/shared-utils':
         specifier: workspace:*
         version: link:../../lib/ts/shared-utils
-      '@trieoh/ui-base':
+      '@trieoh/ui-react':
         specifier: workspace:*
-        version: link:../../lib/ts/ui-base
+        version: link:../../lib/ts/ui-react
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -697,9 +697,9 @@ importers:
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.15.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@trieoh/ui-base':
+      '@trieoh/ui-react':
         specifier: workspace:*
-        version: link:../../lib/ts/ui-base
+        version: link:../../lib/ts/ui-react
       '@trieoh/univents-api':
         specifier: workspace:*
         version: link:../../lib/ts/univents
@@ -857,6 +857,9 @@ importers:
       '@trieoh/identityx-sdk-ts-solid':
         specifier: 'workspace:'
         version: link:../../sdk/ts/identityx-solid
+      '@trieoh/ui-solid':
+        specifier: workspace:*
+        version: link:../../lib/ts/ui-solid
       '@trieoh/univents-api':
         specifier: workspace:*
         version: link:../../lib/ts/univents
@@ -1051,7 +1054,7 @@ importers:
 
   lib/ts/shared-utils: {}
 
-  lib/ts/ui-base:
+  lib/ts/ui-react:
     dependencies:
       next-themes:
         specifier: 'catalog:'
@@ -1102,6 +1105,30 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.6.0
+
+  lib/ts/ui-solid:
+    devDependencies:
+      '@solidjs/web':
+        specifier: 'catalog:'
+        version: 2.0.0-rc.6(solid-js@2.0.0-rc.6)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      clsx:
+        specifier: 'catalog:'
+        version: 2.1.1
+      solid-js:
+        specifier: 'catalog:'
+        version: 2.0.0-rc.6
+      tailwind-merge:
+        specifier: 'catalog:'
+        version: 3.6.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
 
   lib/ts/univents:
     dependencies:

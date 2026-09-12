@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useLayoutHeader } from "@trieoh/ui-base";
+import { useLayoutHeader } from "@trieoh/ui-react";
 import { useMemo } from "react";
 import { collectorsQueryOptions } from "#/features/collectors/api";
 import { ProviderConnectSection } from "#/features/oauth/ui/provider-connect-button";

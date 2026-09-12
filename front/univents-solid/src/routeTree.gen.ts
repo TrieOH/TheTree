@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -19,6 +20,7 @@ import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
 import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
@@ -28,6 +30,11 @@ import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actor
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -75,6 +82,11 @@ const ProfileEditRoute = ProfileEditRouteImport.update({
   path: '/profile/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   id: '/events/$slug/',
   path: '/events/$slug/',
@@ -103,6 +115,7 @@ const ProfileActorIdIndexRoute = ProfileActorIdIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
@@ -115,11 +128,13 @@ export interface FileRoutesByFullPath {
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
+  '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/profile/$actorId/': typeof ProfileActorIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
@@ -132,12 +147,14 @@ export interface FileRoutesByTo {
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
+  '/admin/events': typeof AdminEventsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/profile/$actorId': typeof ProfileActorIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
@@ -150,6 +167,7 @@ export interface FileRoutesById {
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
   '/events/$slug/store': typeof EventsSlugStoreRoute
+  '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/profile/$actorId/': typeof ProfileActorIdIndexRoute
 }
@@ -157,6 +175,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/contact'
     | '/privacy'
@@ -169,11 +188,13 @@ export interface FileRouteTypes {
     | '/events/$slug/checkout'
     | '/events/$slug/programs'
     | '/events/$slug/store'
+    | '/admin/events/'
     | '/events/$slug/'
     | '/profile/$actorId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/contact'
     | '/privacy'
@@ -186,11 +207,13 @@ export interface FileRouteTypes {
     | '/events/$slug/checkout'
     | '/events/$slug/programs'
     | '/events/$slug/store'
+    | '/admin/events'
     | '/events/$slug'
     | '/profile/$actorId'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/contact'
     | '/privacy'
@@ -203,12 +226,14 @@ export interface FileRouteTypes {
     | '/events/$slug/checkout'
     | '/events/$slug/programs'
     | '/events/$slug/store'
+    | '/admin/events/'
     | '/events/$slug/'
     | '/profile/$actorId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -232,6 +257,13 @@ declare module '@tanstack/solid-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -297,6 +329,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ProfileEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/events/': {
+      id: '/admin/events/'
+      path: '/events'
+      fullPath: '/admin/events/'
+      preLoaderRoute: typeof AdminEventsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/events/$slug/': {
       id: '/events/$slug/'
       path: '/events/$slug'
@@ -335,8 +374,19 @@ declare module '@tanstack/solid-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminEventsIndexRoute: typeof AdminEventsIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminEventsIndexRoute: AdminEventsIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,

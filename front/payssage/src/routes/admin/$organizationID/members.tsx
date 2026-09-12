@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PaginatedContainer, useLayoutHeader } from "@trieoh/ui-base";
+import { PaginatedContainer, useLayoutHeader } from "@trieoh/ui-react";
 import { Crown, Plus, Shield, User2 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";

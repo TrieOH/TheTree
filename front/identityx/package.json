@@ -28,7 +28,7 @@
     "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
     "@trieoh/shared-utils": "workspace:*",
-    "@trieoh/ui-base": "workspace:*",
+    "@trieoh/ui-react": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "lucide-react": "catalog:",

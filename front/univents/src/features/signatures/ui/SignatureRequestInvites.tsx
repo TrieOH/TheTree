@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import { Mail, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { allSignatureRequestsQueryOptions } from "@/features/signatures/api";

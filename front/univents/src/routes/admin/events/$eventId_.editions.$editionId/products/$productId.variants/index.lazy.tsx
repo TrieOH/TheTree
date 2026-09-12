@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useRouter } from "@tanstack/react-router";
-import type { SortState } from "@trieoh/ui-base";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import type { SortState } from "@trieoh/ui-react";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import { ArrowLeft, Layers, Plus } from "lucide-react";
 import { useState } from "react";
 import { productVariantsQueryOptions } from "@/features/products/api";

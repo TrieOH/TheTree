@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @source "../../../sdk/ts/identityx-solid/src";
-@source "../node_modules/@trieoh/ui-base/src";
+@source "../node_modules/@trieoh/ui-solid/src";
 
 @layer base {
   button:not(:disabled),

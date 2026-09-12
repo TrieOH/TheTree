@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import type { SortState } from "@trieoh/ui-base";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import type { SortState } from "@trieoh/ui-react";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import { AlertTriangle, Award } from "lucide-react";
 import { useMemo, useState } from "react";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";

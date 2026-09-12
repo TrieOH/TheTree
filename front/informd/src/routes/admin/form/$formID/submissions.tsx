@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PaginatedContainer } from "@trieoh/ui-base";
+import { PaginatedContainer } from "@trieoh/ui-react";
 import { FileText } from "lucide-react";
 import { useMemo, useState } from "react";
 import {

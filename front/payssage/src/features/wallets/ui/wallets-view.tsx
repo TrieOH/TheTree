@@ -1,4 +1,4 @@
-import { PaginatedContainer, useLayoutHeader } from "@trieoh/ui-base";
+import { PaginatedContainer, useLayoutHeader } from "@trieoh/ui-react";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { bpsToPercentage, percentageToBps } from "#/shared/lib/utils";

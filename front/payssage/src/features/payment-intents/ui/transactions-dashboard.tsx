@@ -6,7 +6,7 @@ import {
   DashboardStatCard,
   PaginatedContainer,
   type SortState,
-} from "@trieoh/ui-base";
+} from "@trieoh/ui-react";
 import {
   Ban,
   CheckCircle2,
