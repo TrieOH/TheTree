@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { Button, EmptyState, PaginatedContainer, type SortState } from "@trieoh/ui-solid";
-import { For, Loading, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 
 import CalendarIcon from "~icons/lucide/calendar";
 import PlusIcon from "~icons/lucide/plus";
@@ -83,7 +83,8 @@ function AdminEventsPage(): JSX.Element {
   };
 
   return (
-    <Loading
+    <Show
+      when={ownedQuery().isSuccess && joinedQuery().isSuccess}
       fallback={
         <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-6">
           <For each={[1, 2, 3, 4]}>
@@ -119,7 +120,7 @@ function AdminEventsPage(): JSX.Element {
           />
         )}
       </Show>
-    </Loading>
+    </Show>
   );
 }
 
