@@ -1,8 +1,16 @@
 # TheTree / TrieOH — Project Summary
 
-> Last updated 2026-08-01. Hand-curated; update as the project evolves.
+> Last updated 2026-09-10. Hand-curated; update as the project evolves.
 
 TheTree is the monorepo for **TrieOH**, a SaaS platform built as a suite of domain-specific Go microservices behind a single Caddy API gateway, with React front-ends deployed to Cloudflare Workers. It is a hybrid Go / TypeScript monorepo orchestrated via Docker Compose with self-hosted infrastructure for observability, source control, email, and object storage.
+
+## ⛔️ AGENTS: NEVER push tags
+
+**Pushing a tag deploys to production.** Tags (`<artifact>/v<semver>`, including `-hotfix.N`) trigger `deploy.yml`, which runs the release pipeline and ships to prod — fully automated, no further human step.
+
+- Agents must **never** run `git tag` or `git push <tag>` / `git push --tags` / `git push origin <tag>`. No exceptions, including hotfixes, "just to test", or user requests phrased loosely.
+- Preparing a release is fine: get commits onto `main`, pick the version, and hand the human the exact commands — **the human runs the tag push.**
+- Branch pushes to `main` are safe (zero CI); tag pushes are prod deploys.
 
 ## Repository Layout
 
@@ -70,7 +78,7 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 
 ## Infrastructure (Docker Compose)
 
-Production runtime lives in the **`TrieOH/deploy`** repo (checked out at `~/deploy/thetree` on the server): the prod stack, per-service env templates, and deploy operations. This repo is source + CI only; dev orchestration stays in `compose.yml`.
+Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written digest ledger; server checks it out at `~/deploy/thetree`). This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
 
 - Prod stack (postgres, rustfs, identityx, univents, payssage, informd): `TrieOH/deploy` → `thetree/compose.yml`
 - Infra stacks (caddy, forgejo, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo

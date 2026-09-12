@@ -1,139 +1,103 @@
 #!/bin/sh
+# pre-push — branch naming + pushed-range scope validation (plan §3.7).
+#
+#   branch name:  SCOPE/ACTION/NAME   (SCOPE must be a discovered scope)
+#   range check:  the closest common ancestor of every change being pushed
+#                 must equal the branch's scope.
+#
+# No trivy here (Q2): the deploy lane owns security scanning. The per-commit
+# gitleaks scan in pre-commit covers secrets.
 
 set -eu
 
+ENGINE_TMP=$(mktemp -d "${TMPDIR:-/tmp}/thetree-prepush.XXXXXX")
+trap 'rm -rf "$ENGINE_TMP"' EXIT
+. "$(dirname "$0")/lib/engine.sh"
+
 ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
+ZERO=0000000000000000000000000000000000000000
 
-scope_exists() {
-    scope="$1"
+read -r local_ref local_oid remote_ref remote_oid
 
-    case "$scope" in
-        root|all|docs|agents|dagger|forgejo)
-            return 0
-            ;;
-    esac
+# branch deletion — nothing to validate
+[ "${local_oid:-}" = "$ZERO" ] && exit 0
+[ -z "${local_ref:-}" ] && exit 0
 
-    # api/<service> -> <service>
-    for dir in api/*; do
-        [ -d "$dir" ] || continue
+branch=${local_ref#refs/heads/}
+# tag push — the deploy lane's business, not ours
+[ "$branch" = "$local_ref" ] && exit 0
 
-        name=$(basename "$dir")
+if [ "$branch" = "main" ]; then
+    echo "✓ push to main — no validation (zero-CI dev lane)"
+    exit 0
+fi
 
-        if [ "$scope" = "$name" ]; then
-            return 0
-        fi
-    done
+# --- branch naming -----------------------------------------------------------
 
-    # front/<service> -> <service>-ui
-    for dir in front/*; do
-        [ -d "$dir" ] || continue
-
-        name=$(basename "$dir")
-
-        if [ "$scope" = "$name-ui" ]; then
-            return 0
-        fi
-    done
-
-    # lib/ts -> lib-ts
-    # lib/go -> lib-go
-    if [ "$scope" = "lib-ts" ] && [ -d "lib/ts" ]; then
-        return 0
-    fi
-
-    if [ "$scope" = "lib-go" ] && [ -d "lib/go" ]; then
-        return 0
-    fi
-
-    # sdk/<lang>/<sdk> -> sdk-<lang>-<sdk>
-    for lang in ts go; do
-        for dir in "sdk/$lang"/*; do
-            [ -d "$dir" ] || continue
-
-            name=$(basename "$dir")
-
-            if [ "$scope" = "sdk-$lang-$name" ]; then
-                return 0
-            fi
-        done
-    done
-
-    return 1
-}
-
-branch=$(git symbolic-ref --quiet --short HEAD || true)
-
-if [ -z "$branch" ]; then
-    echo "❌ Cannot determine current branch."
+if ! printf '%s\n' "$branch" | grep -Eq "^[A-Za-z0-9][A-Za-z0-9-]*/($ACTIONS)/[a-z0-9][a-z0-9-]*$"; then
+    printf '\n'
+    printf '❌ Invalid branch name: %s\n' "$branch"
+    printf '\n'
+    printf 'Expected:\n'
+    printf '  SCOPE/ACTION/NAME\n'
+    printf '\n'
+    printf 'Actions:\n'
+    printf '  feat fix refactor perf style docs test build ci chore revert\n'
+    printf '\n'
+    printf 'Examples:\n'
+    printf '  payssage/feat/add-invoice-generation\n'
+    printf '  univents-ui/fix/login-validation\n'
+    printf '  sdk-go-Payssage/feat/add-webhooks\n'
+    printf '  lib-go/refactor/http-client\n'
+    printf '\n'
     exit 1
 fi
 
-# main is allowed — it's already protected server-side (admin-only pushes).
-# Only the branch-name validation is skipped; the trivy scan below still
-# runs on every push.
-if [ "$branch" != "main" ]; then
+scope=${branch%%/*}
 
-    # SCOPE/ACTION/NAME
-    #
-    # NAME:
-    #   lowercase kebab-case
-    #
-    # Example:
-    #   payssage/feat/add-invoice-generation
-    #   sdk-go-payssage/fix/nullable-response
-    #
-    if ! printf '%s\n' "$branch" | grep -Eq "^[a-z0-9][a-z0-9-]*/($ACTIONS)/[a-z0-9][a-z0-9-]*$"; then
-        echo ""
-        echo "❌ Invalid branch name: $branch"
-        echo ""
-        echo "Expected:"
-        echo "  SCOPE/ACTION/NAME"
-        echo ""
-        echo "Examples:"
-        echo "  payssage/feat/add-invoice-generation"
-        echo "  payssage-ui/fix/login-validation"
-        echo "  sdk-go-payssage/feat/add-webhooks"
-        echo "  lib-go/refactor/http-client"
-        echo ""
-        echo "Actions:"
-        echo "  feat fix refactor perf style docs test build ci chore revert"
-        echo ""
+if ! engine_valid_scope "$scope"; then
+    printf '\n'
+    printf '❌ Invalid branch scope: %s\n' "$scope"
+    printf '\n'
+    printf 'Scopes are discovered from the repo layout. Currently valid:\n'
+    engine_all_scopes
+    printf '\n'
+    exit 1
+fi
+
+# --- pushed range must belong to the branch scope ----------------------------
+#
+# Cumulative, not incremental: the range is merge-base(origin/main, HEAD)..HEAD
+# — the branch's entire content — revalidated on every push. Validating only
+# the new increment would let a branch named for its union fail (or pass)
+# depending on how the work happened to be split into pushes.
+
+base=$(git merge-base origin/main "$local_oid" 2>/dev/null || true)
+if [ -z "$base" ]; then
+    printf '  ⚠ no common base with origin/main — skipping range scope validation\n'
+    exit 0
+fi
+
+git diff --name-only "$base" "$local_oid" >"$ENGINE_TMP/range" || true
+
+if [ -s "$ENGINE_TMP/range" ]; then
+    correct=$(engine_scope "$ENGINE_TMP/range")
+
+    if [ "$scope" != "$correct" ]; then
+        printf '\n'
+        printf '❌ Branch scope "%s" does not cover the pushed range.\n' "$scope"
+        printf '\n'
+        printf 'Pushed files and the scope each belongs to:\n'
+        engine_offenders "$ENGINE_TMP/range"
+        printf '\n'
+        printf 'Closest common ancestor: %s\n' "$correct"
+        printf 'Fix the branch name (git branch -m) or land the out-of-scope\n'
+        printf 'changes separately.\n'
+        printf '\n'
         exit 1
     fi
 
-    scope=$(printf '%s\n' "$branch" | cut -d/ -f1)
-    action=$(printf '%s\n' "$branch" | cut -d/ -f2)
-
-    if ! scope_exists "$scope"; then
-        echo ""
-        echo "❌ Invalid branch scope: $scope"
-        echo ""
-        echo "The scope must correspond to a known project."
-        echo ""
-        exit 1
-    fi
-
-    echo "✓ Branch: $scope/$action"
+    printf '✓ Branch: %s — pushed range matches scope (%s)\n' "$branch" "$scope"
 else
-    echo "✓ Branch: main"
+    printf '✓ Branch: %s — nothing new to validate\n' "$branch"
 fi
-
-# --- trivy scan (whole repo, all severities) ----------------------------
-# Runs on EVERY push: trivy refreshes its vulnerability DB on scan, so new
-# CVEs get caught even when no code changed. Fails the push on any finding
-# (LOW through CRITICAL, secrets, misconfigs). Install trivy with `just setup`.
-echo ""
-echo "▶ trivy scan (whole repo, all severities)"
-if ! command -v trivy >/dev/null 2>&1; then
-    echo "  ✗ trivy not found — install it with:  just setup"
-    exit 1
-fi
-if ! trivy fs --skip-version-check \
-    --severity LOW,MEDIUM,HIGH,CRITICAL \
-    --scanners vuln,secret,misconfig \
-    --exit-code 1 .; then
-    echo ""
-    echo "  ✗ trivy found issues — fix them before pushing"
-    exit 1
-fi
-echo "  ✓ trivy clean"

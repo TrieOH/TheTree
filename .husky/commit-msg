@@ -1,97 +1,86 @@
 #!/bin/sh
+# commit-msg — validate "ACTION(SCOPE): MESSAGE" against the DISCOVERED scope
+# tree, then require SCOPE to be the closest common ancestor of the staged
+# diff (plan §3.7, Q12/Q14).
+#
+# Hard fail (Q14): the error lists the offending files, the scope each
+# belongs to, and the computed closest-common-ancestor that should have been
+# used. The hook tells you the correct scope — no guessing.
 
 set -eu
 
-COMMIT_MSG_FILE="$1"
+COMMIT_MSG_FILE=$1
+
+ENGINE_TMP=$(mktemp -d "${TMPDIR:-/tmp}/thetree-commit-msg.XXXXXX")
+trap 'rm -rf "$ENGINE_TMP"' EXIT
+. "$(dirname "$0")/lib/engine.sh"
 
 ACTIONS='feat|fix|refactor|perf|style|docs|test|build|ci|chore|revert'
 
-scope_exists() {
-    scope="$1"
+# trailing whitespace stripped so a whitespace-only message fails the
+# regex below — the message text is mandatory
+message=$(head -n 1 "$COMMIT_MSG_FILE" | sed -E 's/[[:space:]]+$//')
 
-    case "$scope" in
-        root|all|docs|agents|dagger|forgejo)
-            return 0
-            ;;
-    esac
+# description (body below the subject) is capped at 500 chars — leading and
+# trailing blank lines don't count
+MAX_DESC=250
+desc=$(sed '1d' "$COMMIT_MSG_FILE" | sed '/./,$!d')
+if [ "$(printf '%s' "$desc" | wc -m)" -gt "$MAX_DESC" ]; then
+    printf '\n'
+    printf '❌ Commit description too long: %s chars (max %s).\n' \
+        "$(printf '%s' "$desc" | wc -m)" "$MAX_DESC"
+    printf '   Keep the body short — details belong in the code or the PR.\n'
+    printf '\n'
+    exit 1
+fi
 
-    # api/<service> -> <service>
-    for dir in api/*; do
-        [ -d "$dir" ] || continue
-
-        name=$(basename "$dir")
-
-        if [ "$scope" = "$name" ]; then
-            return 0
-        fi
-    done
-
-    # front/<service> -> <service>-ui
-    for dir in front/*; do
-        [ -d "$dir" ] || continue
-
-        name=$(basename "$dir")
-
-        if [ "$scope" = "$name-ui" ]; then
-            return 0
-        fi
-    done
-
-    # lib/ts -> lib-ts
-    # lib/go -> lib-go
-    if [ "$scope" = "lib-ts" ] && [ -d "lib/ts" ]; then
-        return 0
-    fi
-
-    if [ "$scope" = "lib-go" ] && [ -d "lib/go" ]; then
-        return 0
-    fi
-
-    # sdk/ts/<sdk> -> sdk-ts-<sdk>
-    # sdk/go/<sdk> -> sdk-go-<sdk>
-    for lang in ts go; do
-        for dir in "sdk/$lang"/*; do
-            [ -d "$dir" ] || continue
-
-            name=$(basename "$dir")
-
-            if [ "$scope" = "sdk-$lang-$name" ]; then
-                return 0
-            fi
-        done
-    done
-
-    return 1
-}
-
-message=$(head -n 1 "$COMMIT_MSG_FILE")
-
-if ! printf '%s\n' "$message" | grep -Eq "^($ACTIONS)\([a-z0-9][a-z0-9-]*\): .+$"; then
-    echo ""
-    echo "❌ Invalid commit message."
-    echo ""
-    echo "Expected:"
-    echo "  ACTION(SCOPE): MESSAGE"
-    echo ""
-    echo "Actions:"
-    echo "  feat fix refactor perf style docs test build ci chore revert"
-    echo ""
-    echo "Example:"
-    echo "  feat(payssage): add invoice generation"
-    echo ""
+if ! printf '%s\n' "$message" | grep -Eq "^($ACTIONS)\([A-Za-z0-9][A-Za-z0-9-]*\): .+$"; then
+    printf '\n'
+    printf '❌ Invalid commit message.\n'
+    printf '\n'
+    printf 'Expected:\n'
+    printf '  ACTION(SCOPE): MESSAGE\n'
+    printf '\n'
+    printf 'Actions:\n'
+    printf '  feat fix refactor perf style docs test build ci chore revert\n'
+    printf '\n'
+    printf 'Example:\n'
+    printf '  feat(payssage): add invoice generation\n'
+    printf '\n'
     exit 1
 fi
 
 action=$(printf '%s\n' "$message" | sed -E 's/^([a-z]+)\(.*/\1/')
 scope=$(printf '%s\n' "$message" | sed -E 's/^[a-z]+\(([^)]+)\): .*/\1/')
 
-if ! scope_exists "$scope"; then
-    echo ""
-    echo "❌ Invalid commit scope: $scope"
-    echo ""
-    echo "The scope must correspond to a known project."
-    echo ""
+if ! engine_valid_scope "$scope"; then
+    printf '\n'
+    printf '❌ Invalid commit scope: %s\n' "$scope"
+    printf '\n'
+    printf 'Scopes are discovered from the repo layout. Currently valid:\n'
+    engine_all_scopes
+    printf '\n'
     exit 1
 fi
 
-echo "✓ Commit: $action($scope)"
+# Ancestor check: the declared scope must be the closest common ancestor of
+# everything staged. (Empty index — --allow-empty, --amend — skips this.)
+git diff --cached --name-only --diff-filter=ACMRD >"$ENGINE_TMP/staged" || true
+
+if [ -s "$ENGINE_TMP/staged" ]; then
+    correct=$(engine_scope "$ENGINE_TMP/staged")
+
+    if [ "$scope" != "$correct" ]; then
+        printf '\n'
+        printf '❌ Scope "%s" does not match the staged changes.\n' "$scope"
+        printf '\n'
+        printf 'Staged files and the scope each belongs to:\n'
+        engine_offenders "$ENGINE_TMP/staged"
+        printf '\n'
+        printf 'Closest common ancestor (the scope to use): %s\n' "$correct"
+        printf '\n'
+        exit 1
+    fi
+fi
+
+printf '✓ Commit: %s\n' "$message"

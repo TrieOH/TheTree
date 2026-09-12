@@ -12,24 +12,50 @@ inputs:
     description: Docker CLI version (static tarball on download.docker.com)
     required: false
     default: "29.7.2"
+  buildx-version:
+    description: buildx plugin version (docker 29 requires it for `docker build`)
+    required: false
+    default: "v0.37.0"
 runs:
   using: composite
   steps:
-    - name: Restore docker CLI from cache
+    - name: Restore docker CLI + buildx from cache
       id: cache
-      uses: https://code.forgejo.org/actions/cache@v1
+      uses: https://code.forgejo.org/actions/cache/restore@v4
       with:
-        path: /usr/local/bin/docker
-        key: docker-cli-${{ inputs.version }}
-    - name: Install pinned docker CLI (cache miss)
+        # cache a dedicated DIRECTORY — cache save does `tar -C <path> .`,
+        # which fails with "Not a directory" when path is the binary file
+        # itself (seen in sandbox runs)
+        path: /opt/docker-cli
+        key: docker-cli-${{ inputs.version }}-buildx-${{ inputs.buildx-version }}
+    - name: Install pinned docker CLI + buildx (cache miss)
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
+        mkdir -p /opt/docker-cli/cli-plugins
         curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${{ inputs.version }}.tgz" -o /tmp/docker.tgz
         tar -xzf /tmp/docker.tgz -C /tmp docker/docker
-        install -m 0755 /tmp/docker/docker /usr/local/bin/docker
+        install -m 0755 /tmp/docker/docker /opt/docker-cli/docker
         rm -f /tmp/docker.tgz
+        curl -fsSL "https://github.com/docker/buildx/releases/download/${{ inputs.buildx-version }}/buildx-${{ inputs.buildx-version }}.linux-amd64" \
+          -o /opt/docker-cli/cli-plugins/docker-buildx
+        chmod 0755 /opt/docker-cli/cli-plugins/docker-buildx
+    - name: Register plugin dir + add to PATH
+      shell: bash
+      run: |
+        echo "/opt/docker-cli" >> "$GITHUB_PATH"
+        mkdir -p ~/.docker
+        printf '{"cliPluginsExtraDirs":["/opt/docker-cli/cli-plugins"]}' > ~/.docker/config.json
+    - name: Save docker CLI + buildx (inline — never break the pipeline over a cache)
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: https://code.forgejo.org/actions/cache/save@v4
+      with:
+        path: /opt/docker-cli
+        key: docker-cli-${{ inputs.version }}-buildx-${{ inputs.buildx-version }}
+      continue-on-error: true
     - name: Smoke test
       shell: bash
-      run: docker version --format '{{.Client.Version}}'
+      run: |
+        docker version --format '{{.Client.Version}}'
+        docker buildx version

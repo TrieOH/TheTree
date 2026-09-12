@@ -3,8 +3,9 @@
 Monorepo for **TrieOH** — a SaaS platform of four Go microservices behind a
 single Caddy gateway, with React front-ends deployed to Cloudflare Workers.
 
-**This repo is source + CI.** To deploy, go to
-[`TrieOH/deploy`](https://git.trieoh.com/TrieOH/deploy).
+**This repo is source + CI + the deploy trigger.** Releases deploy by pushing a
+tag here; the `TrieOH/deploy` repo is the pipeline-written ledger (see
+[Releases & deploys](#releases--deploys)).
 
 ## Stack
 
@@ -14,7 +15,7 @@ single Caddy gateway, with React front-ends deployed to Cloudflare Workers.
 | Frontends | React 19 · TanStack Start · Tailwind v4 | 4 SPAs in `front/`, deploy to Cloudflare Workers |
 | Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval TS clients, `ui-*`, `front-core*`) | framework-free by default, see *Package boundaries* |
 | SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |
-| CI/CD | Forgejo Actions · Dagger (`.dagger/`) | builds + publishes to `git.trieoh.com/trieoh/<svc>` |
+| CI/CD | Forgejo Actions (`deploy.yml`) | tag-gated checks → publish digests to `git.trieoh.com/trieoh/<svc>` → digest-pinned deploys |
 | Dev infra | Docker Compose (`compose.yml`) | postgres, rustfs, mailpit + hot-rebuilt services |
 
 ## Repo layout
@@ -26,7 +27,6 @@ lib/go/          # shared Go library
 lib/ts/          # shared TS packages: orval clients, ui-react/ui-solid,
                  # front-core (+ -react / -solid bindings)
 sdk/go/ sdk/ts/  # public SDKs
-.dagger/         # Dagger module (ci, lint, test, compile, publish)
 docs/            # CONTEXT.md (domain glossary), adr/, agents/
 ```
 
@@ -50,7 +50,7 @@ when a package imports across that line.
 ## Prereqs
 
 - Go 1.26 (`go.work` at the root)
-- pnpm 10
+- pnpm (pinned via `packageManager` in package.json — corepack picks it up)
 - Docker + Docker Compose
 - `just` — all dev recipes live in the `justfile`
 - `golangci-lint` (for `just lint`)
@@ -67,9 +67,23 @@ export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"   # bash / zsh
 fish_add_path "$HOME/.local/bin" "$HOME/go/bin"             # fish (already set up in config.fish)
 ```
 
-The pre-push hook runs `trivy fs` on the whole repo at every severity on
-every push (the vulnerability DB refreshes automatically, so new CVEs are
-caught even without code changes).
+## Hooks (enforced locally, not in CI)
+
+Main pushes run **zero CI** — quality is gated at the deploy lane and by local
+hooks:
+
+- **`commit-msg`** — validates `<scope>/ACTION: message` against the scope tree
+  *discovered from the repo layout*; the declared scope must be the closest
+  common ancestor of the staged changes (hard fail, tells you the right scope).
+- **`pre-commit`** — gitleaks diff scan of staged changes (secret-only, fast),
+  then per-member checks against each member's actual diff (Go: lint +
+  `gotestsum -short`; fronts: `check`/`tsc`/`test`; SDKs: typecheck).
+- **`pre-push`** — branch naming must match the scope of the *entire* pushed
+  commit range. No repo-wide trivy — the deploy lane owns security scanning.
+
+**Never bypass with `--no-verify`** — the deploy lane re-checks at tag time,
+but the per-commit secret scan is the only thing scanning your diffs between
+releases.
 
 ## Quickstart
 
@@ -131,14 +145,35 @@ regenerated in CI/builds, while the orval TS clients under
 
 ## Releases & deploys
 
-- **Backends:** tag `*/v*` (e.g. `identityx/v0.35.3`) → `publish.yml` runs
-  Dagger → pushes `git.trieoh.com/trieoh/<svc>:<tag>` (+ `:latest`) to the
-  registry.
-- **Frontends:** `main` + `front/**` changes → `deploy-front.yml` → Cloudflare
-  Workers (wrangler).
-- **TS SDKs:** `publish-ts-sdks.yml` publishes `@trieoh/*` packages.
-- **Prod deploy:** images are consumed by `TrieOH/deploy` (server pulls that
-  repo, not this one). Version bumps = a commit in the deploy repo.
+Three lanes, one rule of thumb: **main is cheap, deploys are the gate,
+`-hotfix.*` is the fire escape.**
+
+| Lane | Trigger | Gate |
+|---|---|---|
+| Dev | push to `main` | zero CI — hooks only. Main is latest-unstable, never prod. |
+| Release | tag `<artifact>/v<semver>` | full R-chain: compile → unit → lint → front → trivy → integration |
+| Hotfix | tag `<artifact>/v<semver>-hotfix.N` | compile + unit only (≤2 min tag-to-prod) |
+
+**Any dev with push access deploys by pushing a tag** — nothing else to
+touch. The pipeline is the gate: a deploy happens only if every check passes,
+and the process is fully automated from there (proven live on all four tag
+paths: full/express × service/front).
+
+- **Backends:** tag `<svc>/v<semver>` (e.g. `payssage/v0.7.10`) → `deploy.yml`:
+  R-chain checks → build once → push `git.trieoh.com/trieoh/<svc>@sha256:…` →
+  ledger commit pins the digest in the deploy repo → VPS `compose pull && up -d`
+  (only containers whose digest changed are recreated).
+- **Frontends:** tag `<app>-ui/v<semver>` → Worker version uploaded, then the
+  SAME version promoted to production (build once, never rebuild).
+- **TS SDKs:** tag `<sdk>-sdk-ts/v<semver>` → npm publish (version guard:
+  tag == package.json version).
+- **Rollback:** backends = revert the ledger commit in `TrieOH/deploy` (the
+  previous digest redeploys); fronts = `wrangler versions deploy --version-id
+  <previous>`.
+- **Discipline:** hotfix tags skip most checks — a hotfix must get its next
+  normal release promptly (auditable in tag history).
+- **Agents/LLMs must never push tags** — tags are prod deploys, humans only.
+  See CONTEXT.md.
 
 ## Docs
 

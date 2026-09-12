@@ -1,0 +1,42 @@
+name: Setup Go
+description: >
+  Go toolchain + workspace module/build cache. Run before setup-go-tools
+  (which needs the go toolchain for `go install`). Self-reports the cache
+  outcome as `[cache] setup-go: HIT|MISS key=...` so any run can be
+  diagnosed from logs alone.
+inputs:
+  go-version:
+    description: Go version (keep in sync with the Dockerfiles' golang image)
+    required: false
+    default: "1.26.4"
+runs:
+  using: composite
+  steps:
+    - name: Toolchain
+      uses: https://github.com/actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: false # built-in cache wants a root go.sum (warning); we cache explicitly below
+
+    - name: Restore module + build caches
+      id: cache
+      uses: https://code.forgejo.org/actions/cache/restore@v4
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: go-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}
+      # NOTE: restore-only. The save is an explicit always()-conditioned step
+      # in the calling workflow — a post-save would be skipped on failed
+      # checks, leaving every red run cold.
+
+    - name: Report
+      shell: bash
+      run: |
+        KEY="go-${{ inputs.go-version }}-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}"
+        if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
+          echo "[cache] setup-go: HIT key=$KEY"
+        else
+          echo "[cache] setup-go: MISS key=$KEY → cold, will save at end of job"
+        fi
+        go version

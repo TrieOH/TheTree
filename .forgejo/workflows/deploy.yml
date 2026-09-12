@@ -1,0 +1,522 @@
+name: Deploy
+# THE one deploy file: gate + publish for all artifact types (Go services,
+# fronts, TS SDKs), both lanes. Replaces publish.yml, publish-ts-sdks.yml and
+# deploy-front.yml once proven out on a sandbox tag.
+#
+# Tag grammar (the trigger is the single glob '*/v*'):
+#   <service>/v1.2.3              → full lane   (all checks)
+#   <app>-ui/v1.2.3               → full lane   (front checks)
+#   <sdk>-sdk-ts/v1.2.3           → full lane   (version guard)
+#   <artifact>/v1.2.3-hotfix.1    → express lane (compile + unit only, §3.5)
+#
+# Contract (§3.8): build once → publish immutable artifact → capture digest /
+# Worker Version ID. NO :latest is ever pushed. release.json is printed to the
+# run log (Phase 3 turns it into deploy-repo ledger commits).
+
+on:
+  push:
+    tags:
+      - '*/v*'
+
+# Release lock: one deploy at a time, queued, never cancelled (§3.8).
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.tag.outputs.artifact }}
+      type: ${{ steps.tag.outputs.type }}
+      lane: ${{ steps.tag.outputs.lane }}
+      version: ${{ steps.tag.outputs.version }}
+      front-name: ${{ steps.tag.outputs.front_name }}
+      sdk-name: ${{ steps.tag.outputs.sdk_name }}
+      activate: ${{ steps.tag.outputs.activate }}
+    steps:
+      - name: Parse tag
+        id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          ARTIFACT="${TAG%%/*}"
+          VERSION="${TAG#*/}"
+
+          case "$ARTIFACT" in
+            *-ui)      TYPE=front ;;
+            *-sdk-ts*) TYPE=sdk ;;
+            *)         TYPE=service ;;
+          esac
+
+          LANE=full
+          case "$VERSION" in
+            *-hotfix.*) LANE=express ;;
+          esac
+
+          FRONT_NAME=""
+          SDK_NAME=""
+          ACTIVATE=false
+          case "$TYPE" in
+            front)
+              FRONT_NAME="${ARTIFACT%-ui}"
+              case "$FRONT_NAME" in
+                identityx|informd|payssage|univents) ;;
+                *) echo "::error::unknown front '$ARTIFACT'"; exit 1 ;;
+              esac
+              ;;
+            service)
+              case "$ARTIFACT" in
+                identityx|informd|payssage|univents) ;;
+                *) echo "::error::unknown service '$ARTIFACT'"; exit 1 ;;
+              esac
+              # ledger activation only for real releases — sandbox tags must
+              # never touch the deploy repo (decided in shell, not expressions:
+              # this runner has been shown to mis-evaluate !contains())
+              case "$VERSION" in
+                *sandbox*) ;;
+                *) ACTIVATE=true ;;
+              esac
+              ;;
+            sdk)
+              # same parse as publish-ts-sdks: strip first '-sdk-ts'
+              SDK_NAME="${ARTIFACT/-sdk-ts/}"
+              [ -d "sdk/ts/$SDK_NAME" ] || { echo "::error::unknown sdk '$ARTIFACT' (no sdk/ts/$SDK_NAME)"; exit 1; }
+              ;;
+          esac
+
+          echo "artifact=$ARTIFACT"    >> "$GITHUB_OUTPUT"
+          echo "type=$TYPE"            >> "$GITHUB_OUTPUT"
+          echo "lane=$LANE"            >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION"      >> "$GITHUB_OUTPUT"
+          echo "front_name=$FRONT_NAME" >> "$GITHUB_OUTPUT"
+          echo "sdk_name=$SDK_NAME"      >> "$GITHUB_OUTPUT"
+          echo "activate=$ACTIVATE"     >> "$GITHUB_OUTPUT"
+          echo "[tag] artifact=$ARTIFACT type=$TYPE lane=$LANE version=$VERSION activate=$ACTIVATE"
+
+  checks:
+    needs: parse
+    runs-on: ubuntu-latest
+    outputs:
+      sdk-skip: ${{ steps.sdk.outputs.skip }}
+      sdk-name: ${{ steps.sdk.outputs.name }}
+    env:
+      ARTIFACT: ${{ needs.parse.outputs.artifact }}
+      TYPE: ${{ needs.parse.outputs.type }}
+      LANE: ${{ needs.parse.outputs.lane }}
+      VERSION: ${{ needs.parse.outputs.version }}
+      FRONT_NAME: ${{ needs.parse.outputs.front-name }}
+      SDK_NAME: ${{ needs.parse.outputs.sdk-name }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+
+      # ── Go toolchain (services) ────────────────────────────────────────
+      - name: Setup Go
+        id: setup-go
+        if: ${{ env.TYPE == 'service' }}
+        uses: ./.forgejo/actions/setup-go
+
+      - name: Setup Go tools
+        if: ${{ env.TYPE == 'service' }}
+        uses: ./.forgejo/actions/setup-go-tools
+
+      # ── Node toolchain (fronts, sdks) ──────────────────────────────────
+      - name: Setup Node + pnpm
+        if: ${{ env.TYPE != 'service' }}
+        uses: ./.forgejo/actions/setup-node
+        with:
+          install: 'true'
+
+      # ── R0 generate (services): sqlc + oapi-codegen, same recipe as the
+      #    old ci.yml tests job — generated code is gitignored ────────────
+      - name: R0 generate code
+        if: ${{ env.TYPE == 'service' }}
+        run: |
+          echo "▶ R0 generate code"
+          set -euo pipefail
+          cd "api/$ARTIFACT"
+          sqlc generate
+          oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
+          oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+          go get github.com/oapi-codegen/runtime@v1.6.0
+
+      # ── R1 compile ──────────────────────────────────────────────────────
+      - name: R1 compile
+        if: ${{ env.TYPE == 'service' }}
+        run: |
+          echo "▶ R1 compile"
+          cd "api/$ARTIFACT" && go build ./...
+
+      # ── R2 unit tests (short: testdb skips testcontainers, see
+      #    lib/go/testdb — express lane's only test stage) ─────────────────
+      - name: R2 unit tests (-short)
+        if: ${{ env.TYPE == 'service' }}
+        run: cd "api/$ARTIFACT" && gotestsum --format standard-verbose -- -short -timeout 5m ./...
+
+      # ── Save Go caches (always — red runs need warm caches too, else
+      #    every failing check also pays the full cold compile) ───────────
+      # Key duplicated from setup-go (this runner rejects composite `outputs:`);
+      # keep in sync if the action's key or go-version default changes.
+      - name: Save Go caches
+        if: ${{ always() && env.TYPE == 'service' }}
+        uses: https://code.forgejo.org/actions/cache/save@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-1.26.4-${{ hashFiles('go.work.sum', '**/go.mod', '**/go.sum') }}
+        continue-on-error: true
+
+      # ── R3 lint (full lane only) ────────────────────────────────────────
+      - name: R3 lint
+        if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
+        run: |
+          echo "▶ R3 lint"
+          golangci-lint run "./api/$ARTIFACT/..."
+
+      # ── R4 front checks (full lane only) ────────────────────────────────
+      - name: R4 front check (lint + format)
+        if: ${{ env.TYPE == 'front' && env.LANE == 'full' }}
+        run: pnpm -F "$FRONT_NAME" check
+
+      - name: R4 front tsc
+        if: ${{ env.TYPE == 'front' && env.LANE == 'full' }}
+        run: pnpm -F "$FRONT_NAME" tsc
+
+      - name: R4 front test
+        if: ${{ env.TYPE == 'front' && env.LANE == 'full' && env.FRONT_NAME == 'univents' }}
+        run: pnpm -F "$FRONT_NAME" test
+
+      # ── SDK version guard (always — cheap, gates the publish) ───────────
+      - name: SDK version guard
+        id: sdk
+        if: ${{ env.TYPE == 'sdk' }}
+        working-directory: sdk/ts/${{ env.SDK_NAME }}
+        run: |
+          set -euo pipefail
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "package: $PKG_NAME@$PKG_VERSION (tag: $VERSION)"
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "::error::Version mismatch! Tag version is $VERSION but package.json version is $PKG_VERSION"
+            exit 1
+          fi
+          echo "name=$PKG_NAME" >> "$GITHUB_OUTPUT"
+          if npm view "$PKG_NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::warning::$PKG_NAME@$VERSION already published to npm — skipping publish"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── R5 trivy (full lane only) ───────────────────────────────────────
+      - name: Setup Trivy
+        if: ${{ env.LANE == 'full' }}
+        uses: ./.forgejo/actions/setup-trivy
+
+      - name: R5 trivy scan
+        if: ${{ env.LANE == 'full' }}
+        run: |
+          set -euo pipefail
+          echo "▶ R5 trivy scan"
+          case "$TYPE" in
+            service) PATHS="api/$ARTIFACT lib/go" ;;
+            front)   PATHS="front/$FRONT_NAME pnpm-lock.yaml" ;;  # lockfile lives at root — the app dir alone has zero scannable dep files
+            sdk)     PATHS="sdk/ts/$SDK_NAME pnpm-lock.yaml" ;;
+          esac
+          rc=0
+          for p in $PATHS; do
+            echo "[trivy] scanning $p"
+            trivy fs --skip-version-check \
+              --severity LOW,MEDIUM,HIGH,CRITICAL \
+              --scanners vuln,secret,misconfig \
+              --exit-code 1 "$p" || rc=1
+          done
+          exit $rc
+
+      # ── R6 integration tests (services, full lane, slowest — last) ──────
+      - name: Setup Docker
+        if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
+        uses: ./.forgejo/actions/setup-docker
+
+      - name: R6 integration tests
+        if: ${{ env.TYPE == 'service' && env.LANE == 'full' }}
+        run: |
+          echo "▶ R6 integration tests"
+          cd "api/$ARTIFACT" && gotestsum --format standard-verbose -- -count=1 ./...
+
+  # ── Ledger activation (§3.8): digest → deploy repo commit. Only for
+  #    services (fronts deploy via Cloudflare, SDKs via npm — compose only
+  #    runs backend images). Gated by parse's shell-computed 'activate' —
+  #    sandbox tags never touch the deploy repo.
+  activate:
+    needs: [parse, publish]
+    if: ${{ needs.parse.outputs.activate == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACT: ${{ needs.parse.outputs.artifact }}
+      VERSION: ${{ needs.parse.outputs.version }}
+      DIGEST: ${{ needs.publish.outputs.digest }}
+    steps:
+      - name: Clone deploy repo (SSH, deploy key)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
+        run: |
+          echo "▶ activate: clone deploy repo"
+          set -euo pipefail
+          install -m 600 /dev/null /tmp/deploy_repo_key
+          echo "$SSH_KEY" > /tmp/deploy_repo_key
+          trap 'rm -f /tmp/deploy_repo_key' EXIT
+          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
+          git clone --depth 1 git@ssh.trieoh.com:TrieOH/deploy.git deploy-repo
+          cd deploy-repo
+          git config user.name  "${{ vars.RELEASE_BOT_NAME }}"
+          git config user.email "${{ vars.RELEASE_BOT_EMAIL }}"
+
+      - name: Pin digest in compose.yml
+        run: |
+          echo "▶ activate: pin digest"
+          set -euo pipefail
+          cd deploy-repo
+          # normalize defensively: accept either bare digest or full ref from publish
+          DIGEST="${DIGEST##*@}"
+          # matches tag-form AND digest-form lines, replaces any old comment
+          sed -i -E "s|(image: git\.trieoh\.com/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
+            thetree/compose.yml
+          grep -n "image: git.trieoh.com/trieoh/${ARTIFACT}" thetree/compose.yml
+          # early-exit ONLY when unchanged; a diff is the normal path — don't let
+          # a bare 'A && B' list poison set -e (that killed run 715)
+          if git diff --exit-code --quiet; then
+            echo "compose.yml unchanged — digest already pinned"
+            exit 0
+          fi
+
+      - name: Commit & push ledger entry
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 600 /dev/null /tmp/deploy_repo_key
+          echo "$SSH_KEY" > /tmp/deploy_repo_key
+          trap 'rm -f /tmp/deploy_repo_key' EXIT
+          cd deploy-repo
+          git add thetree/compose.yml
+          echo "▶ activate: commit & push"
+          git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: git.trieoh.com/trieoh/${ARTIFACT}@${DIGEST}"
+          GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key" \
+            git push origin main
+          echo "[ledger] release: ${ARTIFACT} ${VERSION} → TrieOH/deploy main (rollout workflow picks it up)"
+
+  publish:
+    needs: [parse, checks]
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.img.outputs.digest }}
+    env:
+      ARTIFACT: ${{ needs.parse.outputs.artifact }}
+      TYPE: ${{ needs.parse.outputs.type }}
+      LANE: ${{ needs.parse.outputs.lane }}
+      VERSION: ${{ needs.parse.outputs.version }}
+      FRONT_NAME: ${{ needs.parse.outputs.front-name }}
+      SDK_NAME: ${{ needs.parse.outputs.sdk-name }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+
+      # ── Services: build once → push immutable image → capture digest ───
+      #    NOTE: no :latest push — latest left the deployment contract.
+      - name: Setup Docker
+        if: ${{ env.TYPE == 'service' }}
+        uses: ./.forgejo/actions/setup-docker
+
+      - name: Build & push image
+        id: img
+        if: ${{ env.TYPE == 'service' }}
+        run: |
+          echo "▶ publish: build & push image"
+          set -euo pipefail
+          echo "$FJ_TOKEN" | docker login git.trieoh.com -u "$FJ_USER" --password-stdin
+          IMG="git.trieoh.com/trieoh/$ARTIFACT:$VERSION"
+          DOCKER_BUILDKIT=1 docker build -f "api/$ARTIFACT/Dockerfile" -t "$IMG" .
+          docker push "$IMG"
+          DIGEST=$(docker image inspect "$IMG" --format '{{index .RepoDigests 0}}')
+          # RepoDigests entries are full refs (registry/repo@sha256:…) — keep the
+          # bare digest only, that's the §3.8 contract (activate re-attaches the ref)
+          DIGEST="${DIGEST##*@}"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "[release] pushed $IMG → $DIGEST"
+        env:
+          FJ_TOKEN: ${{ secrets.FJ_TOKEN }}
+          FJ_USER: ${{ secrets.FJ_USER }}
+
+      - name: release.json
+        if: ${{ env.TYPE == 'service' }}
+        run: |
+          cat <<EOF
+          ┌─ release.json ────────────────────────────────────────
+          {
+            "tag": "$VERSION",
+            "artifact": "$ARTIFACT",
+            "type": "service",
+            "image": "git.trieoh.com/trieoh/$ARTIFACT:$VERSION",
+            "digest": "${{ steps.img.outputs.digest }}"
+          }
+          └───────────────────────────────────────────────────────
+          EOF
+
+      # ── Fronts: build once → upload Worker version → promote SAME
+      #    version to production (staging/E2E slots in here later) ────────
+      - name: Setup Node + pnpm
+        if: ${{ env.TYPE == 'front' || env.TYPE == 'sdk' }}
+        uses: ./.forgejo/actions/setup-node
+        with:
+          install: 'true'
+
+      - name: Build & upload version (identityx)
+        id: identityx
+        if: ${{ env.ARTIFACT == 'identityx-ui' }}
+        run: |
+          set -euo pipefail
+          pnpm -F identityx build
+          ID=$(pnpm -F identityx exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
+        env:
+          VITE_APP_TITLE: ${{ vars.IDENTITYX_APP_TITLE }}
+          VITE_API_URL: ${{ vars.IDENTITYX_API_URL }}
+          VITE_PUBLIC_POSTHOG_HOST: ${{ vars.IDENTITYX_POSTHOG_HOST }}
+          VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.IDENTITYX_POSTHOG_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote identityx to production
+        if: ${{ env.ARTIFACT == 'identityx-ui' }}
+        run: pnpm -F identityx exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Build & upload version (informd)
+        id: informd
+        if: ${{ env.ARTIFACT == 'informd-ui' }}
+        run: |
+          set -euo pipefail
+          pnpm -F informd build
+          ID=$(pnpm -F informd exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
+        env:
+          VITE_APP_TITLE: ${{ vars.INFORMD_APP_TITLE }}
+          VITE_API_URL: ${{ vars.INFORMD_API_URL }}
+          VITE_AUTH_API_URL: ${{ vars.INFORMD_AUTH_API_URL }}
+          VITE_POSTHOG_KEY: ${{ secrets.INFORMD_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.INFORMD_POSTHOG_HOST }}
+          VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.INFORMD_AUTH_PROJECT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote informd to production
+        if: ${{ env.ARTIFACT == 'informd-ui' }}
+        run: pnpm -F informd exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Build & upload version (payssage)
+        id: payssage
+        if: ${{ env.ARTIFACT == 'payssage-ui' }}
+        run: |
+          set -euo pipefail
+          pnpm -F payssage build
+          ID=$(pnpm -F payssage exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
+        env:
+          VITE_APP_TITLE: ${{ vars.PAYSSAGE_APP_TITLE }}
+          VITE_API_URL: ${{ vars.PAYSSAGE_API_URL }}
+          VITE_AUTH_API_URL: ${{ vars.PAYSSAGE_AUTH_API_URL }}
+          VITE_POSTHOG_KEY: ${{ secrets.PAYSSAGE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.PAYSSAGE_POSTHOG_HOST }}
+          VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.PAYSSAGE_AUTH_PROJECT_ID }}
+          VITE_SUPPORTED_PROVIDERS: ${{ vars.PAYSSAGE_SUPPORTED_PROVIDERS }}
+          VITE_INTENT_TEST_MODE: ${{ vars.PAYSSAGE_INTENT_TEST_MODE }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote payssage to production
+        if: ${{ env.ARTIFACT == 'payssage-ui' }}
+        run: pnpm -F payssage exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Build & upload version (univents)
+        id: univents
+        if: ${{ env.ARTIFACT == 'univents-ui' }}
+        run: |
+          set -euo pipefail
+          pnpm -F univents build
+          ID=$(pnpm -F univents exec wrangler versions upload --tag "$VERSION" --message "release: $ARTIFACT $VERSION" 2>&1 | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $NF}')
+          echo "WORKER_VERSION_ID=$ID" >> "$GITHUB_ENV"
+        env:
+          VITE_APP_TITLE: ${{ vars.UNIVENTS_APP_TITLE }}
+          VITE_API_URL: ${{ vars.UNIVENTS_API_URL }}
+          VITE_AUTH_API_URL: ${{ vars.UNIVENTS_AUTH_API_URL }}
+          VITE_STORAGE_URL: ${{ vars.UNIVENTS_STORAGE_URL }}
+          VITE_POSTHOG_KEY: ${{ secrets.UNIVENTS_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.UNIVENTS_POSTHOG_HOST }}
+          VITE_TRACING_ENABLED: ${{ vars.UNIVENTS_TRACING_ENABLED }}
+          VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.UNIVENTS_AUTH_PROJECT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote univents to production
+        if: ${{ env.ARTIFACT == 'univents-ui' }}
+        run: pnpm -F univents exec wrangler versions deploy --version-id "$WORKER_VERSION_ID"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: release.json (front)
+        if: ${{ env.TYPE == 'front' }}
+        run: |
+          cat <<EOF
+          ┌─ release.json ────────────────────────────────────────
+          {
+            "tag": "$VERSION",
+            "artifact": "$ARTIFACT",
+            "type": "front",
+            "worker_version_id": "$WORKER_VERSION_ID"
+          }
+          └───────────────────────────────────────────────────────
+          EOF
+
+      # ── SDKs: build once → npm publish (version-guarded in checks) ──────
+      - name: Build & publish SDK
+        if: ${{ env.TYPE == 'sdk' && needs.checks.outputs.sdk-skip != 'true' }}
+        run: |
+          set -euo pipefail
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          pnpm --filter "${{ needs.checks.outputs.sdk-name }}" build
+          pnpm publish --access public --no-git-checks
+          rm -f ~/.npmrc
+          echo "[release] published ${{ needs.checks.outputs.sdk-name }}@$VERSION"
+        working-directory: sdk/ts/${{ env.SDK_NAME }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: release.json (sdk)
+        if: ${{ env.TYPE == 'sdk' }}
+        run: |
+          cat <<EOF
+          ┌─ release.json ────────────────────────────────────────
+          {
+            "tag": "$VERSION",
+            "artifact": "$ARTIFACT",
+            "type": "sdk",
+            "package": "${{ needs.checks.outputs.sdk-name }}",
+            "npm_version": "$VERSION"
+          }
+          └───────────────────────────────────────────────────────
+          EOF

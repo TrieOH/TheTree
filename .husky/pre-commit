@@ -1,225 +1,191 @@
 #!/bin/sh
-
-# Pre-commit: lint / typecheck / tests, but only in the modules touched by
-# the staged changes — keeps the hook fast on a monorepo.
+# pre-commit — per-commit quality layer (plan §3 layering + §3.7).
 #
-#   api/<svc>, lib/go, sdk/go/<sdk>  → golangci-lint run + go test (mandatory:
-#                                     tests use testcontainers, so Docker must be up)
-#   front/<svc>                      → biome check (lint+format), tsc, test (if any)
-#   sdk/ts/<sdk>                     → typecheck
-#   lib/ts/*                         → no runnable scripts — skipped
+#   0. gitleaks over the staged diff — secret-only, fast by construction.
+#      (Full vuln+misconfig scanning is the deploy lane's job; hotfix lane
+#      runs none, so this per-commit scan is what guards between deploys.)
+#   1. checks for exactly what changed, via the diff∩scope engine — the
+#      declared commit scope is never trusted, only the raw diff matters:
+#        go:<dir>  → golangci-lint + gotestsum -- -short
+#                    (testcontainers skip under -short; integration tests
+#                     are the deploy lane's R6 job — Docker NOT required)
+#        ts:<dir>  → package.json scripts run if present:
+#                    check → tsc / typecheck → test
+#                    front/univents-solid is a nested independent workspace;
+#                    `pnpm -C <dir>` works for it identically.
 #
-# Root dependency/config files (go.work, pnpm-lock.yaml, package.json, ...)
-# trigger a full run, since a change there can break any module.
+# Workspace-level files fan out by what they can actually break:
+#   go.work / go.work.sum / .golangci.yml → all Go members
+#   pnpm-lock.yaml / pnpm-workspace.yaml / package.json / patches → all
+#   root-workspace TS members (univents-solid has its own lockfile — root
+#   lock files don't affect it).
 
 set -eu
 
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/thetree-precommit.XXXXXX")
-trap 'rm -rf "$tmp"' EXIT
+ENGINE_TMP=$(mktemp -d "${TMPDIR:-/tmp}/thetree-precommit.XXXXXX")
+trap 'rm -rf "$ENGINE_TMP"' EXIT
+. "$(dirname "$0")/lib/engine.sh"
 
-targets="$tmp/targets"
-pids="$tmp/pids"
-: >"$targets"
-: >"$pids"
+# --- 0. secret scan of staged content ---------------------------------------
 
-add_target() {
-    grep -qxF "$1" "$targets" || echo "$1" >>"$targets"
-}
-
-# --- 1. classify staged files into check targets -----------------------
-
-git diff --cached --name-only --diff-filter=ACMRD >"$tmp/staged"
-
-global=0
-while IFS= read -r f; do
-    case "$f" in
-        package.json|pnpm-lock.yaml|pnpm-workspace.yaml|go.work|go.work.sum|.golangci.yml)
-            global=1
-            ;;
-        api/*)
-            rest=${f#api/}; add_target "go:api/${rest%%/*}" ;;
-        lib/go/*)
-            add_target "go:lib/go" ;;
-        sdk/go/*)
-            rest=${f#sdk/go/}; add_target "go:sdk/go/${rest%%/*}" ;;
-        front/*)
-            rest=${f#front/}; add_target "ts:front/${rest%%/*}" ;;
-        sdk/ts/*)
-            rest=${f#sdk/ts/}; add_target "ts:sdk/ts/${rest%%/*}" ;;
-    esac
-done <"$tmp/staged"
-
-# a change to workspace/dep config can break any module → run everything
-if [ "$global" -eq 1 ]; then
-    : >"$targets"
-    for d in api/identityx api/informd api/payssage api/univents lib/go sdk/go/IdentityX sdk/go/Payssage; do
-        add_target "go:$d"
-    done
-    for d in front/identityx front/informd front/payssage front/univents; do
-        add_target "ts:$d"
-    done
-    for d in sdk/ts/*; do
-        [ -d "$d" ] && add_target "ts:$d"
-    done
+if ! command -v gitleaks >/dev/null 2>&1; then
+    printf '  ✗ gitleaks not found — install it with:  just setup\n'
+    exit 1
 fi
 
-if [ ! -s "$targets" ]; then
-    echo "✓ nothing to check (no module files staged)"
+printf '▶ gitleaks — staged diff secret scan\n'
+if ! gitleaks protect --staged --redact --no-banner; then
+    printf '\n'
+    printf '  ✗ gitleaks found secrets in the staged changes.\n'
+    printf '    Remove them; rotate the credential if it ever left this machine.\n'
+    exit 1
+fi
+printf '  ✓ no secrets in staged changes\n'
+
+# --- 1. classify staged files into check targets -----------------------------
+
+git diff --cached --name-only --diff-filter=ACMRD >"$ENGINE_TMP/staged"
+
+if [ ! -s "$ENGINE_TMP/staged" ]; then
+    printf '✓ nothing staged\n'
     exit 0
 fi
 
-# drop stale targets (full-run list may mention removed modules)
-: >"$tmp/targets.fresh"
-while IFS= read -r t; do
-    [ -d "${t#*:}" ] && echo "$t" >>"$tmp/targets.fresh"
-done <"$targets"
-mv "$tmp/targets.fresh" "$targets"
+engine_targets "$ENGINE_TMP/staged" >"$ENGINE_TMP/targets"
 
-# --- 2. run checks per target, in parallel -----------------------------
+if [ ! -s "$ENGINE_TMP/targets" ]; then
+    printf '✓ nothing to check (staged changes have no runnable checks)\n'
+    exit 0
+fi
+
+pids="$ENGINE_TMP/pids"
+: >"$pids"
+: >"$ENGINE_TMP/go_targets"
+: >"$ENGINE_TMP/ts_targets"
+
+# --- 2. run checks per target, in parallel -----------------------------------
+# golangci-lint refuses concurrent runs (lock file), so Go lints run
+# sequentially inside one background chain; gotestsum runs are independent
+# and go in parallel; TS targets each get their own job.
+
+for t in $(cat "$ENGINE_TMP/targets"); do
+    case "$t" in
+        go:*) echo "$t" >>"$ENGINE_TMP/go_targets" ;;
+        ts:*) echo "$t" >>"$ENGINE_TMP/ts_targets" ;;
+    esac
+done
+
+has_script() {
+    node -e "const s=require('./$1/package.json').scripts||{};process.exit(s.$2?0:1)" 2>/dev/null
+}
 
 run_lint() {
-    t=$1
-    dir=${t#*:}
-    work="$tmp/$dir"
-    mkdir -p "$work"
+    dir=${1#go:}
+    work="$ENGINE_TMP/$dir"; mkdir -p "$work"
     log="$work/lint.log"
-    : >"$log"
-    echo "golangci-lint run ./$dir/..." >>"$log"
-    golangci-lint run "./$dir/..." >>"$log" 2>&1
+    {
+        echo "golangci-lint run ./$dir/..."
+        golangci-lint run "./$dir/..."
+    } >"$log" 2>&1
     echo $? >"$work/lint.status"
 }
 
 run_test() {
-    t=$1
-    dir=${t#*:}
-    work="$tmp/$dir"
-    mkdir -p "$work"
+    dir=${1#go:}
+    work="$ENGINE_TMP/$dir"; mkdir -p "$work"
     log="$work/test.log"
-    : >"$log"
-    if docker info >/dev/null 2>&1; then
-        echo "go test ./... (in $dir)" >>"$log"
-        (cd "$dir" && go test ./...) >>"$log" 2>&1
-        echo $? >"$work/test.status"
-    else
-        echo "  ✗ docker unavailable — go tests must run; start the Docker daemon and retry" >>"$log"
-        echo 1 >"$work/test.status"
-    fi
+    {
+        echo "gotestsum --format testdox -- -short ./...   (in $dir)"
+        (cd "$dir" && gotestsum --format testdox --format-hide-empty-pkg -- -short ./...)
+    } >"$log" 2>&1
+    echo $? >"$work/test.status"
 }
 
-run_target() {
-    t=$1
-    dir=${t#*:}
-    work="$tmp/$dir"
-    mkdir -p "$work"
+run_ts() {
+    dir=${1#ts:}
+    work="$ENGINE_TMP/$dir"; mkdir -p "$work"
     log="$work/log"
     : >"$log"
     rc=0
-
-    case "$t" in
-        ts:front/*)
-            if [ ! -f "$dir/package.json" ]; then
-                echo 0 >"$work/status"
-                return 0
+    for s in check tsc typecheck test; do
+        if [ -f "$dir/package.json" ] && has_script "$dir" "$s"; then
+            echo "pnpm -C $dir run $s" >>"$log"
+            # verify-deps-before-run=false: hooks check, they never install —
+            # a stale node_modules must fail loudly, not mutate mid-commit
+            # (also sidesteps front/univents-solid's uninstallable catalog
+            # specs — pre-existing drift, owned by that app's setup)
+            if ! pnpm --config.verify-deps-before-run=false -C "$dir" run "$s" >>"$log" 2>&1; then
+                rc=1
+                break
             fi
-            name=$(node -p "require('./$dir/package.json').name")
-            echo "pnpm -F $name check" >>"$log"
-            pnpm -F "$name" check >>"$log" 2>&1 || rc=1
-            if [ "$rc" -eq 0 ]; then
-                echo "pnpm -F $name tsc" >>"$log"
-                pnpm -F "$name" tsc >>"$log" 2>&1 || rc=1
-            fi
-            if [ "$rc" -eq 0 ] && \
-                node -e "process.exit(require('./$dir/package.json').scripts && require('./$dir/package.json').scripts.test ? 0 : 1)" 2>/dev/null; then
-                echo "pnpm -F $name test" >>"$log"
-                pnpm -F "$name" test >>"$log" 2>&1 || rc=1
-            fi
-            ;;
-        ts:sdk/ts/*)
-            if [ ! -f "$dir/package.json" ]; then
-                echo 0 >"$work/status"
-                return 0
-            fi
-            name=$(node -p "require('./$dir/package.json').name")
-            echo "pnpm -F $name typecheck" >>"$log"
-            pnpm -F "$name" typecheck >>"$log" 2>&1 || rc=1
-            ;;
-    esac
-
+        fi
+    done
     echo "$rc" >"$work/status"
-    return "$rc"
 }
 
-# golangci-lint refuses concurrent runs (it holds a lock file), so all Go
-# lints run sequentially inside one background chain; go tests are
-# independent (each module has its own testcontainers) and run in parallel
-# jobs alongside the lint chain; TS targets each run in their own job.
-grep '^go:' "$targets" >"$tmp/go_targets" || true
-grep '^ts:' "$targets" >"$tmp/ts_targets" || true
-
-# human-readable "what is running" label, e.g. "api/payssage — lint + test"
 desc() {
     t=$1
     dir=${t#*:}
     case "$t" in
-        go:*) echo "$dir — lint + test" ;;
-        ts:front/*)
+        go:*)
+            what="lint + test (-short)"
+            [ -f "$ENGINE_TMP/$dir/test.log" ] || what="lint"
+            echo "$dir — $what" ;;
+        ts:*)
             if [ ! -f "$dir/package.json" ]; then
                 echo "$dir — no package.json, skipped"
-                return
+                return 0
             fi
-            what="check + tsc"
-            if node -e "process.exit(require('./$dir/package.json').scripts && require('./$dir/package.json').scripts.test ? 0 : 1)" 2>/dev/null; then
-                what="$what + test"
-            fi
-            echo "$dir — $what"
-            ;;
-        ts:sdk/ts/*)
-            if [ -f "$dir/package.json" ]; then
-                echo "$dir — typecheck"
-            else
-                echo "$dir — no package.json, skipped"
-            fi
-            ;;
+            what=""
+            for s in check tsc typecheck test; do
+                if has_script "$dir" "$s"; then what="$what$s "; fi
+            done
+            [ -n "$what" ] && echo "$dir — $what" || echo "$dir — no runnable scripts, skipped" ;;
     esac
 }
 
-run_lint_chain() {
-    while IFS= read -r t; do
-        echo "▶ ${t#*:} — lint"
-        run_lint "$t"
-    done <"$tmp/go_targets"
-}
+for tool in golangci-lint gotestsum pnpm; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        printf '  ✗ %s not found — install it with:  just setup\n' "$tool"
+        exit 1
+    fi
+done
 
-if [ -s "$tmp/go_targets" ]; then
-    run_lint_chain &
+if [ -s "$ENGINE_TMP/go_targets" ]; then
+    # lint chain: sequential (golangci-lint lock), as one background job
+    (
+        while IFS= read -r t; do
+            echo "▶ ${t#go:} — lint"
+            run_lint "$t"
+        done <"$ENGINE_TMP/go_targets"
+    ) &
     echo "$!" >>"$pids"
+
+    while IFS= read -r t; do
+        echo "▶ ${t#go:} — test (-short)"
+        run_test "$t" &
+        echo "$!" >>"$pids"
+    done <"$ENGINE_TMP/go_targets"
 fi
 
 while IFS= read -r t; do
-    echo "▶ ${t#*:} — test"
-    run_test "$t" &
-    echo "$!" >>"$pids"
-done <"$tmp/go_targets"
-
-while IFS= read -r t; do
     echo "▶ $(desc "$t")"
-    run_target "$t" &
+    run_ts "$t" &
     echo "$!" >>"$pids"
-done <"$tmp/ts_targets"
+done <"$ENGINE_TMP/ts_targets"
 
-# drain all background jobs (per-module status files carry the results)
 while IFS= read -r p; do
     wait "$p" || true
 done <"$pids"
 
-# --- 3. report + derive exit code ---------------------------------------
+# --- 3. report + derive exit code --------------------------------------------
 
 fail=0
 total=0
 while IFS= read -r t; do
     total=$((total + 1))
     dir=${t#*:}
-    work="$tmp/$dir"
+    work="$ENGINE_TMP/$dir"
     logs="$work/log"
     case "$t" in
         go:*)
@@ -233,21 +199,20 @@ while IFS= read -r t; do
             ;;
     esac
     if [ "$rc" -eq 0 ]; then
-        echo "✓ $(desc "$t")"
+        printf '✓ %s\n' "$(desc "$t")"
     else
         fail=1
-        echo "✗ $(desc "$t")"
+        printf '✗ %s\n' "$(desc "$t")"
         for l in $logs; do
             [ -f "$l" ] && cat "$l"
         done
-        echo
+        printf '\n'
     fi
-done <"$targets"
+done <"$ENGINE_TMP/targets"
 
 if [ "$fail" -eq 0 ]; then
-    echo "✓ all $total checks passed"
+    printf '✓ all %s checks passed\n' "$total"
 else
-    echo "✗ some checks failed"
+    printf '✗ some checks failed\n'
 fi
-
 exit "$fail"
