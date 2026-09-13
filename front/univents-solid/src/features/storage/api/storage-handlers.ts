@@ -1,4 +1,5 @@
 import { AwsClient } from "aws4fetch";
+import { Data, Effect } from "effect";
 import { privateJsonResponse } from "@/shared/lib/http-cache";
 import type { StorageUploadRequest } from "../model";
 
@@ -18,6 +19,21 @@ const DEFAULT_EXPIRES_SECONDS = 300;
 const DEFAULT_MODERATION_MODEL = "@cf/llava-hf/llava-1.5-7b-hf";
 const DEFAULT_MODERATION_PROMPT =
   "Does this image contain any explicit, violent, or inappropriate content? Reply with only 'safe' or 'unsafe'.";
+
+export class StorageValidationError extends Data.TaggedError(
+  "StorageValidationError",
+)<{
+  readonly message: string;
+}> { }
+
+export class StorageConfigError extends Data.TaggedError("StorageConfigError")<{
+  readonly message: string;
+}> { }
+
+export class StorageUploadError extends Data.TaggedError("StorageUploadError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> { }
 
 function getS3Url(key: string, env: StorageRuntimeEnv): URL {
   const endpoint = env.MINIO_ENDPOINT.trim();
@@ -78,17 +94,26 @@ function buildAllowedTypesErrorMessage(types: string[]) {
 /**
  * Validates that all required environment variables are present
  */
-function validateEnv(env: StorageRuntimeEnv) {
-  const keys: (keyof Env)[] = [
-    "MINIO_ENDPOINT",
-    "BUCKET_NAME",
-    "MINIO_ACCESS_KEY",
-    "MINIO_SECRET_KEY",
-  ];
-  for (const key of keys) {
-    if (!env[key]) throw new Error(`Missing environment variable: ${key}`);
-  }
-}
+export const validateEnvEffect = (
+  env: StorageRuntimeEnv,
+): Effect.Effect<void, StorageConfigError> =>
+  Effect.gen(function* () {
+    const keys: (keyof Env)[] = [
+      "MINIO_ENDPOINT",
+      "BUCKET_NAME",
+      "MINIO_ACCESS_KEY",
+      "MINIO_SECRET_KEY",
+    ];
+    for (const key of keys) {
+      if (!env[key]) {
+        yield* Effect.fail(
+          new StorageConfigError({
+            message: `Missing environment variable: ${key}`,
+          }),
+        );
+      }
+    }
+  });
 
 const getAwsClient = (env: StorageRuntimeEnv) =>
   new AwsClient({
@@ -129,89 +154,132 @@ export function isSafeModerationOutput(output: unknown): boolean {
     .startsWith("safe");
 }
 
-async function moderateFileBytes(
+export const moderateFileBytesEffect = (
   file: File,
   env: StorageRuntimeEnv,
-): Promise<boolean> {
-  const buffer = await file.arrayBuffer();
-  const response = await env.AI.run(getModerationModel(env), {
-    prompt: getModerationPrompt(env),
-    image: Array.from(new Uint8Array(buffer)),
-    max_tokens: 5,
-    temperature: 0.0,
+): Effect.Effect<boolean, StorageUploadError> =>
+  Effect.tryPromise({
+    try: async () => {
+      const buffer = await file.arrayBuffer();
+      const response = await env.AI.run(getModerationModel(env), {
+        prompt: getModerationPrompt(env),
+        image: Array.from(new Uint8Array(buffer)),
+        max_tokens: 5,
+        temperature: 0.0,
+      });
+      return isSafeModerationOutput(response);
+    },
+    catch: (cause) =>
+      new StorageUploadError({
+        message:
+          cause instanceof Error ? cause.message : "Falha na moderação de imagem",
+        cause,
+      }),
   });
-  return isSafeModerationOutput(response);
-}
 
-async function putFileToStorage(
+export const putFileToStorageEffect = (
   file: File,
   key: string,
   env: StorageRuntimeEnv,
-): Promise<string> {
-  const aws = getAwsClient(env);
-  const uploadUrl = getS3Url(key, env);
-  const res = await aws.fetch(uploadUrl.toString(), {
-    method: "PUT",
-    body: file,
-    headers: {
-      "Content-Type": file.type,
-      "Cache-Control": "public, max-age=31536000, immutable",
+): Effect.Effect<string, StorageUploadError> =>
+  Effect.tryPromise({
+    try: async () => {
+      const aws = getAwsClient(env);
+      const uploadUrl = getS3Url(key, env);
+      const res = await aws.fetch(uploadUrl.toString(), {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+
+      if (!res.ok) {
+        const responseBody = await res.text().catch(() => "");
+        const storageMessage = responseBody.match(
+          /<Message>(.*?)<\/Message>/s,
+        )?.[1];
+        throw new Error(
+          `Falha ao enviar imagem para o storage (${res.status})${storageMessage ? `: ${storageMessage}` : ""
+          }`,
+        );
+      }
+
+      return `${getS3Url("", env).toString()}${key}`;
     },
+    catch: (cause) =>
+      new StorageUploadError({
+        message: cause instanceof Error ? cause.message : "Falha ao enviar imagem",
+        cause,
+      }),
   });
 
-  if (!res.ok) {
-    const responseBody = await res.text().catch(() => "");
-    const storageMessage = responseBody.match(
-      /<Message>(.*?)<\/Message>/s,
-    )?.[1];
-    throw new Error(
-      `Falha ao enviar imagem para o storage (${res.status})${storageMessage ? `: ${storageMessage}` : ""
-      }`,
-    );
-  }
+const readImageFormDataEffect = (
+  request: Request,
+): Effect.Effect<
+  {
+    file: File;
+    moderationFile: File;
+    path: string;
+    idempotencyKey: string;
+  },
+  StorageValidationError
+> =>
+  Effect.tryPromise({
+    try: async () => {
+      const formData = await request.formData();
+      const file = formData.get("file");
+      const moderationFile = formData.get("moderationFile");
+      const path = formData.get("path");
+      const idempotencyKey = formData.get("idempotencyKey");
 
-  return `${getS3Url("", env).toString()}${key}`;
-}
+      if (!(file instanceof File)) throw new Error("Missing file");
 
-async function readImageFormData(request: Request) {
-  const formData = await request.formData();
-  const file = formData.get("file");
-  const moderationFile = formData.get("moderationFile");
-  const path = formData.get("path");
-  const idempotencyKey = formData.get("idempotencyKey");
+      return {
+        file,
+        moderationFile: moderationFile instanceof File ? moderationFile : file,
+        path: typeof path === "string" ? path : "",
+        idempotencyKey: typeof idempotencyKey === "string" ? idempotencyKey : "",
+      };
+    },
+    catch: (cause) =>
+      new StorageValidationError({
+        message: cause instanceof Error ? cause.message : "Missing file",
+      }),
+  });
 
-  if (!(file instanceof File)) throw new Error("Missing file");
-
-  return {
-    file,
-    moderationFile: moderationFile instanceof File ? moderationFile : file,
-    path: typeof path === "string" ? path : "",
-    idempotencyKey: typeof idempotencyKey === "string" ? idempotencyKey : "",
-  };
-}
-
-export async function handleStorageUpload(
+export const handleStorageUploadEffect = (
   request: Request,
   env: StorageRuntimeEnv,
-): Promise<Response> {
-  try {
-    validateEnv(env);
-    const { filename, contentType, size } =
-      await request.json<StorageUploadRequest>();
+): Effect.Effect<Response, never> =>
+  Effect.gen(function* () {
+    yield* validateEnvEffect(env);
+
+    const { filename, contentType, size } = yield* Effect.tryPromise({
+      try: () => request.json<StorageUploadRequest>(),
+      catch: () =>
+        new StorageValidationError({
+          message: "Invalid JSON payload",
+        }),
+    });
+
     const allowedTypes = getAllowedTypes(env);
     const maxSize = getMaxSize(env);
 
     if (!allowedTypes.includes(contentType)) {
-      return privateJsonResponse(
-        { error: buildAllowedTypesErrorMessage(allowedTypes) },
-        { status: 400 },
+      yield* Effect.fail(
+        new StorageValidationError({
+          message: buildAllowedTypesErrorMessage(allowedTypes),
+        }),
       );
     }
 
     if (size > maxSize) {
-      return privateJsonResponse(
-        { error: "File exceeds 10MB limit" },
-        { status: 400 },
+      yield* Effect.fail(
+        new StorageValidationError({
+          message: "File exceeds 10MB limit",
+        }),
       );
     }
 
@@ -222,13 +290,21 @@ export async function handleStorageUpload(
       String(getUploadExpiresSeconds(env)),
     );
 
-    const signed = await aws.sign(
-      new Request(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-      }),
-      { aws: { signQuery: true } },
-    );
+    const signed = yield* Effect.tryPromise({
+      try: () =>
+        aws.sign(
+          new Request(uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": contentType },
+          }),
+          { aws: { signQuery: true } },
+        ),
+      catch: (cause) =>
+        new StorageUploadError({
+          message: "Upload failed",
+          cause,
+        }),
+    });
 
     const publicUrl = `${getS3Url("", env).toString()}${filename}`;
 
@@ -237,65 +313,122 @@ export async function handleStorageUpload(
       key: filename,
       publicUrl,
     });
-  } catch (error) {
-    return privateJsonResponse(
-      { error: error instanceof Error ? error.message : "Upload failed" },
-      { status: 500 },
-    );
-  }
+  }).pipe(
+    Effect.catchTags({
+      StorageValidationError: (err) =>
+        Effect.succeed(
+          privateJsonResponse({ error: err.message }, { status: 400 }),
+        ),
+      StorageConfigError: (err) =>
+        Effect.succeed(
+          privateJsonResponse({ error: err.message }, { status: 500 }),
+        ),
+      StorageUploadError: (err) =>
+        Effect.succeed(
+          privateJsonResponse({ error: err.message }, { status: 500 }),
+        ),
+    }),
+    Effect.catch((err: unknown) =>
+      Effect.succeed(
+        privateJsonResponse(
+          { error: err instanceof Error ? err.message : "Upload failed" },
+          { status: 500 },
+        ),
+      ),
+    ),
+  );
+
+export async function handleStorageUpload(
+  request: Request,
+  env: StorageRuntimeEnv,
+): Promise<Response> {
+  return Effect.runPromise(handleStorageUploadEffect(request, env));
 }
+
+export const handleStorageImagePreprocessEffect = (
+  request: Request,
+  env: StorageRuntimeEnv,
+): Effect.Effect<Response, never> =>
+  Effect.gen(function* () {
+    yield* validateEnvEffect(env);
+
+    const { file, moderationFile, path, idempotencyKey } =
+      yield* readImageFormDataEffect(request);
+
+    const allowedTypes = getAllowedTypes(env);
+    const maxSize = getMaxSize(env);
+
+    if (!allowedTypes.includes(file.type)) {
+      yield* Effect.fail(
+        new StorageValidationError({
+          message: buildAllowedTypesErrorMessage(allowedTypes),
+        }),
+      );
+    }
+
+    if (file.size > maxSize) {
+      yield* Effect.fail(
+        new StorageValidationError({
+          message: "File exceeds 10MB limit",
+        }),
+      );
+    }
+
+    if (!allowedTypes.includes(moderationFile.type)) {
+      yield* Effect.fail(
+        new StorageValidationError({
+          message: buildAllowedTypesErrorMessage(allowedTypes),
+        }),
+      );
+    }
+
+    if (moderationFile.size > maxSize) {
+      yield* Effect.fail(
+        new StorageValidationError({
+          message: "File exceeds 10MB limit",
+        }),
+      );
+    }
+
+    const approved = yield* moderateFileBytesEffect(moderationFile, env);
+    if (!approved) {
+      return privateJsonResponse({ approved: false });
+    }
+
+    const key = buildStorageKey(file.name, path, idempotencyKey);
+    const publicUrl = yield* putFileToStorageEffect(file, key, env);
+    return privateJsonResponse({ approved: true, publicUrl });
+  }).pipe(
+    Effect.catchTags({
+      StorageValidationError: (err) =>
+        Effect.succeed(
+          privateJsonResponse({ error: err.message }, { status: 400 }),
+        ),
+      StorageConfigError: (err) =>
+        Effect.succeed(
+          privateJsonResponse({ error: err.message }, { status: 500 }),
+        ),
+      StorageUploadError: (err) =>
+        Effect.succeed(
+          privateJsonResponse({ error: err.message }, { status: 500 }),
+        ),
+    }),
+    Effect.catch((err: unknown) =>
+      Effect.succeed(
+        privateJsonResponse(
+          {
+            error:
+              err instanceof Error ? err.message : "Preprocessing failed",
+          },
+          { status: 500 },
+        ),
+      ),
+    ),
+  );
 
 export async function handleStorageImagePreprocess(
   request: Request,
   env: StorageRuntimeEnv,
 ): Promise<Response> {
-  try {
-    validateEnv(env);
-    const { file, moderationFile, path, idempotencyKey } =
-      await readImageFormData(request);
-    const allowedTypes = getAllowedTypes(env);
-    const maxSize = getMaxSize(env);
-
-    if (!allowedTypes.includes(file.type)) {
-      return privateJsonResponse(
-        { error: buildAllowedTypesErrorMessage(allowedTypes) },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > maxSize) {
-      return privateJsonResponse(
-        { error: "File exceeds 10MB limit" },
-        { status: 400 },
-      );
-    }
-
-    if (!allowedTypes.includes(moderationFile.type)) {
-      return privateJsonResponse(
-        { error: buildAllowedTypesErrorMessage(allowedTypes) },
-        { status: 400 },
-      );
-    }
-
-    if (moderationFile.size > maxSize) {
-      return privateJsonResponse(
-        { error: "File exceeds 10MB limit" },
-        { status: 400 },
-      );
-    }
-
-    const approved = await moderateFileBytes(moderationFile, env);
-    if (!approved) return privateJsonResponse({ approved: false });
-
-    const key = buildStorageKey(file.name, path, idempotencyKey);
-    const publicUrl = await putFileToStorage(file, key, env);
-    return privateJsonResponse({ approved: true, publicUrl });
-  } catch (error) {
-    return privateJsonResponse(
-      {
-        error: error instanceof Error ? error.message : "Preprocessing failed",
-      },
-      { status: 500 },
-    );
-  }
+  return Effect.runPromise(handleStorageImagePreprocessEffect(request, env));
 }
