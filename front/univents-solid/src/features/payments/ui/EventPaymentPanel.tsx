@@ -44,30 +44,32 @@ export function EventPaymentPanel(props: {
       <div class="flex flex-wrap gap-3">
         <For each={providers}>
           {(provider) => (
-            <div class="flex w-full max-w-md items-center gap-3 rounded-xl bg-card px-3 py-3 ring-1 ring-foreground/10 shadow-xs">
-              <div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted/50 p-2">
-                <img
-                  src={provider.image}
-                  alt={provider.name}
-                  class="size-full object-contain"
-                />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-foreground">
-                  {provider.name}
-                </p>
-                <span
-                  class={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
-                    props.connected
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  {props.connected ? "Conectado" : "Não conectado"}
-                </span>
+            <div class="flex w-full max-w-md flex-col justify-between gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10 shadow-xs sm:flex-row sm:items-center">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted/50 p-2">
+                  <img
+                    src={provider.image}
+                    alt={provider.name}
+                    class="size-full object-contain"
+                  />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-foreground">
+                    {provider.name}
+                  </p>
+                  <span
+                    class={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                      props.connected
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {props.connected ? "Conectado" : "Não conectado"}
+                  </span>
+                </div>
               </div>
               <Button
-                class="h-9 shrink-0 text-xs"
+                class="h-9 w-full shrink-0 text-xs sm:w-auto"
                 variant={props.connected ? "outline" : "default"}
                 disabled={props.disabled}
                 onClick={() =>

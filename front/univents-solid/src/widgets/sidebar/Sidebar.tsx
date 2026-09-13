@@ -36,7 +36,7 @@ export function Sidebar(): JSX.Element {
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
   const { logout } = useSessionActions();
   const location = useLocation();
-  const sections = getAdminSidebarSections();
+  const sections = () => getAdminSidebarSections(location().pathname);
 
   return (
     <>
@@ -96,7 +96,7 @@ export function Sidebar(): JSX.Element {
         </div>
 
         <nav class="flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-3 py-4">
-          <For each={sections}>
+          <For each={sections()}>
             {(section) => (
               <div class="space-y-2">
                 <Show when={!collapsed()}>
@@ -114,6 +114,7 @@ export function Sidebar(): JSX.Element {
                       return (
                         <Link
                           to={item.to}
+                          params={item.params}
                           onClick={() => setMobileOpen(false)}
                           aria-current={active() ? "page" : undefined}
                           class={cn(
