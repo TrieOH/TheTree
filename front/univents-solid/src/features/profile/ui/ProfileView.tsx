@@ -1,5 +1,6 @@
 import {
   Loading,
+  For,
   Show,
   createMemo,
   untrack,
@@ -7,11 +8,10 @@ import {
 import type { JSX } from "@solidjs/web";
 import { Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { userBadgesQueryOptions } from "@/features/badges/api";
-import { myCertificationsQueryOptions } from "@/features/certifications/api";
-import type { BadgeProfileGroups, Certification } from "@trieoh/univents-api/schemas";
-import { profileQueryOptions } from "@/features/profile/api";
-import { profileKeys } from "@/features/profile/api/query-keys";
+import {
+  profileQueryOptions,
+  profileTabQueryOptions,
+} from "@/features/profile/api";
 import GlobeIcon from "~icons/lucide/globe";
 import MailIcon from "~icons/lucide/mail";
 import GithubIcon from "~icons/lucide/github";
@@ -153,11 +153,13 @@ export function ProfileView(props: ProfileViewProps) {
                           }
                         >
                           <div class="flex flex-wrap gap-2">
-                            {profile().languages?.map((item) => (
-                              <span class="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted">
-                                {item}
-                              </span>
-                            ))}
+                            <For each={profile().languages}>
+                              {(item) => (
+                                <span class="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted">
+                                  {item}
+                                </span>
+                              )}
+                            </For>
                           </div>
                         </Show>
                       </Card>
@@ -186,14 +188,16 @@ export function ProfileView(props: ProfileViewProps) {
                                 />
                               )}
                             </Show>{" "}
-                            {socials().map(([network, value]) => (
-                              <Social
-                                href={socialHref(network, value)}
-                                label={
-                                  network[0].toUpperCase() + network.slice(1)
-                                }
-                              />
-                            ))}
+                            <For each={socials()}>
+                              {([network, value]) => (
+                                <Social
+                                  href={socialHref(network, value)}
+                                  label={
+                                    network[0].toUpperCase() + network.slice(1)
+                                  }
+                                />
+                              )}
+                            </For>
                           </div>
                         </Show>
                       </Card>
@@ -214,23 +218,9 @@ function ProfileTabContent(props: {
   actorId: string;
   ownProfile: boolean;
 }) {
-  const query = useQuery<BadgeProfileGroups | Certification[]>(() => ({
-    queryKey: profileKeys.tab(props.tab, props.actorId, props.ownProfile),
-    enabled: props.tab === "badges" || (props.ownProfile && props.tab === "certificates"),
-    queryFn: () => {
-      const tab = props.tab;
-      const actorId = props.actorId;
-      const ownProfile = props.ownProfile;
-      if (tab === "badges") {
-        return userBadgesQueryOptions(actorId).queryFn();
-      }
-      if (!ownProfile) return [];
-      if (tab === "certificates") {
-        return myCertificationsQueryOptions().queryFn();
-      }
-      return [];
-    },
-  }));
+  const query = useQuery(() =>
+    profileTabQueryOptions(props.tab, props.actorId, props.ownProfile),
+  );
   const data = createMemo(() => query().data);
 
   // Purchases fetch inside <PurchasesContent>, which owns its own skeleton.
@@ -279,9 +269,9 @@ function CollectionCard(props: { tab: Exclude<Tab, "about">; data: unknown }) {
         {/* TODO: I need to change this(one component for each) */}
         <Show when={props.tab !== "purchases"}>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {items().map((item) => (
-              <ProfileCollectionItem tab={props.tab} item={item} />
-            ))}
+            <For each={items()}>
+              {(item) => <ProfileCollectionItem tab={props.tab} item={item} />}
+            </For>
           </div>
         </Show>
       </Card>

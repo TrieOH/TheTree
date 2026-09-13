@@ -27,16 +27,18 @@ export function AuthContextUpdater(props: ParentProps) {
         currentRouterAuth?.service !== currentSession.service ||
         currentRouterAuth?.isAuthenticated !== currentSession.isAuthenticated
       ) {
-        router.update({
-          context: {
-            ...context,
-            session: currentSession,
-          },
-        })
+        setTimeout(() => {
+          router.update({
+            context: {
+              ...context,
+              session: currentSession,
+            },
+          })
 
-        if (currentRouterAuth?.isAuthenticated !== currentSession.isAuthenticated) {
-          setTimeout(() => void router.invalidate(), 0)
-        }
+          if (currentRouterAuth?.isAuthenticated !== currentSession.isAuthenticated) {
+            void router.invalidate()
+          }
+        }, 0)
       }
     },
   )

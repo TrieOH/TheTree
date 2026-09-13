@@ -19,7 +19,7 @@ export const Route = createFileRoute("/events/")({
 });
 
 function EventsPage() {
-  const eventsQuery = useQuery(allPublicEventsQueryOptions());
+  const eventsQuery = useQuery(() => allPublicEventsQueryOptions());
   const [filter, setFilter] = createSignal<"all" | "series">("all");
   const [drawerOpen, setDrawerOpen] = createSignal(false);
 

@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { untrack } from "solid-js";
+import { For, untrack } from "solid-js";
 import { Link } from "@tanstack/solid-router";
 import CalendarIcon from "~icons/lucide/calendar";
 import MailIcon from "~icons/lucide/mail";
@@ -99,15 +99,17 @@ export function ProfileHeader(props: {
       </div>
       <div class="relative mx-auto max-w-7xl">
         <nav class="flex overflow-x-auto px-4 pr-12 sm:pr-4">
-          {tabs(props.ownProfile).map(([tab, label]) => (
-            <button
-              type="button"
-              class={`shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${props.activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              onClick={() => props.onTabChange(tab)}
-            >
-              {label}
-            </button>
-          ))}
+          <For each={tabs(props.ownProfile)}>
+            {([tab, label]) => (
+              <button
+                type="button"
+                class={`shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${props.activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                onClick={() => props.onTabChange(tab)}
+              >
+                {label}
+              </button>
+            )}
+          </For>
         </nav>
         {props.ownProfile && (
           <div

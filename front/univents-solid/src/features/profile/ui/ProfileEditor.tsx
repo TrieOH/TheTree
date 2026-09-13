@@ -64,18 +64,27 @@ export function ProfileEditor(props: {
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const initial = props.initialProfile;
-  const [profile, setProfile] = createSignal<UniventsProfile>(initial?.data?.profile
-    ? asUniventsProfile({
-        ...initial.data.profile,
-        ...(initial.data.pfp_url !== undefined && { pfpUrl: initial.data.pfp_url }),
-      })
-    : {});
-  const [handle, setHandle] = createSignal(initial?.data?.handle ?? "");
-  const [loading, setLoading] = createSignal(!initial?.success || !initial.data);
+  const initial = untrack(() => props.initialProfile);
+  const [profile, setProfile] = createSignal<UniventsProfile>(
+    initial?.data?.profile
+      ? asUniventsProfile({
+          ...initial.data.profile,
+          ...(initial.data.pfp_url !== undefined && { pfpUrl: initial.data.pfp_url }),
+        })
+      : {},
+    { ownedWrite: true },
+  );
+  const [handle, setHandle] = createSignal(initial?.data?.handle ?? "", {
+    ownedWrite: true,
+  });
+  const [loading, setLoading] = createSignal(!initial?.success || !initial.data, {
+    ownedWrite: true,
+  });
   const [saving, setSaving] = createSignal(false);
   const [pendingImages, setPendingImages] = createSignal<Partial<Record<"pfpUrl" | "bannerUrl", File>>>({});
-  const [error, setError] = createSignal<string>();
+  const [error, setError] = createSignal<string | undefined>(undefined, {
+    ownedWrite: true,
+  });
 
   onSettled(() => {
     void props

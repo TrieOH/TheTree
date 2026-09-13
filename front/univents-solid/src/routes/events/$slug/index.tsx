@@ -28,7 +28,7 @@ export const Route = createFileRoute("/events/$slug/")({
 
 function EventPage() {
   const params = Route.useParams();
-  const eventQuery = useQuery(publicEventBySlugQueryOptions(params().slug));
+  const eventQuery = useQuery(() => publicEventBySlugQueryOptions(params().slug));
   const event = createMemo(() => eventQuery().data);
   return (
     <Show
@@ -86,7 +86,7 @@ function EventContent(props: { event: EventI | null }) {
 }
 
 function EditionDetails(props: { event: EventI }) {
-  const editionsQuery = useQuery(allPublicEditionsQueryOptions(untrack(() => props.event.id)));
+  const editionsQuery = useQuery(() => allPublicEditionsQueryOptions(props.event.id));
   const editions = createMemo(() => editionsQuery().data ?? []);
   return (
     <Loading

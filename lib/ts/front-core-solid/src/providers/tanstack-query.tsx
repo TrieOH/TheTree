@@ -1,5 +1,5 @@
 import { MutationObserver, QueryClient, QueryObserver, type MutationObserverOptions, type QueryObserverOptions } from "@tanstack/query-core"
-import { createComponent, createContext, createEffect, createSignal, onCleanup, useContext, type Accessor, type ParentProps } from "solid-js"
+import { createComponent, createContext, createEffect, createSignal, onCleanup, useContext, untrack, type Accessor, type ParentProps } from "solid-js"
 
 const QueryClientContext = createContext<QueryClient>()
 
@@ -59,9 +59,9 @@ export function useMutation<TData, TError = Error, TVariables = void>(
   options: Omit<MutationObserverOptions<TData, TError, TVariables>, "mutationKey">,
 ) {
   const client = useQueryClient()
-  const observer = new MutationObserver<TData, TError, TVariables>(client, options)
-  const [state, setState] = createSignal(observer.getCurrentResult())
-  const unsubscribe = observer.subscribe((result) => setState(() => result))
+  const observer = untrack(() => new MutationObserver<TData, TError, TVariables>(client, options))
+  const [state, setState] = createSignal(untrack(() => observer.getCurrentResult()), { ownedWrite: true })
+  const unsubscribe = untrack(() => observer.subscribe((result) => setState(() => result)))
   onCleanup(() => unsubscribe())
   return {
     mutateAsync: (variables: TVariables) => observer.mutate(variables),
@@ -73,15 +73,21 @@ export function useQuery<TData, TError = Error>(
   options: QueryObserverOptions<TData, TError> | Accessor<QueryObserverOptions<TData, TError>>,
 ) {
   const client = useQueryClient()
-  const getOptions = typeof options === "function" ? options : () => options
-  const observer = new QueryObserver<TData, TError>(client, getOptions())
-  const [state, setState] = createSignal(observer.getCurrentResult())
-  const unsubscribe = observer.subscribe((result) => setState(() => result))
-  createEffect(
-    getOptions,
-    (next) => observer.setOptions(next),
-  )
-  void observer.refetch()
+  const isFn = typeof options === "function"
+  const observer = untrack(() => {
+    const initialOptions = isFn ? (options as Accessor<QueryObserverOptions<TData, TError>>)() : options
+    return new QueryObserver<TData, TError>(client, initialOptions)
+  })
+  const [state, setState] = createSignal(untrack(() => observer.getCurrentResult()), { ownedWrite: true })
+  const unsubscribe = untrack(() => observer.subscribe((result) => setState(() => result)))
+
+  if (isFn) {
+    createEffect(
+      () => (options as Accessor<QueryObserverOptions<TData, TError>>)(),
+      (next) => untrack(() => observer.setOptions(next)),
+    )
+  }
+
   onCleanup(() => unsubscribe())
   return state
 }

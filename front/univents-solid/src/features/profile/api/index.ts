@@ -56,3 +56,5 @@ export function cacheProfile(
     queryClient.setQueryData(profileKeys.detail(handle), profile);
   }
 }
+
+export * from "./tab-query";
