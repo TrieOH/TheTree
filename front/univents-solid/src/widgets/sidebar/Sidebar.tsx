@@ -74,7 +74,7 @@ export function Sidebar(): JSX.Element {
               </div>
               <span class={cn("text-muted-foreground/70", collapsed() && "hidden")}>·</span>
               <span class={cn("ml-2 truncate text-sm font-semibold", collapsed() && "hidden")}>
-                {getAdminShellLabel().title}
+                {getAdminShellLabel(location().pathname).title}
               </span>
             </div>
           </div>

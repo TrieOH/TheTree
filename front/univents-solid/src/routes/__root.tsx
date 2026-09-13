@@ -4,6 +4,7 @@ import { OverlayScrollbar } from "@/widgets/ui/OverlayScrollbar";
 import { AuthContextUpdater } from '@trieoh/front-core-solid';
 import { Toaster } from '@/shared/ui/toast';
 import { NavigationDock } from '@/widgets/ui/NavigationDock';
+import { UploadQueueProvider } from '@/features/upload-queue';
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
@@ -14,9 +15,11 @@ export const Route = createRootRouteWithContext<{ session?: RouterSession }>()({
     <>
       <HeadContent />
       <AuthContextUpdater>
-        <main id="main-content" tabindex="-1">
-          <Outlet />
-        </main>
+        <UploadQueueProvider>
+          <main id="main-content" tabindex="-1">
+            <Outlet />
+          </main>
+        </UploadQueueProvider>
       </AuthContextUpdater>
       <OverlayScrollbar />
       <NavigationDock />

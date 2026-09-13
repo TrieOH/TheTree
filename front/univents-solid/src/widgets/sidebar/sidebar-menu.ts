@@ -1,6 +1,7 @@
 import type { JSX } from "@solidjs/web";
 
 import LayoutDashboardIcon from "~icons/lucide/layout-dashboard";
+import UploadCloudIcon from "~icons/lucide/upload-cloud";
 
 export interface SidebarMenuItem {
   id: string;
@@ -20,12 +21,10 @@ export interface SidebarSection {
 const LayoutDashboard = LayoutDashboardIcon as unknown as (
   props: { class?: string },
 ) => JSX.Element;
+const UploadCloud = UploadCloudIcon as unknown as (
+  props: { class?: string },
+) => JSX.Element;
 
-/**
- * Only the sections whose routes exist in this app. The React admin also has
- * uploads, and the whole event/edition tree; each entry lands here with its
- * route — a menu link to a missing route is worse than a missing link.
- */
 export function getAdminSidebarSections(): SidebarSection[] {
   return [
     {
@@ -38,12 +37,22 @@ export function getAdminSidebarSections(): SidebarSection[] {
           icon: LayoutDashboard,
           exact: true,
         },
+        {
+          id: "uploads",
+          label: "Uploads",
+          to: "/admin/uploads",
+          icon: UploadCloud,
+          exact: true,
+        },
       ],
     },
   ];
 }
 
 /** Title shown in the sidebar header and the mobile topbar. */
-export function getAdminShellLabel(): { title: string } {
+export function getAdminShellLabel(pathname?: string): { title: string } {
+  if (pathname?.startsWith("/admin/uploads")) {
+    return { title: "Uploads" };
+  }
   return { title: "Eventos" };
 }

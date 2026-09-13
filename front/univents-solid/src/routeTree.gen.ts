@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as CheckoutsPurchaseIdRouteImport } from './routes/checkouts/$purchaseId'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
@@ -57,6 +58,11 @@ const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUploadsRoute = AdminUploadsRouteImport.update({
+  id: '/uploads',
+  path: '/uploads',
+  getParentRoute: () => AdminRoute,
 } as any)
 const CheckoutsPurchaseIdRoute = CheckoutsPurchaseIdRouteImport.update({
   id: '/checkouts/$purchaseId',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/admin/uploads'
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/admin/uploads'
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/admin/uploads'
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
@@ -305,6 +317,13 @@ declare module '@tanstack/solid-router' {
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/uploads': {
+      id: '/admin/uploads'
+      path: '/uploads'
+      fullPath: '/admin/uploads'
+      preLoaderRoute: typeof AdminUploadsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/checkouts/$purchaseId': {
       id: '/checkouts/$purchaseId'
@@ -394,11 +413,13 @@ declare module '@tanstack/solid-router' {
 }
 
 interface AdminRouteChildren {
+  AdminUploadsRoute: typeof AdminUploadsRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
   AdminEventsEventIdIndexRoute: typeof AdminEventsEventIdIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminUploadsRoute: AdminUploadsRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,
   AdminEventsEventIdIndexRoute: AdminEventsEventIdIndexRoute,
 }
