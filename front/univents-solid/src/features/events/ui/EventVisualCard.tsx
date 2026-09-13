@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { Show, createEffect, createSignal } from "solid-js";
 import Trash2Icon from "~icons/lucide/trash-2";
 import UploadIcon from "~icons/lucide/upload";
 import { Button } from "@trieoh/ui-solid";
@@ -24,7 +24,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
   let bannerInput: HTMLInputElement | undefined;
   let logoInput: HTMLInputElement | undefined;
 
-  const { enqueue, tasks } = useUploadQueue();
+  const uploadQueue = useUploadQueue();
   const patchMutation = usePatchEventMutation();
 
   const isPending = () => patchMutation.result().status === "pending";
@@ -33,7 +33,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
     if (!file) return;
     const label = field === "logo_url" ? "logo" : "banner";
     try {
-      await enqueue({
+      await uploadQueue.enqueue({
         file,
         owner: {
           type: "event",
@@ -66,7 +66,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
     });
 
   const isUploading = (field: ImageField) =>
-    tasks.some(
+    uploadQueue.tasks.some(
       (task) =>
         task.owner.type === "event" &&
         task.owner.id === props.event.id &&
@@ -86,11 +86,11 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
   createEffect(
     () => props.event.id,
     (_id) => {
-      onCleanup(() => {
+      return () => {
         setDragging(undefined);
         setHovered(undefined);
         setRemoveField(undefined);
-      });
+      };
     },
   );
 
@@ -111,7 +111,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         type="file"
         accept="image/*"
         class="hidden"
-        disabled={isUploading("banner_url") || isPending()}
+        disabled={isUploading("banner_url")}
         onChange={(e) => {
           void upload("banner_url", e.currentTarget.files?.[0]);
           e.currentTarget.value = "";
@@ -125,7 +125,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         type="file"
         accept="image/*"
         class="hidden"
-        disabled={isUploading("logo_url") || isPending()}
+        disabled={isUploading("logo_url")}
         onChange={(e) => {
           void upload("logo_url", e.currentTarget.files?.[0]);
           e.currentTarget.value = "";
@@ -148,13 +148,12 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         }}
         onMouseEnter={() => setHovered("banner_url")}
         onMouseLeave={() => setHovered(undefined)}
-        class={`group relative flex h-56 cursor-pointer items-center justify-center rounded-md border border-dashed bg-muted/20 transition-colors ${
-          dragging() === "banner_url"
-            ? "border-primary bg-primary/10"
-            : hovered() === "banner_url"
-              ? "border-primary"
-              : "border-border/60"
-        }`}
+        class={`group relative flex h-56 cursor-pointer items-center justify-center rounded-md border border-dashed bg-muted/20 transition-colors ${dragging() === "banner_url"
+          ? "border-primary bg-primary/10"
+          : hovered() === "banner_url"
+            ? "border-primary"
+            : "border-border/60"
+          }`}
       >
         <Show when={props.event.banner_url && !isUploading("banner_url")}>
           <img
@@ -164,9 +163,8 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
           />
         </Show>
         <div
-          class={`pointer-events-none absolute inset-0 rounded-md bg-primary/10 transition-opacity ${
-            hovered() === "banner_url" ? "opacity-100" : "opacity-0"
-          }`}
+          class={`pointer-events-none absolute inset-0 rounded-md bg-primary/10 transition-opacity ${hovered() === "banner_url" ? "opacity-100" : "opacity-0"
+            }`}
         />
 
         <div class="absolute inset-0">
@@ -226,13 +224,12 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         }}
         onMouseEnter={() => setHovered("logo_url")}
         onMouseLeave={() => setHovered(undefined)}
-        class={`group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28 ${
-          dragging() === "logo_url"
-            ? "ring-2 ring-primary/70"
-            : hovered() === "logo_url"
-              ? "ring-4 ring-primary/50"
-              : ""
-        }`}
+        class={`group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28 ${dragging() === "logo_url"
+          ? "ring-2 ring-primary/70"
+          : hovered() === "logo_url"
+            ? "ring-4 ring-primary/50"
+            : ""
+          }`}
       >
         <Show when={props.event.logo_url && !isUploading("logo_url")}>
           <img
@@ -242,9 +239,8 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
           />
         </Show>
         <div
-          class={`pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity ${
-            hovered() === "logo_url" ? "opacity-100" : "opacity-0"
-          }`}
+          class={`pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity ${hovered() === "logo_url" ? "opacity-100" : "opacity-0"
+            }`}
         />
 
         <div class="absolute inset-0">

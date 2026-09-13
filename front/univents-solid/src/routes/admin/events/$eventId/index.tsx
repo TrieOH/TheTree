@@ -7,7 +7,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onCleanup,
 } from "solid-js";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
@@ -64,7 +63,7 @@ function AdminEventOverviewRoute(): JSX.Element {
   const params = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { tasks } = useUploadQueue();
+  const uploadQueue = useUploadQueue();
 
   const eventId = () => params().eventId;
 
@@ -174,14 +173,14 @@ function AdminEventOverviewRoute(): JSX.Element {
 
       void loadMetrics(currentEditions);
 
-      onCleanup(() => {
+      return () => {
         cancelled = true;
-      });
+      };
     },
   );
 
   const isImageUploading = (field: "logo_url" | "banner_url") =>
-    tasks.some(
+    uploadQueue.tasks.some(
       (task) =>
         task.owner.type === "event" &&
         task.owner.id === eventId() &&
@@ -272,14 +271,14 @@ function AdminEventOverviewRoute(): JSX.Element {
       },
       ...(ev?.status === "draft"
         ? [
-          {
-            label: "Publicar evento",
-            shortcut: "Mod+P",
-            onClick: () => setPublishConfirmOpen(true),
-            disabled: isPublishing(),
-            variant: "default" as const,
-          },
-        ]
+            {
+              label: "Publicar evento",
+              shortcut: "Mod+P",
+              onClick: () => setPublishConfirmOpen(true),
+              disabled: isPublishing(),
+              variant: "default" as const,
+            },
+          ]
         : []),
       {
         label: "Copiar link público",
@@ -290,21 +289,21 @@ function AdminEventOverviewRoute(): JSX.Element {
       },
       ...(isPublished()
         ? [
-          {
-            label: "Descontinuar evento",
-            shortcut: "Mod+Shift+D",
-            onClick: () => setDiscontinueConfirmOpen(true),
-            disabled: isDiscontinuing(),
-            variant: "destructive" as const,
-          },
-          {
-            label: "Abrir painel público",
-            shortcut: "Mod+Shift+O",
-            to: "/events/$slug" as const,
-            params: { slug: ev?.slug ?? "" },
-            variant: "default" as const,
-          },
-        ]
+            {
+              label: "Descontinuar evento",
+              shortcut: "Mod+Shift+D",
+              onClick: () => setDiscontinueConfirmOpen(true),
+              disabled: isDiscontinuing(),
+              variant: "destructive" as const,
+            },
+            {
+              label: "Abrir painel público",
+              shortcut: "Mod+Shift+O",
+              to: "/events/$slug" as const,
+              params: { slug: ev?.slug ?? "" },
+              variant: "default" as const,
+            },
+          ]
         : []),
     ];
   };
@@ -345,9 +344,9 @@ function AdminEventOverviewRoute(): JSX.Element {
       };
 
       window.addEventListener("keydown", handleKeyDown);
-      onCleanup(() => {
+      return () => {
         window.removeEventListener("keydown", handleKeyDown);
-      });
+      };
     },
   );
 

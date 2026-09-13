@@ -5,7 +5,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onCleanup,
   untrack,
 } from "solid-js";
 import ChevronLeftIcon from "~icons/lucide/chevron-left";
@@ -98,14 +97,17 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
   const [hoverDate, setHoverDate] = createSignal<Date | null>(null);
 
   createEffect(
-    () => props.open,
-    (isOpen) => {
-      if (isOpen) {
+    () =>
+      props.open
+        ? { range: props.range, customRange: props.customRange }
+        : null,
+    (data) => {
+      if (data) {
         const { windowStart, windowEnd } = computeRangeWindow(
-          props.range,
-          props.customRange,
+          data.range,
+          data.customRange,
         );
-        setDraftPreset(props.range);
+        setDraftPreset(data.range);
         setDraftFrom(windowStart);
         setDraftTo(windowEnd);
         setVisibleMonth(windowEnd ?? windowStart ?? new Date());
@@ -121,9 +123,9 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
         if (event.key === "Escape") props.onClose();
       };
       window.addEventListener("keydown", onKeyDown);
-      onCleanup(() => {
+      return () => {
         window.removeEventListener("keydown", onKeyDown);
-      });
+      };
     },
   );
 
@@ -213,7 +215,7 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
           aria-modal="true"
           aria-label="Selecionar período"
           style={{ "max-height": "calc(100vh - 2rem)" }}
-          class="flex min-w-[300px] max-w-sm flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-2xl transition-all duration-150 sm:max-w-2xl"
+          class="flex min-w-75 max-w-sm flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-2xl transition-all duration-150 sm:max-w-2xl"
         >
           {/* Header */}
           <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
@@ -241,11 +243,10 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
                   <button
                     type="button"
                     onClick={() => handlePresetClick(p.key)}
-                    class={`shrink-0 rounded-lg px-3 py-2 text-center text-xs font-medium transition-colors ${
-                      draftPreset() === p.key
+                    class={`shrink-0 rounded-lg px-3 py-2 text-center text-xs font-medium transition-colors ${draftPreset() === p.key
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     {p.label}
                   </button>
@@ -254,11 +255,10 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
               <button
                 type="button"
                 onClick={() => setDraftPreset("custom")}
-                class={`shrink-0 rounded-lg px-3 py-2 text-center text-xs font-medium transition-colors ${
-                  draftPreset() === "custom"
+                class={`shrink-0 rounded-lg px-3 py-2 text-center text-xs font-medium transition-colors ${draftPreset() === "custom"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                  }`}
               >
                 Personalizado
               </button>
@@ -362,13 +362,11 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
                           <div class="relative py-0.5">
                             <Show when={inRange()}>
                               <span
-                                class={`absolute inset-y-0.5 bg-primary/10 ${
-                                  roundLeft() ? "left-0 rounded-l-full" : "left-0"
-                                } ${
-                                  roundRight()
+                                class={`absolute inset-y-0.5 bg-primary/10 ${roundLeft() ? "left-0 rounded-l-full" : "left-0"
+                                  } ${roundRight()
                                     ? "right-0 rounded-r-full"
                                     : "right-0"
-                                }`}
+                                  }`}
                               />
                             </Show>
                             <button
@@ -376,13 +374,12 @@ export function DateRangeModal(props: DateRangeModalProps): JSX.Element {
                               onClick={() => handleDayClick(day)}
                               onMouseEnter={() => setHoverDate(day)}
                               onMouseLeave={() => setHoverDate(null)}
-                              class={`relative z-10 flex size-8 mx-auto items-center justify-center rounded-full text-xs font-medium transition-colors ${
-                                isEdgeCell()
+                              class={`relative z-10 flex size-8 mx-auto items-center justify-center rounded-full text-xs font-medium transition-colors ${isEdgeCell()
                                   ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                                   : isToday()
                                     ? "border border-primary font-semibold text-primary"
                                     : "text-foreground hover:bg-muted"
-                              }`}
+                                }`}
                             >
                               {day.getDate()}
                             </button>

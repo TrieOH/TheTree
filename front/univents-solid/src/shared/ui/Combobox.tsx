@@ -5,7 +5,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onCleanup,
 } from "solid-js";
 import CheckIcon from "~icons/lucide/check";
 import ChevronsUpDownIcon from "~icons/lucide/chevrons-up-down";
@@ -37,29 +36,29 @@ export interface ComboboxProps {
 }
 
 export function Combobox(props: ComboboxProps): JSX.Element {
+  const [open, setOpen] = createSignal(false);
+  const [query, setQuery] = createSignal("");
+  const [highlightedIndex, setHighlightedIndex] = createSignal(0);
+  const [position, setPosition] = createSignal({ top: 0, left: 0, minWidth: 0 });
+
   let containerRef: HTMLDivElement | undefined;
   let dropdownRef: HTMLDivElement | undefined;
   let inputRef: HTMLInputElement | undefined;
 
-  const [open, setOpen] = createSignal(false);
-  const [query, setQuery] = createSignal("");
-  const [highlightedIndex, setHighlightedIndex] = createSignal(0);
-  const [position, setPosition] = createSignal({
-    top: 0,
-    left: 0,
-    minWidth: 0,
-  });
-
   const updatePosition = () => {
-    const el = containerRef;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+    if (!containerRef) return;
+    const rect = containerRef.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const estimatedHeight = 280;
+
+    let top = rect.bottom + 4;
+    if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
+      top = rect.top - estimatedHeight - 4;
+    }
+
     setPosition({
-      top: rect.bottom + 4,
-      left: Math.max(
-        8,
-        Math.min(rect.left, window.innerWidth - (rect.width || 120) - 8),
-      ),
+      top: Math.max(top, 8),
+      left: Math.max(rect.left, 8),
       minWidth: rect.width,
     });
   };
@@ -70,13 +69,12 @@ export function Combobox(props: ComboboxProps): JSX.Element {
       if (!isOpen) return;
 
       updatePosition();
-      setHighlightedIndex(0);
 
       const handlePointerDown = (event: MouseEvent) => {
-        const target = event.target as Node;
+        const target = event.target as Node | null;
         if (
-          containerRef?.contains(target) ||
-          dropdownRef?.contains(target)
+          (containerRef && containerRef.contains(target)) ||
+          (dropdownRef && dropdownRef.contains(target))
         ) {
           return;
         }
@@ -94,11 +92,11 @@ export function Combobox(props: ComboboxProps): JSX.Element {
       // Focus input
       setTimeout(() => inputRef?.focus(), 10);
 
-      onCleanup(() => {
+      return () => {
         document.removeEventListener("mousedown", handlePointerDown);
         window.removeEventListener("resize", handleScrollOrResize);
         window.removeEventListener("scroll", handleScrollOrResize, true);
-      });
+      };
     },
   );
 
