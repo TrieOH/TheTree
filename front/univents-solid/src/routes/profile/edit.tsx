@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/solid-router";
+import { createFileRoute } from "@tanstack/solid-router";
 import { useQueryClient } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { requireAuth } from "@/features/auths/lib/route-guard";
