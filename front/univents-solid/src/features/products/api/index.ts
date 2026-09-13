@@ -34,6 +34,8 @@ export const productsQueryOptions = (editionId: string) => ({
     listEditionProducts(editionId, { public: true }).then(orvalData<Product[]>),
 });
 
+export const productsByEditionQueryOptions = productsQueryOptions;
+
 export const productVariantsQueryOptions = (productId: string) => ({
   queryKey: productKeys.variants(productId),
   queryFn: () =>
@@ -50,24 +52,43 @@ export const storeStockQueryOptions = (editionId: string) => ({
     ),
 });
 
-export const storePageQueryOptions = (slug: string, authenticated: boolean, client: QueryClient) => ({
+export const storePageQueryOptions = (
+  slug: string,
+  authenticated: boolean,
+  client: QueryClient,
+) => ({
   queryKey: productKeys.storePage(slug, authenticated),
   queryFn: async (): Promise<StorePageData | null> => {
     const event = await publicEventBySlugQueryOptions(slug).queryFn();
     if (!event) return null;
     const editions = await allPublicEditionsQueryOptions(event.id).queryFn();
-    const edition = editions.find((item) => new Date(item.ends_at).getTime() >= Date.now()) ?? editions.at(-1);
+    const edition =
+      editions.find((item) => new Date(item.ends_at).getTime() >= Date.now()) ??
+      editions.at(-1);
     if (!edition) return { event, edition: null };
     const [tickets, products, stock, heldTicket] = await Promise.all([
       client.fetchQuery(ticketsQueryOptions(edition.id)),
       client.fetchQuery(productsQueryOptions(edition.id)),
       client.fetchQuery(storeStockQueryOptions(edition.id)),
-      authenticated ? client.fetchQuery(myTicketQueryOptions(edition.id)) : null,
+      authenticated
+        ? client.fetchQuery(myTicketQueryOptions(edition.id))
+        : null,
     ]);
-    const productItems = await Promise.all(products.map(async (product) => ({
-      product,
-      variants: await client.fetchQuery(productVariantsQueryOptions(product.id)),
-    })));
-    return { event, edition, tickets, products: productItems, stock, heldTicket };
+    const productItems = await Promise.all(
+      products.map(async (product) => ({
+        product,
+        variants: await client.fetchQuery(
+          productVariantsQueryOptions(product.id),
+        ),
+      })),
+    );
+    return {
+      event,
+      edition,
+      tickets,
+      products: productItems,
+      stock,
+      heldTicket,
+    };
   },
 });

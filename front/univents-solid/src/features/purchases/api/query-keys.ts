@@ -5,4 +5,6 @@ export const purchaseKeys = {
   detail: (purchaseId: string) => ["purchases", "detail", purchaseId] as const,
   catalog: (purchaseId: string) =>
     ["purchases", "catalog", purchaseId] as const,
+  edition: (editionId: string) =>
+    ["purchases", "edition", editionId] as const,
 };

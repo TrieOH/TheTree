@@ -858,6 +858,9 @@ importers:
       '@solidjs/web':
         specifier: ^2.0.0-rc.6
         version: 2.0.0-rc.6(solid-js@2.0.0-rc.6)
+      '@tanstack/charts':
+        specifier: 'catalog:'
+        version: 0.14.0(preact@10.29.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@2.0.0-rc.6)
       '@tanstack/query-core':
         specifier: 5.101.4
         version: 5.101.4
@@ -885,9 +888,18 @@ importers:
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
+      d3-scale:
+        specifier: 'catalog:'
+        version: 4.0.2
+      d3-shape:
+        specifier: 'catalog:'
+        version: 3.2.0
       effect:
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115
+      idb-keyval:
+        specifier: ^6.2.1
+        version: 6.3.0
       motion:
         specifier: 'catalog:'
         version: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -937,6 +949,12 @@ importers:
       '@testing-library/jest-dom':
         specifier: ^6.6.3
         version: 6.10.0(@testing-library/dom@10.4.1)
+      '@types/d3-scale':
+        specifier: 'catalog:'
+        version: 4.0.9
+      '@types/d3-shape':
+        specifier: 'catalog:'
+        version: 3.1.8
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.2
@@ -5337,6 +5355,9 @@ packages:
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
+
+  idb-keyval@6.3.0:
+    resolution: {integrity: sha512-um+2dgAWmYsu615EXpWVwSmapJhON0G43t3Ka/EVaohzPQXSMqKEqeDK/oIW3Ow+BXaF2PvSc+oBTFp793A5Ow==}
 
   ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
@@ -10891,6 +10912,8 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
+
+  idb-keyval@6.3.0: {}
 
   ieee754@1.2.1:
     optional: true

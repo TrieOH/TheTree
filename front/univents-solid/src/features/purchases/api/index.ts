@@ -4,6 +4,7 @@ import {
   createEditionCheckout,
   getCheckout,
   getWsToken,
+  listEditionPurchases,
   listMyPurchases,
 } from "@trieoh/univents-api";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
@@ -15,6 +16,7 @@ import type {
   Checkout,
   CheckoutResult,
   CreateCheckoutRequest,
+  EditionPurchase,
   MyPurchases,
   Purchase,
   WsToken,
@@ -31,6 +33,12 @@ export const myPurchasesQueryOptions = () => ({
 export const checkoutQueryOptions = (purchaseId: string) => ({
   queryKey: purchaseKeys.detail(purchaseId),
   queryFn: () => getCheckout(purchaseId).then(orvalData<Checkout>),
+});
+
+export const editionPurchasesQueryOptions = (editionId: string) => ({
+  queryKey: purchaseKeys.edition(editionId),
+  queryFn: () =>
+    listEditionPurchases(editionId).then(orvalData<EditionPurchase[]>),
 });
 
 export type CheckoutPageData = {

@@ -13,6 +13,7 @@ import { orvalData } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import type { EventI } from "../model";
 import { eventKeys } from "./query-keys";
+import "./upload-association";
 
 const getPublicEventsFn = () =>
   listPublicEvents({ public: true }).then(orvalData<EventI[]>);

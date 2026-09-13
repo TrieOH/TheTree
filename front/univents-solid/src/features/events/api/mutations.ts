@@ -79,6 +79,38 @@ export const usePatchEventMutation = () => {
   });
 };
 
+export const usePublishEventMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: (eventId: string) =>
+      publishEventEffect(eventId).pipe(
+        Effect.tap(() =>
+          Effect.tryPromise({
+            try: () => invalidateEvents(queryClient),
+            catch: () => undefined,
+          }),
+        ),
+      ),
+  });
+};
+
+export const useDiscontinueEventMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: (eventId: string) =>
+      discontinueEventEffect(eventId).pipe(
+        Effect.tap(() =>
+          Effect.tryPromise({
+            try: () => invalidateEvents(queryClient),
+            catch: () => undefined,
+          }),
+        ),
+      ),
+  });
+};
+
 export const publishEventMutation = (queryClient: QueryClient) =>
   toMutationFn(
     (eventId: string) =>
