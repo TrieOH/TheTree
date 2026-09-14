@@ -1,26 +1,41 @@
 import type { JSX } from "@solidjs/web";
-import { useNavigate } from "@tanstack/solid-router";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
+import { useNavigate } from "@tanstack/solid-router";
 import { createEffect, onCleanup } from "solid-js";
 import { toast } from "@/shared/ui/toast";
-import { useUploadQueue } from "../hooks/use-upload-queue";
 import { uploadQueueProcessor } from "../lib/processor";
 import { uploadQueueStore } from "../lib/store";
-import type { UploadTaskStatus } from "../model/types";
+import { promptImageReplacement } from "../lib/correction";
+import { useUploadQueue } from "../hooks/use-upload-queue";
+import type { UploadTask, UploadTaskStatus } from "../model/types";
 
 const notificationStatuses = new Set<UploadTaskStatus>([
   "completed",
-  "failed",
   "rejected",
+  "failed",
 ]);
 
 export function UploadQueueProvider(props: { children?: JSX.Element }): JSX.Element {
-  const navigate = useNavigate();
   const { auth, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const accountId = () => (isAuthenticated() ? auth.profile()?.id : undefined);
   const queue = useUploadQueue();
   const previousStatuses = new Map<string, UploadTaskStatus>();
   let notificationAccountId: string | undefined;
+
+  const handleCorrectImage = (task: UploadTask) => {
+    if (
+      task.correctionPath &&
+      typeof window !== "undefined" &&
+      window.location.pathname !== task.correctionPath
+    ) {
+      void navigate({ to: task.correctionPath });
+    }
+
+    promptImageReplacement(task, (file) => {
+      void queue.replaceFile(task.id, file);
+    });
+  };
 
   onCleanup(() => {
     uploadQueueProcessor.stop();
@@ -49,14 +64,6 @@ export function UploadQueueProvider(props: { children?: JSX.Element }): JSX.Elem
 
       if (notificationAccountId !== id) {
         notificationAccountId = id;
-        previousStatuses.clear();
-        for (const task of tasks) {
-          previousStatuses.set(task.id, task.status);
-        }
-        return;
-      }
-
-      if (previousStatuses.size === 0) {
         for (const task of tasks) {
           previousStatuses.set(task.id, task.status);
         }
@@ -74,46 +81,34 @@ export function UploadQueueProvider(props: { children?: JSX.Element }): JSX.Elem
           continue;
         }
 
-        if (task.status === "rejected" || task.error?.requiresReplacement) {
+        if (task.status === "rejected") {
           toast.error(
-            task.error?.message ?? `É necessário substituir ${task.label}.`,
+            task.error?.message ?? `${task.label} foi rejeitada.`,
             {
-              action: {
-                label: "Corrigir imagem",
-                onClick: () => {
-                  if (task.correctionPath) {
-                    void navigate({ to: task.correctionPath });
-                  } else {
-                    void navigate({
-                      to: "/admin/uploads",
-                      search: { task: task.id },
-                    });
-                  }
-                },
-              },
+              action: task.correctionPath
+                ? {
+                  label: "Corrigir imagem",
+                  onClick: () => handleCorrectImage(task),
+                }
+                : undefined,
             },
           );
           continue;
         }
 
-        toast.error(
-          task.error?.message ?? `Não foi possível enviar ${task.label}.`,
-          {
-            action: task.error?.retryable
-              ? {
-                  label: "Tentar novamente",
-                  onClick: () => void queue.retry(task.id),
+        if (task.status === "failed") {
+          toast.error(
+            task.error?.message ?? `Falha no envio de ${task.label}.`,
+            {
+              action: task.correctionPath
+                ? {
+                  label: "Corrigir imagem",
+                  onClick: () => handleCorrectImage(task),
                 }
-              : {
-                  label: "Ver detalhes",
-                  onClick: () =>
-                    void navigate({
-                      to: "/admin/uploads",
-                      search: { task: task.id },
-                    }),
-                },
-          },
-        );
+                : undefined,
+            },
+          );
+        }
       }
 
       previousStatuses.clear();

@@ -29,10 +29,10 @@ export function EventOverviewChecklist(props: {
       action: props.hasLogo
         ? undefined
         : {
-            label: "Adicionar",
-            disabled: props.logoUploading,
-            onClick: props.onAddLogo,
-          },
+          label: "Adicionar",
+          disabled: props.logoUploading,
+          onClick: props.onAddLogo,
+        },
     },
     {
       id: "banner",
@@ -42,10 +42,10 @@ export function EventOverviewChecklist(props: {
       action: props.hasBanner
         ? undefined
         : {
-            label: "Adicionar",
-            disabled: props.bannerUploading,
-            onClick: props.onAddBanner,
-          },
+          label: "Adicionar",
+          disabled: props.bannerUploading,
+          onClick: props.onAddBanner,
+        },
     },
     {
       id: "description",
@@ -56,13 +56,23 @@ export function EventOverviewChecklist(props: {
     },
     ...(props.editionCount > 0
       ? [
-          {
-            id: "payment",
-            title: "Pagamento conectado",
-            description: "Necessário para vender ingressos ou produtos.",
-            completed: props.paymentConnected,
-          },
-        ]
+        {
+          id: "payment",
+          title: "Pagamento conectado",
+          description: "Necessário para vender ingressos ou produtos.",
+          completed: props.paymentConnected,
+          action: props.paymentConnected
+            ? undefined
+            : {
+              label: "Conectar",
+              onClick: () => {
+                document
+                  .getElementById("event-payment-panel")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              },
+            },
+        },
+      ]
       : []),
   ];
 
@@ -70,8 +80,6 @@ export function EventOverviewChecklist(props: {
     <StepChecklist
       title="Checklist do evento"
       items={items()}
-      class="order-8 w-full sm:fixed sm:right-4 sm:top-24 sm:z-40 sm:w-auto"
-      mobileInline
     />
   );
 }

@@ -1,11 +1,12 @@
 import type { JSX } from "@solidjs/web";
-import { For, Match, Show, Switch } from "solid-js";
 import { Link } from "@tanstack/solid-router";
+import { For, Match, Show, Switch } from "solid-js";
 import CommandIcon from "~icons/lucide/command";
 import CopyIcon from "~icons/lucide/copy";
 import ExternalLinkIcon from "~icons/lucide/external-link";
 import EyeIcon from "~icons/lucide/eye";
 import PencilIcon from "~icons/lucide/pencil";
+import { cn } from "@trieoh/ui-solid";
 
 type IconComp = (props: { class?: string }) => JSX.Element;
 const LucideCommand = CommandIcon as unknown as IconComp;
@@ -95,7 +96,10 @@ export function EditionQuickActions(props: {
                   onClick={() => action.onClick?.()}
                   title={`${action.label} · ${action.shortcut}`}
                   aria-label={action.label}
-                  class="flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:h-14 sm:min-w-28 sm:flex-col sm:justify-center sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
+                  class={cn(
+                    "flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:h-14 sm:min-w-28 sm:flex-col sm:justify-center sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight",
+                    action.variant === "destructive" && "border-destructive/60 text-destructive hover:bg-destructive/10",
+                  )}
                 >
                   <span class="flex items-center gap-1.5">
                     <ActionIcon label={action.label} />
@@ -110,7 +114,10 @@ export function EditionQuickActions(props: {
                 params={action.params!}
                 title={`${action.label} · ${action.shortcut}`}
                 aria-label={action.label}
-                class="flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-14 sm:min-w-28 sm:flex-col sm:justify-center sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight"
+                class={cn(
+                  "flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-xs font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-14 sm:min-w-28 sm:flex-col sm:justify-center sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight",
+                  action.disabled && "pointer-events-none opacity-50",
+                )}
               >
                 <span class="flex items-center gap-1.5">
                   <ActionIcon label={action.label} />

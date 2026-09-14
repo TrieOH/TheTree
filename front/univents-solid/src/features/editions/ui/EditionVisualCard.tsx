@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createSignal } from "solid-js";
 import Trash2Icon from "~icons/lucide/trash-2";
 import UploadIcon from "~icons/lucide/upload";
-import { Button } from "@trieoh/ui-solid";
+import { Button, cn } from "@trieoh/ui-solid";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import { useUploadQueue } from "@/features/upload-queue";
 import { usePatchEditionMutation } from "../api/mutations";
@@ -151,13 +151,14 @@ export function EditionVisualCard(props: {
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setDragging(undefined)}
         onDrop={(e) => handleDrop("banner_url", e)}
-        class={`group relative flex h-56 cursor-pointer items-center justify-center rounded-xl border border-dashed bg-muted/20 transition-colors ${
+        class={cn(
+          "group relative flex h-56 cursor-pointer items-center justify-center rounded-xl border border-dashed bg-muted/20 transition-colors",
           dragging() === "banner_url"
             ? "border-primary bg-primary/10"
             : hovered() === "banner_url"
               ? "border-primary"
-              : "border-border/60"
-        }`}
+              : "border-border/60",
+        )}
         onClick={() => {
           if (!isUploading("banner_url") && !isPending()) {
             bannerInput?.click();
@@ -174,9 +175,10 @@ export function EditionVisualCard(props: {
           />
         </Show>
         <div
-          class={`pointer-events-none absolute inset-0 rounded-xl bg-primary/10 transition-opacity ${
-            hovered() === "banner_url" ? "opacity-100" : "opacity-0"
-          }`}
+          class={cn(
+            "pointer-events-none absolute inset-0 rounded-xl bg-primary/10 transition-opacity",
+            hovered() === "banner_url" ? "opacity-100" : "opacity-0",
+          )}
         />
         <div class="absolute inset-0">
           <Button
@@ -227,13 +229,14 @@ export function EditionVisualCard(props: {
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setDragging(undefined)}
         onDrop={(e) => handleDrop("logo_url", e)}
-        class={`group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28 ${
+        class={cn(
+          "group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28",
           dragging() === "logo_url"
             ? "ring-2 ring-primary/70"
             : hovered() === "logo_url"
               ? "ring-4 ring-primary/50"
-              : ""
-        }`}
+              : "",
+        )}
         onClick={() => {
           if (!isUploading("logo_url") && !isPending()) {
             logoInput?.click();
@@ -250,9 +253,10 @@ export function EditionVisualCard(props: {
           />
         </Show>
         <div
-          class={`pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity ${
-            hovered() === "logo_url" ? "opacity-100" : "opacity-0"
-          }`}
+          class={cn(
+            "pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity",
+            hovered() === "logo_url" ? "opacity-100" : "opacity-0",
+          )}
         />
         <div class="absolute inset-0">
           <Button

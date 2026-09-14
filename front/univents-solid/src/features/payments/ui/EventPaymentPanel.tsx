@@ -1,7 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { For } from "solid-js";
 import CreditCardIcon from "~icons/lucide/credit-card";
-import { Button } from "@trieoh/ui-solid";
+import { Button, cn } from "@trieoh/ui-solid";
 import type { PaymentProviderI } from "../api";
 
 type IconComp = (props: { class?: string }) => JSX.Element;
@@ -12,12 +12,12 @@ const providers: Array<{
   name: string;
   image: string;
 }> = [
-  {
-    id: "mercadopago",
-    name: "Mercado Pago",
-    image: "/mercado-pago.svg",
-  },
-];
+    {
+      id: "mercadopago",
+      name: "Mercado Pago",
+      image: "/mercado-pago.svg",
+    },
+  ];
 
 export function EventPaymentPanel(props: {
   connected: boolean;
@@ -26,7 +26,7 @@ export function EventPaymentPanel(props: {
   onDisconnect: () => void;
 }): JSX.Element {
   return (
-    <section class="order-3 space-y-3">
+    <section id="event-payment-panel" class="order-3 space-y-3">
       <div class="flex items-center gap-3 px-1">
         <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <LucideCreditCard class="size-5" />
@@ -58,11 +58,12 @@ export function EventPaymentPanel(props: {
                     {provider.name}
                   </p>
                   <span
-                    class={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                    class={cn(
+                      "mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors",
                       props.connected
                         ? "bg-primary text-primary-foreground shadow-xs"
-                        : "bg-secondary text-secondary-foreground"
-                    }`}
+                        : "bg-secondary text-secondary-foreground",
+                    )}
                   >
                     {props.connected ? "Conectado" : "Não conectado"}
                   </span>

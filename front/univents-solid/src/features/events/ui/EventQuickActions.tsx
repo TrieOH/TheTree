@@ -1,12 +1,13 @@
 import type { JSX } from "@solidjs/web";
-import { For, Match, Show, Switch } from "solid-js";
 import { Link } from "@tanstack/solid-router";
+import { For, Match, Show, Switch } from "solid-js";
 import CommandIcon from "~icons/lucide/command";
 import CopyIcon from "~icons/lucide/copy";
 import ExternalLinkIcon from "~icons/lucide/external-link";
 import EyeIcon from "~icons/lucide/eye";
 import PencilIcon from "~icons/lucide/pencil";
 import XCircleIcon from "~icons/lucide/x-circle";
+import { cn } from "@trieoh/ui-solid";
 
 type IconComp = (props: { class?: string }) => JSX.Element;
 const LucideCommand = CommandIcon as unknown as IconComp;
@@ -100,11 +101,12 @@ export function EventQuickActions(props: {
                   onClick={() => action.onClick?.()}
                   title={`${action.label} · ${action.shortcut}`}
                   aria-label={action.label}
-                  class={`inline-flex h-9 shrink-0 flex-row items-center justify-center gap-1.5 rounded-md border bg-background px-2 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight ${
+                  class={cn(
+                    "inline-flex h-9 shrink-0 flex-row items-center justify-center gap-1.5 rounded-md border bg-background px-2 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 sm:h-14! sm:min-w-28! sm:flex-col! sm:gap-1 sm:px-2 sm:py-1.5 sm:text-[11px] sm:leading-tight",
                     action.variant === "destructive"
                       ? "border-destructive/60 text-destructive hover:bg-destructive/10"
-                      : "border-border"
-                  }`}
+                      : "border-border",
+                  )}
                 >
                   <span class="flex items-center gap-1.5">
                     <ActionIcon label={action.label} />

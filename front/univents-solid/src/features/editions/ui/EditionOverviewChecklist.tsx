@@ -22,10 +22,10 @@ export function EditionOverviewChecklist(props: {
       action: props.hasBanner
         ? undefined
         : {
-            label: "Adicionar",
-            disabled: props.bannerUploading,
-            onClick: props.onAddBanner,
-          },
+          label: "Adicionar",
+          disabled: props.bannerUploading,
+          onClick: props.onAddBanner,
+        },
     },
     {
       id: "logo",
@@ -35,10 +35,10 @@ export function EditionOverviewChecklist(props: {
       action: props.hasLogo
         ? undefined
         : {
-            label: "Adicionar",
-            disabled: props.logoUploading,
-            onClick: props.onAddLogo,
-          },
+          label: "Adicionar",
+          disabled: props.logoUploading,
+          onClick: props.onAddLogo,
+        },
     },
     {
       id: "description",
@@ -67,8 +67,6 @@ export function EditionOverviewChecklist(props: {
     <StepChecklist
       title="Checklist da edição"
       items={items()}
-      class="order-8 w-full sm:fixed sm:right-4 sm:top-24 sm:z-40 sm:w-auto"
-      mobileInline
     />
   );
 }

@@ -2,9 +2,9 @@ import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createSignal } from "solid-js";
 import Trash2Icon from "~icons/lucide/trash-2";
 import UploadIcon from "~icons/lucide/upload";
-import { Button } from "@trieoh/ui-solid";
+import { Button, cn } from "@trieoh/ui-solid";
 import { AlertModal } from "@/widgets/ui/AlertModal";
-import { useUploadQueue } from "../../upload-queue";
+import { useUploadQueue } from "@/features/upload-queue";
 import { usePatchEventMutation } from "../api/mutations";
 import type { EventI } from "../model";
 
@@ -15,7 +15,9 @@ const LucideUpload = UploadIcon as unknown as IconComp;
 type ImageField = "logo_url" | "banner_url";
 
 export function EventVisualCard(props: { event: EventI }): JSX.Element {
-  const [dragging, setDragging] = createSignal<ImageField | undefined>(undefined);
+  const [dragging, setDragging] = createSignal<ImageField | undefined>(
+    undefined,
+  );
   const [hovered, setHovered] = createSignal<ImageField | undefined>(undefined);
   const [removeField, setRemoveField] = createSignal<ImageField | undefined>(
     undefined,
@@ -44,7 +46,10 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         label: `${props.event.full_name} — ${label}`,
         storagePath: `events/${props.event.id}/${label}`,
         correctionPath: `/admin/events/${props.event.id}`,
-        association: { handlerKey: "event-image", input: { field } },
+        association: {
+          handlerKey: "event-image",
+          input: { field },
+        },
       });
     } catch {
       // Handled silently
@@ -148,12 +153,14 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         }}
         onMouseEnter={() => setHovered("banner_url")}
         onMouseLeave={() => setHovered(undefined)}
-        class={`group relative flex h-56 cursor-pointer items-center justify-center rounded-md border border-dashed bg-muted/20 transition-colors ${dragging() === "banner_url"
-          ? "border-primary bg-primary/10"
-          : hovered() === "banner_url"
-            ? "border-primary"
-            : "border-border/60"
-          }`}
+        class={cn(
+          "group relative flex h-56 cursor-pointer items-center justify-center rounded-md border border-dashed bg-muted/20 transition-colors",
+          dragging() === "banner_url"
+            ? "border-primary bg-primary/10"
+            : hovered() === "banner_url"
+              ? "border-primary"
+              : "border-border/60",
+        )}
       >
         <Show when={props.event.banner_url && !isUploading("banner_url")}>
           <img
@@ -163,8 +170,10 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
           />
         </Show>
         <div
-          class={`pointer-events-none absolute inset-0 rounded-md bg-primary/10 transition-opacity ${hovered() === "banner_url" ? "opacity-100" : "opacity-0"
-            }`}
+          class={cn(
+            "pointer-events-none absolute inset-0 rounded-md bg-primary/10 transition-opacity",
+            hovered() === "banner_url" ? "opacity-100" : "opacity-0",
+          )}
         />
 
         <div class="absolute inset-0">
@@ -224,12 +233,14 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
         }}
         onMouseEnter={() => setHovered("logo_url")}
         onMouseLeave={() => setHovered(undefined)}
-        class={`group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28 ${dragging() === "logo_url"
-          ? "ring-2 ring-primary/70"
-          : hovered() === "logo_url"
-            ? "ring-4 ring-primary/50"
-            : ""
-          }`}
+        class={cn(
+          "group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28",
+          dragging() === "logo_url"
+            ? "ring-2 ring-primary/70"
+            : hovered() === "logo_url"
+              ? "ring-4 ring-primary/50"
+              : "",
+        )}
       >
         <Show when={props.event.logo_url && !isUploading("logo_url")}>
           <img
@@ -239,8 +250,10 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
           />
         </Show>
         <div
-          class={`pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity ${hovered() === "logo_url" ? "opacity-100" : "opacity-0"
-            }`}
+          class={cn(
+            "pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity",
+            hovered() === "logo_url" ? "opacity-100" : "opacity-0",
+          )}
         />
 
         <div class="absolute inset-0">
@@ -269,7 +282,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
                 type="button"
                 size="icon"
                 variant="destructive"
-                class="size-8 rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-xl ring-1 ring-border hover:bg-destructive/90!"
+                class="size-8 rounded-full border-2 border-background shadow-xl hover:bg-destructive/90"
                 disabled={isPending()}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -286,10 +299,12 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
 
       <AlertModal
         open={Boolean(removeField())}
-        onOpenChange={(open) => !open && setRemoveField(undefined)}
-        title={`Remover ${removeField() === "logo_url" ? "logo" : "banner"}?`}
-        description="Essa imagem será removida do evento. Essa ação não pode ser desfeita."
-        confirmLabel="Remover imagem"
+        onOpenChange={(open) => {
+          if (!open) setRemoveField(undefined);
+        }}
+        title={`Remover ${removeField() === "banner_url" ? "banner" : "logo"}?`}
+        description="Esta imagem será desassociada do evento."
+        confirmLabel="Remover"
         variant="destructive"
         loading={isPending()}
         onConfirm={handleConfirmRemove}

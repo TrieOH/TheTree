@@ -1,6 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import CalendarIcon from "~icons/lucide/calendar";
+import { cn } from "@trieoh/ui-solid";
 import type { EditionI, EditionStatus } from "../model";
 import { EditionVisualCard } from "./EditionVisualCard";
 
@@ -68,7 +69,10 @@ export function EditionOverviewHeader(props: {
             </p>
             <div>
               <span
-                class={`inline-flex w-fit items-center justify-center rounded-4xl border-0 px-2 py-0.5 text-xs font-normal ${status().className}`}
+                class={cn(
+                  "inline-flex w-fit items-center justify-center rounded-4xl border-0 px-2 py-0.5 text-xs font-normal",
+                  status().className,
+                )}
               >
                 {status().label}
               </span>

@@ -1,57 +1,52 @@
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import {
-  Show,
-  createEffect,
-  createMemo,
-  createSignal,
-} from "solid-js";
+import { createMemo, createSignal, Show } from "solid-js";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
+import type { EditionI } from "@/features/editions/model";
+import {
+  allTicketsQueryOptions,
+  attendeeCountQueryOptions,
+} from "@/features/tickets/api";
+import {
+  occurrencesQueryOptions,
+  programsQueryOptions,
+} from "@/features/programs/api";
+import { productsByEditionQueryOptions } from "@/features/products/api";
+import { editionPurchasesQueryOptions } from "@/features/purchases/api";
+import {
+  allJoinedEventsQueryOptions,
+  allOwnEventsQueryOptions,
+} from "@/features/events/api";
 import {
   usePatchEditionMutation,
   usePublishEditionMutation,
 } from "@/features/editions/api/mutations";
-import {
-  type EditionOverviewMetrics,
-  buildEditionOverviewMetrics,
-} from "@/features/editions/model/edition-overview";
-import { EditionOverviewChecklist } from "@/features/editions/ui/EditionOverviewChecklist";
-import { EditionOverviewDashboard } from "@/features/editions/ui/EditionOverviewDashboard";
-import { EditionOverviewDialogs } from "@/features/editions/ui/EditionOverviewDialogs";
+import { useUploadQueue } from "@/features/upload-queue/hooks/use-upload-queue";
+import { buildEditionOverviewMetrics } from "@/features/editions/model/edition-overview";
+import { handleShare } from "@/shared/lib/share";
+import { createHotkeys } from "@/shared/lib/hotkeys";
+import type { ManageEditionValues } from "@/features/editions/ui/ManageEditionDialog";
+
 import { EditionOverviewHeader } from "@/features/editions/ui/EditionOverviewHeader";
 import {
   type EditionQuickAction,
   EditionQuickActions,
 } from "@/features/editions/ui/EditionQuickActions";
-import type { ManageEditionValues } from "@/features/editions/ui/ManageEditionDialog";
-import {
-  allJoinedEventsQueryOptions,
-  allOwnEventsQueryOptions,
-} from "@/features/events/api";
-import { productsByEditionQueryOptions } from "@/features/products/api";
-import {
-  occurrencesQueryOptions,
-  programsQueryOptions,
-} from "@/features/programs/api";
-import { editionPurchasesQueryOptions } from "@/features/purchases/api";
-import {
-  allTicketsQueryOptions,
-  attendeeCountQueryOptions,
-} from "@/features/tickets/api";
-import { useUploadQueue } from "@/features/upload-queue";
-import { toast } from "@/shared/ui/toast";
+import { EditionOverviewDashboard } from "@/features/editions/ui/EditionOverviewDashboard";
+import { EditionOverviewChecklist } from "@/features/editions/ui/EditionOverviewChecklist";
+import { EditionOverviewDialogs } from "@/features/editions/ui/EditionOverviewDialogs";
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/",
 )({
-  head: ({ params }) => ({
-    meta: [{ title: `Edição ${params.editionId} - Admin - Univents` }],
+  head: () => ({
+    meta: [{ title: "Edição - Admin - Univents" }],
   }),
-  component: AdminEditionDetailRoute,
+  component: AdminEditionDetailView,
 });
 
-function AdminEditionDetailRoute(): JSX.Element {
+function AdminEditionDetailView(): JSX.Element {
   const params = Route.useParams();
   const navigate = useNavigate();
   const uploadQueue = useUploadQueue();
@@ -75,14 +70,16 @@ function AdminEditionDetailRoute(): JSX.Element {
 
   const editions = createMemo(() => editionsQuery().data ?? []);
   const edition = createMemo(
-    () => editions().find((item) => item.id === editionId()) ?? null,
+    () => editions().find((item: EditionI) => item.id === editionId()) ?? null,
   );
 
-  const eventSlug = createMemo(() => {
+  const parentEvent = createMemo(() => {
     const own = ownEventsQuery().data ?? [];
     const joined = joinedEventsQuery().data ?? [];
-    return [...own, ...joined].find((event) => event.id === eventId())?.slug;
+    return [...own, ...joined].find((event) => event.id === eventId());
   });
+
+  const eventSlug = createMemo(() => parentEvent()?.slug);
 
   const publishMutation = usePublishEditionMutation();
   const patchMutation = usePatchEditionMutation();
@@ -101,11 +98,12 @@ function AdminEditionDetailRoute(): JSX.Element {
 
   const copyLink = () => {
     const slug = eventSlug();
+    const ed = edition();
     if (!slug) return;
-    void navigator.clipboard.writeText(
+    void handleShare(
+      ed?.name ?? "Edição",
       `${window.location.origin}/events/${slug}`,
     );
-    toast.success("Link copiado");
   };
 
   const handleEditEdition = async (values: ManageEditionValues) => {
@@ -124,10 +122,12 @@ function AdminEditionDetailRoute(): JSX.Element {
   };
 
   const handlePublish = async () => {
+    const ed = edition();
+    if (!ed) return;
     try {
       await publishMutation.mutateAsync({
         eventId: eventId(),
-        editionId: editionId(),
+        editionId: ed.id,
       });
       setPublishConfirmOpen(false);
     } catch {
@@ -135,12 +135,15 @@ function AdminEditionDetailRoute(): JSX.Element {
     }
   };
 
-  const metrics = createMemo<EditionOverviewMetrics | null>(() => {
+  const metrics = createMemo(() => {
     const ed = edition();
     if (!ed) return null;
 
     const purchases = purchasesQuery().data ?? [];
-    const attendeeCount = attendeeCountQuery().data?.count ?? 0;
+    const attendeesData = attendeeCountQuery().data;
+    const attendees = typeof attendeesData === "number"
+      ? attendeesData
+      : (attendeesData?.count ?? 0);
     const tickets = ticketsQuery().data ?? [];
     const products = productsQuery().data ?? [];
     const programs = programsQuery().data ?? [];
@@ -149,7 +152,7 @@ function AdminEditionDetailRoute(): JSX.Element {
     return buildEditionOverviewMetrics({
       edition: ed,
       purchases,
-      attendeeCount,
+      attendeeCount: attendees,
       ticketCount: tickets.length,
       productCount: products.length,
       programCount: programs.length,
@@ -159,15 +162,13 @@ function AdminEditionDetailRoute(): JSX.Element {
 
   const actions = (): EditionQuickAction[] => {
     const ed = edition();
-    const slug = eventSlug();
     const isDraft = ed?.status === "draft";
-
     return [
       {
         label: "Editar edição",
         shortcut: "Mod+E",
         onClick: () => setEditEditionOpen(true),
-        disabled: !ed,
+        disabled: false,
         variant: "default",
       },
       ...(isDraft
@@ -182,19 +183,19 @@ function AdminEditionDetailRoute(): JSX.Element {
         ]
         : []),
       {
-        label: "Copiar link público",
+        label: "Compartilhar",
         shortcut: "Mod+Shift+C",
-        onClick: copyLink,
-        disabled: !slug || isDraft,
+        onClick: () => copyLink(),
+        disabled: !eventSlug() || !ed || ed.status === "draft",
         variant: "default",
       },
-      ...(!isDraft && slug
+      ...(!isDraft && eventSlug()
         ? [
           {
-            label: "Abrir página pública",
+            label: "Abrir painel público",
             shortcut: "Mod+Shift+O",
             to: "/events/$slug" as const,
-            params: { slug },
+            params: { slug: eventSlug() ?? "" },
             variant: "default" as const,
           },
         ]
@@ -203,42 +204,39 @@ function AdminEditionDetailRoute(): JSX.Element {
   };
 
   // Keyboard shortcuts
-  createEffect(
-    () => ({ ed: edition(), slug: eventSlug() }),
-    ({ ed, slug }) => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        const isMod = e.metaKey || e.ctrlKey;
-        if (!isMod) return;
-
-        if (e.key.toLowerCase() === "e" && !e.shiftKey) {
-          e.preventDefault();
-          setEditEditionOpen(true);
-        } else if (e.key.toLowerCase() === "p" && !e.shiftKey) {
-          if (ed?.status === "draft") {
-            e.preventDefault();
-            setPublishConfirmOpen(true);
+  createHotkeys(
+    () => [
+      {
+        hotkey: "Mod+P",
+        callback: () => setPublishConfirmOpen(true),
+        options: { enabled: edition()?.status === "draft" },
+      },
+      {
+        hotkey: "Mod+E",
+        callback: () => setEditEditionOpen(true),
+        options: { enabled: Boolean(edition()) },
+      },
+      {
+        hotkey: "Mod+Shift+C",
+        callback: () => copyLink(),
+        options: {
+          enabled: Boolean(eventSlug() && edition() && edition()?.status !== "draft"),
+        },
+      },
+      {
+        hotkey: "Mod+Shift+O",
+        callback: () => {
+          const slug = eventSlug();
+          if (edition() && slug && edition()?.status !== "draft") {
+            void navigate({ to: "/events/$slug", params: { slug } });
           }
-        } else if (e.key.toLowerCase() === "c" && e.shiftKey) {
-          if (slug && ed?.status !== "draft") {
-            e.preventDefault();
-            copyLink();
-          }
-        } else if (e.key.toLowerCase() === "o" && e.shiftKey) {
-          if (slug && ed?.status !== "draft") {
-            e.preventDefault();
-            void navigate({
-              to: "/events/$slug",
-              params: { slug },
-            });
-          }
-        }
-      };
-
-      window.addEventListener("keydown", handleKeyDown);
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-      };
-    },
+        },
+        options: {
+          enabled: Boolean(eventSlug() && edition() && edition()?.status !== "draft"),
+        },
+      },
+    ],
+    { ignoreInputs: true, preventDefault: true },
   );
 
   return (

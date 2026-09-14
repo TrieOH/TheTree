@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
+import { cn } from "@trieoh/ui-solid";
 
 export interface DashboardPanelProps {
   title: string;
@@ -11,7 +12,7 @@ export interface DashboardPanelProps {
 
 export function DashboardPanel(props: DashboardPanelProps): JSX.Element {
   return (
-    <section class={`min-w-0 max-w-full space-y-3 ${props.class ?? ""}`}>
+    <section class={cn("min-w-0 max-w-full space-y-3", props.class)}>
       <div class="flex min-w-0 items-center gap-3 px-1">
         <Show when={props.icon}>
           {(iconFn) => (

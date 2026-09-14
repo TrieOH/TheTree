@@ -49,8 +49,9 @@ import {
   allTicketsQueryOptions,
   attendeeCountQueryOptions,
 } from "@/features/tickets/api";
+import { createHotkeys } from "@/shared/lib/hotkeys";
 import { useUploadQueue } from "@/features/upload-queue";
-import { toast } from "@/shared/ui/toast";
+import { handleShare } from "@/shared/lib/share";
 
 export const Route = createFileRoute("/admin/events/$eventId/")({
   head: ({ params }) => ({
@@ -208,10 +209,10 @@ function AdminEventOverviewRoute(): JSX.Element {
   const copyLink = () => {
     const ev = event();
     if (!ev) return;
-    void navigator.clipboard.writeText(
+    void handleShare(
+      ev.full_name,
       `${window.location.origin}/events/${ev.slug}`,
     );
-    toast.success("Link copiado");
   };
 
   const handleEditEvent = async (values: ManageEventValues) => {
@@ -271,14 +272,14 @@ function AdminEventOverviewRoute(): JSX.Element {
       },
       ...(ev?.status === "draft"
         ? [
-            {
-              label: "Publicar evento",
-              shortcut: "Mod+P",
-              onClick: () => setPublishConfirmOpen(true),
-              disabled: isPublishing(),
-              variant: "default" as const,
-            },
-          ]
+          {
+            label: "Publicar evento",
+            shortcut: "Mod+P",
+            onClick: () => setPublishConfirmOpen(true),
+            disabled: isPublishing(),
+            variant: "default" as const,
+          },
+        ]
         : []),
       {
         label: "Copiar link público",
@@ -289,65 +290,63 @@ function AdminEventOverviewRoute(): JSX.Element {
       },
       ...(isPublished()
         ? [
-            {
-              label: "Descontinuar evento",
-              shortcut: "Mod+Shift+D",
-              onClick: () => setDiscontinueConfirmOpen(true),
-              disabled: isDiscontinuing(),
-              variant: "destructive" as const,
-            },
-            {
-              label: "Abrir painel público",
-              shortcut: "Mod+Shift+O",
-              to: "/events/$slug" as const,
-              params: { slug: ev?.slug ?? "" },
-              variant: "default" as const,
-            },
-          ]
+          {
+            label: "Descontinuar evento",
+            shortcut: "Mod+Shift+D",
+            onClick: () => setDiscontinueConfirmOpen(true),
+            disabled: isDiscontinuing(),
+            variant: "destructive" as const,
+          },
+          {
+            label: "Abrir painel público",
+            shortcut: "Mod+Shift+O",
+            to: "/events/$slug" as const,
+            params: { slug: ev?.slug ?? "" },
+            variant: "default" as const,
+          },
+        ]
         : []),
     ];
   };
 
-  // Keyboard shortcuts
-  createEffect(
-    () => event(),
-    (ev) => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        const isMod = e.metaKey || e.ctrlKey;
-        if (!isMod) return;
-
-        if (e.key.toLowerCase() === "e" && !e.shiftKey) {
-          e.preventDefault();
-          setEditEventOpen(true);
-        } else if (e.key.toLowerCase() === "p" && !e.shiftKey) {
-          if (ev?.status === "draft") {
-            e.preventDefault();
-            setPublishConfirmOpen(true);
-          }
-        } else if (e.key.toLowerCase() === "c" && e.shiftKey) {
-          e.preventDefault();
-          copyLink();
-        } else if (e.key.toLowerCase() === "d" && e.shiftKey) {
-          if (ev?.status === "active") {
-            e.preventDefault();
-            setDiscontinueConfirmOpen(true);
-          }
-        } else if (e.key.toLowerCase() === "o" && e.shiftKey) {
-          if (ev?.status === "active" && ev) {
-            e.preventDefault();
+  // Keyboard shortcuts via TanStack Hotkeys
+  createHotkeys(
+    () => [
+      {
+        hotkey: "Mod+E",
+        callback: () => setEditEventOpen(true),
+        options: { enabled: Boolean(event()) },
+      },
+      {
+        hotkey: "Mod+P",
+        callback: () => setPublishConfirmOpen(true),
+        options: { enabled: event()?.status === "draft" },
+      },
+      {
+        hotkey: "Mod+Shift+C",
+        callback: () => copyLink(),
+        options: { enabled: Boolean(event()) },
+      },
+      {
+        hotkey: "Mod+Shift+D",
+        callback: () => setDiscontinueConfirmOpen(true),
+        options: { enabled: isPublished() },
+      },
+      {
+        hotkey: "Mod+Shift+O",
+        callback: () => {
+          const ev = event();
+          if (ev) {
             void navigate({
               to: "/events/$slug",
               params: { slug: ev.slug },
             });
           }
-        }
-      };
-
-      window.addEventListener("keydown", handleKeyDown);
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-      };
-    },
+        },
+        options: { enabled: Boolean(isPublished() && event()) },
+      },
+    ],
+    { ignoreInputs: true, preventDefault: true },
   );
 
   return (

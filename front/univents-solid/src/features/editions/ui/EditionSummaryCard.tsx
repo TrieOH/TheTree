@@ -1,11 +1,11 @@
 import type { EditionI } from "@/features/editions/model";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
-import ArrowRightIcon from "~icons/lucide/arrow-right";
 import type { JSX } from "@solidjs/web";
+import { cn } from "@trieoh/ui-solid";
+
 const Calendar = CalendarIcon as unknown as () => JSX.Element;
 const MapPin = MapPinIcon as unknown as () => JSX.Element;
-const ArrowRight = ArrowRightIcon as unknown as () => JSX.Element;
 
 export function EditionSummaryCard(props: { edition: EditionI }) {
   const status = () => {
@@ -39,13 +39,12 @@ export function EditionSummaryCard(props: { edition: EditionI }) {
             {props.edition.name}
           </h3>
           <span
-            class={`inline-block shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide sm:text-[10px] ${
-              status() === "closed"
-                ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                : status() === "active"
-                  ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                  : "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
-            }`}
+            class={cn(
+              "inline-block shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide sm:text-[10px]",
+              status() === "closed" && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+              status() === "active" && "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
+              status() === "future" && "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
+            )}
           >
             {status() === "closed"
               ? "CLOSED"
@@ -72,16 +71,6 @@ export function EditionSummaryCard(props: { edition: EditionI }) {
             </span>
           )}
         </div>
-        <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary sm:mt-3 sm:text-sm">
-          {status() === "closed"
-            ? "View Archives"
-            : status() === "active"
-              ? "Join Now"
-              : "Learn More"}
-          <span class="size-4 [&>svg]:size-4">
-            <ArrowRight />
-          </span>
-        </span>
       </div>
     </article>
   );

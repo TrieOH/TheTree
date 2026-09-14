@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/solid-router";
 import ArrowUpRight from "~icons/lucide/arrow-up-right";
 import { animate } from "motion/mini";
 import type { JSX } from "@solidjs/web";
+import { cn } from "@trieoh/ui-solid";
 
 const ArrowIcon = ArrowUpRight as unknown as () => JSX.Element;
 
@@ -47,7 +48,10 @@ export function EventCard(props: {
           ),
         );
       }}
-      class={`group relative min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-transparent bg-card transition-all duration-300 ease-out hover:-translate-y-1 hover:border-border hover:shadow-lg hover:shadow-foreground/5 ${props.class ?? ""}`}
+      class={cn(
+        "group relative min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-transparent bg-card transition-all duration-300 ease-out hover:-translate-y-1 hover:border-border hover:shadow-lg hover:shadow-foreground/5",
+        props.class,
+      )}
       onClick={handleClick}
       role="link"
       tabindex="0"
@@ -74,7 +78,7 @@ export function EventCard(props: {
         )}
         <div class="absolute right-3 top-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 md:right-4 md:top-4">
           <div class="flex size-8 items-center justify-center rounded-full bg-background/90 backdrop-blur-sm">
-              <span class="flex size-4 items-center justify-center">
+            <span class="flex size-4 items-center justify-center">
               <ArrowIcon />
             </span>
           </div>

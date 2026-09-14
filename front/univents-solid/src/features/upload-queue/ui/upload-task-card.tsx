@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
-import { Button } from "@trieoh/ui-solid";
+import { Button, cn } from "@trieoh/ui-solid";
 
 import AlertTriangleIcon from "~icons/lucide/alert-triangle";
 import CheckIcon from "~icons/lucide/check";
@@ -42,8 +42,19 @@ const statusLabels: Record<UploadTaskStatus, string> = {
   paused: "Processamento pausado",
 };
 
-const statusClasses: Record<UploadTaskStatus, string> = {
-  queued: "bg-muted/10",
+const statusBorderColor: Record<UploadTaskStatus, string> = {
+  queued: "border-border",
+  uploading: "border-primary/40",
+  associating: "border-primary/40",
+  waiting_retry: "border-amber-500/40",
+  completed: "border-emerald-500/40",
+  failed: "border-destructive/40",
+  rejected: "border-destructive/40",
+  paused: "border-amber-500/40",
+};
+
+const statusGlow: Record<UploadTaskStatus, string> = {
+  queued: "",
   uploading: "bg-primary/[0.02]",
   associating: "bg-primary/[0.02]",
   waiting_retry: "bg-amber-500/[0.02]",
@@ -126,17 +137,21 @@ function StageStep(props: {
 }) {
   return (
     <div
-      class={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${props.state === "done"
-          ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700"
-          : props.state === "active"
-            ? "border-primary/25 bg-primary/5 text-primary"
-            : "border-border/70 text-muted-foreground"
-        }`}
+      class={cn(
+        "flex flex-1 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors",
+        props.state === "done" && "border-emerald-500/20 bg-emerald-500/5 text-emerald-700",
+        props.state === "active" && "border-primary/25 bg-primary/5 text-primary",
+        props.state === "pending" && "border-border/70 text-muted-foreground",
+      )}
     >
       <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-background shadow-xs">
         <Show
           when={props.state === "done"}
-          fallback={<props.icon class={`size-3 ${props.state === "active" ? "animate-pulse" : ""}`} />}
+          fallback={
+            <props.icon
+              class={cn("size-3", props.state === "active" && "animate-pulse")}
+            />
+          }
         >
           <Check class="size-3" />
         </Show>
@@ -181,144 +196,169 @@ export function UploadTaskCard(props: {
         hour: "2-digit",
         minute: "2-digit",
       })
-      : undefined,
+      : null,
   );
+
+  const formattedSize = createMemo(() => {
+    const kb = props.task.size / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
+  });
 
   return (
     <div
-      id={`upload-${props.task.id}`}
-      class={`rounded-xl border border-border bg-card text-card-foreground shadow-xs transition-colors ${statusClasses[props.task.status]
-        } ${props.highlighted ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+      class={cn(
+        "group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs transition-all duration-200 hover:shadow-md md:flex-row",
+        statusBorderColor[props.task.status],
+        statusGlow[props.task.status],
+        props.highlighted && "ring-2 ring-primary/40",
+      )}
     >
-      <div class="grid gap-0 p-0 lg:grid-cols-[12rem_minmax(0,1fr)]">
-        <div class="relative overflow-hidden border-b border-border bg-muted lg:border-r lg:border-b-0 rounded-t-xl lg:rounded-tr-none lg:rounded-l-xl">
-          <TaskPreview task={props.task} />
-          <div class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-3 pt-6 pb-2.5 text-white">
-            <p class="truncate text-xs font-medium">{props.task.fileName}</p>
-            <p class="text-[10px] text-white/70">
-              {(props.task.size / 1024 / 1024).toFixed(2)} MB
+      <input
+        ref={(el) => {
+          fileInputRef = el;
+        }}
+        type="file"
+        accept="image/*"
+        class="hidden"
+        onChange={(e) => {
+          const file = e.currentTarget.files?.[0];
+          if (file) {
+            props.onReplace(file);
+            e.currentTarget.value = "";
+          }
+        }}
+      />
+
+      <div class="relative w-full shrink-0 overflow-hidden bg-muted md:w-44 md:max-w-44">
+        <TaskPreview task={props.task} />
+        <div class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent p-2">
+          <p class="truncate text-[11px] font-medium text-white">
+            {props.task.fileName}
+          </p>
+          <p class="text-[10px] text-white/70">
+            {formattedSize()} · {props.task.contentType}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div class="min-w-0">
+            <div class="mb-1.5 flex flex-wrap gap-1.5">
+              <span class="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {props.task.mediaType}
+              </span>
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {props.task.owner.type}
+              </span>
+            </div>
+            <h2 class="truncate text-sm font-semibold sm:text-base">{props.task.label}</h2>
+            <p class="mt-0.5 truncate text-xs text-muted-foreground">
+              {props.task.owner.label ?? props.task.owner.id}
             </p>
           </div>
-        </div>
 
-        <div class="flex min-w-0 flex-col p-3.5 sm:p-4">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-              <div class="mb-1.5 flex flex-wrap gap-1.5">
-                <span class="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  {props.task.mediaType}
-                </span>
-                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  {props.task.owner.type}
-                </span>
-              </div>
-              <h2 class="truncate text-sm font-semibold sm:text-base">{props.task.label}</h2>
-              <p class="mt-0.5 truncate text-xs text-muted-foreground">
-                {props.task.owner.label ?? props.task.owner.id}
-              </p>
-            </div>
-
-            <span
-              class={`inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium h-7 shrink-0 ${props.task.status === "completed"
-                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                  : props.task.status === "failed" || props.task.status === "rejected"
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-muted/40 text-foreground"
-                }`}
-            >
-              <StatusIcon status={props.task.status} />
-              {statusLabels[props.task.status]}
-            </span>
-          </div>
-
-          <div class="my-3 flex items-center gap-2">
-            <StageStep
-              icon={UploadCloud}
-              label="Upload e moderação"
-              state={uploadIsDone() ? "done" : uploadIsActive() ? "active" : "pending"}
-            />
-            <div class="h-px w-3 shrink-0 bg-border" />
-            <StageStep
-              icon={Link2}
-              label="Associação"
-              state={
-                props.task.status === "completed"
-                  ? "done"
-                  : associationIsActive()
-                    ? "active"
-                    : "pending"
-              }
-            />
-          </div>
-
-          <Show when={props.task.error}>
-            {(err) => (
-              <div class="mb-3 flex gap-2.5 rounded-lg border border-destructive/25 bg-destructive/5 p-2.5">
-                <AlertTriangle class="mt-0.5 size-4 shrink-0 text-destructive" />
-                <div class="min-w-0">
-                  <p class="text-xs font-medium text-foreground">{err().message}</p>
-                  <p class="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {err().code}
-                  </p>
-                </div>
-              </div>
+          <span
+            class={cn(
+              "inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium h-7 shrink-0",
+              props.task.status === "completed" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+              (props.task.status === "failed" || props.task.status === "rejected") && "bg-destructive/10 text-destructive",
+              props.task.status !== "completed" && props.task.status !== "failed" && props.task.status !== "rejected" && "bg-muted/40 text-foreground",
             )}
-          </Show>
-
-          <div class="mt-auto flex flex-col gap-2.5 border-t border-border pt-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div class="text-xs text-muted-foreground">
-              <Show
-                when={props.task.retryCount > 0}
-                fallback={<span>Nenhuma nova tentativa necessária</span>}
-              >
-                <span>
-                  {props.task.retryCount >= uploadQueueConfig.maxRetries
-                    ? `Limite de ${uploadQueueConfig.maxRetries} retries atingido`
-                    : `${props.task.retryCount} de ${uploadQueueConfig.maxRetries} retries utilizados`}
-                  {nextAttempt() ? ` · próxima tentativa às ${nextAttempt()}` : ""}
-                </span>
-              </Show>
-            </div>
-
-            <div class="flex flex-wrap justify-end gap-2">
-              <Show when={canRetry()}>
-                <Button type="button" variant="outline" onClick={props.onRetry}>
-                  <RefreshCw class="size-3.5 mr-1.5" />
-                  Tentar novamente
-                </Button>
-              </Show>
-
-              <Show when={needsReplacement()}>
-                <Button type="button" onClick={() => fileInputRef?.click()}>
-                  <Replace class="size-3.5 mr-1.5" />
-                  Trocar imagem
-                </Button>
-              </Show>
-
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={props.onRemove}
-                aria-label={isProcessing() ? "Cancelar upload" : "Remover tarefa"}
-              >
-                <Trash2 class="size-3.5 mr-1.5" />
-                {isProcessing() ? "Cancelar" : "Remover"}
-              </Button>
-            </div>
-          </div>
+          >
+            <StatusIcon status={props.task.status} />
+            {statusLabels[props.task.status]}
+          </span>
         </div>
 
-        <input
-          ref={(el) => (fileInputRef = el)}
-          type="file"
-          accept="image/*"
-          class="hidden"
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            if (file) props.onReplace(file);
-            event.currentTarget.value = "";
-          }}
-        />
+        <div class="my-3 flex items-center gap-2">
+          <StageStep
+            icon={UploadCloud}
+            label="Upload e moderação"
+            state={uploadIsDone() ? "done" : uploadIsActive() ? "active" : "pending"}
+          />
+          <div class="h-px w-3 shrink-0 bg-border" />
+          <StageStep
+            icon={Link2}
+            label="Associação"
+            state={
+              props.task.status === "completed"
+                ? "done"
+                : associationIsActive()
+                  ? "active"
+                  : "pending"
+            }
+          />
+        </div>
+
+        <Show when={props.task.error}>
+          {(err) => (
+            <div class="mb-3 flex gap-2.5 rounded-lg border border-destructive/25 bg-destructive/5 p-2.5">
+              <AlertTriangle class="mt-0.5 size-4 shrink-0 text-destructive" />
+              <div class="min-w-0">
+                <p class="text-xs font-medium text-foreground">{err().message}</p>
+                <p class="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {err().code}
+                </p>
+              </div>
+            </div>
+          )}
+        </Show>
+
+        <div class="mt-auto flex flex-col gap-2.5 border-t border-border pt-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-xs text-muted-foreground">
+            <Show
+              when={props.task.retryCount > 0}
+              fallback={<span>Nenhuma nova tentativa necessária</span>}
+            >
+              <span>
+                {props.task.retryCount >= uploadQueueConfig.maxRetries
+                  ? `Limite de ${uploadQueueConfig.maxRetries} retries atingido`
+                  : `${props.task.retryCount} de ${uploadQueueConfig.maxRetries} retries utilizados`}
+                {nextAttempt() ? ` · próxima tentativa às ${nextAttempt()}` : ""}
+              </span>
+            </Show>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Show when={canRetry()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={props.onRetry}
+                class="gap-1.5 text-xs"
+              >
+                <RefreshCw class="size-3.5" />
+                Tentar novamente
+              </Button>
+            </Show>
+
+            <Show when={needsReplacement()}>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => fileInputRef?.click()}
+                class="gap-1.5 text-xs"
+              >
+                <Replace class="size-3.5" />
+                Trocar imagem
+              </Button>
+            </Show>
+
+            <Show when={!isProcessing()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={props.onRemove}
+                class="gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 class="size-3.5" />
+                Remover
+              </Button>
+            </Show>
+          </div>
+        </div>
       </div>
     </div>
   );

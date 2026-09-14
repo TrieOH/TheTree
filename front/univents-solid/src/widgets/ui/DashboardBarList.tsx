@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
+import { cn } from "@trieoh/ui-solid";
 
 export interface DashboardBarListItem {
   id: string;
@@ -53,9 +54,10 @@ export function DashboardBarList(props: DashboardBarListProps): JSX.Element {
                 </div>
                 <div class="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    class={`h-full rounded-full transition-all duration-500 ${
-                      item.color ?? "bg-primary"
-                    }`}
+                    class={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      item.color ?? "bg-primary",
+                    )}
                     style={{ width: `${width()}%` }}
                   />
                 </div>
