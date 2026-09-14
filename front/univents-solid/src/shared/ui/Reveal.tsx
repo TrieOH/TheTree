@@ -6,6 +6,7 @@ export function Reveal(props: {
   children: JSX.Element;
   direction?: "up" | "left" | "right";
   delay?: number;
+  class?: string;
   /**
    * `false` mounts the content already visible. Lists that re-slice on resize
    * pass it for the rows that appear because of the new width, so a settled
@@ -46,6 +47,7 @@ export function Reveal(props: {
 
   return (
     <div
+      class={props.class}
       ref={(value) => {
         element = value;
         if (untrack(() => props.animate) === false) return;

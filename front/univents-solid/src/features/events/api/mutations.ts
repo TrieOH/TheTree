@@ -1,7 +1,8 @@
 import { useQueryClient, type QueryClient } from "@trieoh/front-core-solid";
 import type { CreateEventRequest, PatchEventRequest } from "@trieoh/univents-api/schemas";
 import { orvalData } from "@trieoh/api-client";
-import { createEvent, discontinueEvent, patchEvent, publishEvent } from "@trieoh/univents-api";
+import { createEvent, discontinueEvent, patchEvent, publishEvent, addEventMember, removeEventMember } from "@trieoh/univents-api";
+import type { AddEventMemberInput, RemoveEventMemberInput, EventMemberWithEmailI } from "./members";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import { Effect } from "effect";
 import { apiEffect, useEffectMutation, toMutationFn } from "@/shared/lib/effect-query";
@@ -138,3 +139,59 @@ export const discontinueEventMutation = (queryClient: QueryClient) =>
       ),
     { retryTransient: true },
   );
+
+export const addEventMemberEffect = (input: AddEventMemberInput) =>
+  apiEffect(() =>
+    withSpan("action:event-member-add", () =>
+      addEventMember(input.eventId, { email: input.email, role: input.role }).then(
+        orvalData<EventMemberWithEmailI>,
+      ),
+    ),
+  );
+
+export const removeEventMemberEffect = (input: RemoveEventMemberInput) =>
+  apiEffect(() =>
+    withSpan("action:event-member-remove", () =>
+      removeEventMember(input.eventId, input.userId, { email: input.email }).then(
+        orvalData<null>,
+      ),
+    ),
+  );
+
+export const useAddEventMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: (input: AddEventMemberInput) =>
+      addEventMemberEffect(input).pipe(
+        Effect.tap((res) =>
+          Effect.sync(() => {
+            queryClient.setQueryData<EventMemberWithEmailI[]>(
+              eventKeys.members(input.eventId),
+              (old) =>
+                old ? [...old.filter((member) => member.id !== res.id), res] : [res],
+            );
+          }),
+        ),
+      ),
+  });
+};
+
+export const useRemoveEventMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: (input: RemoveEventMemberInput) =>
+      removeEventMemberEffect(input).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            queryClient.setQueryData<EventMemberWithEmailI[]>(
+              eventKeys.members(input.eventId),
+              (old) =>
+                old ? old.filter((member) => member.user_id !== input.userId) : [],
+            );
+          }),
+        ),
+      ),
+  });
+};
