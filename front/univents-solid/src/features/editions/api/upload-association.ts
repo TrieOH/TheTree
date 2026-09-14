@@ -9,7 +9,10 @@ import {
   registerUploadAssociationHandler,
   UploadAssociationError,
 } from "@/features/upload-queue";
+import { appQueryClient } from "@/shared/lib/query-client";
 import { normalizeEdition, type EditionI } from "../model";
+import { syncEditionCaches } from "./cache";
+import { editionKeys } from "./query-keys";
 
 type ImageField = "logo_url" | "banner_url";
 
@@ -81,7 +84,19 @@ async function associateEditionImage(
         status: 500,
       });
     }
+
+    const updated = normalizeEdition(orvalData<Edition>(response));
+    syncEditionCaches(appQueryClient, updated);
+    void appQueryClient.invalidateQueries({
+      queryKey: editionKeys.adminListByEvent(eventId),
+    });
+    void appQueryClient.invalidateQueries({
+      queryKey: editionKeys.publicListByEvent(eventId),
+    });
   } catch (err: unknown) {
+    if (err instanceof UploadAssociationError) {
+      throw err;
+    }
     const error = err instanceof Error ? err : undefined;
     const details =
       err && typeof err === "object"
@@ -89,8 +104,8 @@ async function associateEditionImage(
         : undefined;
     throw new UploadAssociationError(
       error?.message ||
-        details?.message ||
-        "Não foi possível associar a imagem.",
+      details?.message ||
+      "Não foi possível associar a imagem.",
       { status: details?.status || 500 },
     );
   }

@@ -4,8 +4,11 @@ import {
   UploadAssociationError,
   registerUploadAssociationHandler,
 } from "@/features/upload-queue";
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { EventI } from "../model";
 import { patchEventFn } from "./index";
+import { syncEventCaches } from "./cache";
+import { eventKeys } from "./query-keys";
 
 type ImageField = "logo_url" | "banner_url";
 
@@ -49,16 +52,27 @@ async function associateEventImage(
   }
 
   try {
-    const response = await patchEventFn(
+    const updated = await patchEventFn(
       event.id,
       patchData(event, field, uploadedUrl),
     );
-    if (!response) {
+    if (!updated) {
       throw new UploadAssociationError("Não foi possível associar a imagem.", {
         status: 500,
       });
     }
+
+    syncEventCaches(appQueryClient, updated);
+    void appQueryClient.invalidateQueries({
+      queryKey: eventKeys.ownedLists(),
+    });
+    void appQueryClient.invalidateQueries({
+      queryKey: eventKeys.joinedLists(),
+    });
   } catch (err: unknown) {
+    if (err instanceof UploadAssociationError) {
+      throw err;
+    }
     const error = err instanceof Error ? err : undefined;
     const details =
       err && typeof err === "object"

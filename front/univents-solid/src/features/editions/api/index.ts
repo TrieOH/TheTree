@@ -3,6 +3,7 @@ import { orvalData } from "@trieoh/api-client";
 import type { Edition } from "@trieoh/univents-api/schemas";
 import { normalizeEdition } from "../model";
 import { editionKeys } from "./query-keys";
+import "./upload-association";
 
 export const getPublicEditionsFn = (eventId: string) =>
   listPublicEditions(eventId, { public: true })

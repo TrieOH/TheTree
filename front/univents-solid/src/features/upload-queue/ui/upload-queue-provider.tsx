@@ -8,6 +8,8 @@ import { uploadQueueStore } from "../lib/store";
 import { promptImageReplacement } from "../lib/correction";
 import { useUploadQueue } from "../hooks/use-upload-queue";
 import type { UploadTask, UploadTaskStatus } from "../model/types";
+import "@/features/events/api/upload-association";
+import "@/features/editions/api/upload-association";
 
 const notificationStatuses = new Set<UploadTaskStatus>([
   "completed",
@@ -39,80 +41,49 @@ export function UploadQueueProvider(props: { children?: JSX.Element }): JSX.Elem
 
   onCleanup(() => {
     uploadQueueProcessor.stop();
-    uploadQueueStore.setActiveAccount(undefined);
   });
 
   createEffect(
     () => accountId(),
     (id) => {
-      uploadQueueStore.setActiveAccount(id);
-      previousStatuses.clear();
-
-      if (!id) {
+      if (id) {
+        if (notificationAccountId !== id) {
+          notificationAccountId = id;
+          previousStatuses.clear();
+        }
+        uploadQueueStore.setActiveAccount(id);
+        void uploadQueueProcessor.start();
+      } else {
+        notificationAccountId = undefined;
+        previousStatuses.clear();
+        uploadQueueStore.setActiveAccount(undefined);
         uploadQueueProcessor.stop();
-        return;
       }
-
-      void uploadQueueProcessor.start();
     },
   );
 
   createEffect(
-    () => ({ id: accountId(), initialized: queue.initialized, tasks: queue.tasks }),
-    ({ id, initialized, tasks }) => {
-      if (!initialized || !id) return;
-
-      if (notificationAccountId !== id) {
-        notificationAccountId = id;
-        for (const task of tasks) {
-          previousStatuses.set(task.id, task.status);
-        }
-        return;
-      }
-
+    () => queue.tasks.map((task) => ({ id: task.id, status: task.status, label: task.label })),
+    (tasks) => {
       for (const task of tasks) {
-        const prevStatus = previousStatuses.get(task.id);
-        if (prevStatus === task.status || !notificationStatuses.has(task.status)) {
-          continue;
-        }
-
-        if (task.status === "completed") {
-          toast.success(`${task.label} foi enviada com sucesso.`);
-          continue;
-        }
-
-        if (task.status === "rejected") {
-          toast.error(
-            task.error?.message ?? `${task.label} foi rejeitada.`,
-            {
-              action: task.correctionPath
+        const prev = previousStatuses.get(task.id);
+        if (prev && prev !== task.status && notificationStatuses.has(task.status)) {
+          if (task.status === "completed") {
+            toast.success(`Upload concluído: ${task.label}`);
+          } else if (task.status === "rejected") {
+            const currentTask = queue.tasks.find((item) => item.id === task.id);
+            toast.error(`A imagem foi rejeitada: ${task.label}`, {
+              action: currentTask
                 ? {
-                  label: "Corrigir imagem",
-                  onClick: () => handleCorrectImage(task),
-                }
+                    label: "Corrigir",
+                    onClick: () => handleCorrectImage(currentTask),
+                  }
                 : undefined,
-            },
-          );
-          continue;
+            });
+          } else if (task.status === "failed") {
+            toast.error(`Falha no upload: ${task.label}`);
+          }
         }
-
-        if (task.status === "failed") {
-          toast.error(
-            task.error?.message ?? `Falha no envio de ${task.label}.`,
-            {
-              action: task.correctionPath
-                ? {
-                  label: "Corrigir imagem",
-                  onClick: () => handleCorrectImage(task),
-                }
-                : undefined,
-            },
-          );
-        }
-      }
-
-      previousStatuses.clear();
-      for (const task of tasks) {
         previousStatuses.set(task.id, task.status);
       }
     },

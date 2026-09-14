@@ -174,7 +174,10 @@ export function UploadTaskCard(props: {
     () => props.task.status === "uploading" || props.task.status === "associating",
   );
   const canRetry = createMemo(
-    () => props.task.status === "failed" && Boolean(props.task.error?.retryable),
+    () =>
+      (props.task.status === "failed" && Boolean(props.task.error?.retryable)) ||
+      props.task.status === "paused" ||
+      props.task.status === "waiting_retry",
   );
   const needsReplacement = createMemo(
     () => props.task.status === "rejected" || Boolean(props.task.error?.requiresReplacement),
@@ -330,7 +333,11 @@ export function UploadTaskCard(props: {
                 class="gap-1.5 text-xs"
               >
                 <RefreshCw class="size-3.5" />
-                Tentar novamente
+                {props.task.status === "paused"
+                  ? "Retomar"
+                  : props.task.status === "waiting_retry"
+                    ? "Tentar agora"
+                    : "Tentar novamente"}
               </Button>
             </Show>
 

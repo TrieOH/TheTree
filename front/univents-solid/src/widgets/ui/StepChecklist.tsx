@@ -225,7 +225,7 @@ export function StepChecklist(props: StepChecklistProps): JSX.Element {
                               type="button"
                               disabled={action().disabled}
                               onClick={() => action().onClick()}
-                              class="text-[11px] font-medium text-primary hover:underline disabled:opacity-50"
+                              class="text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline disabled:opacity-60"
                             >
                               {action().label}
                             </button>

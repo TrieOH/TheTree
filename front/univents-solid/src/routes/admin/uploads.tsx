@@ -70,7 +70,12 @@ function UploadsPage(): JSX.Element {
   });
 
   const retryableTasks = createMemo(() =>
-    tasks().filter((task) => task.status === "failed" && task.error?.retryable),
+    tasks().filter(
+      (task) =>
+        (task.status === "failed" && task.error?.retryable) ||
+        task.status === "paused" ||
+        task.status === "waiting_retry",
+    ),
   );
 
   return (

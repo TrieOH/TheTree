@@ -1,5 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createSignal } from "solid-js";
+import AlertTriangleIcon from "~icons/lucide/alert-triangle";
+import Loader2Icon from "~icons/lucide/loader-2";
 import Trash2Icon from "~icons/lucide/trash-2";
 import UploadIcon from "~icons/lucide/upload";
 import { Button, cn } from "@trieoh/ui-solid";
@@ -9,6 +11,8 @@ import { usePatchEventMutation } from "../api/mutations";
 import type { EventI } from "../model";
 
 type IconComp = (props: { class?: string }) => JSX.Element;
+const LucideAlertTriangle = AlertTriangleIcon as unknown as IconComp;
+const LucideLoader2 = Loader2Icon as unknown as IconComp;
 const LucideTrash2 = Trash2Icon as unknown as IconComp;
 const LucideUpload = UploadIcon as unknown as IconComp;
 
@@ -31,8 +35,26 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
 
   const isPending = () => patchMutation.result().status === "pending";
 
+  const getTask = (field: ImageField) =>
+    uploadQueue.tasks.find(
+      (task) =>
+        task.owner.type === "event" &&
+        task.owner.id === props.event.id &&
+        task.association?.handlerKey === "event-image" &&
+        task.association.input?.field === field &&
+        !["completed", "failed", "rejected"].includes(task.status),
+    );
+
+  const isUploading = (field: ImageField) => Boolean(getTask(field));
+
+  const currentBannerUrl = () =>
+    getTask("banner_url")?.uploadedUrl ?? props.event.banner_url;
+
+  const currentLogoUrl = () =>
+    getTask("logo_url")?.uploadedUrl ?? props.event.logo_url;
+
   const upload = async (field: ImageField, file?: File) => {
-    if (!file) return;
+    if (!file || isUploading(field) || isPending()) return;
     const label = field === "logo_url" ? "logo" : "banner";
     try {
       await uploadQueue.enqueue({
@@ -70,19 +92,10 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
       },
     });
 
-  const isUploading = (field: ImageField) =>
-    uploadQueue.tasks.some(
-      (task) =>
-        task.owner.type === "event" &&
-        task.owner.id === props.event.id &&
-        task.association?.handlerKey === "event-image" &&
-        task.association.input?.field === field &&
-        !["completed", "failed", "rejected"].includes(task.status),
-    );
-
   const handleDrop = (field: ImageField, e: DragEvent) => {
     e.preventDefault();
     setDragging(undefined);
+    if (isUploading(field) || isPending()) return;
     if (e.dataTransfer?.files?.[0]) {
       void upload(field, e.dataTransfer.files[0]);
     }
@@ -141,7 +154,7 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
       <div
         onDragEnter={(e) => {
           e.preventDefault();
-          setDragging("banner_url");
+          if (!isUploading("banner_url")) setDragging("banner_url");
         }}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setDragging(undefined)}
@@ -151,77 +164,121 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
             bannerInput?.click();
           }
         }}
-        onMouseEnter={() => setHovered("banner_url")}
+        onMouseEnter={() => {
+          if (!isUploading("banner_url")) setHovered("banner_url");
+        }}
         onMouseLeave={() => setHovered(undefined)}
         class={cn(
-          "group relative flex h-56 cursor-pointer items-center justify-center rounded-md border border-dashed bg-muted/20 transition-colors",
-          dragging() === "banner_url"
+          "group relative flex h-56 items-center justify-center overflow-hidden rounded-md border border-dashed transition-colors",
+          isUploading("banner_url")
+            ? "cursor-not-allowed border-border/80 bg-muted/40"
+            : "cursor-pointer bg-muted/20",
+          !isUploading("banner_url") && dragging() === "banner_url"
             ? "border-primary bg-primary/10"
-            : hovered() === "banner_url"
+            : !isUploading("banner_url") && hovered() === "banner_url"
               ? "border-primary"
               : "border-border/60",
         )}
       >
-        <Show when={props.event.banner_url && !isUploading("banner_url")}>
-          <img
-            src={props.event.banner_url ?? undefined}
-            alt="Banner do evento"
-            class="size-full rounded-md object-cover"
+        <Show when={currentBannerUrl()}>
+          {(url) => (
+            <img
+              src={url()}
+              alt="Banner do evento"
+              class="size-full rounded-md object-cover"
+            />
+          )}
+        </Show>
+
+        <Show when={!isUploading("banner_url")}>
+          <div
+            class={cn(
+              "pointer-events-none absolute inset-0 rounded-md bg-primary/10 transition-opacity",
+              hovered() === "banner_url" ? "opacity-100" : "opacity-0",
+            )}
           />
         </Show>
-        <div
-          class={cn(
-            "pointer-events-none absolute inset-0 rounded-md bg-primary/10 transition-opacity",
-            hovered() === "banner_url" ? "opacity-100" : "opacity-0",
-          )}
-        />
 
-        <div class="absolute inset-0">
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 border-border bg-background/90 shadow-sm active:-translate-y-1/2!"
-            disabled={isUploading("banner_url") || isPending()}
-            onClick={(e) => {
-              e.stopPropagation();
-              bannerInput?.click();
-            }}
-            aria-label="Adicionar ou trocar banner"
-          >
-            <LucideUpload class="size-4" />
-          </Button>
-
-          <Show when={props.event.banner_url && !isUploading("banner_url")}>
-            <div
-              class="absolute bottom-3 right-3"
-              onMouseEnter={() => setHovered(undefined)}
-              onMouseLeave={() => setHovered("banner_url")}
-            >
+        <Show
+          when={isUploading("banner_url")}
+          fallback={
+            <div class="absolute inset-0">
               <Button
                 type="button"
                 size="icon"
-                variant="destructive"
-                class="bg-destructive text-destructive-foreground shadow-xl hover:bg-destructive/90"
+                variant="outline"
+                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 border-border bg-background/90 shadow-sm active:-translate-y-1/2!"
                 disabled={isPending()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setRemoveField("banner_url");
+                  bannerInput?.click();
                 }}
-                aria-label="Remover banner"
+                aria-label="Adicionar ou trocar banner"
               >
-                <LucideTrash2 class="size-4" />
+                <LucideUpload class="size-4" />
               </Button>
+
+              <Show when={props.event.banner_url}>
+                <div
+                  class="absolute bottom-3 right-3"
+                  onMouseEnter={() => setHovered(undefined)}
+                  onMouseLeave={() => setHovered("banner_url")}
+                >
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    class="bg-destructive text-destructive-foreground shadow-xl hover:bg-destructive/90"
+                    disabled={isPending()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRemoveField("banner_url");
+                    }}
+                    aria-label="Remover banner"
+                  >
+                    <LucideTrash2 class="size-4" />
+                  </Button>
+                </div>
+              </Show>
             </div>
-          </Show>
-        </div>
+          }
+        >
+          <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/80 p-4 text-center backdrop-blur-xs">
+            <Show
+              when={getTask("banner_url")?.status === "paused"}
+              fallback={
+                <>
+                  <LucideLoader2 class="size-6 animate-spin text-primary" />
+                  <div class="space-y-0.5">
+                    <p class="text-xs font-semibold text-foreground">
+                      Enviando banner...
+                    </p>
+                    <p class="text-[11px] text-muted-foreground">
+                      Aguarde a conclusão do upload para realizar novas alterações.
+                    </p>
+                  </div>
+                </>
+              }
+            >
+              <LucideAlertTriangle class="size-6 text-amber-500" />
+              <div class="space-y-0.5">
+                <p class="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  Upload pausado
+                </p>
+                <p class="text-[11px] text-muted-foreground">
+                  Acesse a fila de uploads para retomar ou remover.
+                </p>
+              </div>
+            </Show>
+          </div>
+        </Show>
       </div>
 
       {/* Logo */}
       <div
         onDragEnter={(e) => {
           e.preventDefault();
-          setDragging("logo_url");
+          if (!isUploading("logo_url")) setDragging("logo_url");
         }}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setDragging(undefined)}
@@ -231,70 +288,101 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
             logoInput?.click();
           }
         }}
-        onMouseEnter={() => setHovered("logo_url")}
+        onMouseEnter={() => {
+          if (!isUploading("logo_url")) setHovered("logo_url");
+        }}
         onMouseLeave={() => setHovered(undefined)}
         class={cn(
-          "group absolute -bottom-8 left-5 z-10 flex size-24 cursor-pointer items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28",
-          dragging() === "logo_url"
+          "group absolute -bottom-8 left-5 z-30 flex size-24 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28",
+          isUploading("logo_url")
+            ? "cursor-not-allowed opacity-90"
+            : "cursor-pointer",
+          !isUploading("logo_url") && dragging() === "logo_url"
             ? "ring-2 ring-primary/70"
-            : hovered() === "logo_url"
+            : !isUploading("logo_url") && hovered() === "logo_url"
               ? "ring-4 ring-primary/50"
               : "",
         )}
       >
-        <Show when={props.event.logo_url && !isUploading("logo_url")}>
-          <img
-            src={props.event.logo_url ?? undefined}
-            alt="Logo do evento"
-            class="size-full rounded-full object-cover"
-          />
-        </Show>
-        <div
-          class={cn(
-            "pointer-events-none absolute inset-0 rounded-full bg-primary/15 transition-opacity",
-            hovered() === "logo_url" ? "opacity-100" : "opacity-0",
-          )}
-        />
+        <div class="absolute inset-0 overflow-hidden rounded-full">
+          <Show when={currentLogoUrl()}>
+            {(url) => (
+              <img
+                src={url()}
+                alt="Logo do evento"
+                class="size-full object-cover"
+              />
+            )}
+          </Show>
 
-        <div class="absolute inset-0">
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            class="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-border bg-background/90 shadow-sm active:-translate-y-1/2!"
-            disabled={isUploading("logo_url") || isPending()}
-            onClick={(e) => {
-              e.stopPropagation();
-              logoInput?.click();
-            }}
-            aria-label="Adicionar ou trocar logo"
-          >
-            <LucideUpload class="size-3.5" />
-          </Button>
-
-          <Show when={props.event.logo_url && !isUploading("logo_url")}>
+          <Show when={!isUploading("logo_url")}>
             <div
-              class="absolute bottom-0 right-0"
-              onMouseEnter={() => setHovered(undefined)}
-              onMouseLeave={() => setHovered("logo_url")}
-            >
-              <Button
-                type="button"
-                size="icon"
-                variant="destructive"
-                class="size-8 rounded-full border-2 border-background shadow-xl hover:bg-destructive/90"
-                disabled={isPending()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setRemoveField("logo_url");
-                }}
-                aria-label="Remover logo"
+              class={cn(
+                "pointer-events-none absolute inset-0 bg-primary/15 transition-opacity",
+                hovered() === "logo_url" ? "opacity-100" : "opacity-0",
+              )}
+            />
+          </Show>
+
+          <Show when={isUploading("logo_url")}>
+            <div class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/85 p-1 text-center backdrop-blur-xs">
+              <Show
+                when={getTask("logo_url")?.status === "paused"}
+                fallback={
+                  <>
+                    <LucideLoader2 class="size-5 animate-spin text-primary" />
+                    <span class="mt-1 text-[9px] font-semibold text-foreground">Enviando...</span>
+                  </>
+                }
               >
-                <LucideTrash2 class="size-3.5" />
-              </Button>
+                <LucideAlertTriangle class="size-5 text-amber-500" />
+                <span class="mt-1 text-[9px] font-semibold text-amber-600">Pausado</span>
+              </Show>
             </div>
           </Show>
         </div>
+
+        <Show when={!isUploading("logo_url")}>
+          <div class="pointer-events-none absolute inset-0">
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              class="pointer-events-auto absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-border bg-background/90 shadow-sm active:-translate-y-1/2!"
+              disabled={isPending()}
+              onClick={(e) => {
+                e.stopPropagation();
+                logoInput?.click();
+              }}
+              aria-label="Adicionar ou trocar logo"
+            >
+              <LucideUpload class="size-3.5" />
+            </Button>
+
+            <Show when={props.event.logo_url}>
+              <div
+                class="pointer-events-auto absolute -bottom-1 -right-1 z-10"
+                onMouseEnter={() => setHovered(undefined)}
+                onMouseLeave={() => setHovered("logo_url")}
+              >
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="destructive"
+                  class="size-8 rounded-full border-2 border-background shadow-xl hover:bg-destructive/90"
+                  disabled={isPending()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRemoveField("logo_url");
+                  }}
+                  aria-label="Remover logo"
+                >
+                  <LucideTrash2 class="size-3.5" />
+                </Button>
+              </div>
+            </Show>
+          </div>
+        </Show>
       </div>
 
       <AlertModal

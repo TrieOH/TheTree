@@ -11,7 +11,6 @@ import {
 import {
   AuthenticatedPostHogProvider,
   TanStackQueryProvider,
-  createQueryClient,
 } from "@trieoh/front-core-solid";
 import type { RouterSession } from "@trieoh/front-core-solid";
 import { initBrowserTracing } from "@trieoh/front-core/tracing/browser";
@@ -19,6 +18,7 @@ import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { untrack } from "solid-js";
 import { bffTransport } from "@/features/auths/api/bff-client";
 import { ThemeProvider } from "@/shared/lib/theme";
+import { appQueryClient } from "@/shared/lib/query-client";
 import "./App.css";
 
 const authProjectId = import.meta.env.VITE_TRIEOH_AUTH_PROJECT_ID;
@@ -78,7 +78,7 @@ declare module "@tanstack/solid-router" {
 // wrapped in src/Document.tsx.
 export default function App() {
   return (
-    <TanStackQueryProvider client={createQueryClient()}>
+    <TanStackQueryProvider client={appQueryClient}>
       <ThemeProvider>
         <AuthProvider
           baseURL={import.meta.env.VITE_AUTH_API_URL}

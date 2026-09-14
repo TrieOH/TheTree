@@ -17,12 +17,14 @@ export function EditionOverviewChecklist(props: {
     {
       id: "banner",
       title: "Banner cadastrado",
-      description: "Imagem principal exibida no topo da edição.",
+      description: props.bannerUploading
+        ? "Upload em andamento. Aguarde a conclusão."
+        : "Imagem principal exibida no topo da edição.",
       completed: props.hasBanner,
       action: props.hasBanner
         ? undefined
         : {
-          label: "Adicionar",
+          label: props.bannerUploading ? "Enviando..." : "Adicionar",
           disabled: props.bannerUploading,
           onClick: props.onAddBanner,
         },
@@ -30,12 +32,14 @@ export function EditionOverviewChecklist(props: {
     {
       id: "logo",
       title: "Logo cadastrado",
-      description: "Identifica a edição nos cards e páginas públicas.",
+      description: props.logoUploading
+        ? "Upload em andamento. Aguarde a conclusão."
+        : "Identifica a edição nos cards e páginas públicas.",
       completed: props.hasLogo,
       action: props.hasLogo
         ? undefined
         : {
-          label: "Adicionar",
+          label: props.logoUploading ? "Enviando..." : "Adicionar",
           disabled: props.logoUploading,
           onClick: props.onAddLogo,
         },

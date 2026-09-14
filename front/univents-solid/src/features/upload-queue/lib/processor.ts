@@ -210,7 +210,7 @@ class UploadQueueProcessor {
                 code: "ASSOCIATION_HANDLER_UNAVAILABLE",
                 message:
                   "A integração necessária para associar esta imagem não está disponível.",
-                retryable: false,
+                retryable: true,
                 requiresReplacement: false,
                 occurredAt: Date.now(),
               },
@@ -258,37 +258,58 @@ class UploadQueueProcessor {
   };
 
   private complete = async (taskId: string) => {
-    const now = Date.now();
-    await uploadQueueStore.update(taskId, (value) => ({
-      ...value,
+    await uploadQueueStore.update(taskId, (task) => ({
+      ...task,
       status: "completed",
-      completedAt: now,
-      updatedAt: now,
       error: undefined,
       nextAttemptAt: undefined,
+      updatedAt: Date.now(),
     }));
   };
 
   private handleFailure = async (taskId: string, error: unknown) => {
     const classified = classifyUploadError(error);
-    await uploadQueueStore.update(taskId, (current) => {
-      const retryCount = current.retryCount + 1;
-      const canRetry =
-        classified.retryable && retryCount <= uploadQueueConfig.maxRetries;
+    const task = uploadQueueStore
+      .getSnapshot()
+      .tasks.find((item) => item.id === taskId);
+    if (!task) return;
 
-      return {
-        ...current,
+    if (classified.requiresReplacement) {
+      await uploadQueueStore.update(taskId, (value) => ({
+        ...value,
+        status: "rejected",
         error: classified,
-        retryCount,
+        nextAttemptAt: undefined,
         updatedAt: Date.now(),
-        status: classified.requiresReplacement
-          ? "rejected"
-          : canRetry
-            ? "waiting_retry"
-            : "failed",
-        nextAttemptAt: canRetry ? Date.now() + getRetryDelay(retryCount) : undefined,
-      };
-    });
+      }));
+      return;
+    }
+
+    const nextRetryCount = task.retryCount + 1;
+    if (
+      !classified.retryable ||
+      nextRetryCount >= uploadQueueConfig.maxRetries
+    ) {
+      await uploadQueueStore.update(taskId, (value) => ({
+        ...value,
+        status: "failed",
+        error: classified,
+        nextAttemptAt: undefined,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
+
+    const delay = getRetryDelay(nextRetryCount);
+    await uploadQueueStore.update(taskId, (value) => ({
+      ...value,
+      status: "waiting_retry",
+      error: classified,
+      retryCount: nextRetryCount,
+      nextAttemptAt: Date.now() + delay,
+      updatedAt: Date.now(),
+    }));
+    this.schedule();
   };
 }
 
