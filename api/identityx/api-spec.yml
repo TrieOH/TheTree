@@ -244,6 +244,11 @@ paths:
         (no `project_id`) or as a client of a project that consumes
         IdentityX for authn (pass `project_id`). Returns 201 with an empty
         body — the caller then logs in via `/auth/login`.
+
+        When the target project has terms of service, the registration is
+        rejected unless `accepted_tos` is true — consent under LGPD art. 8
+        must be express. Projects without terms ignore the flag. The
+        acceptance is recorded against the current version.
       security: []
       parameters:
         - $ref: '#/components/parameters/ProjectIDQuery'
@@ -252,10 +257,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CredentialRequest'
+              $ref: '#/components/schemas/RegisterRequest'
             example:
               email: user@example.com
               password: S3curePassw0rd!
+              accepted_tos: true
       responses:
         '201':
           description: User registered successfully
@@ -545,6 +551,16 @@ paths:
       security: []
       parameters:
         - $ref: '#/components/parameters/ProjectIDQuery'
+        - name: accepted_tos
+          in: query
+          required: false
+          description: |
+            Explicit consent to the project's current terms of service.
+            Required (true) when the project has terms and the flow may
+            register a first-time identity; ignored otherwise. The consent
+            screen must precede the provider redirect.
+          schema:
+            type: boolean
         - name: provider
           in: path
           required: true
@@ -1779,6 +1795,209 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /projects/{project_id}/terms-of-service:
+    get:
+      tags: [projects]
+      operationId: getProjectTos
+      summary: Get a project's current terms of service
+      description: |
+        Returns the project's current terms document, or 404 when the
+        project has none (a project without terms requires no acceptance).
+        Public: frontends render the document on signup and notice pages
+        without authenticating.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: The project's current terms of service
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectTos'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [projects]
+      operationId: postProjectTos
+      summary: Introduce a project's terms of service (v1)
+      description: |
+        Creates the project's first terms document as version 1. This is
+        the migration from "no terms" (v0): every human user of the
+        project is emailed the LGPD art. 9 §6 change notice — the new
+        content, the effective date (30 days out), the continued-use
+        clause, and the account-termination path for those who disagree.
+        Creating when terms already exist is a 409 — use `PUT` to update.
+        The authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TosContentBody'
+      responses:
+        '200':
+          description: Terms of service created (v1); notification enqueued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectTos'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      tags: [projects]
+      operationId: putProjectTos
+      summary: Update a project's terms of service (bumps the version)
+      description: |
+        Replaces the content and bumps the version; the effective date is
+        reset to 30 days out. Every human user of the project is emailed
+        the LGPD art. 9 §6 change notice for the new version. Updating a
+        project without terms is a 404 — use `POST` to introduce them.
+        The authenticated actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TosContentBody'
+      responses:
+        '200':
+          description: Terms of service updated; notification enqueued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProjectTos'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /projects/{project_id}/terms-of-service/acceptances:
+    get:
+      tags: [projects]
+      operationId: listTosAcceptances
+      summary: List a project's terms acceptances
+      description: |
+        Serves the consent ledger to project admins: who agreed to which
+        version, when, with the content hash that pins the exact document
+        (the proof artifact LGPD art. 8 §2 demands). The authenticated
+        actor must be an admin or owner of the project.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: The project's terms acceptances
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TosAcceptance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [projects]
+      operationId: postTosAcceptance
+      summary: Record the caller's acceptance of the current terms
+      description: |
+        Records the authenticated actor's explicit agreement to the
+        project's current terms version — the clickwrap path for existing
+        users re-affirming after an update. Accepting a version already
+        accepted is idempotent. The caller must be an actor of the
+        project. Returns 404 when the project has no terms.
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectID'
+      responses:
+        '200':
+          description: Acceptance recorded
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TosAcceptance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
   /projects/{project_id}/api_keys:
     post:
       tags: [apikeys]
@@ -2946,6 +3165,21 @@ components:
         `/auth/login`. Mirrors `models.IDXRegisterRequest` /
         `models.IDXLoginRequest`.
 
+    RegisterRequest:
+      allOf:
+        - $ref: '#/components/schemas/CredentialRequest'
+        - type: object
+          properties:
+            accepted_tos:
+              type: boolean
+              description: |
+                Explicit consent to the project's current terms of service
+                (clickwrap). Required when the target project has terms —
+                LGPD art. 8 requires express consent; a missing flag is a
+                400. Ignored for platform registrations and projects
+                without terms.
+      description: Request body for `/auth/register`.
+
     VerifyEmailRequest:
       type: object
       required: [token]
@@ -3011,8 +3245,8 @@ components:
 
     EmailTemplateKind:
       type: string
-      enum: [verify, reset]
-      description: The kind of auth email. `verify` and `reset`.
+      enum: [verify, reset, tos]
+      description: The kind of auth email. `verify`, `reset`, and the ToS-change notice `tos`.
 
     EmailTemplateBody:
       type: object
@@ -3054,6 +3288,95 @@ components:
       description: |
         The effective template for one kind, as served by the email
         template endpoints.
+
+    TosContentBody:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          description: The full terms document (plain text or HTML).
+      description: Request body for introducing or updating a project's terms of service.
+
+    ProjectTos:
+      type: object
+      required: [id, project_id, version, content, effective_at, created_at, updated_at]
+      properties:
+        id:
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+          type: string
+          format: uuid
+        project_id:
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+          description: Monotonically increasing; bumped on every update.
+        content:
+          type: string
+          description: The full terms document.
+        effective_at:
+          type: string
+          format: date-time
+          description: When this version takes effect for existing users (30 days after the announcement).
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      description: A project's current terms of service.
+
+    TosAcceptance:
+      type: object
+      required: [id, actor_id, project_id, tos_version, content_hash, source, accepted_at]
+      properties:
+        id:
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+          type: string
+          format: uuid
+        actor_id:
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+          type: string
+          format: uuid
+        project_id:
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+          type: string
+          format: uuid
+        tos_version:
+          type: integer
+          description: The terms version the actor agreed to.
+        content_hash:
+          type: string
+          description: SHA-256 of the accepted content — the consent proof artifact (LGPD art. 8 §2).
+        source:
+          type: string
+          enum: [clickwrap, continued_use]
+          description: |
+            How consent was given. `clickwrap` is an explicit box-check
+            (registration or the accept endpoint); `continued_use` is the
+            first login after the version's effective date.
+        accepted_at:
+          type: string
+          format: date-time
+        actor_email:
+          type: string
+          nullable: true
+          description: The accepting actor's email (present on the admin listing).
+      description: One actor's recorded agreement to one terms version.
 
     UserTokensOutput:
       x-go-type: models.UserTokensOutput

@@ -22,6 +22,7 @@ import (
 	"IdentityX/internal/repos/profile_schemas"
 	"IdentityX/internal/repos/profiles"
 	"IdentityX/internal/repos/projects"
+	"IdentityX/internal/repos/tos"
 )
 
 // Type and constructor aliases for each feature's repo package.
@@ -40,6 +41,7 @@ type (
 	ProfileSchemas = profile_schemas.Repo
 	Profiles       = profiles.Repo
 	Projects       = projects.Repo
+	Tos            = tos.Repo
 )
 
 var (
@@ -57,6 +59,7 @@ var (
 	NewProfileSchemas = profile_schemas.NewSchemaRepo
 	NewProfiles       = profiles.NewProfileRepo
 	NewProjects       = projects.NewRepo
+	NewTos            = tos.NewRepo
 )
 
 // Repos is the aggregate of every feature repo, constructed once at startup.
@@ -75,6 +78,7 @@ type Repos struct {
 	ProfileSchemas *ProfileSchemas
 	Profiles       *Profiles
 	Projects       *Projects
+	Tos            *Tos
 	// ExternalIdentities is provided by the authn repo.
 	ExternalIdentities *Authn
 }
@@ -96,6 +100,7 @@ func New(q *sqlc.Queries) *Repos {
 		ProfileSchemas:     NewProfileSchemas(q),
 		Profiles:           NewProfiles(q),
 		Projects:           NewProjects(q),
+		Tos:                NewTos(q),
 		ExternalIdentities: NewAuthn(q),
 	}
 }

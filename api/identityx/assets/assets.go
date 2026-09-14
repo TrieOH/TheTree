@@ -15,12 +15,15 @@ var (
 
 	//go:embed emails/reset.html
 	resetEmailHTML string
+
+	//go:embed emails/tos.html
+	tosEmailHTML string
 )
 
 // Defaults are validated at init: a broken embedded template fails boot,
 // not the first send.
 func init() {
-	for _, src := range []string{verifyEmailHTML, resetEmailHTML} {
+	for _, src := range []string{verifyEmailHTML, resetEmailHTML, tosEmailHTML} {
 		template.Must(template.New("default").Parse(src))
 	}
 }
@@ -30,3 +33,6 @@ func VerifyEmailBody() string { return verifyEmailHTML }
 
 // ResetEmailBody returns the built-in reset-email template source.
 func ResetEmailBody() string { return resetEmailHTML }
+
+// TosEmailBody returns the built-in ToS-change notification template source.
+func TosEmailBody() string { return tosEmailHTML }

@@ -10,9 +10,14 @@ const (
 )
 
 type IDXRegisterInput struct {
-	Email     string
-	Password  string
-	ProjectID *uuid.UUID
+	Email    string
+	Password string
+	// AcceptedTos is the explicit clickwrap consent to the project's
+	// current terms. Registration into a project whose terms exist is
+	// rejected without it (LGPD art. 8: consent must be express, not
+	// assumed); projects without terms (v0) ignore it.
+	AcceptedTos bool
+	ProjectID   *uuid.UUID
 }
 
 type IDXLoginInput struct {

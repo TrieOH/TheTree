@@ -76,7 +76,7 @@
  */
 
 /**
- * The kind of auth email. `verify` and `reset`.
+ * The kind of auth email. `verify`, `reset`, and the ToS-change notice `tos`.
  */
 export type EmailTemplateKind = typeof EmailTemplateKind[keyof typeof EmailTemplateKind];
 
@@ -84,4 +84,5 @@ export type EmailTemplateKind = typeof EmailTemplateKind[keyof typeof EmailTempl
 export const EmailTemplateKind = {
   verify: 'verify',
   reset: 'reset',
+  tos: 'tos',
 } as const;

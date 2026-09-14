@@ -72,7 +72,8 @@ func (app *IdentityX) initKeys(r *repos.Repos) *keys.Manager {
 func (app *IdentityX) initOperations(r *repos.Repos, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager, riverClient *river.Client[pgx.Tx]) (*services.Operations, *authz.Service) {
 	authzSvc := authz.New(r.Organizations, r.Projects, r.PlatformRoles)
 	sender := emails.NewSender(actionTokenMgr, app.cfg.AppURL, app.cfg.AppName, riverClient)
-	return services.NewOperations(r, authzSvc, tokensMgr, actionTokenMgr, keysMgr, app.cfg.HmacSecret, sender), authzSvc
+	tosNotifier := emails.NewTosNotifier(riverClient)
+	return services.NewOperations(r, authzSvc, tokensMgr, actionTokenMgr, keysMgr, app.cfg.HmacSecret, sender, tosNotifier), authzSvc
 }
 
 func (app *IdentityX) initMiddlewares(ops *services.Operations, tokensMgr *tokens.Manager, authzSvc *authz.Service) middlewares {
@@ -102,6 +103,7 @@ func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionToke
 		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(actionTokenMgr)),
 		libriver.Register[jobs.RotateKeysArgs](jobs.NewRotateKeysWorker(keysMgr)),
 		libriver.Register[emails.SendAuthEmailArgs](jobs.NewSendAuthEmailWorker(app.emailClient, repos.NewEmailTemplates(q))),
+		libriver.Register[emails.SendTosUpdateArgs](jobs.NewSendTosUpdateWorker(app.emailClient, repos.NewActors(q), repos.NewEmailTemplates(q))),
 	), nil, []*river.PeriodicJob{
 		river.NewPeriodicJob(
 			river.PeriodicInterval(5*time.Minute),

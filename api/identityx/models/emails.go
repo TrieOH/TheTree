@@ -12,12 +12,13 @@ type EmailTemplateKind string
 const (
 	VerifyEmailTemplateKind EmailTemplateKind = "verify"
 	ResetEmailTemplateKind  EmailTemplateKind = "reset"
+	TosEmailTemplateKind    EmailTemplateKind = "tos"
 )
 
 // AllEmailTemplateKinds is the set of template kinds a project can
 // override. The effective template for a project is its override (if any)
 // or the baked-in default.
-var AllEmailTemplateKinds = []EmailTemplateKind{VerifyEmailTemplateKind, ResetEmailTemplateKind}
+var AllEmailTemplateKinds = []EmailTemplateKind{VerifyEmailTemplateKind, ResetEmailTemplateKind, TosEmailTemplateKind}
 
 type EmailTemplate struct {
 	ID        uuid.UUID         `json:"id"`

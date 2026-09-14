@@ -30,9 +30,9 @@ func (o *Operations) authorizeAdmin(ctx context.Context, projectID uuid.UUID) er
 }
 
 func validKind(kind models.EmailTemplateKind) bool {
-	return kind == models.VerifyEmailTemplateKind || kind == models.ResetEmailTemplateKind
+	return kind == models.VerifyEmailTemplateKind || kind == models.ResetEmailTemplateKind || kind == models.TosEmailTemplateKind
 }
 
 func invalidKindErr() error {
-	return fun.ErrValidation("email template kind must be one of: verify, reset")
+	return fun.ErrValidation("email template kind must be one of: verify, reset, tos")
 }

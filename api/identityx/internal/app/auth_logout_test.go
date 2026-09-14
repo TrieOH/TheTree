@@ -7,9 +7,12 @@ import (
 	"strings"
 	"testing"
 
+	"IdentityX/internal/authz"
+	"IdentityX/internal/emails"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
+	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -40,6 +43,13 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), projects, tokens.Config{}),
 		tokens.NewActionTokenManager(mock.Mock[ports.ActionTokenRepo](), []byte("test-hmac"), tokens.ActionTokenConfig{}),
 		mock.Mock[ports.EmailSender](),
+		tos.NewOperations(
+			mock.Mock[ports.TosRepo](),
+			projects,
+			mock.Mock[ports.ActorRepo](),
+			authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
+			emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
+		),
 	)
 	server := handlers.NewServer(&services.Operations{Authn: ops})
 	jwtStub := func(next http.Handler) http.Handler {
