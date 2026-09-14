@@ -1,6 +1,7 @@
 package authn
 
 import (
+	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/ports"
 	"lib/errx"
@@ -23,6 +24,9 @@ type Operations struct {
 	// secret or the anti-replay repo directly.
 	actionTokens *tokens.ActionTokenManager
 	emailSender  ports.EmailSender
+	// tos owns the terms documents and the consent ledger; registration
+	// gates on it and pins the acceptance row through it.
+	tos *tos.Operations
 }
 
 func NewOperations(
@@ -32,6 +36,7 @@ func NewOperations(
 	tokensMgr *tokens.Manager,
 	actionTokens *tokens.ActionTokenManager,
 	emailSender ports.EmailSender,
+	tosOps *tos.Operations,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		actors:        actors,
@@ -40,5 +45,6 @@ func NewOperations(
 		tokens:        tokensMgr,
 		actionTokens:  actionTokens,
 		emailSender:   emailSender,
+		tos:           tosOps,
 	})
 }

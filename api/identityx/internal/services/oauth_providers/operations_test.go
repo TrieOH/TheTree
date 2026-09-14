@@ -47,6 +47,7 @@ func newTestOps(t *testing.T, role models.ProjectRole) *testOps {
 		mock.Mock[ports.ActorRepo](),
 		authz.New(o.orgs, o.projects, mock.Mock[ports.PlatformRolesRepo]()),
 		tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo](), mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
+		newTosOps(),
 		resty.New(),
 		oauth.Registry,
 	)

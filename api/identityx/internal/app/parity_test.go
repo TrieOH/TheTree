@@ -168,6 +168,21 @@ func (stubStrict) GetProjectProfileSchema(_ context.Context, _ openapi.GetProjec
 func (stubStrict) UpsertProjectProfileSchema(_ context.Context, _ openapi.UpsertProjectProfileSchemaRequestObject) (openapi.UpsertProjectProfileSchemaResponseObject, error) {
 	return nil, errStub
 }
+func (stubStrict) GetProjectTos(_ context.Context, _ openapi.GetProjectTosRequestObject) (openapi.GetProjectTosResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PostProjectTos(_ context.Context, _ openapi.PostProjectTosRequestObject) (openapi.PostProjectTosResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PutProjectTos(_ context.Context, _ openapi.PutProjectTosRequestObject) (openapi.PutProjectTosResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) PostTosAcceptance(_ context.Context, _ openapi.PostTosAcceptanceRequestObject) (openapi.PostTosAcceptanceResponseObject, error) {
+	return nil, errStub
+}
+func (stubStrict) ListTosAcceptances(_ context.Context, _ openapi.ListTosAcceptancesRequestObject) (openapi.ListTosAcceptancesResponseObject, error) {
+	return nil, errStub
+}
 func (stubStrict) GetProjectProfile(_ context.Context, _ openapi.GetProjectProfileRequestObject) (openapi.GetProjectProfileResponseObject, error) {
 	return nil, errStub
 }

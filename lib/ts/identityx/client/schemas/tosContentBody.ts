@@ -74,12 +74,14 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-import type { Uuid } from './uuid';
 
-export type PostLoginParams = {
 /**
- * Project to scope the operation to. Omit for IdentityX itself.
+ * Request body for introducing or updating a project's terms of service.
  */
-project_id?: ProjectIDQueryParameter;
-};
+export interface TosContentBody {
+  /**
+     * The full terms document (plain text or HTML).
+     * @minLength 1
+     */
+  content: string;
+}

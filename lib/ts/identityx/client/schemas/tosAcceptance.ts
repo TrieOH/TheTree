@@ -74,12 +74,26 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-import type { Uuid } from './uuid';
+import type { TosAcceptanceSource } from './tosAcceptanceSource';
 
-export type PostLoginParams = {
 /**
- * Project to scope the operation to. Omit for IdentityX itself.
+ * One actor's recorded agreement to one terms version.
  */
-project_id?: ProjectIDQueryParameter;
-};
+export interface TosAcceptance {
+  id: string;
+  actor_id: string;
+  project_id: string;
+  /** The terms version the actor agreed to. */
+  tos_version: number;
+  /** SHA-256 of the accepted content — the consent proof artifact (LGPD art. 8 §2). */
+  content_hash: string;
+  /**
+     * How consent was given. `clickwrap` is an explicit box-check
+     * (registration or the accept endpoint); `continued_use` is the
+     * first login after the version's effective date.
+     */
+  source: TosAcceptanceSource;
+  accepted_at: string;
+  /** The accepting actor's email (present on the admin listing). */
+  actor_email?: string | null;
+}

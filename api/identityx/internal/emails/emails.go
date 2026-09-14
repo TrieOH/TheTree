@@ -24,6 +24,11 @@ type Data struct {
 	Expiry        int
 	ProjectDomain string
 	Email         string
+	// ToS-change notification variables. They are empty on verify/reset
+	// emails and populated on tos ones.
+	TosVersion    int
+	EffectiveDate string
+	TosContent    string
 }
 
 // Template is a resolved email template: the project override when one
@@ -47,6 +52,8 @@ func DefaultSubject(kind models.EmailTemplateKind) string {
 		return "Verify your email address"
 	case models.ResetEmailTemplateKind:
 		return "Reset your password"
+	case models.TosEmailTemplateKind:
+		return "Our Terms of Service are changing"
 	default:
 		return ""
 	}
@@ -69,6 +76,8 @@ func defaultBody(kind models.EmailTemplateKind) string {
 		return assets.VerifyEmailBody()
 	case models.ResetEmailTemplateKind:
 		return assets.ResetEmailBody()
+	case models.TosEmailTemplateKind:
+		return assets.TosEmailBody()
 	default:
 		return ""
 	}
@@ -135,13 +144,14 @@ func renderString(name, src string, d Data) (string, error) {
 const actionURLVariable = "{{.ActionURL}}"
 
 // Validate enforces the template contract before an override is saved:
-//   - the body must reference {{.ActionURL}} at least once, and
-//   - the template must parse and render with sample data.
+//   - verify/reset bodies must reference {{.ActionURL}} at least once,
+//   - every template must parse and render with sample data.
 //
-// The ActionURL mandate is the security-critical piece: the actionable
-// link always comes from IdentityX, never from the project.
+// The ActionURL mandate is the security-critical piece for action-token
+// emails: the actionable link always comes from IdentityX, never from the
+// project. ToS-change emails carry no action token, so they are exempt.
 func Validate(t Template) error {
-	if !strings.Contains(t.Body, actionURLVariable) {
+	if t.Kind != models.TosEmailTemplateKind && !strings.Contains(t.Body, actionURLVariable) {
 		return fun.ErrValidation(
 			"email template body must include the {{.ActionURL}} variable at least once",
 		)
@@ -162,6 +172,9 @@ func sentinelData() Data {
 		Expiry:        10,
 		ProjectDomain: "example.com",
 		Email:         "user@example.com",
+		TosVersion:    2,
+		EffectiveDate: "2026-02-01",
+		TosContent:    "The updated terms, in full.",
 	}
 }
 
@@ -204,3 +217,18 @@ type SendAuthEmailArgs struct {
 }
 
 func (SendAuthEmailArgs) Kind() string { return "auth_email.send" }
+
+// SendTosUpdateArgs is the River job payload for a ToS-change notification:
+// one job per update, and the worker fans out to every human actor of the
+// project. No action token is involved — the email informs and points at
+// the account-termination path, it does not link to a redeemable flow.
+type SendTosUpdateArgs struct {
+	ProjectID     uuid.UUID `json:"project_id"`
+	ProjectName   string    `json:"project_name"`
+	BaseDomain    string    `json:"base_domain"`
+	TosVersion    int       `json:"tos_version"`
+	TosContent    string    `json:"tos_content"`
+	EffectiveDate string    `json:"effective_date"`
+}
+
+func (SendTosUpdateArgs) Kind() string { return "tos_update_email.send" }

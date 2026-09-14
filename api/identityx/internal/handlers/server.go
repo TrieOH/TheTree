@@ -21,6 +21,7 @@ import (
 	"IdentityX/internal/handlers/profile_schemas"
 	"IdentityX/internal/handlers/profiles"
 	"IdentityX/internal/handlers/projects"
+	tosHandlers "IdentityX/internal/handlers/tos"
 	"IdentityX/internal/services"
 )
 
@@ -41,6 +42,7 @@ type (
 	ProfileSchemaHandlers = profile_schemas.Handlers
 	ProfileHandlers       = profiles.Handlers
 	ProjectHandlers       = projects.Handlers
+	TosHandlers           = tosHandlers.Handlers
 )
 
 type Server struct {
@@ -54,6 +56,7 @@ type Server struct {
 	*ProfileSchemaHandlers
 	*ProfileHandlers
 	*ProjectHandlers
+	*TosHandlers
 }
 
 // NewServer wires the per-feature handlers from the services aggregate.
@@ -69,5 +72,6 @@ func NewServer(ops *services.Operations) *Server {
 		ProfileSchemaHandlers: profile_schemas.New(ops.ProfileSchemas),
 		ProfileHandlers:       profiles.New(ops.Profiles),
 		ProjectHandlers:       projects.New(ops.Projects),
+		TosHandlers:           tosHandlers.New(ops.Tos),
 	}
 }

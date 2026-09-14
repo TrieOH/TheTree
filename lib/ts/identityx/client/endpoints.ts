@@ -130,6 +130,8 @@ import type {
   Project,
   ProjectMember,
   ProjectProfileSchema,
+  ProjectTos,
+  RegisterRequest,
   RemoveOrgProjectMemberRequest,
   RemoveOrganizationMemberRequest,
   RemoveProjectMemberRequest,
@@ -137,6 +139,8 @@ import type {
   ResetPasswordRequest,
   ServiceUnavailableResponse,
   SupportedOAuthProviders,
+  TosAcceptance,
+  TosContentBody,
   UnauthorizedResponse,
   UpdateOAuthProviderRequest,
   UpsertProfileRequest,
@@ -612,9 +616,14 @@ export const getPostRegisterUrl = (params?: PostRegisterParams,) => {
  * (no `project_id`) or as a client of a project that consumes
  * IdentityX for authn (pass `project_id`). Returns 201 with an empty
  * body — the caller then logs in via `/auth/login`.
+ *
+ * When the target project has terms of service, the registration is
+ * rejected unless `accepted_tos` is true — consent under LGPD art. 8
+ * must be express. Projects without terms ignore the flag. The
+ * acceptance is recorded against the current version.
  * @summary Register a user
  */
-export const postRegister = async (credentialRequest: CredentialRequest,
+export const postRegister = async (registerRequest: RegisterRequest,
     params?: PostRegisterParams, options?: Parameters<typeof customInstance>[1]): Promise<postRegisterResponse> => {
 
   return customInstance<postRegisterResponse>(getPostRegisterUrl(params),
@@ -622,7 +631,7 @@ export const postRegister = async (credentialRequest: CredentialRequest,
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(credentialRequest)
+    body: JSON.stringify(registerRequest)
   }
 );}
 
@@ -631,8 +640,8 @@ export const postRegister = async (credentialRequest: CredentialRequest,
 
 
 export const getPostRegisterMutationOptions = <TError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<CredentialRequest>;params?: PostRegisterParams}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<CredentialRequest>;params?: PostRegisterParams}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<RegisterRequest>;params?: PostRegisterParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<RegisterRequest>;params?: PostRegisterParams}, TContext> => {
 
 const mutationKey = ['postRegister'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -644,7 +653,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRegister>>, {data: BodyType<CredentialRequest>;params?: PostRegisterParams}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRegister>>, {data: BodyType<RegisterRequest>;params?: PostRegisterParams}> = (props) => {
           const {data,params} = props ?? {};
 
           return  postRegister(data,params,requestOptions)
@@ -658,18 +667,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PostRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof postRegister>>>
-    export type PostRegisterMutationBody = BodyType<CredentialRequest>
+    export type PostRegisterMutationBody = BodyType<RegisterRequest>
     export type PostRegisterMutationError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
     /**
  * @summary Register a user
  */
 export const usePostRegister = <TError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<CredentialRequest>;params?: PostRegisterParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<RegisterRequest>;params?: PostRegisterParams}, TContext>, request?: SecondParameter<typeof customInstance>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof postRegister>>,
         TError,
-        {data: BodyType<CredentialRequest>;params?: PostRegisterParams},
+        {data: BodyType<RegisterRequest>;params?: PostRegisterParams},
         TContext
       > => {
       return useMutation(getPostRegisterMutationOptions(options));
@@ -4769,7 +4778,7 @@ export type getEmailTemplateResponseError = (getEmailTemplateResponse401 | getEm
 export type getEmailTemplateResponse = (getEmailTemplateResponseSuccess | getEmailTemplateResponseError)
 
 export const getGetEmailTemplateUrl = (projectId: string,
-    kind: 'verify' | 'reset',) => {
+    kind: 'verify' | 'reset' | 'tos',) => {
 
 
 
@@ -4784,7 +4793,7 @@ export const getGetEmailTemplateUrl = (projectId: string,
  * @summary Get a project's effective email template
  */
 export const getEmailTemplate = async (projectId: string,
-    kind: 'verify' | 'reset', options?: Parameters<typeof customInstance>[1]): Promise<getEmailTemplateResponse> => {
+    kind: 'verify' | 'reset' | 'tos', options?: Parameters<typeof customInstance>[1]): Promise<getEmailTemplateResponse> => {
 
   return customInstance<getEmailTemplateResponse>(getGetEmailTemplateUrl(projectId,kind),
   {
@@ -4800,7 +4809,7 @@ export const getEmailTemplate = async (projectId: string,
 
 
 export const getGetEmailTemplateQueryKey = (projectId: string,
-    kind: 'verify' | 'reset',) => {
+    kind: 'verify' | 'reset' | 'tos',) => {
     return [
     `/projects/${projectId}/email-templates/${kind}`
     ] as const;
@@ -4808,7 +4817,7 @@ export const getGetEmailTemplateQueryKey = (projectId: string,
 
 
 export const getGetEmailTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getEmailTemplate>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string,
-    kind: 'verify' | 'reset', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+    kind: 'verify' | 'reset' | 'tos', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -4836,7 +4845,7 @@ export type GetEmailTemplateQueryError = ErrorType<UnauthorizedResponse | Forbid
 
 export function useGetEmailTemplate<TData = Awaited<ReturnType<typeof getEmailTemplate>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  projectId: string,
-    kind: 'verify' | 'reset', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+    kind: 'verify' | 'reset' | 'tos', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
@@ -4898,7 +4907,7 @@ export type putEmailTemplateResponseError = (putEmailTemplateResponse400 | putEm
 export type putEmailTemplateResponse = (putEmailTemplateResponseSuccess | putEmailTemplateResponseError)
 
 export const getPutEmailTemplateUrl = (projectId: string,
-    kind: 'verify' | 'reset',) => {
+    kind: 'verify' | 'reset' | 'tos',) => {
 
 
 
@@ -4917,7 +4926,7 @@ export const getPutEmailTemplateUrl = (projectId: string,
  * @summary Upsert a project's email template override
  */
 export const putEmailTemplate = async (projectId: string,
-    kind: 'verify' | 'reset',
+    kind: 'verify' | 'reset' | 'tos',
     emailTemplateBody: EmailTemplateBody, options?: Parameters<typeof customInstance>[1]): Promise<putEmailTemplateResponse> => {
 
   return customInstance<putEmailTemplateResponse>(getPutEmailTemplateUrl(projectId,kind),
@@ -4934,8 +4943,8 @@ export const putEmailTemplate = async (projectId: string,
 
 
 export const getPutEmailTemplateMutationOptions = <TError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}, TContext> => {
 
 const mutationKey = ['putEmailTemplate'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -4947,7 +4956,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}> = (props) => {
           const {projectId,kind,data} = props ?? {};
 
           return  putEmailTemplate(projectId,kind,data,requestOptions)
@@ -4968,11 +4977,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Upsert a project's email template override
  */
 export const usePutEmailTemplate = <TError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof putEmailTemplate>>,
         TError,
-        {projectId: string;kind: 'verify' | 'reset';data: BodyType<EmailTemplateBody>},
+        {projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>},
         TContext
       > => {
       return useMutation(getPutEmailTemplateMutationOptions(options));
@@ -5018,7 +5027,7 @@ export type deleteEmailTemplateResponseError = (deleteEmailTemplateResponse401 |
 export type deleteEmailTemplateResponse = (deleteEmailTemplateResponseSuccess | deleteEmailTemplateResponseError)
 
 export const getDeleteEmailTemplateUrl = (projectId: string,
-    kind: 'verify' | 'reset',) => {
+    kind: 'verify' | 'reset' | 'tos',) => {
 
 
 
@@ -5034,7 +5043,7 @@ export const getDeleteEmailTemplateUrl = (projectId: string,
  * @summary Delete a project's email template override
  */
 export const deleteEmailTemplate = async (projectId: string,
-    kind: 'verify' | 'reset', options?: Parameters<typeof customInstance>[1]): Promise<deleteEmailTemplateResponse> => {
+    kind: 'verify' | 'reset' | 'tos', options?: Parameters<typeof customInstance>[1]): Promise<deleteEmailTemplateResponse> => {
 
   return customInstance<deleteEmailTemplateResponse>(getDeleteEmailTemplateUrl(projectId,kind),
   {
@@ -5050,8 +5059,8 @@ export const deleteEmailTemplate = async (projectId: string,
 
 
 export const getDeleteEmailTemplateMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset'}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset'}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos'}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos'}, TContext> => {
 
 const mutationKey = ['deleteEmailTemplate'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -5063,7 +5072,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset'}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset' | 'tos'}> = (props) => {
           const {projectId,kind} = props ?? {};
 
           return  deleteEmailTemplate(projectId,kind,requestOptions)
@@ -5084,14 +5093,608 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete a project's email template override
  */
 export const useDeleteEmailTemplate = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset'}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos'}, TContext>, request?: SecondParameter<typeof customInstance>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteEmailTemplate>>,
         TError,
-        {projectId: string;kind: 'verify' | 'reset'},
+        {projectId: string;kind: 'verify' | 'reset' | 'tos'},
         TContext
       > => {
       return useMutation(getDeleteEmailTemplateMutationOptions(options));
+    }
+
+export type getProjectTosResponse200 = {
+  data: ProjectTos
+  status: 200
+}
+
+export type getProjectTosResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getProjectTosResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getProjectTosResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type getProjectTosResponseSuccess = (getProjectTosResponse200) & {
+  headers: Headers;
+};
+export type getProjectTosResponseError = (getProjectTosResponse404 | getProjectTosResponse500 | getProjectTosResponse503) & {
+  headers: Headers;
+};
+
+export type getProjectTosResponse = (getProjectTosResponseSuccess | getProjectTosResponseError)
+
+export const getGetProjectTosUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/terms-of-service`
+}
+
+/**
+ * Returns the project's current terms document, or 404 when the
+ * project has none (a project without terms requires no acceptance).
+ * Public: frontends render the document on signup and notice pages
+ * without authenticating.
+ * @summary Get a project's current terms of service
+ */
+export const getProjectTos = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<getProjectTosResponse> => {
+
+  return customInstance<getProjectTosResponse>(getGetProjectTosUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectTosQueryKey = (projectId: string,) => {
+    return [
+    `/projects/${projectId}/terms-of-service`
+    ] as const;
+    }
+
+
+export const getGetProjectTosQueryOptions = <TData = Awaited<ReturnType<typeof getProjectTos>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectTos>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectTosQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectTos>>> = ({ signal }) => getProjectTos(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectTos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectTosQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectTos>>>
+export type GetProjectTosQueryError = ErrorType<NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary Get a project's current terms of service
+ */
+
+export function useGetProjectTos<TData = Awaited<ReturnType<typeof getProjectTos>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectTos>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectTosQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type postProjectTosResponse200 = {
+  data: ProjectTos
+  status: 200
+}
+
+export type postProjectTosResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type postProjectTosResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type postProjectTosResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type postProjectTosResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type postProjectTosResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postProjectTosResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type postProjectTosResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type postProjectTosResponseSuccess = (postProjectTosResponse200) & {
+  headers: Headers;
+};
+export type postProjectTosResponseError = (postProjectTosResponse400 | postProjectTosResponse401 | postProjectTosResponse403 | postProjectTosResponse404 | postProjectTosResponse409 | postProjectTosResponse500 | postProjectTosResponse503) & {
+  headers: Headers;
+};
+
+export type postProjectTosResponse = (postProjectTosResponseSuccess | postProjectTosResponseError)
+
+export const getPostProjectTosUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/terms-of-service`
+}
+
+/**
+ * Creates the project's first terms document as version 1. This is
+ * the migration from "no terms" (v0): every human user of the
+ * project is emailed the LGPD art. 9 §6 change notice — the new
+ * content, the effective date (30 days out), the continued-use
+ * clause, and the account-termination path for those who disagree.
+ * Creating when terms already exist is a 409 — use `PUT` to update.
+ * The authenticated actor must be an admin or owner of the project.
+ * @summary Introduce a project's terms of service (v1)
+ */
+export const postProjectTos = async (projectId: string,
+    tosContentBody: TosContentBody, options?: Parameters<typeof customInstance>[1]): Promise<postProjectTosResponse> => {
+
+  return customInstance<postProjectTosResponse>(getPostProjectTosUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tosContentBody)
+  }
+);}
+
+
+
+
+
+export const getPostProjectTosMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext> => {
+
+const mutationKey = ['postProjectTos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postProjectTos>>, {projectId: string;data: BodyType<TosContentBody>}> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  postProjectTos(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostProjectTosMutationResult = NonNullable<Awaited<ReturnType<typeof postProjectTos>>>
+    export type PostProjectTosMutationBody = BodyType<TosContentBody>
+    export type PostProjectTosMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Introduce a project's terms of service (v1)
+ */
+export const usePostProjectTos = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postProjectTos>>,
+        TError,
+        {projectId: string;data: BodyType<TosContentBody>},
+        TContext
+      > => {
+      return useMutation(getPostProjectTosMutationOptions(options));
+    }
+
+export type putProjectTosResponse200 = {
+  data: ProjectTos
+  status: 200
+}
+
+export type putProjectTosResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type putProjectTosResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type putProjectTosResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type putProjectTosResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type putProjectTosResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type putProjectTosResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type putProjectTosResponseSuccess = (putProjectTosResponse200) & {
+  headers: Headers;
+};
+export type putProjectTosResponseError = (putProjectTosResponse400 | putProjectTosResponse401 | putProjectTosResponse403 | putProjectTosResponse404 | putProjectTosResponse500 | putProjectTosResponse503) & {
+  headers: Headers;
+};
+
+export type putProjectTosResponse = (putProjectTosResponseSuccess | putProjectTosResponseError)
+
+export const getPutProjectTosUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/terms-of-service`
+}
+
+/**
+ * Replaces the content and bumps the version; the effective date is
+ * reset to 30 days out. Every human user of the project is emailed
+ * the LGPD art. 9 §6 change notice for the new version. Updating a
+ * project without terms is a 404 — use `POST` to introduce them.
+ * The authenticated actor must be an admin or owner of the project.
+ * @summary Update a project's terms of service (bumps the version)
+ */
+export const putProjectTos = async (projectId: string,
+    tosContentBody: TosContentBody, options?: Parameters<typeof customInstance>[1]): Promise<putProjectTosResponse> => {
+
+  return customInstance<putProjectTosResponse>(getPutProjectTosUrl(projectId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tosContentBody)
+  }
+);}
+
+
+
+
+
+export const getPutProjectTosMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof putProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext> => {
+
+const mutationKey = ['putProjectTos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putProjectTos>>, {projectId: string;data: BodyType<TosContentBody>}> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  putProjectTos(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutProjectTosMutationResult = NonNullable<Awaited<ReturnType<typeof putProjectTos>>>
+    export type PutProjectTosMutationBody = BodyType<TosContentBody>
+    export type PutProjectTosMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Update a project's terms of service (bumps the version)
+ */
+export const usePutProjectTos = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putProjectTos>>,
+        TError,
+        {projectId: string;data: BodyType<TosContentBody>},
+        TContext
+      > => {
+      return useMutation(getPutProjectTosMutationOptions(options));
+    }
+
+export type listTosAcceptancesResponse200 = {
+  data: TosAcceptance[]
+  status: 200
+}
+
+export type listTosAcceptancesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listTosAcceptancesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listTosAcceptancesResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listTosAcceptancesResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type listTosAcceptancesResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type listTosAcceptancesResponseSuccess = (listTosAcceptancesResponse200) & {
+  headers: Headers;
+};
+export type listTosAcceptancesResponseError = (listTosAcceptancesResponse401 | listTosAcceptancesResponse403 | listTosAcceptancesResponse404 | listTosAcceptancesResponse500 | listTosAcceptancesResponse503) & {
+  headers: Headers;
+};
+
+export type listTosAcceptancesResponse = (listTosAcceptancesResponseSuccess | listTosAcceptancesResponseError)
+
+export const getListTosAcceptancesUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/terms-of-service/acceptances`
+}
+
+/**
+ * Serves the consent ledger to project admins: who agreed to which
+ * version, when, with the content hash that pins the exact document
+ * (the proof artifact LGPD art. 8 §2 demands). The authenticated
+ * actor must be an admin or owner of the project.
+ * @summary List a project's terms acceptances
+ */
+export const listTosAcceptances = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<listTosAcceptancesResponse> => {
+
+  return customInstance<listTosAcceptancesResponse>(getListTosAcceptancesUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTosAcceptancesQueryKey = (projectId: string,) => {
+    return [
+    `/projects/${projectId}/terms-of-service/acceptances`
+    ] as const;
+    }
+
+
+export const getListTosAcceptancesQueryOptions = <TData = Awaited<ReturnType<typeof listTosAcceptances>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTosAcceptances>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTosAcceptancesQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTosAcceptances>>> = ({ signal }) => listTosAcceptances(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTosAcceptances>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTosAcceptancesQueryResult = NonNullable<Awaited<ReturnType<typeof listTosAcceptances>>>
+export type ListTosAcceptancesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+
+/**
+ * @summary List a project's terms acceptances
+ */
+
+export function useListTosAcceptances<TData = Awaited<ReturnType<typeof listTosAcceptances>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTosAcceptances>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTosAcceptancesQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type postTosAcceptanceResponse200 = {
+  data: TosAcceptance
+  status: 200
+}
+
+export type postTosAcceptanceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type postTosAcceptanceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type postTosAcceptanceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type postTosAcceptanceResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type postTosAcceptanceResponse503 = {
+  data: ServiceUnavailableResponse
+  status: 503
+}
+
+export type postTosAcceptanceResponseSuccess = (postTosAcceptanceResponse200) & {
+  headers: Headers;
+};
+export type postTosAcceptanceResponseError = (postTosAcceptanceResponse401 | postTosAcceptanceResponse403 | postTosAcceptanceResponse404 | postTosAcceptanceResponse500 | postTosAcceptanceResponse503) & {
+  headers: Headers;
+};
+
+export type postTosAcceptanceResponse = (postTosAcceptanceResponseSuccess | postTosAcceptanceResponseError)
+
+export const getPostTosAcceptanceUrl = (projectId: string,) => {
+
+
+
+
+  return `/projects/${projectId}/terms-of-service/acceptances`
+}
+
+/**
+ * Records the authenticated actor's explicit agreement to the
+ * project's current terms version — the clickwrap path for existing
+ * users re-affirming after an update. Accepting a version already
+ * accepted is idempotent. The caller must be an actor of the
+ * project. Returns 404 when the project has no terms.
+ * @summary Record the caller's acceptance of the current terms
+ */
+export const postTosAcceptance = async (projectId: string, options?: Parameters<typeof customInstance>[1]): Promise<postTosAcceptanceResponse> => {
+
+  return customInstance<postTosAcceptanceResponse>(getPostTosAcceptanceUrl(projectId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPostTosAcceptanceMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postTosAcceptance>>, TError,{projectId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postTosAcceptance>>, TError,{projectId: string}, TContext> => {
+
+const mutationKey = ['postTosAcceptance'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postTosAcceptance>>, {projectId: string}> = (props) => {
+          const {projectId} = props ?? {};
+
+          return  postTosAcceptance(projectId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostTosAcceptanceMutationResult = NonNullable<Awaited<ReturnType<typeof postTosAcceptance>>>
+
+    export type PostTosAcceptanceMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+
+    /**
+ * @summary Record the caller's acceptance of the current terms
+ */
+export const usePostTosAcceptance = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postTosAcceptance>>, TError,{projectId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postTosAcceptance>>,
+        TError,
+        {projectId: string},
+        TContext
+      > => {
+      return useMutation(getPostTosAcceptanceMutationOptions(options));
     }
 
 export type createAPIKeyResponse201 = {

@@ -75,10 +75,18 @@
  * OpenAPI spec version: 0.22.0
  */
 import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
+import type { Uuid } from './uuid';
 
 export type GetOAuthConnectParams = {
-    /**
-     * Project to scope the operation to. Omit for IdentityX itself.
-     */
-    project_id?: ProjectIDQueryParameter;
+/**
+ * Project to scope the operation to. Omit for IdentityX itself.
+ */
+project_id?: ProjectIDQueryParameter;
+/**
+ * Explicit consent to the project's current terms of service.
+ * Required (true) when the project has terms and the flow may
+ * register a first-time identity; ignored otherwise. The consent
+ * screen must precede the provider redirect.
+ */
+accepted_tos?: boolean;
 };

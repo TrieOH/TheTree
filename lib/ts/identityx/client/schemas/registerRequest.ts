@@ -74,12 +74,18 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-import type { Uuid } from './uuid';
+import type { CredentialRequest } from './credentialRequest';
 
-export type PostLoginParams = {
 /**
- * Project to scope the operation to. Omit for IdentityX itself.
+ * Request body for `/auth/register`.
  */
-project_id?: ProjectIDQueryParameter;
+export type RegisterRequest = CredentialRequest & {
+  /**
+     * Explicit consent to the project's current terms of service
+     * (clickwrap). Required when the target project has terms —
+     * LGPD art. 8 requires express consent; a missing flag is a
+     * 400. Ignored for platform registrations and projects
+     * without terms.
+     */
+  accepted_tos?: boolean;
 };

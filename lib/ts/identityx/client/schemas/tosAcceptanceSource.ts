@@ -74,12 +74,16 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { ProjectIDQueryParameter } from './projectIDQueryParameter';
-import type { Uuid } from './uuid';
 
-export type PostLoginParams = {
 /**
- * Project to scope the operation to. Omit for IdentityX itself.
+ * How consent was given. `clickwrap` is an explicit box-check
+ * (registration or the accept endpoint); `continued_use` is the
+ * first login after the version's effective date.
  */
-project_id?: ProjectIDQueryParameter;
-};
+export type TosAcceptanceSource = typeof TosAcceptanceSource[keyof typeof TosAcceptanceSource];
+
+
+export const TosAcceptanceSource = {
+  clickwrap: 'clickwrap',
+  continued_use: 'continued_use',
+} as const;
