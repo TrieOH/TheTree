@@ -288,7 +288,7 @@ export function EditionVisualCard(props: {
         onDragLeave={() => setDragging(undefined)}
         onDrop={(e) => handleDrop("logo_url", e)}
         class={cn(
-          "group absolute -bottom-8 left-5 z-30 flex size-24 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28",
+          "group absolute -bottom-8 left-5 z-10 flex size-24 items-center justify-center rounded-full border-4 border-card bg-muted shadow-xl transition-all md:size-28",
           isUploading("logo_url")
             ? "cursor-not-allowed opacity-90"
             : "cursor-pointer",
