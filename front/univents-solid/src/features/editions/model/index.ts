@@ -24,3 +24,13 @@ export function normalizeEdition(edition: Edition): EditionI {
     status: inferEditionStatus(edition),
   };
 }
+
+export function editionRangesOverlap(
+  left: Pick<EditionI, "starts_at" | "ends_at">,
+  right: Pick<EditionI, "starts_at" | "ends_at">,
+): boolean {
+  return (
+    new Date(left.starts_at).getTime() < new Date(right.ends_at).getTime() &&
+    new Date(left.ends_at).getTime() > new Date(right.starts_at).getTime()
+  );
+}

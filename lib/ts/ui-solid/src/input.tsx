@@ -8,7 +8,7 @@ const fieldBase =
 export interface InputProps {
   id?: string;
   name?: string;
-  type?: "text" | "email" | "password" | "search" | "url" | "tel" | "number" | "date";
+  type?: "text" | "email" | "password" | "search" | "url" | "tel" | "number" | "date" | "datetime-local";
   value?: string | number;
   placeholder?: string;
   required?: boolean;
