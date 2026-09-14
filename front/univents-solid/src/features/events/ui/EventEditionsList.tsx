@@ -1,4 +1,5 @@
 import type { JSX } from "@solidjs/web";
+import { Link } from "@tanstack/solid-router";
 import { For, Show } from "solid-js";
 import ChevronRightIcon from "~icons/lucide/chevron-right";
 import Layers3Icon from "~icons/lucide/layers-3";
@@ -80,11 +81,11 @@ export function EventEditionsList(props: {
               };
 
               return (
-                <a
-                  href={`/admin/events/${props.eventId}/editions/${edition.id}`}
-                  class={`group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/40 ${
-                    index() > 0 ? "border-t border-border" : ""
-                  }`}
+                <Link
+                  to="/admin/events/$eventId/editions/$editionId"
+                  params={{ eventId: props.eventId, editionId: edition.id }}
+                  class={`group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/40 ${index() > 0 ? "border-t border-border" : ""
+                    }`}
                 >
                   <div class="flex min-w-0 items-center gap-3">
                     <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
@@ -104,16 +105,15 @@ export function EventEditionsList(props: {
                   </div>
                   <div class="flex shrink-0 items-center gap-3">
                     <span
-                      class={`hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium sm:inline-flex ${
-                        status().className
-                      }`}
+                      class={`hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium sm:inline-flex ${status().className
+                        }`}
                     >
                       <span class={`size-1.5 rounded-full ${status().dot}`} />
                       {status().label}
                     </span>
                     <LucideChevronRight class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </div>
-                </a>
+                </Link>
               );
             }}
           </For>

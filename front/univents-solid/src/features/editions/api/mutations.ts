@@ -6,6 +6,7 @@ import { withSpan } from "@trieoh/front-core/tracing/browser";
 import { Effect } from "effect";
 import { apiEffect, useEffectMutation } from "@/shared/lib/effect-query";
 import { normalizeEdition, type EditionI } from "../model";
+import { editionKeys } from "./query-keys";
 import { syncEditionCaches } from "./cache";
 
 export interface CreateEditionInput {
@@ -17,6 +18,11 @@ export interface PatchEditionInput {
   eventId: string;
   editionId: string;
   data: PatchEditionRequest;
+}
+
+export interface PublishEditionInput {
+  eventId: string;
+  editionId: string;
 }
 
 export const createEditionEffect = (eventId: string, data: CreateEditionRequest) =>
@@ -72,6 +78,26 @@ export const usePatchEditionMutation = () => {
         Effect.tap((edition) =>
           Effect.sync(() => {
             syncEditionCaches(queryClient, edition);
+          }),
+        ),
+      ),
+  });
+};
+
+export const usePublishEditionMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: ({ eventId, editionId }: PublishEditionInput) =>
+      publishEditionEffect(eventId, editionId).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            queryClient.invalidateQueries({
+              queryKey: editionKeys.adminLists(),
+            });
+            queryClient.invalidateQueries({
+              queryKey: editionKeys.publicLists(),
+            });
           }),
         ),
       ),

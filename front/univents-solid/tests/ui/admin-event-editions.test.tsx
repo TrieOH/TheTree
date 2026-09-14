@@ -3,8 +3,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { EditionI } from "@/features/editions/model";
 import { AdminCreateEditionCard } from "@/features/editions/ui/AdminCreateEditionCard";
-import { AdminEditionCard } from "@/features/editions/ui/AdminEditionCard";
 import { ManageEditionDialog } from "@/features/editions/ui/ManageEditionDialog";
+
+vi.mock("@tanstack/solid-router", () => ({
+  Link: (props: any) => (
+    <a href={props.to} aria-label={props["aria-label"]} class={props.class}>
+      {props.children}
+    </a>
+  ),
+  useNavigate: () => vi.fn(),
+  useLocation: () => () => ({ pathname: "/", href: "/" }),
+}));
 
 afterEach(cleanup);
 
@@ -48,7 +57,9 @@ describe("AdminCreateEditionCard", () => {
   });
 });
 
-describe("AdminEditionCard", () => {
+describe("AdminEditionCard", async () => {
+  const { AdminEditionCard } = await import("@/features/editions/ui/AdminEditionCard");
+
   it("renders edition details and edit button", () => {
     const onEdit = vi.fn();
     render(() => (
@@ -102,10 +113,12 @@ describe("ManageEditionDialog", () => {
 
   it("refuses to submit an invalid form when creating", async () => {
     const onSubmit = vi.fn().mockResolvedValue(true);
+    const onOpenChange = vi.fn();
+
     render(() => (
       <ManageEditionDialog
         open={true}
-        onOpenChange={() => undefined}
+        onOpenChange={onOpenChange}
         edition={null}
         onSubmit={onSubmit}
       />
@@ -113,7 +126,10 @@ describe("ManageEditionDialog", () => {
 
     submit();
 
-    await waitFor(() => expect(screen.getAllByRole("alert").length).toBeGreaterThan(0));
-    expect(onSubmit).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(screen.getAllByText("Informe ao menos 2 caracteres.")).toHaveLength(2);
+      expect(screen.getByText("Informe a data de início.")).toBeInTheDocument();
+    });
   });
 });

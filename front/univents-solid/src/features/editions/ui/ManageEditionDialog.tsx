@@ -1,4 +1,4 @@
-import { createSignal, untrack } from "solid-js";
+import { createEffect, createSignal, untrack } from "solid-js";
 import { Button, Dialog, Field, Input } from "@trieoh/ui-solid";
 import type { EditionI } from "../model";
 
@@ -82,6 +82,14 @@ export function ManageEditionDialog(props: ManageEditionDialogProps) {
   const [values, setValues] = createSignal(untrack(() => valuesOf(props.edition)));
   const [submitting, setSubmitting] = createSignal(false);
   const [errors, setErrors] = createSignal<Partial<Record<keyof ManageEditionValues, string>>>({});
+
+  createEffect(
+    () => props.edition,
+    (ed) => {
+      setValues(valuesOf(ed));
+      setErrors({});
+    },
+  );
 
   const update = <K extends keyof ManageEditionValues>(key: K, value: ManageEditionValues[K]) => {
     const current = values();

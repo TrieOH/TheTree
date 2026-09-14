@@ -1,4 +1,5 @@
 import type { JSX } from "@solidjs/web";
+import { Link } from "@tanstack/solid-router";
 import { Show } from "solid-js";
 
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
@@ -143,8 +144,9 @@ export function AdminEditionCard(props: AdminEditionCardProps): JSX.Element {
         </div>
 
         {/* Link covering the card */}
-        <a
-          href={`/admin/events/${props.eventId}/editions/${props.edition.id}`}
+        <Link
+          to="/admin/events/$eventId/editions/$editionId"
+          params={{ eventId: props.eventId, editionId: props.edition.id }}
           aria-label={props.edition.name}
           class="absolute inset-0 z-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
