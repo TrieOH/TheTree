@@ -5,12 +5,16 @@ import {
   createSignal,
   untrack,
 } from "solid-js";
+import EyeIcon from "~icons/lucide/eye";
 import { DateRangeControl } from "./chart-filter-bar";
 import { fillContinuousSeries } from "./data-continuity";
 import { GenericChart } from "./generic-chart";
 import { buildSeriesMeta } from "./theme";
 import type { ChartDatum, ChartType, CurveStyle, RangeKey } from "./types";
 import { useChartFilters } from "./use-chart-filters";
+
+type IconComp = (props: { class?: string }) => JSX.Element;
+const LucideEye = EyeIcon as unknown as IconComp;
 
 export interface ChartCardProps {
   title: string;
@@ -34,6 +38,9 @@ export interface ChartCardProps {
   valueFormatter?: (value: number) => string;
   dateFormatter?: (date: Date) => string;
   tooltipDetails?: (datum: ChartDatum) => { label: string; value: string }[];
+  isMasked?: boolean;
+  onToggleMask?: () => void;
+  maskedPlaceholder?: string;
 }
 
 export function ChartCard(props: ChartCardProps): JSX.Element {
@@ -116,11 +123,10 @@ export function ChartCard(props: ChartCardProps): JSX.Element {
               type="button"
               onClick={() => setShowPoints((v) => !v)}
               aria-pressed={showPoints() ? "true" : "false"}
-              class={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                showPoints()
+              class={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${showPoints()
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
+                }`}
             >
               Pontos
             </button>
@@ -138,19 +144,41 @@ export function ChartCard(props: ChartCardProps): JSX.Element {
         </div>
       </div>
 
-      <div class="mt-4">
-        <GenericChart
-          data={chartData()}
-          type={effectiveType()}
-          series={visibleSeries()}
-          ariaLabel={props.title}
-          height={props.height ?? 320}
-          showPoints={showPoints()}
-          curveStyle={props.curveStyle}
-          valueFormatter={props.valueFormatter}
-          dateFormatter={props.dateFormatter}
-          tooltipDetails={props.tooltipDetails}
-        />
+      <div class="relative mt-4">
+        <div
+          class={props.isMasked ? "pointer-events-none select-none filter blur-md transition-all" : "transition-all"}
+        >
+          <GenericChart
+            data={chartData()}
+            type={effectiveType()}
+            series={visibleSeries()}
+            ariaLabel={props.title}
+            height={props.height ?? 320}
+            showPoints={showPoints()}
+            curveStyle={props.curveStyle}
+            valueFormatter={props.valueFormatter}
+            dateFormatter={props.dateFormatter}
+            tooltipDetails={props.tooltipDetails}
+          />
+        </div>
+
+        <Show when={props.isMasked}>
+          <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/60 p-4 text-center backdrop-blur-xs">
+            <p class="text-sm font-medium text-foreground">
+              {props.maskedPlaceholder ?? "Valores ocultos"}
+            </p>
+            <Show when={props.onToggleMask}>
+              <button
+                type="button"
+                onClick={() => props.onToggleMask?.()}
+                class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
+              >
+                <LucideEye class="size-3.5" />
+                <span>Mostrar valores</span>
+              </button>
+            </Show>
+          </div>
+        </Show>
       </div>
     </div>
   );

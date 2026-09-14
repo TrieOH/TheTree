@@ -3,6 +3,7 @@ import { createSignal, onSettled, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
+import EyeIcon from "~icons/lucide/eye";
 import LogOutIcon from "~icons/lucide/log-out";
 import PaletteIcon from "~icons/lucide/palette";
 import PencilIcon from "~icons/lucide/pencil";
@@ -12,7 +13,9 @@ import UserIcon from "~icons/lucide/user-round";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 
 import {
+  readDashboardMonetaryPreference,
   readInplaceEditPreference,
+  saveDashboardMonetaryPreference,
   saveInplaceEditPreference,
 } from "@/features/profile/lib/preferences";
 
@@ -40,6 +43,9 @@ type IconComponent = () => JSX.Element;
 const ArrowLeft =
   ArrowLeftIcon as unknown as IconComponent;
 
+const Eye =
+  EyeIcon as unknown as IconComponent;
+
 const LogOut =
   LogOutIcon as unknown as IconComponent;
 
@@ -61,8 +67,14 @@ function ProfileConfigPage() {
     setInplaceEditEnabled,
   ] = createSignal(false);
 
+  const [
+    dashboardMonetaryDefault,
+    setDashboardMonetaryDefault,
+  ] = createSignal(false);
+
   onSettled(() => {
     setInplaceEditEnabled(readInplaceEditPreference());
+    setDashboardMonetaryDefault(readDashboardMonetaryPreference());
   });
 
   const toggleInplaceEditing = () => {
@@ -70,6 +82,16 @@ function ProfileConfigPage() {
       const next = !enabled;
 
       saveInplaceEditPreference(next);
+
+      return next;
+    });
+  };
+
+  const toggleDashboardMonetaryDefault = () => {
+    setDashboardMonetaryDefault((enabled) => {
+      const next = !enabled;
+
+      saveDashboardMonetaryPreference(next);
 
       return next;
     });
@@ -115,6 +137,30 @@ function ProfileConfigPage() {
             onClick={toggleInplaceEditing}
           >
             {inplaceEditEnabled() ? "Desativar" : "Ativar"}
+          </button>
+        </div>
+      ),
+    },
+    {
+      value: "dashboard-monetary",
+      title: <AccordionTitle icon={Eye} title="Valores na dashboard" />,
+      content: (
+        <div class="flex min-w-0 flex-col gap-3 rounded-sm border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div class="min-w-0">
+            <p class="text-xs leading-relaxed text-muted-foreground">
+              Exibir valores monetários por padrão ao abrir as dashboards do painel de administração (quando desativado, iniciam ocultos).
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-pressed={dashboardMonetaryDefault() ? "true" : "false"}
+            class={`h-9 w-full shrink-0 rounded-md border px-4 text-sm font-medium transition-colors sm:w-auto ${dashboardMonetaryDefault()
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background text-foreground hover:bg-muted"
+              }`}
+            onClick={toggleDashboardMonetaryDefault}
+          >
+            {dashboardMonetaryDefault() ? "Desativar" : "Ativar por padrão"}
           </button>
         </div>
       ),

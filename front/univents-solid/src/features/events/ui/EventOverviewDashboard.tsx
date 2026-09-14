@@ -1,7 +1,9 @@
 import type { JSX } from "@solidjs/web";
-import { For } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import CalendarRangeIcon from "~icons/lucide/calendar-range";
 import CircleAlertIcon from "~icons/lucide/circle-alert";
+import EyeIcon from "~icons/lucide/eye";
+import EyeOffIcon from "~icons/lucide/eye-off";
 import Layers3Icon from "~icons/lucide/layers-3";
 import PackageIcon from "~icons/lucide/package";
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
@@ -11,11 +13,14 @@ import { ChartCard } from "@/widgets/ui/ChartCard";
 import { DashboardBarList } from "@/widgets/ui/DashboardBarList";
 import { DashboardPanel } from "@/widgets/ui/DashboardPanel";
 import { DashboardStatCard } from "@/widgets/ui/DashboardStatCard";
+import { useMonetaryVisibility } from "../lib/use-monetary-visibility";
 import type { EventOverviewMetrics } from "../model/event-overview";
 
 type IconComp = (props: { class?: string }) => JSX.Element;
 const LucideCalendarRange = CalendarRangeIcon as unknown as IconComp;
 const LucideCircleAlert = CircleAlertIcon as unknown as IconComp;
+const LucideEye = EyeIcon as unknown as IconComp;
+const LucideEyeOff = EyeOffIcon as unknown as IconComp;
 const LucideLayers3 = Layers3Icon as unknown as IconComp;
 const LucidePackage = PackageIcon as unknown as IconComp;
 const LucideShoppingBag = ShoppingBagIcon as unknown as IconComp;
@@ -45,6 +50,12 @@ export function EventOverviewDashboard(props: {
   metrics: EventOverviewMetrics;
 }): JSX.Element {
   const m = () => props.metrics;
+  const { showMonetary, toggleMonetary } = useMonetaryVisibility();
+
+  const profitValueFormatter = createMemo(() => {
+    const show = showMonetary();
+    return (value: number) => (show ? wholeCurrency.format(value) : "••••");
+  });
 
   const revenueBars = () =>
     m()
@@ -53,7 +64,7 @@ export function EventOverviewDashboard(props: {
         id: edition.name,
         label: edition.name,
         value: edition.revenue,
-        detail: currency.format(edition.revenue / 100),
+        detail: showMonetary() ? currency.format(edition.revenue / 100) : "••••",
       }));
 
   const statusBars = () =>
@@ -69,9 +80,26 @@ export function EventOverviewDashboard(props: {
   const summaryMetrics = () => [
     {
       label: "Receita aprovada",
-      value: currency.format(m().revenue / 100),
-      hint: "Somente compras aprovadas",
+      value: (
+        <span class="inline-flex items-center gap-2">
+          <span>{showMonetary() ? currency.format(m().revenue / 100) : "••••"}</span>
+        </span>
+      ),
+      hint: showMonetary() ? "Somente compras aprovadas" : "Valores monetários ocultos",
       icon: (p: { class?: string }) => <LucideWallet class={p.class ?? "size-4"} />,
+      action: (
+        <button
+          type="button"
+          onClick={toggleMonetary}
+          title={showMonetary() ? "Ocultar valores monetários" : "Exibir valores monetários"}
+          aria-label={showMonetary() ? "Ocultar valores monetários" : "Exibir valores monetários"}
+          class="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Show when={showMonetary()} fallback={<LucideEyeOff class="size-3.5" />}>
+            <LucideEye class="size-3.5" />
+          </Show>
+        </button>
+      ),
     },
     {
       label: "Participantes",
@@ -161,6 +189,20 @@ export function EventOverviewDashboard(props: {
           description="Receita aprovada comparada entre as edições."
           icon={(p) => <LucideWallet class={p.class} />}
           class="rounded-xl border border-border bg-card p-5 shadow-xs"
+          action={
+            <button
+              type="button"
+              onClick={toggleMonetary}
+              title={showMonetary() ? "Ocultar valores monetários" : "Exibir valores monetários"}
+              aria-label={showMonetary() ? "Ocultar valores monetários" : "Exibir valores monetários"}
+              class="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Show when={showMonetary()} fallback={<LucideEyeOff class="size-3.5" />}>
+                <LucideEye class="size-3.5" />
+              </Show>
+              <span>{showMonetary() ? "Ocultar valores" : "Mostrar valores"}</span>
+            </button>
+          }
         >
           <div class="mt-2">
             <DashboardBarList
@@ -191,7 +233,10 @@ export function EventOverviewDashboard(props: {
               value: String(datum.purchases ?? 0),
             },
           ]}
-          valueFormatter={(value) => wholeCurrency.format(value)}
+          valueFormatter={profitValueFormatter()}
+          isMasked={!showMonetary()}
+          onToggleMask={toggleMonetary}
+          maskedPlaceholder="Valores financeiros ocultos por padrão"
         />
       </section>
     </>

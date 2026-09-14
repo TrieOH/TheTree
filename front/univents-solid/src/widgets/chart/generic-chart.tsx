@@ -172,14 +172,14 @@ export function GenericChart(props: GenericChartProps): JSX.Element {
       x:
         t === "bar"
           ? {
-              scale: () => scaleBand().padding(0.28),
-              axis: { ticks: { format: dFmt } },
-            }
+            scale: () => scaleBand().padding(0.28),
+            axis: { ticks: { format: dFmt } },
+          }
           : {
-              scale: scaleUtc,
-              nice: false,
-              axis: { ticks: { format: dFmt } },
-            },
+            scale: scaleUtc,
+            nice: false,
+            axis: { ticks: { format: dFmt } },
+          },
       y: {
         scale: scaleLinear,
         nice: true,
@@ -287,7 +287,7 @@ export function GenericChart(props: GenericChartProps): JSX.Element {
 
             return (
               <Portal mount={target().element}>
-                <div class="min-w-[9rem] px-1 py-0.5">
+                <div class="min-w-36 px-1 py-0.5">
                   <p class="mb-1.5 text-[11px] font-medium text-muted-foreground">
                     Período:{" "}
                     {points()[0] ? dateFmt()(points()[0].xValue) : ""}

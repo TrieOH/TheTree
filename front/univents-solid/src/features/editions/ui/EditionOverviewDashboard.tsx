@@ -1,7 +1,9 @@
 import type { JSX } from "@solidjs/web";
-import { For } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import CalendarRangeIcon from "~icons/lucide/calendar-range";
 import CircleAlertIcon from "~icons/lucide/circle-alert";
+import EyeIcon from "~icons/lucide/eye";
+import EyeOffIcon from "~icons/lucide/eye-off";
 import Layers3Icon from "~icons/lucide/layers-3";
 import PackageIcon from "~icons/lucide/package";
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
@@ -11,11 +13,14 @@ import { ChartCard } from "@/widgets/ui/ChartCard";
 import { DashboardBarList } from "@/widgets/ui/DashboardBarList";
 import { DashboardPanel } from "@/widgets/ui/DashboardPanel";
 import { DashboardStatCard } from "@/widgets/ui/DashboardStatCard";
+import { useMonetaryVisibility } from "@/features/events/lib/use-monetary-visibility";
 import type { EditionOverviewMetrics } from "../model/edition-overview";
 
 type IconComp = (props: { class?: string }) => JSX.Element;
 const LucideCalendarRange = CalendarRangeIcon as unknown as IconComp;
 const LucideCircleAlert = CircleAlertIcon as unknown as IconComp;
+const LucideEye = EyeIcon as unknown as IconComp;
+const LucideEyeOff = EyeOffIcon as unknown as IconComp;
 const LucideLayers3 = Layers3Icon as unknown as IconComp;
 const LucidePackage = PackageIcon as unknown as IconComp;
 const LucideShoppingBag = ShoppingBagIcon as unknown as IconComp;
@@ -45,6 +50,12 @@ export function EditionOverviewDashboard(props: {
   metrics: EditionOverviewMetrics;
 }): JSX.Element {
   const m = () => props.metrics;
+  const { showMonetary, toggleMonetary } = useMonetaryVisibility();
+
+  const profitValueFormatter = createMemo(() => {
+    const show = showMonetary();
+    return (value: number) => (show ? wholeCurrency.format(value) : "••••");
+  });
 
   const statusBars = () =>
     purchaseStatuses.map((item) => ({
@@ -57,9 +68,26 @@ export function EditionOverviewDashboard(props: {
   const summaryMetrics = () => [
     {
       label: "Receita aprovada",
-      value: currency.format(m().revenue / 100),
-      hint: "Compras aprovadas",
+      value: (
+        <span class="inline-flex items-center gap-2">
+          <span>{showMonetary() ? currency.format(m().revenue / 100) : "••••"}</span>
+        </span>
+      ),
+      hint: showMonetary() ? "Compras aprovadas" : "Valores monetários ocultos",
       icon: (p: { class?: string }) => <LucideWallet class={p.class ?? "size-4"} />,
+      action: (
+        <button
+          type="button"
+          onClick={toggleMonetary}
+          title={showMonetary() ? "Ocultar valores monetários" : "Exibir valores monetários"}
+          aria-label={showMonetary() ? "Ocultar valores monetários" : "Exibir valores monetários"}
+          class="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Show when={showMonetary()} fallback={<LucideEyeOff class="size-3.5" />}>
+            <LucideEye class="size-3.5" />
+          </Show>
+        </button>
+      ),
     },
     {
       label: "Participantes",
@@ -158,7 +186,10 @@ export function EditionOverviewDashboard(props: {
           tooltipDetails={(datum) => [
             { label: "Compras", value: String(datum.purchases ?? 0) },
           ]}
-          valueFormatter={(value) => wholeCurrency.format(value)}
+          valueFormatter={profitValueFormatter()}
+          isMasked={!showMonetary()}
+          onToggleMask={toggleMonetary}
+          maskedPlaceholder="Valores financeiros ocultos por padrão"
         />
       </section>
     </>
