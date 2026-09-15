@@ -23,6 +23,7 @@ export function AdminCreateEventCard(
       onClick={props.onCreate}
       index={props.index}
       animate={props.animate}
+      layout="horizontal"
       minHeight="min-h-[4rem]"
     />
   );

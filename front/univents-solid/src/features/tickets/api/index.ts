@@ -1,12 +1,16 @@
 import { orvalData } from "@trieoh/api-client";
 import {
+  createTicketType,
   getEditionAttendeeCount,
   getEditionMyTicket,
   listTicketTypes,
+  patchTicketType,
 } from "@trieoh/univents-api";
 import type {
   AttendeeCount,
+  CreateTicketTypeRequest,
   MyTicket,
+  PatchTicketTypeRequest,
   TicketType,
 } from "@trieoh/univents-api/schemas";
 import { ticketKeys } from "./query-keys";
@@ -34,3 +38,15 @@ export const attendeeCountQueryOptions = (editionId: string) => ({
       orvalData<AttendeeCount>,
     ),
 });
+
+export const createTicketFn = (
+  data: CreateTicketTypeRequest,
+  editionId: string,
+) =>
+  createTicketType(editionId, data).then(orvalData<TicketType>);
+
+export const patchTicketFn = (
+  data: PatchTicketTypeRequest,
+  ticketId: string,
+) =>
+  patchTicketType(ticketId, data).then(orvalData<TicketType>);
