@@ -31,8 +31,10 @@ import { Route as AdminEventsEventIdIndexRouteImport } from './routes/admin/even
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
+import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
 import { Route as AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/purchases/index'
 import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/tickets/index'
+import { Route as AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/$productId.variants/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -147,6 +149,12 @@ const AdminEventsEventIdEditionsEditionIdIndexRoute =
     path: '/events/$eventId/editions/$editionId/',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/products/',
+    path: '/events/$eventId/editions/$editionId/products/',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute =
   AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport.update({
     id: '/events/$eventId_/editions/$editionId/purchases/',
@@ -159,6 +167,14 @@ const AdminEventsEventIdEditionsEditionIdTicketsIndexRoute =
     path: '/events/$eventId/editions/$editionId/tickets/',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport.update(
+    {
+      id: '/events/$eventId_/editions/$editionId/products/$productId/variants/',
+      path: '/events/$eventId/editions/$editionId/products/$productId/variants/',
+      getParentRoute: () => AdminRoute,
+    } as any,
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -183,8 +199,10 @@ export interface FileRoutesByFullPath {
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/purchases/': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   '/admin/events/$eventId/editions/$editionId/tickets/': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/products/$productId/variants/': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -209,8 +227,10 @@ export interface FileRoutesByTo {
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId/editions/$editionId/products': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/purchases': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   '/admin/events/$eventId/editions/$editionId/tickets': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  '/admin/events/$eventId/editions/$editionId/products/$productId/variants': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -236,8 +256,10 @@ export interface FileRoutesById {
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId_/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/purchases/': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   '/admin/events/$eventId_/editions/$editionId/tickets/': typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/': typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -264,8 +286,10 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId/editions/$editionId/'
+    | '/admin/events/$eventId/editions/$editionId/products/'
     | '/admin/events/$eventId/editions/$editionId/purchases/'
     | '/admin/events/$eventId/editions/$editionId/tickets/'
+    | '/admin/events/$eventId/editions/$editionId/products/$productId/variants/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -290,8 +314,10 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/members'
     | '/admin/events/$eventId/editions/$editionId'
+    | '/admin/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/$editionId/purchases'
     | '/admin/events/$eventId/editions/$editionId/tickets'
+    | '/admin/events/$eventId/editions/$editionId/products/$productId/variants'
   id:
     | '__root__'
     | '/'
@@ -316,8 +342,10 @@ export interface FileRouteTypes {
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId_/editions/$editionId/'
+    | '/admin/events/$eventId_/editions/$editionId/products/'
     | '/admin/events/$eventId_/editions/$editionId/purchases/'
     | '/admin/events/$eventId_/editions/$editionId/tickets/'
+    | '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -495,6 +523,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/events/$eventId_/editions/$editionId/products/': {
+      id: '/admin/events/$eventId_/editions/$editionId/products/'
+      path: '/events/$eventId/editions/$editionId/products'
+      fullPath: '/admin/events/$eventId/editions/$editionId/products/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/events/$eventId_/editions/$editionId/purchases/': {
       id: '/admin/events/$eventId_/editions/$editionId/purchases/'
       path: '/events/$eventId/editions/$editionId/purchases'
@@ -509,6 +544,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/': {
+      id: '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/'
+      path: '/events/$eventId/editions/$editionId/products/$productId/variants'
+      fullPath: '/admin/events/$eventId/editions/$editionId/products/$productId/variants/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -519,8 +561,10 @@ interface AdminRouteChildren {
   AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
   AdminEventsEventIdMembersIndexRoute: typeof AdminEventsEventIdMembersIndexRoute
   AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  AdminEventsEventIdEditionsEditionIdProductsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
   AdminEventsEventIdEditionsEditionIdTicketsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRoute
+  AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -531,10 +575,14 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEventsEventIdMembersIndexRoute: AdminEventsEventIdMembersIndexRoute,
   AdminEventsEventIdEditionsEditionIdIndexRoute:
     AdminEventsEventIdEditionsEditionIdIndexRoute,
+  AdminEventsEventIdEditionsEditionIdProductsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdProductsIndexRoute,
   AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute:
     AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute,
   AdminEventsEventIdEditionsEditionIdTicketsIndexRoute:
     AdminEventsEventIdEditionsEditionIdTicketsIndexRoute,
+  AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

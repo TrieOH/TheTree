@@ -10,6 +10,7 @@ import { useUploadQueue } from "../hooks/use-upload-queue";
 import type { UploadTask, UploadTaskStatus } from "../model/types";
 import "@/features/events/api/upload-association";
 import "@/features/editions/api/upload-association";
+import "@/features/products/api/upload-association";
 
 const notificationStatuses = new Set<UploadTaskStatus>([
   "completed",
