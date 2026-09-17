@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
-import { createFileRoute, Outlet } from "@tanstack/solid-router";
+import { createFileRoute, Outlet, useLocation } from "@tanstack/solid-router";
+import { Show } from "solid-js";
 
 import { cn } from "@trieoh/ui-solid";
 
@@ -29,32 +30,56 @@ function AdminLayout(): JSX.Element {
  * Same shell as the React admin: rail above `lg`, drawer below it, a sticky
  * breadcrumb on desktop and a topbar with the drawer trigger on mobile. The
  * content padding follows the rail width so nothing hides behind it.
+ *
+ * In fullscreen editor routes (certifications/editor, badges/editor, programs/calendar,
+ * occurrences draw), the sidebar, topbar, and breadcrumb are hidden so the editor
+ * fills the full screen.
  */
 function AdminShell(): JSX.Element {
   const { collapsed } = useSidebar();
+  const location = useLocation();
+
+  const isFullScreenEditor = () => {
+    const p = location().pathname;
+    return (
+      p.endsWith("/certifications/editor") ||
+      p.endsWith("/badges/editor") ||
+      p.endsWith("/programs/calendar") ||
+      (p.includes("/occurrences/") && p.endsWith("/draw"))
+    );
+  };
 
   return (
-    <div class="min-h-dvh bg-background">
-      <Sidebar />
-
-      <div
-        class={cn(
-          "flex min-h-dvh flex-col transition-[padding] duration-300 ease-in-out",
-          collapsed() ? "lg:pl-18" : "lg:pl-72",
-        )}
-      >
-        <div class="print:hidden">
-          <MobileTopbar />
-        </div>
-
-        <div class="sticky top-0 z-30 hidden bg-card/95 shadow-sm shadow-black/5 lg:block">
-          <Breadcrumb />
-        </div>
-
-        <main class="flex-1 px-6 py-6 pb-28">
+    <Show
+      when={!isFullScreenEditor()}
+      fallback={
+        <div class="h-dvh overflow-hidden bg-background">
           <Outlet />
-        </main>
+        </div>
+      }
+    >
+      <div class="min-h-dvh bg-background">
+        <Sidebar />
+
+        <div
+          class={cn(
+            "flex min-h-dvh flex-col transition-[padding] duration-300 ease-in-out",
+            collapsed() ? "lg:pl-18" : "lg:pl-72",
+          )}
+        >
+          <div class="print:hidden">
+            <MobileTopbar />
+          </div>
+
+          <div class="sticky top-0 z-30 hidden bg-card/95 shadow-sm shadow-black/5 lg:block">
+            <Breadcrumb />
+          </div>
+
+          <main class="flex-1 px-6 py-6 pb-28">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </Show>
   );
 }

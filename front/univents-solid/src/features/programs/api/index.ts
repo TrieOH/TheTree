@@ -1,18 +1,31 @@
 import { orvalData } from "@trieoh/api-client";
 import {
+  createProgram,
+  createProgramOccurrence,
+  deleteOccurrence,
+  deleteProgram,
   deregisterOccurrence,
   getOccurrence,
   listEditionOccurrences,
   listEditionPrograms,
   listMyParticipations,
+  listOccurrenceParticipants,
+  markParticipationAttended,
+  patchOccurrence,
+  patchProgram,
   registerOccurrence,
 } from "@trieoh/univents-api";
 import type {
+  CreateProgramOccurrenceRequest,
+  CreateProgramRequest,
   MyParticipation,
+  MyTicket,
+  PatchProgramOccurrenceRequest,
+  PatchProgramRequest,
   Program,
   ProgramOccurrence,
+  ProgramParticipant,
   ProgramParticipation,
-  MyTicket,
 } from "@trieoh/univents-api/schemas";
 import { programKeys } from "./query-keys";
 import type { QueryClient } from "@tanstack/query-core";
@@ -21,6 +34,13 @@ import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EventI } from "@/features/events/model";
 import type { EditionI } from "@/features/editions/model";
 import { myTicketQueryOptions } from "@/features/tickets/api";
+import type {
+  OccurrenceCreateOutput,
+  OccurrenceI,
+  ProgramCreateInput,
+  ProgramCreateOutput,
+  ProgramI,
+} from "../model";
 
 export type ProgramPageData = {
   event: EventI;
@@ -57,14 +77,14 @@ export const programPageQueryOptions = (
 export const programsQueryOptions = (editionId: string) => ({
   queryKey: programKeys.byEdition(editionId),
   queryFn: () =>
-    listEditionPrograms(editionId, { public: true }).then(orvalData<Program[]>),
+    listEditionPrograms(editionId).then(orvalData<ProgramI[]>),
 });
 
 export const occurrencesQueryOptions = (editionId: string) => ({
   queryKey: programKeys.occurrences(editionId),
   queryFn: () =>
-    listEditionOccurrences(editionId, { public: true }).then(
-      orvalData<ProgramOccurrence[]>,
+    listEditionOccurrences(editionId).then(
+      orvalData<OccurrenceI[]>,
     ),
 });
 
@@ -84,8 +104,58 @@ export const myParticipationsQueryOptions = (editionId: string) => ({
     ),
 });
 
+export const createProgramFn = (
+  editionId: string,
+  data: ProgramCreateInput | ProgramCreateOutput,
+) =>
+  createProgram(editionId, data as CreateProgramRequest).then(
+    orvalData<ProgramI>,
+  );
+
+export const patchProgramFn = (
+  programId: string,
+  data: ProgramCreateInput | ProgramCreateOutput,
+) =>
+  patchProgram(programId, data as PatchProgramRequest).then(
+    orvalData<ProgramI>,
+  );
+
+export const deleteProgramFn = (programId: string) =>
+  deleteProgram(programId).then(orvalData<ProgramI>);
+
+export const createOccurrenceFn = (
+  programId: string,
+  data: OccurrenceCreateOutput,
+) =>
+  createProgramOccurrence(
+    programId,
+    data as CreateProgramOccurrenceRequest,
+  ).then(orvalData<OccurrenceI>);
+
+export const patchOccurrenceFn = (
+  occurrenceId: string,
+  data: OccurrenceCreateOutput,
+) =>
+  patchOccurrence(
+    occurrenceId,
+    data as PatchProgramOccurrenceRequest,
+  ).then(orvalData<OccurrenceI>);
+
+export const deleteOccurrenceFn = (occurrenceId: string) =>
+  deleteOccurrence(occurrenceId).then(orvalData<OccurrenceI>);
+
 export const registerOccurrenceFn = (occurrenceId: string) =>
   registerOccurrence(occurrenceId).then(orvalData<ProgramParticipation>);
 
 export const deregisterOccurrenceFn = (occurrenceId: string) =>
   deregisterOccurrence(occurrenceId).then(orvalData<ProgramParticipation>);
+
+export const listOccurrenceParticipantsFn = (occurrenceId: string) =>
+  listOccurrenceParticipants(occurrenceId).then(
+    orvalData<ProgramParticipant[]>,
+  );
+
+export const markParticipationAttendedFn = (participationId: string) =>
+  markParticipationAttended(participationId).then(
+    orvalData<ProgramParticipation>,
+  );
