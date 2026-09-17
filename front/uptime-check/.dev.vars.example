@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local dev (`wrangler dev --test-scheduled`).
+# ntfy topic that receives dead/recovery pings. Use a dedicated topic.
+NTFY_URL=https://ntfy.trieoh.com/uptime-alerts

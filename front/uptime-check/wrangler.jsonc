@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uptime-check",
+  "compatibility_date": "2026-04-23",
+  "main": "src/index.ts",
+  "observability": {
+    "enabled": true
+  },
+  // Checks every 5 minutes; daily compaction (5m -> hourly -> daily averages) at 03:40 UTC.
+  "triggers": {
+    "crons": ["*/30 * * * *", "40 3 * * *"]
+  },
+  // Create with: pnpm --filter uptime-check exec wrangler kv namespace create UPTIME
+  // then paste the id here.
+  "kv_namespaces": [
+    {
+      "binding": "UPTIME",
+      "id": "ab7fb2f04a874808b21cad9882029764"
+    }
+  ],
+  // Public status page on the trieoh.com zone:
+  "routes": [{ "pattern": "status.trieoh.com", "custom_domain": true }]
+}
