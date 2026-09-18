@@ -4,6 +4,7 @@ import {
   Show,
   createMemo,
   createSignal,
+  onCleanup,
   onSettled,
 } from "solid-js";
 
@@ -215,6 +216,22 @@ export function PaginatedContainer<T>(props: PaginatedContainerProps<T>) {
       : undefined,
   );
   const [sortOpen, setSortOpen] = createSignal(false);
+  let sortMenuEl: HTMLElement | undefined;
+
+  const clampSortMenu = (el?: HTMLElement | null) => {
+    const target = el ?? sortMenuEl;
+    if (!target || typeof window === "undefined") return;
+    requestAnimationFrame(() => {
+      target.style.transform = "";
+      const rect = target.getBoundingClientRect();
+      const vw = window.innerWidth;
+      if (rect.left < 8) {
+        target.style.transform = `translateX(${8 - rect.left}px)`;
+      } else if (rect.right > vw - 8) {
+        target.style.transform = `translateX(${vw - 8 - rect.right}px)`;
+      }
+    });
+  };
   const [columns, setColumns] = createSignal(1);
   const [resized, setResized] = createSignal(false);
   const [measured, setMeasured] = createSignal(false);
@@ -309,6 +326,13 @@ export function PaginatedContainer<T>(props: PaginatedContainerProps<T>) {
       handleKeyDown,
     );
 
+    const handleResize = () => {
+      if (sortOpen()) {
+        clampSortMenu();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
     return () => {
       document.removeEventListener(
         "pointerdown",
@@ -318,6 +342,10 @@ export function PaginatedContainer<T>(props: PaginatedContainerProps<T>) {
       document.removeEventListener(
         "keydown",
         handleKeyDown,
+      );
+      window.removeEventListener(
+        "resize",
+        handleResize,
       );
 
       resizeObserver?.disconnect();
@@ -620,69 +648,71 @@ export function PaginatedContainer<T>(props: PaginatedContainerProps<T>) {
           </div>
         </Show>
 
-        {/* HEADER ACTIONS */}
-        <Show when={props.headerActions}>
-          <div class="flex shrink-0 items-center gap-2">
+        {/* HEADER ACTIONS & SORT */}
+        <Show when={props.headerActions || props.sortFields?.length}>
+          <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
             {props.headerActions}
-          </div>
-        </Show>
 
-        {/* SORT */}
-        <Show when={props.sortFields?.length}>
-          <div
-            ref={(element) => {
-              sortRoot = element;
-            }}
-            class="relative ml-auto shrink-0"
-          >
-            <button
-              type="button"
-              aria-label="Ordenar"
-              title="Ordenar"
-              aria-expanded={
-                sortOpen()
-                  ? "true"
-                  : "false"
-              }
-              aria-haspopup="dialog"
-              onClick={() =>
-                setSortOpen(
-                  (open) => !open,
-                )
-              }
-              class="inline-flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              {/* FILTER / SORT ICON */}
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-                class="size-4"
-              >
-                <path
-                  d="M3 6h18"
-                  stroke-linecap="round"
-                />
-
-                <path
-                  d="M6 12h12"
-                  stroke-linecap="round"
-                />
-
-                <path
-                  d="M10 18h4"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-
-            <Show when={sortOpen()}>
+            {/* SORT */}
+            <Show when={props.sortFields?.length}>
               <div
-                role="dialog"
-                aria-label="Opções de ordenação"
-                class="
+                ref={(element) => {
+                  sortRoot = element;
+                }}
+                class="relative shrink-0"
+              >
+                <button
+                  type="button"
+                  aria-label="Ordenar"
+                  title="Ordenar"
+                  aria-expanded={
+                    sortOpen()
+                      ? "true"
+                      : "false"
+                  }
+                  aria-haspopup="dialog"
+                  onClick={() =>
+                    setSortOpen(
+                      (open) => !open,
+                    )
+                  }
+                  class="inline-flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {/* FILTER / SORT ICON */}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                    class="size-4"
+                  >
+                    <path
+                      d="M3 6h18"
+                      stroke-linecap="round"
+                    />
+
+                    <path
+                      d="M6 12h12"
+                      stroke-linecap="round"
+                    />
+
+                    <path
+                      d="M10 18h4"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+
+                <Show when={sortOpen()}>
+                  <div
+                    ref={(el) => {
+                      sortMenuEl = el;
+                      clampSortMenu(el);
+                    }}
+                    role="dialog"
+                    aria-label="Opções de ordenação"
+                    class="
                   absolute
                   right-0
                   top-[calc(100%+6px)]
@@ -698,204 +728,206 @@ export function PaginatedContainer<T>(props: PaginatedContainerProps<T>) {
                   shadow-lg
                   shadow-black/5
                 "
-              >
-                {/* HEADER */}
-                <div class="border-b border-border px-3 py-2">
-                  <p class="text-xs font-medium text-muted-foreground">
-                    Ordenar por
-                  </p>
-                </div>
+                  >
+                    {/* HEADER */}
+                    <div class="border-b border-border px-3 py-2">
+                      <p class="text-xs font-medium text-muted-foreground">
+                        Ordenar por
+                      </p>
+                    </div>
 
-                {/* SORT FIELDS */}
-                <div class="p-1.5">
-                  <For each={props.sortFields}>
-                    {(field) => {
-                      const isActive = () =>
-                        activeSort()?.field ===
-                        field.key;
-
-                      return (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            selectSortField(
-                              field,
-                            )
-                          }
-                          class={cn(
-                            "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors",
-                            isActive()
-                              ? "bg-muted text-foreground"
-                              : "text-foreground hover:bg-muted/70",
-                          )}
-                        >
-                          {/* FIELD ICON */}
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            aria-hidden="true"
-                            class={cn(
-                              "size-4 shrink-0",
-                              isActive()
-                                ? "text-foreground"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            <path
-                              d="M7 7h10M7 12h7M7 17h4"
-                              stroke-linecap="round"
-                            />
-                          </svg>
-
-                          {/* LABEL + DESCRIPTION */}
-                          <span class="min-w-0 flex-1">
-                            <span
-                              class={cn(
-                                "block truncate text-sm",
-                                isActive() &&
-                                "font-medium",
-                              )}
-                            >
-                              {field.label}
-                            </span>
-
-                            <Show when={isActive()}>
-                              <span class="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
-                                {activeSort()
-                                  ?.direction ===
-                                  "asc"
-                                  ? (
-                                    field.ascLabel ??
-                                    "Ascendente"
-                                  )
-                                  : (
-                                    field.descLabel ??
-                                    "Descendente"
-                                  )}
-                              </span>
-                            </Show>
-                          </span>
-
-                          {/* CURRENT DIRECTION ARROW */}
-                          <Show when={isActive()}>
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              aria-hidden="true"
-                              class="size-4 shrink-0 text-primary"
-                            >
-                              <Show
-                                when={
-                                  activeSort()
-                                    ?.direction ===
-                                  "asc"
-                                }
-                                fallback={
-                                  <path
-                                    d="M12 5v14M18 13l-6 6-6-6"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                  />
-                                }
-                              >
-                                <path
-                                  d="M12 19V5M6 11l6-6 6 6"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                />
-                              </Show>
-                            </svg>
-                          </Show>
-                        </button>
-                      );
-                    }}
-                  </For>
-                </div>
-
-                {/* DIRECTION */}
-                <Show when={activeSort()}>
-                  <div class="border-t border-border p-2">
-                    <div class="grid grid-cols-2 gap-1.5">
-                      <For
-                        each={
-                          [
-                            "asc",
-                            "desc",
-                          ] as const
-                        }
-                      >
-                        {(direction) => {
+                    {/* SORT FIELDS */}
+                    <div class="p-1.5">
+                      <For each={props.sortFields}>
+                        {(field) => {
                           const isActive = () =>
-                            activeSort()
-                              ?.direction ===
-                            direction;
+                            activeSort()?.field ===
+                            field.key;
 
                           return (
                             <button
                               type="button"
-                              onClick={() => {
-                                const sort =
-                                  activeSort();
-
-                                if (!sort) {
-                                  return;
-                                }
-
-                                changeSort({
-                                  ...sort,
-                                  direction,
-                                });
-                              }}
+                              onClick={() =>
+                                selectSortField(
+                                  field,
+                                )
+                              }
                               class={cn(
-                                "flex min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                                "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors",
                                 isActive()
-                                  ? "border-primary/30 bg-primary/10 text-primary"
-                                  : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                                  ? "bg-muted text-foreground"
+                                  : "text-foreground hover:bg-muted/70",
                               )}
                             >
+                              {/* FIELD ICON */}
                               <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
                                 stroke-width="2"
                                 aria-hidden="true"
-                                class="size-3.5 shrink-0"
+                                class={cn(
+                                  "size-4 shrink-0",
+                                  isActive()
+                                    ? "text-foreground"
+                                    : "text-muted-foreground",
+                                )}
                               >
-                                <Show
-                                  when={
-                                    direction ===
-                                    "asc"
-                                  }
-                                  fallback={
+                                <path
+                                  d="M7 7h10M7 12h7M7 17h4"
+                                  stroke-linecap="round"
+                                />
+                              </svg>
+
+                              {/* LABEL + DESCRIPTION */}
+                              <span class="min-w-0 flex-1">
+                                <span
+                                  class={cn(
+                                    "block truncate text-sm",
+                                    isActive() &&
+                                    "font-medium",
+                                  )}
+                                >
+                                  {field.label}
+                                </span>
+
+                                <Show when={isActive()}>
+                                  <span class="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
+                                    {activeSort()
+                                      ?.direction ===
+                                      "asc"
+                                      ? (
+                                        field.ascLabel ??
+                                        "Ascendente"
+                                      )
+                                      : (
+                                        field.descLabel ??
+                                        "Descendente"
+                                      )}
+                                  </span>
+                                </Show>
+                              </span>
+
+                              {/* CURRENT DIRECTION ARROW */}
+                              <Show when={isActive()}>
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  aria-hidden="true"
+                                  class="size-4 shrink-0 text-primary"
+                                >
+                                  <Show
+                                    when={
+                                      activeSort()
+                                        ?.direction ===
+                                      "asc"
+                                    }
+                                    fallback={
+                                      <path
+                                        d="M12 5v14M18 13l-6 6-6-6"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      />
+                                    }
+                                  >
                                     <path
-                                      d="M12 5v14M18 13l-6 6-6-6"
+                                      d="M12 19V5M6 11l6-6 6 6"
                                       stroke-linecap="round"
                                       stroke-linejoin="round"
                                     />
-                                  }
-                                >
-                                  <path
-                                    d="M12 19V5M6 11l6-6 6 6"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                  />
-                                </Show>
-                              </svg>
-
-                              <span class="truncate">
-                                {directionLabel(
-                                  direction,
-                                )}
-                              </span>
+                                  </Show>
+                                </svg>
+                              </Show>
                             </button>
                           );
                         }}
                       </For>
                     </div>
+
+                    {/* DIRECTION */}
+                    <Show when={activeSort()}>
+                      <div class="border-t border-border p-2">
+                        <div class="grid grid-cols-2 gap-1.5">
+                          <For
+                            each={
+                              [
+                                "asc",
+                                "desc",
+                              ] as const
+                            }
+                          >
+                            {(direction) => {
+                              const isActive = () =>
+                                activeSort()
+                                  ?.direction ===
+                                direction;
+
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const sort =
+                                      activeSort();
+
+                                    if (!sort) {
+                                      return;
+                                    }
+
+                                    changeSort({
+                                      ...sort,
+                                      direction,
+                                    });
+                                  }}
+                                  class={cn(
+                                    "flex min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                                    isActive()
+                                      ? "border-primary/30 bg-primary/10 text-primary"
+                                      : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                                  )}
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    aria-hidden="true"
+                                    class="size-3.5 shrink-0"
+                                  >
+                                    <Show
+                                      when={
+                                        direction ===
+                                        "asc"
+                                      }
+                                      fallback={
+                                        <path
+                                          d="M12 5v14M18 13l-6 6-6-6"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                        />
+                                      }
+                                    >
+                                      <path
+                                        d="M12 19V5M6 11l6-6 6 6"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      />
+                                    </Show>
+                                  </svg>
+
+                                  <span class="truncate">
+                                    {directionLabel(
+                                      direction,
+                                    )}
+                                  </span>
+                                </button>
+                              );
+                            }}
+                          </For>
+                        </div>
+                      </div>
+                    </Show>
                   </div>
                 </Show>
               </div>

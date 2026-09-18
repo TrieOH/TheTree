@@ -1,13 +1,18 @@
 import type { JSX } from "@solidjs/web";
 import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
 import { useNavigate } from "@tanstack/solid-router";
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup } from "solid-js";
 
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
 import ChevronLeftIcon from "~icons/lucide/chevron-left";
 import ChevronRightIcon from "~icons/lucide/chevron-right";
+import FilterIcon from "~icons/lucide/filter";
 import GripVerticalIcon from "~icons/lucide/grip-vertical";
 import PlusIcon from "~icons/lucide/plus";
+import SearchIcon from "~icons/lucide/search";
+import { AlertModal } from "@/widgets/ui/AlertModal";
+import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
+import { toISODate } from "../lib/date";
 
 import { occurrencesQueryOptions, programsQueryOptions } from "@/features/programs/api";
 import {
@@ -35,8 +40,10 @@ import { YearView } from "./YearView";
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const ChevronLeft = ChevronLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const ChevronRight = ChevronRightIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Filter = FilterIcon as unknown as (props: { class?: string }) => JSX.Element;
 const GripVertical = GripVerticalIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Search = SearchIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface CalendarEditorProps {
   eventId: string;
@@ -76,10 +83,64 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
   const [drawModalOpen, setDrawModalOpen] = createSignal(false);
   const [drawOccurrence, setDrawOccurrence] = createSignal<OccurrenceI | null>(null);
 
-  // Filter by program
+  // Filter by program & advanced filters
   const [selectedProgramFilter, setSelectedProgramFilter] = createSignal<string | null>(
     props.initialProgramId ?? null,
   );
+  const [programSearch, setProgramSearch] = createSignal("");
+  const [programKindFilter, setProgramKindFilter] = createSignal<"all" | "activity" | "checkpoint">("all");
+  const [dateFilter, setDateFilter] = createSignal<string | null>(null);
+
+  // Occurrence deletion confirmation state
+  const [occurrenceToDelete, setOccurrenceToDelete] = createSignal<OccurrenceI | null>(null);
+  const [deletingOccurrence, setDeletingOccurrence] = createSignal(false);
+
+  // Filter Popover state
+  const [filterMenuOpen, setFilterMenuOpen] = createSignal(false);
+  let filterMenuRef: HTMLDivElement | undefined;
+  let filterPopoverEl: HTMLDivElement | undefined;
+
+  const clampCalendarFilter = (el?: HTMLElement | null) => {
+    const target = el ?? filterPopoverEl;
+    if (!target || typeof window === "undefined") return;
+    requestAnimationFrame(() => {
+      target.style.transform = "";
+      const rect = target.getBoundingClientRect();
+      const vw = window.innerWidth;
+      if (rect.left < 8) {
+        target.style.transform = `translateX(${8 - rect.left}px)`;
+      } else if (rect.right > vw - 8) {
+        target.style.transform = `translateX(${vw - 8 - rect.right}px)`;
+      }
+    });
+  };
+
+  if (typeof document !== "undefined") {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (filterMenuOpen() && filterMenuRef && !filterMenuRef.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && filterMenuOpen()) {
+        setFilterMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    onCleanup(() => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    });
+  }
+
+  const activeFilterCount = createMemo(() => {
+    let count = 0;
+    if (programSearch().trim().length > 0) count++;
+    if (programKindFilter() !== "all") count++;
+    if (dateFilter() !== null) count++;
+    return count;
+  });
 
   // Program color map
   const programColors = createMemo(() => {
@@ -90,11 +151,123 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
     return map;
   });
 
-  // Filtered occurrences
-  const visibleOccurrences = createMemo(() => {
-    if (!selectedProgramFilter()) return occurrences();
-    return occurrences().filter((oc) => oc.program_id === selectedProgramFilter());
+  // Unique dates with occurrences
+  const occurrenceDates = createMemo(() => {
+    const datesMap = new Map<string, number>();
+    for (const oc of occurrences()) {
+      const key = toISODate(new Date(oc.starts_at));
+      datesMap.set(key, (datesMap.get(key) ?? 0) + 1);
+    }
+    return Array.from(datesMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([dateKey, count]) => {
+        const [y, m, d] = dateKey.split("-").map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const weekday = dateObj.toLocaleDateString("pt-BR", { weekday: "short" });
+        return {
+          dateKey,
+          dateObj,
+          dayMonth: `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`,
+          weekday,
+          count,
+        };
+      });
   });
+
+  const calendarDateOptions = createMemo((): ComboboxOption[] => {
+    const list: ComboboxOption[] = [
+      { value: "all", label: "Todos os dias com horários" },
+    ];
+    for (const item of occurrenceDates()) {
+      list.push({
+        value: item.dateKey,
+        label: `${item.dayMonth} (${item.weekday})`,
+        description: `${item.count} horário${item.count > 1 ? "s" : ""}`,
+      });
+    }
+    return list;
+  });
+
+  // Filtered programs for sidebar
+  const filteredPrograms = createMemo(() => {
+    const all = programs();
+    const currentKind = programKindFilter();
+    const q = programSearch().trim().toLowerCase();
+    const targetDate = dateFilter();
+    const allOccurrences = occurrences();
+
+    const result: ProgramI[] = [];
+    for (const p of all) {
+      if (currentKind !== "all" && p.kind !== currentKind) {
+        continue;
+      }
+      if (
+        q &&
+        !p.name.toLowerCase().includes(q) &&
+        !(p.description?.toLowerCase().includes(q) ?? false)
+      ) {
+        continue;
+      }
+      if (targetDate) {
+        let hasDate = false;
+        for (const oc of allOccurrences) {
+          if (oc.program_id === p.id && toISODate(new Date(oc.starts_at)) === targetDate) {
+            hasDate = true;
+            break;
+          }
+        }
+        if (!hasDate) continue;
+      }
+      result.push(p);
+    }
+    return result;
+  });
+
+  // Filtered occurrences for the calendar grid
+  const visibleOccurrences = createMemo(() => {
+    const all = occurrences();
+    const progId = selectedProgramFilter();
+    const currentKind = programKindFilter();
+    const q = programSearch().trim().toLowerCase();
+    const targetDate = dateFilter();
+    const allPrograms = programs();
+
+    const result: OccurrenceI[] = [];
+    for (const oc of all) {
+      if (progId && oc.program_id !== progId) {
+        continue;
+      }
+      if (currentKind !== "all") {
+        const prog = allPrograms.find((p) => p.id === oc.program_id);
+        if (!prog || prog.kind !== currentKind) continue;
+      }
+      if (q) {
+        const prog = allPrograms.find((p) => p.id === oc.program_id);
+        if (!prog || !prog.name.toLowerCase().includes(q)) continue;
+      }
+      if (targetDate && toISODate(new Date(oc.starts_at)) !== targetDate) {
+        continue;
+      }
+      result.push(oc);
+    }
+    return result;
+  });
+
+  const hasActiveFilters = createMemo(() => {
+    return (
+      selectedProgramFilter() !== null ||
+      programSearch().trim().length > 0 ||
+      programKindFilter() !== "all" ||
+      dateFilter() !== null
+    );
+  });
+
+  const clearAllFilters = () => {
+    setSelectedProgramFilter(null);
+    setProgramSearch("");
+    setProgramKindFilter("all");
+    setDateFilter(null);
+  };
 
   // Navigation handlers
   const handlePrev = () => {
@@ -261,8 +434,30 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
     }
   };
 
-  const handleDeleteOccurrence = async (occurrenceId: string) => {
-    await handleDeleteOccurrenceModal(occurrenceId);
+  const confirmDeleteOccurrence = async () => {
+    const occ = occurrenceToDelete();
+    if (!occ) return;
+    setDeletingOccurrence(true);
+    try {
+      await deleteMutation.mutateAsync(occ.id);
+      void queryClient.invalidateQueries({
+        queryKey: programKeys.occurrences(props.editionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: programKeys.byEdition(props.editionId),
+      });
+      toast.success("Horário excluído!");
+      setOccurrenceToDelete(null);
+    } catch {
+      toast.error("Erro ao excluir horário.");
+    } finally {
+      setDeletingOccurrence(false);
+    }
+  };
+
+  const handleRequestDeleteOccurrence = (occurrenceId: string) => {
+    const occ = occurrences().find((o) => o.id === occurrenceId);
+    setOccurrenceToDelete(occ ?? ({ id: occurrenceId } as OccurrenceI));
   };
 
   // Drag & drop handlers
@@ -463,8 +658,134 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
             </h1>
           </div>
 
-          {/* Right: View Switcher Segmented Control */}
-          <div class="flex items-center">
+          {/* Right: Filter Popover & View Switcher */}
+          <div class="flex items-center gap-2">
+            {/* Filter Popover */}
+            <div class="relative" ref={(el) => (filterMenuRef = el)}>
+              <button
+                type="button"
+                onClick={() => setFilterMenuOpen((prev) => !prev)}
+                class={`relative flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${activeFilterCount() > 0
+                  ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
+                  : "border-border bg-background hover:bg-muted text-foreground"
+                  }`}
+                title="Filtrar calendário"
+              >
+                <Filter class="size-3.5" />
+                <span>Filtrar</span>
+                <Show when={activeFilterCount() > 0}>
+                  <span class="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold shadow-xs">
+                    {activeFilterCount()}
+                  </span>
+                </Show>
+              </button>
+
+              <Show when={filterMenuOpen()}>
+                <div
+                  ref={(el) => {
+                    filterPopoverEl = el;
+                    clampCalendarFilter(el);
+                  }}
+                  class="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-popover p-3 shadow-xl z-50 text-xs space-y-3"
+                >
+                  <div class="flex items-center justify-between pb-1.5 border-b border-border/60">
+                    <div class="flex items-center gap-1.5 font-semibold text-foreground">
+                      <Filter class="size-3.5 text-primary" />
+                      <span>Filtros do calendário</span>
+                    </div>
+                    <Show when={hasActiveFilters()}>
+                      <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        class="text-[11px] text-primary hover:underline cursor-pointer font-medium"
+                      >
+                        Limpar todos
+                      </button>
+                    </Show>
+                  </div>
+
+                  {/* Search */}
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-medium text-muted-foreground">Buscar programa</label>
+                    <div class="relative">
+                      <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Nome ou descrição..."
+                        value={programSearch()}
+                        onInput={(e) => setProgramSearch(e.currentTarget.value)}
+                        class="w-full rounded-md border border-border bg-background pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Kind */}
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-medium text-muted-foreground">Tipo de atividade</label>
+                    <div class="flex rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setProgramKindFilter("all")}
+                        class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${programKindFilter() === "all"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProgramKindFilter("activity")}
+                        class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${programKindFilter() === "activity"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        Atividades
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProgramKindFilter("checkpoint")}
+                        class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${programKindFilter() === "checkpoint"
+                          ? "bg-background text-foreground shadow-2xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        Checkpoints
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Day Select */}
+                  <Show when={occurrenceDates().length > 0}>
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-medium text-muted-foreground">Dia específico</label>
+                      <Combobox
+                        value={dateFilter() ?? "all"}
+                        options={calendarDateOptions()}
+                        placeholder="Todos os dias com horários"
+                        searchPlaceholder="Buscar dia..."
+                        onChange={(val) => {
+                          const nextVal = val === "all" ? null : val;
+                          setDateFilter(nextVal);
+                          if (nextVal) {
+                            const [y, m, d] = nextVal.split("-").map(Number);
+                            setCurrentDate(new Date(y, m - 1, d));
+                            if (view() === "month" || view() === "year") {
+                              setView("day");
+                            }
+                          }
+                        }}
+                        class="w-full"
+                        triggerClass="h-8 text-xs"
+                      />
+                    </div>
+                  </Show>
+                </div>
+              </Show>
+            </div>
+
+            {/* View Switcher Segmented Control */}
             <div class="flex items-center p-0.5 rounded-lg border border-border bg-muted/40">
               {(["day", "week", "month", "year"] as const).map((v) => {
                 const labels: Record<CalendarView, string> = {
@@ -478,11 +799,10 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                   <button
                     type="button"
                     onClick={() => setView(v)}
-                    class={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                      isActive()
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    class={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${isActive()
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                      }`}
                   >
                     {labels[v]}
                   </button>
@@ -527,10 +847,11 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
               <Plus class="size-4" /> Criar ocorrência
             </button>
 
-            <div class="space-y-2 pt-2 border-t border-border">
+            {/* Program Drag & Select List */}
+            <div class="space-y-2 pt-2 border-t border-border flex-1 flex flex-col">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-foreground uppercase tracking-wider">
-                  Programas
+                  Programas ({filteredPrograms().length})
                 </span>
                 <Show when={selectedProgramFilter() !== null}>
                   <button
@@ -547,12 +868,14 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 Arraste um programa para a grade para criar um horário.
               </p>
 
-              <div class="space-y-1 mt-2">
+              <div class="space-y-1 mt-2 flex-1 overflow-y-auto">
                 <For
-                  each={programs()}
+                  each={filteredPrograms()}
                   fallback={
                     <p class="text-xs text-muted-foreground/60 py-2">
-                      Nenhum programa cadastrado nesta edição.
+                      {hasActiveFilters()
+                        ? "Nenhum programa corresponde aos filtros."
+                        : "Nenhum programa cadastrado nesta edição."}
                     </p>
                   }
                 >
@@ -575,11 +898,10 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                             prev === prog.id ? null : prog.id,
                           );
                         }}
-                        class={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-grab active:cursor-grabbing transition-all ${
-                          isFiltered()
-                            ? "ring-2 ring-primary border-transparent"
-                            : "hover:bg-muted border-transparent hover:border-border"
-                        }`}
+                        class={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-grab active:cursor-grabbing transition-all ${isFiltered()
+                          ? "ring-2 ring-primary border-transparent"
+                          : "hover:bg-muted border-transparent hover:border-border"
+                          }`}
                         style={{
                           "border-left-color": color().border,
                           "border-left-width": "4px",
@@ -588,6 +910,11 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                       >
                         <GripVertical class="size-3 text-muted-foreground/50 shrink-0" />
                         <span class="truncate flex-1">{prog.name}</span>
+                        <Show when={prog.kind === "checkpoint"}>
+                          <span class="text-[9px] px-1 py-0.2 rounded bg-muted text-muted-foreground font-mono shrink-0">
+                            CP
+                          </span>
+                        </Show>
                       </div>
                     );
                   }}
@@ -625,7 +952,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                   setView("day");
                 }}
                 onOccurrenceClick={openEditOccurrence}
-                onDeleteOccurrence={handleDeleteOccurrence}
+                onDeleteOccurrence={handleRequestDeleteOccurrence}
                 onOpenAttendance={handleOpenAttendance}
                 onOpenDraw={handleOpenDraw}
                 onDropSlot={handleDropSlot}
@@ -640,7 +967,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 programColors={programColors()}
                 onSlotClick={(dateStr, hour) => openNewOccurrence(dateStr, hour)}
                 onOccurrenceClick={openEditOccurrence}
-                onDeleteOccurrence={handleDeleteOccurrence}
+                onDeleteOccurrence={handleRequestDeleteOccurrence}
                 onOpenAttendance={handleOpenAttendance}
                 onOpenDraw={handleOpenDraw}
                 onDropSlot={handleDropSlot}
@@ -692,6 +1019,18 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
           occurrence={drawOccurrence()}
           programName={targetProgramName(drawOccurrence())}
           programKind={targetProgramKind(drawOccurrence())}
+        />
+
+        {/* Delete Occurrence Confirmation Modal */}
+        <AlertModal
+          open={occurrenceToDelete() !== null}
+          onOpenChange={(open) => !open && setOccurrenceToDelete(null)}
+          title="Excluir ocorrência"
+          description="Tem certeza que deseja remover esta ocorrência da grade de horários? Esta ação não pode ser desfeita."
+          confirmLabel="Excluir ocorrência"
+          variant="destructive"
+          loading={deletingOccurrence()}
+          onConfirm={confirmDeleteOccurrence}
         />
       </div>
     </DesktopOnly>

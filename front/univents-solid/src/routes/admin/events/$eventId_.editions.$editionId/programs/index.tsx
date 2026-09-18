@@ -3,10 +3,11 @@ import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import type { SortState } from "@trieoh/ui-solid";
 import { Button, EmptyState, PaginatedContainer } from "@trieoh/ui-solid";
-import { For, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup } from "solid-js";
 
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
 import CalendarPlusIcon from "~icons/lucide/calendar-plus";
+import FilterIcon from "~icons/lucide/filter";
 
 import {
   occurrencesQueryOptions,
@@ -27,9 +28,11 @@ import { AdminProgramCard } from "@/features/programs/ui/AdminProgramCard";
 import { ManageProgramDialog } from "@/features/programs/ui/ManageProgramDialog";
 import { toast } from "@/shared/ui/toast";
 import { AlertModal } from "@/widgets/ui/AlertModal";
+import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
 
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Filter = FilterIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/programs/",
@@ -58,12 +61,141 @@ function AdminProgramsRoute(): JSX.Element {
   const programs = createMemo(() => (programsQuery().data ?? []) as ProgramI[]);
   const occurrences = createMemo(() => (occurrencesQuery().data ?? []) as OccurrenceI[]);
 
-  // States
+  // States & Filters
   const [filter, setFilter] = createSignal("");
+  const [kindFilter, setKindFilter] = createSignal<"all" | "activity" | "checkpoint">("all");
+  const [dateFilter, setDateFilter] = createSignal<string | null>(null);
   const [sort, setSort] = createSignal<SortState<ProgramI>>({
     field: "name",
     direction: "asc",
   });
+
+  const distinctDates = createMemo(() => {
+    const datesMap = new Map<string, number>();
+    for (const occ of occurrences()) {
+      const key = occ.starts_at.slice(0, 10);
+      datesMap.set(key, (datesMap.get(key) ?? 0) + 1);
+    }
+    return Array.from(datesMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([dateKey, count]) => {
+        const [y, m, d] = dateKey.split("-").map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const weekday = dateObj.toLocaleDateString("pt-BR", { weekday: "short" });
+        return {
+          key: dateKey,
+          label: `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`,
+          weekday,
+          count,
+        };
+      });
+  });
+
+  const dateOptions = createMemo((): ComboboxOption[] => {
+    const list: ComboboxOption[] = [
+      { value: "all", label: "Todos os dias" },
+    ];
+    for (const d of distinctDates()) {
+      list.push({
+        value: d.key,
+        label: `${d.label} (${d.weekday})`,
+        description: `${d.count} horário${d.count > 1 ? "s" : ""}`,
+      });
+    }
+    return list;
+  });
+
+  const activityCount = createMemo(() => programs().filter((p) => p.kind === "activity").length);
+  const checkpointCount = createMemo(() => programs().filter((p) => p.kind === "checkpoint").length);
+
+  const filteredPrograms = createMemo(() => {
+    const all = programs();
+    const currentKind = kindFilter();
+    const targetDate = dateFilter();
+    const allOccurrences = occurrences();
+
+    const result: ProgramI[] = [];
+    for (const p of all) {
+      if (currentKind !== "all" && p.kind !== currentKind) {
+        continue;
+      }
+      if (targetDate) {
+        let hasOccurrence = false;
+        for (const occ of allOccurrences) {
+          if (occ.program_id === p.id && occ.starts_at.slice(0, 10) === targetDate) {
+            hasOccurrence = true;
+            break;
+          }
+        }
+        if (!hasOccurrence) continue;
+      }
+      result.push(p);
+    }
+    return result;
+  });
+
+
+
+  const [filterMenuOpen, setFilterMenuOpen] = createSignal(false);
+  let filterMenuRef: HTMLDivElement | undefined;
+  let filterPopoverEl: HTMLDivElement | undefined;
+
+  const clampFilterMenu = (el?: HTMLElement | null) => {
+    const target = el ?? filterPopoverEl;
+    if (!target || typeof window === "undefined") return;
+    requestAnimationFrame(() => {
+      target.style.transform = "";
+      const rect = target.getBoundingClientRect();
+      const vw = window.innerWidth;
+      if (rect.left < 8) {
+        target.style.transform = `translateX(${8 - rect.left}px)`;
+      } else if (rect.right > vw - 8) {
+        target.style.transform = `translateX(${vw - 8 - rect.right}px)`;
+      }
+    });
+  };
+
+  const activeFilterCount = createMemo(() => {
+    let count = 0;
+    if (kindFilter() !== "all") count++;
+    if (dateFilter() !== null) count++;
+    return count;
+  });
+
+  const clearAllFilters = () => {
+    setKindFilter("all");
+    setDateFilter(null);
+  };
+
+  if (typeof document !== "undefined") {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (filterMenuRef && !filterMenuRef.contains(target)) {
+        const portalEl = (target as HTMLElement | null)?.closest?.("[role='listbox']") || (target as HTMLElement | null)?.closest?.(".bg-popover");
+        if (!portalEl) {
+          setFilterMenuOpen(false);
+        }
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFilterMenuOpen(false);
+      }
+    };
+    const handleResize = () => {
+      if (filterMenuOpen()) {
+        clampFilterMenu();
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+    onCleanup(() => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    });
+  }
 
   const [creating, setCreating] = createSignal(false);
   const [editing, setEditing] = createSignal<ProgramI | null>(null);
@@ -149,7 +281,7 @@ function AdminProgramsRoute(): JSX.Element {
       </div>
 
       <PaginatedContainer<ProgramI>
-        items={programs()}
+        items={filteredPrograms()}
         layout="grid"
         minItemWidth="16rem"
         maxRows={(columns) => (columns === 1 ? 8 : 4)}
@@ -174,6 +306,106 @@ function AdminProgramsRoute(): JSX.Element {
         onFilterChange={setFilter}
         filterPlaceholder="Buscar por nome ou descrição..."
         filterFields={["name", "description"]}
+        headerActions={
+          <div class="relative" ref={(el) => (filterMenuRef = el)}>
+            <button
+              type="button"
+              onClick={() => setFilterMenuOpen((prev) => !prev)}
+              class={`relative flex items-center gap-1.5 h-9 px-3 text-xs font-medium rounded-md border transition-all cursor-pointer ${activeFilterCount() > 0
+                ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
+                : "border-border bg-background hover:bg-muted text-foreground"
+                }`}
+              title="Filtrar programações"
+            >
+              <Filter class="size-3.5" />
+              <span>Filtrar</span>
+              <Show when={activeFilterCount() > 0}>
+                <span class="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold shadow-xs">
+                  {activeFilterCount()}
+                </span>
+              </Show>
+            </button>
+
+            <Show when={filterMenuOpen()}>
+              <div
+                ref={(el) => {
+                  filterPopoverEl = el;
+                  clampFilterMenu(el);
+                }}
+                class="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-popover p-3 shadow-xl z-50 text-xs space-y-3"
+              >
+                <div class="flex items-center justify-between pb-1.5 border-b border-border/60">
+                  <div class="flex items-center gap-1.5 font-semibold text-foreground">
+                    <Filter class="size-3.5 text-primary" />
+                    <span>Filtros</span>
+                  </div>
+                  <Show when={activeFilterCount() > 0}>
+                    <button
+                      type="button"
+                      onClick={clearAllFilters}
+                      class="text-[11px] text-primary hover:underline cursor-pointer font-medium"
+                    >
+                      Limpar todos
+                    </button>
+                  </Show>
+                </div>
+
+                {/* Kind Filter Tabs */}
+                <div class="space-y-1">
+                  <label class="text-[11px] font-medium text-muted-foreground">Tipo de atividade</label>
+                  <div class="flex rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setKindFilter("all")}
+                      class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "all"
+                        ? "bg-background text-foreground shadow-2xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      Todos ({programs().length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setKindFilter("activity")}
+                      class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "activity"
+                        ? "bg-background text-foreground shadow-2xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      Atividades ({activityCount()})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setKindFilter("checkpoint")}
+                      class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "checkpoint"
+                        ? "bg-background text-foreground shadow-2xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                      Checkpoints ({checkpointCount()})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Event Day Combobox */}
+                <Show when={distinctDates().length > 0}>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-medium text-muted-foreground">Dia específico</label>
+                    <Combobox
+                      value={dateFilter() ?? "all"}
+                      options={dateOptions()}
+                      placeholder="Todos os dias"
+                      searchPlaceholder="Buscar dia..."
+                      onChange={(val) => setDateFilter(val === "all" ? null : val)}
+                      class="w-full"
+                      triggerClass="h-8 text-xs"
+                    />
+                  </div>
+                </Show>
+              </div>
+            </Show>
+          </div>
+        }
         itemLabel="programas"
         emptyState={
           <EmptyState

@@ -12,6 +12,7 @@ import XIcon from "~icons/lucide/x";
 import type { OccurrenceCreateOutput } from "@/features/programs/model";
 import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
 import { Button } from "@trieoh/ui-solid";
+import { AlertModal } from "@/widgets/ui/AlertModal";
 import { toISODate } from "../lib/date";
 import type { OccurrenceI, ProgramI } from "../model";
 
@@ -101,6 +102,7 @@ export function ManageOccurrenceDialog(props: ManageOccurrenceDialogProps): JSX.
   });
   const [submitting, setSubmitting] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = createSignal(false);
   const [errors, setErrors] = createSignal<Partial<Record<"programId" | "time", string>>>({});
 
   // Reset form when opened or target changed
@@ -253,7 +255,7 @@ export function ManageOccurrenceDialog(props: ManageOccurrenceDialogProps): JSX.
                 <Show when={isEditing() && props.onDelete}>
                   <button
                     type="button"
-                    onClick={handleDelete}
+                    onClick={() => setConfirmDeleteOpen(true)}
                     disabled={submitting() || deleting()}
                     title="Excluir ocorrência"
                     class="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
@@ -416,6 +418,20 @@ export function ManageOccurrenceDialog(props: ManageOccurrenceDialogProps): JSX.
             </form>
           </div>
         </div>
+
+        <AlertModal
+          open={confirmDeleteOpen()}
+          onOpenChange={setConfirmDeleteOpen}
+          title="Excluir ocorrência"
+          description="Tem certeza que deseja excluir esta ocorrência? Participantes inscritos perderão o agendamento."
+          confirmLabel="Excluir ocorrência"
+          variant="destructive"
+          loading={deleting()}
+          onConfirm={() => {
+            void handleDelete();
+            setConfirmDeleteOpen(false);
+          }}
+        />
       </Portal>
     </Show>
   );

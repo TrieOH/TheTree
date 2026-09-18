@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
 import type { SortState } from "@trieoh/ui-solid";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-solid";
-import { For, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
@@ -30,6 +30,7 @@ import { OccurrenceAttendanceModal } from "@/features/programs/ui/OccurrenceAtte
 import { OccurrenceDrawModal } from "@/features/programs/ui/OccurrenceDrawModal";
 import { toast } from "@/shared/ui/toast";
 import { AlertModal } from "@/widgets/ui/AlertModal";
+import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
 
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -71,11 +72,60 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
     allOccurrences().filter((occ) => occ.program_id === programId()),
   );
 
-  // States
+  // States & Filters
   const [filter, setFilter] = createSignal("");
+  const [selectedDate, setSelectedDate] = createSignal<string | null>(null);
   const [sort, setSort] = createSignal<SortState<OccurrenceI>>({
     field: "starts_at",
     direction: "asc",
+  });
+
+  const occurrenceDates = createMemo(() => {
+    const datesMap = new Map<string, number>();
+    for (const occ of occurrences()) {
+      const key = occ.starts_at.slice(0, 10);
+      datesMap.set(key, (datesMap.get(key) ?? 0) + 1);
+    }
+    return Array.from(datesMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([dateKey, count]) => {
+        const [y, m, d] = dateKey.split("-").map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const weekday = dateObj.toLocaleDateString("pt-BR", { weekday: "short" });
+        return {
+          key: dateKey,
+          label: `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`,
+          weekday,
+          count,
+        };
+      });
+  });
+
+  const dateOptions = createMemo((): ComboboxOption[] => {
+    const list: ComboboxOption[] = [
+      { value: "all", label: `Todos os dias (${occurrences().length})` },
+    ];
+    for (const d of occurrenceDates()) {
+      list.push({
+        value: d.key,
+        label: `${d.label} (${d.weekday})`,
+        description: `${d.count} horário${d.count > 1 ? "s" : ""}`,
+      });
+    }
+    return list;
+  });
+
+  const filteredOccurrences = createMemo(() => {
+    const all = occurrences();
+    const filterDate = selectedDate();
+    if (!filterDate) return all;
+    const result: OccurrenceI[] = [];
+    for (const occ of all) {
+      if (occ.starts_at.slice(0, 10) === filterDate) {
+        result.push(occ);
+      }
+    }
+    return result;
   });
 
   // Modals state
@@ -196,7 +246,7 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
       </div>
 
       <PaginatedContainer<OccurrenceI>
-        items={occurrences()}
+        items={filteredOccurrences()}
         layout="grid"
         minItemWidth="16rem"
         maxRows={(columns) => (columns === 1 ? 8 : 4)}
@@ -215,6 +265,19 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
         onFilterChange={setFilter}
         filterPlaceholder="Buscar por data ou horário..."
         filterFields={["starts_at", "ends_at"]}
+        headerActions={
+          <Show when={occurrenceDates().length > 1}>
+            <Combobox
+              value={selectedDate() ?? "all"}
+              options={dateOptions()}
+              placeholder="Todos os dias"
+              searchPlaceholder="Buscar dia..."
+              onChange={(val) => setSelectedDate(val === "all" ? null : val)}
+              class="w-48 sm:w-56"
+              triggerClass="h-9 text-xs"
+            />
+          </Show>
+        }
         itemLabel="ocorrências"
         emptyState={
           <EmptyState
