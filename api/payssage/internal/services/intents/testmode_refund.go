@@ -3,7 +3,6 @@ package intents
 import (
 	"context"
 	"encoding/json"
-	"lib/utils"
 	"payssage/models"
 
 	"github.com/MintzyG/fun"
@@ -28,7 +27,7 @@ func (o *Operations) TestmodeRefund(ctx context.Context, intentID uuid.UUID) (*m
 	}
 
 	var pd models.MercadoPagoIntentData
-	_ = utils.MapTo(&pd, intent.ProviderData)
+	_ = json.Unmarshal(intent.ProviderData, &pd)
 	fakeID := "testmode-refund-" + intent.ID.String()[:8]
 	pd.RefundID = &fakeID
 	status := "approved"

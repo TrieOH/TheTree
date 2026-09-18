@@ -9,8 +9,8 @@ import (
 	"IdentityX/internal/config"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
+	"IdentityX/internal/setup"
 	libauthz "lib/authz"
-	"lib/globals"
 	"lib/validator"
 )
 
@@ -62,7 +62,7 @@ func TestSwapSmokeSetupFlow(t *testing.T) {
 		Scopes: testScopeCheckers(),
 	})
 
-	globals.MarkSetupComplete()
+	setup.MarkComplete()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/setup", nil)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)

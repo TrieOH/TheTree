@@ -15,7 +15,6 @@ import (
 	"lib/errx"
 	"lib/telemetry"
 	"lib/validator"
-	"lib/xslices"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
@@ -51,6 +50,18 @@ type Config struct {
 
 // SetupFUN configures the shared fun runtime for the process. Call once at
 // startup, before any request is handled.
+// cleanCSV splits a comma-separated env value, trims whitespace, and drops
+// empty entries.
+func cleanCSV(s string) []string {
+	out := make([]string, 0)
+	for part := range strings.SplitSeq(s, ",") {
+		if v := strings.TrimSpace(part); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
 func SetupFUN(appName string) {
 	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
@@ -231,8 +242,8 @@ func stack(cfg Config) []func(http.Handler) http.Handler {
 			},
 		}),
 		mws.CORS(mws.CORSConfig{
-			AllowedOrigins:   xslices.Clean(strings.Split(cfg.CorsAllowedOrigins, ",")),
-			AllowedHeaders:   xslices.Clean(strings.Split(cfg.CorsAllowedHeaders, ",")),
+			AllowedOrigins:   cleanCSV(cfg.CorsAllowedOrigins),
+			AllowedHeaders:   cleanCSV(cfg.CorsAllowedHeaders),
 			AllowCredentials: true,
 		}),
 	}

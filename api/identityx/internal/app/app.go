@@ -7,10 +7,10 @@ import (
 
 	spec "IdentityX"
 	"IdentityX/internal/config"
+	"IdentityX/internal/setup"
 	"IdentityX/internal/sqlc"
 	"lib/database"
 	"lib/email"
-	"lib/globals"
 	"lib/httpserver"
 	libriver "lib/river"
 
@@ -49,7 +49,7 @@ func Run() error {
 			return nil, nil, fmt.Errorf("check setup state: %w", err)
 		}
 		if has {
-			globals.MarkSetupComplete()
+			setup.MarkComplete()
 		}
 
 		tx := database.NewPGXTxRunner(pool)

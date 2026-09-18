@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"lib/telemetry"
-	"lib/utils"
 	"math"
 	"payssage/models"
 	"strconv"
@@ -21,7 +20,7 @@ import (
 // observability (and for the fee-on-refund verification, R1).
 func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	var providerData models.MercadoPagoIntentData
-	err := utils.MapTo(&providerData, intent.ProviderData)
+	err := json.Unmarshal(intent.ProviderData, &providerData)
 	if err != nil {
 		return fun.Errf("error mapping mercadopago provider data: %v", err).Internal()
 	}
@@ -38,7 +37,7 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	}
 
 	var creds models.MercadoPagoCredentials
-	err = utils.MapTo(&creds, seller.Credentials)
+	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
 		return fun.Errf("error mapping seller credentials: %v", err).Internal()
 	}

@@ -3,7 +3,6 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
-	"lib/utils"
 	"net/http"
 	"payssage/models"
 
@@ -46,7 +45,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	}
 
 	var creds models.MercadoPagoCredentials
-	err = utils.MapTo(&creds, seller.Credentials)
+	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
 		return nil, fun.Errf("unmarshal seller credentials: %v", err).Internal()
 	}
@@ -74,7 +73,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	intent.StatusDetail = p.MapStatusDetail(mpResp.StatusDetail)
 
 	var providerData models.MercadoPagoIntentData
-	_ = utils.MapTo(&providerData, intent.ProviderData)
+	_ = json.Unmarshal(intent.ProviderData, &providerData)
 	providerData.OrderStatus = mpResp.Status
 	providerData.OrderStatusDetail = mpResp.StatusDetail
 	applySettlement(&providerData, &mpResp)

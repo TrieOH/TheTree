@@ -3,7 +3,7 @@ package app
 import (
 	"net/http"
 
-	"lib/globals"
+	"IdentityX/internal/setup"
 
 	"github.com/MintzyG/fun"
 )
@@ -14,7 +14,7 @@ import (
 func setupGuard() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !globals.SetupComplete() {
+			if !setup.Complete() {
 				fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)
 				return
 			}

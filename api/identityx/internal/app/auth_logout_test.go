@@ -13,11 +13,11 @@ import (
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
 	"IdentityX/internal/services/tos"
+	"IdentityX/internal/setup"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	libauthz "lib/authz"
-	"lib/globals"
 	"lib/validator"
 
 	"github.com/MintzyG/fun"
@@ -63,7 +63,7 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	globals.MarkSetupComplete()
+	setup.MarkComplete()
 	return newTestRouter(t, server, libauthz.Primitives{
 		JWT:    jwtStub,
 		APIKey: mwJWT,
