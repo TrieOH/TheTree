@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"IdentityX/models"
-	"lib/database"
 	"lib/oauth"
 	"lib/telemetry"
 
@@ -113,7 +112,7 @@ func (o *Operations) registerNewIdentity(
 	// callback surfaces the error — no half-registered actor.
 	var actor *models.Actor
 	var txErr error
-	err := database.RunTx(ctx, func(ctx context.Context) error {
+	err := o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		actor, txErr = o.actors.Register(ctx, models.Actor{
 			ProjectID:  projectID,
 			AuthMethod: models.AuthMethod(provider),

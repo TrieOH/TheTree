@@ -4,6 +4,7 @@ import (
 	"Informd/internal/authz"
 
 	"Informd/ports"
+	"lib/database"
 )
 
 type Operations struct {
@@ -12,6 +13,9 @@ type Operations struct {
 	fields     ports.FieldsRepo
 	namespaces ports.NamespaceRepo
 	authz      *authz.Service
+	// tx opens the transactions multi-step writes run in; threaded from
+	// boot, no package-level runner.
+	tx database.TxRunner
 }
 
 func NewOperations(
@@ -20,6 +24,7 @@ func NewOperations(
 	fields ports.FieldsRepo,
 	namespaces ports.NamespaceRepo,
 	authz *authz.Service,
+	tx database.TxRunner,
 ) *Operations {
 	return &Operations{
 		forms:      forms,
@@ -27,5 +32,6 @@ func NewOperations(
 		fields:     fields,
 		namespaces: namespaces,
 		authz:      authz,
+		tx:         tx,
 	}
 }

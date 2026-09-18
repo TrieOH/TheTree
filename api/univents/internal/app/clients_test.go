@@ -2,11 +2,8 @@ package app
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"os/exec"
 	"testing"
 
 	payssage "sdk/payssage"
@@ -31,29 +28,19 @@ func TestVerifyPayssageWallet_Resolves(t *testing.T) {
 	client := payssage.New(payssage.Config{BaseURL: srv.URL, APIKey: "test"})
 
 	// Must not exit — the resolved wallet passes the boot gate.
-	VerifyPayssageWallet(context.Background(), client, walletID)
+	err := VerifyPayssageWallet(context.Background(), client, walletID)
+	if err != nil {
+		t.Fatalf("resolved wallet must not stop the boot: %v", err)
+	}
 }
 
-// TestVerifyPayssageWallet_ExitsOnUnresolvableWallet pins the fail-fast
+// TestVerifyPayssageWallet_FailsOnUnresolvableWallet pins the fail-fast
 // side: a wallet that does not resolve (wrong id / unreachable Payssage)
-// must stop the boot. errx.Exit calls os.Exit(1), so the assertion runs in
-// a subprocess (the standard pattern for testing exits).
-func TestVerifyPayssageWallet_ExitsOnUnresolvableWallet(t *testing.T) {
-	if os.Getenv("TEST_BOOT_CHECK_EXIT") == "1" {
-		// unreachable Payssage: the client's HTTP call fails
-		client := payssage.New(payssage.Config{BaseURL: "http://127.0.0.1:1", APIKey: "test"})
-		VerifyPayssageWallet(context.Background(), client, uuid.New())
-		return
-	}
-
-	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestVerifyPayssageWallet_ExitsOnUnresolvableWallet") //nolint:gosec // fixed args, standard subprocess-exit test pattern
-	cmd.Env = append(os.Environ(), "TEST_BOOT_CHECK_EXIT=1")
-	err := cmd.Run()
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("want exit status 1 from the boot check, got %v", err)
-	}
-	if code := exitErr.ExitCode(); code != 1 {
-		t.Fatalf("exit code = %d, want 1", code)
+// surfaces as a boot error, so Boot stops the process before serving.
+func TestVerifyPayssageWallet_FailsOnUnresolvableWallet(t *testing.T) {
+	client := payssage.New(payssage.Config{BaseURL: "http://127.0.0.1:1", APIKey: "test"})
+	err := VerifyPayssageWallet(context.Background(), client, uuid.New())
+	if err == nil {
+		t.Fatal("want a boot error from an unresolvable wallet, got nil")
 	}
 }

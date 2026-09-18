@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func SetupAuthMiddlewares() *mws.Middleware[*idx.AccessClaims] {
+func (app *Univents) setupAuthMiddlewares() *mws.Middleware[*idx.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
 		return app.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
 	}

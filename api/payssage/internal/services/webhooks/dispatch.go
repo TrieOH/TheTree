@@ -44,7 +44,7 @@ func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.Webho
 		return nil
 	}
 
-	return database.RunTx(ctx, func(ctx context.Context) error {
+	return o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
 		if !ok {
 			return fun.Err("dispatchDeliveries: no transaction in context").Internal()

@@ -4,8 +4,8 @@ import (
 	"lib/database"
 )
 
-func SetupConstraintMessages() {
-	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+func constraintMessages() database.ConstraintRegistry {
+	return database.ConstraintRegistry{
 		// intents
 		"chk_intents_amount_cents":  "amount must be greater than zero",
 		"chk_intents_status":        "invalid intent status",
@@ -41,5 +41,5 @@ func SetupConstraintMessages() {
 
 		// sellers
 		"uniq_sellers_active": "this seller is already connected to this wallet",
-	})
+	}
 }

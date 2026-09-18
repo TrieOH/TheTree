@@ -1,7 +1,10 @@
 package main
 
-import "univents/internal/app"
+import (
+	"lib/errx"
+	"univents/internal/app"
+)
 
 func main() {
-	app.Start()
+	errx.Exit(app.Run(), "univents exited with error")
 }

@@ -4,6 +4,7 @@ import (
 	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/ports"
+	"lib/database"
 	"lib/errx"
 )
 
@@ -27,6 +28,9 @@ type Operations struct {
 	// tos owns the terms documents and the consent ledger; registration
 	// gates on it and pins the acceptance row through it.
 	tos *tos.Operations
+	// tx opens the transactions multi-step writes run in; threaded
+	// from boot, no package-level runner.
+	tx database.TxRunner
 }
 
 func NewOperations(
@@ -37,6 +41,7 @@ func NewOperations(
 	actionTokens *tokens.ActionTokenManager,
 	emailSender ports.EmailSender,
 	tosOps *tos.Operations,
+	tx database.TxRunner,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		actors:        actors,
@@ -46,5 +51,6 @@ func NewOperations(
 		actionTokens:  actionTokens,
 		emailSender:   emailSender,
 		tos:           tosOps,
+		tx:            tx,
 	})
 }

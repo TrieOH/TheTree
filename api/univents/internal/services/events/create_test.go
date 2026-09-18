@@ -22,12 +22,10 @@ func TestCreate_Success(t *testing.T) {
 	authzSvc := authz.New(repo)
 	var txr = mock.Mock[database.TxRunner]()
 
-	database.SetDefaultRunner(txr)
-
 	ownerID := uuid.New()
 	eventID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps](), txr)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -74,8 +72,9 @@ func TestCreate_NoIdentity(t *testing.T) {
 
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
+	var txr = mock.Mock[database.TxRunner]()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps](), txr)
 
 	_, err := cmd.Create(context.Background(), models.CreateEventInput{
 		FullName: "Test Event",
@@ -93,11 +92,9 @@ func TestCreate_RepoCreateFails(t *testing.T) {
 	authzSvc := authz.New(repo)
 	var txr = mock.Mock[database.TxRunner]()
 
-	database.SetDefaultRunner(txr)
-
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps](), txr)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},

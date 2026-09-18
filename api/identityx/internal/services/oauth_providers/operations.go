@@ -12,6 +12,7 @@ import (
 	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/ports"
+	"lib/database"
 	"lib/errx"
 	"lib/oauth"
 
@@ -36,6 +37,9 @@ type Operations struct {
 	// (endpoints, userinfo URL) comes from the injected registry.
 	client *resty.Client
 	meta   map[string]oauth.Provider
+	// tx opens the transactions multi-step writes run in; threaded
+	// from boot, no package-level runner.
+	tx database.TxRunner
 }
 
 func NewOperations(
@@ -49,6 +53,7 @@ func NewOperations(
 	tosOps *tos.Operations,
 	client *resty.Client,
 	meta map[string]oauth.Provider,
+	tx database.TxRunner,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		providers:   providers,
@@ -61,5 +66,6 @@ func NewOperations(
 		tos:         tosOps,
 		client:      client,
 		meta:        meta,
+		tx:          tx,
 	})
 }

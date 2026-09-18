@@ -1,6 +1,4 @@
-// Test-only transaction runner stub: unit tests have no DB, so the
-// transactions multi-step writes run in flatten to direct calls.
-package authn
+package app
 
 import (
 	"context"
@@ -8,6 +6,8 @@ import (
 	"lib/database"
 )
 
+// nopTxRunner is the test-only transaction runner: app tests have no DB, so
+// the transactions multi-step writes run in flatten to direct calls.
 type nopTxRunner struct{}
 
 func (nopTxRunner) WithinTx(ctx context.Context, fn func(context.Context) error) error {

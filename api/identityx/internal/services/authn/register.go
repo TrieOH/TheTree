@@ -5,7 +5,6 @@ import (
 
 	"IdentityX/models"
 	"lib/crypto"
-	"lib/database"
 	"lib/telemetry"
 	"strings"
 
@@ -52,7 +51,7 @@ func (o *Operations) Register(ctx context.Context, in models.IDXRegisterInput) e
 	// A failure here rolls back the actor and the registration 500s —
 	// the user retries, nothing half-created.
 	var actor *models.Actor
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		actor, err = o.actors.Register(ctx, models.Actor{
 			ProjectID:    in.ProjectID,
 			AuthMethod:   models.PasswordAuthMethod,

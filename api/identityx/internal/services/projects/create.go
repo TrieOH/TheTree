@@ -3,7 +3,6 @@ package projects
 import (
 	"IdentityX/models"
 	"context"
-	"lib/database"
 
 	"lib/telemetry"
 )
@@ -23,7 +22,7 @@ func (o *Operations) Create(ctx context.Context, in models.CreateProjectInput) (
 	}
 
 	var created *models.Project
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.projects.Create(ctx, *project)
 		if err != nil {
 			return err

@@ -65,6 +65,101 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 	}
 }
 
+// StrictHandlerFuncT and StrictMiddlewareFuncT capture the generated
+// packages' strict types structurally: every backend's oapi-codegen output
+// defines StrictHandlerFunc and StrictMiddlewareFunc with these exact
+// underlying shapes (distinct types, one per package), so the harness
+// converts to them with plain casts instead of per-backend adapt() funcs.
+type StrictHandlerFuncT interface {
+	~func(context.Context, http.ResponseWriter, *http.Request, any) (any, error)
+}
+
+type StrictMiddlewareFuncT[F StrictHandlerFuncT] interface {
+	~func(F, string) F
+}
+
+// adaptTo converts the harness strict middleware into the generated
+// package's strict-middleware type MF. The generated types share the
+// harness's underlying shape, so the leaf conversion is a plain cast.
+func adaptTo[HF StrictHandlerFuncT, MF StrictMiddlewareFuncT[HF]](mw StrictMiddlewareFunc) MF {
+	return MF(func(f HF, operationID string) HF {
+		return HF(mw(StrictHandlerFunc(f), operationID))
+	})
+}
+
+// MountStrict mounts the backend's generated strict server with the
+// harness's standard strict stack — request validation, then the
+// spec-derived fail-closed auth dispatch — in that order, on every
+// backend. The generated package's surface crosses the seam as function
+// values and type parameters; every piece of policy (middleware order,
+// fail-closed dispatch, unified param-binding error mapping) lives here,
+// so the four backends cannot drift.
+//
+// The caller supplies the generated package's constructors as values
+// (newStrict = openapi.NewStrictHandlerWithOptions, handlerWith =
+// openapi.HandlerWithOptions) and builds the two generated options
+// structs — strictOpts with the harness's StrictRequestErrorHandler and
+// StrictResponseErrorHandler, chiOpts with BaseRouter, any extra
+// ChiServerOptions middlewares, and ParamBindingErrorHandler. All type
+// parameters except HF are inferred from the arguments.
+func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF], SO, SI, CO any](
+	server ServerT,
+	chains map[string][]func(http.Handler) http.Handler,
+	strictOpts SO,
+	newStrict func(ServerT, []MF, SO) SI,
+	chiOpts CO,
+	handlerWith func(SI, CO) http.Handler,
+) http.Handler {
+	strict := newStrict(server, []MF{
+		adaptTo[HF, MF](ValidateMiddleware()),
+		adaptTo[HF, MF](AuthDispatch(chains)),
+	}, strictOpts)
+	return handlerWith(strict, chiOpts)
+}
+
+// ParamBindingErrorHandler returns the fun-envelope handler for the
+// generated strict server's param-binding failures, unified across the
+// backends to the superset: required params, invalid param formats, and
+// required headers. The generated error classes are oapi-codegen's and
+// identical across the four packages except for their package path, so the
+// harness classifies by type name and reads ParamName by reflection — the
+// generated surface is machine-owned; binding to it by name is the
+// harness's one concession to the codegen.
+func ParamBindingErrorHandler() func(w http.ResponseWriter, _ *http.Request, err error) {
+	return func(w http.ResponseWriter, _ *http.Request, err error) {
+		if resp, ok := paramBindingResponse(err); ok {
+			resp.Send(w)
+			return
+		}
+		fun.InternalServerError("internal error").Send(w)
+	}
+}
+
+// paramBindingResponse classifies one param-binding error into its fun
+// validation envelope. Only the three generated classes match; anything
+// else falls through to the caller's default (500).
+func paramBindingResponse(err error) (*fun.Response, bool) {
+	t := reflect.TypeOf(err)
+	if t == nil || t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
+		return nil, false
+	}
+	s := t.Elem()
+	f, ok := s.FieldByName("ParamName")
+	if !ok || f.Type.Kind() != reflect.String {
+		return nil, false
+	}
+	name := reflect.ValueOf(err).Elem().FieldByName("ParamName").String()
+	switch s.Name() {
+	case "RequiredParamError":
+		return fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "parameter is required"}).Validation()), true
+	case "InvalidParamFormatError":
+		return fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "invalid format"}).Validation()), true
+	case "RequiredHeaderError":
+		return fun.Error(fun.Err("invalid request header").WithFields(&fun.FieldError{Field: name, Message: "header is required"}).Validation()), true
+	}
+	return nil, false
+}
+
 // ValidateMiddleware returns a strict middleware that validates every
 // request body before the handler runs. The generated request object's
 // Body field is validated against its `validate` struct tags; operations

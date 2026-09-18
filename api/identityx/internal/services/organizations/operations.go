@@ -4,6 +4,7 @@ import (
 	"IdentityX/internal/authz"
 	"IdentityX/internal/keys"
 	"IdentityX/ports"
+	"lib/database"
 	"lib/errx"
 )
 
@@ -16,6 +17,9 @@ type Operations struct {
 	// next boot.
 	keys  *keys.Manager
 	authz *authz.Service
+	// tx opens the transactions multi-step writes run in; threaded
+	// from boot, no package-level runner.
+	tx database.TxRunner
 }
 
 func NewOperations(
@@ -24,6 +28,7 @@ func NewOperations(
 	orgs ports.OrganizationRepo,
 	keysMgr *keys.Manager,
 	authz *authz.Service,
+	tx database.TxRunner,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		projects: projects,
@@ -31,5 +36,6 @@ func NewOperations(
 		orgs:     orgs,
 		keys:     keysMgr,
 		authz:    authz,
+		tx:       tx,
 	})
 }

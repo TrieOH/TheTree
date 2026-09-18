@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"Informd/models"
-	"lib/database"
 	"lib/telemetry"
 )
 
@@ -25,7 +24,7 @@ func (o *Operations) Create(ctx context.Context, title string) (*models.Form, er
 	}
 
 	var created *models.Form
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.forms.Create(ctx, *form)
 		if err != nil {
 			return err

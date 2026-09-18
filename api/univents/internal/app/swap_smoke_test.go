@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	libauthz "lib/authz"
 	"univents/internal/handlers"
 	"univents/internal/services"
 
@@ -20,7 +21,7 @@ func rejectJWT(_ http.Handler) http.Handler {
 
 func TestSwapSmokeAuthDispatch(t *testing.T) {
 	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(t, server, middlewares{jwt: rejectJWT})
+	r := newTestRouter(t, server, libauthz.Primitives{JWT: rejectJWT})
 
 	// JWT-protected route without a token -> 401 fun envelope via the dispatch
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/events/owned", nil)
