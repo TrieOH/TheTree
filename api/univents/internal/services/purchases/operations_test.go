@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"lib/database"
 	"lib/testdb"
 
 	"univents/internal/repos"
@@ -81,7 +80,6 @@ func newOps(t *testing.T) (*repos.Repos, *sqlc.Queries, *purchases.Operations) {
 	t.Helper()
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 	r := repos.New(q)
 	return r, q, purchases.NewOperations(r.Purchases)
 }

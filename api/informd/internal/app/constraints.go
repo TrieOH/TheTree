@@ -4,8 +4,12 @@ import (
 	"lib/database"
 )
 
-func SetupConstraintMessages() {
-	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+// constraintMessages maps Informd's constraint and unique-index names to
+// the client-facing messages repos surface on violation. They travel into
+// database.SetupDB as data — boot fails loudly when a migration adds a
+// constraint with no message here.
+func constraintMessages() database.ConstraintRegistry {
+	return database.ConstraintRegistry{
 		// forms
 		"chk_forms_valid_status":       "status must be one of: draft, open, closed, archived",
 		"chk_forms_valid_status_state": "opened_at, closed_at or archived_at must be set when status is open, closed or archived",
@@ -33,5 +37,5 @@ func SetupConstraintMessages() {
 		"uniq_responder_email_on_system": "a responder with this email already exists on this system",
 		"chk_invite_not_both_named":      "an invite cannot have both responder_id and email set",
 		"form_invites_token_key":         "an invite with this token already exists",
-	})
+	}
 }

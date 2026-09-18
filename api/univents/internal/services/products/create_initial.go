@@ -2,7 +2,6 @@ package products
 
 import (
 	"context"
-	"lib/database"
 	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
@@ -28,7 +27,7 @@ func (o *Operations) CreateInitial(ctx context.Context, payload models.CreateIni
 	}
 
 	var product *models.Product
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		p, err := o.products.CreateProduct(ctx, &models.Product{
 			EditionID:            payload.EditionID,
 			VendorCode:           payload.VendorCode,

@@ -12,8 +12,8 @@ import (
 	"resty.dev/v3"
 )
 
-func SetupIdentityX(cfg config.Config) *idx.Client {
-	return idx.MustBootstrap(context.Background(), cfg.ToIdentityXConfig())
+func SetupIdentityX(ctx context.Context, cfg config.Config) (*idx.Client, error) {
+	return idx.Bootstrap(ctx, cfg.ToIdentityXConfig())
 }
 
 func SetupHTTPClient() *resty.Client {

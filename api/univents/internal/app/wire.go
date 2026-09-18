@@ -2,11 +2,11 @@ package app
 
 import (
 	"context"
+	"fmt"
+	libauthz "lib/authz"
 	"lib/database"
-	"lib/errx"
 	libriver "lib/river"
 	"log/slog"
-	"net/http"
 	"univents/internal/authz"
 	"univents/internal/handlers"
 	"univents/internal/repos"
@@ -19,14 +19,6 @@ import (
 	"github.com/riverqueue/river"
 	"riverqueue.com/riverui"
 )
-
-// ── Wire types ────────────────────────────────────────────────────────────
-
-type middlewares struct {
-	jwt     func(http.Handler) http.Handler
-	apiKey  func(http.Handler) http.Handler
-	anyAuth func(http.Handler) http.Handler
-}
 
 // ── Init methods ──────────────────────────────────────────────────────────
 
@@ -43,17 +35,21 @@ func (app *Univents) initHandlers(ops *services.Operations) *handlers.Server {
 	return handlers.NewServer(ops)
 }
 
-func (app *Univents) initMiddlewares() middlewares {
-	var mw middlewares
-	authMW := SetupAuthMiddlewares()
+// initMiddlewares builds the auth primitives the spec-derived chains
+// resolve against; construction stays per-backend, everything downstream
+// (chain derivation, dispatch, fail-closed) is the Access-check and
+// Harness modules' implementation.
+func (app *Univents) initMiddlewares() libauthz.Primitives {
+	authMW := app.setupAuthMiddlewares()
 
-	mw.jwt = authMW.JWT()
-	mw.apiKey = authMW.APIKey()
-	mw.anyAuth = authMW.AnyAuth()
-	return mw
+	return libauthz.Primitives{
+		JWT:    authMW.JWT(),
+		APIKey: authMW.APIKey(),
+		Any:    authMW.AnyAuth(),
+	}
 }
 
-func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], *riverui.Handler) {
+func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], *riverui.Handler, error) {
 	libriver.Migrate(ctx, app.db)
 
 	client := libriver.NewClient(app.db, libriver.NewWorkers(
@@ -66,7 +62,7 @@ func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *da
 
 	err := client.Start(ctx)
 	if err != nil {
-		errx.Exit(err, "failed to start river client")
+		return nil, nil, fmt.Errorf("start river client: %w", err)
 	}
 
 	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
@@ -77,12 +73,12 @@ func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *da
 		JobListHideArgsByDefault: true,
 	})
 	if err != nil {
-		errx.Exit(err, "failed to create river ui handler")
+		return nil, nil, fmt.Errorf("create river ui handler: %w", err)
 	}
 	err = riverUIHandler.Start(ctx)
 	if err != nil {
-		errx.Exit(err, "failed to start river ui handler")
+		return nil, nil, fmt.Errorf("start river ui handler: %w", err)
 	}
 
-	return client, riverUIHandler
+	return client, riverUIHandler, nil
 }

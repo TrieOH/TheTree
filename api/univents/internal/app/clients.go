@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
 
-	"lib/errx"
 	"lib/objectstorage"
 	"univents/internal/config"
 
@@ -32,23 +32,20 @@ func SetupPayssage(cfg config.Config) *payssage.Client {
 // VerifyPayssageWallet is the fail-fast boot check for the platform wallet
 // (D6): every event's seller lives on this one precreated wallet, so a wrong
 // or unreachable wallet id means the store cannot work — do not start.
-func VerifyPayssageWallet(ctx context.Context, client *payssage.Client, walletID uuid.UUID) {
+func VerifyPayssageWallet(ctx context.Context, client *payssage.Client, walletID uuid.UUID) error {
 	_, err := client.GetWallet(ctx, walletID)
 	if err != nil {
-		errx.Exit(err, "payssage platform wallet check failed (PAYSSAGE_WALLET_ID)")
+		return fmt.Errorf("payssage platform wallet check failed (PAYSSAGE_WALLET_ID): %w", err)
 	}
+	return nil
 }
 
-func SetupObjectStorage(cfg config.Config) *objectstorage.Client {
-	client, err := objectstorage.New(context.Background(), objectstorage.Config{
+func SetupObjectStorage(cfg config.Config) (*objectstorage.Client, error) {
+	return objectstorage.New(context.Background(), objectstorage.Config{
 		Endpoint:  cfg.ObjStorageEndpoint,
 		AccessKey: cfg.ObjStorageAccessKey,
 		SecretKey: cfg.ObjStorageSecretKey,
 		UseSSL:    cfg.ObjStorageUseSSL,
 		Region:    cfg.ObjStorageRegion,
 	})
-	if err != nil {
-		errx.Exit(err, "failed to create object-storage client")
-	}
-	return client
 }

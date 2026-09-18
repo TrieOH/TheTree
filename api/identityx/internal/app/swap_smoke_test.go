@@ -9,6 +9,7 @@ import (
 	"IdentityX/internal/config"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
+	libauthz "lib/authz"
 	"lib/globals"
 	"lib/validator"
 )
@@ -24,11 +25,11 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 		CorsAllowedOrigins: "http://localhost:3000",
 		CorsAllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
 	}}
-	r := app.CreateRouter(middlewares{
-		jwtAuth:    mwJWT,
-		apiKeyAuth: mwJWT,
-		anyAuth:    mwAnyAuth,
-		scopes:     testScopeCheckers(),
+	r := app.CreateRouter(libauthz.Primitives{
+		JWT:    mwJWT,
+		APIKey: mwJWT,
+		Any:    mwAnyAuth,
+		Scopes: testScopeCheckers(),
 	}, server, nil)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/auth/logout", nil)
@@ -54,11 +55,11 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 func TestSwapSmokeSetupFlow(t *testing.T) {
 	validator.SetupValidator() // normally done by httpserver.SetupFUN at startup
 	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(t, server, middlewares{
-		jwtAuth:    mwJWT,
-		apiKeyAuth: mwJWT,
-		anyAuth:    mwAnyAuth,
-		scopes:     testScopeCheckers(),
+	r := newTestRouter(t, server, libauthz.Primitives{
+		JWT:    mwJWT,
+		APIKey: mwJWT,
+		Any:    mwAnyAuth,
+		Scopes: testScopeCheckers(),
 	})
 
 	globals.MarkSetupComplete()

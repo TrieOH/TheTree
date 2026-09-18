@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"lib/database"
 	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
@@ -28,7 +27,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateEventInput
 	}
 
 	var created *models.Event
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.events.Create(ctx, event)
 		if err != nil {
 			return err

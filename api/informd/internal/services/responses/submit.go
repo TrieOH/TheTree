@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"Informd/models"
-	"lib/database"
 	"lib/telemetry"
 	"lib/xslices"
 
@@ -26,7 +25,7 @@ func (o *Operations) Submit(ctx context.Context, payload models.SubmitInput) err
 	}
 
 	var responderID *uuid.UUID
-	return database.RunTx(ctx, func(ctx context.Context) error {
+	return o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if payload.Email != nil {
 			responder, err := o.responders.GetByEmail(ctx, *payload.Email)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {

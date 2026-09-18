@@ -1,7 +1,8 @@
 package app
 
 import (
-	"net/http"
+	libauthz "lib/authz"
+	"lib/database"
 	"payssage/internal/authz"
 	"payssage/internal/features/providers"
 	"payssage/internal/handlers"
@@ -14,14 +15,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 )
-
-// ── Wire types ────────────────────────────────────────────────────────────
-
-type middlewares struct {
-	jwtAuth    func(http.Handler) http.Handler
-	apiKeyAuth func(http.Handler) http.Handler
-	anyAuth    func(http.Handler) http.Handler
-}
 
 // ── Init functions ────────────────────────────────────────────────────────
 
@@ -45,18 +38,22 @@ func (app *Payssage) initProviders(r *repos.Repos) {
 	}
 }
 
-func (app *Payssage) initOperations(riverClient *river.Client[pgx.Tx], r *repos.Repos) *services.Operations {
+func (app *Payssage) initOperations(riverClient *river.Client[pgx.Tx], r *repos.Repos, tx database.TxRunner) *services.Operations {
 	authzSvc := authz.New(r.Organizations, r.Wallets)
-	return services.NewOperations(r, authzSvc, riverClient, app.idxClient)
+	return services.NewOperations(r, authzSvc, riverClient, app.idxClient, tx)
 }
 
-func (app *Payssage) initMiddlewares() middlewares {
-	var mw middlewares
+// initMiddlewares builds the auth primitives the spec-derived chains
+// resolve against; construction stays per-backend, everything downstream
+// (chain derivation, dispatch, fail-closed) is the Access-check and
+// Harness modules' implementation.
+func (app *Payssage) initMiddlewares() libauthz.Primitives {
 	authMW := app.setupAuthMiddlewares()
-	mw.jwtAuth = authMW.JWT()
-	mw.apiKeyAuth = authMW.APIKey()
-	mw.anyAuth = authMW.AnyAuth()
-	return mw
+	return libauthz.Primitives{
+		JWT:    authMW.JWT(),
+		APIKey: authMW.APIKey(),
+		Any:    authMW.AnyAuth(),
+	}
 }
 
 func (app *Payssage) initHandlers(ops *services.Operations) *handlers.Server {

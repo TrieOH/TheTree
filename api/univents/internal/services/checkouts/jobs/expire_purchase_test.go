@@ -180,7 +180,6 @@ func newWorker(t *testing.T) (*repos.Repos, *jobs.ExpirePurchaseWorker, *recordi
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
 	tx := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(tx)
 	r := repos.New(q)
 	notifier := &recordingNotifier{}
 	w := jobs.NewExpirePurchaseWorker(r.Purchases, r.Registrations, r.Products, r.Programs, notifier, tx)

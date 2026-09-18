@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"lib/database"
 	"lib/email"
 	"lib/testdb"
 
@@ -115,7 +114,6 @@ func newGiftWorker(t *testing.T, r *repos.Repos, sender *recordingSender) *jobs.
 func TestSendGiftEmail_SendsToAccountlessRecipient(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 	r := repos.New(q)
 
 	reg, slug := seedGiftedReg(t, r, nil)
@@ -156,7 +154,6 @@ func TestSendGiftEmail_SendsToAccountlessRecipient(t *testing.T) {
 func TestSendGiftEmail_SkipsClaimedRegistration(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 	r := repos.New(q)
 
 	claimedID := uuid.New()
@@ -181,7 +178,6 @@ func TestSendGiftEmail_SkipsClaimedRegistration(t *testing.T) {
 func TestSendGiftEmail_SkipsUnconfirmedRegistration(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 	r := repos.New(q)
 
 	reg, _ := seedGiftedReg(t, r, nil)
@@ -208,7 +204,6 @@ func TestSendGiftEmail_SkipsUnconfirmedRegistration(t *testing.T) {
 func TestSendGiftEmail_RetriesOnSendFailure(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 	r := repos.New(q)
 
 	reg, _ := seedGiftedReg(t, r, nil)
@@ -260,7 +255,6 @@ func TestSendGiftEmail_DeliversViaSMTP(t *testing.T) {
 
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 	r := repos.New(q)
 
 	reg, _ := seedGiftedReg(t, r, nil)

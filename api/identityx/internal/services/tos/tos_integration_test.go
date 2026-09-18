@@ -11,7 +11,6 @@ import (
 	"IdentityX/internal/repos"
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
-	"lib/database"
 	"lib/testdb"
 
 	"github.com/google/uuid"
@@ -50,7 +49,6 @@ func setupTosFixture(t *testing.T) *tosFixture {
 	t.Helper()
 
 	pool := testdb.Postgres(t, "../../../db/migrations")
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
 
 	ctx := context.Background()
 	r := repos.New(sqlc.New(pool))

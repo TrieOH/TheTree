@@ -3,7 +3,6 @@ package organizations
 import (
 	"IdentityX/models"
 	"context"
-	"lib/database"
 
 	"lib/telemetry"
 )
@@ -31,7 +30,7 @@ func (o *Operations) CreateProject(ctx context.Context, in models.CreateOrgProje
 	// new project here, so an org-created project is never token-broken
 	// until the next boot.
 	var created *models.Project
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.projects.Create(ctx, *project)
 		if err != nil {
 			return err

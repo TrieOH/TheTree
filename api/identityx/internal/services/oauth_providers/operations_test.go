@@ -50,6 +50,7 @@ func newTestOps(t *testing.T, role models.ProjectRole) *testOps {
 		newTosOps(),
 		resty.New(),
 		oauth.Registry,
+		nopTxRunner{},
 	)
 	return o
 }

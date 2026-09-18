@@ -1,7 +1,10 @@
 package main
 
-import "IdentityX/internal/app"
+import (
+	"IdentityX/internal/app"
+	"lib/errx"
+)
 
 func main() {
-	app.Start()
+	errx.Exit(app.Run(), "identityx exited with error")
 }

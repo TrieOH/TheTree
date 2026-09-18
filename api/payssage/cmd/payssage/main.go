@@ -1,7 +1,10 @@
 package main
 
-import "payssage/internal/app"
+import (
+	"lib/errx"
+	"payssage/internal/app"
+)
 
 func main() {
-	app.Start()
+	errx.Exit(app.Run(), "payssage exited with error")
 }

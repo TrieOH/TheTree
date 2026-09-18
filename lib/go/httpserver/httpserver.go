@@ -160,15 +160,8 @@ func NewRouter(cfg Config) http.Handler {
 
 // Start serves handler on cfg.Port, blocking until the process exits. It also
 // starts the pprof server on cfg.ProfilePort when set.
-func Start(handler http.Handler, cfg Config) {
-	if cfg.ProfilePort != "" {
-		go servePprof(cfg.ProfilePort, cfg.AppName)
-	}
-
-	log.Printf("%s listening on :%s", cfg.AppName, cfg.Port)
-	log.Fatal(newServer(handler, cfg.Port).ListenAndServe())
-}
-
+//
+// Superseded by Boot, which owns the whole process lifecycle.
 func newServer(handler http.Handler, port string) *http.Server {
 	return &http.Server{
 		Addr:         ":" + port,

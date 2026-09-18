@@ -23,22 +23,12 @@ type TxOptions struct {
 //
 // A transaction-bound context is passed to fn and must be used by repositories
 // to access the active transaction.
+//
+// There is no package-level default runner: the runner is constructed at
+// boot (see PgxTxRunner) and threaded explicitly into the services that
+// open transactions, so transaction knowledge stays local to its users and
+// no init-order contract exists.
 type TxRunner interface {
 	WithinTx(ctx context.Context, fn func(ctx context.Context) error) error
 	WithinTxWithOptions(ctx context.Context, opts TxOptions, fn func(ctx context.Context) error) error
-}
-
-var defaultRunner TxRunner
-
-// SetDefaultRunner sets the package-level transaction runner. Call once at startup.
-func SetDefaultRunner(r TxRunner) { defaultRunner = r }
-
-// RunTx executes fn within a transaction using the default runner.
-func RunTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	return defaultRunner.WithinTx(ctx, fn)
-}
-
-// RunTxWithOptions executes fn within a transaction with the given options.
-func RunTxWithOptions(ctx context.Context, opts TxOptions, fn func(ctx context.Context) error) error {
-	return defaultRunner.WithinTxWithOptions(ctx, opts, fn)
 }

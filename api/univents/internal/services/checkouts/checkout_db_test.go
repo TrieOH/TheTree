@@ -170,7 +170,6 @@ func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentReques
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	tx := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(tx)
 	r := repos.New(q)
 
 	ps := newFakePayssage(payssageFn)

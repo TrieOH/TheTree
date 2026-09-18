@@ -185,7 +185,7 @@ type pendingPurchaseSeed struct {
 // seedPendingPurchase creates a pending purchase with one item of each type
 // and its materialized rows (D4), exactly as split 7 checkout will — in one
 // tx.
-func seedPendingPurchase(t *testing.T, r *repos.Repos, fx dbFixture) pendingPurchaseSeed {
+func seedPendingPurchase(t *testing.T, r *repos.Repos, fx dbFixture, runner database.TxRunner) pendingPurchaseSeed {
 	t.Helper()
 	ctx := context.Background()
 	purchaserID := uuid.New()
@@ -194,7 +194,7 @@ func seedPendingPurchase(t *testing.T, r *repos.Repos, fx dbFixture) pendingPurc
 	var seed pendingPurchaseSeed
 	seed.intentID = intentID
 
-	err := database.RunTx(ctx, func(ctx context.Context) error {
+	err := runner.WithinTx(ctx, func(ctx context.Context) error {
 		p, err := r.Purchases.CreatePurchase(ctx, &models.Purchase{
 			EditionID:        fx.editionID,
 			PurchaserID:      purchaserID,
@@ -276,11 +276,10 @@ func TestReceiveDB_ApproveEndToEnd(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	runner := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(runner)
 	r := repos.New(q)
 
 	fx := seedDBFixture(t, q)
-	seed := seedPendingPurchase(t, r, fx)
+	seed := seedPendingPurchase(t, r, fx, runner)
 
 	badges := &recordingBadges{}
 	river := &recordingRiver{}
@@ -362,7 +361,6 @@ func TestReceiveDB_ApproveGiftEmailOnly(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	runner := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(runner)
 	r := repos.New(q)
 
 	fx := seedDBFixture(t, q)
@@ -373,7 +371,7 @@ func TestReceiveDB_ApproveGiftEmailOnly(t *testing.T) {
 	purchaserID := uuid.New()
 	intentID := uuid.New()
 	var regID uuid.UUID
-	err := database.RunTx(ctx, func(ctx context.Context) error {
+	err := runner.WithinTx(ctx, func(ctx context.Context) error {
 		p, err := r.Purchases.CreatePurchase(ctx, &models.Purchase{
 			EditionID:        fx.editionID,
 			PurchaserID:      purchaserID,
@@ -466,11 +464,10 @@ func TestReceiveDB_DuplicateDeliveryIsNoOp(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	runner := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(runner)
 	r := repos.New(q)
 
 	fx := seedDBFixture(t, q)
-	seed := seedPendingPurchase(t, r, fx)
+	seed := seedPendingPurchase(t, r, fx, runner)
 
 	badges := &recordingBadges{}
 	river := &recordingRiver{}
@@ -515,11 +512,10 @@ func TestReceiveDB_RefundEndToEnd(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	runner := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(runner)
 	r := repos.New(q)
 
 	fx := seedDBFixture(t, q)
-	seed := seedPendingPurchase(t, r, fx)
+	seed := seedPendingPurchase(t, r, fx, runner)
 
 	badges := &recordingBadges{}
 	river := &recordingRiver{}

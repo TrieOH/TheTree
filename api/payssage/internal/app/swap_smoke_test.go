@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	libauthz "lib/authz"
 	"payssage/internal/handlers"
 	"payssage/internal/services"
 
@@ -21,7 +22,7 @@ func rejectJWT(_ http.Handler) http.Handler {
 func TestSwapSmokeAuthDispatch(t *testing.T) {
 	server := handlers.NewServer(&services.Operations{})
 	// JWT-protected route without a token -> 401 fun envelope via the dispatch
-	r := newTestRouter(t, server, middlewares{jwtAuth: rejectJWT, apiKeyAuth: mwAPIKey, anyAuth: mwAny})
+	r := newTestRouter(t, server, libauthz.Primitives{JWT: rejectJWT, APIKey: mwAPIKey, Any: mwAny})
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/wallets", nil)
 	rec := httptest.NewRecorder()
