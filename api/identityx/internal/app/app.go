@@ -67,7 +67,7 @@ func Run() error {
 			return nil, nil, fmt.Errorf("ensure crypto keys: %w", err)
 		}
 
-		riverClient, riverUIHandler, err := app.initRiver(ctx, q, actionTokenMgr, keysMgr)
+		riverClient, riverUI, err := app.initRiver(ctx, q, actionTokenMgr, keysMgr)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -77,7 +77,7 @@ func Run() error {
 		handlers := app.initHandlers(ops)
 		primitives := app.initMiddlewares(ops, tokensMgr, authzSvc)
 
-		mux := app.CreateRouter(primitives, handlers, riverUIHandler)
+		mux := app.CreateRouter(primitives, handlers, riverUI)
 		return mux, func(ctx context.Context) error {
 			libriver.LogStop(ctx, riverClient)
 			database.CloseDB(pool)
@@ -89,8 +89,8 @@ func Run() error {
 		AppName:            cfg.AppName,
 		Port:               cfg.Port,
 		ProfilePort:        cfg.ProfilePort,
-		CorsAllowedOrigins: cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 	}, start)
 }

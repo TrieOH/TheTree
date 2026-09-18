@@ -2,8 +2,7 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
+	"net/http"
 	"time"
 
 	"IdentityX/internal/authz"
@@ -21,7 +20,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
-	"riverqueue.com/riverui"
 )
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -86,12 +84,12 @@ func (app *IdentityX) initHandlers(ops *services.Operations) *handlers.Server {
 }
 
 // initRiver migrates, starts the river client with the service's workers and
-// periodic jobs, and brings up the riverui dashboard. Returns both so callers
-// can enqueue work and mount the UI handler.
-func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager) (*river.Client[pgx.Tx], *riverui.Handler, error) {
+// periodic jobs, and brings up the riverui dashboard (policy lives in
+// lib/river). Returns both so callers can enqueue work and mount the UI.
+func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager) (*river.Client[pgx.Tx], http.Handler, error) {
 	libriver.Migrate(ctx, app.db)
 
-	client := libriver.NewClient(app.db, libriver.NewWorkers(
+	client, err := libriver.Start(ctx, app.db, libriver.NewWorkers(
 		libriver.Register[jobs.CleanupBlacklistArgs](jobs.NewCleanupBlacklistWorker(q)),
 		libriver.Register[jobs.CleanupActionTokensArgs](jobs.NewCleanupActionTokensWorker(actionTokenMgr)),
 		libriver.Register[jobs.RotateKeysArgs](jobs.NewRotateKeysWorker(keysMgr)),
@@ -123,26 +121,14 @@ func (app *IdentityX) initRiver(ctx context.Context, q *sqlc.Queries, actionToke
 			&river.PeriodicJobOpts{RunOnStart: false},
 		),
 	})
-
-	err := client.Start(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("start river client: %w", err)
+		return nil, nil, err
 	}
 
-	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		DevMode:                  false,
-		Endpoints:                riverui.NewEndpoints[pgx.Tx](client, nil),
-		Logger:                   slog.Default(),
-		Prefix:                   "/riverui",
-		JobListHideArgsByDefault: true,
-	})
+	riverUI, err := libriver.Dashboard(ctx, client)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create river ui handler: %w", err)
-	}
-	err = riverUIHandler.Start(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("start river ui handler: %w", err)
+		return nil, nil, err
 	}
 
-	return client, riverUIHandler, nil
+	return client, riverUI, nil
 }

@@ -82,7 +82,7 @@ func Run() error {
 		// River must exist before the operations: the webhook receiver
 		// cancels the expiry job on approve via the client (best-effort;
 		// split 7 checkout schedules the job).
-		riverClient, riverUIHandler, err := app.initRiver(ctx, repos, notifier, tx)
+		riverClient, riverUI, err := app.initRiver(ctx, repos, notifier, tx)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -91,7 +91,7 @@ func Run() error {
 		primitives := app.initMiddlewares()
 		handlers := app.initHandlers(ops)
 
-		mux := app.CreateRouter(primitives, handlers, riverUIHandler)
+		mux := app.CreateRouter(primitives, handlers, riverUI)
 		return mux, func(ctx context.Context) error {
 			libriver.LogStop(ctx, riverClient)
 			database.CloseDB(pool)
@@ -103,8 +103,8 @@ func Run() error {
 		AppName:            cfg.AppName,
 		Port:               cfg.Port,
 		ProfilePort:        cfg.ProfilePort,
-		CorsAllowedOrigins: cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 	}, start)
 }

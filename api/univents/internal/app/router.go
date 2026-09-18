@@ -11,17 +11,18 @@ import (
 	"univents/internal/handlers/webhooks"
 	"univents/internal/openapi"
 
+	libriver "lib/river"
+
 	"github.com/go-chi/chi/v5"
-	"riverqueue.com/riverui"
 )
 
-func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
+func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Server, riverUI http.Handler) http.Handler {
 	resolver, err := authz.NewResolver(spec.OpenAPISpec, primitives, authz.Options{})
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:            app.cfg.AppName,
-		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: app.cfg.AllowedOrigins,
+		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 		SkipLogPrefixes:    []string{"/admin/asynq"},
 		Routes: func(r *chi.Mux) {
@@ -35,13 +36,7 @@ func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Serve
 			r.Get("/editions/{edition_id}/store/stream", h.ServeStoreStream)
 			r.Handle("/ws", http.HandlerFunc(h.ServeWS))
 
-			r.Group(func(r chi.Router) {
-				// River's job dashboard is an ops surface, not a spec
-				// operation: the auth chains do not cover it, so it is
-				// gated with the shared basic auth (SIMPLE_AUTH_* env).
-				r.Use(httpserver.BasicAuth)
-				r.Mount("/riverui", riverUIHandler)
-			})
+			libriver.MountDashboard(r, riverUI)
 		},
 	})
 }

@@ -18,8 +18,8 @@ func (app *Informd) CreateRouter(h *handlers.Server, primitives libauthz.Primiti
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:            app.cfg.AppName,
-		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: app.cfg.AllowedOrigins,
+		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())

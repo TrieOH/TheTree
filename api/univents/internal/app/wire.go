@@ -2,11 +2,10 @@ package app
 
 import (
 	"context"
-	"fmt"
 	libauthz "lib/authz"
 	"lib/database"
 	libriver "lib/river"
-	"log/slog"
+	"net/http"
 	"univents/internal/authz"
 	"univents/internal/handlers"
 	"univents/internal/repos"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
-	"riverqueue.com/riverui"
 )
 
 // ── Init methods ──────────────────────────────────────────────────────────
@@ -49,36 +47,24 @@ func (app *Univents) initMiddlewares() libauthz.Primitives {
 	}
 }
 
-func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], *riverui.Handler, error) {
+func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], http.Handler, error) {
 	libriver.Migrate(ctx, app.db)
 
-	client := libriver.NewClient(app.db, libriver.NewWorkers(
+	client, err := libriver.Start(ctx, app.db, libriver.NewWorkers(
 		libriver.Register(certsJobs.NewGrantCertsWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(certsJobs.NewGrantCertsForOccurrenceWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(checkoutsJobs.NewExpirePurchaseWorker(r.Purchases, r.Registrations, r.Products, r.Programs, notifier, tx)),
 		libriver.Register(checkoutsJobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, app.emailClient)),
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
-
-	err := client.Start(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("start river client: %w", err)
+		return nil, nil, err
 	}
 
-	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		DevMode:                  false,
-		Endpoints:                riverui.NewEndpoints[pgx.Tx](client, nil),
-		Logger:                   slog.Default(),
-		Prefix:                   "/riverui",
-		JobListHideArgsByDefault: true,
-	})
+	riverUI, err := libriver.Dashboard(ctx, client)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create river ui handler: %w", err)
-	}
-	err = riverUIHandler.Start(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("start river ui handler: %w", err)
+		return nil, nil, err
 	}
 
-	return client, riverUIHandler, nil
+	return client, riverUI, nil
 }

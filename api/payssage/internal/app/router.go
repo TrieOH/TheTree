@@ -11,25 +11,23 @@ import (
 	"payssage/internal/handlers/webhooks"
 	"payssage/internal/openapi"
 
+	libriver "lib/river"
+
 	"github.com/go-chi/chi/v5"
-	"riverqueue.com/riverui"
 )
 
-func (app *Payssage) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
+func (app *Payssage) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, riverUI http.Handler) http.Handler {
 	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, libauthz.Options{})
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:            app.cfg.AppName,
-		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: app.cfg.AllowedOrigins,
+		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())
 
-			r.Group(func(r chi.Router) {
-				r.Use(httpserver.BasicAuth)
-				r.Mount("/riverui", riverUIHandler)
-			})
+			libriver.MountDashboard(r, riverUI)
 		},
 	})
 }

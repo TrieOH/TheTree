@@ -62,8 +62,8 @@ func Run() error {
 		AppName:            cfg.AppName,
 		Port:               cfg.Port,
 		ProfilePort:        cfg.ProfilePort,
-		CorsAllowedOrigins: cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 	}, start)
 }

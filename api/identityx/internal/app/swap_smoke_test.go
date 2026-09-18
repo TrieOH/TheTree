@@ -11,6 +11,7 @@ import (
 	"IdentityX/internal/services"
 	"IdentityX/internal/setup"
 	libauthz "lib/authz"
+	libconfig "lib/config"
 	"lib/validator"
 )
 
@@ -22,8 +23,10 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 	validator.SetupValidator()
 	server := handlers.NewServer(&services.Operations{})
 	app := &IdentityX{cfg: config.Config{
-		CorsAllowedOrigins: "http://localhost:3000",
-		CorsAllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
+		CORS: libconfig.CORS{
+			AllowedOrigins: "http://localhost:3000",
+			AllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
+		},
 	}}
 	r := app.CreateRouter(libauthz.Primitives{
 		JWT:    mwJWT,

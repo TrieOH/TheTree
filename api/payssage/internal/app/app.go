@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -17,10 +15,8 @@ import (
 
 	idx "sdk/identityx"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"resty.dev/v3"
-	"riverqueue.com/riverui"
 )
 
 type Payssage struct {
@@ -61,36 +57,25 @@ func Run() error {
 		repos := app.initRepos(sqlc.New(pool))
 		app.initProviders(repos)
 
-		riverClient := libriver.NewClient(pool, libriver.NewWorkers(
+		riverClient, err := libriver.Start(ctx, pool, libriver.NewWorkers(
 			libriver.Register[webhooksjobs.DeliverWebhookArgs](webhooksjobs.NewDeliverWebhookWorker(
 				repos.WebhookDeliveries, repos.WebhookEvents, repos.WebhookEndpoints, app.httpClient,
 			)),
 		), nil, nil)
-		err = riverClient.Start(ctx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("start river client: %w", err)
+			return nil, nil, err
 		}
 
-		riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-			DevMode:                  false,
-			Endpoints:                riverui.NewEndpoints[pgx.Tx](riverClient, nil),
-			Logger:                   slog.Default(),
-			Prefix:                   "/riverui",
-			JobListHideArgsByDefault: true,
-		})
+		riverUI, err := libriver.Dashboard(ctx, riverClient)
 		if err != nil {
-			return nil, nil, fmt.Errorf("create river ui handler: %w", err)
-		}
-		err = riverUIHandler.Start(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("start river ui handler: %w", err)
+			return nil, nil, err
 		}
 
 		ops := app.initOperations(riverClient, repos, tx)
 		handlers := app.initHandlers(ops)
 		primitives := app.initMiddlewares()
 
-		mux := app.CreateRouter(primitives, handlers, riverUIHandler)
+		mux := app.CreateRouter(primitives, handlers, riverUI)
 		return mux, func(ctx context.Context) error {
 			libriver.LogStop(ctx, riverClient)
 			database.CloseDB(pool)
@@ -102,8 +87,8 @@ func Run() error {
 		AppName:            cfg.AppName,
 		Port:               cfg.Port,
 		ProfilePort:        cfg.ProfilePort,
-		CorsAllowedOrigins: cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 	}, start)
 }

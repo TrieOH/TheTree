@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	libconfig "lib/config"
 	"lib/database"
 	"lib/email"
 	"lib/errx"
@@ -12,27 +13,19 @@ import (
 )
 
 type Config struct {
-	// Server
-	Port        string `env:"PORT"              envDefault:"8080"`
-	ProfilePort string `env:"PROFILE_PORT"      envDefault:"6060"`
-	AppName     string `env:"APP_NAME,required"`
-	AppURL      string `env:"APP_URL,required"`
-	DebugMode   bool   `env:"DEBUG_MODE"`
+	libconfig.Server
+	libconfig.RootPostgres
+	libconfig.CORS
 
-	// Postgres (own DB)
-	PostgresHost     string `env:"IDX_POSTGRES_HOST,required"`
-	PostgresPort     string `env:"IDX_POSTGRES_PORT"              envDefault:"5432"`
-	PostgresDB       string `env:"IDX_POSTGRES_DB,required"`
-	PostgresUser     string `env:"IDX_POSTGRES_USER,required"`
-	PostgresPassword string `env:"IDX_POSTGRES_PASSWORD,required"`
+	// Own database, prefixed IDX_.
+	Postgres libconfig.Postgres `envPrefix:"IDX_"`
 
 	// Migration
 	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
 
-	// Postgres (root — from .env)
-	RootPostgresUser     string `env:"POSTGRES_USER,required"`
-	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
-	RootPostgresDB       string `env:"POSTGRES_DB"                envDefault:"postgres"`
+	// Server extras
+	AppURL      string `env:"APP_URL,required"`
+	ProfilePort string `env:"PROFILE_PORT"     envDefault:"6060"`
 
 	// SMTP
 	SMTPHost     string `env:"SMTP_HOST,required"`
@@ -57,30 +50,10 @@ type Config struct {
 	// Action tokens (email verify / password reset links)
 	EmailVerifyTokenTTL time.Duration `env:"EMAIL_VERIFY_TOKEN_TTL" envDefault:"10m"`
 	EmailResetTokenTTL  time.Duration `env:"EMAIL_RESET_TOKEN_TTL"  envDefault:"10m"`
-
-	// CORS
-	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
-	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
-
-	// Feature flags
-	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
 }
 
 func (cfg *Config) ToDBConfig() database.Config {
-	return database.Config{
-		Host:          cfg.PostgresHost,
-		Port:          cfg.PostgresPort,
-		DB:            cfg.PostgresDB,
-		User:          cfg.PostgresUser,
-		Password:      cfg.PostgresPassword,
-		SSLMode:       "disable",
-		RootUser:      cfg.RootPostgresUser,
-		RootPassword:  cfg.RootPostgresPassword,
-		RootDB:        cfg.RootPostgresDB,
-		RootHost:      "postgres",
-		RootPort:      "5432",
-		MigrationPath: cfg.MigrationPath,
-	}
+	return libconfig.DBConfig(cfg.Postgres, cfg.RootPostgres, cfg.MigrationPath)
 }
 
 func (cfg *Config) ToEmailConfig() email.Config {

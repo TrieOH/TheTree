@@ -9,12 +9,12 @@ import (
 	libauthz "lib/authz"
 	"lib/errx"
 	"lib/httpserver"
+	libriver "lib/river"
 
 	"github.com/go-chi/chi/v5"
-	"riverqueue.com/riverui"
 )
 
-func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, riverUIHandler *riverui.Handler) http.Handler {
+func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, riverUI http.Handler) http.Handler {
 	// The setup guard and its op list are validated against the spec at
 	// construction; a mismatch fails boot, never production. Platform-vs-
 	// project scope is also a chain concern, derived from each operation's
@@ -29,21 +29,15 @@ func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.S
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
 		AppName:            app.cfg.AppName,
-		CorsAllowedOrigins: app.cfg.CorsAllowedOrigins,
-		CorsAllowedHeaders: app.cfg.CorsAllowedHeaders,
+		CorsAllowedOrigins: app.cfg.AllowedOrigins,
+		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())
 
 			// nil in tests; wired in run via initRiver
-			if riverUIHandler != nil {
-				r.Group(func(r chi.Router) {
-					// River's job dashboard is an ops surface, not a spec
-					// operation: the auth chains do not cover it, so it is
-					// gated with the shared basic auth (SIMPLE_AUTH_* env).
-					r.Use(httpserver.BasicAuth)
-					r.Mount("/riverui", riverUIHandler)
-				})
+			if riverUI != nil {
+				libriver.MountDashboard(r, riverUI)
 			}
 		},
 	})
