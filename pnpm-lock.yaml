@@ -885,6 +885,9 @@ importers:
       '@trieoh/univents-api':
         specifier: workspace:*
         version: link:../../lib/ts/univents
+      '@zxing/browser':
+        specifier: ^0.1.5
+        version: 0.1.5(@zxing/library@0.21.3)
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
@@ -921,7 +924,7 @@ importers:
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
-        version: 1.39.2(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(workerd@1.20260908.1)(wrangler@4.97.0)
+        version: 1.39.2(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(workerd@1.20260601.1)(wrangler@4.97.0)
       '@cloudflare/vitest-plugin':
         specifier: 1.1.6
         version: 1.1.6(@vitest/runner@4.1.10)(@vitest/snapshot@4.1.10)(vitest@4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))
@@ -7265,9 +7268,9 @@ snapshots:
       - utf-8-validate
       - workerd
 
-  '@cloudflare/vite-plugin@1.39.2(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(workerd@1.20260908.1)(wrangler@4.97.0)':
+  '@cloudflare/vite-plugin@1.39.2(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))(workerd@1.20260601.1)(wrangler@4.97.0)':
     dependencies:
-      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260908.1)
+      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260601.1)
       miniflare: 4.20260601.0
       unenv: 2.0.0-rc.24
       vite: 8.2.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)

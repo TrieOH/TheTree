@@ -5,35 +5,37 @@ import type { OccurrenceI, ProgramI } from "@/features/programs/model";
 import { AdminCreateProgramCard } from "@/features/programs/ui/AdminCreateProgramCard";
 import { AdminProgramCard } from "@/features/programs/ui/AdminProgramCard";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+});
 
 const mockProgram: ProgramI = {
   id: "prog-1",
   edition_id: "ed-1",
+  kind: "activity",
   name: "Keynote de Abertura",
   description: "Apresentação de abertura com os fundadores e convidados especiais.",
-  kind: "activity",
   min_access_level: 1,
   staff_only: false,
-  price: 0,
   banner_url: "https://example.com/keynote.png",
-  created_at: "2026-03-01T10:00:00Z",
-  updated_at: null,
+  price: 0,
+  created_at: "2026-09-01T10:00:00Z",
+  updated_at: "2026-09-01T10:00:00Z",
   deleted_at: null,
 };
 
 const mockCheckpointProgram: ProgramI = {
   id: "prog-2",
   edition_id: "ed-1",
+  kind: "checkpoint",
   name: "Checkpoint Entrada Principal",
   description: "Validação de crachás no hall principal.",
-  kind: "checkpoint",
   min_access_level: 0,
   staff_only: true,
-  price: 0,
   banner_url: null,
-  created_at: "2026-03-01T10:00:00Z",
-  updated_at: null,
+  price: 0,
+  created_at: "2026-09-01T10:00:00Z",
+  updated_at: "2026-09-01T10:00:00Z",
   deleted_at: null,
 };
 
@@ -42,22 +44,22 @@ const mockOccurrences: OccurrenceI[] = [
     id: "occ-1",
     program_id: "prog-1",
     edition_id: "ed-1",
-    starts_at: "2026-03-20T09:00:00Z",
-    ends_at: "2026-03-20T10:30:00Z",
-    max_capacity: 150,
-    created_at: "2026-03-01T10:00:00Z",
-    updated_at: null,
+    starts_at: "2026-09-10T09:00:00Z",
+    ends_at: "2026-09-10T10:30:00Z",
+    max_capacity: 100,
+    created_at: "2026-09-01T10:00:00Z",
+    updated_at: "2026-09-01T10:00:00Z",
     deleted_at: null,
   },
   {
     id: "occ-2",
     program_id: "prog-1",
     edition_id: "ed-1",
-    starts_at: "2026-03-21T09:00:00Z",
-    ends_at: "2026-03-21T10:30:00Z",
-    max_capacity: 150,
-    created_at: "2026-03-01T10:00:00Z",
-    updated_at: null,
+    starts_at: "2026-09-10T14:00:00Z",
+    ends_at: "2026-09-10T15:30:00Z",
+    max_capacity: 100,
+    created_at: "2026-09-01T10:00:00Z",
+    updated_at: "2026-09-01T10:00:00Z",
     deleted_at: null,
   },
 ];
@@ -67,31 +69,34 @@ describe("AdminCreateProgramCard", () => {
     const onCreate = vi.fn();
     render(() => <AdminCreateProgramCard onCreate={onCreate} animate={false} />);
 
-    const btn = screen.getByRole("button", { name: /Novo programa/i });
-    expect(btn).toBeInTheDocument();
+    expect(screen.getByText("Novo programa")).toBeInTheDocument();
     expect(
-      screen.getByText("Crie atividades, palestras ou checkpoints com horários e controle de acesso."),
+      screen.getByText(
+        "Crie atividades, palestras ou checkpoints com horários e controle de acesso.",
+      ),
     ).toBeInTheDocument();
 
-    fireEvent.click(btn);
+    const button = screen.getByRole("button", { name: /Novo programa/i });
+    fireEvent.click(button);
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("AdminProgramCard", () => {
-  it("renders activity program info, thumbnail, badges, occurrences count and actions", () => {
+  it("renders activity program info, thumbnail, metadata, occurrences count and link", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
-    const onOpenCalendar = vi.fn();
+    const onManageOccurrences = vi.fn();
 
     render(() => (
       <AdminProgramCard
         program={mockProgram}
         occurrences={mockOccurrences}
+        occurrencesHref="/admin/events/1/editions/1/programs/prog-1/occurrences"
         animate={false}
         onEdit={onEdit}
         onDelete={onDelete}
-        onOpenCalendar={onOpenCalendar}
+        onManageOccurrences={onManageOccurrences}
       />
     ));
 
@@ -114,15 +119,15 @@ describe("AdminProgramCard", () => {
     fireEvent.click(deleteBtn);
     expect(onDelete).toHaveBeenCalledWith(mockProgram);
 
-    const calBtn = screen.getByRole("button", { name: /Ver no calendário/i });
-    fireEvent.click(calBtn);
-    expect(onOpenCalendar).toHaveBeenCalledWith(mockProgram);
+    const occLink = screen.getByRole("link", { name: /Ocorrências/i });
+    expect(occLink).toHaveAttribute("href", "/admin/events/1/editions/1/programs/prog-1/occurrences");
+    fireEvent.click(occLink);
+    expect(onManageOccurrences).toHaveBeenCalledWith(mockProgram);
   });
 
   it("renders checkpoint program with staff only badge and fallback icon", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
-    const onOpenCalendar = vi.fn();
 
     render(() => (
       <AdminProgramCard
@@ -131,7 +136,6 @@ describe("AdminProgramCard", () => {
         animate={false}
         onEdit={onEdit}
         onDelete={onDelete}
-        onOpenCalendar={onOpenCalendar}
       />
     ));
 

@@ -17,6 +17,8 @@ import {
 } from "@/features/programs/api/mutations";
 import type { OccurrenceCreateOutput } from "@/features/programs/model";
 import { programKeys } from "@/features/programs/api/query-keys";
+import { OccurrenceAttendanceModal } from "@/features/programs/ui/OccurrenceAttendanceModal";
+import { OccurrenceDrawModal } from "@/features/programs/ui/OccurrenceDrawModal";
 import { DesktopOnly } from "@/shared/ui/DesktopOnly";
 import { toast } from "@/shared/ui/toast";
 import { addDays, formatMonthYear, isSameDay, startOfDay } from "../lib/date";
@@ -67,6 +69,12 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
     dateStr: string;
     hour: number;
   } | null>(null);
+
+  // Attendance & Draw modals
+  const [attendanceModalOpen, setAttendanceModalOpen] = createSignal(false);
+  const [attendanceOccurrence, setAttendanceOccurrence] = createSignal<OccurrenceI | null>(null);
+  const [drawModalOpen, setDrawModalOpen] = createSignal(false);
+  const [drawOccurrence, setDrawOccurrence] = createSignal<OccurrenceI | null>(null);
 
   // Filter by program
   const [selectedProgramFilter, setSelectedProgramFilter] = createSignal<string | null>(
@@ -182,6 +190,26 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
     setNewOccurrenceSlot(null);
     setSelectedOccurrence(occurrence);
     setDialogOpen(true);
+  };
+
+  const handleOpenAttendance = (occ: OccurrenceI) => {
+    setAttendanceOccurrence(occ);
+    setAttendanceModalOpen(true);
+  };
+
+  const handleOpenDraw = (occ: OccurrenceI) => {
+    setDrawOccurrence(occ);
+    setDrawModalOpen(true);
+  };
+
+  const targetProgramName = (occ: OccurrenceI | null) => {
+    if (!occ) return undefined;
+    return programs().find((p) => p.id === occ.program_id)?.name;
+  };
+
+  const targetProgramKind = (occ: OccurrenceI | null) => {
+    if (!occ) return undefined;
+    return programs().find((p) => p.id === occ.program_id)?.kind;
   };
 
   const handleSaveOccurrence = async (data: {
@@ -413,16 +441,16 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 <button
                   type="button"
                   onClick={handlePrev}
-                  title="Anterior"
                   class="size-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Anterior"
                 >
                   <ChevronLeft class="size-4" />
                 </button>
                 <button
                   type="button"
                   onClick={handleNext}
-                  title="Próximo"
                   class="size-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Próximo"
                 >
                   <ChevronRight class="size-4" />
                 </button>
@@ -430,24 +458,29 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
             </div>
 
             {/* Current View Title */}
-            <h1 class="text-sm sm:text-base font-semibold text-foreground tracking-tight capitalize pl-1">
+            <h1 class="text-sm font-semibold text-foreground capitalize">
               {titleText()}
             </h1>
           </div>
 
-          {/* Right: View Switcher */}
+          {/* Right: View Switcher Segmented Control */}
           <div class="flex items-center">
-            <div class="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
+            <div class="flex items-center p-0.5 rounded-lg border border-border bg-muted/40">
               {(["day", "week", "month", "year"] as const).map((v) => {
-                const labels = { day: "Dia", week: "Semana", month: "Mês", year: "Ano" };
+                const labels: Record<CalendarView, string> = {
+                  day: "Dia",
+                  week: "Semana",
+                  month: "Mês",
+                  year: "Ano",
+                };
                 const isActive = () => view() === v;
                 return (
                   <button
                     type="button"
                     onClick={() => setView(v)}
-                    class={`px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                    class={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
                       isActive()
-                        ? "bg-background text-foreground font-semibold shadow-2xs"
+                        ? "bg-background text-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -459,13 +492,17 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
           </div>
         </header>
 
-        {/* Main layout */}
+        {/* Calendar Body */}
         <div class="flex flex-1 overflow-hidden">
-          {/* Sidebar with mini calendar & program list (desktop only) */}
-          <div class="hidden lg:flex w-64 flex-col border-r border-border bg-background p-3 gap-4 overflow-y-auto shrink-0 select-none">
+          {/* Left sidebar */}
+          <div class="w-64 shrink-0 border-r border-border bg-card p-4 flex flex-col gap-4 overflow-y-auto select-none">
+            {/* Mini Calendar */}
             <MiniCalendar
               currentDate={currentDate()}
-              onDateClick={(d) => setCurrentDate(d)}
+              onDateClick={(d: Date) => {
+                setCurrentDate(d);
+                if (view() === "year") setView("day");
+              }}
               onPrevMonth={() =>
                 setCurrentDate((d) => {
                   const nd = new Date(d);
@@ -532,21 +569,20 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                             programId: prog.id,
                           });
                         }}
-                        onDragEnd={() => {
-                          endCalendarDrag();
-                        }}
+                        onDragEnd={endCalendarDrag}
                         onClick={() => {
                           setSelectedProgramFilter((prev) =>
                             prev === prog.id ? null : prog.id,
                           );
                         }}
-                        class={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-grab active:cursor-grabbing transition-all select-none ${
+                        class={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-grab active:cursor-grabbing transition-all ${
                           isFiltered()
-                            ? "ring-2 ring-primary border-primary font-semibold"
-                            : "border-border/60 hover:bg-muted/50"
+                            ? "ring-2 ring-primary border-transparent"
+                            : "hover:bg-muted border-transparent hover:border-border"
                         }`}
                         style={{
-                          "border-left": `4px solid ${color().border}`,
+                          "border-left-color": color().border,
+                          "border-left-width": "4px",
                           background: isFiltered() ? color().bg : undefined,
                         }}
                       >
@@ -590,6 +626,8 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 }}
                 onOccurrenceClick={openEditOccurrence}
                 onDeleteOccurrence={handleDeleteOccurrence}
+                onOpenAttendance={handleOpenAttendance}
+                onOpenDraw={handleOpenDraw}
                 onDropSlot={handleDropSlot}
               />
             </Show>
@@ -603,6 +641,8 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 onSlotClick={(dateStr, hour) => openNewOccurrence(dateStr, hour)}
                 onOccurrenceClick={openEditOccurrence}
                 onDeleteOccurrence={handleDeleteOccurrence}
+                onOpenAttendance={handleOpenAttendance}
+                onOpenDraw={handleOpenDraw}
                 onDropSlot={handleDropSlot}
               />
             </Show>
@@ -621,7 +661,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
           </div>
         </div>
 
-        {/* Create/Edit Occurrence Dialog */}
+        {/* Create/Edit Occurrence Dialog (Google Calendar style with Presença & Sorteio) */}
         <ManageOccurrenceDialog
           open={dialogOpen()}
           onOpenChange={setDialogOpen}
@@ -632,6 +672,26 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
           initialHour={newOccurrenceSlot()?.hour}
           onSave={handleSaveOccurrence}
           onDelete={handleDeleteOccurrenceModal}
+          onOpenAttendance={handleOpenAttendance}
+          onOpenDraw={handleOpenDraw}
+        />
+
+        {/* Attendance Modal */}
+        <OccurrenceAttendanceModal
+          open={attendanceModalOpen()}
+          onOpenChange={setAttendanceModalOpen}
+          occurrence={attendanceOccurrence()}
+          programName={targetProgramName(attendanceOccurrence())}
+          programKind={targetProgramKind(attendanceOccurrence())}
+        />
+
+        {/* Draw Modal with Projector Mode */}
+        <OccurrenceDrawModal
+          open={drawModalOpen()}
+          onOpenChange={setDrawModalOpen}
+          occurrence={drawOccurrence()}
+          programName={targetProgramName(drawOccurrence())}
+          programKind={targetProgramKind(drawOccurrence())}
         />
       </div>
     </DesktopOnly>

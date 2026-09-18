@@ -3,7 +3,9 @@ import { Portal } from "@solidjs/web";
 import { Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 
 import ClockIcon from "~icons/lucide/clock";
+import GiftIcon from "~icons/lucide/gift";
 import TrashIcon from "~icons/lucide/trash-2";
+import UserCheckIcon from "~icons/lucide/user-check";
 import UsersIcon from "~icons/lucide/users";
 import XIcon from "~icons/lucide/x";
 
@@ -14,7 +16,9 @@ import { toISODate } from "../lib/date";
 import type { OccurrenceI, ProgramI } from "../model";
 
 const Clock = ClockIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Gift = GiftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash = TrashIcon as unknown as (props: { class?: string }) => JSX.Element;
+const UserCheck = UserCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Users = UsersIcon as unknown as (props: { class?: string }) => JSX.Element;
 const X = XIcon as unknown as (props: { class?: string }) => JSX.Element;
 
@@ -32,6 +36,8 @@ export interface ManageOccurrenceDialogProps {
     id?: string;
   }) => Promise<boolean>;
   onDelete?: (occurrenceId: string) => Promise<boolean>;
+  onOpenAttendance?: (occurrence: OccurrenceI) => void;
+  onOpenDraw?: (occurrence: OccurrenceI) => void;
 }
 
 interface FormValues {
@@ -80,6 +86,11 @@ function initValues(
   };
 }
 
+/**
+ * Google Calendar-style floating quick card to create or edit an occurrence.
+ * Features inline Combobox for program search/selection, clean date/time inputs,
+ * quick Presença & Sorteio actions, and quick delete/save.
+ */
 export function ManageOccurrenceDialog(props: ManageOccurrenceDialogProps): JSX.Element {
   const [values, setValues] = createSignal<FormValues>({
     programId: "",
@@ -262,6 +273,37 @@ export function ManageOccurrenceDialog(props: ManageOccurrenceDialogProps): JSX.
               </div>
             </div>
 
+            {/* Quick Actions for Existing Occurrences: Presença & Sorteio */}
+            <Show when={isEditing()}>
+              <div class="grid grid-cols-2 gap-2 px-5 pt-3.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!props.occurrence) return;
+                    props.onOpenChange(false);
+                    props.onOpenAttendance?.(props.occurrence);
+                  }}
+                  class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-border/70 bg-muted/30 hover:bg-muted/70 text-xs font-medium text-foreground transition-colors cursor-pointer"
+                >
+                  <UserCheck class="size-4 text-primary" />
+                  <span>Presença</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!props.occurrence) return;
+                    props.onOpenChange(false);
+                    props.onOpenDraw?.(props.occurrence);
+                  }}
+                  class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-border/70 bg-muted/30 hover:bg-muted/70 text-xs font-medium text-foreground transition-colors cursor-pointer"
+                >
+                  <Gift class="size-4 text-amber-500" />
+                  <span>Sorteio</span>
+                </button>
+              </div>
+            </Show>
+
             {/* Quick Form */}
             <form onSubmit={handleSubmit} class="p-5 space-y-4">
               {/* Program Selector using Combobox */}
@@ -367,8 +409,8 @@ export function ManageOccurrenceDialog(props: ManageOccurrenceDialogProps): JSX.
                   {submitting()
                     ? "Salvando..."
                     : isEditing()
-                      ? "Salvar alterações"
-                      : "Adicionar"}
+                    ? "Salvar alterações"
+                    : "Adicionar"}
                 </Button>
               </div>
             </form>

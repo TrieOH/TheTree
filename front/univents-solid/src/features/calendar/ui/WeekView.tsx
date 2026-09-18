@@ -30,6 +30,8 @@ export interface WeekViewProps {
   onDayClick?: (date: Date) => void;
   onOccurrenceClick: (occurrence: OccurrenceI) => void;
   onDeleteOccurrence?: (occurrenceId: string) => void;
+  onOpenAttendance?: (occurrence: OccurrenceI) => void;
+  onOpenDraw?: (occurrence: OccurrenceI) => void;
   onDropSlot?: (dateStr: string, hour: number, minute: number, data: CalendarDragData) => void;
 }
 
@@ -44,6 +46,8 @@ function DayColumn(props: {
   onSlotClick: (dateStr: string, hour: number) => void;
   onOccurrenceClick: (occurrence: OccurrenceI) => void;
   onDeleteOccurrence?: (occurrenceId: string) => void;
+  onOpenAttendance?: (occurrence: OccurrenceI) => void;
+  onOpenDraw?: (occurrence: OccurrenceI) => void;
   onDropSlot?: (dateStr: string, hour: number, minute: number, data: CalendarDragData) => void;
 }): JSX.Element {
   const [dragOverMins, setDragOverMins] = createSignal<number | null>(null);
@@ -200,6 +204,8 @@ function DayColumn(props: {
             }
             onClick={props.onOccurrenceClick}
             onDelete={props.onDeleteOccurrence}
+            onOpenAttendance={props.onOpenAttendance}
+            onOpenDraw={props.onOpenDraw}
             overlapIndex={item.overlapIndex}
             overlapCount={item.overlapCount}
             isContinuation={item.isContinuation}
@@ -296,8 +302,8 @@ export function WeekView(props: WeekViewProps): JSX.Element {
                     </span>
                     <span
                       class={`size-6 flex items-center justify-center rounded-full text-xs font-bold ${dayIsToday()
-                          ? "bg-primary text-primary-foreground shadow-xs"
-                          : "text-foreground"
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "text-foreground"
                         }`}
                     >
                       {day.getDate()}
@@ -349,6 +355,8 @@ export function WeekView(props: WeekViewProps): JSX.Element {
                   onSlotClick={props.onSlotClick}
                   onOccurrenceClick={props.onOccurrenceClick}
                   onDeleteOccurrence={props.onDeleteOccurrence}
+                  onOpenAttendance={props.onOpenAttendance}
+                  onOpenDraw={props.onOpenDraw}
                   onDropSlot={props.onDropSlot}
                 />
               )}

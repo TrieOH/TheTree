@@ -54,6 +54,7 @@
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "@trieoh/ui-solid": "workspace:*",
     "@trieoh/univents-api": "workspace:*",
+    "@zxing/browser": "^0.1.5",
     "aws4fetch": "^1.0.20",
     "d3-scale": "catalog:",
     "d3-shape": "catalog:",

@@ -6,5 +6,7 @@ export const programKeys = {
     ["programs", "occurrences", editionId] as const,
   occurrence: (occurrenceId: string) =>
     ["programs", "occurrence", occurrenceId] as const,
+  participants: (occurrenceId: string) =>
+    ["programs", "participants", occurrenceId] as const,
   mine: (editionId: string) => ["programs", "mine", editionId] as const,
 };

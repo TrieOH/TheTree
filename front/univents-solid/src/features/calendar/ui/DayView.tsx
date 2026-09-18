@@ -29,6 +29,8 @@ export interface DayViewProps {
   onSlotClick: (dateStr: string, hour: number) => void;
   onOccurrenceClick: (occurrence: OccurrenceI) => void;
   onDeleteOccurrence?: (occurrenceId: string) => void;
+  onOpenAttendance?: (occurrence: OccurrenceI) => void;
+  onOpenDraw?: (occurrence: OccurrenceI) => void;
   onDropSlot?: (dateStr: string, hour: number, minute: number, data: CalendarDragData) => void;
 }
 
@@ -279,6 +281,8 @@ export function DayView(props: DayViewProps): JSX.Element {
                   }
                   onClick={props.onOccurrenceClick}
                   onDelete={props.onDeleteOccurrence}
+                  onOpenAttendance={props.onOpenAttendance}
+                  onOpenDraw={props.onOpenDraw}
                   overlapIndex={item.overlapIndex}
                   overlapCount={item.overlapCount}
                   isContinuation={item.isContinuation}

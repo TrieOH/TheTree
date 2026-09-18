@@ -1,8 +1,10 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createSignal, onCleanup } from "solid-js";
 
+import GiftIcon from "~icons/lucide/gift";
 import PencilIcon from "~icons/lucide/pencil";
 import Trash2Icon from "~icons/lucide/trash-2";
+import UserCheckIcon from "~icons/lucide/user-check";
 
 import { formatTimeRange, getDurationMinutes } from "../lib/date";
 import {
@@ -12,8 +14,10 @@ import {
 } from "../lib/drag-state";
 import type { EventColor, OccurrenceI, ProgramI } from "../model";
 
+const Gift = GiftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Pencil = PencilIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash2 = Trash2Icon as unknown as (props: { class?: string }) => JSX.Element;
+const UserCheck = UserCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface DraggableEventProps {
   occurrence: OccurrenceI;
@@ -21,6 +25,8 @@ export interface DraggableEventProps {
   color: EventColor;
   onClick: (occurrence: OccurrenceI) => void;
   onDelete?: (occurrenceId: string) => void;
+  onOpenAttendance?: (occurrence: OccurrenceI) => void;
+  onOpenDraw?: (occurrence: OccurrenceI) => void;
   overlapIndex?: number;
   overlapCount?: number;
   isContinuation?: boolean;
@@ -81,17 +87,15 @@ export function DraggableEvent(props: DraggableEventProps): JSX.Element {
       onDragEnd={() => {
         endCalendarDrag();
       }}
-      class={`group absolute cursor-grab active:cursor-grabbing transition-shadow ${
-        menuOpen() ? "z-30 overflow-visible" : "z-10 overflow-hidden"
-      } ${
-        props.isContinuation && props.continuesNextDay
+      class={`group absolute cursor-grab active:cursor-grabbing transition-shadow ${menuOpen() ? "z-30 overflow-visible" : "z-10 overflow-hidden"
+        } ${props.isContinuation && props.continuesNextDay
           ? "rounded-none border-t-0 border-b-0"
           : props.isContinuation
-          ? "rounded-b-md rounded-t-none border-t-0"
-          : props.continuesNextDay
-          ? "rounded-t-md rounded-b-none border-b-0"
-          : "rounded-md"
-      } hover:z-25 hover:shadow-md select-none flex flex-col justify-between`}
+            ? "rounded-b-md rounded-t-none border-t-0"
+            : props.continuesNextDay
+              ? "rounded-t-md rounded-b-none border-b-0"
+              : "rounded-md"
+        } hover:z-25 hover:shadow-md select-none flex flex-col justify-between`}
       style={{
         top: `${top()}px`,
         height: `${height()}px`,
@@ -134,6 +138,34 @@ export function DraggableEvent(props: DraggableEventProps): JSX.Element {
             <Pencil class="size-3" />
             Alterar
           </button>
+          <Show when={props.onOpenAttendance}>
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent cursor-pointer transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                props.onOpenAttendance?.(props.occurrence);
+              }}
+            >
+              <UserCheck class="size-3" />
+              Presença
+            </button>
+          </Show>
+          <Show when={props.program?.kind === "activity" && props.onOpenDraw}>
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent cursor-pointer transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                props.onOpenDraw?.(props.occurrence);
+              }}
+            >
+              <Gift class="size-3" />
+              Sortear
+            </button>
+          </Show>
           <Show when={props.onDelete}>
             <button
               type="button"

@@ -5,8 +5,6 @@ import CalendarDaysIcon from "~icons/lucide/calendar-days";
 import ClockIcon from "~icons/lucide/clock";
 import FlagIcon from "~icons/lucide/flag";
 import PencilIcon from "~icons/lucide/pencil";
-import ShieldAlertIcon from "~icons/lucide/shield-alert";
-import ShieldCheckIcon from "~icons/lucide/shield-check";
 import TrashIcon from "~icons/lucide/trash";
 
 import { Button, cn } from "@trieoh/ui-solid";
@@ -17,8 +15,6 @@ const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) 
 const Clock = ClockIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Flag = FlagIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Pencil = PencilIcon as unknown as (props: { class?: string }) => JSX.Element;
-const ShieldAlert = ShieldAlertIcon as unknown as (props: { class?: string }) => JSX.Element;
-const ShieldCheck = ShieldCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash = TrashIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface AdminProgramCardProps {
@@ -28,7 +24,9 @@ export interface AdminProgramCardProps {
   animate?: boolean;
   onEdit: (program: ProgramI) => void;
   onDelete: (program: ProgramI) => void;
-  onOpenCalendar: (program: ProgramI) => void;
+  onOpenCalendar?: (program: ProgramI) => void;
+  onManageOccurrences?: (program: ProgramI) => void;
+  occurrencesHref?: string;
 }
 
 export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
@@ -42,14 +40,14 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
         role="region"
         aria-label={`Programa ${props.program.name}`}
         class={cn(
-          "group relative flex h-full w-full min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-border border-t-[3px] border-t-primary bg-card bg-linear-to-b from-primary/[0.04] via-card to-card p-4 text-left shadow-xs transition-all duration-200",
+          "group relative flex h-full w-full min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-border border-t-[3px] border-t-primary bg-card bg-linear-to-b from-primary/4 via-card to-card p-4 text-left shadow-xs transition-all duration-200",
           "hover:-translate-y-0.5 hover:border-foreground/20 hover:border-t-primary hover:shadow-md",
           "focus-within:ring-2 focus-within:ring-ring",
           isDeleted() && "opacity-60 grayscale",
         )}
       >
         <div class="space-y-2">
-          {/* Header with thumbnail, name, badges and actions */}
+          {/* Header with thumbnail, name, metadata and actions */}
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-center gap-2.5 min-w-0 flex-1">
               <div class="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/60 transition-transform group-hover:scale-105">
@@ -83,28 +81,15 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
                 >
                   {props.program.name}
                 </h3>
-                <div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px]">
-                  <span class={cn(
-                    "inline-flex items-center rounded-sm px-1.5 py-0.5 font-medium",
-                    isCheckpoint()
-                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                      : "bg-primary/15 text-primary"
-                  )}>
-                    {isCheckpoint() ? "Checkpoint" : "Atividade"}
-                  </span>
-
-                  <Show when={props.program.staff_only}>
-                    <span class="inline-flex items-center gap-0.5 rounded-sm bg-destructive/15 px-1.5 py-0.5 font-medium text-destructive">
-                      <ShieldAlert class="size-2.5 shrink-0" />
-                      Staff
-                    </span>
-                  </Show>
-
+                <div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <span class="shrink-0">{isCheckpoint() ? "Checkpoint" : "Atividade"}</span>
                   <Show when={props.program.min_access_level != null && props.program.min_access_level > 0}>
-                    <span class="inline-flex items-center gap-0.5 rounded-sm bg-muted px-1.5 py-0.5 font-medium text-muted-foreground">
-                      <ShieldCheck class="size-2.5 shrink-0" />
-                      Nível {props.program.min_access_level}
-                    </span>
+                    <span class="text-muted-foreground/60">•</span>
+                    <span class="truncate">Nível {props.program.min_access_level}</span>
+                  </Show>
+                  <Show when={props.program.staff_only}>
+                    <span class="text-muted-foreground/60">•</span>
+                    <span class="font-medium text-destructive shrink-0">Staff</span>
                   </Show>
                 </div>
               </div>
@@ -138,7 +123,7 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
           </div>
 
           <p
-            class="line-clamp-2 text-xs leading-relaxed text-muted-foreground min-h-[2rem]"
+            class="line-clamp-2 text-xs leading-relaxed text-muted-foreground min-h-8"
             title={props.program.description ?? ""}
           >
             {props.program.description || "Nenhuma descrição fornecida para este programa."}
@@ -154,14 +139,37 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => props.onOpenCalendar(props.program)}
-            class="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline cursor-pointer"
+          <Show
+            when={props.occurrencesHref}
+            fallback={
+              <button
+                type="button"
+                onClick={() => props.onManageOccurrences?.(props.program)}
+                class="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                title="Gerenciar ocorrências"
+              >
+                <CalendarDays class="size-3 shrink-0" />
+                <span>Ocorrências</span>
+              </button>
+            }
           >
-            <CalendarDays class="size-3 shrink-0" />
-            <span>Ver no calendário</span>
-          </button>
+            {(href) => (
+              <a
+                href={href()}
+                onClick={(e) => {
+                  if (props.onManageOccurrences) {
+                    e.preventDefault();
+                    props.onManageOccurrences(props.program);
+                  }
+                }}
+                class="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline cursor-pointer"
+                title="Gerenciar ocorrências"
+              >
+                <CalendarDays class="size-3 shrink-0" />
+                <span>Ocorrências</span>
+              </a>
+            )}
+          </Show>
         </div>
       </div>
     </Reveal>

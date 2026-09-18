@@ -6,10 +6,12 @@ import { Effect } from "effect";
 import { apiEffect, useEffectMutation } from "@/shared/lib/effect-query";
 import { invalidateParticipationCache } from "./cache";
 import {
+  checkInOccurrenceFn,
   createOccurrenceFn,
   createProgramFn,
   deleteOccurrenceFn,
   deleteProgramFn,
+  markParticipationAttendedFn,
   patchOccurrenceFn,
   patchProgramFn,
 } from "./index";
@@ -83,9 +85,6 @@ export const useCreateProgramMutation = (editionId: () => string) => {
             void queryClient.invalidateQueries({
               queryKey: programKeys.byEdition(editionId()),
             });
-            void queryClient.invalidateQueries({
-              queryKey: programKeys.occurrences(editionId()),
-            });
           }),
         ),
       ),
@@ -108,9 +107,6 @@ export const useUpdateProgramMutation = (editionId: () => string) => {
           Effect.sync(() => {
             void queryClient.invalidateQueries({
               queryKey: programKeys.byEdition(editionId()),
-            });
-            void queryClient.invalidateQueries({
-              queryKey: programKeys.occurrences(editionId()),
             });
           }),
         ),
@@ -194,6 +190,40 @@ export const useDeleteOccurrenceMutation = (editionId: () => string) => {
           Effect.sync(() => {
             void queryClient.invalidateQueries({
               queryKey: programKeys.occurrences(editionId()),
+            });
+          }),
+        ),
+      ),
+  });
+};
+
+export const useMarkParticipationAttendedMutation = (occurrenceId: () => string) => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: (participationId: string) =>
+      apiEffect(() => markParticipationAttendedFn(participationId)).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            void queryClient.invalidateQueries({
+              queryKey: programKeys.participants(occurrenceId()),
+            });
+          }),
+        ),
+      ),
+  });
+};
+
+export const useCheckpointCheckInMutation = (occurrenceId: () => string) => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: (attendeeId: string) =>
+      apiEffect(() => checkInOccurrenceFn(occurrenceId(), attendeeId)).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            void queryClient.invalidateQueries({
+              queryKey: programKeys.participants(occurrenceId()),
             });
           }),
         ),

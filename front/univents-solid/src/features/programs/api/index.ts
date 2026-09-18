@@ -1,5 +1,6 @@
 import { orvalData } from "@trieoh/api-client";
 import {
+  checkInOccurrence,
   createProgram,
   createProgramOccurrence,
   deleteOccurrence,
@@ -96,6 +97,12 @@ export const occurrenceQueryOptions = (occurrenceId: string) => ({
     ),
 });
 
+export const occurrenceParticipantsQueryOptions = (occurrenceId: string) => ({
+  queryKey: programKeys.participants(occurrenceId),
+  queryFn: () => listOccurrenceParticipantsFn(occurrenceId),
+  enabled: Boolean(occurrenceId),
+});
+
 export const myParticipationsQueryOptions = (editionId: string) => ({
   queryKey: programKeys.mine(editionId),
   queryFn: () =>
@@ -157,5 +164,10 @@ export const listOccurrenceParticipantsFn = (occurrenceId: string) =>
 
 export const markParticipationAttendedFn = (participationId: string) =>
   markParticipationAttended(participationId).then(
+    orvalData<ProgramParticipation>,
+  );
+
+export const checkInOccurrenceFn = (occurrenceId: string, attendeeId: string) =>
+  checkInOccurrence(occurrenceId, { attendee_id: attendeeId }).then(
     orvalData<ProgramParticipation>,
   );

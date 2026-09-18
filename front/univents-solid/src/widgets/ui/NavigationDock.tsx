@@ -459,6 +459,7 @@ export function NavigationDock(props: NavigationDockProps) {
       path.endsWith('/certifications/editor') ||
       path.endsWith('/badges/editor') ||
       path.includes('/badges/') ||
+      path.includes('/calendar') ||
       (path.includes('/occurrences/') && path.endsWith('/draw')) ||
       path === '/profile/edit'
     );
