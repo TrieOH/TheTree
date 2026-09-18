@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { Show, createEffect, createSignal } from "solid-js";
 
 import GiftIcon from "~icons/lucide/gift";
 import PencilIcon from "~icons/lucide/pencil";
@@ -68,9 +68,9 @@ export function DraggableEvent(props: DraggableEventProps): JSX.Element {
       };
 
       document.addEventListener("mousedown", handleClickOutside);
-      onCleanup(() => {
+      return () => {
         document.removeEventListener("mousedown", handleClickOutside);
-      });
+      };
     },
   );
 
