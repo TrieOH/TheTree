@@ -4,8 +4,12 @@ import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { untrack } from "solid-js";
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { ProfileEditor } from "@/features/profile/ui/ProfileEditor";
-import { cacheProfile, getCachedOwnProfile } from "@/features/profile/api";
-import { profileKeys } from "@/features/profile/api/query-keys";
+import {
+  cacheProfile,
+  getCachedOwnProfile,
+  profileKeys,
+  syncActorProfileCache,
+} from "@/features/profile/api";
 
 export const Route = createFileRoute("/profile/edit")({
   beforeLoad: requireAuth,
@@ -22,6 +26,30 @@ function EditProfilePage() {
     void queryClient.invalidateQueries({ queryKey: profileKeys.details() });
     void navigate({ to: "/profile", search: { tab: "about" } });
   };
+
+  const handleSave = (profile: Record<string, unknown>, handle?: string) => {
+    const id = actorId();
+    const { pfpUrl, ...data } = profile;
+    if (!id) {
+      return Promise.resolve({
+        success: false,
+        message: "Usuário não autenticado",
+      });
+    }
+    return auth
+      .upsertActorProfile(id, {
+        handle,
+        pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
+        profile: data as never,
+      })
+      .then((response) => {
+        if (response.success) {
+          syncActorProfileCache(queryClient, id, profile as any, handle);
+        }
+        return response;
+      });
+  };
+
   return (
     <ProfileEditor
       initialProfile={untrack(() => getCachedOwnProfile(queryClient, auth.profile()?.id))}
@@ -29,27 +57,14 @@ function EditProfilePage() {
         const id = actorId();
         return id
           ? Promise.all([auth.getProfileSchema(), auth.getActorProfile(id)]).then(([, profile]) => {
-              cacheProfile(queryClient, profile, id);
-              return { profile };
-            })
+            cacheProfile(queryClient, profile, id);
+            return { profile };
+          })
           : Promise.resolve({
             profile: { success: false, message: "Usuário não autenticado" },
           });
       }}
-      save={(profile, handle) => {
-        const id = actorId();
-        const { pfpUrl, ...data } = profile;
-        return id
-          ? auth.upsertActorProfile(id, {
-            handle,
-            pfp_url: typeof pfpUrl === "string" ? pfpUrl : null,
-            profile: data as never,
-          })
-          : Promise.resolve({
-            success: false,
-            message: "Usuário não autenticado",
-          });
-      }}
+      save={handleSave}
       onCancel={finish}
       onSaved={finish}
     />

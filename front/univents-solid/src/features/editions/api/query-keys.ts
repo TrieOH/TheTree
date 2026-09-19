@@ -1,5 +1,7 @@
 export const editionKeys = {
   all: ["editions"] as const,
+  details: () => [...editionKeys.all, "detail"] as const,
+  detail: (editionId: string) => [...editionKeys.details(), editionId] as const,
   lists: () => [...editionKeys.all, "list"] as const,
   publicLists: () => [...editionKeys.lists(), "public"] as const,
   adminLists: () => [...editionKeys.lists(), "admin"] as const,

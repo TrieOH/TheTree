@@ -23,6 +23,7 @@ import { uploadProfileImagesBatch } from "@/features/storage/api";
 import {
   asUniventsProfile,
   socialHref,
+  type ActorProfile,
   type UniventsProfile,
 } from "../model/profile-data";
 
@@ -56,7 +57,7 @@ export function ProfileEditor(props: {
   load: () => Promise<{
     profile: LoadedProfile;
   }>;
-  initialProfile?: LoadedProfile;
+  initialProfile?: LoadedProfile | ActorProfile;
   save: (
     profile: Record<string, unknown>,
     handle?: string,
@@ -64,20 +65,21 @@ export function ProfileEditor(props: {
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const initial = untrack(() => props.initialProfile);
+  const initial = untrack(() => props.initialProfile as any);
+  const initialData = initial?.actor_id ? initial : initial?.data;
   const [profile, setProfile] = createSignal<UniventsProfile>(
-    initial?.data?.profile
+    initialData?.profile
       ? asUniventsProfile({
-          ...initial.data.profile,
-          ...(initial.data.pfp_url !== undefined && { pfpUrl: initial.data.pfp_url }),
-        })
+        ...initialData.profile,
+        ...(initialData.pfp_url !== undefined && { pfpUrl: initialData.pfp_url }),
+      })
       : {},
     { ownedWrite: true },
   );
-  const [handle, setHandle] = createSignal(initial?.data?.handle ?? "", {
+  const [handle, setHandle] = createSignal(initialData?.handle ?? "", {
     ownedWrite: true,
   });
-  const [loading, setLoading] = createSignal(!initial?.success || !initial.data, {
+  const [loading, setLoading] = createSignal(!initialData?.profile, {
     ownedWrite: true,
   });
   const [saving, setSaving] = createSignal(false);

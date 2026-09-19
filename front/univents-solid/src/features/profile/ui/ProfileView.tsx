@@ -1,34 +1,45 @@
+import type { JSX } from "@solidjs/web";
 import {
-  Loading,
   For,
+  Loading,
   Show,
+  createEffect,
   createMemo,
+  createSignal,
   untrack,
 } from "solid-js";
-import type { JSX } from "@solidjs/web";
-import { Link } from "@tanstack/solid-router";
-import { useQuery } from "@trieoh/front-core-solid";
-import {
-  profileQueryOptions,
-  profileTabQueryOptions,
-} from "@/features/profile/api";
-import GlobeIcon from "~icons/lucide/globe";
-import MailIcon from "~icons/lucide/mail";
+import CircleAlertIcon from "~icons/lucide/circle-alert";
 import GithubIcon from "~icons/lucide/github";
+import GlobeIcon from "~icons/lucide/globe";
 import InstagramIcon from "~icons/lucide/instagram";
 import LinkedinIcon from "~icons/lucide/linkedin";
-import YoutubeIcon from "~icons/lucide/youtube";
+import MailIcon from "~icons/lucide/mail";
 import MessageCircleIcon from "~icons/lucide/message-circle";
-import CircleAlertIcon from "~icons/lucide/circle-alert";
+import YoutubeIcon from "~icons/lucide/youtube";
+import { useQuery } from "@trieoh/front-core-solid";
+import { userBadgesQueryOptions } from "@/features/badges/api";
+import type { BadgeProfileGroups } from "@/features/badges/model";
+import { allProfileBadges } from "@/features/badges/model/profile-badges";
+import { ProfileBadges } from "@/features/badges/ui/ProfileBadges";
+import { myCertificationsQueryOptions } from "@/features/certifications/api";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
+import type { EventI } from "@/features/events/model";
+import { getPublicEditionsFn } from "@/features/editions/api";
+import {
+  type LoadProfile,
+  profileKeys,
+  profileQueryOptions,
+} from "@/features/profile/api";
+import { PurchasesContent } from "@/features/purchases/ui/PurchasesContent";
 import {
   asUniventsProfile,
   profileCompleteness,
   profileDisplayName,
   socialHref,
+  type ActorProfile,
 } from "../model/profile-data";
-import { ProfileHeader } from "./ProfileHeader";
 import { ProfileCollectionItem } from "./ProfileCollectionItem";
-import { PurchasesContent } from "@/features/purchases/ui/PurchasesContent";
+import { ProfileHeader } from "./ProfileHeader";
 
 const Globe = GlobeIcon as unknown as () => JSX.Element;
 const Mail = MailIcon as unknown as () => JSX.Element;
@@ -42,171 +53,218 @@ const CircleAlert = CircleAlertIcon as unknown as (p: {
 }) => JSX.Element;
 
 type Tab = "about" | "badges" | "certificates" | "purchases";
-type ProfileResponse = {
-  success: boolean;
-  data?: {
-    actor_id?: string;
-    handle?: string | null;
-    pfp_url?: string | null;
-    profile?: Record<string, unknown>;
-  };
-  message?: string;
-};
+
 export interface ProfileViewProps {
-  actorId?: string;
-  loadProfile: (actorId: string) => Promise<ProfileResponse>;
+  actorId: string;
+  loadProfile?: LoadProfile;
   ownProfile?: boolean;
   viewerActorId?: string;
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
 }
 
-export function ProfileView(props: ProfileViewProps) {
-  const profileQuery = useQuery(() => ({
-    ...profileQueryOptions(props.actorId, props.loadProfile),
-  }));
-  const result = createMemo(() => profileQuery().data);
+export function ProfileView(props: ProfileViewProps): JSX.Element {
+  const query = useQuery(() =>
+    props.loadProfile
+      ? profileQueryOptions(props.actorId, props.loadProfile)
+      : {
+        queryKey: profileKeys.detail(props.actorId),
+        queryFn: () => null,
+      },
+  );
+  const raw = createMemo(() => query().data as any);
+  const data = createMemo<ActorProfile | undefined>(() => {
+    const d = raw();
+    if (!d) return undefined;
+    return d.actor_id ? d : d.data;
+  });
+  const profile = createMemo(() =>
+    asUniventsProfile({
+      ...(data()?.profile),
+      ...(data()?.pfp_url !== undefined ? { pfpUrl: data()?.pfp_url } : {}),
+    }),
+  );
+  const own = createMemo(
+    () =>
+      Boolean(props.ownProfile) ||
+      Boolean(
+        props.viewerActorId &&
+        (data()?.actor_id === props.viewerActorId ||
+          props.actorId === props.viewerActorId),
+      ),
+  );
+  const name = createMemo(() => profileDisplayName(profile()));
+  const publicIdentifier = createMemo(
+    () => data()?.handle ?? data()?.actor_id ?? props.actorId,
+  );
+  const participantName = createMemo(
+    () => profile().preferredName || profile().legalName || "",
+  );
+  const socials = createMemo(() => Object.entries(profile().socials ?? {}));
+
+  const isError = createMemo(() => {
+    if (own()) return false;
+    if (query().isError) return true;
+    const code = raw()?.code;
+    if (code !== undefined && code >= 400) return true;
+    if (!query().isLoading && !data()) return true;
+    return false;
+  });
+
   return (
     <Loading fallback={<ProfileSkeleton />}>
-      <Show when={profileQuery().isSuccess} fallback={<ProfileSkeleton />}>
-        <Show when={result()} fallback={<MissingPublicProfile />}>
-          {(response) => {
-            const data = () => response().data;
-            const profile = createMemo(() =>
-              asUniventsProfile({
-                ...data()?.profile,
-                ...(data()?.pfp_url !== undefined && { pfpUrl: data()?.pfp_url }),
-              }),
-            );
-            const name = () => profileDisplayName(profile());
-            const own = () =>
-              Boolean(
-                props.ownProfile || data()?.actor_id === props.viewerActorId,
-              );
-            const socials = () =>
-              Object.entries(profile().socials ?? {}).filter(([, value]) =>
-                Boolean(value),
-              ) as [string, string][];
-            return (
-              <main class="min-h-dvh bg-background pb-28">
-                <ProfileHeader
-                  profile={profile()}
-                  name={name()}
-                  profileUrl={`${window.location.origin}/profile/${data()?.handle ?? data()?.actor_id ?? ""}`}
-                  handle={data()?.handle ?? undefined}
+      <Show
+        when={!isError()}
+        fallback={
+          <div class="mx-auto max-w-7xl px-4 py-8">
+            <div class="flex items-center gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-destructive">
+              <CircleAlert class="size-5 shrink-0" />
+              <div>
+                <p class="font-medium">
+                  {raw()?.message || "Não foi possível carregar este perfil."}
+                </p>
+                <p class="text-sm text-destructive/80">
+                  {raw()?.code === 404
+                    ? "O perfil solicitado não foi encontrado."
+                    : "Tente novamente mais tarde."}
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <Show
+          when={data()}
+          fallback={
+            <div class="mx-auto max-w-7xl px-4 py-8">
+              <div class="flex items-center gap-3 rounded-md border border-muted bg-card p-4 text-muted-foreground">
+                <p class="text-sm">
+                  Não encontramos os dados do seu usuário. Você ainda pode editar
+                  ou configurar o perfil.
+                </p>
+              </div>
+            </div>
+          }
+        >
+          <main class="min-h-dvh bg-background pb-28">
+            <ProfileHeader
+              profile={profile()}
+              name={name()}
+              profileUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/profile/${data()?.handle ?? data()?.actor_id ?? ""}`}
+              handle={data()?.handle ?? undefined}
+              ownProfile={own()}
+              activeTab={props.activeTab}
+              onTabChange={props.onTabChange}
+            />
+            <Show
+              when={props.activeTab === "about"}
+              fallback={
+                <ProfileTabContent
+                  tab={props.activeTab as Exclude<Tab, "about">}
+                  actorId={data()?.actor_id || props.actorId}
+                  publicIdentifier={publicIdentifier()}
+                  participantName={participantName()}
                   ownProfile={own()}
-                  activeTab={props.activeTab}
-                  onTabChange={props.onTabChange}
                 />
-                <Show
-                  when={props.activeTab === "about"}
-                  fallback={
-                    <ProfileTabContent
-                      tab={props.activeTab as Exclude<Tab, "about">}
-                      actorId={data()?.actor_id ?? ""}
-                      ownProfile={own()}
-                    />
-                  }
-                >
-                  <div class="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
-                    <div class="space-y-5">
-                      <Show when={own() && profileCompleteness(profile()) < 100}>
-                        <Card title="Integridade do Perfil">
-                          <div class="flex items-center justify-between text-sm">
-                            <span>Complete seu perfil</span>
-                            <span class="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-                              {profileCompleteness(profile())}% completo
+              }
+            >
+              <div class="mx-auto mt-4 grid max-w-7xl gap-4 px-4 md:grid-cols-[minmax(0,1fr)_280px] md:gap-5">
+                <div class="space-y-5">
+                  <Show when={own() && profileCompleteness(profile()) < 100}>
+                    <Card title="Integridade do Perfil">
+                      <div class="flex items-center justify-between text-sm">
+                        <span>Complete seu perfil</span>
+                        <span class="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                          {profileCompleteness(profile())}% completo
+                        </span>
+                      </div>
+                      <div class="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          class="h-full bg-primary"
+                          style={{
+                            width: `${profileCompleteness(profile())}%`,
+                          }}
+                        />
+                      </div>
+                      <p class="mt-3 text-sm italic text-muted-foreground">
+                        {completenessHint(profile())}
+                      </p>
+                    </Card>
+                  </Show>
+                  <Card title="Sobre mim">
+                    <Show
+                      when={profile().aboutMe}
+                      fallback={
+                        <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
+                      }
+                    >
+                      <p class="whitespace-pre-wrap text-[15px] leading-[1.7] text-muted-foreground">
+                        {profile().aboutMe}
+                      </p>
+                    </Show>
+                  </Card>
+                </div>
+                <div class="space-y-5">
+                  <Card title="Idiomas">
+                    <Show
+                      when={profile().languages?.length}
+                      fallback={
+                        <EmptyState message="Nenhum idioma informado ainda." />
+                      }
+                    >
+                      <div class="flex flex-wrap gap-2">
+                        <For each={profile().languages}>
+                          {(item) => (
+                            <span class="rounded-md border border-border bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
+                              {item}
                             </span>
-                          </div>
-                          <div class="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                            <div
-                              class="h-full bg-primary"
-                              style={{
-                                width: `${profileCompleteness(profile())}%`,
-                              }}
+                          )}
+                        </For>
+                      </div>
+                    </Show>
+                  </Card>
+                  <Card title="Contato">
+                    <Show
+                      when={
+                        profile().website ||
+                        profile().contactEmail ||
+                        socials().length
+                      }
+                      fallback={
+                        <EmptyState message="Nenhuma informação de contato compartilhada." />
+                      }
+                    >
+                      <div class="space-y-1">
+                        <Show when={profile().website}>
+                          {(site) => (
+                            <Social href={site()} label="Website" />
+                          )}
+                        </Show>{" "}
+                        <Show when={profile().contactEmail}>
+                          {(email) => (
+                            <Social
+                              href={`mailto:${email()}`}
+                              label="E-mail"
                             />
-                          </div>
-                          <p class="mt-3 text-sm italic text-muted-foreground">
-                            {completenessHint(profile())}
-                          </p>
-                        </Card>
-                      </Show>
-                      <Card title="Sobre mim">
-                        <Show
-                          when={profile().aboutMe}
-                          fallback={
-                            <EmptyState message="Nada aqui ainda. Conte um pouco sobre você!" />
-                          }
-                        >
-                          <p class="whitespace-pre-wrap text-[15px] leading-[1.7] text-muted-foreground">
-                            {profile().aboutMe}
-                          </p>
-                        </Show>
-                      </Card>
-                    </div>
-                    <div class="space-y-5">
-                      <Card title="Idiomas">
-                        <Show
-                          when={profile().languages?.length}
-                          fallback={
-                            <EmptyState message="Adicione idiomas para destacar seu perfil." />
-                          }
-                        >
-                          <div class="flex flex-wrap gap-2">
-                            <For each={profile().languages}>
-                              {(item) => (
-                                <span class="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted">
-                                  {item}
-                                </span>
-                              )}
-                            </For>
-                          </div>
-                        </Show>
-                      </Card>
-                      <Card title="Contato">
-                        <Show
-                          when={
-                            profile().website ||
-                            profile().contactEmail ||
-                            socials().length
-                          }
-                          fallback={
-                            <EmptyState message="Adicione formas de contato para que outros possam se conectar." />
-                          }
-                        >
-                          <div class="grid grid-cols-2 gap-1">
-                            <Show when={profile().website}>
-                              {(website) => (
-                                <Social href={website()} label="Website" />
-                              )}
-                            </Show>{" "}
-                            <Show when={profile().contactEmail}>
-                              {(email) => (
-                                <Social
-                                  href={`mailto:${email()}`}
-                                  label="E-mail"
-                                />
-                              )}
-                            </Show>{" "}
-                            <For each={socials()}>
-                              {([network, value]) => (
-                                <Social
-                                  href={socialHref(network, value)}
-                                  label={
-                                    network[0].toUpperCase() + network.slice(1)
-                                  }
-                                />
-                              )}
-                            </For>
-                          </div>
-                        </Show>
-                      </Card>
-                    </div>
-                  </div>
-                </Show>
-              </main>
-            );
-          }}
+                          )}
+                        </Show>{" "}
+                        <For each={socials()}>
+                          {([network, value]) => (
+                            <Social
+                              href={socialHref(network, String(value ?? ""))}
+                              label={
+                                network[0].toUpperCase() + network.slice(1)
+                              }
+                            />
+                          )}
+                        </For>
+                      </div>
+                    </Show>
+                  </Card>
+                </div>
+              </div>
+            </Show>
+          </main>
         </Show>
       </Show>
     </Loading>
@@ -216,27 +274,108 @@ export function ProfileView(props: ProfileViewProps) {
 function ProfileTabContent(props: {
   tab: Exclude<Tab, "about">;
   actorId: string;
+  publicIdentifier: string;
+  participantName: string;
   ownProfile: boolean;
 }) {
-  const query = useQuery(() =>
-    profileTabQueryOptions(props.tab, props.actorId, props.ownProfile),
-  );
-  const data = createMemo(() => query().data);
+  const badgesQuery = useQuery(() => ({
+    ...userBadgesQueryOptions(props.actorId),
+    enabled: props.tab === "badges" && Boolean(props.actorId),
+  }));
 
-  // Purchases fetch inside <PurchasesContent>, which owns its own skeleton.
-  // Wrapping it here would flash a second, differently shaped one first.
+  const certsQuery = useQuery(() => ({
+    ...myCertificationsQueryOptions(),
+    enabled: props.tab === "certificates" && props.ownProfile,
+  }));
+
+  const data = createMemo(() => {
+    if (props.tab === "badges") return badgesQuery().data;
+    if (props.tab === "certificates") return certsQuery().data;
+    return undefined;
+  });
+
+  const isLoading = createMemo(() => {
+    if (props.tab === "badges") return badgesQuery().isLoading;
+    if (props.tab === "certificates") return certsQuery().isLoading;
+    return false;
+  });
+
+  const eventsQuery = useQuery(() => ({
+    ...allPublicEventsQueryOptions(),
+    enabled: props.tab === "badges",
+  }));
+
+  const [editionLocations, setEditionLocations] = createSignal<Map<string, string>>(new Map());
+
+  createEffect(
+    () => [props.tab, eventsQuery().data] as const,
+    ([tab, evData]) => {
+      if (tab !== "badges") return;
+      const events = (evData ?? []) as EventI[];
+      if (events.length === 0) return;
+      void (async () => {
+        const map = new Map<string, string>();
+        await Promise.all(
+          events.map(async (ev) => {
+            try {
+              const editions = await getPublicEditionsFn(ev.id);
+              for (const ed of editions) {
+                map.set(ed.id, ed.location_name ?? "");
+              }
+            } catch {
+              // ignore
+            }
+          }),
+        );
+        setEditionLocations(new Map(map));
+      })();
+    },
+  );
+
   return (
     <Show
       when={props.tab === "purchases"}
       fallback={
-        <Loading fallback={<CollectionSkeleton tab={props.tab} />}>
+        <Show
+          when={!isLoading()}
+          fallback={<CollectionSkeleton tab={props.tab} />}
+        >
           <Show when={data()}>
-            {(loaded) => <CollectionCard tab={props.tab} data={loaded()} />}
+            <Show
+              when={props.tab === "badges"}
+              fallback={
+                <div class="mx-auto mt-4 max-w-7xl px-4">
+                  <Card title={tabTitle(props.tab)}>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <For each={collectItems(data())}>
+                        {(item) => (
+                          <ProfileCollectionItem
+                            tab={props.tab}
+                            item={item}
+                          />
+                        )}
+                      </For>
+                    </div>
+                  </Card>
+                </div>
+              }
+            >
+              <div class="mx-auto mt-5 max-w-7xl px-4">
+                <ProfileBadges
+                  badges={allProfileBadges(data() as BadgeProfileGroups)}
+                  profileIdentifier={props.publicIdentifier}
+                  participantName={props.participantName}
+                  editionLocations={editionLocations()}
+                />
+              </div>
+            </Show>
           </Show>
-        </Loading>
+        </Show>
       }
     >
-      <CollectionCard tab="purchases" data={[]} />
+      <div class="mx-auto mt-4 max-w-7xl px-4">
+        <PurchasesContent />
+      </div>
     </Show>
   );
 }
@@ -248,35 +387,12 @@ const tabTitle = (tab: Exclude<Tab, "about">) =>
       ? "Certificados"
       : "Compras";
 
-function CollectionCard(props: { tab: Exclude<Tab, "about">; data: unknown }) {
-  const title = () => tabTitle(props.tab);
-  const items = () => {
-    const data = props.data;
-    const collect = (value: unknown): unknown[] =>
-      Array.isArray(value)
-        ? value
-        : value && typeof value === "object"
-          ? Object.values(value as Record<string, unknown>).flatMap(collect)
-          : [];
-    return collect(data);
-  };
-  return (
-    <div class="mx-auto mt-4 max-w-7xl px-4">
-      <Card title={title()}>
-        <Show when={props.tab === "purchases"}>
-          <PurchasesContent />
-        </Show>
-        {/* TODO: I need to change this(one component for each) */}
-        <Show when={props.tab !== "purchases"}>
-          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <For each={items()}>
-              {(item) => <ProfileCollectionItem tab={props.tab} item={item} />}
-            </For>
-          </div>
-        </Show>
-      </Card>
-    </div>
-  );
+function collectItems(data: unknown): unknown[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    return Object.values(data as Record<string, unknown>).flatMap(collectItems);
+  }
+  return [];
 }
 
 function Card(props: { title: string; children: unknown }) {
@@ -287,6 +403,7 @@ function Card(props: { title: string; children: unknown }) {
     </section>
   );
 }
+
 function Social(props: { href: string; label: string }) {
   return (
     <a
@@ -314,123 +431,41 @@ function SocialIcon(props: { label: string }) {
   if (label === "discord") return <MessageCircle />;
   return <Globe />;
 }
+
 function EmptyState(props: { message: string }) {
-  return <p class="text-sm italic text-muted-foreground/70">{props.message}</p>;
+  return <p class="text-sm italic text-muted-foreground">{props.message}</p>;
 }
 
-function completenessHint(profile: ReturnType<typeof asUniventsProfile>) {
-  if (!(profile.preferredName || profile.legalName))
-    return "Adicione seu nome para completar o perfil.";
-  if (!profile.pfpUrl) return "Adicione uma foto para completar o perfil.";
-  if (!profile.bannerUrl)
-    return "Adicione uma imagem de capa para completar o perfil.";
-  if (!profile.aboutMe)
-    return 'Preencha a seção "Sobre mim" para completar o perfil.';
-  if (!(profile.role || profile.organization))
-    return "Adicione sua função ou organização para completar o perfil.";
-  if (!profile.languages?.length)
-    return "Adicione ao menos um idioma para completar o perfil.";
-  if (
-    !(
-      profile.website ||
-      profile.contactEmail ||
-      Object.values(profile.socials ?? {}).some(Boolean)
-    )
-  )
-    return "Adicione uma forma de contato para completar o perfil.";
-  return "Perfil completo!";
+function ProfileSkeleton() {
+  return (
+    <div class="mx-auto max-w-7xl space-y-6 px-4 py-8">
+      <div class="h-32 rounded-md bg-muted animate-pulse" />
+      <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_280px]">
+        <div class="h-64 rounded-md bg-muted animate-pulse" />
+        <div class="h-64 rounded-md bg-muted animate-pulse" />
+      </div>
+    </div>
+  );
 }
-function CollectionSkeleton(props: { tab: Exclude<Tab, "about"> }) {
+
+function CollectionSkeleton(props: { tab: Tab }) {
   return (
     <div class="mx-auto mt-4 max-w-7xl px-4">
-      <Card title={tabTitle(props.tab)}>
+      <Card title={tabTitle(props.tab as Exclude<Tab, "about">)}>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <CollectionItemSkeleton />
-          <CollectionItemSkeleton />
-          <CollectionItemSkeleton />
+          <div class="h-44 rounded-md bg-muted animate-pulse" />
+          <div class="h-44 rounded-md bg-muted animate-pulse" />
+          <div class="h-44 rounded-md bg-muted animate-pulse" />
         </div>
       </Card>
     </div>
   );
 }
 
-function CollectionItemSkeleton() {
-  return (
-    <div class="overflow-hidden rounded-md border border-border bg-card shadow-sm">
-      <div class="flex gap-3 p-4">
-        <div class="size-9 shrink-0 animate-pulse rounded-md bg-muted" />
-
-        <div class="min-w-0 flex-1 space-y-2">
-          <div class="h-4 w-2/3 animate-pulse rounded bg-muted" />
-          <div class="h-3 w-full animate-pulse rounded bg-muted" />
-          <div class="h-3 w-4/5 animate-pulse rounded bg-muted" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProfileSkeleton() {
-  return (
-    <main class="min-h-dvh bg-background pb-28">
-      <div class="w-full">
-        <div class="h-44 w-full animate-pulse bg-muted md:h-56" />
-
-        <div class="mx-auto max-w-7xl px-4">
-          <div class="-mt-14 size-28 animate-pulse rounded-full border-4 border-border bg-muted md:-mt-16 md:size-32" />
-
-          <div class="mt-4 space-y-2">
-            <div class="h-8 w-48 animate-pulse rounded bg-muted" />
-            <div class="h-4 w-64 animate-pulse rounded bg-muted" />
-            <div class="h-4 w-40 animate-pulse rounded bg-muted" />
-          </div>
-        </div>
-      </div>
-
-      <div class="mx-auto mt-5 hidden max-w-7xl gap-5 px-4 md:grid md:grid-cols-[1fr_280px]">
-        <div class="space-y-5">
-          <div class="h-36 animate-pulse rounded-md bg-muted" />
-          <div class="h-32 animate-pulse rounded-md bg-muted" />
-        </div>
-
-        <div class="space-y-5">
-          <div class="h-64 animate-pulse rounded-md bg-muted" />
-          <div class="h-24 animate-pulse rounded-md bg-muted" />
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function MissingPublicProfile() {
-  return (
-    <main class="relative min-h-dvh overflow-hidden bg-background">
-      <div aria-hidden="true" class="pointer-events-none blur-md opacity-50">
-        <ProfileSkeleton />
-      </div>
-
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-background/35 px-4 backdrop-blur-sm">
-        <div
-          role="alert"
-          class="w-full max-w-md rounded-lg border border-border bg-card p-6 text-center shadow-xl"
-        >
-          <CircleAlert class="mx-auto size-8 text-muted-foreground" />
-
-          <h1 class="mt-4 text-xl font-semibold">Perfil não encontrado</h1>
-
-          <p class="mt-2 text-sm text-muted-foreground">
-            Este perfil não existe ou não está mais disponível.
-          </p>
-
-          <Link
-            to="/profile"
-            search={{ tab: "about" }}
-            class="mt-5 inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm text-primary-foreground shadow-sm"
-          >
-            Ir para o meu perfil
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
+function completenessHint(profile: ReturnType<typeof asUniventsProfile>) {
+  if (!profile.preferredName && !profile.legalName)
+    return "Adicione seu nome completo ou como prefere ser chamado.";
+  if (!profile.aboutMe) return "Conte um pouco sobre você na bio.";
+  if (!profile.languages?.length) return "Adicione seus idiomas de domínio.";
+  return "Seu perfil está quase completo!";
 }

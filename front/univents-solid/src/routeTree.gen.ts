@@ -28,9 +28,12 @@ import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/pr
 import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
 import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
 import { Route as AdminEventsEventIdIndexRouteImport } from './routes/admin/events/$eventId/index'
+import { Route as ProfileActorIdBadgesBadgeIdRouteImport } from './routes/profile/$actorId/badges/$badgeId'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
+import { Route as AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/index'
+import { Route as AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
 import { Route as AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/index'
 import { Route as AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/calendar'
@@ -134,6 +137,12 @@ const AdminEventsEventIdIndexRoute = AdminEventsEventIdIndexRouteImport.update({
   path: '/events/$eventId/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ProfileActorIdBadgesBadgeIdRoute =
+  ProfileActorIdBadgesBadgeIdRouteImport.update({
+    id: '/profile/$actorId/badges/$badgeId',
+    path: '/profile/$actorId/badges/$badgeId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
     id: '/events/$eventId/editions/',
@@ -150,6 +159,18 @@ const AdminEventsEventIdEditionsEditionIdIndexRoute =
   AdminEventsEventIdEditionsEditionIdIndexRouteImport.update({
     id: '/events/$eventId_/editions/$editionId/',
     path: '/events/$eventId/editions/$editionId/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdBadgesIndexRoute =
+  AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/badges/',
+    path: '/events/$eventId/editions/$editionId/badges/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdBadgesEditorRoute =
+  AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/badges/editor',
+    path: '/events/$eventId/editions/$editionId/badges/editor',
     getParentRoute: () => AdminRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
@@ -218,11 +239,14 @@ export interface FileRoutesByFullPath {
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/profile/$actorId/': typeof ProfileActorIdIndexRoute
+  '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId/editions/$editionId/badges/editor': typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   '/admin/events/$eventId/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute
+  '/admin/events/$eventId/editions/$editionId/badges/': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexRoute
   '/admin/events/$eventId/editions/$editionId/purchases/': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
@@ -249,11 +273,14 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$slug': typeof EventsSlugIndexRoute
   '/profile/$actorId': typeof ProfileActorIdIndexRoute
+  '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/admin/events/$eventId': typeof AdminEventsEventIdIndexRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId/editions/$editionId/badges/editor': typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   '/admin/events/$eventId/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute
+  '/admin/events/$eventId/editions/$editionId/badges': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId/editions/$editionId/products': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId/editions/$editionId/programs': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexRoute
   '/admin/events/$eventId/editions/$editionId/purchases': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
@@ -281,11 +308,14 @@ export interface FileRoutesById {
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$slug/': typeof EventsSlugIndexRoute
   '/profile/$actorId/': typeof ProfileActorIdIndexRoute
+  '/profile/$actorId/badges/$badgeId': typeof ProfileActorIdBadgesBadgeIdRoute
   '/admin/events/$eventId/': typeof AdminEventsEventIdIndexRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/members/': typeof AdminEventsEventIdMembersIndexRoute
   '/admin/events/$eventId_/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  '/admin/events/$eventId_/editions/$editionId/badges/editor': typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   '/admin/events/$eventId_/editions/$editionId/programs/calendar': typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute
+  '/admin/events/$eventId_/editions/$editionId/badges/': typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   '/admin/events/$eventId_/editions/$editionId/products/': typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/programs/': typeof AdminEventsEventIdEditionsEditionIdProgramsIndexRoute
   '/admin/events/$eventId_/editions/$editionId/purchases/': typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
@@ -314,11 +344,14 @@ export interface FileRouteTypes {
     | '/admin/events/'
     | '/events/$slug/'
     | '/profile/$actorId/'
+    | '/profile/$actorId/badges/$badgeId'
     | '/admin/events/$eventId/'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId/editions/$editionId/'
+    | '/admin/events/$eventId/editions/$editionId/badges/editor'
     | '/admin/events/$eventId/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId/editions/$editionId/badges/'
     | '/admin/events/$eventId/editions/$editionId/products/'
     | '/admin/events/$eventId/editions/$editionId/programs/'
     | '/admin/events/$eventId/editions/$editionId/purchases/'
@@ -345,11 +378,14 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/events/$slug'
     | '/profile/$actorId'
+    | '/profile/$actorId/badges/$badgeId'
     | '/admin/events/$eventId'
     | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/members'
     | '/admin/events/$eventId/editions/$editionId'
+    | '/admin/events/$eventId/editions/$editionId/badges/editor'
     | '/admin/events/$eventId/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId/editions/$editionId/badges'
     | '/admin/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/$editionId/programs'
     | '/admin/events/$eventId/editions/$editionId/purchases'
@@ -376,11 +412,14 @@ export interface FileRouteTypes {
     | '/admin/events/'
     | '/events/$slug/'
     | '/profile/$actorId/'
+    | '/profile/$actorId/badges/$badgeId'
     | '/admin/events/$eventId/'
     | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/members/'
     | '/admin/events/$eventId_/editions/$editionId/'
+    | '/admin/events/$eventId_/editions/$editionId/badges/editor'
     | '/admin/events/$eventId_/editions/$editionId/programs/calendar'
+    | '/admin/events/$eventId_/editions/$editionId/badges/'
     | '/admin/events/$eventId_/editions/$editionId/products/'
     | '/admin/events/$eventId_/editions/$editionId/programs/'
     | '/admin/events/$eventId_/editions/$editionId/purchases/'
@@ -406,6 +445,7 @@ export interface RootRouteChildren {
   EventsSlugStoreRoute: typeof EventsSlugStoreRoute
   EventsSlugIndexRoute: typeof EventsSlugIndexRoute
   ProfileActorIdIndexRoute: typeof ProfileActorIdIndexRoute
+  ProfileActorIdBadgesBadgeIdRoute: typeof ProfileActorIdBadgesBadgeIdRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -543,6 +583,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminEventsEventIdIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/profile/$actorId/badges/$badgeId': {
+      id: '/profile/$actorId/badges/$badgeId'
+      path: '/profile/$actorId/badges/$badgeId'
+      fullPath: '/profile/$actorId/badges/$badgeId'
+      preLoaderRoute: typeof ProfileActorIdBadgesBadgeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/events/$eventId/editions/': {
       id: '/admin/events/$eventId/editions/'
       path: '/events/$eventId/editions'
@@ -562,6 +609,20 @@ declare module '@tanstack/solid-router' {
       path: '/events/$eventId/editions/$editionId'
       fullPath: '/admin/events/$eventId/editions/$editionId/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/badges/': {
+      id: '/admin/events/$eventId_/editions/$editionId/badges/'
+      path: '/events/$eventId/editions/$editionId/badges'
+      fullPath: '/admin/events/$eventId/editions/$editionId/badges/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/badges/editor': {
+      id: '/admin/events/$eventId_/editions/$editionId/badges/editor'
+      path: '/events/$eventId/editions/$editionId/badges/editor'
+      fullPath: '/admin/events/$eventId/editions/$editionId/badges/editor'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events/$eventId_/editions/$editionId/products/': {
@@ -623,7 +684,9 @@ interface AdminRouteChildren {
   AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
   AdminEventsEventIdMembersIndexRoute: typeof AdminEventsEventIdMembersIndexRoute
   AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
+  AdminEventsEventIdEditionsEditionIdBadgesEditorRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRoute
   AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute
+  AdminEventsEventIdEditionsEditionIdBadgesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRoute
   AdminEventsEventIdEditionsEditionIdProductsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRoute
   AdminEventsEventIdEditionsEditionIdProgramsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexRoute
   AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute
@@ -640,8 +703,12 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEventsEventIdMembersIndexRoute: AdminEventsEventIdMembersIndexRoute,
   AdminEventsEventIdEditionsEditionIdIndexRoute:
     AdminEventsEventIdEditionsEditionIdIndexRoute,
+  AdminEventsEventIdEditionsEditionIdBadgesEditorRoute:
+    AdminEventsEventIdEditionsEditionIdBadgesEditorRoute,
   AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute:
     AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute,
+  AdminEventsEventIdEditionsEditionIdBadgesIndexRoute:
+    AdminEventsEventIdEditionsEditionIdBadgesIndexRoute,
   AdminEventsEventIdEditionsEditionIdProductsIndexRoute:
     AdminEventsEventIdEditionsEditionIdProductsIndexRoute,
   AdminEventsEventIdEditionsEditionIdProgramsIndexRoute:
@@ -675,6 +742,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsSlugStoreRoute: EventsSlugStoreRoute,
   EventsSlugIndexRoute: EventsSlugIndexRoute,
   ProfileActorIdIndexRoute: ProfileActorIdIndexRoute,
+  ProfileActorIdBadgesBadgeIdRoute: ProfileActorIdBadgesBadgeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

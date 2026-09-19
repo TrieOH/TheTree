@@ -1,4 +1,14 @@
-type ProfileData = Record<string, unknown>;
+export type ProfileData = Record<string, unknown>;
+
+export interface ActorProfile {
+  actor_id: string;
+  handle?: string | null;
+  pfp_url?: string | null;
+  profile?: Record<string, unknown>;
+  schema_version?: number;
+  outdated?: boolean;
+  updated_at?: string;
+}
 
 export type UniventsProfile = ProfileData & {
   legalName?: string;
@@ -49,5 +59,6 @@ export const socialHref = (network: string, value: string) => {
     instagram: "https://instagram.com/",
     discord: "https://discord.com/users/",
   };
-  return bases[network] ? `${bases[network]}${value.replace(/^@/, "")}` : value;
+  const base = bases[network.toLowerCase()];
+  return base ? `${base}${value.replace(/^@/, "")}` : value;
 };

@@ -36,3 +36,24 @@ export const allAdminEditionsQueryOptions = (eventId: string) => ({
   queryKey: editionKeys.adminListByEvent(eventId),
   queryFn: () => getAllAdminEditionsFn(eventId),
 });
+
+export const editionLocationQueryOptions = (
+  editionId: string | undefined,
+  events: Array<{ id: string }>,
+) => ({
+  queryKey: editionKeys.detail(editionId ?? ""),
+  queryFn: async () => {
+    if (!editionId) return null;
+    for (const event of events) {
+      try {
+        const editions = await getPublicEditionsFn(event.id);
+        const match = editions.find((item) => item.id === editionId);
+        if (match) return match;
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  },
+  enabled: Boolean(editionId && events.length > 0),
+});
