@@ -22,8 +22,8 @@ export function AdminCreateBadgeCard(
       index={props.index}
       animate={props.animate}
       layout="stacked"
-      minHeight="min-h-[18rem]"
-      class="p-5"
+      minHeight="min-h-[13.5rem]"
+      class="p-4"
     />
   );
 }

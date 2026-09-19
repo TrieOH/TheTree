@@ -137,9 +137,9 @@ describe("AdminBadgeCard", () => {
     expect(screen.getByText("Crachá VIP 2026")).toBeDefined();
     expect(screen.getAllByText("Ingresso VIP").length).toBeGreaterThan(0);
 
-    // Click card invokes onEdit
-    const card = screen.getByRole("button", { name: "Visualizar crachá Crachá VIP 2026" });
-    fireEvent.click(card);
+    // Click edit invokes onEdit
+    const editBtn = screen.getByRole("button", { name: "Editar crachá Crachá VIP 2026" });
+    fireEvent.click(editBtn);
     expect(onEdit).toHaveBeenCalledTimes(1);
   });
 

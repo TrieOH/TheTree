@@ -435,17 +435,6 @@ function AdminEditionBadgesRoute(): JSX.Element {
             onFilterChange={setTemplateFilter}
             filterPlaceholder="Buscar por nome do template..."
             itemLabel="templates"
-            headerActions={
-              <Button
-                variant="default"
-                size="sm"
-                class="h-9 gap-1.5 px-3 text-xs cursor-pointer"
-                onClick={() => handleOpenEditor()}
-              >
-                <Plus class="size-4" />
-                <span>Novo template</span>
-              </Button>
-            }
             emptyState={
               <EmptyState
                 class="border-0 bg-transparent px-0 py-4 shadow-none"

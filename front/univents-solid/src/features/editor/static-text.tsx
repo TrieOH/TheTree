@@ -75,10 +75,11 @@ function findNearestRun(
 export function StaticText(props: StaticTextProps): JSX.Element {
   return (
     <div
-      class="h-full w-full select-none"
+      class="h-full w-full overflow-hidden select-none whitespace-pre-wrap wrap-break-word"
       style={{
+        "line-height": 1.25,
         "overflow-wrap": "anywhere",
-        "white-space": "pre-wrap",
+        "word-break": "break-word",
       }}
     >
       <For each={props.paragraphs}>
@@ -87,34 +88,23 @@ export function StaticText(props: StaticTextProps): JSX.Element {
             paragraph.runs.length === 0 ||
             paragraph.runs.every((r) => !r.text || r.text === "");
 
+          const nearestRun = () =>
+            paragraph.runs[0] ?? findNearestRun(props.paragraphs, paragraph);
+
           return (
-            <p
+            <div
               style={{
                 "text-align": paragraph.align,
-                "line-height": paragraph.lineHeight,
+                "line-height": paragraph.lineHeight ?? 1.25,
+                "font-size": `${nearestRun()?.fontSize ?? 16}px`,
+                "font-family": nearestRun()?.fontFamily,
                 margin: 0,
                 padding: 0,
               }}
             >
               <Show
                 when={!isEmpty()}
-                fallback={(() => {
-                  const fallbackRun = findNearestRun(
-                    props.paragraphs,
-                    paragraph,
-                  );
-                  return (
-                    <span
-                      style={{
-                        "font-size": `${fallbackRun?.fontSize ?? 16}px`,
-                        "line-height": paragraph.lineHeight,
-                        display: "inline-block",
-                      }}
-                    >
-                      &#8203;
-                    </span>
-                  );
-                })()}
+                fallback={<br />}
               >
                 <For each={paragraph.runs}>
                   {(run) => (
@@ -123,7 +113,7 @@ export function StaticText(props: StaticTextProps): JSX.Element {
                         "font-size": `${run.fontSize}px`,
                         "font-family": run.fontFamily,
                         color: run.color,
-                        "font-weight": run.bold ? "bold" : "normal",
+                        "font-weight": run.bold ? 700 : 400,
                         "font-style": run.italic ? "italic" : "normal",
                         "text-decoration": run.underline
                           ? "underline"
@@ -139,7 +129,7 @@ export function StaticText(props: StaticTextProps): JSX.Element {
                   )}
                 </For>
               </Show>
-            </p>
+            </div>
           );
         }}
       </For>

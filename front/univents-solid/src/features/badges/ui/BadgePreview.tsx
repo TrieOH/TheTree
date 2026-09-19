@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { type Accessor, For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import { type Accessor, For, Show, createMemo, createSignal, onCleanup } from "solid-js";
 import { QrRenderer } from "@/features/editor/qr-renderer";
 import { StaticText } from "@/features/editor/static-text";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
@@ -64,22 +64,27 @@ function previewText(
 
 export function BadgePreview(props: BadgePreviewProps): JSX.Element {
   const [containerWidth, setContainerWidth] = createSignal(0);
-  const [container, setContainer] = createSignal<HTMLDivElement>();
+  let observer: ResizeObserver | undefined;
 
-  createEffect(container, (el) => {
-    if (!el) return;
-    setContainerWidth(el.getBoundingClientRect().width);
+  onCleanup(() => {
+    observer?.disconnect();
+  });
+
+  const setupContainer = (el: HTMLDivElement) => {
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0) {
+      setContainerWidth(rect.width);
+    }
 
     if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(([entry]) => {
+      observer = new ResizeObserver(([entry]) => {
         if (entry && entry.contentRect.width > 0) {
           setContainerWidth(entry.contentRect.width);
         }
       });
       observer.observe(el);
-      return () => observer.disconnect();
     }
-  });
+  };
 
   const design = createMemo<BadgeDesign>(() => {
     const raw = props.badge.design_data;
@@ -141,7 +146,7 @@ export function BadgePreview(props: BadgePreviewProps): JSX.Element {
 
   return (
     <div
-      ref={setContainer}
+      ref={setupContainer}
       class={`${cls()} shrink-0 overflow-hidden rounded-md${framed() ? " border shadow-xs" : ""}`}
       style={{
         "aspect-ratio": `${design().canvas.width} / ${design().canvas.height}`,
@@ -263,8 +268,11 @@ function BadgeElementPreview(props: {
       <div class="absolute overflow-hidden" style={style()}>
         <StaticText
           paragraphs={
-            (transformedElement() as Extract<BadgeElement, { type: "text" }>).paragraphs
+            (transformedElement() as Extract<BadgeElement, { type: "text" }>)
+              .paragraphs
           }
+          values={props.values()}
+          showVariables={props.showVariables()}
         />
       </div>
     </Show>
