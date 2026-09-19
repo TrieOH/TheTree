@@ -3,12 +3,15 @@ packages:
   - 'lib/ts/*'
   - 'sdk/ts/*'
 
+catalogs:
+  solid:
+    solid-js: 2.0.0-rc.6
+    '@solidjs/web': 2.0.0-rc.6
+
 catalog:
   # === @trieoh ===
   '@trieoh/identityx-sdk-ts': ^0.15.5
   '@trieoh/identityx-sdk-ts-react': ^0.15.5
-  solid-js: 2.0.0-rc.6
-  '@solidjs/web': 2.0.0-rc.6
   '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -86,6 +89,13 @@ catalog:
   "@opentelemetry/otlp-transformer": ^0.221.0
 
 overrides:
+  'univents>solid-js': 1.9.15
+  'payssage>solid-js': 1.9.15
+  'informd>solid-js': 1.9.15
+  'identityx>solid-js': 1.9.15
+  '@tanstack/devtools>solid-js': 1.9.15
+  '@tanstack/devtools-ui>solid-js': 1.9.15
+  '@tanstack/react-devtools>solid-js': 1.9.15
   browserslist: 4.28.7
   'posthog-js>fflate': ^0.4.9
   fflate: 0.8.3
@@ -127,3 +137,11 @@ allowBuilds:
   workerd: true
 patchedDependencies:
   '@tanstack/solid-router@2.0.0-rc.6': patches/@tanstack__solid-router@2.0.0-rc.6.patch
+
+packageExtensions:
+  '@tanstack/devtools':
+    peerDependencies:
+      solid-js: '^1.9.9'
+  '@tanstack/devtools-ui':
+    peerDependencies:
+      solid-js: '^1.9.9'

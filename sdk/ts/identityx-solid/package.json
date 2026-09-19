@@ -19,17 +19,17 @@
     "typecheck": "pnpm exec tsc -p . --noEmit"
   },
   "peerDependencies": {
-    "@solidjs/web": "catalog:",
-    "solid-js": "catalog:"
+    "@solidjs/web": "catalog:solid",
+    "solid-js": "catalog:solid"
   },
   "dependencies": {
     "@trieoh/envoy-fetch-ts": "catalog:",
     "@trieoh/identityx-sdk-ts": "workspace:*"
   },
   "devDependencies": {
-    "@solidjs/web": "catalog:",
+    "@solidjs/web": "catalog:solid",
     "@types/node": "catalog:",
-    "solid-js": "catalog:",
+    "solid-js": "catalog:solid",
     "tailwindcss": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:"

@@ -16,7 +16,7 @@
     "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "posthog-js": "catalog:",
-    "solid-js": "catalog:"
+    "solid-js": "catalog:solid"
   },
   "devDependencies": {
     "@tanstack/query-core": "catalog:",
@@ -25,6 +25,6 @@
     "@trieoh/identityx-sdk-ts": "workspace:*",
     "@trieoh/identityx-sdk-ts-solid": "workspace:",
     "posthog-js": "catalog:",
-    "solid-js": "catalog:"
+    "solid-js": "catalog:solid"
   }
 }

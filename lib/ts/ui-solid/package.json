@@ -8,18 +8,18 @@
     ".": "./src/index.ts"
   },
   "peerDependencies": {
-    "@solidjs/web": "catalog:",
+    "@solidjs/web": "catalog:solid",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
-    "solid-js": "catalog:",
+    "solid-js": "catalog:solid",
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "@solidjs/web": "catalog:",
+    "@solidjs/web": "catalog:solid",
     "@types/node": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
-    "solid-js": "catalog:",
+    "solid-js": "catalog:solid",
     "tailwind-merge": "catalog:",
     "typescript": "catalog:"
   }
