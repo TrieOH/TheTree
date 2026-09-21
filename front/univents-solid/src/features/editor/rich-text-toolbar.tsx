@@ -36,7 +36,7 @@ export function normalizeHexColor(color?: string | null): string {
   if (/^#[0-9a-f]{3}$/i.test(color)) {
     return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`;
   }
-  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  const match = color.match(/rgba?\(([0-9]+),\s*([0-9]+),\s*([0-9]+)/i);
   if (match) {
     const [, r, g, b] = match;
     const hex = (n: string) =>
@@ -59,12 +59,8 @@ export interface RichTextToolbarProps {
 }
 
 export function RichTextToolbar(props: RichTextToolbarProps): JSX.Element {
-  const [fontSize, setFontSize] = createSignal("24", {
-    ownedWrite: true,
-  } as any);
-  const [textColor, setTextColor] = createSignal("#0f172a", {
-    ownedWrite: true,
-  } as any);
+  const [fontSize, setFontSize] = createSignal("24");
+  const [textColor, setTextColor] = createSignal("#0f172a");
 
   const disabled = createMemo(() => !props.controller);
 
@@ -72,10 +68,12 @@ export function RichTextToolbar(props: RichTextToolbarProps): JSX.Element {
     () => props.selectionStyles,
     (styles) => {
       if (styles) {
-        setFontSize(styles.fontSize === null ? "—" : String(styles.fontSize));
-        if (styles.color) {
-          setTextColor(normalizeHexColor(styles.color));
-        }
+        queueMicrotask(() => {
+          setFontSize(styles.fontSize === null ? "—" : String(styles.fontSize));
+          if (styles.color) {
+            setTextColor(normalizeHexColor(styles.color));
+          }
+        });
       }
     },
   );

@@ -42,11 +42,9 @@ export interface ToolbarComboboxProps {
 
 export function ToolbarCombobox(props: ToolbarComboboxProps): JSX.Element {
   let containerRef: HTMLDivElement | undefined;
-  const [open, setOpen] = createSignal(false, { ownedWrite: true } as any);
-  const [query, setQuery] = createSignal("", { ownedWrite: true } as any);
-  const [highlightedIndex, setHighlightedIndex] = createSignal(0, {
-    ownedWrite: true,
-  } as any);
+  const [open, setOpen] = createSignal(false);
+  const [query, setQuery] = createSignal("");
+  const [highlightedIndex, setHighlightedIndex] = createSignal(0);
 
   const normalizedQuery = createMemo(() => query().trim().toLowerCase());
   const selectedOption = createMemo(() =>
@@ -83,7 +81,9 @@ export function ToolbarCombobox(props: ToolbarComboboxProps): JSX.Element {
   createEffect(
     () => [open(), query()],
     () => {
-      setHighlightedIndex(0);
+      queueMicrotask(() => {
+        setHighlightedIndex(0);
+      });
     },
   );
 
@@ -131,22 +131,22 @@ export function ToolbarCombobox(props: ToolbarComboboxProps): JSX.Element {
           >
             {selectedOption()?.label ?? props.placeholder}
           </span>
-          <ChevronsUpDown class="size-3 shrink-0 text-muted-foreground" />
+          <ChevronsUpDown class="size-3.5 shrink-0 opacity-50" />
         </Show>
       </button>
 
       <Show when={open()}>
         <div
           class={cn(
-            "absolute top-full left-0 z-50 mt-1 w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
-            props.iconOnly && "w-64 max-w-none",
+            "absolute top-[calc(100%+4px)] left-0 z-50 min-w-44 max-w-72 rounded-md border border-border bg-popover text-popover-foreground shadow-md",
             props.dropdownClass,
             props.dropdownClassName,
           )}
         >
-          <div class="flex items-center gap-2 border-b border-border px-2 py-1.5">
-            <Search class="size-3.5 shrink-0 text-muted-foreground" />
+          <div class="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
+            <Search class="size-3.5 text-muted-foreground" />
             <input
+              type="text"
               value={query()}
               placeholder={props.searchPlaceholder ?? "Buscar…"}
               class="h-7 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"

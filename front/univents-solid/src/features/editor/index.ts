@@ -7,3 +7,4 @@ export * from "./rich-text-toolbar";
 export * from "./toolbar-combobox";
 export * from "./qr-renderer";
 export * from "./static-text";
+export * from "./editable-text";

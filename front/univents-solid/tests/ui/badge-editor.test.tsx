@@ -1,3 +1,4 @@
+import type { JSX } from "@solidjs/web";
 import { render, screen, fireEvent } from "@solidjs/testing-library";
 import { describe, it, expect, vi } from "vitest";
 import { BadgeEditor } from "@/features/badges/editor/BadgeEditor";
@@ -5,12 +6,12 @@ import { BadgeCanvas } from "@/features/badges/editor/BadgeCanvas";
 import { DEFAULT_BADGE_TEMPLATE } from "@/features/badges/default-template";
 
 vi.mock("@tanstack/solid-router", () => ({
-  Link: (props: any) => <a href={props.href}>{props.children}</a>,
+  Link: (props: { href?: string; children?: JSX.Element }) => <a href={props.href}>{props.children}</a>,
   useNavigate: () => vi.fn(),
 }));
 
 vi.mock("@trieoh/front-core-solid", () => ({
-  useQuery: (optionsFn: any) => () => {
+  useQuery: (optionsFn: () => { enabled?: boolean } | { enabled?: boolean }) => () => {
     const opts = typeof optionsFn === "function" ? optionsFn() : optionsFn;
     if (opts?.enabled === false) {
       return { data: undefined, isLoading: false, isError: false };

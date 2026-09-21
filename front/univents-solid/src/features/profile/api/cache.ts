@@ -58,8 +58,8 @@ export function getCachedOwnProfile(
   return queryClient
     .getQueryCache()
     .findAll({ queryKey: profileKeys.details() })
-    .map((query) => query.state.data as any)
-    .map((d) => (d?.actor_id ? d : d?.data))
+    .map((query) => query.state.data as ActorProfile | { data?: ActorProfile } | undefined)
+    .map((d) => (d && "actor_id" in d ? d : d?.data))
     .find((p) => p?.actor_id === actorId);
 }
 

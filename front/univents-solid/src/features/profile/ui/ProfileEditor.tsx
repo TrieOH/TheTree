@@ -65,8 +65,8 @@ export function ProfileEditor(props: {
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const initial = untrack(() => props.initialProfile as any);
-  const initialData = initial?.actor_id ? initial : initial?.data;
+  const initial = untrack(() => props.initialProfile);
+  const initialData = initial && "actor_id" in initial ? initial : initial?.data;
   const [profile, setProfile] = createSignal<UniventsProfile>(
     initialData?.profile
       ? asUniventsProfile({

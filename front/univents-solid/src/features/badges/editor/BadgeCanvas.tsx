@@ -5,18 +5,14 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onCleanup,
-  untrack,
 } from "solid-js";
 import {
+  EditableText,
   EditorElementFrame,
   QrRenderer,
   StaticText,
-  domToParagraphs,
-  paragraphsToHtml,
   type ElementBounds,
   type TextElementAdapter,
-  type TextSelectionStyles,
 } from "@/features/editor";
 import type { BadgeDesign, BadgeElement } from "../model";
 
@@ -32,10 +28,10 @@ export interface BadgeCanvasProps {
 
 export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
   let containerRef: HTMLDivElement | undefined;
-  const [scale, setScale] = createSignal(1, { ownedWrite: true } as any);
+  const [scale, setScale] = createSignal(1, { ownedWrite: true });
   const [editingId, setEditingId] = createSignal<string | null>(null, {
     ownedWrite: true,
-  } as any);
+  });
 
   const elementIds = createMemo(() => props.design.elements.map((e) => e.id));
 
@@ -252,247 +248,4 @@ function CanvasElementItem(props: {
       )}
     </Show>
   );
-}
-
-function EditableText(props: {
-  element: Extract<BadgeElement, { type: "text" }>;
-  adapter?: TextElementAdapter;
-  onStopEditing: () => void;
-}): JSX.Element {
-  let editorRef: HTMLDivElement | undefined;
-  let isMounted = true;
-  let savedRange: Range | null = null;
-
-  const saveSelection = () => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && editorRef && rangeWithin(sel, editorRef)) {
-      savedRange = sel.getRangeAt(0).cloneRange();
-    }
-  };
-
-  const restoreSelection = () => {
-    if (!editorRef) return;
-    editorRef.focus();
-    if (savedRange) {
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(savedRange);
-      }
-    }
-  };
-
-  const readStyles = (): TextSelectionStyles => {
-    const sel = window.getSelection();
-    let targetNode: Node | null = sel?.anchorNode ?? null;
-    if (targetNode?.nodeType === Node.TEXT_NODE) {
-      targetNode = targetNode.parentElement;
-    }
-    const computed = targetNode
-      ? window.getComputedStyle(targetNode as Element)
-      : null;
-
-    return {
-      bold:
-        computed?.fontWeight === "bold" ||
-        Number(computed?.fontWeight ?? 400) >= 700,
-      italic: computed?.fontStyle === "italic",
-      underline: computed?.textDecorationLine?.includes("underline") ?? false,
-      align:
-        (computed?.textAlign as
-          | "left"
-          | "center"
-          | "right"
-          | "justify"
-          | undefined) ?? "left",
-      lineHeight: computed?.lineHeight
-        ? Number.parseFloat(computed.lineHeight) /
-          Number.parseFloat(computed.fontSize || "16")
-        : 1.25,
-      color: computed?.color ?? "#0f172a",
-      fontSize: computed?.fontSize
-        ? Number.parseFloat(computed.fontSize)
-        : 18,
-      fontFamily: computed?.fontFamily ?? "Inter, sans-serif",
-    };
-  };
-
-  const sync = () => {
-    if (!editorRef) return;
-    const paragraphs = domToParagraphs(editorRef);
-    const adapter = untrack(() => props.adapter);
-    const elementId = untrack(() => props.element.id);
-    adapter?.updateParagraphs(elementId, paragraphs);
-    adapter?.setSelectionStyles(readStyles());
-  };
-
-  const initEditor = (el: HTMLDivElement) => {
-    editorRef = el;
-    const initialParagraphs = untrack(() => props.element.paragraphs);
-    el.innerHTML = paragraphsToHtml(initialParagraphs);
-    el.focus();
-    try {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-      savedRange = range.cloneRange();
-    } catch {
-      // ignore
-    }
-
-    const adapter = untrack(() => props.adapter);
-    const elementId = untrack(() => props.element.id);
-
-    queueMicrotask(() => {
-      if (!isMounted) return;
-      adapter?.setController({
-        elementId,
-        commit: sync,
-        toggleBold: () => {
-          restoreSelection();
-          document.execCommand("bold");
-          sync();
-          saveSelection();
-        },
-        toggleItalic: () => {
-          restoreSelection();
-          document.execCommand("italic");
-          sync();
-          saveSelection();
-        },
-        toggleUnderline: () => {
-          restoreSelection();
-          document.execCommand("underline");
-          sync();
-          saveSelection();
-        },
-        setAlign: (align) => {
-          restoreSelection();
-          if (align === "left") document.execCommand("justifyLeft");
-          else if (align === "center") document.execCommand("justifyCenter");
-          else if (align === "right") document.execCommand("justifyRight");
-          else if (align === "justify") document.execCommand("justifyFull");
-          sync();
-          saveSelection();
-        },
-        setLineHeight: (lineHeight) => {
-          restoreSelection();
-          const sel = window.getSelection();
-          if (sel && sel.anchorNode && editorRef) {
-            let node: Node | null = sel.anchorNode;
-            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-            const block = (node as HTMLElement)?.closest("p, div");
-            if (block && editorRef.contains(block)) {
-              (block as HTMLElement).style.lineHeight = `${lineHeight}`;
-            }
-          }
-          sync();
-          saveSelection();
-        },
-        setColor: (color) => {
-          restoreSelection();
-          document.execCommand("foreColor", false, color);
-          sync();
-          saveSelection();
-        },
-        setFontSize: (fontSize) => {
-          restoreSelection();
-          const sel = window.getSelection();
-          if (sel && !sel.isCollapsed && rangeWithin(sel, editorRef!)) {
-            applyInlineStyleToSelection({ fontSize: `${fontSize}px` }, editorRef!);
-          } else if (editorRef) {
-            editorRef.style.fontSize = `${fontSize}px`;
-          }
-          sync();
-          saveSelection();
-        },
-        setFontFamily: (fontFamily) => {
-          restoreSelection();
-          const sel = window.getSelection();
-          if (sel && !sel.isCollapsed && rangeWithin(sel, editorRef!)) {
-            applyInlineStyleToSelection({ fontFamily }, editorRef!);
-          } else if (editorRef) {
-            editorRef.style.fontFamily = fontFamily;
-          }
-          sync();
-          saveSelection();
-        },
-        insertText: (text) => {
-          restoreSelection();
-          document.execCommand("insertText", false, text);
-          sync();
-          saveSelection();
-        },
-      });
-
-      adapter?.setSelectionStyles(readStyles());
-    });
-  };
-
-  onCleanup(() => {
-    isMounted = false;
-    const adapter = untrack(() => props.adapter);
-    queueMicrotask(() => {
-      adapter?.setController(null);
-      adapter?.setSelectionStyles(null);
-    });
-  });
-
-  return (
-    <div
-      ref={initEditor}
-      contenteditable
-      class="h-full w-full outline-none focus:outline-none"
-      style={{ "overflow-wrap": "anywhere", "white-space": "pre-wrap" }}
-      onInput={() => {
-        saveSelection();
-        sync();
-      }}
-      onBlur={() => {
-        saveSelection();
-        sync();
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          sync();
-          props.onStopEditing();
-        }
-      }}
-    />
-  );
-}
-
-function rangeWithin(selection: Selection, container: HTMLElement): boolean {
-  if (selection.rangeCount === 0) return false;
-  const range = selection.getRangeAt(0);
-  return (
-    container.contains(range.commonAncestorContainer) ||
-    container === range.commonAncestorContainer
-  );
-}
-
-function applyInlineStyleToSelection(
-  styles: Record<string, string>,
-  container: HTMLElement,
-): void {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const range = sel.getRangeAt(0);
-  if (range.collapsed || !rangeWithin(sel, container)) return;
-
-  const span = document.createElement("span");
-  for (const [key, value] of Object.entries(styles)) {
-    (span.style as any)[key] = value;
-  }
-  try {
-    range.surroundContents(span);
-  } catch {
-    const contents = range.extractContents();
-    span.appendChild(contents);
-    range.insertNode(span);
-  }
 }

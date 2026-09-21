@@ -39,6 +39,22 @@ function RouteComponent() {
 
   const viewerActorId = createMemo(() => auth.profile()?.id);
 
+  const isOwn = createMemo(() => {
+    const viewerId = viewerActorId();
+    const actorParam = params().actorId;
+    if (viewerId && actorParam === viewerId) return true;
+    const authProfile = auth.profile();
+    if (
+      authProfile &&
+      "handle" in authProfile &&
+      typeof authProfile.handle === "string" &&
+      actorParam === authProfile.handle
+    ) {
+      return true;
+    }
+    return false;
+  });
+
   const loadProfile = async (identifier: string) => {
     const isActorId =
       /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(identifier);
@@ -77,7 +93,7 @@ function RouteComponent() {
     <ProfileView
       actorId={params().actorId}
       loadProfile={loadProfile}
-      ownProfile={params().actorId === viewerActorId()}
+      ownProfile={isOwn()}
       viewerActorId={viewerActorId()}
       activeTab={search().tab}
       onTabChange={(nextTab) => {

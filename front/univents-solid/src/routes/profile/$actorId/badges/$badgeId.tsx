@@ -32,11 +32,7 @@ function ProfileBadgePage(): JSX.Element {
     profileDetailQueryOptions(params().actorId, auth),
   );
 
-  const profileRecord = createMemo(() => {
-    const raw = profileQuery().data as any;
-    if (!raw) return null;
-    return raw.actor_id ? raw : (raw.data ?? null);
-  });
+  const profileRecord = createMemo(() => profileQuery().data ?? null);
 
   const actorProfileId = createMemo(() => {
     const fromData = profileRecord()?.actor_id;
@@ -194,7 +190,7 @@ function ProfileBadgePage(): JSX.Element {
                     width: `min(100dvw, calc(100dvh * ${aspectRatio()}))`,
                     height: `min(100dvh, calc(100dvw / ${aspectRatio()}))`,
                   }}
-                  ticketName={(currentBadge() as any).ticket_name ?? undefined}
+                  ticketName={currentBadge().ticket_name ?? undefined}
                   participantName={
                     profileData().preferredName || profileData().legalName || ""
                   }

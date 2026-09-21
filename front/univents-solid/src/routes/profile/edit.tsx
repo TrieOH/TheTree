@@ -44,7 +44,7 @@ function EditProfilePage() {
       })
       .then((response) => {
         if (response.success) {
-          syncActorProfileCache(queryClient, id, profile as any, handle);
+          syncActorProfileCache(queryClient, id, profile, handle);
         }
         return response;
       });

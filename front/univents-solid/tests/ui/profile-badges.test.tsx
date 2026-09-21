@@ -1,10 +1,11 @@
+import type { JSX } from "@solidjs/web";
 import { render, screen } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
 import { allProfileBadges } from "@/features/badges/model";
 import { ProfileBadges } from "@/features/badges/ui/ProfileBadges";
 
 vi.mock("@tanstack/solid-router", () => ({
-  Link: (props: any) => (
+  Link: (props: { to: string; "aria-label"?: string; class?: string; children?: JSX.Element }) => (
     <a href={props.to} aria-label={props["aria-label"]} class={props.class}>
       {props.children}
     </a>
@@ -154,8 +155,8 @@ describe("allProfileBadges helper", () => {
   });
 
   it("handles null or undefined input gracefully", () => {
-    expect(allProfileBadges(null as any)).toEqual([]);
-    expect(allProfileBadges(undefined as any)).toEqual([]);
+    expect(allProfileBadges(null as unknown as Parameters<typeof allProfileBadges>[0])).toEqual([]);
+    expect(allProfileBadges(undefined as unknown as Parameters<typeof allProfileBadges>[0])).toEqual([]);
   });
 });
 

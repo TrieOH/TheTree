@@ -1,3 +1,4 @@
+import type { JSX } from "@solidjs/web";
 import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -6,7 +7,7 @@ import { AdminCreateEditionCard } from "@/features/editions/ui/AdminCreateEditio
 import { ManageEditionDialog } from "@/features/editions/ui/ManageEditionDialog";
 
 vi.mock("@tanstack/solid-router", () => ({
-  Link: (props: any) => (
+  Link: (props: { to: string; "aria-label"?: string; class?: string; children?: JSX.Element }) => (
     <a href={props.to} aria-label={props["aria-label"]} class={props.class}>
       {props.children}
     </a>

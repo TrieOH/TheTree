@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { Button, Dialog, Field, Input, Label } from "@trieoh/ui-solid";
 import { For, Show, createEffect, createMemo, createSignal, untrack } from "solid-js";
 import { DEFAULT_BADGE_TEMPLATE } from "../default-template";
-import type { BadgeTemplate, BadgeTemplateCreate } from "../model";
+import type { BadgeElement, BadgeTemplate, BadgeTemplateCreate } from "../model";
 import { BadgePreview } from "./BadgePreview";
 
 export interface ManageBadgeTemplateValues {
@@ -41,7 +41,7 @@ const valuesOf = (template: BadgeTemplate | null): ManageBadgeTemplateValues => 
     };
   }
   const design = template.design_data ?? DEFAULT_BADGE_TEMPLATE.design_data;
-  const nameEl = design.elements?.find((el: any) => el.id === "default-name") as any;
+  const nameEl = design.elements?.find((el): el is Extract<BadgeElement, { type: "text" }> => el.id === "default-name" && el.type === "text");
   return {
     name: template.name,
     ticket_type_id: template.ticket_type_id,

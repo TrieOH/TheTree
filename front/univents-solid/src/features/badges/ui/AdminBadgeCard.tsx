@@ -9,7 +9,12 @@ import Trash2Icon from "~icons/lucide/trash-2";
 import { cn } from "@trieoh/ui-solid";
 import { Reveal } from "@/shared/ui/Reveal";
 import { AlertModal } from "@/widgets/ui/AlertModal";
-import { type BadgePrintItem, type BadgeTemplate, badgePxToMm } from "../model";
+import {
+  type BadgeDesign,
+  type BadgePrintItem,
+  type BadgeTemplate,
+  badgePxToMm,
+} from "../model";
 import { BadgePreview } from "./BadgePreview";
 
 const Copy = CopyIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -28,155 +33,146 @@ export interface AdminBadgeCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  onPrint?: () => void;
   onView?: () => void;
 }
 
 export function AdminBadgeCard(props: AdminBadgeCardProps): JSX.Element {
-  const [deleteOpen, setDeleteOpen] = createSignal(false);
-  const [menuOpen, setMenuOpen] = createSignal(false);
+  const [showMenu, setShowMenu] = createSignal(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
 
   const title = () =>
     props.kind === "template"
       ? (props.item as BadgeTemplate).name
-      : (props.item as BadgePrintItem).event_name;
+      : (props.item as BadgePrintItem).event_name || "Participante";
 
   const subtitle = () =>
     props.kind === "template"
-      ? props.ticketName ?? "Padrão da edição"
-      : (props.item as BadgePrintItem).edition_name;
-
-  const isStaff = () =>
-    props.kind === "template" && (props.item as BadgeTemplate).origin === "staff";
+      ? props.ticketName || "Geral (todos os ingressos)"
+      : (props.item as BadgePrintItem).ticket_name || "Ingresso";
 
   return (
     <>
-      <Reveal delay={(props.index ?? 0) * 0.04} animate={props.animate} class="h-full">
+      <Reveal
+        delay={props.animate ? (props.index ?? 0) * 0.04 : 0}
+        animate={props.animate}
+        class="h-full"
+      >
         <article
           class={cn(
-            "group relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-lg border border-border/60 bg-card text-left transition-colors duration-150 hover:border-border",
+            "group relative flex h-full flex-col justify-between overflow-hidden rounded-lg border border-border/60 bg-card p-3.5 text-left transition-colors duration-150 hover:border-border",
           )}
         >
-          {/* Badge Preview Header (Compact Linear style) */}
-          <div class="relative flex h-36 w-full items-center justify-center overflow-hidden bg-muted/30 p-3">
-            <BadgePreview
-              badge={props.item}
-              contain
-              showVariables={props.kind === "template"}
-              ticketName={props.ticketName}
-              participantName={props.participantName}
-              location={props.location}
-              class="max-h-full max-w-full"
-            />
+          <div class="space-y-3">
+            {/* Top row: badge preview & actions */}
+            <div class="relative flex items-center justify-center rounded-md bg-muted/40 p-4 border border-border/40">
+              <span class="absolute left-2.5 top-2.5 inline-flex items-center rounded border border-border/70 bg-background/85 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-xs">
+                {props.kind === "template" ? "Template" : "Crachá"}
+              </span>
+              <BadgePreview
+                badge={props.item}
+                ticketName={props.ticketName}
+                participantName={props.participantName}
+                location={props.location}
+                framed={false}
+                class="w-36 shadow-sm"
+              />
 
-            {/* Top-left Pill */}
-            <span class="absolute left-2.5 top-2.5 inline-flex items-center rounded border border-border/50 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-xs">
-              {props.kind === "template" ? "Template" : "Crachá"}
-            </span>
-
-            {/* Template Actions (Linear subtle icon buttons) */}
-            <Show when={props.kind === "template"}>
-              <div class="absolute right-2 top-2 flex items-center gap-1">
-                <Show when={props.onEdit}>
-                  <button
-                    type="button"
-                    aria-label={`Editar crachá ${title()}`}
-                    onClick={() => props.onEdit?.()}
-                    class="inline-flex size-6 items-center justify-center rounded border border-border/50 bg-background/80 text-muted-foreground transition-colors hover:border-border hover:text-foreground backdrop-blur-xs cursor-pointer"
-                    title="Editar template"
-                  >
-                    <Pencil class="size-3" />
-                  </button>
-                </Show>
-
-                <Show when={props.onDuplicate || props.onDelete}>
+              {/* Actions Dropdown for templates */}
+              <Show when={props.kind === "template"}>
+                <div class="absolute top-2 right-2">
                   <div class="relative">
                     <button
                       type="button"
-                      aria-label={`Ações de ${title()}`}
-                      onClick={() => setMenuOpen(!menuOpen())}
-                      class="inline-flex size-6 items-center justify-center rounded border border-border/50 bg-background/80 text-muted-foreground transition-colors hover:border-border hover:text-foreground backdrop-blur-xs cursor-pointer"
+                      onClick={() => setShowMenu(!showMenu())}
+                      class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground cursor-pointer"
+                      aria-label="Opções do modelo"
                     >
-                      <MoreVertical class="size-3" />
+                      <MoreVertical class="size-4" />
                     </button>
 
-                    <Show when={menuOpen()}>
+                    <Show when={showMenu()}>
                       <div
-                        class="fixed inset-0 z-40"
-                        onClick={() => setMenuOpen(false)}
-                      />
-                      <div class="absolute right-0 z-50 mt-1 w-40 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-sm animate-in fade-in-0 zoom-in-95">
+                        class="absolute right-0 top-8 z-30 min-w-36 rounded-md border border-border bg-popover p-1 shadow-md"
+                        onFocusOut={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            setShowMenu(false);
+                          }
+                        }}
+                      >
                         <Show when={props.onEdit}>
                           <button
                             type="button"
                             onClick={() => {
-                              setMenuOpen(false);
+                              setShowMenu(false);
                               props.onEdit?.();
                             }}
-                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted cursor-pointer"
+                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
                           >
-                            <Pencil class="size-3 text-muted-foreground" />
-                            Editar
+                            <Pencil class="size-3.5 text-muted-foreground" />
+                            <span>Editar</span>
                           </button>
                         </Show>
                         <Show when={props.onDuplicate}>
                           <button
                             type="button"
                             onClick={() => {
-                              setMenuOpen(false);
+                              setShowMenu(false);
                               props.onDuplicate?.();
                             }}
-                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted cursor-pointer"
+                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
                           >
-                            <Copy class="size-3 text-muted-foreground" />
-                            Duplicar
+                            <Copy class="size-3.5 text-muted-foreground" />
+                            <span>Duplicar</span>
                           </button>
                         </Show>
                         <Show when={props.onDelete}>
-                          <div class="my-1 border-t border-border" />
                           <button
                             type="button"
                             onClick={() => {
-                              setMenuOpen(false);
-                              setDeleteOpen(true);
+                              setShowMenu(false);
+                              setShowDeleteConfirm(true);
                             }}
-                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 cursor-pointer"
+                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
                           >
-                            <Trash2 class="size-3" />
-                            Excluir
+                            <Trash2 class="size-3.5" />
+                            <span>Excluir</span>
                           </button>
                         </Show>
                       </div>
                     </Show>
                   </div>
-                </Show>
-              </div>
-            </Show>
-          </div>
+                </div>
+              </Show>
+            </div>
 
-          {/* Details Section */}
-          <div class="flex flex-1 flex-col justify-between p-3">
-            <div class="space-y-0.5">
-              <div class="flex items-center justify-between gap-1.5">
-                <h3
+            {/* Info */}
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <h4
                   class="truncate text-xs font-medium text-foreground"
                   title={title()}
                 >
                   {title()}
-                </h3>
-                <Show when={isStaff()}>
-                  <span class="inline-flex shrink-0 items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
-                    Staff
+                </h4>
+                <Show when={props.kind === "template" && (props.item as BadgeTemplate).origin}>
+                  <span class="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                    {(props.item as BadgeTemplate).origin}
                   </span>
                 </Show>
               </div>
-
-              <p class="truncate text-[11px] text-muted-foreground" title={subtitle()}>
+              <p
+                class="truncate text-[11px] text-muted-foreground"
+                title={subtitle()}
+              >
                 {subtitle()}
               </p>
             </div>
+          </div>
 
-            {/* Metadata Footer */}
-            <div class="mt-2.5 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
+          {/* Footer */}
+          <div class="mt-4 pt-2.5 border-t border-border/40">
+            <div class="flex items-center justify-between text-[11px] text-muted-foreground">
               <Show
                 when={props.kind === "template"}
                 fallback={
@@ -186,13 +182,14 @@ export function AdminBadgeCard(props: AdminBadgeCardProps): JSX.Element {
                 }
               >
                 <span>
-                  {badgePxToMm((props.item.design_data as any)?.canvas?.width ?? 321)} ×{" "}
-                  {badgePxToMm((props.item.design_data as any)?.canvas?.height ?? 204)} mm
+                  {badgePxToMm((props.item.design_data as BadgeDesign | undefined)?.canvas?.width ?? 321)} ×{" "}
+                  {badgePxToMm((props.item.design_data as BadgeDesign | undefined)?.canvas?.height ?? 204)} mm
                 </span>
                 <Show when={props.onEdit}>
                   <button
                     type="button"
                     onClick={() => props.onEdit?.()}
+                    aria-label={`Editar crachá ${title()}`}
                     class="text-[11px] font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
                   >
                     Editar
@@ -204,16 +201,16 @@ export function AdminBadgeCard(props: AdminBadgeCardProps): JSX.Element {
         </article>
       </Reveal>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Modal */}
       <AlertModal
-        open={deleteOpen()}
-        onOpenChange={setDeleteOpen}
-        title="Excluir crachá"
-        description={`Tem certeza que deseja excluir o template "${title()}"? Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir"
+        open={showDeleteConfirm()}
+        onOpenChange={setShowDeleteConfirm}
+        title="Excluir modelo de crachá"
+        description={`Tem certeza que deseja remover o modelo "${title()}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir modelo"
         variant="destructive"
         onConfirm={() => {
-          setDeleteOpen(false);
+          setShowDeleteConfirm(false);
           props.onDelete?.();
         }}
       />

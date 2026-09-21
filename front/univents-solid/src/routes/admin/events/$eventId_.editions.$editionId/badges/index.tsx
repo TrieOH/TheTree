@@ -39,8 +39,10 @@ import {
   QrPrintDialog,
 } from "@/features/badges/ui";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
+import type { EditionI } from "@/features/editions/model";
 import { asUniventsProfile, profileDisplayName } from "@/features/profile/model/profile-data";
 import { allTicketsQueryOptions } from "@/features/tickets/api";
+import type { TicketType } from "@trieoh/univents-api/schemas";
 import { printElement } from "@/shared/lib/print-element";
 import { toast } from "@/shared/ui/toast";
 
@@ -188,8 +190,8 @@ function AdminEditionBadgesRoute(): JSX.Element {
   const templates = createMemo(() => (templatesQuery().data ?? []) as BadgeTemplate[]);
   const emissions = createMemo(() => (emissionsQuery().data ?? []) as BadgeEditionEmission[]);
   const printItems = createMemo(() => (printQuery().data ?? []) as BadgePrintItem[]);
-  const editions = createMemo(() => (editionsQuery().data ?? []) as any[]);
-  const tickets = createMemo(() => (ticketsQuery().data ?? []) as any[]);
+  const editions = createMemo(() => (editionsQuery().data ?? []) as EditionI[]);
+  const tickets = createMemo(() => (ticketsQuery().data ?? []) as TicketType[]);
 
   const ticketNames = createMemo(() => {
     const map = new Map<string, string>();

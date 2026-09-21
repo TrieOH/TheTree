@@ -222,7 +222,7 @@ export function GenericChart(props: GenericChartProps): JSX.Element {
       const el = containerRef;
       if (!el) return;
 
-      const opts = buildHostOptions(def) as any;
+      const opts = buildHostOptions(def) as unknown as Parameters<typeof createChartRendererAdapter>[0];
       if (!adapterInstance) {
         adapterInstance = createChartRendererAdapter(opts);
         adapterInstance.mount(el);

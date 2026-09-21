@@ -69,16 +69,16 @@ export const VARIABLES: readonly [
   label: string,
   description: string,
 ][] = [
-  [
-    "{{participant_name}}",
-    "Nome civil do participante",
-    "Nome civil informado no perfil do participante",
-  ],
-  ["{{event_name}}", "Nome do evento", "Nome do evento"],
-  ["{{edition_name}}", "Nome da edição", "Nome da edição do evento"],
-  ["{{ticket_name}}", "Tipo de ingresso", "Ingresso associado ao participante"],
-  ["{{location}}", "Local", "Local informado na edição"],
-];
+    [
+      "{{participant_name}}",
+      "Nome civil do participante",
+      "Nome civil informado no perfil do participante",
+    ],
+    ["{{event_name}}", "Nome do evento", "Nome do evento"],
+    ["{{edition_name}}", "Nome da edição", "Nome da edição do evento"],
+    ["{{ticket_name}}", "Tipo de ingresso", "Ingresso associado ao participante"],
+    ["{{location}}", "Local", "Local informado na edição"],
+  ];
 
 const DEFAULT_PREVIEW_VALUES: Record<string, string> = {
   participant_name: "Maria da Silva",
@@ -141,6 +141,16 @@ export interface BadgeEditorProps {
   duplicate?: boolean;
 }
 
+type DevSignalOptions<T> = NonNullable<Parameters<typeof createSignal<T>>[1]> & {
+  ownedWrite?: boolean;
+};
+
+const devSignalOptions = <T,>(options: {
+  equals?: false | ((prev: T, next: T) => boolean);
+  name?: string;
+  ownedWrite?: boolean;
+}): DevSignalOptions<T> => options as unknown as DevSignalOptions<T>;
+
 export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
   const navigate = useNavigate();
   const createMutation = useCreateBadgeTemplateMutation();
@@ -155,23 +165,31 @@ export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
 
   const [draft, setDraft] = createSignal<BadgeTemplateCreate>(
     structuredClone(DEFAULT_BADGE_TEMPLATE),
-    { ownedWrite: true } as any,
+    devSignalOptions({ ownedWrite: true }),
   );
-  const [selectedId, setSelectedId] = createSignal<string | null>(null, {
-    ownedWrite: true,
-  } as any);
-  const [uploading, setUploading] = createSignal(false, {
-    ownedWrite: true,
-  } as any);
+  const [selectedId, setSelectedId] = createSignal<string | null>(
+    null,
+    devSignalOptions({ ownedWrite: true }),
+  );
+  const [uploading, setUploading] = createSignal(
+    false,
+    devSignalOptions({ ownedWrite: true }),
+  );
   const [previewValues, setPreviewValues] = createSignal<Record<string, string>>(
     DEFAULT_PREVIEW_VALUES,
-    { ownedWrite: true } as any,
+    devSignalOptions({ ownedWrite: true }),
   );
 
   const [textController, setTextController] =
-    createSignal<RichTextController | null>(null, { ownedWrite: true } as any);
+    createSignal<RichTextController | null>(
+      null,
+      devSignalOptions({ ownedWrite: true }),
+    );
   const [textSelectionStyles, setTextSelectionStyles] =
-    createSignal<TextSelectionStyles | null>(null, { ownedWrite: true } as any);
+    createSignal<TextSelectionStyles | null>(
+      null,
+      devSignalOptions({ ownedWrite: true }),
+    );
 
   createEffect(
     () => ({
@@ -262,7 +280,7 @@ export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
 
     return {
       elementId,
-      commit: () => {},
+      commit: () => { },
       toggleBold: () => {
         const item = selected();
         if (!item || item.type !== "text") return;
@@ -350,20 +368,20 @@ export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
           paragraphs: item.paragraphs.map((p, idx) =>
             idx === lastIdx
               ? {
-                  ...p,
-                  runs: [
-                    ...p.runs,
-                    {
-                      text: ` ${text} `,
-                      fontSize: p.runs[0]?.fontSize ?? 18,
-                      fontFamily: p.runs[0]?.fontFamily ?? DEFAULT_EDITOR_FONT,
-                      color: p.runs[0]?.color ?? DEFAULT_EDITOR_TEXT_COLOR,
-                      bold: p.runs[0]?.bold ?? false,
-                      italic: p.runs[0]?.italic ?? false,
-                      underline: p.runs[0]?.underline ?? false,
-                    },
-                  ],
-                }
+                ...p,
+                runs: [
+                  ...p.runs,
+                  {
+                    text: ` ${text} `,
+                    fontSize: p.runs[0]?.fontSize ?? 18,
+                    fontFamily: p.runs[0]?.fontFamily ?? DEFAULT_EDITOR_FONT,
+                    color: p.runs[0]?.color ?? DEFAULT_EDITOR_TEXT_COLOR,
+                    bold: p.runs[0]?.bold ?? false,
+                    italic: p.runs[0]?.italic ?? false,
+                    underline: p.runs[0]?.underline ?? false,
+                  },
+                ],
+              }
               : p,
           ),
         });
@@ -899,7 +917,7 @@ export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
                               triggerClass="h-9"
                               onChange={(value) =>
                                 updateElement(element().id, {
-                                  style: value as any,
+                                  style: (value as "square" | "dots" | "rounded") || "square",
                                 })
                               }
                             />
@@ -931,7 +949,7 @@ export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
                               triggerClass="h-9"
                               onChange={(value) =>
                                 updateElement(element().id, {
-                                  fit: value as any,
+                                  fit: (value as "contain" | "cover" | "fill") || "contain",
                                 })
                               }
                             />

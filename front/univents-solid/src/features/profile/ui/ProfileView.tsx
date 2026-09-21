@@ -9,6 +9,8 @@ import {
   untrack,
 } from "solid-js";
 import CircleAlertIcon from "~icons/lucide/circle-alert";
+import FileCheck2Icon from "~icons/lucide/file-check-2";
+
 import GithubIcon from "~icons/lucide/github";
 import GlobeIcon from "~icons/lucide/globe";
 import InstagramIcon from "~icons/lucide/instagram";
@@ -22,6 +24,8 @@ import type { BadgeProfileGroups } from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { ProfileBadges } from "@/features/badges/ui/ProfileBadges";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
+import type { CertificationI } from "@/features/certifications/model";
+import { UserCertificationsSection } from "@/features/certifications/ui/UserCertificationsSection";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
 import { getPublicEditionsFn } from "@/features/editions/api";
@@ -48,6 +52,7 @@ const Instagram = InstagramIcon as unknown as () => JSX.Element;
 const Linkedin = LinkedinIcon as unknown as () => JSX.Element;
 const Youtube = YoutubeIcon as unknown as () => JSX.Element;
 const MessageCircle = MessageCircleIcon as unknown as () => JSX.Element;
+const FileCheck2 = FileCheck2Icon as unknown as (props: { class?: string }) => JSX.Element;
 const CircleAlert = CircleAlertIcon as unknown as (p: {
   class?: string;
 }) => JSX.Element;
@@ -72,12 +77,7 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
         queryFn: () => null,
       },
   );
-  const raw = createMemo(() => query().data as any);
-  const data = createMemo<ActorProfile | undefined>(() => {
-    const d = raw();
-    if (!d) return undefined;
-    return d.actor_id ? d : d.data;
-  });
+  const data = createMemo<ActorProfile | undefined>(() => query().data ?? undefined);
   const profile = createMemo(() =>
     asUniventsProfile({
       ...(data()?.profile),
@@ -105,8 +105,6 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
   const isError = createMemo(() => {
     if (own()) return false;
     if (query().isError) return true;
-    const code = raw()?.code;
-    if (code !== undefined && code >= 400) return true;
     if (!query().isLoading && !data()) return true;
     return false;
   });
@@ -121,12 +119,15 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
               <CircleAlert class="size-5 shrink-0" />
               <div>
                 <p class="font-medium">
-                  {raw()?.message || "Não foi possível carregar este perfil."}
+                  {query().error?.message || "Não foi possível carregar este perfil."}
                 </p>
                 <p class="text-sm text-destructive/80">
-                  {raw()?.code === 404
-                    ? "O perfil solicitado não foi encontrado."
-                    : "Tente novamente mais tarde."}
+                  {(() => {
+                    const err = query().error;
+                    return err && "code" in err && (err as { code?: unknown }).code === 404
+                      ? "O perfil solicitado não foi encontrado."
+                      : "Tente novamente mais tarde.";
+                  })()}
                 </p>
               </div>
             </div>
@@ -340,35 +341,54 @@ function ProfileTabContent(props: {
           when={!isLoading()}
           fallback={<CollectionSkeleton tab={props.tab} />}
         >
-          <Show when={data()}>
-            <Show
-              when={props.tab === "badges"}
-              fallback={
-                <div class="mx-auto mt-4 max-w-7xl px-4">
-                  <Card title={tabTitle(props.tab)}>
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      <For each={collectItems(data())}>
-                        {(item) => (
-                          <ProfileCollectionItem
-                            tab={props.tab}
-                            item={item}
-                          />
-                        )}
-                      </For>
+          <Show
+            when={props.tab === "certificates"}
+            fallback={
+              <Show when={data()}>
+                <Show
+                  when={props.tab === "badges"}
+                  fallback={
+                    <div class="mx-auto mt-4 max-w-7xl px-4">
+                      <Card title={tabTitle(props.tab)}>
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          <For each={collectItems(data())}>
+                            {(item) => (
+                              <ProfileCollectionItem
+                                tab={props.tab}
+                                item={item}
+                              />
+                            )}
+                          </For>
+                        </div>
+                      </Card>
                     </div>
-                  </Card>
-                </div>
-              }
-            >
-              <div class="mx-auto mt-5 max-w-7xl px-4">
-                <ProfileBadges
-                  badges={allProfileBadges(data() as BadgeProfileGroups)}
-                  profileIdentifier={props.publicIdentifier}
+                  }
+                >
+                  <div class="mx-auto mt-5 max-w-7xl px-4">
+                    <ProfileBadges
+                      badges={allProfileBadges(data() as BadgeProfileGroups)}
+                      profileIdentifier={props.publicIdentifier}
+                      participantName={props.participantName}
+                      editionLocations={editionLocations()}
+                    />
+                  </div>
+                </Show>
+              </Show>
+            }
+          >
+            <div class="mx-auto mt-5 max-w-7xl px-4">
+              <Show
+                when={props.ownProfile}
+                fallback={
+                  <EmptyState message="Os certificados deste usuário são visíveis apenas para ele." />
+                }
+              >
+                <UserCertificationsSection
+                  certifications={(certsQuery().data ?? []) as CertificationI[]}
                   participantName={props.participantName}
-                  editionLocations={editionLocations()}
                 />
-              </div>
-            </Show>
+              </Show>
+            </div>
           </Show>
         </Show>
       }
@@ -420,20 +440,32 @@ function Social(props: { href: string; label: string }) {
   );
 }
 
-function SocialIcon(props: { label: string }) {
-  const label = untrack(() => props.label.toLowerCase());
-  if (label === "website") return <Globe />;
-  if (label === "e-mail") return <Mail />;
-  if (label === "github") return <Github />;
-  if (label === "instagram") return <Instagram />;
-  if (label === "linkedin") return <Linkedin />;
-  if (label === "youtube") return <Youtube />;
-  if (label === "discord") return <MessageCircle />;
-  return <Globe />;
+function SocialIcon(props: { label: string }): JSX.Element {
+  switch (props.label.toLowerCase()) {
+    case "website":
+      return <Globe />;
+    case "e-mail":
+    case "email":
+      return <Mail />;
+    case "github":
+      return <Github />;
+    case "instagram":
+      return <Instagram />;
+    case "linkedin":
+      return <Linkedin />;
+    case "youtube":
+      return <Youtube />;
+    default:
+      return <MessageCircle />;
+  }
 }
 
 function EmptyState(props: { message: string }) {
-  return <p class="text-sm italic text-muted-foreground">{props.message}</p>;
+  return (
+    <p class="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+      {props.message}
+    </p>
+  );
 }
 
 function ProfileSkeleton() {
