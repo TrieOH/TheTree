@@ -106,6 +106,7 @@ export function CertificateTemplateStaticView(props: {
   template: CertificationTemplateI;
   variables?: CertificateVariableValues;
   setCanvasRef?: (el: HTMLDivElement) => void;
+  overlay?: JSX.Element;
 }): JSX.Element {
   const { ref, size } = useElementSize<HTMLDivElement>();
   const canvas = () =>
@@ -170,6 +171,7 @@ export function CertificateTemplateStaticView(props: {
               )}
             </For>
           </div>
+          <Show when={props.overlay}>{props.overlay}</Show>
         </div>
       </Show>
     </div>

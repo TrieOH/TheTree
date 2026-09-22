@@ -3,11 +3,28 @@ import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import type { SortState } from "@trieoh/ui-solid";
 import { Button, EmptyState, PaginatedContainer } from "@trieoh/ui-solid";
-import { For, Show, createMemo, createSignal, onCleanup } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
 import CalendarPlusIcon from "~icons/lucide/calendar-plus";
 import FilterIcon from "~icons/lucide/filter";
+import AwardIcon from "~icons/lucide/award";
+import { Dialog } from "@trieoh/ui-solid";
+import { orvalData } from "@trieoh/api-client";
+import { listCertificationTemplateLinks } from "@trieoh/univents-api";
+import {
+  allCertificationTemplatesQueryOptions,
+} from "@/features/certifications/api";
+import {
+  useEmitProgramCertificationsMutation,
+  useLinkCertificationTemplateMutation,
+  useUnlinkCertificationTemplateMutation,
+} from "@/features/certifications/api/mutations";
+import type {
+  CertificationTemplateI,
+  CertificationTemplateProgramI,
+} from "@/features/certifications/model";
+
 
 import {
   occurrencesQueryOptions,
@@ -33,6 +50,7 @@ import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Filter = FilterIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Award = AwardIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/programs/",
@@ -57,6 +75,147 @@ function AdminProgramsRoute(): JSX.Element {
   const createMutation = useCreateProgramMutation(editionId);
   const updateMutation = useUpdateProgramMutation(editionId);
   const deleteMutation = useDeleteProgramMutation(editionId);
+
+  // Certification Queries & Mutations
+  const templatesQuery = useQuery(() => allCertificationTemplatesQueryOptions(editionId()));
+  const programTemplates = createMemo<CertificationTemplateI[]>(() =>
+    ((templatesQuery().data ?? []) as CertificationTemplateI[]).filter(
+      (t) => t.kind === "program_attendance",
+    ),
+  );
+
+  const [linkedTemplateByProgram, setLinkedTemplateByProgram] = createSignal<Map<string, string>>(new Map());
+  const [linkingLoading, setLinkingLoading] = createSignal(false);
+
+  const fetchLinks = async () => {
+    const templates = programTemplates();
+    if (templates.length === 0) {
+      setLinkedTemplateByProgram(new Map());
+      return;
+    }
+    const map = new Map<string, string>();
+    await Promise.all(
+      templates.map(async (t) => {
+        try {
+          const links = await listCertificationTemplateLinks(t.id, { public: true }).then(
+            orvalData<CertificationTemplateProgramI[]>,
+          );
+          for (const l of links ?? []) {
+            map.set(l.program_id, t.id);
+          }
+        } catch {
+          // ignore
+        }
+      }),
+    );
+    setLinkedTemplateByProgram(map);
+  };
+
+  createEffect(
+    () => programTemplates(),
+    () => {
+      void fetchLinks();
+    },
+  );
+
+  const linkMutation = useLinkCertificationTemplateMutation();
+  const unlinkMutation = useUnlinkCertificationTemplateMutation();
+  const emitMutation = useEmitProgramCertificationsMutation();
+
+  const [certificateProgram, setCertificateProgram] = createSignal<ProgramI | null>(null);
+  const [certificateTemplateId, setCertificateTemplateId] = createSignal<string>("");
+  const [programToUnlink, setProgramToUnlink] = createSignal<ProgramI | null>(null);
+  const [emittingProgramId, setEmittingProgramId] = createSignal<string | null>(null);
+
+  // Cooldown handling
+  const [now, setNow] = createSignal(Date.now());
+  const cooldownTimer = setInterval(() => setNow(Date.now()), 1000);
+  onCleanup(() => clearInterval(cooldownTimer));
+
+  const COOLDOWN_MS = 60_000;
+  function getCooldownKey(programId: string) {
+    return `univents:cert-cooldown:${programId}`;
+  }
+  function startCooldown(programId: string) {
+    try {
+      localStorage.setItem(getCooldownKey(programId), String(Date.now() + COOLDOWN_MS));
+      setNow(Date.now());
+    } catch {
+      // ignore
+    }
+  }
+  function cooldownRemaining(programId: string) {
+    now();
+    try {
+      const raw = localStorage.getItem(getCooldownKey(programId));
+      if (!raw) return 0;
+      const expiresAt = Number(raw);
+      if (!Number.isFinite(expiresAt)) return 0;
+      const remaining = expiresAt - Date.now();
+      return remaining > 0 ? remaining : 0;
+    } catch {
+      return 0;
+    }
+  }
+  function formatCooldown(ms: number) {
+    const seconds = Math.ceil(ms / 1000);
+    return `${seconds}s`;
+  }
+
+  const handleLinkCertificate = async () => {
+    const prog = certificateProgram();
+    const templateId = certificateTemplateId();
+    if (!prog || !templateId) return;
+
+    setLinkingLoading(true);
+    try {
+      await linkMutation.mutateAsync({ templateId, programId: prog.id });
+      toast.success("Certificado vinculado com sucesso!");
+      setCertificateProgram(null);
+      setCertificateTemplateId("");
+      await fetchLinks();
+    } catch {
+      toast.error("Erro ao vincular certificado ao programa.");
+    } finally {
+      setLinkingLoading(false);
+    }
+  };
+
+  const handleUnlinkCertificate = async () => {
+    const prog = programToUnlink();
+    if (!prog) return;
+
+    const templateId = linkedTemplateByProgram().get(prog.id);
+    if (!templateId) {
+      setProgramToUnlink(null);
+      return;
+    }
+
+    try {
+      await unlinkMutation.mutateAsync({ templateId, programId: prog.id });
+      toast.success("Certificado desvinculado!");
+      setProgramToUnlink(null);
+      await fetchLinks();
+    } catch {
+      toast.error("Erro ao desvincular certificado.");
+    }
+  };
+
+  const handleEmitCertificates = async (prog: ProgramI) => {
+    if (cooldownRemaining(prog.id) > 0 || emitMutation.result().isPending) return;
+
+    startCooldown(prog.id);
+    setEmittingProgramId(prog.id);
+    try {
+      await emitMutation.mutateAsync({ editionId: editionId(), programId: prog.id });
+      toast.success(`Emissão de certificados iniciada para "${prog.name}"!`);
+    } catch {
+      toast.error("Erro ao solicitar emissão de certificados.");
+    } finally {
+      setEmittingProgramId(null);
+    }
+  };
+
 
   const programs = createMemo(() => (programsQuery().data ?? []) as ProgramI[]);
   const occurrences = createMemo(() => (occurrencesQuery().data ?? []) as OccurrenceI[]);
@@ -437,6 +596,19 @@ function AdminProgramsRoute(): JSX.Element {
                   animate={options.animate}
                   occurrences={occurrences().filter((o) => o.program_id === program.id)}
                   occurrencesHref={`/admin/events/${eventId()}/editions/${editionId()}/programs/${program.id}/occurrences`}
+                  hasCertificate={Boolean(linkedTemplateByProgram().get(program.id))}
+                  isEmittingCertificates={emittingProgramId() === program.id}
+                  emissionCooldownLabel={
+                    cooldownRemaining(program.id) > 0
+                      ? formatCooldown(cooldownRemaining(program.id))
+                      : undefined
+                  }
+                  onManageCertificate={(p) => {
+                    setCertificateProgram(p);
+                    setCertificateTemplateId(linkedTemplateByProgram().get(p.id) ?? "");
+                  }}
+                  onUnlinkCertificate={(p) => setProgramToUnlink(p)}
+                  onEmitCertificates={(p) => void handleEmitCertificates(p)}
                   onEdit={setEditing}
                   onDelete={(p) => setDeleting(p)}
                   onManageOccurrences={(p) =>
@@ -479,6 +651,96 @@ function AdminProgramsRoute(): JSX.Element {
           }
           return handleCreate(data);
         }}
+      />
+
+      {/* Dialog: Link Certificate */}
+      <Dialog
+        open={certificateProgram() !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCertificateProgram(null);
+            setCertificateTemplateId("");
+          }
+        }}
+        title="Vincular certificado ao programa"
+        description={
+          certificateProgram()
+            ? `Selecione o modelo de certificado emitido para os participantes de "${certificateProgram()?.name}".`
+            : undefined
+        }
+      >
+        <div class="space-y-4 pt-1">
+          <Show
+            when={programTemplates().length > 0}
+            fallback={
+              <div class="rounded-lg border border-border/60 bg-muted/40 p-4 text-center">
+                <Award class="mx-auto size-8 text-muted-foreground/60" />
+                <p class="mt-2 text-xs font-medium text-foreground">
+                  Nenhum modelo de atividade disponível
+                </p>
+                <p class="mt-1 text-[11px] text-muted-foreground">
+                  Crie um modelo com a categoria &quot;Presença em atividade&quot; na aba de Certificações desta edição.
+                </p>
+              </div>
+            }
+          >
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-foreground">Modelo de Certificado</label>
+              <Combobox
+                value={certificateTemplateId()}
+                options={programTemplates().map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                  description: t.description ?? undefined,
+                }))}
+                placeholder="Selecione um modelo..."
+                searchPlaceholder="Buscar modelo..."
+                onChange={(val) => setCertificateTemplateId(val)}
+                class="w-full"
+              />
+            </div>
+          </Show>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCertificateProgram(null);
+                setCertificateTemplateId("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={!certificateTemplateId() || linkingLoading()}
+              onClick={handleLinkCertificate}
+            >
+              <Show when={linkingLoading()} fallback={"Vincular certificado"}>
+                <span>Vinculando...</span>
+              </Show>
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Modal: Unlink Certificate */}
+      <AlertModal
+        open={programToUnlink() !== null}
+        onOpenChange={(open) => {
+          if (!open) setProgramToUnlink(null);
+        }}
+        title="Desvincular certificado?"
+        description={
+          programToUnlink()
+            ? `O programa "${programToUnlink()?.name}" não terá mais um certificado específico vinculado.`
+            : undefined
+        }
+        confirmLabel="Desvincular certificado"
+        variant="destructive"
+        loading={unlinkMutation.result().isPending}
+        onConfirm={handleUnlinkCertificate}
       />
 
       {/* Modal: Delete */}

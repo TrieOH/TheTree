@@ -1,4 +1,5 @@
 import type { JSX } from "@solidjs/web";
+import { useNavigate } from "@tanstack/solid-router";
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 
 import AlertTriangleIcon from "~icons/lucide/alert-triangle";
@@ -47,6 +48,7 @@ export interface CertificationListProps {
 
 export function CertificationList(props: CertificationListProps): JSX.Element {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const [filter, setFilter] = createSignal("");
   const [sort, setSort] = createSignal<SortState<CertificationI>>({
     field: "issued_at",
@@ -326,7 +328,7 @@ export function CertificationList(props: CertificationListProps): JSX.Element {
                       <div class="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setCertToView(cert)}
+                          onClick={() => (() => { try { void navigate?.({ to: "/verify/$hash", params: { hash: cert.verification_hash } }); } catch {} })()}
                           class="inline-flex items-center gap-1 text-[11px] font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
                         >
                           <Eye class="size-3" />

@@ -21,6 +21,7 @@ import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
@@ -102,6 +103,11 @@ const ProfileConfigRoute = ProfileConfigRouteImport.update({
 const ProfileEditRoute = ProfileEditRouteImport.update({
   id: '/profile/edit',
   path: '/profile/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyHashRoute = VerifyHashRouteImport.update({
+  id: '/verify/$hash',
+  path: '/verify/$hash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
@@ -318,6 +326,7 @@ export interface FileRoutesById {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
+    | '/verify/$hash'
     | '/events/'
     | '/profile/'
     | '/events/$slug/checkout'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
+    | '/verify/$hash'
     | '/events'
     | '/profile'
     | '/events/$slug/checkout'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
+    | '/verify/$hash'
     | '/events/'
     | '/profile/'
     | '/events/$slug/checkout'
@@ -464,6 +476,7 @@ export interface RootRouteChildren {
   CheckoutsPurchaseIdRoute: typeof CheckoutsPurchaseIdRoute
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
+  VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   EventsSlugCheckoutRoute: typeof EventsSlugCheckoutRoute
@@ -558,6 +571,13 @@ declare module '@tanstack/solid-router' {
       path: '/profile/edit'
       fullPath: '/profile/edit'
       preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$hash': {
+      id: '/verify/$hash'
+      path: '/verify/$hash'
+      fullPath: '/verify/$hash'
+      preLoaderRoute: typeof VerifyHashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/': {
@@ -781,6 +801,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutsPurchaseIdRoute: CheckoutsPurchaseIdRoute,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
+  VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   EventsSlugCheckoutRoute: EventsSlugCheckoutRoute,

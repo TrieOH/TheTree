@@ -6,6 +6,8 @@ import {
   deleteCertificationTemplate,
   emitProgramCertifications,
   invalidateCertification,
+  linkCertificationTemplate,
+  unlinkCertificationTemplate,
   updateCertificationTemplate,
 } from "@trieoh/univents-api";
 import type {
@@ -204,6 +206,76 @@ export const useEmitProgramCertificationsMutation = () => {
             });
             void queryClient.invalidateQueries({
               queryKey: certificationKeys.emissionErrorsByEdition(editionId),
+            });
+          }),
+        ),
+      ),
+  });
+};
+
+export const linkCertificationTemplateEffect = (
+  templateId: string,
+  programId: string,
+) =>
+  apiEffect(() =>
+    withSpan("action:certification-template-link", () =>
+      linkCertificationTemplate(templateId, {
+        program_id: programId,
+      }).then(orvalData<null>),
+    ),
+  );
+
+export const unlinkCertificationTemplateEffect = (
+  templateId: string,
+  programId: string,
+) =>
+  apiEffect(() =>
+    withSpan("action:certification-template-unlink", () =>
+      unlinkCertificationTemplate(templateId, {
+        program_id: programId,
+      }).then(orvalData<null>),
+    ),
+  );
+
+export const useLinkCertificationTemplateMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: ({
+      templateId,
+      programId,
+    }: {
+      templateId: string;
+      programId: string;
+    }) =>
+      linkCertificationTemplateEffect(templateId, programId).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            void queryClient.invalidateQueries({
+              queryKey: certificationKeys.templateLinks(templateId),
+            });
+          }),
+        ),
+      ),
+  });
+};
+
+export const useUnlinkCertificationTemplateMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: ({
+      templateId,
+      programId,
+    }: {
+      templateId: string;
+      programId: string;
+    }) =>
+      unlinkCertificationTemplateEffect(templateId, programId).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            void queryClient.invalidateQueries({
+              queryKey: certificationKeys.templateLinks(templateId),
             });
           }),
         ),

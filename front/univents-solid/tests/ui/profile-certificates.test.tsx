@@ -1,7 +1,39 @@
-import { fireEvent, render, screen } from "@solidjs/testing-library";
+import type { JSX } from "@solidjs/web";
+import { render, screen } from "@solidjs/testing-library";
+import { untrack } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
 import type { CertificationI } from "@/features/certifications/model";
 import { UserCertificationsSection } from "@/features/certifications/ui/UserCertificationsSection";
+
+vi.mock("@tanstack/solid-router", () => ({
+  Link: (props: {
+    to: string;
+    params?: Record<string, string>;
+    preload?: string;
+    "aria-label"?: string;
+    class?: string;
+    children?: JSX.Element;
+  }) => {
+    let href = untrack(() => props.to);
+    const params = untrack(() => props.params);
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        href = href.replace(`$${key}`, value);
+      }
+    }
+    return (
+      <a
+        href={href}
+        data-preload={props.preload}
+        aria-label={props["aria-label"]}
+        class={props.class}
+      >
+        {props.children}
+      </a>
+    );
+  },
+  useNavigate: () => vi.fn(),
+}));
 
 vi.mock("@trieoh/front-core-solid", async (importOriginal) => {
   const actual =
@@ -61,7 +93,7 @@ describe("UserCertificationsSection", () => {
     ).toBeDefined();
   });
 
-  it("renders certificate preview cards and opens viewer on click", async () => {
+  it("renders certificate cards as links directly to /verify/$hash", () => {
     render(() => (
       <UserCertificationsSection
         certifications={[mockValidCert, mockInvalidCert]}
@@ -74,10 +106,8 @@ describe("UserCertificationsSection", () => {
     });
     expect(certCards.length).toBe(2);
 
-    // Clicking a card opens the viewer modal with download actions
-    fireEvent.click(certCards[0]);
-    expect(await screen.findByText("PNG")).toBeDefined();
-    expect(screen.getByText("PDF")).toBeDefined();
-    expect(screen.getByText("Fechar")).toBeDefined();
+    expect(certCards[0].getAttribute("href")).toBe("/verify/abcd-1234-ef56");
+
+    expect(certCards[1].getAttribute("href")).toBe("/verify/zzzz-9999-xxxx");
   });
 });

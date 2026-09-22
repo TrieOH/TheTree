@@ -1,20 +1,24 @@
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 
+import AwardIcon from "~icons/lucide/award";
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
 import ClockIcon from "~icons/lucide/clock";
 import FlagIcon from "~icons/lucide/flag";
 import PencilIcon from "~icons/lucide/pencil";
+import SendIcon from "~icons/lucide/send";
 import TrashIcon from "~icons/lucide/trash";
 
 import { Button, cn } from "@trieoh/ui-solid";
 import { Reveal } from "@/shared/ui/Reveal";
 import type { OccurrenceI, ProgramI } from "../model";
 
+const Award = AwardIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Clock = ClockIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Flag = FlagIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Pencil = PencilIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Send = SendIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash = TrashIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface AdminProgramCardProps {
@@ -22,10 +26,16 @@ export interface AdminProgramCardProps {
   occurrences?: OccurrenceI[];
   index?: number;
   animate?: boolean;
+  hasCertificate?: boolean;
+  isEmittingCertificates?: boolean;
+  emissionCooldownLabel?: string;
   onEdit: (program: ProgramI) => void;
   onDelete: (program: ProgramI) => void;
   onOpenCalendar?: (program: ProgramI) => void;
   onManageOccurrences?: (program: ProgramI) => void;
+  onManageCertificate?: (program: ProgramI) => void;
+  onUnlinkCertificate?: (program: ProgramI) => void;
+  onEmitCertificates?: (program: ProgramI) => void;
   occurrencesHref?: string;
 }
 
@@ -91,12 +101,80 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
                     <span class="text-muted-foreground/60">•</span>
                     <span class="font-medium text-destructive shrink-0">Staff</span>
                   </Show>
+                  <Show when={props.hasCertificate}>
+                    <span class="text-muted-foreground/60">•</span>
+                    <span class="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.2 text-[10px] font-medium text-primary">
+                      <Award class="size-2.5" />
+                      <span>Certificado</span>
+                    </span>
+                  </Show>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
             <div class="flex items-center gap-0.5 shrink-0">
+              {/* Certificate link / unlink */}
+              <Show when={props.onManageCertificate || props.onUnlinkCertificate}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={props.hasCertificate ? "Desvincular certificado" : "Vincular certificado"}
+                  title={props.hasCertificate ? "Desvincular certificado" : "Vincular certificado"}
+                  onClick={() => {
+                    if (props.hasCertificate) {
+                      props.onUnlinkCertificate?.(props.program);
+                    } else {
+                      props.onManageCertificate?.(props.program);
+                    }
+                  }}
+                  class={cn(
+                    "size-7 transition-colors cursor-pointer",
+                    props.hasCertificate
+                      ? "text-primary hover:bg-primary/10"
+                      : "text-muted-foreground opacity-60 hover:text-foreground hover:bg-muted group-hover:opacity-100",
+                  )}
+                >
+                  <Award class="size-3.5" />
+                </Button>
+              </Show>
+
+              {/* Certificate emission */}
+              <Show when={props.onEmitCertificates}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={!props.hasCertificate || Boolean(props.emissionCooldownLabel) || props.isEmittingCertificates}
+                  aria-label={
+                    props.isEmittingCertificates
+                      ? "Iniciando emissão..."
+                      : props.emissionCooldownLabel
+                        ? `Emitir novamente em ${props.emissionCooldownLabel}`
+                        : "Emitir certificados"
+                  }
+                  title={
+                    !props.hasCertificate
+                      ? "Vincule um certificado antes de emitir"
+                      : props.isEmittingCertificates
+                        ? "Iniciando emissão..."
+                        : props.emissionCooldownLabel
+                          ? `Emitir novamente em ${props.emissionCooldownLabel}`
+                          : "Emitir certificados"
+                  }
+                  onClick={() => props.onEmitCertificates?.(props.program)}
+                  class={cn(
+                    "size-7 transition-colors",
+                    props.hasCertificate && !props.emissionCooldownLabel
+                      ? "text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+                      : "text-muted-foreground/30 cursor-not-allowed",
+                  )}
+                >
+                  <Send class="size-3.5" />
+                </Button>
+              </Show>
+
               <Button
                 type="button"
                 variant="ghost"

@@ -9,15 +9,19 @@ import {
   untrack,
 } from "solid-js";
 import CircleAlertIcon from "~icons/lucide/circle-alert";
-import FileCheck2Icon from "~icons/lucide/file-check-2";
 
-import GithubIcon from "~icons/lucide/github";
 import GlobeIcon from "~icons/lucide/globe";
-import InstagramIcon from "~icons/lucide/instagram";
-import LinkedinIcon from "~icons/lucide/linkedin";
 import MailIcon from "~icons/lucide/mail";
 import MessageCircleIcon from "~icons/lucide/message-circle";
-import YoutubeIcon from "~icons/lucide/youtube";
+import InstagramIcon from "~icons/simple-icons/instagram";
+import LinkedinIcon from "~icons/simple-icons/linkedin";
+import GithubIcon from "~icons/simple-icons/github";
+import YoutubeIcon from "~icons/simple-icons/youtube";
+import XIcon from "~icons/simple-icons/x";
+import TwitterIcon from "~icons/simple-icons/twitter";
+import TwitchIcon from "~icons/simple-icons/twitch";
+import BlueskyIcon from "~icons/simple-icons/bluesky";
+import DiscordIcon from "~icons/simple-icons/discord";
 import { useQuery } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileGroups } from "@/features/badges/model";
@@ -45,14 +49,18 @@ import {
 import { ProfileCollectionItem } from "./ProfileCollectionItem";
 import { ProfileHeader } from "./ProfileHeader";
 
-const Globe = GlobeIcon as unknown as () => JSX.Element;
-const Mail = MailIcon as unknown as () => JSX.Element;
-const Github = GithubIcon as unknown as () => JSX.Element;
-const Instagram = InstagramIcon as unknown as () => JSX.Element;
-const Linkedin = LinkedinIcon as unknown as () => JSX.Element;
-const Youtube = YoutubeIcon as unknown as () => JSX.Element;
-const MessageCircle = MessageCircleIcon as unknown as () => JSX.Element;
-const FileCheck2 = FileCheck2Icon as unknown as (props: { class?: string }) => JSX.Element;
+const Globe = GlobeIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Mail = MailIcon as unknown as (p: { class?: string }) => JSX.Element;
+const MessageCircle = MessageCircleIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Github = GithubIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Instagram = InstagramIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Linkedin = LinkedinIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Youtube = YoutubeIcon as unknown as (p: { class?: string }) => JSX.Element;
+const X = XIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Twitter = TwitterIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Twitch = TwitchIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Bluesky = BlueskyIcon as unknown as (p: { class?: string }) => JSX.Element;
+const Discord = DiscordIcon as unknown as (p: { class?: string }) => JSX.Element;
 const CircleAlert = CircleAlertIcon as unknown as (p: {
   class?: string;
 }) => JSX.Element;
@@ -98,7 +106,7 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
     () => data()?.handle ?? data()?.actor_id ?? props.actorId,
   );
   const participantName = createMemo(
-    () => profile().preferredName || profile().legalName || "",
+    () => profile().legalName || profile().preferredName || "",
   );
   const socials = createMemo(() => Object.entries(profile().socials ?? {}));
 
@@ -238,7 +246,7 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
                       <div class="space-y-1">
                         <Show when={profile().website}>
                           {(site) => (
-                            <Social href={site()} label="Website" />
+                            <Social href={site()} label="Website" network="website" />
                           )}
                         </Show>{" "}
                         <Show when={profile().contactEmail}>
@@ -246,6 +254,7 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
                             <Social
                               href={`mailto:${email()}`}
                               label="E-mail"
+                              network="email"
                             />
                           )}
                         </Show>{" "}
@@ -253,8 +262,11 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
                           {([network, value]) => (
                             <Social
                               href={socialHref(network, String(value ?? ""))}
+                              network={network}
                               label={
-                                network[0].toUpperCase() + network.slice(1)
+                                network === "x"
+                                  ? "X"
+                                  : network[0].toUpperCase() + network.slice(1)
                               }
                             />
                           )}
@@ -424,39 +436,50 @@ function Card(props: { title: string; children: unknown }) {
   );
 }
 
-function Social(props: { href: string; label: string }) {
+function Social(props: { href: string; label: string; network?: string }) {
   return (
     <a
       href={props.href}
       target={props.href.startsWith("mailto:") ? undefined : "_blank"}
       rel="noreferrer"
-      class="flex items-center gap-2.5 rounded-md p-2 text-sm hover:bg-muted"
+      class="flex items-center gap-2.5 rounded-md p-2 text-sm hover:bg-muted transition-colors"
     >
-      <span class="flex size-7 items-center justify-center rounded-md bg-foreground text-background">
-        <SocialIcon label={props.label} />
+      <span class="flex size-7 items-center justify-center rounded-md bg-muted text-foreground">
+        <SocialIcon label={props.label} network={props.network} />
       </span>
-      <span class="truncate">{props.label}</span>
+      <span class="truncate font-medium">{props.label}</span>
     </a>
   );
 }
 
-function SocialIcon(props: { label: string }): JSX.Element {
-  switch (props.label.toLowerCase()) {
+function SocialIcon(props: { label: string; network?: string }): JSX.Element {
+  const key = untrack(() => (props.network || props.label).toLowerCase());
+  switch (key) {
     case "website":
-      return <Globe />;
+      return <Globe class="size-4" />;
     case "e-mail":
     case "email":
-      return <Mail />;
+      return <Mail class="size-4" />;
     case "github":
-      return <Github />;
+      return <Github class="size-4" />;
     case "instagram":
-      return <Instagram />;
+      return <Instagram class="size-4" />;
     case "linkedin":
-      return <Linkedin />;
+      return <Linkedin class="size-4" />;
     case "youtube":
-      return <Youtube />;
+      return <Youtube class="size-4" />;
+    case "x":
+      return <X class="size-4" />;
+    case "twitter":
+      return <Twitter class="size-4" />;
+    case "twitch":
+      return <Twitch class="size-4" />;
+    case "bluesky":
+      return <Bluesky class="size-4" />;
+    case "discord":
+      return <Discord class="size-4" />;
     default:
-      return <MessageCircle />;
+      return <MessageCircle class="size-4" />;
   }
 }
 

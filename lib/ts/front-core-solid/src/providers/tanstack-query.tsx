@@ -25,12 +25,21 @@ export function queryError(message: string, code?: number) {
   return new QueryError(message, code)
 }
 
+function retryQuery(failureCount: number, error: unknown) {
+  const value = error as {
+    code?: number
+    envelope?: { code?: number }
+  }
+  const code = value?.envelope?.code ?? value?.code
+  return !(typeof code === "number" && code >= 400 && code < 500) && failureCount < 3
+}
+
 export function createQueryClient(config?: QueryClientConfig) {
   return new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: config?.staleTime ?? 1000 * 60 * 5,
-        retry: config?.maxRetries ?? 3,
+        retry: config?.maxRetries === undefined ? retryQuery : config.maxRetries,
       },
       mutations: { onError: config?.onError },
     },

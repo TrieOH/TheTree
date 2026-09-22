@@ -8,6 +8,7 @@ import {
   invalidateCertification,
   listCertificationEmissionErrors,
   listCertificationTemplates,
+  listCertificationTemplateLinks,
   listEditionCertifications,
   listMyCertifications,
   updateCertificationTemplate,
@@ -17,6 +18,7 @@ import type {
   CertificationEmissionErrorI,
   CertificationI,
   CertificationTemplateI,
+  CertificationTemplateProgramI,
   VerifyCertificationResponseI,
 } from "../model";
 import { certificationKeys } from "./query-keys";
@@ -56,6 +58,14 @@ export const emissionErrorsByEditionQueryOptions = (editionId: string) => ({
     ),
 });
 
+export const certificationTemplateLinksQueryOptions = (templateId: string) => ({
+  queryKey: certificationKeys.templateLinks(templateId),
+  queryFn: () =>
+    listCertificationTemplateLinks(templateId, { public: true }).then(
+      orvalData<CertificationTemplateProgramI[]>,
+    ),
+});
+
 export const certificationVerificationQueryOptions = (hash: string) => ({
   queryKey: certificationKeys.verification(hash),
   queryFn: () =>
@@ -74,6 +84,7 @@ export {
   invalidateCertification,
   listCertificationEmissionErrors,
   listCertificationTemplates,
+  listCertificationTemplateLinks,
   listEditionCertifications,
   listMyCertifications,
   updateCertificationTemplate,
