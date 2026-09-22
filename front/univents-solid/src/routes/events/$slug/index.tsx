@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/solid-router";
+import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { Loading, Show, createMemo, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
 import ShareIcon from "~icons/lucide/share-2";
+import ArrowRightIcon from "~icons/lucide/arrow-right";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
 import { ContactSection } from "@/features/events/ui/ContactSection";
@@ -18,6 +19,7 @@ import { handleShare } from "@/shared/lib/share";
 const Calendar = CalendarIcon as unknown as () => JSX.Element;
 const MapPin = MapPinIcon as unknown as () => JSX.Element;
 const Share = ShareIcon as unknown as () => JSX.Element;
+const ArrowRight = ArrowRightIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/events/$slug/")({
   head: ({ params }) => ({
@@ -171,12 +173,17 @@ function EditionBody(props: { event: EventI; editions: EditionI[] }) {
               <EditionSummaryCard edition={edition} />
             ))}
           </div>
-          <a
-            class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
-            href={`/events/${props.event.slug}/editions`}
-          >
-            Ver todas as Edições <span aria-hidden="true">→</span>
-          </a>
+          {/* View all */}
+          <div class="mt-5">
+            <Link
+              to="/events/$slug/editions"
+              params={{ slug: props.event.slug }}
+              class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:gap-2.5 transition-all duration-200"
+            >
+              Ver todas as Edições
+              <ArrowRight class="w-4 h-4" />
+            </Link>
+          </div>
         </section>
       )}
       {active?.location_name && (
