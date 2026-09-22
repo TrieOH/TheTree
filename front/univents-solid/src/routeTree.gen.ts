@@ -21,6 +21,7 @@ import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
@@ -105,6 +106,11 @@ const ProfileConfigRoute = ProfileConfigRouteImport.update({
 const ProfileEditRoute = ProfileEditRouteImport.update({
   id: '/profile/edit',
   path: '/profile/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileSetupRoute = ProfileSetupRouteImport.update({
+  id: '/profile/setup',
+  path: '/profile/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyHashRoute = VerifyHashRouteImport.update({
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/setup': typeof ProfileSetupRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/setup': typeof ProfileSetupRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
+  '/profile/setup': typeof ProfileSetupRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
@@ -384,6 +393,7 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
+    | '/profile/setup'
     | '/verify/$hash'
     | '/events/'
     | '/profile/'
@@ -423,6 +433,7 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
+    | '/profile/setup'
     | '/verify/$hash'
     | '/events'
     | '/profile'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
+    | '/profile/setup'
     | '/verify/$hash'
     | '/events/'
     | '/profile/'
@@ -501,6 +513,7 @@ export interface RootRouteChildren {
   CheckoutsPurchaseIdRoute: typeof CheckoutsPurchaseIdRoute
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
+  ProfileSetupRoute: typeof ProfileSetupRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
@@ -598,6 +611,13 @@ declare module '@tanstack/solid-router' {
       path: '/profile/edit'
       fullPath: '/profile/edit'
       preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/setup': {
+      id: '/profile/setup'
+      path: '/profile/setup'
+      fullPath: '/profile/setup'
+      preLoaderRoute: typeof ProfileSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify/$hash': {
@@ -842,6 +862,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutsPurchaseIdRoute: CheckoutsPurchaseIdRoute,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
+  ProfileSetupRoute: ProfileSetupRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,

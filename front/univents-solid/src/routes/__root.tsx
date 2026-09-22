@@ -5,11 +5,13 @@ import { AuthContextUpdater } from '@trieoh/front-core-solid';
 import { Toaster } from '@/shared/ui/toast';
 import { NavigationDock } from '@/widgets/ui/NavigationDock';
 import { UploadQueueProvider } from '@/features/upload-queue';
+import { requireConfiguredProfile } from '@/features/auths/lib/route-guard';
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
 // declare in their `head` options (titles here).
 export const Route = createRootRouteWithContext<{ session?: RouterSession }>()({
+  beforeLoad: requireConfiguredProfile,
   head: () => ({ meta: [{ title: 'Univents' }] }),
   component: () => (
     <>
