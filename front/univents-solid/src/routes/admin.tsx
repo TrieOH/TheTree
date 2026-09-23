@@ -40,7 +40,7 @@ function AdminShell(): JSX.Element {
   const location = useLocation();
 
   const isFullScreenEditor = () => {
-    const p = location().pathname;
+    const p = location().pathname.replace(/\/+$/, "");
     return (
       p.endsWith("/certifications/editor") ||
       p.endsWith("/badges/editor") ||

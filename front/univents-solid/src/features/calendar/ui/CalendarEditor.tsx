@@ -117,7 +117,13 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
 
   if (typeof document !== "undefined") {
     const handlePointerDown = (event: PointerEvent) => {
-      if (filterMenuOpen() && filterMenuRef && !filterMenuRef.contains(event.target as Node)) {
+      const target = event.target as Element | null;
+      if (
+        filterMenuOpen() &&
+        filterMenuRef &&
+        !filterMenuRef.contains(target) &&
+        !target?.closest?.('[role="listbox"], [role="option"], .z-70, [data-portal]')
+      ) {
         setFilterMenuOpen(false);
       }
     };
@@ -603,7 +609,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
         onDrop={(e) => e.preventDefault()}
       >
         {/* Top Bar / Toolbar - Clean & Organized */}
-        <header class="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 sm:px-6 select-none z-30">
+        <header class="relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 sm:px-6 select-none">
           {/* Left: Navigation & Date Info */}
           <div class="flex items-center gap-3">
             {/* Back Button */}
@@ -615,7 +621,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                   params: { eventId: props.eventId, editionId: props.editionId },
                 })
               }
-              class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              class="inline-flex h-8 items-center gap-1.5 px-3 rounded-lg hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <ArrowLeft class="size-4" />
               <span>Voltar aos programas</span>
@@ -628,7 +634,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
               <button
                 type="button"
                 onClick={handleToday}
-                class="px-2.5 py-1 text-xs font-medium rounded-md border border-border hover:bg-muted text-foreground transition-colors cursor-pointer"
+                class="inline-flex h-8 items-center px-3 text-xs font-medium rounded-lg border border-border hover:bg-muted text-foreground transition-colors cursor-pointer"
               >
                 Hoje
               </button>
@@ -636,7 +642,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 <button
                   type="button"
                   onClick={handlePrev}
-                  class="size-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  class="size-8 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Anterior"
                 >
                   <ChevronLeft class="size-4" />
@@ -644,7 +650,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 <button
                   type="button"
                   onClick={handleNext}
-                  class="size-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  class="size-8 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Próximo"
                 >
                   <ChevronRight class="size-4" />
@@ -661,11 +667,11 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
           {/* Right: Filter Popover & View Switcher */}
           <div class="flex items-center gap-2">
             {/* Filter Popover */}
-            <div class="relative" ref={(el) => (filterMenuRef = el)}>
+            <div class="relative z-50" ref={(el) => (filterMenuRef = el)}>
               <button
                 type="button"
                 onClick={() => setFilterMenuOpen((prev) => !prev)}
-                class={`relative flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${activeFilterCount() > 0
+                class={`relative inline-flex h-8 items-center gap-1.5 px-3 text-xs font-medium rounded-lg border transition-all cursor-pointer ${activeFilterCount() > 0
                   ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
                   : "border-border bg-background hover:bg-muted text-foreground"
                   }`}
@@ -722,13 +728,13 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                   {/* Kind */}
                   <div class="space-y-1">
                     <label class="text-[11px] font-medium text-muted-foreground">Tipo de atividade</label>
-                    <div class="flex rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
+                    <div class="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 text-[11px]">
                       <button
                         type="button"
                         onClick={() => setProgramKindFilter("all")}
                         class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${programKindFilter() === "all"
-                          ? "bg-background text-foreground shadow-2xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-background text-foreground shadow-xs font-semibold border border-border/80"
+                          : "text-muted-foreground hover:text-foreground border border-transparent"
                           }`}
                       >
                         Todos
@@ -737,8 +743,8 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                         type="button"
                         onClick={() => setProgramKindFilter("activity")}
                         class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${programKindFilter() === "activity"
-                          ? "bg-background text-foreground shadow-2xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-background text-foreground shadow-xs font-semibold border border-border/80"
+                          : "text-muted-foreground hover:text-foreground border border-transparent"
                           }`}
                       >
                         Atividades
@@ -747,8 +753,8 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                         type="button"
                         onClick={() => setProgramKindFilter("checkpoint")}
                         class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${programKindFilter() === "checkpoint"
-                          ? "bg-background text-foreground shadow-2xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-background text-foreground shadow-xs font-semibold border border-border/80"
+                          : "text-muted-foreground hover:text-foreground border border-transparent"
                           }`}
                       >
                         Checkpoints
@@ -770,10 +776,9 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                           setDateFilter(nextVal);
                           if (nextVal) {
                             const [y, m, d] = nextVal.split("-").map(Number);
-                            setCurrentDate(new Date(y, m - 1, d));
-                            if (view() === "month" || view() === "year") {
-                              setView("day");
-                            }
+                            setCurrentDate(new Date(y, m - 1, d, 12, 0, 0));
+                            setView("day");
+                            setFilterMenuOpen(false);
                           }
                         }}
                         class="w-full"
@@ -786,7 +791,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
             </div>
 
             {/* View Switcher Segmented Control */}
-            <div class="flex items-center p-0.5 rounded-lg border border-border bg-muted/40">
+            <div class="inline-flex h-8 items-center gap-1 p-1 rounded-lg border border-border bg-muted/40">
               {(["day", "week", "month", "year"] as const).map((v) => {
                 const labels: Record<CalendarView, string> = {
                   day: "Dia",
@@ -799,9 +804,9 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                   <button
                     type="button"
                     onClick={() => setView(v)}
-                    class={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${isActive()
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
+                    class={`inline-flex h-full items-center px-3 text-xs font-medium rounded-md transition-all cursor-pointer ${isActive()
+                      ? "bg-background text-foreground shadow-xs font-semibold border border-border/80"
+                      : "text-muted-foreground hover:text-foreground border border-transparent"
                       }`}
                   >
                     {labels[v]}
@@ -868,7 +873,7 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                 Arraste um programa para a grade para criar um horário.
               </p>
 
-              <div class="space-y-1 mt-2 flex-1 overflow-y-auto">
+              <div class="space-y-1.5 mt-2 flex-1 overflow-y-auto p-1">
                 <For
                   each={filteredPrograms()}
                   fallback={
@@ -898,14 +903,13 @@ export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
                             prev === prog.id ? null : prog.id,
                           );
                         }}
-                        class={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-grab active:cursor-grabbing transition-all ${isFiltered()
-                          ? "ring-2 ring-primary border-transparent"
-                          : "hover:bg-muted border-transparent hover:border-border"
+                        class={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-xs font-medium cursor-grab active:cursor-grabbing transition-all select-none ${isFiltered()
+                          ? "border-primary bg-primary/10 shadow-xs ring-2 ring-primary/30"
+                          : "border-border/60 hover:border-border hover:bg-muted/70 bg-card"
                           }`}
                         style={{
-                          "border-left-color": color().border,
                           "border-left-width": "4px",
-                          background: isFiltered() ? color().bg : undefined,
+                          "border-left-color": color().border,
                         }}
                       >
                         <GripVertical class="size-3 text-muted-foreground/50 shrink-0" />
