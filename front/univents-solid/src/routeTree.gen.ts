@@ -16,6 +16,9 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth_/forgot-password'
+import { Route as AuthResetRouteImport } from './routes/auth_/reset'
+import { Route as AuthVerifyRouteImport } from './routes/auth_/verify'
 import { Route as CheckoutsPurchaseIdRouteImport } from './routes/checkouts/$purchaseId'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
@@ -24,6 +27,7 @@ import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
+import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
 import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
 import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
 import { Route as EventsSlugEditionsRouteImport } from './routes/events/$slug/editions'
@@ -83,6 +87,21 @@ const AdminUploadsRoute = AdminUploadsRouteImport.update({
   path: '/uploads',
   getParentRoute: () => AdminRoute,
 } as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth_/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth_/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutsPurchaseIdRoute = CheckoutsPurchaseIdRouteImport.update({
   id: '/checkouts/$purchaseId',
   path: '/checkouts/$purchaseId',
@@ -122,6 +141,11 @@ const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
   getParentRoute: () => AdminRoute,
+} as any)
+const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
+  id: '/auth_/$provider/callback',
+  path: '/auth/$provider/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
   id: '/events/$slug/',
@@ -267,6 +291,9 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -274,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/editions': typeof EventsSlugEditionsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
@@ -307,6 +335,9 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset': typeof AuthResetRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -314,6 +345,7 @@ export interface FileRoutesByTo {
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/editions': typeof EventsSlugEditionsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
@@ -348,6 +380,9 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/uploads': typeof AdminUploadsRoute
+  '/auth_/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth_/reset': typeof AuthResetRoute
+  '/auth_/verify': typeof AuthVerifyRoute
   '/checkouts/$purchaseId': typeof CheckoutsPurchaseIdRoute
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -355,6 +390,7 @@ export interface FileRoutesById {
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/auth_/$provider/callback': typeof AuthProviderCallbackRoute
   '/events/$slug/checkout': typeof EventsSlugCheckoutRoute
   '/events/$slug/editions': typeof EventsSlugEditionsRoute
   '/events/$slug/programs': typeof EventsSlugProgramsRoute
@@ -390,6 +426,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/uploads'
+    | '/auth/forgot-password'
+    | '/auth/reset'
+    | '/auth/verify'
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
@@ -397,6 +436,7 @@ export interface FileRouteTypes {
     | '/verify/$hash'
     | '/events/'
     | '/profile/'
+    | '/auth/$provider/callback'
     | '/events/$slug/checkout'
     | '/events/$slug/editions'
     | '/events/$slug/programs'
@@ -430,6 +470,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/uploads'
+    | '/auth/forgot-password'
+    | '/auth/reset'
+    | '/auth/verify'
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
@@ -437,6 +480,7 @@ export interface FileRouteTypes {
     | '/verify/$hash'
     | '/events'
     | '/profile'
+    | '/auth/$provider/callback'
     | '/events/$slug/checkout'
     | '/events/$slug/editions'
     | '/events/$slug/programs'
@@ -470,6 +514,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/uploads'
+    | '/auth_/forgot-password'
+    | '/auth_/reset'
+    | '/auth_/verify'
     | '/checkouts/$purchaseId'
     | '/profile/config'
     | '/profile/edit'
@@ -477,6 +524,7 @@ export interface FileRouteTypes {
     | '/verify/$hash'
     | '/events/'
     | '/profile/'
+    | '/auth_/$provider/callback'
     | '/events/$slug/checkout'
     | '/events/$slug/editions'
     | '/events/$slug/programs'
@@ -510,6 +558,9 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetRoute: typeof AuthResetRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
   CheckoutsPurchaseIdRoute: typeof CheckoutsPurchaseIdRoute
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
@@ -517,6 +568,7 @@ export interface RootRouteChildren {
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
+  AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
   EventsSlugCheckoutRoute: typeof EventsSlugCheckoutRoute
   EventsSlugEditionsRoute: typeof EventsSlugEditionsRoute
   EventsSlugProgramsRoute: typeof EventsSlugProgramsRoute
@@ -578,6 +630,27 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminUploadsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/auth_/forgot-password': {
+      id: '/auth_/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/verify': {
+      id: '/auth_/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkouts/$purchaseId': {
       id: '/checkouts/$purchaseId'
       path: '/checkouts/$purchaseId'
@@ -633,6 +706,13 @@ declare module '@tanstack/solid-router' {
       fullPath: '/admin/events/'
       preLoaderRoute: typeof AdminEventsIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/auth_/$provider/callback': {
+      id: '/auth_/$provider/callback'
+      path: '/auth/$provider/callback'
+      fullPath: '/auth/$provider/callback'
+      preLoaderRoute: typeof AuthProviderCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/events/$slug/': {
       id: '/events/$slug/'
@@ -859,6 +939,9 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetRoute: AuthResetRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
   CheckoutsPurchaseIdRoute: CheckoutsPurchaseIdRoute,
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
@@ -866,6 +949,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
+  AuthProviderCallbackRoute: AuthProviderCallbackRoute,
   EventsSlugCheckoutRoute: EventsSlugCheckoutRoute,
   EventsSlugEditionsRoute: EventsSlugEditionsRoute,
   EventsSlugProgramsRoute: EventsSlugProgramsRoute,

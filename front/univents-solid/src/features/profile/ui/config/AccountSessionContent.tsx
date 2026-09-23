@@ -1,7 +1,6 @@
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import {
   Show,
-  createEffect,
   createSignal,
 } from "solid-js";
 import type { JSX } from "@solidjs/web";
@@ -43,45 +42,9 @@ export function AccountSessionContent() {
   const [resending, setResending] =
     createSignal(false);
 
-  const profile = () => auth.profile();
-
   const initializing = () => readReactive(isInitializing);
 
   const authenticated = () => readReactive(isAuthenticated);
-  let refreshedEmail: string | undefined;
-
-  createEffect(
-    () => ({
-      initializing: initializing(),
-      authenticated: authenticated(),
-      email: profile()?.email,
-      verifiedAt: profile()?.verified_at,
-    }),
-
-    ({
-      initializing,
-      authenticated,
-      email,
-      verifiedAt,
-    }) => {
-      if (
-        initializing ||
-        !authenticated ||
-        !email ||
-        verifiedAt
-      ) {
-        return;
-      }
-
-      if (refreshedEmail === email) return;
-
-      refreshedEmail = email;
-
-      void auth.refresh().catch((error) => {
-        console.error("Erro ao atualizar sessão:", error);
-      });
-    },
-  );
 
   const resendVerification = async (email: string) => {
     if (resending()) return;
@@ -116,7 +79,7 @@ export function AccountSessionContent() {
       fallback={<AccountSkeleton />}
     >
       <Show
-        when={authenticated() && profile()}
+        when={authenticated() && auth.profile()}
         fallback={
           <div class="py-3 text-sm text-muted-foreground">
             Nenhuma sessão ativa encontrada.

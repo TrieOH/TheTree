@@ -21,7 +21,7 @@ export async function requireConfiguredProfile({ context, location }: GuardArgs)
   const response = await context.session.service.getActorProfile(actorId);
   const profileExists = response.success && Boolean(response.data);
 
-  if (!profileExists && location.pathname !== "/profile/setup" && location.pathname !== "/auth/verify-email") {
+  if (!profileExists && location.pathname !== "/profile/setup" && location.pathname !== "/auth/verify") {
     throw redirect({
       to: "/profile/setup",
       search: { returnTo: location.href },
