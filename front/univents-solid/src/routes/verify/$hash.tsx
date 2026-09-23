@@ -15,17 +15,25 @@ import {
 } from "@/features/certifications/api";
 import { getCertificationTemplateOrDefault } from "@/features/certifications/default-template";
 import { DEFAULT_CERTIFICATE_CANVAS } from "@/features/certifications/editor/constants";
-import type {
-  CertificateVariableValues,
-} from "@/features/certifications/editor/variables";
+import {
+  buildCertificateVariables,
+  formatCertifiedAt,
+  formatWorkloadLabel,
+  type CertificateVariableValues,
+  type OccurrenceTimeSpan,
+} from "@/features/certifications/lib/certificate-variables";
 import {
   CertificateDownloadButtons,
   CertificateTemplateStaticView,
 } from "@/features/certifications/ui/CertViewer";
-import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { editionLocationQueryOptions } from "@/features/editions/api";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { asUniventsProfile, profileDisplayName } from "@/features/profile/model/profile-data";
-import { occurrencesQueryOptions, programsQueryOptions } from "@/features/programs/api";
+import {
+  myParticipationsQueryOptions,
+  occurrencesQueryOptions,
+  programsQueryOptions,
+} from "@/features/programs/api";
 
 const BadgeCheck = BadgeCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const FileX2 = FileX2Icon as unknown as (props: { class?: string }) => JSX.Element;
@@ -37,16 +45,6 @@ export const Route = createFileRoute("/verify/$hash")({
   }),
   component: VerifyCertificationPage,
 });
-
-function formatCertifiedAt(value: string) {
-  return new Date(value).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function DetailItem(props: { label: string; value?: string | null }) {
   return (
@@ -78,6 +76,12 @@ function VerifyCertificationPage(): JSX.Element {
   const cert = () => verificationQuery().data?.cert ?? null;
   const isLoading = () => verificationQuery().isLoading;
   const isError = () => verificationQuery().isError;
+
+  const isNotFound = () => {
+    const err = verificationQuery().error as { envelope?: { code?: number }; code?: number } | null;
+    return err?.envelope?.code === 404 || err?.code === 404;
+  };
+
   const showCertificateArea = () => Boolean((verified() && cert()) || isLoading());
 
   const templateId = () => cert()?.template_id ?? verificationQuery().data?.template_id ?? "";
@@ -154,41 +158,65 @@ function VerifyCertificationPage(): JSX.Element {
     ...occurrencesQueryOptions(cert()?.edition_id ?? ""),
     enabled: Boolean(cert()?.edition_id),
   }));
-  const workloadHours = createMemo(() => {
-    const milliseconds = ((occurrencesQuery().data ?? []) as Array<{ starts_at: string; ends_at: string }>).reduce(
-      (total, occurrence) => total + new Date(occurrence.ends_at).getTime() - new Date(occurrence.starts_at).getTime(),
-      0,
-    );
-    const hours = milliseconds / 3_600_000;
-    return hours > 0
-      ? Number.isInteger(hours)
-        ? String(hours)
-        : hours.toFixed(1).replace(".", ",")
-      : "";
+
+  const isCertificateOwner = () => {
+    const profileId = auth.profile?.()?.id;
+    const certUserId = cert()?.user_id;
+    return Boolean(profileId && certUserId && profileId === certUserId);
+  };
+
+  const myParticipationsQuery = useQuery(() => ({
+    ...myParticipationsQueryOptions(cert()?.edition_id ?? ""),
+    enabled: Boolean(cert()?.edition_id && isCertificateOwner()),
+  }));
+
+  const attendedOccurrences = createMemo(() => {
+    const currentCert = cert();
+    const list = (myParticipationsQuery().data ?? []) as Array<{
+      status: string;
+      occurrence: OccurrenceTimeSpan;
+      program: { id: string };
+    }>;
+    return list
+      .filter(
+        (p) =>
+          p.status === "attended" &&
+          (!currentCert?.program_id || p.program.id === currentCert.program_id),
+      )
+      .map((p) => p.occurrence);
+  });
+
+  const workloadIsApproximate = createMemo(() => {
+    if (cert()?.program_id) return false;
+    const hasOccurrences =
+      (occurrencesQuery().data ?? []).length > 0 ||
+      Boolean(editionQuery().data?.starts_at);
+    return hasOccurrences && attendedOccurrences().length === 0;
   });
 
   // 6. Certificate variables
   const variables = createMemo<CertificateVariableValues>(() => {
     const currentCert = cert();
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-
-    return {
-      participant_name: participantName() || "Participante",
-      event_name: eventName() || "Evento",
-      edition_name: editionName() || "",
-      activity_name: programName() ?? editionName() ?? "",
-      participation_type: currentCert?.program_id ? "atividade" : "edição",
-      location: locationName() || "",
-      workload_hours: "",
-      participation_date: "",
-      certified_at: currentCert ? formatCertifiedAt(currentCert.issued_at) : "",
-      cert_hash: hash(),
-      verify_url: `${origin}/verify/${hash()}`,
-    };
+    const ed = editionQuery().data;
+    return buildCertificateVariables({
+      participantName: participantName() || "Participante",
+      eventName: eventName() || "Evento",
+      editionName: editionName() || "",
+      editionStartsAt: ed?.starts_at,
+      editionEndsAt: ed?.ends_at,
+      programName: programName(),
+      programId: currentCert?.program_id,
+      locationName: locationName() || "",
+      occurrences: (occurrencesQuery().data ?? []) as OccurrenceTimeSpan[],
+      attendedOccurrences: attendedOccurrences(),
+      issuedAt: currentCert?.issued_at,
+      certHash: hash(),
+    });
   });
 
   const statusTitle = createMemo(() => {
     if (isLoading()) return "Verificando certificado";
+    if (isNotFound()) return "Certificado não encontrado";
     if (isError()) return "Falha na verificação";
     if (verified()) return "Certificado autêntico";
     return "Certificado inválido";
@@ -196,6 +224,7 @@ function VerifyCertificationPage(): JSX.Element {
 
   const statusDescription = createMemo(() => {
     if (isLoading()) return "Consultando os dados de emissão e integridade.";
+    if (isNotFound()) return "Nenhum certificado foi encontrado com o código informado.";
     if (isError()) return "Não foi possível consultar este certificado agora.";
     if (verified()) return "Emissão e integridade confirmadas.";
     return "Este documento não possui uma emissão válida.";
@@ -203,7 +232,6 @@ function VerifyCertificationPage(): JSX.Element {
 
   return (
     <main class="min-h-screen bg-background pb-24 text-foreground">
-
       <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">
           {/* Left Column: Certificate Preview Canvas */}
@@ -219,34 +247,15 @@ function VerifyCertificationPage(): JSX.Element {
                 </div>
               }
             >
-              <Show
-                when={verified() && cert()}
-                fallback={
-                  <div class="grid h-80 place-items-center rounded-xl border border-dashed border-destructive/30 bg-destructive/5 p-6 text-center">
-                    <div class="flex flex-col items-center gap-3">
-                      <div class="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                        <FileX2 class="size-6" />
-                      </div>
-                      <div>
-                        <h3 class="text-sm font-semibold text-foreground">
-                          Visualização indisponível
-                        </h3>
-                        <p class="mt-1 max-w-sm text-xs text-muted-foreground">
-                          Não foi possível exibir a prévia gráfica porque o certificado não é válido ou foi invalidado.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                }
-              >
+              <Show when={verified() && cert()}>
                 <div
-                  class="relative w-full overflow-hidden rounded-xl border border-border/60 bg-card shadow-md"
-                  style={{ "aspect-ratio": `${canvas().width}/${canvas().height}` }}
+                  ref={setCanvasEl}
+                  class="relative w-full rounded-xl overflow-hidden shadow-md border border-border/60 bg-white"
+                  style={{ "aspect-ratio": `${canvas().width} / ${canvas().height}` }}
                 >
                   <CertificateTemplateStaticView
                     template={template()}
                     variables={variables()}
-                    setCanvasRef={(el) => setCanvasEl(el)}
                     overlay={
                       <div class="absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-full bg-background/90 p-1.5 shadow-sm ring-1 ring-foreground/10 backdrop-blur-sm">
                         <img
@@ -258,7 +267,6 @@ function VerifyCertificationPage(): JSX.Element {
                     }
                   />
                 </div>
-
               </Show>
             </Show>
           </div>
@@ -277,9 +285,9 @@ function VerifyCertificationPage(): JSX.Element {
                   "flex size-8 shrink-0 items-center justify-center rounded-md",
                   isLoading()
                     ? "bg-muted text-muted-foreground"
-                    : verified()
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-destructive/10 text-destructive",
+                    : isNotFound() || (!verified() && !isLoading())
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-primary text-primary-foreground",
                 )}
               >
                 <Show when={isLoading()}>
@@ -294,14 +302,12 @@ function VerifyCertificationPage(): JSX.Element {
               </div>
 
               <div class="min-w-0 flex-1">
-                <div>
-                  <h2 class="text-sm leading-none font-semibold text-foreground">
-                    {statusTitle()}
-                  </h2>
-                  <p class="mt-0.5 text-xs leading-tight text-muted-foreground">
-                    {statusDescription()}
-                  </p>
-                </div>
+                <h2 class="text-sm leading-none font-semibold text-foreground">
+                  {statusTitle()}
+                </h2>
+                <p class="mt-0.5 text-xs leading-tight text-muted-foreground">
+                  {statusDescription()}
+                </p>
               </div>
             </div>
 
@@ -324,37 +330,48 @@ function VerifyCertificationPage(): JSX.Element {
                   />
                   <DetailItem
                     label="Carga horária"
-                    value={workloadHours() ? `${workloadHours()} ${workloadHours() === "1" ? "hora" : "horas"}` : null}
+                    value={
+                      formatWorkloadLabel(variables().workload_hours, {
+                        approximate: workloadIsApproximate(),
+                      }) || null
+                    }
+                  />
+                  <DetailItem
+                    label="Data de realização"
+                    value={variables().participation_date || null}
                   />
                 </dl>
-                <div>
-                  <p class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Código de verificação
-                  </p>
-                  <p class="mt-1 break-all font-mono text-[11px] text-muted-foreground">
-                    {hash()}
-                  </p>
-                </div>
               </Show>
 
               <Show when={!isLoading() && !verified()}>
-                <div class="space-y-3 border-l-2 border-destructive pl-3">
-                  <p class="text-sm text-muted-foreground">
-                    {isError()
-                      ? "Tente novamente em instantes. Se o problema continuar, confirme se o link está completo."
-                      : cert()?.invalid_reason ??
-                      "Confira o código informado ou solicite uma nova emissão ao organizador."}
+                <div class="p-3 text-xs border-l-2 border-destructive bg-destructive/5 space-y-1">
+                  <p class="font-medium text-destructive">
+                    {isNotFound() ? "Código não localizado" : "Falha na verificação"}
                   </p>
-                  <p class="break-all font-mono text-[11px] text-muted-foreground/70">
-                    {hash()}
+                  <p class="text-muted-foreground">
+                    {isNotFound()
+                      ? "Confira se o código informado está completo ou solicite uma nova emissão ao organizador."
+                      : isError()
+                        ? "Tente novamente em instantes. Se o problema continuar, confirme se o link está completo."
+                        : cert()?.invalid_reason ??
+                        "Confira o código informado ou solicite uma nova emissão ao organizador."}
                   </p>
                 </div>
               </Show>
 
+              <div class="space-y-1">
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Código de verificação
+                </p>
+                <p class="break-all font-mono text-xs text-muted-foreground">
+                  {hash()}
+                </p>
+              </div>
+
               <Show when={verified() && cert()}>
-                <div class="border-t border-border/60 pt-4">
+                <div class="border-t border-border/40 pt-3">
                   <CertificateDownloadButtons
-                    canvasElement={() => canvasEl()}
+                    canvasElement={canvasEl}
                     templateName="Certificado"
                     prominent
                   />

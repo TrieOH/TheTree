@@ -17,6 +17,10 @@ const LABELS: Record<string, string> = {
   purchases: "Compras",
   programs: "Programação",
   members: "Membros",
+  signatures: "Assinaturas",
+  certifications: "Certificados",
+  badges: "Crachás",
+  tickets: "Ingressos",
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -55,7 +59,7 @@ export function Breadcrumb(): JSX.Element {
         "font-bold uppercase tracking-[0.2em] text-[10px]",
         "h-16 border-b border-border/60 px-6",
         "bg-background/95 backdrop-blur-md",
-        "overflow-x-auto whitespace-nowrap",
+        "overflow-x-auto whitespace-nowrap min-w-0 max-w-full",
       )}
     >
       <For each={crumbs()}>
@@ -84,4 +88,3 @@ export function Breadcrumb(): JSX.Element {
     </nav>
   );
 }
-

@@ -78,13 +78,13 @@ export const programPageQueryOptions = (
 export const programsQueryOptions = (editionId: string) => ({
   queryKey: programKeys.byEdition(editionId),
   queryFn: () =>
-    listEditionPrograms(editionId).then(orvalData<ProgramI[]>),
+    listEditionPrograms(editionId, { public: true }).then(orvalData<ProgramI[]>),
 });
 
 export const occurrencesQueryOptions = (editionId: string) => ({
   queryKey: programKeys.occurrences(editionId),
   queryFn: () =>
-    listEditionOccurrences(editionId).then(
+    listEditionOccurrences(editionId, { public: true }).then(
       orvalData<OccurrenceI[]>,
     ),
 });

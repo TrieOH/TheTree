@@ -31,9 +31,9 @@ function AdminLayout(): JSX.Element {
  * breadcrumb on desktop and a topbar with the drawer trigger on mobile. The
  * content padding follows the rail width so nothing hides behind it.
  *
- * In fullscreen editor routes (certifications/editor, badges/editor, programs/calendar,
- * occurrences draw), the sidebar, topbar, and breadcrumb are hidden so the editor
- * fills the full screen.
+ * In fullscreen editor routes (certifications/editor, badges/editor, signatures/editor,
+ * programs/calendar, occurrences draw), the sidebar, topbar, and breadcrumb are hidden
+ * so the editor fills the full screen.
  */
 function AdminShell(): JSX.Element {
   const { collapsed } = useSidebar();
@@ -44,6 +44,7 @@ function AdminShell(): JSX.Element {
     return (
       p.endsWith("/certifications/editor") ||
       p.endsWith("/badges/editor") ||
+      p.endsWith("/signatures/editor") ||
       p.endsWith("/programs/calendar") ||
       (p.includes("/occurrences/") && p.endsWith("/draw"))
     );
@@ -58,24 +59,24 @@ function AdminShell(): JSX.Element {
         </div>
       }
     >
-      <div class="min-h-dvh bg-background">
+      <div class="min-h-dvh min-w-0 max-w-full bg-background overflow-x-hidden">
         <Sidebar />
 
         <div
           class={cn(
-            "flex min-h-dvh flex-col transition-[padding] duration-300 ease-in-out",
+            "flex min-h-dvh min-w-0 max-w-full flex-col transition-[padding] duration-300 ease-in-out",
             collapsed() ? "lg:pl-18" : "lg:pl-72",
           )}
         >
-          <div class="print:hidden">
+          <div class="print:hidden shrink-0 min-w-0 max-w-full">
             <MobileTopbar />
           </div>
 
-          <div class="sticky top-0 z-30 hidden bg-card/95 shadow-sm shadow-black/5 lg:block">
+          <div class="sticky top-0 z-30 hidden min-w-0 max-w-full shrink-0 bg-card/95 shadow-sm shadow-black/5 lg:block">
             <Breadcrumb />
           </div>
 
-          <main class="flex-1 px-6 py-6 pb-28">
+          <main class="flex-1 min-w-0 max-w-full px-4 sm:px-6 py-6 pb-28">
             <Outlet />
           </main>
         </div>

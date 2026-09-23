@@ -3,15 +3,26 @@ import { Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { For, Show, createMemo } from "solid-js";
 
+import { editionLocationQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
+import {
+  myParticipationsQueryOptions,
+  occurrencesQueryOptions,
+  programsQueryOptions,
+} from "@/features/programs/api";
+
 import {
   certificationTemplateQueryOptions,
   myCertificationsQueryOptions,
 } from "../api";
 import { getCertificationTemplateOrDefault } from "../default-template";
 import { DEFAULT_CERTIFICATE_CANVAS } from "../editor/constants";
-import type { CertificateVariableValues } from "../editor/variables";
+import {
+  buildCertificateVariables,
+  type CertificateVariableValues,
+  type OccurrenceTimeSpan,
+} from "../lib/certificate-variables";
 import type { CertificationI, CertificationTemplateI } from "../model";
 import { CertificateTemplateStaticView } from "./CertViewer";
 
@@ -104,14 +115,59 @@ function CertificateProfileCard(props: {
     getCertificationTemplateOrDefault(templateQuery().data as CertificationTemplateI | undefined),
   );
 
+  const editionQuery = useQuery(() =>
+    editionLocationQueryOptions(props.certification.edition_id, props.events),
+  );
+
+  const edition = () => editionQuery().data;
+  const editionName = () => edition()?.name ?? "";
+  const locationName = () => edition()?.location_name ?? "";
+
   const eventName = createMemo(() => {
-    const matched = props.events.find(
-      (ev) => ev.id === props.certification.edition_id,
-    );
+    const ed = edition();
+    if (!ed) return "Univents";
+    const matched = props.events.find((ev) => ev.id === ed.event_id);
     return matched?.full_name ?? "Univents";
   });
 
-  const scopeName = createMemo(() => "Certificado de Participação");
+  const programsQuery = useQuery(() => ({
+    ...programsQueryOptions(props.certification.edition_id),
+    enabled: Boolean(props.certification.program_id),
+  }));
+
+  const programName = createMemo(() => {
+    const progId = props.certification.program_id;
+    if (!progId) return null;
+    const list = programsQuery().data ?? [];
+    const matched = list.find((p) => p.id === progId);
+    return matched?.name ?? null;
+  });
+
+  const occurrencesQuery = useQuery(() => ({
+    ...occurrencesQueryOptions(props.certification.edition_id),
+    enabled: Boolean(props.certification.edition_id),
+  }));
+
+  const myParticipationsQuery = useQuery(() => ({
+    ...myParticipationsQueryOptions(props.certification.edition_id),
+    enabled: Boolean(props.certification.edition_id),
+  }));
+
+  const attendedOccurrences = createMemo(() => {
+    const list = (myParticipationsQuery().data ?? []) as Array<{
+      status: string;
+      occurrence: OccurrenceTimeSpan;
+      program: { id: string };
+    }>;
+    const progId = props.certification.program_id;
+    return list
+      .filter((p) => p.status === "attended" && (!progId || p.program.id === progId))
+      .map((p) => p.occurrence);
+  });
+
+  const scopeName = createMemo(
+    () => programName() ?? editionName() ?? "Certificado de Participação",
+  );
 
   const canvas = createMemo(
     () => template().design_data?.canvas ?? DEFAULT_CERTIFICATE_CANVAS,
@@ -121,18 +177,21 @@ function CertificateProfileCard(props: {
   const height = createMemo(() => (width * canvas().height) / canvas().width);
 
   const variables = createMemo<CertificateVariableValues>(() => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return {
-      participant_name: props.participantName || "Participante",
-      event_name: eventName(),
-      edition_name: "Edição",
-      activity_name: scopeName(),
-      participation_type: props.certification.program_id ? "atividade" : "edição",
-      location: "",
-      certified_at: new Date(props.certification.issued_at).toLocaleDateString("pt-BR"),
-      cert_hash: props.certification.verification_hash,
-      verify_url: `${origin}/verify/${props.certification.verification_hash}`,
-    };
+    const ed = edition();
+    return buildCertificateVariables({
+      participantName: props.participantName || "Participante",
+      eventName: eventName(),
+      editionName: editionName(),
+      editionStartsAt: ed?.starts_at,
+      editionEndsAt: ed?.ends_at,
+      programName: programName(),
+      programId: props.certification.program_id,
+      locationName: locationName(),
+      occurrences: (occurrencesQuery().data ?? []) as OccurrenceTimeSpan[],
+      attendedOccurrences: attendedOccurrences(),
+      issuedAt: props.certification.issued_at,
+      certHash: props.certification.verification_hash,
+    });
   });
 
   return (
@@ -141,8 +200,8 @@ function CertificateProfileCard(props: {
       params={{ hash: props.certification.verification_hash }}
       class="block max-w-full cursor-pointer transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg overflow-hidden shadow-xs hover:shadow-md"
       style={{
-        width: `${width}px`,
-        height: `${height()}px`,
+        width: `${width}px` as `${number}px`,
+        height: `${height()}px` as `${number}px`,
         "max-width": "100%",
       }}
       aria-label={`Abrir certificado de ${scopeName()}`}
