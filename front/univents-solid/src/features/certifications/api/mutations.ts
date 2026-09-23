@@ -254,6 +254,9 @@ export const useLinkCertificationTemplateMutation = () => {
             void queryClient.invalidateQueries({
               queryKey: certificationKeys.templateLinks(templateId),
             });
+            void queryClient.invalidateQueries({
+              queryKey: certificationKeys.allEditionProgramLinks(),
+            });
           }),
         ),
       ),
@@ -276,6 +279,9 @@ export const useUnlinkCertificationTemplateMutation = () => {
           Effect.sync(() => {
             void queryClient.invalidateQueries({
               queryKey: certificationKeys.templateLinks(templateId),
+            });
+            void queryClient.invalidateQueries({
+              queryKey: certificationKeys.allEditionProgramLinks(),
             });
           }),
         ),

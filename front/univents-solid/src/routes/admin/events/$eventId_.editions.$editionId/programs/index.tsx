@@ -1,29 +1,26 @@
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
-import { useQuery } from "@trieoh/front-core-solid";
+import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
 import type { SortState } from "@trieoh/ui-solid";
 import { Button, EmptyState, PaginatedContainer } from "@trieoh/ui-solid";
-import { For, Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup } from "solid-js";
 
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
 import CalendarPlusIcon from "~icons/lucide/calendar-plus";
 import FilterIcon from "~icons/lucide/filter";
 import AwardIcon from "~icons/lucide/award";
 import { Dialog } from "@trieoh/ui-solid";
-import { orvalData } from "@trieoh/api-client";
-import { listCertificationTemplateLinks } from "@trieoh/univents-api";
 import {
   allCertificationTemplatesQueryOptions,
+  certificationKeys,
+  editionProgramTemplateLinksQueryOptions,
 } from "@/features/certifications/api";
 import {
   useEmitProgramCertificationsMutation,
   useLinkCertificationTemplateMutation,
   useUnlinkCertificationTemplateMutation,
 } from "@/features/certifications/api/mutations";
-import type {
-  CertificationTemplateI,
-  CertificationTemplateProgramI,
-} from "@/features/certifications/model";
+import type { CertificationTemplateI } from "@/features/certifications/model";
 
 
 import {
@@ -66,6 +63,7 @@ function AdminProgramsRoute(): JSX.Element {
   const eventId = () => params().eventId;
   const editionId = () => params().editionId;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Queries
   const programsQuery = useQuery(() => programsQueryOptions(editionId()));
@@ -84,38 +82,18 @@ function AdminProgramsRoute(): JSX.Element {
     ),
   );
 
-  const [linkedTemplateByProgram, setLinkedTemplateByProgram] = createSignal<Map<string, string>>(new Map());
   const [linkingLoading, setLinkingLoading] = createSignal(false);
 
-  const fetchLinks = async () => {
-    const templates = programTemplates();
-    if (templates.length === 0) {
-      setLinkedTemplateByProgram(new Map());
-      return;
-    }
-    const map = new Map<string, string>();
-    await Promise.all(
-      templates.map(async (t) => {
-        try {
-          const links = await listCertificationTemplateLinks(t.id, { public: true }).then(
-            orvalData<CertificationTemplateProgramI[]>,
-          );
-          for (const l of links ?? []) {
-            map.set(l.program_id, t.id);
-          }
-        } catch {
-          // ignore
-        }
-      }),
-    );
-    setLinkedTemplateByProgram(map);
-  };
+  const linksQuery = useQuery(() =>
+    editionProgramTemplateLinksQueryOptions(
+      editionId(),
+      programTemplates(),
+      queryClient,
+    ),
+  );
 
-  createEffect(
-    () => programTemplates(),
-    () => {
-      void fetchLinks();
-    },
+  const linkedTemplateByProgram = createMemo(
+    () => linksQuery().data ?? new Map<string, string>(),
   );
 
   const linkMutation = useLinkCertificationTemplateMutation();
@@ -173,7 +151,7 @@ function AdminProgramsRoute(): JSX.Element {
       toast.success("Certificado vinculado com sucesso!");
       setCertificateProgram(null);
       setCertificateTemplateId("");
-      await fetchLinks();
+      await queryClient.invalidateQueries({ queryKey: certificationKeys.editionProgramLinks(editionId()) });
     } catch {
       toast.error("Erro ao vincular certificado ao programa.");
     } finally {
@@ -195,7 +173,7 @@ function AdminProgramsRoute(): JSX.Element {
       await unlinkMutation.mutateAsync({ templateId, programId: prog.id });
       toast.success("Certificado desvinculado!");
       setProgramToUnlink(null);
-      await fetchLinks();
+      await queryClient.invalidateQueries({ queryKey: certificationKeys.editionProgramLinks(editionId()) });
     } catch {
       toast.error("Erro ao desvincular certificado.");
     }

@@ -9,6 +9,14 @@ export const certificationKeys = {
     [...certificationKeys.templates(), "detail", templateId] as const,
   templateLinks: (templateId: string) =>
     [...certificationKeys.templates(), "links", templateId] as const,
+  allEditionProgramLinks: () =>
+    [...certificationKeys.templates(), "edition-program-links"] as const,
+  editionProgramLinks: (editionId: string, templateIdsKey?: string) =>
+    [
+      ...certificationKeys.allEditionProgramLinks(),
+      editionId,
+      ...(templateIdsKey ? [templateIdsKey] : []),
+    ] as const,
 
   issued: () => [...certificationKeys.all, "issued"] as const,
   issuedById: (certificationId: string) =>
