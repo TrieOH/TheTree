@@ -1,9 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { EmptyState } from "@trieoh/ui-solid";
 import { For, Show, createMemo } from "solid-js";
-import FileCheck2Icon from "~icons/lucide/file-check-2";
 
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
@@ -16,8 +14,6 @@ import { DEFAULT_CERTIFICATE_CANVAS } from "../editor/constants";
 import type { CertificateVariableValues } from "../editor/variables";
 import type { CertificationI, CertificationTemplateI } from "../model";
 import { CertificateTemplateStaticView } from "./CertViewer";
-
-const FileCheck2 = FileCheck2Icon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface UserCertificationsSectionProps {
   participantName: string;
@@ -70,11 +66,12 @@ export function UserCertificationsSection(
       <Show
         when={certifications().length > 0}
         fallback={
-          <EmptyState
-            icon={<FileCheck2 class="size-6 text-foreground/70" />}
-            title="Nenhum certificado emitido"
-            description="Seus certificados aparecerão aqui quando forem liberados."
-          />
+          <div class="rounded-md border border-dashed border-border p-10 text-center">
+            <h2 class="font-semibold">Você ainda não possui certificados</h2>
+            <p class="mt-2 text-sm text-muted-foreground">
+              Seus certificados aparecerão aqui quando forem emitidos.
+            </p>
+          </div>
         }
       >
         <div class="flex flex-wrap items-start justify-center gap-3 sm:justify-start">

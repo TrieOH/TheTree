@@ -54,7 +54,17 @@ function ProfileBadgeItem(props: {
 
 export function ProfileBadges(props: ProfileBadgesProps): JSX.Element {
   return (
-    <Show when={props.badges.length > 0}>
+    <Show
+      when={props.badges.length > 0}
+      fallback={
+        <div class="rounded-md border border-dashed border-border p-10 text-center">
+          <h2 class="font-semibold">Você ainda não possui crachás</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Seus crachás aparecerão aqui quando forem emitidos.
+          </p>
+        </div>
+      }
+    >
       <div class="flex flex-wrap items-start justify-center gap-2 sm:justify-start">
         <For each={props.badges}>
           {(badge) => (

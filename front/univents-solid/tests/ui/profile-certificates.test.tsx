@@ -85,10 +85,10 @@ describe("UserCertificationsSection", () => {
       />
     ));
 
-    expect(screen.getByText("Nenhum certificado emitido")).toBeDefined();
+    expect(screen.getByText("Você ainda não possui certificados")).toBeDefined();
     expect(
       screen.getByText(
-        "Seus certificados aparecerão aqui quando forem liberados.",
+        "Seus certificados aparecerão aqui quando forem emitidos.",
       ),
     ).toBeDefined();
   });

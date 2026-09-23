@@ -161,8 +161,8 @@ describe("allProfileBadges helper", () => {
 });
 
 describe("ProfileBadges component", () => {
-  it("renders nothing when badge list is empty", () => {
-    const { container } = render(() => (
+  it("renders an empty state when badge list is empty", () => {
+    render(() => (
       <ProfileBadges
         badges={[]}
         profileIdentifier="user-1"
@@ -170,7 +170,10 @@ describe("ProfileBadges component", () => {
       />
     ));
 
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByText("Você ainda não possui crachás")).toBeDefined();
+    expect(
+      screen.getByText("Seus crachás aparecerão aqui quando forem emitidos."),
+    ).toBeDefined();
   });
 
   it("renders badge cards with preview and accessible link", () => {
