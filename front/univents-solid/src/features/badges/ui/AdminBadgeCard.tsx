@@ -34,7 +34,6 @@ export interface AdminBadgeCardProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   onPrint?: () => void;
-  onView?: () => void;
 }
 
 export function AdminBadgeCard(props: AdminBadgeCardProps): JSX.Element {
@@ -60,97 +59,100 @@ export function AdminBadgeCard(props: AdminBadgeCardProps): JSX.Element {
       >
         <article
           class={cn(
-            "group relative flex h-full flex-col justify-between overflow-hidden rounded-lg border border-border/60 bg-card p-3.5 text-left transition-colors duration-150 hover:border-border",
+            "group relative flex h-full w-full min-w-0 flex-col rounded-lg border border-border/60 bg-card text-left transition-colors duration-150 hover:border-border shadow-xs overflow-hidden",
           )}
         >
-          <div class="space-y-3">
-            {/* Top row: badge preview & actions */}
-            <div class="relative flex items-center justify-center rounded-md bg-muted/40 p-4 border border-border/40">
-              <span class="absolute left-2.5 top-2.5 inline-flex items-center rounded border border-border/70 bg-background/85 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-xs">
-                {props.kind === "template" ? "Template" : "Crachá"}
-              </span>
-              <BadgePreview
-                badge={props.item}
-                ticketName={props.ticketName}
-                participantName={props.participantName}
-                location={props.location}
-                framed={false}
-                class="w-36 shadow-sm"
-              />
+          {/* Top row: badge preview & actions */}
+          <div class="relative flex h-38 sm:h-42 w-full items-center justify-center overflow-hidden rounded-t-lg bg-muted/20 p-2.5 sm:p-3 border-b border-border/40">
+            <span class="absolute left-2 top-2 z-10 inline-flex items-center rounded border border-border/60 bg-background/90 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground shadow-xs backdrop-blur-xs">
+              {props.kind === "template" ? "Template" : "Crachá"}
+            </span>
 
-              {/* Actions Dropdown for templates */}
-              <Show when={props.kind === "template"}>
-                <div class="absolute top-2 right-2">
-                  <div class="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowMenu(!showMenu())}
-                      class="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground cursor-pointer"
-                      aria-label="Opções do modelo"
+            <BadgePreview
+              badge={props.item}
+              ticketName={props.ticketName}
+              participantName={props.participantName}
+              location={props.location}
+              contain
+              framed={false}
+              showVariables={true}
+              class="max-h-full max-w-full shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
+            />
+
+            {/* Actions Dropdown for templates */}
+            <Show when={props.kind === "template"}>
+              <div class="absolute top-2 right-2 z-10">
+                <div class="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowMenu(!showMenu())}
+                    class="flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground shadow-xs backdrop-blur-xs transition-colors hover:border-border hover:bg-background hover:text-foreground cursor-pointer"
+                    aria-label="Opções do modelo"
+                  >
+                    <MoreVertical class="size-4" />
+                  </button>
+
+                  <Show when={showMenu()}>
+                    <div
+                      class="absolute right-0 top-8 z-30 min-w-36 rounded-md border border-border bg-popover p-1 shadow-md"
+                      onFocusOut={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                          setShowMenu(false);
+                        }
+                      }}
                     >
-                      <MoreVertical class="size-4" />
-                    </button>
-
-                    <Show when={showMenu()}>
-                      <div
-                        class="absolute right-0 top-8 z-30 min-w-36 rounded-md border border-border bg-popover p-1 shadow-md"
-                        onFocusOut={(e) => {
-                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      <Show when={props.onEdit}>
+                        <button
+                          type="button"
+                          onClick={() => {
                             setShowMenu(false);
-                          }
-                        }}
-                      >
-                        <Show when={props.onEdit}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowMenu(false);
-                              props.onEdit?.();
-                            }}
-                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
-                          >
-                            <Pencil class="size-3.5 text-muted-foreground" />
-                            <span>Editar</span>
-                          </button>
-                        </Show>
-                        <Show when={props.onDuplicate}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowMenu(false);
-                              props.onDuplicate?.();
-                            }}
-                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
-                          >
-                            <Copy class="size-3.5 text-muted-foreground" />
-                            <span>Duplicar</span>
-                          </button>
-                        </Show>
-                        <Show when={props.onDelete}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowMenu(false);
-                              setShowDeleteConfirm(true);
-                            }}
-                            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
-                          >
-                            <Trash2 class="size-3.5" />
-                            <span>Excluir</span>
-                          </button>
-                        </Show>
-                      </div>
-                    </Show>
-                  </div>
+                            props.onEdit?.();
+                          }}
+                          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
+                        >
+                          <Pencil class="size-3.5 text-muted-foreground" />
+                          <span>Editar</span>
+                        </button>
+                      </Show>
+                      <Show when={props.onDuplicate}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMenu(false);
+                            props.onDuplicate?.();
+                          }}
+                          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
+                        >
+                          <Copy class="size-3.5 text-muted-foreground" />
+                          <span>Duplicar</span>
+                        </button>
+                      </Show>
+                      <Show when={props.onDelete}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMenu(false);
+                            setShowDeleteConfirm(true);
+                          }}
+                          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
+                        >
+                          <Trash2 class="size-3.5" />
+                          <span>Excluir</span>
+                        </button>
+                      </Show>
+                    </div>
+                  </Show>
                 </div>
-              </Show>
-            </div>
+              </div>
+            </Show>
+          </div>
 
-            {/* Info */}
-            <div class="space-y-1">
+          {/* Info Content */}
+          <div class="flex flex-1 flex-col justify-between p-3">
+            <div class="space-y-0.5">
               <div class="flex items-center justify-between gap-2">
                 <h4
-                  class="truncate text-xs font-medium text-foreground"
+                  class="truncate text-xs font-semibold text-foreground leading-tight"
                   title={title()}
                 >
                   {title()}
@@ -168,11 +170,9 @@ export function AdminBadgeCard(props: AdminBadgeCardProps): JSX.Element {
                 {subtitle()}
               </p>
             </div>
-          </div>
 
-          {/* Footer */}
-          <div class="mt-4 pt-2.5 border-t border-border/40">
-            <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+            {/* Footer */}
+            <div class="mt-2.5 flex items-center justify-between border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
               <Show
                 when={props.kind === "template"}
                 fallback={

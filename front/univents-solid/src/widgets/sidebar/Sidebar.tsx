@@ -25,7 +25,7 @@ function isActivePath(pathname: string, href: string, exact?: boolean): boolean 
     .map((segment) => {
       if (!segment) return "";
       if (segment.startsWith("$")) return "[^/]+";
-      return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return segment.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&");
     })
     .join("/")}${exact ? "$" : "(?:/.*)?$"}`;
 
@@ -115,7 +115,14 @@ export function Sidebar(): JSX.Element {
                         <Link
                           to={item.to}
                           params={item.params}
-                          onClick={() => setMobileOpen(false)}
+                          onClick={(e: MouseEvent) => {
+                            if (isActivePath(location().pathname, item.to, true)) {
+                              e.preventDefault();
+                              setMobileOpen(false);
+                              return;
+                            }
+                            setMobileOpen(false);
+                          }}
                           aria-current={active() ? "page" : undefined}
                           class={cn(
                             "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",

@@ -3,6 +3,11 @@ export {
   AdminCreateBadgeCard,
   type AdminCreateBadgeCardProps,
 } from "./AdminCreateBadgeCard";
+export {
+  BadgeSectionTabs,
+  type BadgeSection,
+  type BadgeSectionTabsProps,
+} from "./BadgeSectionTabs";
 export { BadgePreview, type BadgePreviewProps } from "./BadgePreview";
 export {
   ManageBadgeTemplateDialog,

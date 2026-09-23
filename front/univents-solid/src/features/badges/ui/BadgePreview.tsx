@@ -29,21 +29,31 @@ export interface BadgePreviewProps {
 }
 
 const FALLBACK_LABELS: Record<string, string> = {
-  event_name: "Nome do evento",
-  edition_name: "Nome da edição",
-  ticket_name: "Nome do ingresso",
-  ticket_type: "Nome do ingresso",
-  ticket: "Nome do ingresso",
-  participant_name: "Nome do participante",
-  name: "Nome do participante",
-  location: "Local da edição",
-  checkin_url: "Link de check-in",
+  event_name: "Nome do Evento",
+  edition_name: "Nome da Edição",
+  ticket_name: "Nome do Ingresso",
+  ticket_type: "Nome do Ingresso",
+  ticket: "Nome do Ingresso",
+  participant_name: "Nome do Participante",
+  name: "Nome do Participante",
+  activity_name: "Nome da Atividade",
+  program_name: "Nome da Programação",
+  participation_type: "Participação",
+  location: "Local da Edição",
+  location_name: "Local da Edição",
+  workload_hours: "10 horas",
+  participation_date: "19/09/2026",
+  certified_at: "19/09/2026",
+  issue_date: "19/09/2026",
+  cert_hash: "UNIV-2026-CERT-SAMPLE",
+  verify_url: "https://univents.app/verify/sample",
+  checkin_url: "https://univents.app/check-in",
 };
 
 function previewText(
   element: Extract<BadgeElement, { type: "text" }>,
   v: Record<string, string>,
-  show?: boolean,
+  show: boolean = true,
 ) {
   return {
     ...element,
@@ -54,8 +64,24 @@ function previewText(
         text: run.text.replace(/\{\{([^}]+)\}\}/g, (_, rawKey: string) => {
           const key = rawKey.trim();
           if (v[key] !== undefined && v[key] !== "") return v[key];
+          if (key === "ticket_name" || key === "ticket_type" || key === "ticket") {
+            const ticketVal = v.ticket_name ?? v.ticket_type ?? v.ticket;
+            if (ticketVal) return ticketVal;
+          }
+          if (key === "participant_name" || key === "name") {
+            const nameVal = v.participant_name ?? v.name;
+            if (nameVal) return nameVal;
+          }
+          if (key === "activity_name" || key === "program_name") {
+            const actVal = v.activity_name ?? v.program_name;
+            if (actVal) return actVal;
+          }
+          if (key === "location" || key === "location_name") {
+            const locVal = v.location ?? v.location_name;
+            if (locVal) return locVal;
+          }
           if (!show) return "";
-          return FALLBACK_LABELS[key] ?? key;
+          return FALLBACK_LABELS[key] ?? `{{${key}}}`;
         }),
       })),
     })),
@@ -180,7 +206,7 @@ export function BadgePreview(props: BadgePreviewProps): JSX.Element {
             <BadgeElementPreview
               element={element}
               values={values}
-              showVariables={() => props.showVariables}
+              showVariables={() => props.showVariables ?? true}
               actionUrl={actionUrl}
             />
           )}
@@ -196,85 +222,58 @@ function BadgeElementPreview(props: {
   showVariables: Accessor<boolean | undefined>;
   actionUrl: Accessor<string>;
 }): JSX.Element {
-  const transformedElement = createMemo(() => {
-    if (props.element.type === "text") {
-      return previewText(
-        props.element as Extract<BadgeElement, { type: "text" }>,
-        props.values(),
-        props.showVariables(),
-      );
-    }
-    return props.element;
-  });
-
-  const style = createMemo(() => ({
-    position: "absolute" as const,
-    left: `${props.element.x}px`,
-    top: `${props.element.y}px`,
-    width: `${props.element.width}px`,
-    height: `${props.element.height}px`,
-  }));
+  const el = () => props.element;
 
   return (
-    <Show
-      when={props.element.type === "text"}
-      fallback={
-        <Show
-          when={props.element.type === "image"}
-          fallback={
-            <div style={style()}>
-              <QrRenderer
-                value={props.actionUrl()}
-                foreground={
-                  props.element.type === "qr"
-                    ? (props.element as Extract<BadgeElement, { type: "qr" }>).foreground
-                    : "#000000"
-                }
-                background={
-                  props.element.type === "qr"
-                    ? (props.element as Extract<BadgeElement, { type: "qr" }>).background
-                    : "#ffffff"
-                }
-                style={
-                  props.element.type === "qr"
-                    ? (props.element as Extract<BadgeElement, { type: "qr" }>).style
-                    : "square"
-                }
-              />
-            </div>
-          }
-        >
-          {(() => {
-            const img = props.element as Extract<BadgeElement, { type: "image" }>;
-            return (
-              <img
-                src={img.src}
-                alt=""
-                class="absolute transition-transform duration-700 ease-out pointer-events-none"
-                loading="lazy"
-                decoding="async"
-                style={{
-                  ...style(),
-                  "object-fit": img.fit,
-                  opacity: img.opacity,
-                  "border-radius": `${img.radius}px`,
-                }}
-              />
-            );
-          })()}
-        </Show>
-      }
+    <div
+      class="absolute overflow-hidden"
+      style={{
+        left: `${el().x}px`,
+        top: `${el().y}px`,
+        width: `${el().width}px`,
+        height: `${el().height}px`,
+      }}
     >
-      <div class="absolute overflow-hidden" style={style()}>
+      <Show when={el().type === "text"}>
         <StaticText
           paragraphs={
-            (transformedElement() as Extract<BadgeElement, { type: "text" }>)
-              .paragraphs
+            previewText(
+              el() as Extract<BadgeElement, { type: "text" }>,
+              props.values(),
+              props.showVariables() ?? true,
+            ).paragraphs
           }
           values={props.values()}
-          showVariables={props.showVariables()}
+          showVariables={props.showVariables() ?? true}
         />
-      </div>
-    </Show>
+      </Show>
+
+      <Show when={el().type === "image"}>
+        <img
+          src={(el() as Extract<BadgeElement, { type: "image" }>).src}
+          alt="Elemento"
+          class="h-full w-full object-contain pointer-events-none"
+        />
+      </Show>
+
+      <Show when={el().type === "qr"}>
+        <div class="flex h-full w-full items-center justify-center pointer-events-none">
+          <QrRenderer
+            value={props.actionUrl()}
+            foreground={
+              (el() as Extract<BadgeElement, { type: "qr" }>).foreground ??
+              "#000000"
+            }
+            background={
+              (el() as Extract<BadgeElement, { type: "qr" }>).background ??
+              "#ffffff"
+            }
+            style={
+              (el() as Extract<BadgeElement, { type: "qr" }>).style ?? "square"
+            }
+          />
+        </div>
+      </Show>
+    </div>
   );
 }

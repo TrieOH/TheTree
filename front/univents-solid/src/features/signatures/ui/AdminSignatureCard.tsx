@@ -1,7 +1,5 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createSignal } from "solid-js";
-import CopyIcon from "~icons/lucide/copy";
-import CheckIcon from "~icons/lucide/check";
 import Trash2Icon from "~icons/lucide/trash-2";
 import MailIcon from "~icons/lucide/mail";
 
@@ -9,8 +7,6 @@ import { cn } from "@trieoh/ui-solid";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import type { SignatureI } from "../model";
 
-const Copy = CopyIcon as unknown as (props: { class?: string }) => JSX.Element;
-const Check = CheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash2 = Trash2Icon as unknown as (props: { class?: string }) => JSX.Element;
 const Mail = MailIcon as unknown as (props: { class?: string }) => JSX.Element;
 
@@ -22,7 +18,6 @@ export interface AdminSignatureCardProps {
 
 export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element {
   const [deleteOpen, setDeleteOpen] = createSignal(false);
-  const [copied, setCopied] = createSignal(false);
 
   const formattedDate = () => {
     if (!props.signature.created_at) return "";
@@ -37,25 +32,15 @@ export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element 
     }
   };
 
-  const handleCopyUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(props.signature.image_url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // ignore
-    }
-  };
-
   return (
     <>
       <article
         class={cn(
-          "group relative flex h-full w-full min-w-0 flex-col rounded-lg border border-border/60 bg-card text-left transition-colors duration-150 hover:border-border shadow-xs",
+          "group relative flex h-full w-full min-w-0 flex-col rounded-lg border border-border/60 bg-card text-left transition-colors duration-150 hover:border-border shadow-xs overflow-hidden",
         )}
       >
         {/* Preview Container */}
-        <div class="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-t-lg bg-white p-4">
+        <div class="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-t-lg bg-white p-4 border-b border-border/40">
           {/* Subtle checkered backdrop pattern for transparency awareness */}
           <div
             class="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -75,36 +60,24 @@ export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element 
           />
 
           {/* Top-left Pill */}
-          <span class="absolute left-2.5 top-2.5 inline-flex items-center rounded border border-border/50 bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-xs">
+          <span class="absolute left-2.5 top-2.5 z-10 inline-flex items-center rounded border border-border/60 bg-background/90 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-xs backdrop-blur-xs">
             Assinatura
           </span>
 
           {/* Top-right Actions */}
-          <div class="absolute right-2.5 top-2.5 z-10 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-            <button
-              type="button"
-              aria-label="Copiar link da assinatura"
-              onClick={handleCopyUrl}
-              class="inline-flex size-7 items-center justify-center rounded border border-border/50 bg-background/80 text-muted-foreground transition-colors hover:border-border hover:text-foreground backdrop-blur-xs cursor-pointer"
-              title="Copiar URL da imagem"
-            >
-              <Show when={copied()} fallback={<Copy class="size-3.5" />}>
-                <Check class="size-3.5 text-emerald-600 dark:text-emerald-400" />
-              </Show>
-            </button>
-
-            <Show when={props.onDelete}>
+          <Show when={props.onDelete}>
+            <div class="absolute right-2.5 top-2.5 z-10">
               <button
                 type="button"
                 aria-label={`Excluir assinatura de ${props.signature.signatory_name}`}
                 onClick={() => setDeleteOpen(true)}
-                class="inline-flex size-7 items-center justify-center rounded border border-destructive/30 bg-background/80 text-destructive/80 transition-colors hover:border-destructive hover:bg-destructive/10 hover:text-destructive backdrop-blur-xs cursor-pointer"
+                class="flex size-7 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground shadow-xs backdrop-blur-xs transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
                 title="Excluir assinatura"
               >
                 <Trash2 class="size-3.5" />
               </button>
-            </Show>
-          </div>
+            </div>
+          </Show>
         </div>
 
         {/* Info Content */}

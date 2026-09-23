@@ -13,7 +13,6 @@ import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 
 import BadgeCheckIcon from "~icons/lucide/badge-check";
 import CalendarClockIcon from "~icons/lucide/calendar-clock";
-import FileTextIcon from "~icons/lucide/file-text";
 import PlusIcon from "~icons/lucide/plus";
 import PrinterIcon from "~icons/lucide/printer";
 import QrCodeIcon from "~icons/lucide/qr-code";
@@ -33,6 +32,8 @@ import { selectBadgePrintItems } from "@/features/badges/model/print-selection";
 import {
   AdminBadgeCard,
   AdminCreateBadgeCard,
+  BadgeSectionTabs,
+  type BadgeSection,
   DateFilterDialog,
   PrintableBadge,
   PrintableQr,
@@ -48,7 +49,6 @@ import { toast } from "@/shared/ui/toast";
 
 const BadgeCheck = BadgeCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarClock = CalendarClockIcon as unknown as (props: { class?: string }) => JSX.Element;
-const FileText = FileTextIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Printer = PrinterIcon as unknown as (props: { class?: string }) => JSX.Element;
 const QrCode = QrCodeIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -164,7 +164,7 @@ function AdminEditionBadgesRoute(): JSX.Element {
   const deleteMutation = useDeleteBadgeTemplateMutation();
 
   // State
-  const [activeSection, setActiveSection] = createSignal<"templates" | "emissions">("templates");
+  const [activeSection, setActiveSection] = createSignal<BadgeSection>("templates");
   const [templateFilter, setTemplateFilter] = createSignal("");
   const [emissionFilter, setEmissionFilter] = createSignal("");
   const [templateSort, setTemplateSort] = createSignal<SortState<BadgeTemplate>>({
@@ -372,40 +372,11 @@ function AdminEditionBadgesRoute(): JSX.Element {
         </div>
 
         {/* Navigation Tabs */}
-        <nav class="flex gap-1 border-b border-border overflow-x-auto scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setActiveSection("templates")}
-            class={cn(
-              "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer",
-              activeSection() === "templates"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <FileText class="size-4" />
-            <span>Templates</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection("emissions")}
-            class={cn(
-              "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer",
-              activeSection() === "emissions"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <BadgeCheck class="size-4" />
-            <span>Crachás emitidos</span>
-            <Show when={emissions().length > 0}>
-              <span class="ml-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                {emissions().length}
-              </span>
-            </Show>
-          </button>
-        </nav>
+        <BadgeSectionTabs
+          active={activeSection()}
+          onChange={setActiveSection}
+          emissionsCount={emissions().length > 0 ? emissions().length : undefined}
+        />
 
         {/* Content: Templates */}
         <Show when={activeSection() === "templates"}>

@@ -8,16 +8,26 @@ export interface StaticTextProps {
   showVariables?: boolean;
 }
 
-const FALLBACK_LABELS: Record<string, string> = {
-  event_name: "Nome do evento",
-  edition_name: "Nome da edição",
-  ticket_name: "Nome do ingresso",
-  ticket_type: "Nome do ingresso",
-  ticket: "Nome do ingresso",
-  participant_name: "Nome do participante",
-  name: "Nome do participante",
-  location: "Local da edição",
-  checkin_url: "Link de check-in",
+export const FALLBACK_LABELS: Record<string, string> = {
+  event_name: "Nome do Evento",
+  edition_name: "Nome da Edição",
+  ticket_name: "Nome do Ingresso",
+  ticket_type: "Nome do Ingresso",
+  ticket: "Nome do Ingresso",
+  participant_name: "Nome do Participante",
+  name: "Nome do Participante",
+  activity_name: "Nome da Atividade",
+  program_name: "Nome da Programação",
+  participation_type: "Participação",
+  location: "Local do Evento",
+  location_name: "Local do Evento",
+  workload_hours: "10 horas",
+  participation_date: "19/09/2026",
+  certified_at: "19/09/2026",
+  issue_date: "19/09/2026",
+  cert_hash: "UNIV-2026-CERT-SAMPLE",
+  verify_url: "https://univents.app/verify/sample",
+  checkin_url: "https://univents.app/check-in",
 };
 
 function resolveValue(key: string, values?: Record<string, string>): string | undefined {
@@ -28,6 +38,12 @@ function resolveValue(key: string, values?: Record<string, string>): string | un
   }
   if (key === "participant_name" || key === "name") {
     return values.participant_name ?? values.name;
+  }
+  if (key === "activity_name" || key === "program_name") {
+    return values.activity_name ?? values.program_name;
+  }
+  if (key === "location" || key === "location_name") {
+    return values.location ?? values.location_name;
   }
   return undefined;
 }
@@ -45,7 +61,7 @@ function replaceVariables(
       return val;
     }
     if (showVariables) {
-      return FALLBACK_LABELS[key] ?? key;
+      return FALLBACK_LABELS[key] ?? `{{${key}}}`;
     }
     return val !== undefined ? val : match;
   });
@@ -59,77 +75,61 @@ function findNearestRun(
   const before = paragraphs
     .slice(0, index)
     .reverse()
-    .find((p) => p.runs.length > 0);
-  if (before && before.runs.length > 0) {
-    return before.runs[before.runs.length - 1];
-  }
-  const after = paragraphs
-    .slice(index + 1)
-    .find((p) => p.runs.length > 0);
-  if (after && after.runs.length > 0) {
-    return after.runs[0];
-  }
-  return undefined;
+    .flatMap((p) => [...p.runs].reverse());
+  const after = paragraphs.slice(index + 1).flatMap((p) => p.runs);
+  return [...before, ...after][0];
 }
 
 export function StaticText(props: StaticTextProps): JSX.Element {
+  const showVariables = () => props.showVariables ?? true;
+
   return (
-    <div
-      class="h-full w-full overflow-hidden select-none whitespace-pre-wrap wrap-break-word"
-      style={{
-        "line-height": 1.25,
-        "overflow-wrap": "anywhere",
-        "word-break": "break-word",
-      }}
-    >
+    <div class="h-full w-full select-none overflow-hidden">
       <For each={props.paragraphs}>
         {(paragraph) => {
-          const isEmpty = () =>
-            paragraph.runs.length === 0 ||
-            paragraph.runs.every((r) => !r.text || r.text === "");
-
-          const nearestRun = () =>
+          const fallbackRun = () =>
             paragraph.runs[0] ?? findNearestRun(props.paragraphs, paragraph);
 
           return (
-            <div
+            <p
               style={{
-                "text-align": paragraph.align,
-                "line-height": paragraph.lineHeight ?? 1.25,
-                "font-size": `${nearestRun()?.fontSize ?? 16}px`,
-                "font-family": nearestRun()?.fontFamily,
-                margin: 0,
-                padding: 0,
+                "text-align": paragraph.align ?? "left",
+                "line-height": paragraph.lineHeight ? `${paragraph.lineHeight}` : "1.25",
+                "font-size": `${fallbackRun()?.fontSize ?? 14}px`,
+                "font-family": fallbackRun()?.fontFamily ?? "sans-serif",
+                "font-weight": fallbackRun()?.bold ? "bold" : "normal",
+                "font-style": fallbackRun()?.italic ? "italic" : "normal",
+                "text-decoration": fallbackRun()?.underline ? "underline" : "none",
+                color: fallbackRun()?.color ?? "#000000",
               }}
             >
               <Show
-                when={!isEmpty()}
-                fallback={<br />}
+                when={paragraph.runs.length > 0}
+                fallback={<span>&nbsp;</span>}
               >
                 <For each={paragraph.runs}>
-                  {(run) => (
-                    <span
-                      style={{
-                        "font-size": `${run.fontSize}px`,
-                        "font-family": run.fontFamily,
-                        color: run.color,
-                        "font-weight": run.bold ? 700 : 400,
-                        "font-style": run.italic ? "italic" : "normal",
-                        "text-decoration": run.underline
-                          ? "underline"
-                          : "none",
-                      }}
-                    >
-                      {replaceVariables(
-                        run.text,
-                        props.values,
-                        props.showVariables,
-                      )}
-                    </span>
-                  )}
+                  {(run) => {
+                    const text = () =>
+                      replaceVariables(run.text, props.values, showVariables());
+
+                    return (
+                      <span
+                        style={{
+                          "font-size": `${run.fontSize}px`,
+                          "font-family": run.fontFamily,
+                          "font-weight": run.bold ? "bold" : "normal",
+                          "font-style": run.italic ? "italic" : "normal",
+                          "text-decoration": run.underline ? "underline" : "none",
+                          color: run.color,
+                        }}
+                      >
+                        {text()}
+                      </span>
+                    );
+                  }}
                 </For>
               </Show>
-            </div>
+            </p>
           );
         }}
       </For>

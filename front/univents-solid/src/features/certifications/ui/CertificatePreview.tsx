@@ -7,16 +7,14 @@ import type {
   CertificationTemplateI,
 } from "../model";
 
-export type CertificateVariableValues = Record<string, string | number | undefined>;
-
 export interface CertificatePreviewProps {
   template: CertificationTemplateI;
-  variables?: CertificateVariableValues;
-  contain?: boolean;
   class?: string;
   className?: string;
-  showVariables?: boolean;
+  contain?: boolean;
   framed?: boolean;
+  showVariables?: boolean;
+  variables?: Record<string, string | number>;
   style?: JSX.CSSProperties;
 }
 
@@ -79,7 +77,7 @@ export function CertificatePreview(props: CertificatePreviewProps): JSX.Element 
     };
     if (props.variables) {
       for (const [k, v] of Object.entries(props.variables)) {
-        if (v !== undefined) {
+        if (v !== undefined && v !== "") {
           base[k] = String(v);
         }
       }
@@ -143,11 +141,11 @@ export function CertificatePreview(props: CertificatePreviewProps): JSX.Element 
                 <img
                   src={element.type === "image" ? element.src : ""}
                   alt="Elemento"
-                  class="h-full w-full object-contain"
+                  class="h-full w-full object-contain pointer-events-none"
                 />
               </Show>
               <Show when={element.type === "signature"}>
-                <div class="flex h-full w-full flex-col items-center justify-end">
+                <div class="flex h-full w-full flex-col items-center justify-end pointer-events-none">
                   <Show when={element.type === "signature" && (element.src || (element as { imageUrl?: string }).imageUrl)}>
                     <img
                       src={element.type === "signature" ? ((element as { imageUrl?: string }).imageUrl ?? element.src) : ""}
