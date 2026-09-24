@@ -3,6 +3,7 @@ import {
   createContext,
   createEffect,
   createSignal,
+  onSettled,
   useContext,
   type Accessor,
   type ParentProps,
@@ -23,62 +24,138 @@ function readStoredTheme(): ThemeMode {
     return "system";
   }
 
-  const storedTheme = window.localStorage.getItem("theme");
-
-  if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
-    return storedTheme;
+  try {
+    const storedTheme = window.localStorage.getItem("theme");
+    if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
+      return storedTheme;
+    }
+  } catch {
+    // Ignore storage read errors (e.g. security sandbox)
   }
 
   return "system";
 }
 
+function getSystemPrefersDark(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function applyDOMTheme(isDark: boolean) {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.classList.toggle("light", !isDark);
+  document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+}
+
 export function ThemeProvider(props: ParentProps) {
-  const [theme, setTheme] = createSignal<ThemeMode>(readStoredTheme());
+  const [theme, setThemeSignal] = createSignal<ThemeMode>(readStoredTheme());
+  const [systemDark, setSystemDark] = createSignal<boolean>(getSystemPrefersDark());
 
+  const isDark = () => {
+    const current = theme();
+    if (current === "dark") return true;
+    if (current === "light") return false;
+    return systemDark();
+  };
+
+  // Keep DOM in sync with current theme
   createEffect(
-    () => theme(),
-    (currentTheme) => {
-      if (typeof window === "undefined") return;
-
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-      const updateDOM = () => {
-        const prefersDark = mediaQuery.matches;
-        const shouldUseDark =
-          currentTheme === "dark" ||
-          (currentTheme === "system" && prefersDark);
-
-        document.documentElement.classList.toggle("dark", shouldUseDark);
-        document.documentElement.classList.toggle("light", !shouldUseDark);
-      };
-
-      // Apply theme & store preference
-      updateDOM();
-      window.localStorage.setItem("theme", currentTheme);
-
-      // System theme listener
-      const handleSystemThemeChange = () => {
-        if (theme() === "system") updateDOM();
-      };
-
-      mediaQuery.addEventListener("change", handleSystemThemeChange);
-
-      return () => {
-        mediaQuery.removeEventListener("change", handleSystemThemeChange);
-      };
-    }
+    () => isDark(),
+    (shouldUseDark) => {
+      applyDOMTheme(shouldUseDark);
+    },
   );
+
+  let broadcastChannel: BroadcastChannel | undefined;
+
+  const setTheme = (nextTheme: ThemeMode) => {
+    if (nextTheme !== theme()) {
+      setThemeSignal(nextTheme);
+    }
+
+    if (typeof window !== "undefined" && "localStorage" in window) {
+      try {
+        if (window.localStorage.getItem("theme") !== nextTheme) {
+          window.localStorage.setItem("theme", nextTheme);
+        }
+      } catch {
+        // Storage access may be restricted
+      }
+    }
+
+    try {
+      broadcastChannel?.postMessage({ theme: nextTheme });
+    } catch {
+      // Ignore broadcast errors
+    }
+  };
+
+  onSettled(() => {
+    if (typeof window === "undefined") return;
+
+    // Apply immediately upon hydration/mount
+    applyDOMTheme(isDark());
+
+    // 1. Cross-tab synchronization via BroadcastChannel (instantaneous)
+    try {
+      if ("BroadcastChannel" in window) {
+        broadcastChannel = new BroadcastChannel("univents-theme-sync");
+        broadcastChannel.onmessage = (event) => {
+          const incoming = event.data?.theme;
+          if (incoming === "light" || incoming === "dark" || incoming === "system") {
+            if (incoming !== theme()) {
+              setThemeSignal(incoming);
+            }
+          }
+        };
+      }
+    } catch {
+      // BroadcastChannel not available or blocked
+    }
+
+    // 2. Cross-tab synchronization via standard StorageEvent (universal fallback)
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === "theme" && event.newValue) {
+        const incoming = event.newValue;
+        if (incoming === "light" || incoming === "dark" || incoming === "system") {
+          if (incoming !== theme()) {
+            setThemeSignal(incoming);
+          }
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    // 3. Operating System (prefers-color-scheme) change listener
+    let mediaQuery: MediaQueryList | undefined;
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      setSystemDark(e.matches);
+    };
+
+    if (typeof window.matchMedia === "function") {
+      mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      setSystemDark(mediaQuery.matches);
+      mediaQuery.addEventListener("change", handleMediaChange);
+    }
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      mediaQuery?.removeEventListener("change", handleMediaChange);
+      try {
+        broadcastChannel?.close();
+      } catch {
+        // Ignore close errors
+      }
+    };
+  });
 
   const value: ThemeContextValue = {
     theme,
-    setTheme: (nextTheme) => setTheme(nextTheme),
-    isDark: () => {
-      const currentTheme = theme();
-      if (currentTheme === "dark") return true;
-      if (currentTheme === "light") return false;
-      if (typeof window === "undefined") return false;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    },
+    setTheme,
+    isDark,
   };
 
   return createComponent(ThemeContext, {
