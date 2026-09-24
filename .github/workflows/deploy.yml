@@ -272,9 +272,9 @@ jobs:
           # normalize defensively: accept either bare digest or full ref from publish
           DIGEST="${DIGEST##*@}"
           # matches tag-form AND digest-form lines, replaces any old comment
-          sed -i -E "s|(image: git\.trieoh\.com/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
+          sed -i -E "s|(image: ghcr\.io/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
             thetree/compose.yml
-          grep -n "image: git.trieoh.com/trieoh/${ARTIFACT}" thetree/compose.yml
+          grep -n "image: ghcr.io/trieoh/${ARTIFACT}" thetree/compose.yml
           # early-exit ONLY when unchanged; a diff is the normal path — don't let
           # a bare 'A && B' list poison set -e (that killed run 715)
           if git diff --exit-code --quiet; then
@@ -293,7 +293,7 @@ jobs:
           cd deploy-repo
           git add thetree/compose.yml
           echo "▶ activate: commit & push"
-          git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: git.trieoh.com/trieoh/${ARTIFACT}@${DIGEST}"
+          git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: ghcr.io/trieoh/${ARTIFACT}@${DIGEST}"
           GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key" \
             git push origin main
           echo "[ledger] release: ${ARTIFACT} ${VERSION} → TrieOH/deploy main (rollout workflow picks it up)"
@@ -303,6 +303,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       digest: ${{ steps.img.outputs.digest }}
+    permissions:
+      contents: read
+      packages: write
     env:
       ARTIFACT: ${{ needs.parse.outputs.artifact }}
       TYPE: ${{ needs.parse.outputs.type }}
@@ -315,6 +318,8 @@ jobs:
 
       # ── Services: build once → push immutable image → capture digest ───
       #    NOTE: no :latest push — latest left the deployment contract.
+      #    Registry: GHCR (ghcr.io/trieoh/<artifact>), auth via the job's
+      #    own GITHUB_TOKEN — no registry secret needed.
       - name: Setup Docker
         if: ${{ env.TYPE == 'service' }}
         uses: ./.github/actions/setup-docker
@@ -325,8 +330,8 @@ jobs:
         run: |
           echo "▶ publish: build & push image"
           set -euo pipefail
-          echo "$FJ_TOKEN" | docker login git.trieoh.com -u "$FJ_USER" --password-stdin
-          IMG="git.trieoh.com/trieoh/$ARTIFACT:$VERSION"
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          IMG="ghcr.io/trieoh/$ARTIFACT:$VERSION"
           DOCKER_BUILDKIT=1 docker build -f "api/$ARTIFACT/Dockerfile" -t "$IMG" .
           docker push "$IMG"
           DIGEST=$(docker image inspect "$IMG" --format '{{index .RepoDigests 0}}')
@@ -336,8 +341,8 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "[release] pushed $IMG → $DIGEST"
         env:
-          FJ_TOKEN: ${{ secrets.FJ_TOKEN }}
-          FJ_USER: ${{ secrets.FJ_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
 
       - name: release.json
         if: ${{ env.TYPE == 'service' }}
@@ -348,7 +353,7 @@ jobs:
             "tag": "$VERSION",
             "artifact": "$ARTIFACT",
             "type": "service",
-            "image": "git.trieoh.com/trieoh/$ARTIFACT:$VERSION",
+            "image": "ghcr.io/trieoh/$ARTIFACT:$VERSION",
             "digest": "${{ steps.img.outputs.digest }}"
           }
           └───────────────────────────────────────────────────────
