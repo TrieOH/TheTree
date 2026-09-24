@@ -25,6 +25,8 @@ import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileConfigRouteImport } from './routes/profile/config'
 import { Route as ProfileEditRouteImport } from './routes/profile/edit'
 import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
+import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
@@ -133,6 +135,17 @@ const ProfileEditRoute = ProfileEditRouteImport.update({
 const ProfileSetupRoute = ProfileSetupRouteImport.update({
   id: '/profile/setup',
   path: '/profile/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignatureRequestsFulfillRoute =
+  SignatureRequestsFulfillRouteImport.update({
+    id: '/signature-requests/fulfill',
+    path: '/signature-requests/fulfill',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SignaturesRevokeRoute = SignaturesRevokeRouteImport.update({
+  id: '/signatures/revoke',
+  path: '/signatures/revoke',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyHashRoute = VerifyHashRouteImport.update({
@@ -319,6 +332,8 @@ export interface FileRoutesByFullPath {
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/setup': typeof ProfileSetupRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
+  '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
@@ -366,6 +381,8 @@ export interface FileRoutesByTo {
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/setup': typeof ProfileSetupRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
+  '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/profile': typeof ProfileIndexRoute
@@ -414,6 +431,8 @@ export interface FileRoutesById {
   '/profile/config': typeof ProfileConfigRoute
   '/profile/edit': typeof ProfileEditRoute
   '/profile/setup': typeof ProfileSetupRoute
+  '/signature-requests/fulfill': typeof SignatureRequestsFulfillRoute
+  '/signatures/revoke': typeof SignaturesRevokeRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/profile/': typeof ProfileIndexRoute
@@ -463,6 +482,8 @@ export interface FileRouteTypes {
     | '/profile/config'
     | '/profile/edit'
     | '/profile/setup'
+    | '/signature-requests/fulfill'
+    | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
     | '/profile/'
@@ -510,6 +531,8 @@ export interface FileRouteTypes {
     | '/profile/config'
     | '/profile/edit'
     | '/profile/setup'
+    | '/signature-requests/fulfill'
+    | '/signatures/revoke'
     | '/verify/$hash'
     | '/events'
     | '/profile'
@@ -557,6 +580,8 @@ export interface FileRouteTypes {
     | '/profile/config'
     | '/profile/edit'
     | '/profile/setup'
+    | '/signature-requests/fulfill'
+    | '/signatures/revoke'
     | '/verify/$hash'
     | '/events/'
     | '/profile/'
@@ -604,6 +629,8 @@ export interface RootRouteChildren {
   ProfileConfigRoute: typeof ProfileConfigRoute
   ProfileEditRoute: typeof ProfileEditRoute
   ProfileSetupRoute: typeof ProfileSetupRoute
+  SignatureRequestsFulfillRoute: typeof SignatureRequestsFulfillRoute
+  SignaturesRevokeRoute: typeof SignaturesRevokeRoute
   VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
@@ -730,6 +757,20 @@ declare module '@tanstack/solid-router' {
       path: '/profile/setup'
       fullPath: '/profile/setup'
       preLoaderRoute: typeof ProfileSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signature-requests/fulfill': {
+      id: '/signature-requests/fulfill'
+      path: '/signature-requests/fulfill'
+      fullPath: '/signature-requests/fulfill'
+      preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signatures/revoke': {
+      id: '/signatures/revoke'
+      path: '/signatures/revoke'
+      fullPath: '/signatures/revoke'
+      preLoaderRoute: typeof SignaturesRevokeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify/$hash': {
@@ -1015,6 +1056,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileConfigRoute: ProfileConfigRoute,
   ProfileEditRoute: ProfileEditRoute,
   ProfileSetupRoute: ProfileSetupRoute,
+  SignatureRequestsFulfillRoute: SignatureRequestsFulfillRoute,
+  SignaturesRevokeRoute: SignaturesRevokeRoute,
   VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,

@@ -82,29 +82,41 @@ function AdminEditionSignaturesRoute(): JSX.Element {
 
   // Filtered Signatures
   const filteredSignatures = createMemo(() => {
-    const search = filter().trim().toLowerCase();
-    if (!search) return signatures();
+    const list = signatures();
+    const query = filter().trim().toLowerCase();
+    if (!query) return list;
 
-    return signatures().filter((sig) =>
-      [sig.signatory_name, sig.signatory_title ?? "", sig.signatory_email ?? ""].some(
-        (val) => val.toLowerCase().includes(search),
-      ),
-    );
+    const result: SignatureI[] = [];
+    for (const sig of list) {
+      const match =
+        sig.signatory_name.toLowerCase().includes(query) ||
+        (sig.signatory_title && sig.signatory_title.toLowerCase().includes(query)) ||
+        (sig.signatory_email && sig.signatory_email.toLowerCase().includes(query));
+      if (match) {
+        result.push(sig);
+      }
+    }
+    return result;
   });
 
   // Filtered Requests
   const filteredRequests = createMemo(() => {
-    const search = filter().trim().toLowerCase();
-    if (!search) return requests();
+    const list = requests();
+    const query = filter().trim().toLowerCase();
+    if (!query) return list;
 
-    return requests().filter((req) =>
-      [
-        req.signatory_name,
-        req.signatory_title ?? "",
-        req.signatory_email ?? "",
-        req.status,
-      ].some((val) => val.toLowerCase().includes(search)),
-    );
+    const result: SignatureRequestI[] = [];
+    for (const req of list) {
+      const match =
+        req.signatory_name.toLowerCase().includes(query) ||
+        (req.signatory_title && req.signatory_title.toLowerCase().includes(query)) ||
+        (req.signatory_email && req.signatory_email.toLowerCase().includes(query)) ||
+        req.status.toLowerCase().includes(query);
+      if (match) {
+        result.push(req);
+      }
+    }
+    return result;
   });
 
   // Mutations

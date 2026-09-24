@@ -7,3 +7,5 @@ export * from "./CreateSignatureRequestModal";
 export * from "./SignatureCanvas";
 export * from "./SignatureEditor";
 export * from "./SignatureSectionTabs";
+export * from "./FulfillSignatureRequestView";
+export * from "./RevokeSignatureView";

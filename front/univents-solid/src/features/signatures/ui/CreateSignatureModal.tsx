@@ -38,7 +38,6 @@ export function CreateSignatureModal(
   const [importedFile, setImportedFile] = createSignal<File | null>(null);
   const [previewUrl, setPreviewUrl] = createSignal<string | null>(null);
   const [isSubmitting, setIsSubmitting] = createSignal(false);
-  const [hasDrawn, setHasDrawn] = createSignal(false);
 
   let canvasRef: SignatureCanvasRef | undefined;
 
@@ -54,7 +53,6 @@ export function CreateSignatureModal(
       setPreviewUrl(null);
     }
     canvasRef?.clear();
-    setHasDrawn(false);
   };
 
   const handleFileChange = (e: Event) => {
@@ -100,19 +98,19 @@ export function CreateSignatureModal(
 
         imageUrl = await uploadFile(
           file,
-          `events/${props.eventId}/editions/${props.editionId}/signatures`,
+          `editions/${props.editionId}/signatures`,
         );
       } else {
         const file = importedFile();
         if (!file) {
-          toast.error("Selecione um arquivo de imagem para a assinatura.");
+          toast.error("Selecione um arquivo de imagem com a assinatura.");
           setIsSubmitting(false);
           return;
         }
 
         imageUrl = await uploadFile(
           file,
-          `events/${props.eventId}/editions/${props.editionId}/signatures`,
+          `editions/${props.editionId}/signatures`,
         );
       }
 
@@ -126,12 +124,13 @@ export function CreateSignatureModal(
         },
       });
 
-      toast.success("Assinatura criada com sucesso!");
+      toast.success("Assinatura adicionada com sucesso!");
       resetForm();
       props.onOpenChange(false);
       props.onSuccess?.();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao salvar assinatura.";
+      const msg =
+        err instanceof Error ? err.message : "Erro ao cadastrar assinatura.";
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -306,7 +305,6 @@ export function CreateSignatureModal(
                 type="button"
                 onClick={() => {
                   canvasRef?.clear();
-                  setHasDrawn(false);
                 }}
                 class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
@@ -320,7 +318,6 @@ export function CreateSignatureModal(
                 ref={(r) => {
                   canvasRef = r;
                 }}
-                onStroke={() => setHasDrawn(true)}
               />
             </div>
           </div>

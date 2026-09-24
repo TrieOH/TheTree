@@ -7,7 +7,6 @@ import {
   EmptyState,
   PaginatedContainer,
   type SortState,
-  cn,
 } from "@trieoh/ui-solid";
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 

@@ -1,4 +1,5 @@
 import type { JSX } from "@solidjs/web";
+import { Show } from "solid-js";
 import { cn } from "@trieoh/ui-solid";
 
 export const SIGNATURE_CANVAS_WIDTH = 1200;
@@ -14,8 +15,11 @@ export interface SignatureCanvasRef {
 
 export interface SignatureCanvasProps {
   class?: string;
+  canvasClass?: string;
   strokeColor?: string;
   lineWidth?: number;
+  showBaseline?: boolean;
+  baselineLabel?: string;
   onStroke?: () => void;
   ref?: (instance: SignatureCanvasRef) => void;
 }
@@ -115,20 +119,33 @@ export function SignatureCanvas(props: SignatureCanvasProps): JSX.Element {
   };
 
   return (
-    <canvas
-      ref={setupRef}
+    <div
       class={cn(
-        "touch-none select-none rounded-lg bg-white shadow-inner cursor-crosshair",
+        "relative w-full aspect-[1200/420] overflow-hidden select-none bg-white",
         props.class,
       )}
-      style={{
-        "aspect-ratio": `${SIGNATURE_CANVAS_WIDTH} / ${SIGNATURE_CANVAS_HEIGHT}`,
-        width: "100%",
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-    />
+    >
+      <canvas
+        ref={setupRef}
+        class={cn(
+          "size-full touch-none block cursor-crosshair",
+          props.canvasClass,
+        )}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      />
+      <Show when={props.showBaseline ?? true}>
+        <div class="pointer-events-none absolute inset-x-6 sm:inset-x-12 bottom-[24%] flex items-center gap-2 border-b border-dashed border-slate-300">
+          <span class="text-xs text-slate-400 font-mono pb-0.5 select-none">✕</span>
+        </div>
+        <div class="pointer-events-none absolute bottom-[6%] inset-x-0 text-center">
+          <span class="text-[10px] sm:text-[11px] text-slate-400 select-none">
+            {props.baselineLabel ?? "Assine sobre a linha"}
+          </span>
+        </div>
+      </Show>
+    </div>
   );
 }

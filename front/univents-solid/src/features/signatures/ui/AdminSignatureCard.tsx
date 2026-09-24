@@ -1,26 +1,28 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createSignal } from "solid-js";
-import Trash2Icon from "~icons/lucide/trash-2";
+import CalendarIcon from "~icons/lucide/calendar";
 import MailIcon from "~icons/lucide/mail";
+import Trash2Icon from "~icons/lucide/trash-2";
 
-import { cn } from "@trieoh/ui-solid";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import type { SignatureI } from "../model";
 
-const Trash2 = Trash2Icon as unknown as (props: { class?: string }) => JSX.Element;
+const Calendar = CalendarIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Mail = MailIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Trash2 = Trash2Icon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface AdminSignatureCardProps {
   signature: SignatureI;
-  onDelete?: () => void | Promise<void>;
+  onDelete?: () => Promise<void> | void;
   isDeleting?: boolean;
 }
 
-export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element {
+export function AdminSignatureCard(
+  props: AdminSignatureCardProps,
+): JSX.Element {
   const [deleteOpen, setDeleteOpen] = createSignal(false);
 
   const formattedDate = () => {
-    if (!props.signature.created_at) return "";
     try {
       return new Date(props.signature.created_at).toLocaleDateString("pt-BR", {
         day: "2-digit",
@@ -32,21 +34,21 @@ export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element 
     }
   };
 
+  const handleConfirmDelete = async () => {
+    await props.onDelete?.();
+    setDeleteOpen(false);
+  };
+
   return (
     <>
-      <article
-        class={cn(
-          "group relative flex h-full w-full min-w-0 flex-col rounded-lg border border-border/60 bg-card text-left transition-colors duration-150 hover:border-border shadow-xs overflow-hidden",
-        )}
-      >
-        {/* Preview Container */}
-        <div class="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-t-lg bg-white p-4 border-b border-border/40">
-          {/* Subtle checkered backdrop pattern for transparency awareness */}
+      <article class="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-foreground/20 hover:shadow-xs">
+        {/* Preview Frame with transparency pattern */}
+        <div class="relative flex h-40 w-full items-center justify-center overflow-hidden border-b border-border/80 bg-white p-6">
           <div
-            class="absolute inset-0 opacity-[0.03] pointer-events-none"
+            class="pointer-events-none absolute inset-0 opacity-40"
             style={{
               "background-image":
-                "radial-gradient(#000 1px, transparent 1px), radial-gradient(#000 1px, transparent 1px)",
+                "radial-gradient(#94a3b8 0.75px, transparent 0.75px), radial-gradient(#94a3b8 0.75px, #ffffff 0.75px)",
               "background-size": "16px 16px",
               "background-position": "0 0, 8px 8px",
             }}
@@ -80,30 +82,39 @@ export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element 
           </Show>
         </div>
 
-        {/* Info Content */}
-        <div class="flex flex-1 flex-col justify-between p-3.5">
+        {/* Content Body */}
+        <div class="flex flex-1 flex-col justify-between p-4 text-left">
           <div class="space-y-1">
-            <h3 class="truncate text-sm font-semibold text-foreground leading-tight">
+            <h4
+              class="font-semibold text-sm text-foreground line-clamp-1"
+              title={props.signature.signatory_name}
+            >
               {props.signature.signatory_name}
-            </h3>
-
+            </h4>
             <Show when={props.signature.signatory_title}>
-              <p class="truncate text-xs font-medium text-muted-foreground">
+              <p
+                class="text-xs text-muted-foreground line-clamp-1"
+                title={props.signature.signatory_title!}
+              >
                 {props.signature.signatory_title}
               </p>
             </Show>
+          </div>
 
+          <div class="mt-4 flex flex-col gap-1 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
             <Show when={props.signature.signatory_email}>
-              <div class="flex items-center gap-1.5 pt-0.5 text-xs text-muted-foreground/80 truncate">
+              <div class="flex items-center gap-1.5 truncate">
                 <Mail class="size-3 shrink-0" />
                 <span class="truncate">{props.signature.signatory_email}</span>
               </div>
             </Show>
-          </div>
 
-          <div class="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
-            <span>Criado em</span>
-            <span class="font-mono">{formattedDate()}</span>
+            <Show when={formattedDate()}>
+              <div class="flex items-center gap-1.5">
+                <Calendar class="size-3 shrink-0" />
+                <span>Adicionada em {formattedDate()}</span>
+              </div>
+            </Show>
           </div>
         </div>
       </article>
@@ -117,10 +128,7 @@ export function AdminSignatureCard(props: AdminSignatureCardProps): JSX.Element 
         confirmLabel="Remover assinatura"
         variant="destructive"
         loading={props.isDeleting}
-        onConfirm={async () => {
-          await props.onDelete?.();
-          setDeleteOpen(false);
-        }}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

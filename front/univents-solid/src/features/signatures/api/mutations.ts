@@ -6,6 +6,9 @@ import {
   createSignature,
   createSignatureRequest,
   deleteSignature,
+  denySignatureRequest,
+  fulfillSignatureRequest,
+  revokeSignature,
 } from "@trieoh/univents-api";
 import type {
   AddSignatureRequest,
@@ -157,6 +160,149 @@ export const useCancelSignatureRequestMutation = () => {
             void queryClient.invalidateQueries({
               queryKey: signatureKeys.requestById(requestId),
             });
+          }),
+        ),
+      ),
+  });
+};
+
+export interface FulfillSignatureRequestInput {
+  token: string;
+  imageUrl: string;
+  requestId?: string;
+  editionId?: string;
+}
+
+export interface DenySignatureRequestInput {
+  token: string;
+  reason?: string;
+  requestId?: string;
+  editionId?: string;
+}
+
+export interface RevokeSignatureInput {
+  token: string;
+  signatureId?: string;
+  editionId?: string;
+}
+
+export const fulfillSignatureRequestEffect = (
+  token: string,
+  imageUrl: string,
+) =>
+  apiEffect(() =>
+    withSpan("action:signature-request-fulfill", () =>
+      fulfillSignatureRequest(
+        { image_url: imageUrl },
+        { token },
+      ).then(orvalData<SignatureI>),
+    ),
+  );
+
+export const denySignatureRequestEffect = (
+  token: string,
+  reason?: string,
+) =>
+  apiEffect(() =>
+    withSpan("action:signature-request-deny", () =>
+      denySignatureRequest(
+        reason ? { reason } : {},
+        { token },
+      ).then(() => null),
+    ),
+  );
+
+export const revokeSignatureEffect = (token: string) =>
+  apiEffect(() =>
+    withSpan("action:signature-revoke", () =>
+      revokeSignature({ token }).then(() => null),
+    ),
+  );
+
+export const useFulfillSignatureRequestMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: ({
+      token,
+      imageUrl,
+      requestId,
+      editionId,
+    }: FulfillSignatureRequestInput) =>
+      fulfillSignatureRequestEffect(token, imageUrl).pipe(
+        Effect.tap((signature) =>
+          Effect.sync(() => {
+            if (requestId) {
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.requestById(requestId),
+              });
+            }
+            const targetEditionId = editionId ?? signature?.edition_id;
+            if (targetEditionId) {
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.requestsByEdition(targetEditionId),
+              });
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.byEdition(targetEditionId),
+              });
+            }
+          }),
+        ),
+      ),
+  });
+};
+
+export const useDenySignatureRequestMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: ({
+      token,
+      reason,
+      requestId,
+      editionId,
+    }: DenySignatureRequestInput) =>
+      denySignatureRequestEffect(token, reason).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            if (requestId) {
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.requestById(requestId),
+              });
+            }
+            if (editionId) {
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.requestsByEdition(editionId),
+              });
+            }
+          }),
+        ),
+      ),
+  });
+};
+
+export const useRevokeSignatureMutation = () => {
+  const queryClient = useQueryClient();
+  return useEffectMutation({
+    retryTransient: true,
+    mutationEffect: ({
+      token,
+      signatureId,
+      editionId,
+    }: RevokeSignatureInput) =>
+      revokeSignatureEffect(token).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            if (signatureId) {
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.byId(signatureId),
+              });
+            }
+            if (editionId) {
+              void queryClient.invalidateQueries({
+                queryKey: signatureKeys.byEdition(editionId),
+              });
+            }
           }),
         ),
       ),
