@@ -302,7 +302,7 @@ jobs:
     needs: [parse, checks]
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      digest: ${{ steps.img.outputs.digest }}
+      digest: ${{ steps.digest.outputs.digest }}
     permissions:
       contents: read
       packages: write
@@ -319,30 +319,45 @@ jobs:
       # ── Services: build once → push immutable image → capture digest ───
       #    NOTE: no :latest push — latest left the deployment contract.
       #    Registry: GHCR (ghcr.io/trieoh/<artifact>), auth via the job's
-      #    own GITHUB_TOKEN — no registry secret needed.
-      - name: Setup Docker
+      #    own GITHUB_TOKEN — no registry secret needed. Build runs through
+      #    Blacksmith's cached builder — see docs.blacksmith.sh/blacksmith-caching/docker-builds
+      - name: Setup Docker Builder (Blacksmith)
         if: ${{ env.TYPE == 'service' }}
-        uses: ./.github/actions/setup-docker
+        uses: useblacksmith/setup-docker-builder@v2
+        with:
+          cache-key: api/${{ env.ARTIFACT }}/Dockerfile
+
+      - name: Login to GHCR
+        if: ${{ env.TYPE == 'service' }}
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push image
         id: img
         if: ${{ env.TYPE == 'service' }}
+        uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: api/${{ env.ARTIFACT }}/Dockerfile
+          tags: ghcr.io/trieoh/${{ env.ARTIFACT }}:${{ env.VERSION }}
+          push: true
+
+      - name: Extract digest
+        id: digest
+        if: ${{ env.TYPE == 'service' }}
         run: |
-          echo "▶ publish: build & push image"
+          echo "▶ publish: extract digest"
           set -euo pipefail
-          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
           IMG="ghcr.io/trieoh/$ARTIFACT:$VERSION"
-          DOCKER_BUILDKIT=1 docker build -f "api/$ARTIFACT/Dockerfile" -t "$IMG" .
-          docker push "$IMG"
-          DIGEST=$(docker image inspect "$IMG" --format '{{index .RepoDigests 0}}')
           # RepoDigests entries are full refs (registry/repo@sha256:…) — keep the
           # bare digest only, that's the §3.8 contract (activate re-attaches the ref)
+          DIGEST="${{ steps.img.outputs.digest }}"
           DIGEST="${DIGEST##*@}"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "[release] pushed $IMG → $DIGEST"
-        env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_USER: ${{ github.actor }}
 
       - name: release.json
         if: ${{ env.TYPE == 'service' }}
@@ -354,7 +369,7 @@ jobs:
             "artifact": "$ARTIFACT",
             "type": "service",
             "image": "ghcr.io/trieoh/$ARTIFACT:$VERSION",
-            "digest": "${{ steps.img.outputs.digest }}"
+            "digest": "${{ steps.digest.outputs.digest }}"
           }
           └───────────────────────────────────────────────────────
           EOF
