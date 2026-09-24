@@ -29,7 +29,7 @@ defaults:
 
 jobs:
   parse:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       artifact: ${{ steps.tag.outputs.artifact }}
       type: ${{ steps.tag.outputs.type }}
@@ -101,7 +101,7 @@ jobs:
 
   checks:
     needs: parse
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       sdk-skip: ${{ steps.sdk.outputs.skip }}
       sdk-name: ${{ steps.sdk.outputs.name }}
@@ -113,7 +113,7 @@ jobs:
       FRONT_NAME: ${{ needs.parse.outputs.front-name }}
       SDK_NAME: ${{ needs.parse.outputs.sdk-name }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: useblacksmith/checkout@v1
 
       # ── Go toolchain (services) ────────────────────────────────────────
       - name: Setup Go
@@ -243,7 +243,7 @@ jobs:
   activate:
     needs: [parse, publish]
     if: ${{ needs.parse.outputs.activate == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       ARTIFACT: ${{ needs.parse.outputs.artifact }}
       VERSION: ${{ needs.parse.outputs.version }}
@@ -300,7 +300,7 @@ jobs:
 
   publish:
     needs: [parse, checks]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       digest: ${{ steps.img.outputs.digest }}
     permissions:
@@ -314,7 +314,7 @@ jobs:
       FRONT_NAME: ${{ needs.parse.outputs.front-name }}
       SDK_NAME: ${{ needs.parse.outputs.sdk-name }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: useblacksmith/checkout@v1
 
       # ── Services: build once → push immutable image → capture digest ───
       #    NOTE: no :latest push — latest left the deployment contract.
