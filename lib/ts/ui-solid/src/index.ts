@@ -15,7 +15,18 @@ export {
 } from "./input";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
 export { CardSkeleton, Skeleton, type SkeletonProps } from "./skeleton";
-export { Dialog, type DialogProps } from "./dialog";
+export {
+  Dialog,
+  Dialog as Modal,
+  type DialogProps,
+  type DialogProps as ModalProps,
+  type DialogSize,
+} from "./dialog";
+export {
+  AlertModal,
+  type AlertModalProps,
+  type AlertModalVariant,
+} from "./alert-modal";
 export {
   PaginatedContainer,
   type GapSize,
