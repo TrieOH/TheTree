@@ -1,0 +1,26 @@
+name: Setup Trivy
+description: >
+  Installs a pinned trivy binary and lets trivy manage its own CVE database
+  download. No caching — binary and DB fetched fresh every run.
+  Adds ~/.local/bin to PATH — same location `just setup` uses on dev machines.
+inputs:
+  version:
+    description: trivy version (with leading v — keep in sync with justfile setup)
+    required: false
+    default: "v0.74.0"
+runs:
+  using: composite
+  steps:
+    - name: Install binary
+      shell: bash
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sh -s -- -b "$HOME/.local/bin" ${{ inputs.version }}
+
+    - name: Add to PATH
+      shell: bash
+      run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Report + smoke test
+      shell: bash
+      run: trivy --version

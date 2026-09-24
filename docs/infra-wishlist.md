@@ -665,11 +665,11 @@ The infra README documents a manual `docker run --rm -it … forgejo-runner regi
 
 ### 46. Forgejo composite action — pinned, cached docker CLI ✅ **done 2026-08-24**
 
-**Implemented:** `.forgejo/actions/setup-docker/action.yml` (TheTree) + all 5 workflow call sites swapped; stale runner label in `infra/README.md` fixed.
+**Implemented:** `../.github` (TheTree) + all 5 workflow call sites swapped; stale runner label in `infra/README.md` fixed.
 
 **Verified:** "Set up Docker" (`curl -fsSL https://get.docker.com | sh`) is copy-pasted in **5 spots across 4 workflows** (ci ×2, frontend-lint-tsc, publish, trivy). Worse, it installs a **full Docker daemon that is never used** — the runner config already automounts the Docker socket into job containers (`docker_host: automount`), so jobs only need the **CLI**. And it's unpinned (`get.docker.com` = latest every run) + re-downloads every run.
 
-**Design:** `.forgejo/actions/setup-docker/action.yml` (local composite action, `uses: ./.forgejo/actions/setup-docker`):
+**Design:** `../.github` (local composite action, `uses: ./.forgejo/actions/setup-docker`):
 
 ```yaml
 name: Setup Docker CLI

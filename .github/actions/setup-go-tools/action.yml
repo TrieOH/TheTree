@@ -1,10 +1,9 @@
 name: Setup Go tools
 description: >
-  Pinned Go-ecosystem tools into ~/.local/thetree-tools/bin (added to PATH):
-  sqlc, oapi-codegen, golangci-lint, gotestsum — the same versions `just setup`
-  installs on dev machines. Requires setup-go to run first (needs `go install`).
-  Whole dir is cached as one unit: cache hit = zero network. Self-reports as
-  `[cache] setup-go-tools: HIT|MISS key=...`.
+  Installs pinned Go-ecosystem tools into ~/.local/thetree-tools/bin (added
+  to PATH): sqlc, oapi-codegen, golangci-lint, gotestsum — the same versions
+  `just setup` installs on dev machines. Requires setup-go to run first
+  (needs `go install`). No caching — installed fresh every run.
 inputs:
   sqlc-version:
     description: sqlc version (no leading v — matches the tarball name)
@@ -25,21 +24,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Compute cache key
-      id: key
-      shell: bash
-      run: |
-        echo "key=go-tools-${{ inputs.sqlc-version }}-${{ inputs.oapi-codegen-version }}-${{ inputs.golangci-lint-version }}-${{ inputs.gotestsum-version }}-linux-amd64" >> "$GITHUB_OUTPUT"
-
-    - name: Restore tools
-      id: cache
-      uses: https://code.forgejo.org/actions/cache/restore@v4
-      with:
-        path: ~/.local/thetree-tools
-        key: ${{ steps.key.outputs.key }}
-
-    - name: Install (cache miss)
-      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Install tools
       shell: bash
       run: |
         set -euo pipefail
@@ -60,22 +45,9 @@ runs:
       shell: bash
       run: echo "$HOME/.local/thetree-tools/bin" >> "$GITHUB_PATH"
 
-    - name: Save tools (inline — content is complete here; never break the pipeline over a cache)
-      if: steps.cache.outputs.cache-hit != 'true'
-      uses: https://code.forgejo.org/actions/cache/save@v4
-      with:
-        path: ~/.local/thetree-tools
-        key: ${{ steps.key.outputs.key }}
-      continue-on-error: true
-
     - name: Report + smoke test
       shell: bash
       run: |
-        if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
-          echo "[cache] setup-go-tools: HIT key=${{ steps.key.outputs.key }}"
-        else
-          echo "[cache] setup-go-tools: MISS key=${{ steps.key.outputs.key }} → installed fresh, will save at end of job"
-        fi
         sqlc version
         oapi-codegen --version
         golangci-lint version

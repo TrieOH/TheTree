@@ -1,12 +1,11 @@
 name: Setup Docker CLI
 description: >
-  Installs the docker CLI from a pinned static tarball (no latest, no apt),
-  cached in the runner's internal cache so CI doesn't re-download it every
-  run. The daemon socket is automounted into job containers by the runner
-  (docker_host: automount), so only the CLI is needed — the full daemon
-  install from get.docker.com is redundant.
+  Installs the docker CLI from a pinned static tarball (no latest, no apt).
+  No caching — installed fresh every run. NOTE: on GitHub-hosted
+  ubuntu-latest runners, Docker + buildx are already preinstalled, so this
+  action is only needed on self-hosted runners without Docker.
   Keep `version` in sync with the DinD daemon image in
-  infra/forgejo/compose.yml (docker:<version>-dind).
+  infra/forgejo/compose.yml (docker:<version>-dind), if still relevant.
 inputs:
   version:
     description: Docker CLI version (static tarball on download.docker.com)
@@ -19,17 +18,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Restore docker CLI + buildx from cache
-      id: cache
-      uses: https://code.forgejo.org/actions/cache/restore@v4
-      with:
-        # cache a dedicated DIRECTORY — cache save does `tar -C <path> .`,
-        # which fails with "Not a directory" when path is the binary file
-        # itself (seen in sandbox runs)
-        path: /opt/docker-cli
-        key: docker-cli-${{ inputs.version }}-buildx-${{ inputs.buildx-version }}
-    - name: Install pinned docker CLI + buildx (cache miss)
-      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Install pinned docker CLI + buildx
       shell: bash
       run: |
         set -euo pipefail
@@ -41,19 +30,14 @@ runs:
         curl -fsSL "https://github.com/docker/buildx/releases/download/${{ inputs.buildx-version }}/buildx-${{ inputs.buildx-version }}.linux-amd64" \
           -o /opt/docker-cli/cli-plugins/docker-buildx
         chmod 0755 /opt/docker-cli/cli-plugins/docker-buildx
+
     - name: Register plugin dir + add to PATH
       shell: bash
       run: |
         echo "/opt/docker-cli" >> "$GITHUB_PATH"
         mkdir -p ~/.docker
         printf '{"cliPluginsExtraDirs":["/opt/docker-cli/cli-plugins"]}' > ~/.docker/config.json
-    - name: Save docker CLI + buildx (inline — never break the pipeline over a cache)
-      if: steps.cache.outputs.cache-hit != 'true'
-      uses: https://code.forgejo.org/actions/cache/save@v4
-      with:
-        path: /opt/docker-cli
-        key: docker-cli-${{ inputs.version }}-buildx-${{ inputs.buildx-version }}
-      continue-on-error: true
+
     - name: Smoke test
       shell: bash
       run: |
