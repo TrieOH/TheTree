@@ -11,6 +11,11 @@ export function MultiStepSummaryCard(props: {
   summary: MultiStepSummaryConfig;
   class?: string;
 }): JSX.Element {
+  const badgeText = () =>
+    typeof props.summary.badge === "function"
+      ? props.summary.badge()
+      : props.summary.badge;
+
   return (
     <div
       class={cn(
@@ -18,17 +23,19 @@ export function MultiStepSummaryCard(props: {
         props.class,
       )}
     >
-      <Show when={props.summary.title || props.summary.badge}>
+      <Show when={props.summary.title || badgeText()}>
         <div class="flex items-center justify-between gap-2 border-b border-border/50 pb-2.5">
           <Show when={props.summary.title}>
             <h3 class="text-xs sm:text-sm font-semibold text-foreground truncate">
               {props.summary.title}
             </h3>
           </Show>
-          <Show when={props.summary.badge}>
-            <span class="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-primary">
-              {props.summary.badge}
-            </span>
+          <Show when={badgeText()}>
+            {(text) => (
+              <span class="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-primary">
+                {text()}
+              </span>
+            )}
           </Show>
         </div>
       </Show>
@@ -43,11 +50,16 @@ export function MultiStepSummaryCard(props: {
               return v != null && v !== "" ? String(v) : "—";
             };
             const hrefVal = () =>
-              typeof item.href === "function" ? (item.href as () => string | undefined)() : item.href;
+              typeof item.href === "function" ? item.href() : item.href;
 
             return (
-              <div class={cn("min-w-0 w-full overflow-hidden", item.fullWidth && "sm:col-span-2")}>
-                <span class="block text-[11px] font-medium text-muted-foreground truncate">
+              <div
+                class={cn(
+                  "min-w-0 flex flex-col gap-1 p-2 rounded-lg bg-muted/40 border border-border/30",
+                  item.fullWidth && "sm:col-span-2",
+                )}
+              >
+                <span class="text-[11px] font-medium text-muted-foreground truncate">
                   {item.label}
                 </span>
                 <Show
@@ -55,39 +67,34 @@ export function MultiStepSummaryCard(props: {
                   fallback={
                     <span
                       class={cn(
-                        "mt-0.5 block text-foreground truncate max-w-full",
-                        item.mono && "font-mono text-[11px] break-all",
-                        item.fullWidth &&
-                          "whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed text-foreground/90 font-normal",
+                        "text-xs text-foreground truncate font-medium",
+                        item.mono && "font-mono text-[11px]",
                       )}
                     >
                       {displayVal()}
                     </span>
                   }
                 >
-                  <a
-                    href={hrefVal()!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class={cn(
-                      "mt-0.5 block text-primary hover:underline truncate max-w-full",
-                      item.mono && "font-mono text-[11px] break-all",
-                    )}
-                  >
-                    {displayVal()}
-                  </a>
+                  {(href) => (
+                    <a
+                      href={href()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-xs text-primary underline-offset-4 hover:underline truncate font-mono text-[11px]"
+                    >
+                      {displayVal()}
+                    </a>
+                  )}
                 </Show>
               </div>
             );
           }}
         </For>
-
-        <Show when={props.summary.extra}>
-          <div class="col-span-1 sm:col-span-2 pt-1 w-full max-w-full min-w-0">
-            {props.summary.extra?.()}
-          </div>
-        </Show>
       </div>
+
+      <Show when={props.summary.extra}>
+        {(renderExtra) => <div class="w-full min-w-0 pt-1">{renderExtra()()}</div>}
+      </Show>
     </div>
   );
 }

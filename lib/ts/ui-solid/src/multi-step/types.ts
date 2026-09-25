@@ -8,6 +8,7 @@ export type MultiStepFieldKind =
   | "url"
   | "tel"
   | "date"
+  | "datetime-local"
   | "textarea"
   | "custom";
 
@@ -23,7 +24,15 @@ export interface BaseMultiStepField<T = Record<string, unknown>> {
 
 export interface TextMultiStepField<T = Record<string, unknown>>
   extends BaseMultiStepField<T> {
-  kind?: "text" | "email" | "password" | "number" | "url" | "tel" | "date";
+  kind?:
+    | "text"
+    | "email"
+    | "password"
+    | "number"
+    | "url"
+    | "tel"
+    | "date"
+    | "datetime-local";
   autocomplete?: string;
 }
 
@@ -69,7 +78,7 @@ export interface MultiStepSummaryItem {
 
 export interface MultiStepSummaryConfig {
   title?: string;
-  badge?: string;
+  badge?: string | (() => string | undefined);
   items: MultiStepSummaryItem[];
   extra?: () => JSX.Element;
 }

@@ -113,7 +113,20 @@ function AdminEditionDetailView(): JSX.Element {
       await patchMutation.mutateAsync({
         eventId: eventId(),
         editionId: ed.id,
-        data: values,
+        data: {
+          name: values.name,
+          slug: values.slug,
+          starts_at: values.starts_at,
+          ends_at: values.ends_at,
+          location_name: values.location_name ?? ed.location_name ?? null,
+          location_description: values.location_description ?? ed.location_description ?? null,
+          tagline: values.tagline ?? ed.tagline ?? null,
+          description: values.description ?? ed.description ?? null,
+          contact_email: values.contact_email ?? ed.contact_email ?? null,
+          registration_opens_at: values.registration_opens_at ?? ed.registration_opens_at ?? null,
+          logo_url: values.logo_url ?? ed.logo_url ?? null,
+          banner_url: values.banner_url ?? ed.banner_url ?? null,
+        },
       });
       return true;
     } catch {

@@ -125,11 +125,30 @@ describe("ManageEditionDialog", () => {
       />
     ));
 
+    // Tentativa de submissão no passo 0 (Edição) sem preenchimento
     submit();
 
     await waitFor(() => {
       expect(onSubmit).not.toHaveBeenCalled();
       expect(screen.getAllByText("Informe ao menos 2 caracteres.")).toHaveLength(2);
+    });
+
+    // Preenche o passo 0
+    const nameInput = screen.getByPlaceholderText("Ex: Edição 2026");
+    fireEvent.input(nameInput, { target: { value: "Edição 2027" } });
+
+    const continueBtn = screen.getByRole("button", { name: "Continuar" });
+    fireEvent.click(continueBtn);
+
+    // Passo 1 (Cronograma): tenta avançar sem data de início
+    await waitFor(() => {
+      expect(screen.getByText("Cronograma")).toBeInTheDocument();
+    });
+
+    submit();
+
+    await waitFor(() => {
+      expect(onSubmit).not.toHaveBeenCalled();
       expect(screen.getByText("Informe a data de início.")).toBeInTheDocument();
     });
   });

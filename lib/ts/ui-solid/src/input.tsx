@@ -56,6 +56,10 @@ export function Input(props: InputProps) {
     return undefined;
   };
 
+  const isDateOrTime = () =>
+    props.type === "date" ||
+    props.type === "datetime-local";
+
   return (
     <input
       id={props.id}
@@ -80,7 +84,7 @@ export function Input(props: InputProps) {
       onBlur={props.onBlur}
       onFocus={props.onFocus}
       onKeyDown={props.onKeyDown}
-      class={cn(fieldBase, props.class)}
+      class={cn(fieldBase, isDateOrTime() && "relative pr-9", props.class)}
     />
   );
 }
@@ -100,6 +104,8 @@ export interface TextareaProps {
   onInput?: JSX.EventHandler<HTMLTextAreaElement, InputEvent>;
   onChange?: JSX.EventHandler<HTMLTextAreaElement, Event>;
   onBlur?: JSX.EventHandler<HTMLTextAreaElement, FocusEvent>;
+  onFocus?: JSX.EventHandler<HTMLTextAreaElement, FocusEvent>;
+  onKeyDown?: JSX.EventHandler<HTMLTextAreaElement, KeyboardEvent>;
 }
 
 export function Textarea(props: TextareaProps) {
@@ -114,17 +120,19 @@ export function Textarea(props: TextareaProps) {
     <textarea
       id={props.id}
       name={props.name}
-      rows={props.rows ?? 3}
       value={props.value ?? ""}
       placeholder={props.placeholder}
       disabled={props.disabled}
       required={props.required}
       readonly={props.readonly}
+      rows={props.rows ?? 3}
       aria-describedby={props["aria-describedby"]}
       aria-invalid={ariaInvalid()}
       onInput={props.onInput}
       onChange={props.onChange}
       onBlur={props.onBlur}
+      onFocus={props.onFocus}
+      onKeyDown={props.onKeyDown}
       class={cn(fieldBase, "min-h-20 custom-scrollbar", props.class)}
     />
   );
@@ -144,6 +152,21 @@ export function Label(props: LabelProps) {
     >
       {props.children}
     </label>
+  );
+}
+
+export interface FormErrorProps {
+  id?: string;
+  children?: JSX.Element;
+}
+
+export function FormError(props: FormErrorProps) {
+  return (
+    <Show when={props.children}>
+      <p id={props.id} role="alert" class="text-xs text-destructive">
+        {props.children}
+      </p>
+    </Show>
   );
 }
 

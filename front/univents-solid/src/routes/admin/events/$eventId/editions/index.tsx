@@ -93,7 +93,14 @@ function AdminEventEditionsRoute(): JSX.Element {
             slug: values.slug,
             starts_at: values.starts_at,
             ends_at: values.ends_at,
-            location_name: values.location_name || null,
+            location_name: values.location_name ?? currentTarget.location_name ?? null,
+            location_description: values.location_description ?? currentTarget.location_description ?? null,
+            tagline: values.tagline ?? currentTarget.tagline ?? null,
+            description: values.description ?? currentTarget.description ?? null,
+            contact_email: values.contact_email ?? currentTarget.contact_email ?? null,
+            registration_opens_at: values.registration_opens_at ?? currentTarget.registration_opens_at ?? null,
+            logo_url: values.logo_url ?? currentTarget.logo_url ?? null,
+            banner_url: values.banner_url ?? currentTarget.banner_url ?? null,
           },
         });
         toast.success("Edição atualizada com sucesso!");
