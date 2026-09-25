@@ -1,4 +1,3 @@
-import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createSignal, untrack } from "solid-js";
 import {
   MultiStepDialog,

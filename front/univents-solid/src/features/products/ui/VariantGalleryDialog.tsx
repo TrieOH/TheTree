@@ -78,6 +78,7 @@ export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Elem
       description={`${props.variant.name} (${props.variant.vendor_code}) · ${images().length} ${images().length === 1 ? "foto" : "fotos"}`}
     >
       <input
+        id={`variant-${props.variant.id}-gallery-upload`}
         ref={(el) => {
           fileInputRef = el;
         }}
@@ -100,10 +101,10 @@ export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Elem
                 />
                 <button
                   type="button"
-                  title={`Remover foto ${index() + 1}`}
+                  aria-label={`Remover foto ${index() + 1}`}
                   disabled={saving()}
                   onClick={() => handleRemoveImage(url)}
-                  class="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/75 text-white opacity-90 transition-opacity hover:bg-destructive sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                  class="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-destructive group-hover:opacity-100 disabled:opacity-50 cursor-pointer"
                 >
                   <Trash class="size-3.5" />
                 </button>
@@ -115,9 +116,9 @@ export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Elem
             type="button"
             disabled={isUploading()}
             onClick={() => fileInputRef?.click()}
-            class="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer disabled:opacity-50"
+            class="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-muted/30 text-muted-foreground transition-colors hover:border-primary hover:bg-muted/60 hover:text-foreground disabled:opacity-50 cursor-pointer"
           >
-            <ImagePlus class="size-6" />
+            <ImagePlus class="size-5" />
             <span class="text-xs font-medium">
               {isUploading() ? "Enviando..." : "Adicionar fotos"}
             </span>
@@ -130,7 +131,7 @@ export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Elem
             variant="outline"
             onClick={() => props.onOpenChange(false)}
           >
-            Concluir
+            Fechar
           </Button>
         </div>
       </div>

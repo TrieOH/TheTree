@@ -65,7 +65,7 @@ function valuesOf(program?: ProgramI | null): ManageProgramValues {
 
 export function ManageProgramDialog(props: ManageProgramDialogProps): JSX.Element {
   const [currentStep, setCurrentStep] = createSignal(0);
-  let currentValues: ManageProgramValues = valuesOf(props.program);
+  let currentValues: ManageProgramValues = untrack(() => valuesOf(props.program));
   const [values, setValues] = createSignal<ManageProgramValues>(
     untrack(() => currentValues),
   );
@@ -225,7 +225,7 @@ export function ManageProgramDialog(props: ManageProgramDialogProps): JSX.Elemen
             kind: "custom",
             label: "Tipo de programação",
             layout: "full",
-            render: (fieldProps) => (
+            render: () => (
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   type="button"
@@ -485,7 +485,11 @@ export function ManageProgramDialog(props: ManageProgramDialogProps): JSX.Elemen
       open={props.open}
       onOpenChange={handleOpenChange}
       title={isEditing() ? "Editar programação" : "Nova programação"}
-      description="Configure os detalhes da atividade ou checkpoint na programação do evento."
+      description={
+        isEditing()
+          ? "Atualize as informações, requisitos de acesso e valores da programação."
+          : "Cadastre uma nova atividade ou checkpoint com controle de acesso para sua edição."
+      }
       steps={steps()}
       currentStep={currentStep()}
       onStepChange={setCurrentStep}

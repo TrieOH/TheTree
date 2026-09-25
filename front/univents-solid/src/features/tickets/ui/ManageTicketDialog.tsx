@@ -42,7 +42,7 @@ const valuesOf = (ticket: TicketI | null): ManageTicketValues =>
 
 export function ManageTicketDialog(props: ManageTicketDialogProps) {
   const [currentStep, setCurrentStep] = createSignal(0);
-  let currentValues: ManageTicketValues = valuesOf(props.ticket);
+  let currentValues: ManageTicketValues = untrack(() => valuesOf(props.ticket));
   const [values, setValues] = createSignal<ManageTicketValues>(
     untrack(() => currentValues),
   );

@@ -1,12 +1,27 @@
-import { createEffect, createSignal, untrack } from "solid-js";
-import { Button, Dialog, Field, Input, Textarea } from "@trieoh/ui-solid";
+import type { JSX } from "@solidjs/web";
+import { Show, createEffect, createMemo, createSignal, untrack } from "solid-js";
+import BoxesIcon from "~icons/lucide/boxes";
+import CoinsIcon from "~icons/lucide/coins";
+import InfinityIcon from "~icons/lucide/infinity";
+import LayersIcon from "~icons/lucide/layers";
+
+import {
+  MultiStepDialog,
+  type MultiStepItem,
+} from "@trieoh/ui-solid";
+import { formatPrice } from "@/shared/lib/money";
 import type { VariantCreateOutputI, VariantI } from "../model";
+
+const Boxes = BoxesIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Coins = CoinsIcon as unknown as (props: { class?: string }) => JSX.Element;
+const InfinityLucide = InfinityIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Layers = LayersIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface ManageVariantValues {
   vendor_code: string;
   name: string;
   description: string;
-  price: string;
+  price_cents: number;
   stock: string;
 }
 
@@ -21,7 +36,7 @@ const emptyValues: ManageVariantValues = {
   vendor_code: "",
   name: "",
   description: "",
-  price: "0.00",
+  price_cents: 0,
   stock: "",
 };
 
@@ -31,70 +46,111 @@ const valuesOf = (variant: VariantI | null): ManageVariantValues =>
         vendor_code: variant.vendor_code,
         name: variant.name,
         description: variant.description ?? "",
-        price: (variant.price / 100).toFixed(2),
+        price_cents: variant.price,
         stock: variant.stock != null ? String(variant.stock) : "",
       }
     : { ...emptyValues };
 
-function validate(values: ManageVariantValues): Partial<Record<keyof ManageVariantValues, string>> {
-  const errors: Partial<Record<keyof ManageVariantValues, string>> = {};
-
-  if (values.vendor_code.trim().length < 2) {
-    errors.vendor_code = "O código deve ter pelo menos 2 caracteres.";
-  }
-
-  if (values.name.trim().length < 2) {
-    errors.name = "O nome deve ter pelo menos 2 caracteres.";
-  }
-
-  const numPrice = parseFloat(values.price.replace(",", "."));
-  if (Number.isNaN(numPrice) || numPrice < 0) {
-    errors.price = "Informe um preço válido (>= 0).";
-  }
-
-  if (values.stock.trim() !== "") {
-    const qty = Number(values.stock);
-    if (!Number.isInteger(qty) || qty <= 0) {
-      errors.stock = "Quantidade em estoque deve ser um número inteiro maior que 0.";
-    }
-  }
-
-  return errors;
-}
-
-export function ManageVariantDialog(props: ManageVariantDialogProps) {
-  const [values, setValues] = createSignal(untrack(() => valuesOf(props.variant)));
+export function ManageVariantDialog(props: ManageVariantDialogProps): JSX.Element {
+  const [currentStep, setCurrentStep] = createSignal(0);
+  let currentValues: ManageVariantValues = untrack(() => valuesOf(props.variant));
+  const [values, setValues] = createSignal<ManageVariantValues>(
+    untrack(() => currentValues),
+  );
   const [submitting, setSubmitting] = createSignal(false);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof ManageVariantValues, string>>>({});
+  const [errors, setErrors] = createSignal<
+    Partial<Record<keyof ManageVariantValues, string>>
+  >({});
 
+  const isEditing = createMemo(() => Boolean(props.variant));
+
+  let isMounted = false;
   createEffect(
-    () => props.variant,
-    (v) => {
-      setValues(valuesOf(v));
+    () => (props.variant ? props.variant.id : null),
+    () => {
+      if (!isMounted) {
+        isMounted = true;
+        return;
+      }
+      currentValues = valuesOf(props.variant);
+      setValues(currentValues);
       setErrors({});
+      setCurrentStep(0);
     },
   );
 
-  const update = <K extends keyof ManageVariantValues>(key: K, value: ManageVariantValues[K]) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  const resetForm = () => {
+    currentValues = valuesOf(props.variant);
+    setValues(currentValues);
+    setErrors({});
+    setCurrentStep(0);
   };
 
-  const isEditing = () => Boolean(props.variant);
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      resetForm();
+    }
+    props.onOpenChange(open);
+  };
 
-  const handleSubmit = async (e: SubmitEvent) => {
-    e.preventDefault();
-    const current = values();
-    const validationErrors = validate(current);
+  const handleChange = (
+    key: keyof ManageVariantValues & string,
+    value: unknown,
+  ) => {
+    currentValues = { ...currentValues, [key]: value };
+    setValues(currentValues);
+    setErrors((prev) => {
+      if (!prev[key as keyof ManageVariantValues]) return prev;
+      const nextErrors = { ...prev };
+      delete nextErrors[key as keyof ManageVariantValues];
+      return nextErrors;
+    });
+  };
 
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
+  const validateStep = (stepIndex: number): boolean => {
+    const current = currentValues;
+    const nextErrors: Partial<Record<keyof ManageVariantValues, string>> = {};
+
+    if (stepIndex === 0) {
+      if (current.vendor_code.trim().length < 2) {
+        nextErrors.vendor_code = "O código deve ter pelo menos 2 caracteres.";
+      }
+
+      if (current.name.trim().length < 2) {
+        nextErrors.name = "O nome deve ter pelo menos 2 caracteres.";
+      }
     }
 
-    const numPrice = parseFloat(current.price.replace(",", "."));
-    const priceCents = Math.round(numPrice * 100);
-    const stockQty = current.stock.trim() !== "" ? parseInt(current.stock, 10) : null;
+    if (stepIndex === 1) {
+      if (
+        typeof current.price_cents !== "number" ||
+        isNaN(current.price_cents) ||
+        current.price_cents < 0
+      ) {
+        nextErrors.price_cents = "Informe um preço válido (>= 0).";
+      }
+
+      if (current.stock.trim() !== "") {
+        const qty = Number(current.stock);
+        if (!Number.isInteger(qty) || qty <= 0) {
+          nextErrors.stock = "Quantidade em estoque deve ser um número inteiro maior que 0.";
+        }
+      }
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const handleSubmit = async (): Promise<boolean> => {
+    const current = currentValues;
+    const stockQty =
+      current.stock.trim() !== "" ? parseInt(current.stock, 10) : null;
 
     setSubmitting(true);
     try {
@@ -102,151 +158,187 @@ export function ManageVariantDialog(props: ManageVariantDialogProps) {
         vendor_code: current.vendor_code.trim(),
         name: current.name.trim(),
         description: current.description.trim() || null,
-        price: priceCents,
+        price: current.price_cents,
         stock: stockQty,
         gallery_urls: props.variant?.gallery_urls ?? [],
       });
-      if (ok) props.onOpenChange(false);
+
+      if (ok) {
+        resetForm();
+        props.onOpenChange(false);
+      }
+      return ok;
     } finally {
       setSubmitting(false);
     }
   };
 
+  const steps = createMemo<MultiStepItem<ManageVariantValues>[]>(() => [
+    {
+      id: "identificacao",
+      title: "Identificação",
+      description: "Código SKU e nome da variação",
+      fields: [
+        {
+          name: "vendor_code",
+          label: "Código da variação (SKU)",
+          required: true,
+          layout: "half",
+          placeholder: "Ex: CAMISETA-G",
+          hint: "Identificador único (SKU) desta opção.",
+        },
+        {
+          name: "name",
+          label: "Nome da variação",
+          required: true,
+          layout: "half",
+          placeholder: "Ex: Tamanho G - Branca",
+          hint: "Como o comprador verá este item.",
+        },
+        {
+          name: "description",
+          kind: "textarea",
+          rows: 2,
+          label: "Descrição (opcional)",
+          layout: "full",
+          placeholder: "Detalhes sobre tecido, medidas, cor ou especificações...",
+          hint: "Informações adicionais para os participantes.",
+        },
+      ],
+    },
+    {
+      id: "valores",
+      title: "Preço e Estoque",
+      description: "Defina o valor de venda e a disponibilidade",
+      fields: [
+        {
+          name: "price_cents",
+          kind: "money",
+          currency: "BRL",
+          label: "Preço unitário",
+          layout: "half",
+          hint: "Valor unitário de venda deste modelo.",
+        },
+        {
+          name: "stock",
+          kind: "number",
+          min: "1",
+          step: "1",
+          label: "Estoque disponível",
+          layout: "half",
+          placeholder: "Ilimitado",
+          hint: "Deixe em branco para estoque ilimitado.",
+        },
+      ],
+    },
+    {
+      id: "resumo",
+      title: "Resumo",
+      description: "Revise os dados antes de salvar a variação",
+      summary: {
+        title: "Dados da variação",
+        badge: () =>
+          isEditing() ? "Pronto para salvar alterações" : "Pronto para cadastrar",
+        items: [
+          {
+            label: "Nome",
+            value: () => values().name || "Sem nome",
+          },
+          {
+            label: "Código SKU",
+            value: () => values().vendor_code || "Sem código",
+          },
+          {
+            label: "Preço unitário",
+            value: () => formatPrice(values().price_cents),
+          },
+          {
+            label: "Estoque",
+            value: () =>
+              values().stock.trim() !== ""
+                ? `${values().stock} unidades`
+                : "Ilimitado",
+          },
+          {
+            label: "Descrição",
+            value: () => values().description || "Sem descrição",
+          },
+        ],
+        extra: () => (
+          <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 shadow-xs space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-border/60">
+              <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers class="size-4 text-primary" />
+                {values().name || "Nova Variação"}
+              </span>
+              <span class="font-mono text-xs text-muted-foreground">
+                {values().vendor_code || "SKU-VAR"}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3">
+              <div class="flex items-center gap-2">
+                <Coins class="size-4 text-emerald-600 dark:text-emerald-400" />
+                <span class="text-sm font-bold text-foreground">
+                  {formatPrice(values().price_cents)}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1.5 text-xs">
+                <Show
+                  when={values().stock.trim() !== ""}
+                  fallback={
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      <InfinityLucide class="size-3" />
+                      Estoque ilimitado
+                    </span>
+                  }
+                >
+                  <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    <Boxes class="size-3" />
+                    {values().stock} un.
+                  </span>
+                </Show>
+              </div>
+            </div>
+
+            <Show when={values().description}>
+              <p class="text-xs text-muted-foreground leading-relaxed">
+                {values().description}
+              </p>
+            </Show>
+          </div>
+        ),
+      },
+    },
+  ]);
+
   return (
-    <Dialog
+    <MultiStepDialog
       open={props.open}
-      onOpenChange={props.onOpenChange}
+      onOpenChange={handleOpenChange}
       title={isEditing() ? "Editar variação" : "Nova variação"}
       description={
         isEditing()
           ? "Atualize as informações de preço e estoque da variação."
           : "Cadastre um novo tamanho, cor ou modelo para este produto."
       }
-      footer={
-        <div class="flex w-full items-center justify-end gap-2 pt-2">
-          <Button
-            variant="outline"
-            type="button"
-            disabled={submitting()}
-            onClick={() => props.onOpenChange(false)}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            form="manage-variant-form"
-            disabled={submitting()}
-          >
-            {submitting()
-              ? "Salvando..."
-              : isEditing()
-                ? "Salvar alterações"
-                : "Criar variação"}
-          </Button>
-        </div>
+      steps={steps()}
+      currentStep={currentStep()}
+      onStepChange={setCurrentStep}
+      values={values()}
+      errors={errors()}
+      onChange={handleChange}
+      loading={submitting()}
+      submitLabel={
+        submitting()
+          ? "Salvando..."
+          : isEditing()
+            ? "Salvar alterações"
+            : "Criar variação"
       }
-    >
-      <form id="manage-variant-form" onSubmit={handleSubmit} class="space-y-4">
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field
-            label="Código da variação"
-            hint="Identificador único (SKU), ex: CAMISETA-G"
-            required
-            error={errors().vendor_code}
-          >
-            {(ids) => (
-              <Input
-                id={ids.id}
-                aria-describedby={ids.describedBy}
-                aria-invalid={errors().vendor_code ? "true" : undefined}
-                value={values().vendor_code}
-                onInput={(e) => update("vendor_code", e.currentTarget.value)}
-                placeholder="Ex: CAMISETA-G"
-                disabled={submitting()}
-                required
-              />
-            )}
-          </Field>
-
-          <Field
-            label="Nome da variação"
-            hint="Ex: Tamanho G - Branca"
-            required
-            error={errors().name}
-          >
-            {(ids) => (
-              <Input
-                id={ids.id}
-                aria-describedby={ids.describedBy}
-                aria-invalid={errors().name ? "true" : undefined}
-                value={values().name}
-                onInput={(e) => update("name", e.currentTarget.value)}
-                placeholder="Ex: Tamanho G - Branca"
-                disabled={submitting()}
-                required
-              />
-            )}
-          </Field>
-        </div>
-
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field
-            label="Preço (R$)"
-            hint="Valor da unidade"
-            required
-            error={errors().price}
-          >
-            {(ids) => (
-              <Input
-                id={ids.id}
-                aria-describedby={ids.describedBy}
-                aria-invalid={errors().price ? "true" : undefined}
-                type="text"
-                inputmode="decimal"
-                value={values().price}
-                onInput={(e) => update("price", e.currentTarget.value)}
-                placeholder="0.00"
-                disabled={submitting()}
-                required
-              />
-            )}
-          </Field>
-
-          <Field
-            label="Estoque"
-            hint="Deixe vazio para ilimitado"
-            error={errors().stock}
-          >
-            {(ids) => (
-              <Input
-                id={ids.id}
-                aria-describedby={ids.describedBy}
-                aria-invalid={errors().stock ? "true" : undefined}
-                type="number"
-                min="1"
-                step="1"
-                value={values().stock}
-                onInput={(e) => update("stock", e.currentTarget.value)}
-                placeholder="Ilimitado"
-                disabled={submitting()}
-              />
-            )}
-          </Field>
-        </div>
-
-        <Field label="Descrição (opcional)">
-          {(ids) => (
-            <Textarea
-              id={ids.id}
-              rows={3}
-              value={values().description}
-              onInput={(e) => update("description", e.currentTarget.value)}
-              placeholder="Especificações, medidas, material..."
-              disabled={submitting()}
-            />
-          )}
-        </Field>
-      </form>
-    </Dialog>
+      onBeforeNext={validateStep}
+      onSubmit={handleSubmit}
+    />
   );
 }

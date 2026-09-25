@@ -23,6 +23,11 @@ export function getAssociatedFileInputId(task: UploadTask): string | null {
     if (programId) return `program-${programId}-banner-upload`;
   }
 
+  if (handlerKey === "variant-gallery") {
+    const variantId = task.owner?.id;
+    if (variantId) return `variant-${variantId}-gallery-upload`;
+  }
+
   return null;
 }
 
@@ -48,7 +53,6 @@ export function promptImageReplacement(
   picker.type = "file";
   picker.accept = "image/*";
   picker.style.display = "none";
-
   picker.onchange = () => {
     const file = picker.files?.[0];
     if (file) {
@@ -56,7 +60,6 @@ export function promptImageReplacement(
     }
     picker.remove();
   };
-
   document.body.appendChild(picker);
   picker.click();
 }
