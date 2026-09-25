@@ -2,10 +2,12 @@ import type { JSX } from "@solidjs/web";
 import { For, Match, Switch } from "solid-js";
 import { cn } from "../lib/cn";
 import { MultiStepCustomField } from "./fields/custom-field";
+import { MultiStepMoneyField } from "./fields/money-field";
 import { MultiStepTextField } from "./fields/text-field";
 import { MultiStepTextareaField } from "./fields/textarea-field";
 import type {
   CustomMultiStepField,
+  MoneyMultiStepField,
   MultiStepFieldsProps,
   TextMultiStepField,
   TextareaMultiStepField,
@@ -13,6 +15,7 @@ import type {
 
 export { MultiStepTextField } from "./fields/text-field";
 export { MultiStepTextareaField } from "./fields/textarea-field";
+export { MultiStepMoneyField } from "./fields/money-field";
 export { MultiStepCustomField } from "./fields/custom-field";
 
 /**
@@ -36,6 +39,15 @@ export function MultiStepFields<T = Record<string, unknown>>(
                 <Match when={field.kind === "textarea"}>
                   <MultiStepTextareaField
                     field={field as TextareaMultiStepField<T>}
+                    value={val()}
+                    error={errorMsg()}
+                    onChange={(v) => props.onChange?.(field.name, v)}
+                  />
+                </Match>
+
+                <Match when={field.kind === "money"}>
+                  <MultiStepMoneyField
+                    field={field as MoneyMultiStepField<T>}
                     value={val()}
                     error={errorMsg()}
                     onChange={(v) => props.onChange?.(field.name, v)}

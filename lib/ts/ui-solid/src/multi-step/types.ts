@@ -5,6 +5,7 @@ export type MultiStepFieldKind =
   | "email"
   | "password"
   | "number"
+  | "money"
   | "url"
   | "tel"
   | "date"
@@ -34,6 +35,18 @@ export interface TextMultiStepField<T = Record<string, unknown>>
     | "date"
     | "datetime-local";
   autocomplete?: string;
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
+}
+
+export interface MoneyMultiStepField<T = Record<string, unknown>>
+  extends BaseMultiStepField<T> {
+  kind: "money";
+  currency?: string;
+  locale?: string;
+  minCents?: number;
+  maxCents?: number;
 }
 
 export interface TextareaMultiStepField<T = Record<string, unknown>>
@@ -55,6 +68,7 @@ export interface CustomMultiStepField<T = Record<string, unknown>>
 
 export type MultiStepFieldConfig<T = Record<string, unknown>> =
   | TextMultiStepField<T>
+  | MoneyMultiStepField<T>
   | TextareaMultiStepField<T>
   | CustomMultiStepField<T>;
 

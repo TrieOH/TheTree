@@ -3,6 +3,7 @@ import { Show } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface InputProps {
+  ref?: HTMLInputElement | ((el: HTMLInputElement) => void);
   id?: string;
   name?: string;
   type?:
@@ -62,6 +63,7 @@ export function Input(props: InputProps) {
 
   return (
     <input
+      ref={props.ref}
       id={props.id}
       name={props.name}
       type={props.type ?? "text"}
@@ -90,6 +92,7 @@ export function Input(props: InputProps) {
 }
 
 export interface TextareaProps {
+  ref?: HTMLTextAreaElement | ((el: HTMLTextAreaElement) => void);
   id?: string;
   name?: string;
   value?: string;
@@ -118,6 +121,7 @@ export function Textarea(props: TextareaProps) {
 
   return (
     <textarea
+      ref={props.ref}
       id={props.id}
       name={props.name}
       value={props.value ?? ""}

@@ -25,7 +25,8 @@ export function MultiStepTextField<T = Record<string, unknown>>(
   };
 
   const handleInput = (event: InputEvent & { currentTarget: HTMLInputElement }) => {
-    const val = (event.target as HTMLInputElement)?.value ?? event.currentTarget?.value ?? "";
+    const target = (event.target as HTMLInputElement) ?? (event.currentTarget as HTMLInputElement);
+    const val = target?.value ?? "";
     props.onChange?.(val);
   };
 
@@ -50,6 +51,9 @@ export function MultiStepTextField<T = Record<string, unknown>>(
         placeholder={props.field.placeholder}
         disabled={props.field.disabled}
         autocomplete={props.field.autocomplete ?? "off"}
+        min={props.field.min}
+        max={props.field.max}
+        step={props.field.step}
         onInput={handleInput}
       />
 
@@ -63,11 +67,9 @@ export function MultiStepTextField<T = Record<string, unknown>>(
           </Show>
         }
       >
-        {(err) => (
-          <p id={errorId} role="alert" class="text-xs font-medium text-destructive">
-            {err()}
-          </p>
-        )}
+        <p id={errorId} role="alert" class="text-xs font-medium text-destructive">
+          {props.error}
+        </p>
       </Show>
     </div>
   );

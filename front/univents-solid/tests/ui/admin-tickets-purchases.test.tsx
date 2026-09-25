@@ -5,6 +5,7 @@ import type { EditionPurchase } from "@trieoh/univents-api/schemas";
 import type { TicketI } from "@/features/tickets/model";
 import { AdminCreateTicketCard } from "@/features/tickets/ui/AdminCreateTicketCard";
 import { AdminTicketCard } from "@/features/tickets/ui/AdminTicketCard";
+import { ManageTicketDialog } from "@/features/tickets/ui/ManageTicketDialog";
 import { AdminPurchaseCard } from "@/features/purchases/ui/AdminPurchaseCard";
 
 afterEach(cleanup);
@@ -137,5 +138,138 @@ describe("AdminPurchaseCard", () => {
     const refundBtn = screen.getByRole("button", { name: /Reembolsar/i });
     fireEvent.click(refundBtn);
     expect(onRefund).toHaveBeenCalledWith(mockPurchase);
+  });
+});
+
+describe("ManageTicketDialog", () => {
+  it("steps through creation flow, validates access level required, and submits valid ticket", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    const onOpenChange = vi.fn();
+
+    render(() => (
+      <ManageTicketDialog
+        open={true}
+        onOpenChange={onOpenChange}
+        ticket={null}
+        onSubmit={onSubmit}
+      />
+    ));
+
+    expect(screen.getByText("Novo ticket")).toBeInTheDocument();
+
+    // Try advancing with empty name
+    const continueBtn = screen.getByRole("button", { name: /Continuar/i });
+    fireEvent.click(continueBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("O nome deve ter pelo menos 2 caracteres.")).toBeInTheDocument();
+    });
+
+    // Fill name and description
+    const nameInput = screen.getByLabelText(/Nome do ticket/i);
+    fireEvent.input(nameInput, { target: { value: "Ingresso Regular" } });
+
+    // Step error should be cleared when user types
+    await waitFor(() => {
+      expect(screen.queryByText("O nome deve ter pelo menos 2 caracteres.")).not.toBeInTheDocument();
+    });
+
+    // Advance to Step 2: Valores e Vagas
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^Preço/i)).toBeInTheDocument();
+    });
+
+    // Test access level required validation: try advancing with unset access level
+    const step2ContinueBtn = screen.getByRole("button", { name: /Continuar/i });
+    fireEvent.click(step2ContinueBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("O nível de acesso é obrigatório.")).toBeInTheDocument();
+    });
+
+    // Fill price using monetary mask (typing 4990 gives R$ 49,90)
+    const priceInput = screen.getByLabelText(/^Preço/i);
+    fireEvent.input(priceInput, { target: { value: "4990" } });
+
+    // Fill access level
+    const accessLevelInput = screen.getByLabelText(/Nível de acesso/i);
+    fireEvent.input(accessLevelInput, { target: { value: "0" } });
+
+    // Fill max quantity
+    const maxQtyInput = screen.getByLabelText(/Quantidade máxima \(vagas\)/i);
+    fireEvent.input(maxQtyInput, { target: { value: "100" } });
+
+    // Advance to Step 3: Resumo
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Dados do ticket")).toBeInTheDocument();
+      expect(screen.getByText("Pronto para criar")).toBeInTheDocument();
+      expect(screen.getAllByText("100 vagas").length).toBeGreaterThan(0);
+    });
+
+    // Submit
+    const submitBtn = screen.getByRole("button", { name: /Criar ticket/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({
+        name: "Ingresso Regular",
+        description: null,
+        price_cents: 4990,
+        access_level: 0,
+        max_quantity: 100,
+      });
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  it("populates existing ticket in edit mode and updates", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    const onOpenChange = vi.fn();
+
+    render(() => (
+      <ManageTicketDialog
+        open={true}
+        onOpenChange={onOpenChange}
+        ticket={mockTicket}
+        onSubmit={onSubmit}
+      />
+    ));
+
+    expect(screen.getByText("Editar ticket")).toBeInTheDocument();
+    const nameInput = screen.getByLabelText(/Nome do ticket/i) as HTMLInputElement;
+    expect(nameInput.value).toBe("Ingresso VIP");
+
+    // Advance to Step 2
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      const priceInput = screen.getByLabelText(/^Preço/i) as HTMLInputElement;
+      expect(priceInput.value).toMatch(/150/);
+    });
+
+    // Advance to Step 3 (Resumo)
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Pronto para atualizar")).toBeInTheDocument();
+    });
+
+    const submitBtn = screen.getByRole("button", { name: /Salvar alterações/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({
+        name: "Ingresso VIP",
+        description: "Acesso total à área VIP",
+        price_cents: 15000,
+        access_level: 2,
+        max_quantity: 50,
+      });
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 });
