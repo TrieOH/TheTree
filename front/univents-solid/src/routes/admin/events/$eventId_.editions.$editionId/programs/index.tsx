@@ -531,7 +531,7 @@ function AdminProgramsRoute(): JSX.Element {
                     <Combobox
                       value={dateFilter() ?? "all"}
                       options={dateOptions()}
-                      placeholder="Todos os dias"
+                      placeholder="Todos os dias..."
                       searchPlaceholder="Buscar dia..."
                       onChange={(val) => setDateFilter(val === "all" ? null : val)}
                       class="w-full"
@@ -570,6 +570,7 @@ function AdminProgramsRoute(): JSX.Element {
               {(program, index) => (
                 <AdminProgramCard
                   program={program}
+                  eventId={eventId()}
                   index={index() + 1}
                   animate={options.animate}
                   occurrences={occurrences().filter((o) => o.program_id === program.id)}

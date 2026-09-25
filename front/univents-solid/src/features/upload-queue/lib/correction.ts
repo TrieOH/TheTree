@@ -18,6 +18,11 @@ export function getAssociatedFileInputId(task: UploadTask): string | null {
     if (editionId && field === "banner_url") return `edition-${editionId}-banner-upload`;
   }
 
+  if (handlerKey === "program-image") {
+    const programId = task.owner?.id;
+    if (programId) return `program-${programId}-banner-upload`;
+  }
+
   return null;
 }
 

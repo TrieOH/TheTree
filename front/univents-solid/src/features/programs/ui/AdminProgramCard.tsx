@@ -5,11 +5,14 @@ import AwardIcon from "~icons/lucide/award";
 import CalendarDaysIcon from "~icons/lucide/calendar-days";
 import ClockIcon from "~icons/lucide/clock";
 import FlagIcon from "~icons/lucide/flag";
+import Loader2Icon from "~icons/lucide/loader-2";
 import PencilIcon from "~icons/lucide/pencil";
 import SendIcon from "~icons/lucide/send";
 import TrashIcon from "~icons/lucide/trash";
+import UploadIcon from "~icons/lucide/upload";
 
 import { Button, cn } from "@trieoh/ui-solid";
+import { useUploadQueue } from "@/features/upload-queue";
 import { Reveal } from "@/shared/ui/Reveal";
 import type { OccurrenceI, ProgramI } from "../model";
 
@@ -17,12 +20,15 @@ const Award = AwardIcon as unknown as (props: { class?: string }) => JSX.Element
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Clock = ClockIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Flag = FlagIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Loader2 = Loader2Icon as unknown as (props: { class?: string }) => JSX.Element;
 const Pencil = PencilIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Send = SendIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash = TrashIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Upload = UploadIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface AdminProgramCardProps {
   program: ProgramI;
+  eventId?: string;
   occurrences?: OccurrenceI[];
   index?: number;
   animate?: boolean;
@@ -40,9 +46,53 @@ export interface AdminProgramCardProps {
 }
 
 export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
+  let fileInputRef: HTMLInputElement | undefined;
+  const uploadQueue = useUploadQueue();
+
   const isDeleted = () => props.program.deleted_at !== null;
   const occurrencesCount = () => props.occurrences?.length ?? 0;
   const isCheckpoint = () => props.program.kind === "checkpoint";
+
+  const getTask = () =>
+    uploadQueue.tasks.find(
+      (task) =>
+        task.owner.type === "program" &&
+        task.owner.id === props.program.id &&
+        task.association?.handlerKey === "program-image" &&
+        !["completed", "failed", "rejected"].includes(task.status),
+    );
+
+  const isUploading = () => Boolean(getTask());
+  const currentBannerUrl = () => getTask()?.uploadedUrl ?? props.program.banner_url;
+
+  const handleUpload = async (file?: File) => {
+    if (!file || isUploading()) return;
+    try {
+      await uploadQueue.enqueue({
+        file,
+        owner: {
+          type: "program",
+          id: props.program.id,
+          label: props.program.name,
+        },
+        mediaType: "banner",
+        label: `${props.program.name} — imagem`,
+        storagePath: `editions/${props.program.edition_id}/programs/${props.program.id}/banner`,
+        correctionPath: props.eventId
+          ? `/admin/events/${props.eventId}/editions/${props.program.edition_id}/programs`
+          : undefined,
+        association: {
+          handlerKey: "program-image",
+          input: {
+            editionId: props.program.edition_id,
+            eventId: props.eventId,
+          },
+        },
+      });
+    } catch {
+      // Ignored: handled by upload queue UI
+    }
+  };
 
   return (
     <Reveal delay={(props.index ?? 0) * 0.05} animate={props.animate} class="h-full">
@@ -56,13 +106,55 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
           isDeleted() && "opacity-60 grayscale",
         )}
       >
+        <input
+          id={`program-${props.program.id}-banner-upload`}
+          ref={(el) => {
+            fileInputRef = el;
+          }}
+          type="file"
+          accept="image/*"
+          class="hidden"
+          disabled={isUploading()}
+          onChange={(e) => {
+            const file = e.currentTarget.files?.[0];
+            if (file) {
+              void handleUpload(file);
+            }
+            e.currentTarget.value = "";
+          }}
+        />
+
         <div class="space-y-2">
           {/* Header with thumbnail, name, metadata and actions */}
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-center gap-2.5 min-w-0 flex-1">
-              <div class="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/60 transition-transform group-hover:scale-105">
+              {/* Card de imagem: permite clicar diretamente para alterar/enviar a imagem de capa */}
+              <div
+                role="button"
+                tabindex="0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef?.click();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fileInputRef?.click();
+                  }
+                }}
+                title={
+                  isUploading()
+                    ? "Enviando imagem..."
+                    : currentBannerUrl()
+                      ? "Clique para alterar a imagem"
+                      : "Clique para enviar uma imagem"
+                }
+                aria-label={`Alterar imagem de ${props.program.name}`}
+                class="group/thumb relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/60 transition-transform hover:scale-105 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 <Show
-                  when={props.program.banner_url}
+                  when={currentBannerUrl()}
                   fallback={
                     <div class="flex size-full items-center justify-center bg-primary/10 text-primary">
                       <Show
@@ -82,6 +174,22 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
                     />
                   )}
                 </Show>
+
+                <div
+                  class={cn(
+                    "absolute inset-0 flex items-center justify-center bg-black/50 text-white transition-opacity",
+                    isUploading()
+                      ? "opacity-100"
+                      : "opacity-0 group-hover/thumb:opacity-100 focus-visible:opacity-100",
+                  )}
+                >
+                  <Show
+                    when={isUploading()}
+                    fallback={<Upload class="size-4" />}
+                  >
+                    <Loader2 class="size-4 animate-spin text-white" />
+                  </Show>
+                </div>
               </div>
 
               <div class="min-w-0 flex-1">

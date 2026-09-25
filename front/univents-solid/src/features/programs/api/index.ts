@@ -42,6 +42,7 @@ import type {
   ProgramCreateOutput,
   ProgramI,
 } from "../model";
+import "./upload-association";
 
 export type ProgramPageData = {
   event: EventI;
