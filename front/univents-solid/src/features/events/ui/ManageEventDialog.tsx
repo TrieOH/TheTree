@@ -1,15 +1,29 @@
-import { createSignal, untrack } from "solid-js";
-
-import { Button, Dialog, Field, Input, Textarea } from "@trieoh/ui-solid";
-
+import { Show, createEffect, createSignal, untrack } from "solid-js";
+import {
+  MultiStepDialog,
+  type MultiStepItem,
+} from "@trieoh/ui-solid";
+import { toast } from "@/shared/ui/toast";
 import type { EventI } from "../model";
 
 export interface ManageEventValues {
   full_name: string;
   slug: string;
+  acronym: string | null;
+  description: string | null;
+  contact_email: string | null;
+  logo_url?: string | null;
+  banner_url?: string | null;
+}
+
+interface FormInternalValues {
+  full_name: string;
+  slug: string;
   acronym: string;
   description: string;
   contact_email: string;
+  logo_url: string | null;
+  banner_url: string | null;
 }
 
 export interface ManageEventDialogProps {
@@ -40,15 +54,17 @@ function toAcronym(value: string): string {
     .join("");
 }
 
-const emptyValues: ManageEventValues = {
+const emptyValues: FormInternalValues = {
   full_name: "",
   slug: "",
   acronym: "",
   description: "",
   contact_email: "",
+  logo_url: null,
+  banner_url: null,
 };
 
-const valuesOf = (event: EventI | null): ManageEventValues =>
+const valuesOf = (event: EventI | null): FormInternalValues =>
   event
     ? {
       full_name: event.full_name,
@@ -56,47 +72,32 @@ const valuesOf = (event: EventI | null): ManageEventValues =>
       acronym: event.acronym ?? "",
       description: event.description ?? "",
       contact_email: event.contact_email ?? "",
+      logo_url: event.logo_url ?? null,
+      banner_url: event.banner_url ?? null,
     }
     : { ...emptyValues };
 
-function validate(values: ManageEventValues): Partial<Record<keyof ManageEventValues, string>> {
-  const errors: Partial<Record<keyof ManageEventValues, string>> = {};
-
-  if (values.full_name.trim().length < 2) {
-    errors.full_name = "Informe ao menos 2 caracteres.";
-  }
-  if (values.slug.trim().length < 2) {
-    errors.slug = "Informe ao menos 2 caracteres.";
-  }
-  if (values.contact_email && !values.contact_email.includes("@")) {
-    errors.contact_email = "E-mail inválido.";
-  }
-
-  return errors;
-}
-
-/**
- * Create/edit form. Single step on purpose — the React app opens a multi-step
- * wizard here, and porting that widget is its own task; the fields, the slug
- * rules and the payload are the same.
- */
 export function ManageEventDialog(props: ManageEventDialogProps) {
-  // Seeded once, on mount: the caller remounts this component when it points at
-  // another event (`<Show keyed>`), so there is no re-seed effect to fight the
-  // user's typing. `untrack` documents that this is a snapshot, not a
-  // subscription.
-  const [values, setValues] = createSignal(untrack(() => valuesOf(props.event)));
+  const [values, setValues] = createSignal<FormInternalValues>(untrack(() => valuesOf(props.event)));
+  const [currentStep, setCurrentStep] = createSignal(0);
   const [submitting, setSubmitting] = createSignal(false);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof ManageEventValues, string>>>({});
+  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>({});
 
-  /**
-   * Derivation is decided by comparing with the current values instead of a
-   * "touched" signal: the moment the field stops matching what the name would
-   * produce, it is the user's and we leave it alone. One signal, one write.
-   */
-  const update = <K extends keyof ManageEventValues>(key: K, value: ManageEventValues[K]) => {
+  // Reset or re-sync values only when the dialog opens
+  createEffect(
+    () => [props.open, props.event] as const,
+    ([open, event]) => {
+      if (open) {
+        setValues(valuesOf(event));
+        setCurrentStep(0);
+        setErrors({});
+      }
+    },
+  );
+
+  const update = <K extends keyof FormInternalValues>(key: K, value: FormInternalValues[K]) => {
     const current = values();
-    const next: ManageEventValues = { ...current, [key]: value };
+    const next: FormInternalValues = { ...current, [key]: value };
 
     if (key === "full_name") {
       if (!current.slug || current.slug === toSlug(current.full_name)) {
@@ -108,120 +109,249 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
     }
 
     setValues(next);
+
+    // Clear error for field once edited
+    if (errors()[key]) {
+      setErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[key];
+        return updated;
+      });
+    }
   };
 
-  const submit = async (event: SubmitEvent) => {
-    event.preventDefault();
+  const validateStep = (stepIndex: number): boolean => {
+    const v = values();
+    const stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
 
-    // Normalise at the form boundary: nothing leaves here with stray spaces.
+    if (stepIndex === 0) {
+      if (v.full_name.trim().length < 2) {
+        stepErrors.full_name = "Informe ao menos 2 caracteres.";
+      }
+      if (v.slug.trim().length < 2) {
+        stepErrors.slug = "Informe ao menos 2 caracteres.";
+      }
+    } else if (stepIndex === 1) {
+      if (v.contact_email && !v.contact_email.includes("@")) {
+        stepErrors.contact_email = "E-mail inválido.";
+      }
+    }
+
+    setErrors((prev) => ({ ...prev, ...stepErrors }));
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const submitCurrent = async (): Promise<boolean> => {
+    const isStep0Valid = validateStep(0);
+    if (!isStep0Valid) {
+      setCurrentStep(0);
+      return false;
+    }
+
+    const isStep1Valid = validateStep(1);
+    if (!isStep1Valid) {
+      setCurrentStep(1);
+      return false;
+    }
+
     const raw = values();
     const current: ManageEventValues = {
       full_name: raw.full_name.trim(),
       slug: raw.slug.trim(),
-      acronym: raw.acronym.trim(),
-      description: raw.description.trim(),
-      contact_email: raw.contact_email.trim(),
+      acronym: raw.acronym.trim() ? raw.acronym.trim() : null,
+      description: raw.description.trim() ? raw.description.trim() : null,
+      contact_email: raw.contact_email.trim() ? raw.contact_email.trim() : null,
+      logo_url: raw.logo_url ?? props.event?.logo_url ?? null,
+      banner_url: raw.banner_url ?? props.event?.banner_url ?? null,
     };
-
-    const found = validate(current);
-    setErrors(found);
-    if (Object.keys(found).length > 0) return;
 
     setSubmitting(true);
     try {
-      await props.onSubmit(current);
+      const ok = await props.onSubmit(current);
+      if (ok) {
+        toast.success(
+          props.event
+            ? "Evento atualizado com sucesso!"
+            : "Evento criado com sucesso!",
+        );
+        props.onOpenChange(false);
+        return true;
+      } else {
+        toast.error("Não foi possível salvar o evento. Verifique os dados.");
+        return false;
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao salvar o evento.";
+      toast.error(message);
+      return false;
     } finally {
       setSubmitting(false);
     }
   };
 
+  const steps = (): MultiStepItem<FormInternalValues>[] => [
+    {
+      id: "identidade",
+      title: "Identidade",
+      description: "Nome, link e detalhes",
+      fields: [
+        {
+          name: "full_name",
+          label: "Nome",
+          placeholder: "Ex: Tech Summit 2026",
+          required: true,
+        },
+        {
+          name: "slug",
+          label: "Slug",
+          placeholder: "tech-summit-2026",
+          hint: "Identificador na URL pública.",
+          layout: "half",
+          required: true,
+        },
+        {
+          name: "acronym",
+          label: "Sigla",
+          placeholder: "TS26",
+          hint: "Gerada a partir do nome.",
+          layout: "half",
+        },
+        {
+          kind: "textarea",
+          name: "description",
+          label: "Descrição",
+          placeholder: "Escreva uma breve apresentação sobre o seu evento...",
+          hint: "Conteúdo explicativo sobre o propósito e público do evento.",
+          rows: 4,
+        },
+      ],
+    },
+    {
+      id: "contato",
+      title: "Contato",
+      description: "E-mail de atendimento",
+      fields: [
+        {
+          kind: "email",
+          name: "contact_email",
+          label: "E-mail de contato",
+          placeholder: "contato@evento.com",
+          hint: "E-mail visível para dúvidas e suporte aos participantes.",
+        },
+      ],
+    },
+    {
+      id: "resumo",
+      title: "Resumo",
+      description: "Revisão e confirmação",
+      summary: {
+        title: "Revisão das Informações",
+        badge: "Pronto para salvar",
+        items: [
+          { label: "Nome do evento", value: () => values().full_name },
+          { label: "Sigla", value: () => values().acronym },
+          {
+            label: "Link público",
+            value: () => (values().slug ? `/events/${values().slug}` : ""),
+            href: () => (values().slug ? `/events/${values().slug}` : undefined),
+            mono: true,
+          },
+          {
+            label: "E-mail de contato",
+            value: () => values().contact_email || "Não informado",
+          },
+          {
+            label: "Descrição",
+            value: () => values().description,
+            fullWidth: true,
+          },
+        ],
+        extra: () => (
+          <Show when={values().logo_url || values().banner_url}>
+            <div class="col-span-1 sm:col-span-2 overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs">
+              {/* Capa com o banner do evento ou gradiente harmonioso */}
+              <div class="relative h-20 w-full bg-muted overflow-hidden">
+                <Show
+                  when={values().banner_url}
+                  fallback={
+                    <div class="size-full bg-linear-to-r from-muted via-muted/60 to-muted/40" />
+                  }
+                >
+                  {(banner) => (
+                    <img
+                      src={banner()}
+                      alt="Banner do evento"
+                      class="size-full object-cover"
+                    />
+                  )}
+                </Show>
+              </div>
+
+              {/* Faixa inferior com o logo sobreposto no banner e identificação */}
+              <div class="relative flex items-center gap-3 px-3.5 pb-3 pt-2 bg-card">
+                <div class="relative -mt-7 size-12 shrink-0 overflow-hidden rounded-xl border-2 border-card bg-card shadow-sm">
+                  <Show
+                    when={values().logo_url}
+                    fallback={
+                      <div class="flex size-full items-center justify-center bg-muted text-xs font-bold text-muted-foreground/60">
+                        {values().acronym || "EV"}
+                      </div>
+                    }
+                  >
+                    {(logo) => (
+                      <img
+                        src={logo()}
+                        alt="Logo do evento"
+                        class="size-full object-cover"
+                      />
+                    )}
+                  </Show>
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <span class="block text-xs font-semibold text-foreground truncate">
+                    {values().full_name || "Identidade visual"}
+                  </span>
+                  <span class="block text-[11px] text-muted-foreground truncate">
+                    {values().logo_url && values().banner_url
+                      ? "Logo e banner configurados"
+                      : values().logo_url
+                        ? "Logo configurado"
+                        : "Banner configurado"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Show>
+        ),
+      },
+    },
+  ];
+
   return (
-    <Dialog
+    <MultiStepDialog<FormInternalValues>
       open={props.open}
       onOpenChange={props.onOpenChange}
       title={props.event ? "Editar evento" : "Criar novo evento"}
       description={
         props.event
-          ? "Alterações entram em vigor imediatamente."
-          : "O evento nasce como rascunho e pode ser publicado depois."
+          ? "Altere os dados do evento em etapas organizadas."
+          : "Preencha as informações para cadastrar seu novo evento."
       }
-      footer={
-        <>
-          <Button variant="ghost" onClick={() => props.onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="manage-event-form" disabled={submitting()}>
-            {props.event ? "Salvar alterações" : "Criar evento"}
-          </Button>
-        </>
-      }
-    >
-      <form id="manage-event-form" class="flex flex-col gap-4" onSubmit={submit}>
-        <Field label="Nome" required error={errors().full_name}>
-          {(ids) => (
-            <Input
-              id={ids.id}
-              aria-describedby={ids.describedBy}
-              aria-invalid={errors().full_name ? "true" : undefined}
-              value={values().full_name}
-              autocomplete="off"
-              onInput={(event) => update("full_name", event.currentTarget.value)}
-            />
-          )}
-        </Field>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <Field label="Slug" required error={errors().slug} hint="Usado na URL pública.">
-            {(ids) => (
-              <Input
-                id={ids.id}
-                aria-describedby={ids.describedBy}
-                aria-invalid={errors().slug ? "true" : undefined}
-                value={values().slug}
-                autocomplete="off"
-                onInput={(event) => update("slug", event.currentTarget.value)}
-              />
-            )}
-          </Field>
-
-          <Field label="Sigla" hint="Gerada a partir do nome.">
-            {(ids) => (
-              <Input
-                id={ids.id}
-                aria-describedby={ids.describedBy}
-                value={values().acronym}
-                autocomplete="off"
-                onInput={(event) => update("acronym", event.currentTarget.value)}
-              />
-            )}
-          </Field>
-        </div>
-
-        <Field label="E-mail de contato" error={errors().contact_email}>
-          {(ids) => (
-            <Input
-              id={ids.id}
-              type="email"
-              aria-describedby={ids.describedBy}
-              aria-invalid={errors().contact_email ? "true" : undefined}
-              value={values().contact_email}
-              onInput={(event) => update("contact_email", event.currentTarget.value)}
-            />
-          )}
-        </Field>
-
-        <Field label="Descrição">
-          {(ids) => (
-            <Textarea
-              id={ids.id}
-              rows={3}
-              aria-describedby={ids.describedBy}
-              value={values().description}
-              onInput={(event) => update("description", event.currentTarget.value)}
-            />
-          )}
-        </Field>
-      </form>
-    </Dialog>
+      steps={steps()}
+      currentStep={currentStep()}
+      onStepChange={setCurrentStep}
+      values={values()}
+      errors={errors()}
+      onChange={(key, val) => update(key, val as FormInternalValues[typeof key])}
+      formId="manage-event-form"
+      loading={submitting()}
+      submitLabel={props.event ? "Salvar alterações" : "Criar evento"}
+      nextLabel="Continuar"
+      onBeforeNext={(step) => validateStep(step)}
+      onFormSubmit={submitCurrent}
+      onSubmit={submitCurrent}
+    />
   );
 }

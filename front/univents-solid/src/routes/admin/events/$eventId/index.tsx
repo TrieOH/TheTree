@@ -223,6 +223,7 @@ function AdminEventOverviewRoute(): JSX.Element {
         eventId: ev.id,
         data: values,
       });
+      setEditEventOpen(false);
       return true;
     } catch {
       return false;

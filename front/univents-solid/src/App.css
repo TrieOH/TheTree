@@ -167,26 +167,6 @@ svg.ts-chart:focus-visible {
   }
 }
 
-:root.univents-easter-egg {
-  animation: easter-egg-invert 6s ease-in-out infinite alternate;
-}
-
-@keyframes easter-egg-invert {
-  0% {
-    filter: invert(0) hue-rotate(0deg);
-  }
-  50% {
-    filter: invert(0.9) hue-rotate(180deg);
-  }
-  100% {
-    filter: invert(0) hue-rotate(360deg);
-  }
-}
-
-::selection {
-  background-color: var(--selection);
-  color: var(--selection-foreground);
-}
 
 .profile-preferences-scroll {
   scrollbar-gutter: stable;
@@ -278,4 +258,15 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   to {
     height: 0;
   }
+}
+
+/* Hide native scrollbar when OverlayScrollbar widget is active */
+html.overlay-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html.overlay-scrollbar::-webkit-scrollbar,
+html.overlay-scrollbar body::-webkit-scrollbar {
+  display: none;
 }

@@ -14,6 +14,8 @@ export interface DialogProps {
   footer?: JSX.Element;
   header?: JSX.Element;
   size?: DialogSize;
+  /** When true, dialog panel has a fixed height of `calc(100dvh - 2rem)` instead of `max-height`. */
+  fixedHeight?: boolean;
   /** Extra classes for the panel (width, padding overrides…). */
   class?: string;
   /** Extra classes for the content body. */
@@ -101,38 +103,40 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
       props.onOpenChange(false);
       return;
     }
+
     if (event.key !== "Tab") return;
 
     const element = panel();
     if (!element) return;
 
     const focusable = Array.from(element.querySelectorAll<HTMLElement>(FOCUSABLE));
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (!first || !last) {
+    if (!focusable.length) {
       event.preventDefault();
       return;
     }
 
-    const active = document.activeElement;
-    if (event.shiftKey && (active === first || active === element)) {
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const activeEl = document.activeElement;
+
+    if (event.shiftKey && (activeEl === first || activeEl === element)) {
       event.preventDefault();
       last.focus();
-    } else if (!event.shiftKey && active === last) {
+    } else if (!event.shiftKey && activeEl === last) {
       event.preventDefault();
       first.focus();
     }
   };
 
-  // Solid 2 canonical lifecycle: onSettled with returned cleanup (no onCleanup outside owner)
   onSettled(() => {
     if (typeof window === "undefined") return;
     const previousOverflow = document.body.style.overflow;
     const previousPaddingRight = document.body.style.paddingRight;
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
-    // Compensate scrollbar width to prevent desktop layout shift
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    // Compensate scrollbar width to prevent desktop layout shift (capped to realistic max)
+    const rawScrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth = Math.max(0, Math.min(32, rawScrollbarWidth));
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
@@ -187,7 +191,8 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
         {/*
           Modern Dialog Panel:
           - Centered card layout with rounded-2xl on mobile and desktop.
-          - max-height: calc(100dvh - 2rem) guarantees 16px safety clearance top and bottom on any screen.
+          - max-height or height: calc(100dvh - 2rem) guarantees 16px safety clearance top and bottom on any screen.
+          - Specific transition-[opacity,transform] avoiding transition-all layout reflows during scroll/resize.
           - Clean border and subtle shadow for depth without performance penalty.
         */}
         <div
@@ -199,11 +204,11 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
           aria-describedby={props.description ? descriptionId : undefined}
           tabindex="-1"
           style={{
-            "max-height": "calc(100dvh - 2rem)",
+            [props.fixedHeight ? "height" : "max-height"]: "calc(100dvh - 2rem)",
             ...(props.style ?? {}),
           }}
           class={cn(
-            "relative z-10 flex w-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-2xl shadow-black/25 ring-1 ring-black/5 transition-all duration-200 ease-out dark:shadow-black/70 dark:ring-white/10",
+            "relative z-10 flex w-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-2xl shadow-black/25 ring-1 ring-black/5 transition-[opacity,transform] duration-200 ease-out dark:shadow-black/70 dark:ring-white/10",
             sizeClass(),
             surfaceProps.active
               ? "translate-y-0 opacity-100 scale-100"
@@ -243,11 +248,11 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
               when={displayHeader()}
               fallback={
                 <header class="flex shrink-0 items-start justify-between gap-3 border-b border-border/40 px-5 py-3.5 sm:px-6 sm:py-4">
-                  <div class="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                  <div class="flex min-w-0 flex-1 flex-col pr-2">
                     <Show when={displayTitle()}>
                       <h2
                         id={titleId}
-                        class="text-base sm:text-lg font-semibold tracking-tight text-foreground leading-tight"
+                        class="text-base sm:text-lg font-semibold tracking-tight text-foreground leading-snug"
                       >
                         {displayTitle()}
                       </h2>
@@ -255,7 +260,7 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
                     <Show when={displayDescription()}>
                       <p
                         id={descriptionId}
-                        class="text-xs sm:text-sm text-muted-foreground leading-normal"
+                        class="text-xs sm:text-sm text-muted-foreground mt-0.5 leading-relaxed"
                       >
                         {displayDescription()}
                       </p>
@@ -292,11 +297,12 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
             Scrollable Content Body:
             - min-h-0 allows flex child to shrink properly between pinned header and footer.
             - overscroll-contain keeps momentum scrolling isolated to the dialog.
+            - scroll-smooth ensures buttery smooth scroll on desktop wheel/trackpad.
             - -webkit-overflow-scrolling: touch ensures buttery-smooth mobile momentum scrolling.
           */}
           <div
             class={cn(
-              "flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6 isolate",
+              "flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth p-5 sm:p-6",
               props.contentClass,
             )}
             style={{ "-webkit-overflow-scrolling": "touch" }}
@@ -315,3 +321,8 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
     </Portal>
   );
 }
+
+/**
+ * Modal is an exact drop-in alias for Dialog.
+ */
+export const Modal = Dialog;

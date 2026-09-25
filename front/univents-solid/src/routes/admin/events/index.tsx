@@ -68,6 +68,8 @@ function AdminEventsPage(): JSX.Element {
       acronym: values.acronym || null,
       description: values.description || null,
       contact_email: values.contact_email || null,
+      logo_url: values.logo_url ?? current?.logo_url ?? null,
+      banner_url: values.banner_url ?? current?.banner_url ?? null,
     };
 
     try {
