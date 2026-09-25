@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, cleanup, waitFor } from "@solidjs/testing-library";
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import {
   AdminCreateSignatureCard,
   AdminCreateSignatureRequestCard,
@@ -7,12 +7,38 @@ import {
   AdminSignatureRequestCard,
   SignatureSectionTabs,
 } from "@/features/signatures/ui";
+import { CreateSignatureModal } from "@/features/signatures/ui/CreateSignatureModal";
+import { CreateSignatureRequestModal } from "@/features/signatures/ui/CreateSignatureRequestModal";
 import type {
   SignatureI,
   SignatureRequestI,
 } from "@/features/signatures/model";
 
+const mockCreateSignature = vi.fn().mockResolvedValue({ id: "sig-new" });
+const mockCreateSignatureRequest = vi.fn().mockResolvedValue({ id: "req-new" });
+const mockUploadFile = vi.fn().mockResolvedValue("https://storage.example.com/signatures/test.png");
+
+vi.mock("@/features/storage/api/index", () => ({
+  uploadFile: (...args: unknown[]) => mockUploadFile(...args),
+}));
+
+vi.mock("@/features/signatures/api/mutations", () => ({
+  useCreateSignatureMutation: () => ({
+    mutateAsync: mockCreateSignature,
+  }),
+  useCreateSignatureRequestMutation: () => ({
+    mutateAsync: mockCreateSignatureRequest,
+  }),
+}));
+
 describe("Admin Signatures UI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCreateSignature.mockResolvedValue({ id: "sig-new" });
+    mockCreateSignatureRequest.mockResolvedValue({ id: "req-new" });
+    mockUploadFile.mockResolvedValue("https://storage.example.com/signatures/test.png");
+  });
+
   afterEach(() => {
     cleanup();
   });
@@ -121,5 +147,200 @@ describe("Admin Signatures UI", () => {
     const invitesTab = screen.getByText("Convites de assinatura");
     fireEvent.click(invitesTab);
     expect(onChange).toHaveBeenCalledWith("invites");
+  });
+
+  it("guides through CreateSignatureModal steps, validates fields, and submits successfully", async () => {
+    const onOpenChange = vi.fn();
+    const onSuccess = vi.fn();
+
+    // Mock canvas methods for jsdom
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+      lineWidth: 3.5,
+      lineCap: "round",
+      lineJoin: "round",
+      strokeStyle: "#000",
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+    }) as any;
+    HTMLCanvasElement.prototype.toDataURL = vi.fn().mockReturnValue("data:image/png;base64,mockcanvas");
+    HTMLCanvasElement.prototype.toBlob = vi.fn().mockImplementation((cb) => {
+      cb(new Blob(["mock-signature"], { type: "image/png" }));
+    });
+
+    render(() => (
+      <CreateSignatureModal
+        open={true}
+        onOpenChange={onOpenChange}
+        eventId="ev-1"
+        editionId="ed-100"
+        onSuccess={onSuccess}
+      />
+    ));
+
+    expect(screen.getByText("Adicionar assinatura")).toBeInTheDocument();
+
+    // Try advancing with empty name
+    const continueBtn = screen.getByRole("button", { name: /Continuar/i });
+    fireEvent.click(continueBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("O nome do signatário deve ter pelo menos 2 caracteres."),
+      ).toBeInTheDocument();
+    });
+
+    // Fill signatory name and title
+    const nameInput = screen.getByLabelText(/Nome do signatário/i);
+    fireEvent.input(nameInput, { target: { value: "Prof. Dr. Ricardo Fonseca" } });
+
+    const titleInput = screen.getByLabelText(/Cargo \/ Função/i);
+    fireEvent.input(titleInput, { target: { value: "Reitor" } });
+
+    // Step error should be cleared when user types
+    await waitFor(() => {
+      expect(
+        screen.queryByText("O nome do signatário deve ter pelo menos 2 caracteres."),
+      ).not.toBeInTheDocument();
+    });
+
+    // Advance to Step 2: Assinatura Digital
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Origem da assinatura")).toBeInTheDocument();
+    });
+
+    // Switch to upload mode
+    const uploadModeBtn = screen.getByRole("button", { name: /Importar imagem/i });
+    fireEvent.click(uploadModeBtn);
+
+    // Try to advance without file
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Selecione um arquivo de imagem com a assinatura."),
+      ).toBeInTheDocument();
+    });
+
+    // Upload an image file via drop or input
+    const file = new File(["dummy-content"], "signature.png", { type: "image/png" });
+    const dropzone = document.getElementById("sig-file-upload")?.closest("label") as HTMLElement;
+    fireEvent.drop(dropzone, {
+      dataTransfer: {
+        files: [file],
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Clique para trocar de imagem")).toBeInTheDocument();
+    });
+
+    // Advance to Step 3: Resumo
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Dados da assinatura")).toBeInTheDocument();
+      expect(screen.getByText("Pronto para cadastrar")).toBeInTheDocument();
+      expect(screen.getAllByText("Prof. Dr. Ricardo Fonseca")[0]).toBeInTheDocument();
+      expect(screen.getAllByText("Reitor")[0]).toBeInTheDocument();
+      expect(screen.getByText("Arquivo de imagem importado")).toBeInTheDocument();
+    });
+
+    // Submit form
+    const submitBtn = screen.getByRole("button", { name: /Salvar assinatura/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockUploadFile).toHaveBeenCalled();
+      expect(mockCreateSignature).toHaveBeenCalledWith({
+        editionId: "ed-100",
+        data: expect.objectContaining({
+          signatory_name: "Prof. Dr. Ricardo Fonseca",
+          signatory_title: "Reitor",
+          image_url: "https://storage.example.com/signatures/test.png",
+        }),
+      });
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onSuccess).toHaveBeenCalled();
+    });
+
+    // Restore canvas
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
+  });
+
+  it("guides through CreateSignatureRequestModal steps and submits invite", async () => {
+    const onOpenChange = vi.fn();
+    const onSuccess = vi.fn();
+
+    render(() => (
+      <CreateSignatureRequestModal
+        open={true}
+        onOpenChange={onOpenChange}
+        editionId="ed-100"
+        onSuccess={onSuccess}
+      />
+    ));
+
+    expect(screen.getByText("Enviar convite de assinatura")).toBeInTheDocument();
+
+    // Try advancing with empty fields
+    const continueBtn = screen.getByRole("button", { name: /Continuar/i });
+    fireEvent.click(continueBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("O nome do signatário deve ter pelo menos 2 caracteres."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Informe um e-mail válido para envio do convite."),
+      ).toBeInTheDocument();
+    });
+
+    // Fill name, email, title and expiration in the same Destinatário step
+    const nameInput = screen.getByLabelText(/Nome do signatário/i);
+    fireEvent.input(nameInput, { target: { value: "Dra. Beatriz Santos" } });
+
+    const emailInput = screen.getByLabelText(/E-mail para envio/i);
+    fireEvent.input(emailInput, { target: { value: "beatriz.santos@hospital.org" } });
+
+    const titleInput = screen.getByLabelText(/Cargo \/ Função/i);
+    fireEvent.input(titleInput, { target: { value: "Diretora Clínica" } });
+
+    const expiresInput = screen.getByLabelText(/Validade do link \(dias\)/i);
+    fireEvent.input(expiresInput, { target: { value: "14" } });
+
+    // Advance directly to Step 2: Resumo
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Dados do convite")).toBeInTheDocument();
+      expect(screen.getByText("Pronto para enviar")).toBeInTheDocument();
+      expect(screen.getAllByText("Dra. Beatriz Santos")[0]).toBeInTheDocument();
+      expect(screen.getAllByText("beatriz.santos@hospital.org")[0]).toBeInTheDocument();
+      expect(screen.getByText("14 dias")).toBeInTheDocument();
+    });
+
+    // Submit invite
+    const submitBtn = screen.getByRole("button", { name: /Enviar convite/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockCreateSignatureRequest).toHaveBeenCalledWith({
+        editionId: "ed-100",
+        data: expect.objectContaining({
+          signatory_name: "Dra. Beatriz Santos",
+          signatory_email: "beatriz.santos@hospital.org",
+          signatory_title: "Diretora Clínica",
+          expires_in_days: 14,
+        }),
+      });
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onSuccess).toHaveBeenCalled();
+    });
   });
 });
