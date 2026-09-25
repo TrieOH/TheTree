@@ -298,11 +298,12 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
             - min-h-0 allows flex child to shrink properly between pinned header and footer.
             - overscroll-contain keeps momentum scrolling isolated to the dialog.
             - scroll-smooth ensures buttery smooth scroll on desktop wheel/trackpad.
+            - custom-scrollbar applies the sleek, rounded thin scrollbar matching Profile Preferences.
             - -webkit-overflow-scrolling: touch ensures buttery-smooth mobile momentum scrolling.
           */}
           <div
             class={cn(
-              "flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth p-5 sm:p-6",
+              "flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth custom-scrollbar p-5 sm:p-6",
               props.contentClass,
             )}
             style={{ "-webkit-overflow-scrolling": "touch" }}

@@ -89,7 +89,7 @@ export function Textarea(props: TextareaProps) {
       aria-describedby={props["aria-describedby"]}
       onInput={props.onInput}
       onBlur={props.onBlur}
-      class={cn(fieldBase, "min-h-20", props.class)}
+      class={cn(fieldBase, "min-h-20 custom-scrollbar", props.class)}
     />
   );
 }

@@ -168,28 +168,39 @@ svg.ts-chart:focus-visible {
 }
 
 
-.profile-preferences-scroll {
+.profile-preferences-scroll,
+.custom-scrollbar,
+textarea {
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent) transparent;
 }
 
-.profile-preferences-scroll::-webkit-scrollbar {
+.profile-preferences-scroll::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+textarea::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
-.profile-preferences-scroll::-webkit-scrollbar-track {
+.profile-preferences-scroll::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.profile-preferences-scroll::-webkit-scrollbar-thumb {
+.profile-preferences-scroll::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.profile-preferences-scroll::-webkit-scrollbar-thumb:hover {
+.profile-preferences-scroll::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
   background-clip: padding-box;
 }
