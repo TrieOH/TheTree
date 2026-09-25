@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-
 import type { EventMemberWithEmailI } from "@/features/events/model/member";
 import { AdminAddMemberCard } from "@/features/events/ui/AdminAddMemberCard";
 import { AdminEventMemberCard } from "@/features/events/ui/AdminEventMemberCard";
@@ -76,7 +75,7 @@ describe("AdminEventMemberCard", () => {
 });
 
 describe("ManageEventMemberDialog", () => {
-  it("submits the entered email and selected role", async () => {
+  it("submits the entered email and selected role across multi-step wizard", async () => {
     const onSubmit = vi.fn().mockResolvedValue(true);
     const onOpenChange = vi.fn();
 
@@ -90,18 +89,30 @@ describe("ManageEventMemberDialog", () => {
 
     expect(screen.getByRole("heading", { name: "Adicionar membro" })).toBeInTheDocument();
 
+    // Step 0: Identificação
     const emailInput = screen.getByPlaceholderText("membro@exemplo.com");
     fireEvent.input(emailInput, { target: { value: "novo@membro.com" } });
 
-    // Select role "Administrador"
+    const nextBtn1 = screen.getByRole("button", { name: "Continuar" });
+    fireEvent.click(nextBtn1);
+
+    // Step 1: Permissão
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Administrador/i })).toBeInTheDocument();
+    });
     const adminRoleBtn = screen.getByRole("button", { name: /Administrador/i });
     fireEvent.click(adminRoleBtn);
 
-    const submitBtn = screen.getByRole("button", { name: "Adicionar membro" });
+    const nextBtn2 = screen.getByRole("button", { name: "Continuar" });
+    fireEvent.click(nextBtn2);
+
+    // Step 2: Resumo
     await waitFor(() => {
-      expect(submitBtn).not.toBeDisabled();
+      expect(screen.getByText("Pronto para adicionar")).toBeInTheDocument();
+      expect(screen.getByText("novo@membro.com")).toBeInTheDocument();
     });
 
+    const submitBtn = screen.getByRole("button", { name: "Adicionar membro" });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {

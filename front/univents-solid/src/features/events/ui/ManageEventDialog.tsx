@@ -1,6 +1,8 @@
+import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createSignal, untrack } from "solid-js";
 import {
   MultiStepDialog,
+  type MultiStepField,
   type MultiStepItem,
 } from "@trieoh/ui-solid";
 import { toast } from "@/shared/ui/toast";
@@ -9,14 +11,21 @@ import type { EventI } from "../model";
 export interface ManageEventValues {
   full_name: string;
   slug: string;
-  acronym: string | null;
-  description: string | null;
-  contact_email: string | null;
+  acronym?: string | null;
+  description?: string | null;
+  contact_email?: string | null;
   logo_url?: string | null;
   banner_url?: string | null;
 }
 
-interface FormInternalValues {
+export interface ManageEventDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  event?: EventI | null;
+  onSubmit: (values: ManageEventValues) => Promise<boolean>;
+}
+
+type FormInternalValues = {
   full_name: string;
   slug: string;
   acronym: string;
@@ -24,15 +33,7 @@ interface FormInternalValues {
   contact_email: string;
   logo_url: string | null;
   banner_url: string | null;
-}
-
-export interface ManageEventDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** `null` creates; an event edits it. */
-  event: EventI | null;
-  onSubmit: (values: ManageEventValues) => Promise<boolean>;
-}
+};
 
 /** Same slug rules as the React form, so the two apps generate identical URLs. */
 function toSlug(value: string): string {
@@ -64,7 +65,7 @@ const emptyValues: FormInternalValues = {
   banner_url: null,
 };
 
-const valuesOf = (event: EventI | null): FormInternalValues =>
+const valuesOf = (event: EventI | null | undefined): FormInternalValues =>
   event
     ? {
       full_name: event.full_name,
@@ -77,18 +78,60 @@ const valuesOf = (event: EventI | null): FormInternalValues =>
     }
     : { ...emptyValues };
 
+const IDENTITY_FIELDS: MultiStepField<FormInternalValues>[] = [
+  {
+    name: "full_name",
+    label: "Nome",
+    placeholder: "Ex: Tech Summit 2026",
+    required: true,
+  },
+  {
+    name: "slug",
+    label: "Slug",
+    placeholder: "tech-summit-2026",
+    hint: "Identificador na URL pública.",
+    layout: "half",
+    required: true,
+  },
+  {
+    name: "acronym",
+    label: "Sigla",
+    placeholder: "TS26",
+    hint: "Gerada a partir do nome.",
+    layout: "half",
+  },
+  {
+    kind: "textarea",
+    name: "description",
+    label: "Descrição",
+    placeholder: "Escreva uma breve apresentação sobre o seu evento...",
+    hint: "Conteúdo explicativo sobre o propósito e público do evento.",
+    rows: 4,
+  },
+];
+
+const CONTACT_FIELDS: MultiStepField<FormInternalValues>[] = [
+  {
+    kind: "email",
+    name: "contact_email",
+    label: "E-mail de contato",
+    placeholder: "contato@evento.com",
+    hint: "E-mail visível para dúvidas e suporte aos participantes.",
+  },
+];
+
 export function ManageEventDialog(props: ManageEventDialogProps) {
   const [values, setValues] = createSignal<FormInternalValues>(untrack(() => valuesOf(props.event)));
   const [currentStep, setCurrentStep] = createSignal(0);
   const [submitting, setSubmitting] = createSignal(false);
   const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>({});
 
-  // Reset or re-sync values only when the dialog opens
+  // Reset or re-sync values only when the dialog opens (reading proxies inside compute function to avoid STRICT_READ_UNTRACKED)
   createEffect(
-    () => [props.open, props.event] as const,
-    ([open, event]) => {
-      if (open) {
-        setValues(valuesOf(event));
+    () => (props.open ? valuesOf(props.event) : null),
+    (computedValues) => {
+      if (computedValues) {
+        setValues(computedValues);
         setCurrentStep(0);
         setErrors({});
       }
@@ -110,14 +153,23 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
 
     setValues(next);
 
-    // Clear error for field once edited
-    if (errors()[key]) {
-      setErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[key];
-        return updated;
-      });
-    }
+    // Clear errors for fields that become valid
+    setErrors((prev) => {
+      const updated = { ...prev };
+      delete updated[key];
+
+      if (next.full_name.trim().length >= 2) {
+        delete updated.full_name;
+      }
+      if (next.slug.trim().length >= 2) {
+        delete updated.slug;
+      }
+      if (!next.contact_email || next.contact_email.includes("@")) {
+        delete updated.contact_email;
+      }
+
+      return updated;
+    });
   };
 
   const validateStep = (stepIndex: number): boolean => {
@@ -190,63 +242,24 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
     }
   };
 
-  const steps = (): MultiStepItem<FormInternalValues>[] => [
+  const steps: MultiStepItem<FormInternalValues>[] = [
     {
       id: "identidade",
       title: "Identidade",
       description: "Nome, link e detalhes",
-      fields: [
-        {
-          name: "full_name",
-          label: "Nome",
-          placeholder: "Ex: Tech Summit 2026",
-          required: true,
-        },
-        {
-          name: "slug",
-          label: "Slug",
-          placeholder: "tech-summit-2026",
-          hint: "Identificador na URL pública.",
-          layout: "half",
-          required: true,
-        },
-        {
-          name: "acronym",
-          label: "Sigla",
-          placeholder: "TS26",
-          hint: "Gerada a partir do nome.",
-          layout: "half",
-        },
-        {
-          kind: "textarea",
-          name: "description",
-          label: "Descrição",
-          placeholder: "Escreva uma breve apresentação sobre o seu evento...",
-          hint: "Conteúdo explicativo sobre o propósito e público do evento.",
-          rows: 4,
-        },
-      ],
+      fields: IDENTITY_FIELDS,
     },
     {
       id: "contato",
       title: "Contato",
       description: "E-mail de atendimento",
-      fields: [
-        {
-          kind: "email",
-          name: "contact_email",
-          label: "E-mail de contato",
-          placeholder: "contato@evento.com",
-          hint: "E-mail visível para dúvidas e suporte aos participantes.",
-        },
-      ],
+      fields: CONTACT_FIELDS,
     },
     {
       id: "resumo",
       title: "Resumo",
       description: "Revisão e confirmação",
       summary: {
-        title: "Revisão das Informações",
         badge: "Pronto para salvar",
         items: [
           { label: "Nome do evento", value: () => values().full_name },
@@ -267,64 +280,67 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
             fullWidth: true,
           },
         ],
-        extra: () => (
-          <Show when={values().logo_url || values().banner_url}>
-            <div class="col-span-1 sm:col-span-2 overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs">
-              {/* Capa com o banner do evento ou gradiente harmonioso */}
-              <div class="relative h-20 w-full bg-muted overflow-hidden">
-                <Show
-                  when={values().banner_url}
-                  fallback={
-                    <div class="size-full bg-linear-to-r from-muted via-muted/60 to-muted/40" />
-                  }
-                >
-                  {(banner) => (
-                    <img
-                      src={banner()}
-                      alt="Banner do evento"
-                      class="size-full object-cover"
-                    />
-                  )}
-                </Show>
-              </div>
-
-              {/* Faixa inferior com o logo sobreposto no banner e identificação */}
-              <div class="relative flex items-center gap-3 px-3.5 pb-3 pt-2 bg-card">
-                <div class="relative -mt-7 size-12 shrink-0 overflow-hidden rounded-xl border-2 border-card bg-card shadow-sm">
+        extra: () => {
+          const hasVisual = () => !!(values().logo_url || values().banner_url);
+          return (
+            <Show when={hasVisual()}>
+              <div class="col-span-1 sm:col-span-2 overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs">
+                {/* Capa com o banner do evento ou gradiente harmonioso */}
+                <div class="relative h-20 w-full bg-muted overflow-hidden">
                   <Show
-                    when={values().logo_url}
+                    when={values().banner_url}
                     fallback={
-                      <div class="flex size-full items-center justify-center bg-muted text-xs font-bold text-muted-foreground/60">
-                        {values().acronym || "EV"}
-                      </div>
+                      <div class="size-full bg-linear-to-r from-muted via-muted/60 to-muted/40" />
                     }
                   >
-                    {(logo) => (
+                    {(banner) => (
                       <img
-                        src={logo()}
-                        alt="Logo do evento"
+                        src={banner()}
+                        alt="Banner do evento"
                         class="size-full object-cover"
                       />
                     )}
                   </Show>
                 </div>
 
-                <div class="min-w-0 flex-1">
-                  <span class="block text-xs font-semibold text-foreground truncate">
-                    {values().full_name || "Identidade visual"}
-                  </span>
-                  <span class="block text-[11px] text-muted-foreground truncate">
-                    {values().logo_url && values().banner_url
-                      ? "Logo e banner configurados"
-                      : values().logo_url
-                        ? "Logo configurado"
-                        : "Banner configurado"}
-                  </span>
+                {/* Faixa inferior com o logo sobreposto no banner e identificação */}
+                <div class="relative flex items-center gap-3 px-3.5 pb-3 pt-2 bg-card">
+                  <div class="relative -mt-7 size-12 shrink-0 overflow-hidden rounded-xl border-2 border-card bg-card shadow-sm">
+                    <Show
+                      when={values().logo_url}
+                      fallback={
+                        <div class="flex size-full items-center justify-center bg-muted text-xs font-bold text-muted-foreground/60">
+                          {values().acronym || "EV"}
+                        </div>
+                      }
+                    >
+                      {(logo) => (
+                        <img
+                          src={logo()}
+                          alt="Logo do evento"
+                          class="size-full object-cover"
+                        />
+                      )}
+                    </Show>
+                  </div>
+
+                  <div class="min-w-0 flex-1">
+                    <span class="block text-xs font-semibold text-foreground truncate">
+                      {values().full_name || "Identidade visual"}
+                    </span>
+                    <span class="block text-[11px] text-muted-foreground truncate">
+                      {values().logo_url && values().banner_url
+                        ? "Logo e banner configurados"
+                        : values().logo_url
+                          ? "Logo configurado"
+                          : "Banner configurado"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Show>
-        ),
+            </Show>
+          );
+        },
       },
     },
   ];
@@ -333,21 +349,21 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
     <MultiStepDialog<FormInternalValues>
       open={props.open}
       onOpenChange={props.onOpenChange}
-      title={props.event ? "Editar evento" : "Criar novo evento"}
+      title={props.event ? "Editar evento" : "Novo evento"}
       description={
         props.event
-          ? "Altere os dados do evento em etapas organizadas."
-          : "Preencha as informações para cadastrar seu novo evento."
+          ? "Atualize as informações do evento em etapas organizadas."
+          : "Cadastre um novo evento na plataforma em etapas organizadas."
       }
-      steps={steps()}
       currentStep={currentStep()}
       onStepChange={setCurrentStep}
+      steps={steps}
       values={values()}
       errors={errors()}
       onChange={(key, val) => update(key, val as FormInternalValues[typeof key])}
       formId="manage-event-form"
       loading={submitting()}
-      submitLabel={props.event ? "Salvar alterações" : "Criar evento"}
+      submitLabel={props.event ? "Atualizar evento" : "Criar evento"}
       nextLabel="Continuar"
       onBeforeNext={(step) => validateStep(step)}
       onFormSubmit={submitCurrent}

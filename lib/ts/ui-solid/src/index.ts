@@ -38,6 +38,7 @@ export {
   type BaseMultiStepField,
   type CustomMultiStepField,
   type MultiStepDialogProps,
+  type MultiStepField,
   type MultiStepFieldConfig,
   type MultiStepFieldKind,
   type MultiStepFieldsProps,

@@ -5,16 +5,17 @@ export type MultiStepFieldKind =
   | "email"
   | "password"
   | "number"
-  | "tel"
   | "url"
+  | "tel"
+  | "date"
   | "textarea"
   | "custom";
 
 export interface BaseMultiStepField<T = Record<string, unknown>> {
   name: keyof T & string;
-  label: JSX.Element;
+  label: string;
   placeholder?: string;
-  hint?: JSX.Element;
+  hint?: string;
   required?: boolean;
   disabled?: boolean;
   layout?: "full" | "half";
@@ -22,7 +23,8 @@ export interface BaseMultiStepField<T = Record<string, unknown>> {
 
 export interface TextMultiStepField<T = Record<string, unknown>>
   extends BaseMultiStepField<T> {
-  kind?: "text" | "email" | "password" | "number" | "tel" | "url";
+  kind?: "text" | "email" | "password" | "number" | "url" | "tel" | "date";
+  autocomplete?: string;
 }
 
 export interface TextareaMultiStepField<T = Record<string, unknown>>
@@ -47,6 +49,8 @@ export type MultiStepFieldConfig<T = Record<string, unknown>> =
   | TextareaMultiStepField<T>
   | CustomMultiStepField<T>;
 
+export type MultiStepField<T = Record<string, unknown>> = MultiStepFieldConfig<T>;
+
 export interface MultiStepFieldsProps<T = Record<string, unknown>> {
   fields: MultiStepFieldConfig<T>[];
   values?: T;
@@ -58,9 +62,9 @@ export interface MultiStepFieldsProps<T = Record<string, unknown>> {
 export interface MultiStepSummaryItem {
   label: string;
   value: unknown | (() => unknown);
+  href?: string | (() => string | undefined);
   fullWidth?: boolean;
   mono?: boolean;
-  href?: string | (() => string | undefined);
 }
 
 export interface MultiStepSummaryConfig {
@@ -71,13 +75,19 @@ export interface MultiStepSummaryConfig {
 }
 
 export interface MultiStepRenderContext<T = Record<string, unknown>> {
-  currentStep: number;
-  step: MultiStepItem<T>;
-  isFirst: boolean;
-  isLast: boolean;
+  readonly currentStep: number;
+  readonly step: MultiStepItem<T>;
+  readonly isFirst: boolean;
+  readonly isLast: boolean;
+  values: () => T;
+  errors: () => Partial<Record<keyof T & string, string>>;
+  next: () => void;
+  prev: () => void;
+  cancel: () => void;
+  onChange: (key: keyof T & string, value: unknown) => void;
   goNext: () => void;
   goBack: () => void;
-  goTo: (index: number) => void;
+  goTo: (step: number) => void;
 }
 
 export interface MultiStepItem<T = Record<string, unknown>> {
@@ -86,12 +96,44 @@ export interface MultiStepItem<T = Record<string, unknown>> {
   description?: string;
   fields?: MultiStepFieldConfig<T>[];
   summary?: MultiStepSummaryConfig;
-  render?: (ctx: MultiStepRenderContext<T>) => JSX.Element;
+  render?: (context: MultiStepRenderContext<T>) => JSX.Element;
 }
 
-export interface MultiStepStepperProps {
-  steps: MultiStepItem<any>[];
+export interface MultiStepStepperProps<T = Record<string, unknown>> {
+  steps: MultiStepItem<T>[];
   currentStep: number;
-  onStepClick?: (index: number) => void;
+  onStepClick?: (stepIndex: number) => void;
   class?: string;
+}
+
+export interface MultiStepDialogProps<T = Record<string, unknown>> {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  steps: MultiStepItem<T>[];
+  currentStep?: number;
+  onStepChange?: (step: number) => void;
+  values?: T;
+  errors?: Partial<Record<keyof T & string, string>>;
+  onChange?: (key: keyof T & string, value: unknown) => void;
+  formId?: string;
+  loading?: boolean;
+  submitLabel?: string;
+  nextLabel?: string;
+  cancelLabel?: string;
+  onBeforeNext?: (currentStep: number) => boolean | Promise<boolean>;
+  onFormSubmit?: () => boolean | Promise<boolean>;
+  onSubmit?: () => boolean | Promise<boolean>;
+  fixedHeight?: boolean;
+  class?: string;
+  contentClass?: string;
+  /**
+   * Optional custom children. If omitted, `step.fields` and `step.summary` are rendered automatically.
+   */
+  children?: (context: MultiStepRenderContext<T>) => JSX.Element;
+  /**
+   * Optional custom footer. If omitted, standard Back / Continue buttons are rendered.
+   */
+  footer?: (context: MultiStepRenderContext<T>) => JSX.Element;
 }

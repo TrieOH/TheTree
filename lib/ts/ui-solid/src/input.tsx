@@ -2,44 +2,69 @@ import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import { cn } from "./lib/cn";
 
-const fieldBase =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive [color-scheme:light] dark:[color-scheme:dark]";
-
 export interface InputProps {
   id?: string;
   name?: string;
-  type?: "text" | "email" | "password" | "search" | "url" | "tel" | "number" | "date" | "datetime-local";
+  type?:
+    | "text"
+    | "email"
+    | "password"
+    | "search"
+    | "url"
+    | "tel"
+    | "number"
+    | "date"
+    | "datetime-local";
   value?: string | number;
   placeholder?: string;
-  required?: boolean;
   disabled?: boolean;
+  required?: boolean;
   readonly?: boolean;
   autocomplete?: string;
-  inputmode?: "none" | "text" | "decimal" | "numeric" | "tel" | "email" | "url" | "search";
+  inputmode?:
+    | "none"
+    | "text"
+    | "decimal"
+    | "numeric"
+    | "tel"
+    | "email"
+    | "url"
+    | "search";
   min?: string | number;
   max?: string | number;
   step?: string | number;
   minlength?: number;
   maxlength?: number;
   class?: string;
-  /** Solid 2 types ARIA booleans as the string form. */
-  "aria-invalid"?: "true" | "false";
   "aria-describedby"?: string;
-  onInput?: (event: InputEvent & { currentTarget: HTMLInputElement }) => void;
-  onChange?: (event: Event & { currentTarget: HTMLInputElement }) => void;
-  onBlur?: (event: FocusEvent & { currentTarget: HTMLInputElement }) => void;
+  "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling";
+  onInput?: JSX.EventHandler<HTMLInputElement, InputEvent>;
+  onChange?: JSX.EventHandler<HTMLInputElement, Event>;
+  onBlur?: JSX.EventHandler<HTMLInputElement, FocusEvent>;
+  onFocus?: JSX.EventHandler<HTMLInputElement, FocusEvent>;
+  onKeyDown?: JSX.EventHandler<HTMLInputElement, KeyboardEvent>;
 }
 
+const fieldBase =
+  "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
 export function Input(props: InputProps) {
+  const ariaInvalid = () => {
+    const val = props["aria-invalid"];
+    if (val === true || val === "true") return "true";
+    if (val === "grammar" || val === "spelling") return val;
+    return undefined;
+  };
+
   return (
     <input
       id={props.id}
       name={props.name}
       type={props.type ?? "text"}
-      value={props.value}
+      value={props.value ?? ""}
       placeholder={props.placeholder}
-      required={props.required}
       disabled={props.disabled}
+      required={props.required}
       readonly={props.readonly}
       autocomplete={props.autocomplete}
       inputmode={props.inputmode}
@@ -48,12 +73,14 @@ export function Input(props: InputProps) {
       step={props.step}
       minlength={props.minlength}
       maxlength={props.maxlength}
-      aria-invalid={props["aria-invalid"]}
       aria-describedby={props["aria-describedby"]}
+      aria-invalid={ariaInvalid()}
       onInput={props.onInput}
       onChange={props.onChange}
       onBlur={props.onBlur}
-      class={cn(fieldBase, "h-9", props.class)}
+      onFocus={props.onFocus}
+      onKeyDown={props.onKeyDown}
+      class={cn(fieldBase, props.class)}
     />
   );
 }
@@ -63,31 +90,40 @@ export interface TextareaProps {
   name?: string;
   value?: string;
   placeholder?: string;
-  rows?: number;
-  required?: boolean;
   disabled?: boolean;
+  required?: boolean;
   readonly?: boolean;
+  rows?: number;
   class?: string;
-  "aria-invalid"?: "true" | "false";
   "aria-describedby"?: string;
-  onInput?: (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => void;
-  onBlur?: (event: FocusEvent & { currentTarget: HTMLTextAreaElement }) => void;
+  "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling";
+  onInput?: JSX.EventHandler<HTMLTextAreaElement, InputEvent>;
+  onChange?: JSX.EventHandler<HTMLTextAreaElement, Event>;
+  onBlur?: JSX.EventHandler<HTMLTextAreaElement, FocusEvent>;
 }
 
 export function Textarea(props: TextareaProps) {
+  const ariaInvalid = () => {
+    const val = props["aria-invalid"];
+    if (val === true || val === "true") return "true";
+    if (val === "grammar" || val === "spelling") return val;
+    return undefined;
+  };
+
   return (
     <textarea
       id={props.id}
       name={props.name}
-      value={props.value}
+      rows={props.rows ?? 3}
+      value={props.value ?? ""}
       placeholder={props.placeholder}
-      rows={props.rows}
-      required={props.required}
       disabled={props.disabled}
+      required={props.required}
       readonly={props.readonly}
-      aria-invalid={props["aria-invalid"]}
       aria-describedby={props["aria-describedby"]}
+      aria-invalid={ariaInvalid()}
       onInput={props.onInput}
+      onChange={props.onChange}
       onBlur={props.onBlur}
       class={cn(fieldBase, "min-h-20 custom-scrollbar", props.class)}
     />
@@ -112,6 +148,8 @@ export function Label(props: LabelProps) {
 }
 
 export interface FieldProps {
+  id?: string;
+  name?: string;
   label: JSX.Element;
   /** Rendered below the control, and wired to `aria-describedby`. */
   hint?: JSX.Element;
@@ -128,18 +166,25 @@ export interface FieldProps {
  * the part everyone forgets when wiring fields by hand.
  */
 export function Field(props: FieldProps) {
-  const id = `field-${Math.random().toString(36).slice(2, 9)}`;
-  const errorId = `${id}-error`;
-  const hintId = `${id}-hint`;
-  const describedBy = () => {
-    if (props.error) return errorId;
-    if (props.hint) return hintId;
-    return undefined;
+  const autoId = `field-${Math.random().toString(36).slice(2, 9)}`;
+  const id = () => props.id ?? (props.name ? `field-${props.name}` : autoId);
+  const errorId = () => `${id()}-error`;
+  const hintId = () => `${id()}-hint`;
+
+  const ids = {
+    get id() {
+      return id();
+    },
+    get describedBy() {
+      if (props.error) return errorId();
+      if (props.hint) return hintId();
+      return undefined;
+    },
   };
 
   return (
     <div class={cn("flex flex-col gap-1.5", props.class)}>
-      <Label for={id}>
+      <Label for={id()}>
         {props.label}
         <Show when={props.required}>
           <span aria-hidden="true" class="ml-0.5 text-destructive">
@@ -148,16 +193,19 @@ export function Field(props: FieldProps) {
         </Show>
       </Label>
 
-      {props.children({ id, describedBy: describedBy() })}
+      {props.children(ids)}
 
-      <Show when={props.error} fallback={
-        <Show when={props.hint}>
-          <p id={hintId} class="text-xs text-muted-foreground">
-            {props.hint}
-          </p>
-        </Show>
-      }>
-        <p id={errorId} role="alert" class="text-xs text-destructive">
+      <Show
+        when={props.error}
+        fallback={
+          <Show when={props.hint}>
+            <p id={hintId()} class="text-xs text-muted-foreground">
+              {props.hint}
+            </p>
+          </Show>
+        }
+      >
+        <p id={errorId()} role="alert" class="text-xs font-medium text-destructive">
           {props.error}
         </p>
       </Show>

@@ -18,16 +18,20 @@ export function MultiStepSummaryCard(props: {
         props.class,
       )}
     >
-      <div class="flex items-center justify-between gap-2 border-b border-border/50 pb-2.5">
-        <h3 class="text-xs sm:text-sm font-semibold text-foreground truncate">
-          {props.summary.title ?? "Revisão das Informações"}
-        </h3>
-        <Show when={props.summary.badge}>
-          <span class="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-primary">
-            {props.summary.badge}
-          </span>
-        </Show>
-      </div>
+      <Show when={props.summary.title || props.summary.badge}>
+        <div class="flex items-center justify-between gap-2 border-b border-border/50 pb-2.5">
+          <Show when={props.summary.title}>
+            <h3 class="text-xs sm:text-sm font-semibold text-foreground truncate">
+              {props.summary.title}
+            </h3>
+          </Show>
+          <Show when={props.summary.badge}>
+            <span class="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-primary">
+              {props.summary.badge}
+            </span>
+          </Show>
+        </div>
+      </Show>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 text-xs w-full max-w-full min-w-0">
         <For each={props.summary.items}>
@@ -62,10 +66,13 @@ export function MultiStepSummaryCard(props: {
                   }
                 >
                   <a
-                    href={hrefVal()}
+                    href={hrefVal()!}
                     target="_blank"
-                    rel="noreferrer"
-                    class="mt-0.5 block font-mono text-[11px] text-primary truncate hover:underline max-w-full"
+                    rel="noopener noreferrer"
+                    class={cn(
+                      "mt-0.5 block text-primary hover:underline truncate max-w-full",
+                      item.mono && "font-mono text-[11px] break-all",
+                    )}
                   >
                     {displayVal()}
                   </a>
@@ -76,7 +83,7 @@ export function MultiStepSummaryCard(props: {
         </For>
 
         <Show when={props.summary.extra}>
-          <div class="col-span-1 sm:col-span-2 w-full min-w-0 overflow-hidden">
+          <div class="col-span-1 sm:col-span-2 pt-1 w-full max-w-full min-w-0">
             {props.summary.extra?.()}
           </div>
         </Show>

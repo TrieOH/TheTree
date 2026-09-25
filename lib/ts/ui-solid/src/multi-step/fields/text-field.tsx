@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
-import { Field, Input } from "../../input";
+import { Show } from "solid-js";
+import { Input, Label } from "../../input";
 import type { TextMultiStepField } from "../types";
 
 export interface MultiStepTextFieldProps<T = Record<string, unknown>> {
@@ -13,28 +14,61 @@ export function MultiStepTextField<T = Record<string, unknown>>(
   props: MultiStepTextFieldProps<T>,
 ): JSX.Element {
   const inputType = () => props.field.kind ?? "text";
-  const strValue = () => (props.value != null ? String(props.value) : "");
+  const id = `field-${props.field.name}`;
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+
+  const describedBy = () => {
+    if (props.error) return errorId;
+    if (props.field.hint) return hintId;
+    return undefined;
+  };
+
+  const handleInput = (event: InputEvent & { currentTarget: HTMLInputElement }) => {
+    const val = (event.target as HTMLInputElement)?.value ?? event.currentTarget?.value ?? "";
+    props.onChange?.(val);
+  };
 
   return (
-    <Field
-      label={props.field.label}
-      required={props.field.required}
-      hint={props.field.hint}
-      error={props.error}
-    >
-      {(ids) => (
-        <Input
-          id={ids.id}
-          type={inputType()}
-          aria-describedby={ids.describedBy}
-          aria-invalid={props.error ? "true" : undefined}
-          value={strValue()}
-          placeholder={props.field.placeholder}
-          disabled={props.field.disabled}
-          autocomplete="off"
-          onInput={(event) => props.onChange?.(event.currentTarget.value)}
-        />
-      )}
-    </Field>
+    <div class="flex flex-col gap-1.5">
+      <Label for={id}>
+        {props.field.label}
+        <Show when={props.field.required}>
+          <span aria-hidden="true" class="ml-0.5 text-destructive">
+            *
+          </span>
+        </Show>
+      </Label>
+
+      <Input
+        id={id}
+        name={props.field.name}
+        type={inputType()}
+        aria-describedby={describedBy()}
+        aria-invalid={props.error ? "true" : undefined}
+        value={props.value != null ? String(props.value) : ""}
+        placeholder={props.field.placeholder}
+        disabled={props.field.disabled}
+        autocomplete={props.field.autocomplete ?? "off"}
+        onInput={handleInput}
+      />
+
+      <Show
+        when={props.error}
+        fallback={
+          <Show when={props.field.hint}>
+            <p id={hintId} class="text-xs text-muted-foreground">
+              {props.field.hint}
+            </p>
+          </Show>
+        }
+      >
+        {(err) => (
+          <p id={errorId} role="alert" class="text-xs font-medium text-destructive">
+            {err()}
+          </p>
+        )}
+      </Show>
+    </div>
   );
 }
