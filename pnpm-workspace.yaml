@@ -2,7 +2,6 @@ packages:
   - 'front/*'
   - 'lib/ts/*'
   - 'sdk/ts/*'
-  - '!sdk/ts/identityx-solid'
 
 catalogs:
   solid:
@@ -11,8 +10,8 @@ catalogs:
 
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.15.5
-  '@trieoh/identityx-sdk-ts-react': ^0.15.5
+  '@trieoh/identityx-sdk-ts': ^0.16.1
+  '@trieoh/identityx-sdk-ts-react': ^0.16.0
   '@trieoh/identityx-sdk-ts-solid': ^0.16.2
   '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5

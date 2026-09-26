@@ -26,7 +26,7 @@
     "@trieoh/front-core": "workspace:*",
     "@trieoh/front-core-react": "workspace:*",
     "@trieoh/identityx-api": "workspace:*",
-    "@trieoh/identityx-sdk-ts": "workspace:*",
+    "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
     "@trieoh/shared-utils": "workspace:*",
     "@trieoh/ui-react": "workspace:*",

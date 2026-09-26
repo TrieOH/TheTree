@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import Icons from "unplugin-icons/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 
-export default defineConfig(({ command, mode }) => ({
+export default defineConfig(({ mode }) => ({
   resolve: {
     tsconfigPaths: true,
     alias: {

@@ -31,10 +31,10 @@
   },
   "peerDependencies": {
     "@trieoh/envoy-fetch-ts": "catalog:",
-    "@trieoh/identityx-sdk-ts": "workspace:*"
+    "@trieoh/identityx-sdk-ts": "catalog:"
   },
   "devDependencies": {
     "@trieoh/envoy-fetch-ts": "catalog:",
-    "@trieoh/identityx-sdk-ts": "workspace:*"
+    "@trieoh/identityx-sdk-ts": "catalog:"
   }
 }

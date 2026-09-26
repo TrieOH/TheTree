@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/identityx-sdk-ts-react",
-  "version": "0.15.5",
+  "version": "0.16.0",
   "type": "module",
   "exports": {
     ".": {
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "catalog:",
-    "@trieoh/identityx-sdk-ts": "workspace:*",
+    "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/envoy-fetch-ts": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
