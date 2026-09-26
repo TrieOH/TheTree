@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Match, Switch, Show, createMemo, createSignal } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import SearchIcon from "~icons/lucide/search";
 import SlidersIcon from "~icons/lucide/sliders-horizontal";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
 import { EventCard } from "@/widgets/landing/ui/EventCard";
+import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import Logo from "@/shared/ui/Logo";
 import { Drawer } from "@/shared/ui/Drawer";
 
@@ -26,9 +27,8 @@ function EventsPage() {
   const events = createMemo(() => eventsQuery().data ?? []);
 
   return (
-    <Show
-      when={eventsQuery().isSuccess}
-      fallback={
+    <Switch>
+      <Match when={eventsQuery().isPending}>
         <EventsShell count="...">
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 md:gap-8">
             <For each={[1, 2, 3, 4]}>
@@ -38,16 +38,25 @@ function EventsPage() {
             </For>
           </div>
         </EventsShell>
-      }
-    >
-      <EventsContent
-        events={events()}
-        filter={filter}
-        setFilter={setFilter}
-        drawerOpen={drawerOpen}
-        setDrawerOpen={setDrawerOpen}
-      />
-    </Show>
+      </Match>
+      <Match when={eventsQuery().isError}>
+        <EventsShell count="—">
+          <EventQueryError
+            message="Não foi possível carregar os eventos. Verifique sua conexão e tente novamente."
+            onRetry={() => void eventsQuery().refetch()}
+          />
+        </EventsShell>
+      </Match>
+      <Match when={eventsQuery().isSuccess}>
+        <EventsContent
+          events={events()}
+          filter={filter}
+          setFilter={setFilter}
+          drawerOpen={drawerOpen}
+          setDrawerOpen={setDrawerOpen}
+        />
+      </Match>
+    </Switch>
   );
 }
 

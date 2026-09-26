@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { Loading, Show, createMemo, untrack } from "solid-js";
+import { Show, createMemo, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
@@ -13,6 +13,7 @@ import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { EditionSummaryCard } from "@/features/editions/ui/EditionSummaryCard";
 import { EventCatalog } from "@/features/events/ui/EventCatalog";
+import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { handleShare } from "@/shared/lib/share";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
@@ -35,11 +36,26 @@ function EventPage() {
   const event = createMemo(() => eventQuery().data);
   return (
     <Show
-      when={eventQuery().isSuccess}
+      when={!eventQuery().isPending}
       fallback={<div class="min-h-screen animate-pulse bg-muted" />}
     >
-      <Show when={event()} fallback={<div class="p-12 text-center">Evento não encontrado.</div>}>
-        {(loaded) => <EventContent event={loaded()} />}
+      <Show
+        when={!eventQuery().isError}
+        fallback={
+          <main class="grid min-h-screen place-items-center bg-background px-6">
+            <EventQueryError
+              message="Não foi possível carregar este evento. Verifique sua conexão e tente novamente."
+              onRetry={() => void eventQuery().refetch()}
+            />
+          </main>
+        }
+      >
+        <Show
+          when={event()}
+          fallback={<div class="p-12 text-center">Evento não encontrado.</div>}
+        >
+          {(loaded) => <EventContent event={loaded()} />}
+        </Show>
       </Show>
     </Show>
   );
@@ -103,7 +119,8 @@ function EditionDetails(props: { event: EventI }) {
   const editionsQuery = useQuery(() => allPublicEditionsQueryOptions(props.event.id));
   const editions = createMemo(() => editionsQuery().data ?? []);
   return (
-    <Loading
+    <Show
+      when={!editionsQuery().isPending}
       fallback={
         <div class="mt-6 grid gap-4 md:grid-cols-2">
           <div class="h-28 animate-pulse rounded-xl bg-muted" />
@@ -112,12 +129,17 @@ function EditionDetails(props: { event: EventI }) {
       }
     >
       <Show
-        when={editionsQuery().isSuccess}
-        fallback={<div class="mt-6 grid gap-4 md:grid-cols-2"><div class="h-28 animate-pulse rounded-xl bg-muted" /><div class="h-28 animate-pulse rounded-xl bg-muted" /></div>}
+        when={!editionsQuery().isError}
+        fallback={
+          <EventQueryError
+            message="Não foi possível carregar as edições deste evento."
+            onRetry={() => void editionsQuery().refetch()}
+          />
+        }
       >
         <EditionBody event={props.event} editions={editions()} />
       </Show>
-    </Loading>
+    </Show>
   );
 }
 
