@@ -1,6 +1,7 @@
 package events
 
 import (
+	"lib/database"
 	"lib/objectstorage"
 	idx "sdk/identityx"
 	"univents/internal/authz"
@@ -13,6 +14,9 @@ type Operations struct {
 	idx    *idx.Client
 	badges ports.BadgeStaffOps
 	authz  *authz.Service
+	// tx opens the transactions multi-step writes run in; threaded
+	// from boot, no package-level runner.
+	tx database.TxRunner
 }
 
 func NewOperations(
@@ -21,6 +25,7 @@ func NewOperations(
 	idx *idx.Client,
 	authz *authz.Service,
 	badges ports.BadgeStaffOps,
+	tx database.TxRunner,
 ) *Operations {
 	return &Operations{
 		events: events,
@@ -28,5 +33,6 @@ func NewOperations(
 		idx:    idx,
 		badges: badges,
 		authz:  authz,
+		tx:     tx,
 	}
 }

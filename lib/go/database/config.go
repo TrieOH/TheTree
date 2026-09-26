@@ -7,8 +7,6 @@ import (
 	"net/url"
 	"time"
 
-	"lib/errx"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -66,17 +64,22 @@ func (c Config) port() string {
 	return c.Port
 }
 
-func SetupDB(cfg Config) *pgxpool.Pool {
+// SetupDB is the Postgres adapter's one boot entry point: provision the
+// role and database, wait for connectivity, run migrations, and validate
+// that every constraint carries a registered message. It returns errors
+// instead of exiting so the caller's boot path owns process failure.
+func SetupDB(cfg Config, messages ConstraintRegistry) (*pgxpool.Pool, error) {
 	db, err := WaitForDB(30*time.Second, cfg)
 	if err != nil {
-		errx.Exit(err, "Failed to connect DB")
+		return nil, fmt.Errorf("connect: %w", err)
 	}
 	err = RunMigrations(db, cfg.MigrationPath)
 	if err != nil {
-		errx.Exit(err, "Failed migrations")
+		return nil, fmt.Errorf("migrate: %w", err)
 	}
+	constraintRegistry = messages
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	validateConstraints(ctx, db)
-	return db
+	return db, nil
 }

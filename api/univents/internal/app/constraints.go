@@ -2,8 +2,8 @@ package app
 
 import "lib/database"
 
-func SetupConstraintMessages() {
-	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+func constraintMessages() database.ConstraintRegistry {
+	return database.ConstraintRegistry{
 		// events
 		"chk_event_status_valid":                        "Event status must be one of: draft, active, discontinued.",
 		"chk_event_payments_public_key_requires_seller": "An event's Payssage public key requires a connected seller.",
@@ -71,5 +71,5 @@ func SetupConstraintMessages() {
 
 		// ws_tokens
 		"uniq_ws_tokens_token_hash": "This webhook token has already been issued.",
-	})
+	}
 }

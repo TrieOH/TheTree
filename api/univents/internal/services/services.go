@@ -108,10 +108,10 @@ func NewOperations(
 	badgesOps := NewBadges(r.Badges, r.Badges, r.Registrations, r.Editions, r.Events, checkouts.NewSDKActorResolver(idxClient.Actors), emailClient, authzSvc)
 	wsOps := NewWS(r.WsTokens, r.Purchases, payssageClient, notifier)
 	return &Operations{
-		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps),
+		Events:      NewEvents(r.Events, objStorage, idxClient, authzSvc, badgesOps, tx),
 		Editions:    NewEditions(r.Events, r.Editions, authzSvc, badgesOps),
 		TicketTypes: NewTicketTypes(r.Events, r.Editions, r.TicketTypes, authzSvc),
-		Products:    NewProducts(r.Events, r.Editions, r.Products, authzSvc),
+		Products:    NewProducts(r.Events, r.Editions, r.Products, authzSvc, tx),
 		Programs:    NewPrograms(r.Events, r.Editions, r.Programs, r.Occurrences, r.Registrations, r.TicketTypes, r.Programs, authzSvc, notifier, tx),
 		Badges:      badgesOps,
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),

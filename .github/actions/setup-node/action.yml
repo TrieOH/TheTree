@@ -1,0 +1,42 @@
+name: Setup Node + pnpm
+description: >
+  Node + pnpm toolchain with automatic pnpm-store caching via setup-node's
+  built-in cache. Optionally runs `pnpm install --frozen-lockfile` (install
+  input).
+inputs:
+  node-version:
+    description: Node version
+    required: false
+    default: "22"
+  pnpm-version:
+    description: pnpm version
+    required: false
+    default: "11.26.0"
+  install:
+    description: "run `pnpm install --frozen-lockfile` after cache restore (true/false)"
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
+
+    - name: Toolchain
+      uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Report
+      shell: bash
+      run: |
+        node --version
+        pnpm --version

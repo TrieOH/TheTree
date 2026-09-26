@@ -24,7 +24,7 @@ import (
 // of being token-broken until the next boot's catch-up.
 func TestCreateProjectProvisionsKeysRealDB(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../db/migrations")
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
+	tx := database.NewPGXTxRunner(pool)
 
 	ctx := context.Background()
 	q := sqlc.New(pool)
@@ -38,7 +38,7 @@ func TestCreateProjectProvisionsKeysRealDB(t *testing.T) {
 	}, keys.WithKeyGen(func(models.CryptoKeyType) (*crypto.KeyPair, error) {
 		return &crypto.KeyPair{Public: "pub", EncryptedPrivate: "enc", Algorithm: "test"}, nil
 	}))
-	ops := NewOperations(r.Projects, r.Actors, r.Organizations, keysMgr, authzSvc)
+	ops := NewOperations(r.Projects, r.Actors, r.Organizations, keysMgr, authzSvc, tx)
 
 	// org owner (platform actor) with a member row, so CheckOrg admits them
 	email := "owner@trieoh.com"

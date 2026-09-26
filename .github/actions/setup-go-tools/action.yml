@@ -1,0 +1,54 @@
+name: Setup Go tools
+description: >
+  Installs pinned Go-ecosystem tools into ~/.local/thetree-tools/bin (added
+  to PATH): sqlc, oapi-codegen, golangci-lint, gotestsum — the same versions
+  `just setup` installs on dev machines. Requires setup-go to run first
+  (needs `go install`). No caching — installed fresh every run.
+inputs:
+  sqlc-version:
+    description: sqlc version (no leading v — matches the tarball name)
+    required: false
+    default: "1.31.1"
+  oapi-codegen-version:
+    description: oapi-codegen module version (with leading v)
+    required: false
+    default: "v2.8.0"
+  golangci-lint-version:
+    description: golangci-lint version (no leading v — tag gets v-prefix)
+    required: false
+    default: "2.12.2"
+  gotestsum-version:
+    description: gotestsum version (WITH leading v — go install needs it)
+    required: false
+    default: "v1.13.0"
+runs:
+  using: composite
+  steps:
+    - name: Install tools
+      shell: bash
+      run: |
+        set -euo pipefail
+        DIR="$HOME/.local/thetree-tools"
+        mkdir -p "$DIR/bin"
+        # sqlc — tarball name uses underscores (matches old ci.yml recipe)
+        curl -sSL "https://downloads.sqlc.dev/sqlc_${{ inputs.sqlc-version }}_linux_amd64.tar.gz" \
+          | tar -xz -C "$DIR/bin" sqlc
+        # golangci-lint — release tag gets the v-prefix, dirname doesn't
+        GCL="${{ inputs.golangci-lint-version }}"
+        curl -sSL "https://github.com/golangci/golangci-lint/releases/download/v${GCL}/golangci-lint-${GCL}-linux-amd64.tar.gz" \
+          | tar -xz --strip-components=1 -C "$DIR/bin" "golangci-lint-${GCL}-linux-amd64/golangci-lint"
+        # oapi-codegen + gotestsum — via go install (needs the go toolchain)
+        GOBIN="$DIR/bin" go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${{ inputs.oapi-codegen-version }}"
+        GOBIN="$DIR/bin" go install "gotest.tools/gotestsum@${{ inputs.gotestsum-version }}"
+
+    - name: Add to PATH
+      shell: bash
+      run: echo "$HOME/.local/thetree-tools/bin" >> "$GITHUB_PATH"
+
+    - name: Report + smoke test
+      shell: bash
+      run: |
+        sqlc version
+        oapi-codegen --version
+        golangci-lint version
+        gotestsum --version

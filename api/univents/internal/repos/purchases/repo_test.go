@@ -102,12 +102,11 @@ func seedFixture(t *testing.T, q *sqlc.Queries) fixture {
 	return fixture{edition.ID, ticket.ID, variant.ID, occurrence.ID}
 }
 
-func newRepo(t *testing.T) (*repos.Repos, *sqlc.Queries) {
+func newRepo(t *testing.T) (*repos.Repos, *sqlc.Queries, database.TxRunner) {
 	t.Helper()
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
-	database.SetDefaultRunner(database.NewPGXTxRunner(pool))
-	return repos.New(q), q
+	return repos.New(q), q, database.NewPGXTxRunner(pool)
 }
 
 func purchase(id uuid.UUID, editionID uuid.UUID, status models.PurchaseStatus) *models.Purchase {
@@ -139,13 +138,13 @@ func availabilityByID(t *testing.T, r *repos.Repos, editionID uuid.UUID) map[uui
 // materialized rows (registration / product purchase / participation) commit
 // in one tx, and the materialized ids are stored back on the items.
 func TestCreatePurchaseWithItemsInOneTx(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, tx := newRepo(t)
 	fx := seedFixture(t, q)
 	purchaserID := uuid.New()
 	ctx := context.Background()
 
 	var purchaseID uuid.UUID
-	err := database.RunTx(ctx, func(ctx context.Context) error {
+	err := tx.WithinTx(ctx, func(ctx context.Context) error {
 		p, err := r.Purchases.CreatePurchase(ctx, purchase(purchaserID, fx.editionID, models.PurchaseStatusPending))
 		if err != nil {
 			return err
@@ -238,7 +237,7 @@ func TestCreatePurchaseWithItemsInOneTx(t *testing.T) {
 }
 
 func TestGetByIntentID(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, _ := newRepo(t)
 	fx := seedFixture(t, q)
 	intentID := uuid.New()
 	ctx := context.Background()
@@ -266,7 +265,7 @@ func TestGetByIntentID(t *testing.T) {
 }
 
 func TestOwnerScoping(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, _ := newRepo(t)
 	fx := seedFixture(t, q)
 	owner, other := uuid.New(), uuid.New()
 	ctx := context.Background()
@@ -296,7 +295,7 @@ func TestOwnerScoping(t *testing.T) {
 // available = base - reserved, nil base = unlimited. Reserved counts
 // purchase_items of pending AND approved purchases; expired frees stock.
 func TestAvailabilityMath(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, tx := newRepo(t)
 	fx := seedFixture(t, q)
 	buyer := uuid.New()
 	ctx := context.Background()
@@ -315,7 +314,7 @@ func TestAvailabilityMath(t *testing.T) {
 
 	// Reserve 2 tickets + 1 variant via a pending purchase.
 	var purchaseID uuid.UUID
-	err := database.RunTx(ctx, func(ctx context.Context) error {
+	err := tx.WithinTx(ctx, func(ctx context.Context) error {
 		p, err := r.Purchases.CreatePurchase(ctx, purchase(buyer, fx.editionID, models.PurchaseStatusPending))
 		if err != nil {
 			return err
@@ -358,12 +357,12 @@ func TestAvailabilityMath(t *testing.T) {
 
 // TestAvailabilityUnlimitedPins nil base = unlimited (never sells out).
 func TestAvailabilityUnlimited(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, tx := newRepo(t)
 	fx := seedFixture(t, q)
 	ctx := context.Background()
 
 	var unlimitedID uuid.UUID
-	err := database.RunTx(ctx, func(ctx context.Context) error {
+	err := tx.WithinTx(ctx, func(ctx context.Context) error {
 		tt, err := q.CreateTicketType(ctx, sqlc.CreateTicketTypeParams{
 			EditionID:   fx.editionID,
 			Name:        "Unlimited",
@@ -390,7 +389,7 @@ func TestAvailabilityUnlimited(t *testing.T) {
 // TestPartialUniqueBlocksSecondPendingPurchase pins the checkout 409: one
 // pending purchase per (purchaser, edition).
 func TestPartialUniqueBlocksSecondPendingPurchase(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, _ := newRepo(t)
 	fx := seedFixture(t, q)
 	buyer := uuid.New()
 	ctx := context.Background()
@@ -412,7 +411,7 @@ func TestPartialUniqueBlocksSecondPendingPurchase(t *testing.T) {
 }
 
 func TestListByPurchaser(t *testing.T) {
-	r, q := newRepo(t)
+	r, q, _ := newRepo(t)
 	fx := seedFixture(t, q)
 	buyer := uuid.New()
 	ctx := context.Background()

@@ -2,10 +2,9 @@ package app
 
 import (
 	"context"
+	libauthz "lib/authz"
 	"lib/database"
-	"lib/errx"
 	libriver "lib/river"
-	"log/slog"
 	"net/http"
 	"univents/internal/authz"
 	"univents/internal/handlers"
@@ -17,16 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
-	"riverqueue.com/riverui"
 )
-
-// ── Wire types ────────────────────────────────────────────────────────────
-
-type middlewares struct {
-	jwt     func(http.Handler) http.Handler
-	apiKey  func(http.Handler) http.Handler
-	anyAuth func(http.Handler) http.Handler
-}
 
 // ── Init methods ──────────────────────────────────────────────────────────
 
@@ -43,46 +33,38 @@ func (app *Univents) initHandlers(ops *services.Operations) *handlers.Server {
 	return handlers.NewServer(ops)
 }
 
-func (app *Univents) initMiddlewares() middlewares {
-	var mw middlewares
-	authMW := SetupAuthMiddlewares()
+// initMiddlewares builds the auth primitives the spec-derived chains
+// resolve against; construction stays per-backend, everything downstream
+// (chain derivation, dispatch, fail-closed) is the Access-check and
+// Harness modules' implementation.
+func (app *Univents) initMiddlewares() libauthz.Primitives {
+	authMW := app.setupAuthMiddlewares()
 
-	mw.jwt = authMW.JWT()
-	mw.apiKey = authMW.APIKey()
-	mw.anyAuth = authMW.AnyAuth()
-	return mw
+	return libauthz.Primitives{
+		JWT:    authMW.JWT(),
+		APIKey: authMW.APIKey(),
+		Any:    authMW.AnyAuth(),
+	}
 }
 
-func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], *riverui.Handler) {
+func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], http.Handler, error) {
 	libriver.Migrate(ctx, app.db)
 
-	client := libriver.NewClient(app.db, libriver.NewWorkers(
+	client, err := libriver.Start(ctx, app.db, libriver.NewWorkers(
 		libriver.Register(certsJobs.NewGrantCertsWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(certsJobs.NewGrantCertsForOccurrenceWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
 		libriver.Register(checkoutsJobs.NewExpirePurchaseWorker(r.Purchases, r.Registrations, r.Products, r.Programs, notifier, tx)),
 		libriver.Register(checkoutsJobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, app.emailClient)),
 	), nil, nil)
 	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
-
-	err := client.Start(ctx)
 	if err != nil {
-		errx.Exit(err, "failed to start river client")
+		return nil, nil, err
 	}
 
-	riverUIHandler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		DevMode:                  false,
-		Endpoints:                riverui.NewEndpoints[pgx.Tx](client, nil),
-		Logger:                   slog.Default(),
-		Prefix:                   "/riverui",
-		JobListHideArgsByDefault: true,
-	})
+	riverUI, err := libriver.Dashboard(ctx, client)
 	if err != nil {
-		errx.Exit(err, "failed to create river ui handler")
-	}
-	err = riverUIHandler.Start(ctx)
-	if err != nil {
-		errx.Exit(err, "failed to start river ui handler")
+		return nil, nil, err
 	}
 
-	return client, riverUIHandler
+	return client, riverUI, nil
 }

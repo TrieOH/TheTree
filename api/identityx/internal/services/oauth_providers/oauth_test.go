@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"IdentityX/internal/authz"
+	"IdentityX/internal/emails"
+	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -104,10 +106,23 @@ func newOAuthOps(t *testing.T) (*Operations, *oauthRepos) {
 		r.actors,
 		authz.New(mock.Mock[ports.OrganizationRepo](), r.projects, mock.Mock[ports.PlatformRolesRepo]()),
 		tokens.NewManager(r.keys, r.blacklist, r.actors, mock.Mock[ports.ProjectRepo](), tokens.Config{}),
+		newTosOps(),
 		resty.New(),
 		testProviderMeta(t),
+		nopTxRunner{},
 	)
 	return ops, r
+}
+
+// newTosOps builds a tos operations over per-test mockio repos.
+func newTosOps() *tos.Operations {
+	return tos.NewOperations(
+		mock.Mock[ports.TosRepo](),
+		mock.Mock[ports.ProjectRepo](),
+		mock.Mock[ports.ActorRepo](),
+		authz.New(mock.Mock[ports.OrganizationRepo](), mock.Mock[ports.ProjectRepo](), mock.Mock[ports.PlatformRolesRepo]()),
+		emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
+	)
 }
 
 func envState() models.OAuthLoginState {
@@ -224,7 +239,7 @@ func TestConnectPlatformUsesEnvCredentials(t *testing.T) {
 			return []any{&s, nil}
 		})
 
-	connectURL, err := ops.Connect(context.Background(), "google", nil)
+	connectURL, err := ops.Connect(context.Background(), "google", nil, false)
 	if err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
@@ -271,7 +286,7 @@ func TestConnectProjectUsesProjectCredentials(t *testing.T) {
 			return []any{&s, nil}
 		})
 
-	connectURL, err := ops.Connect(context.Background(), "google", &projectID)
+	connectURL, err := ops.Connect(context.Background(), "google", &projectID, true)
 	if err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
@@ -308,7 +323,7 @@ func TestConnectDisabledProviderStillReturnsURL(t *testing.T) {
 			return []any{&s, nil}
 		})
 
-	_, err := ops.Connect(context.Background(), "google", &projectID)
+	_, err := ops.Connect(context.Background(), "google", &projectID, true)
 	if err != nil {
 		t.Fatalf("disabled provider must still issue a connect URL, got %v", err)
 	}
@@ -323,7 +338,7 @@ func TestConnectProviderNotConfigured(t *testing.T) {
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(nil, fun.ErrNotFound("not configured"))
 
-	_, err := ops.Connect(context.Background(), "google", &projectID)
+	_, err := ops.Connect(context.Background(), "google", &projectID, true)
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}
@@ -336,7 +351,7 @@ func TestConnectUnknownProject(t *testing.T) {
 	mock.When(r.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
 		ThenReturn(nil, fun.ErrNotFound("project not found"))
 
-	_, err := ops.Connect(context.Background(), "google", &projectID)
+	_, err := ops.Connect(context.Background(), "google", &projectID, true)
 	if !fun.Is(err, fun.CodeNotFound) {
 		t.Fatalf("want not found, got %v", err)
 	}
@@ -346,7 +361,7 @@ func TestConnectUnsupportedProvider(t *testing.T) {
 	testEnv(t)
 	ops, _ := newOAuthOps(t)
 
-	_, err := ops.Connect(context.Background(), "x", nil)
+	_, err := ops.Connect(context.Background(), "x", nil, false)
 	if !fun.Is(err, fun.CodeBadRequest) {
 		t.Fatalf("want bad request, got %v", err)
 	}

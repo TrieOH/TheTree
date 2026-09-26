@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"lib/telemetry"
-	"lib/utils"
 	"payssage/models"
 
 	"github.com/MintzyG/fun"
@@ -13,7 +12,7 @@ import (
 
 func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Intent) error {
 	var providerData models.MercadoPagoIntentData
-	err := utils.MapTo(&providerData, intent.ProviderData)
+	err := json.Unmarshal(intent.ProviderData, &providerData)
 	if err != nil {
 		return fun.Errf("error mapping mercadopago provider data: %v", err).Internal()
 	}
@@ -30,7 +29,7 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 	}
 
 	var creds models.MercadoPagoCredentials
-	err = utils.MapTo(&creds, seller.Credentials)
+	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
 		return fun.Errf("error mapping seller credentials: %v", err).Internal()
 	}

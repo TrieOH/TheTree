@@ -6,11 +6,11 @@ import (
 	"github.com/MintzyG/fun"
 
 	"IdentityX/internal/openapi"
-	"lib/globals"
+	"IdentityX/internal/setup"
 )
 
 func (h *Handlers) GetSetup(_ context.Context, _ openapi.GetSetupRequestObject) (openapi.GetSetupResponseObject, error) {
-	if globals.SetupComplete() {
+	if setup.Complete() {
 		return nil, fun.Err("setup already complete").Conflict()
 	}
 	return openapi.GetSetup204Response{}, nil

@@ -2,8 +2,8 @@ package app
 
 import "lib/database"
 
-func SetupConstraintMessages() {
-	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+func constraintMessages() database.ConstraintRegistry {
+	return database.ConstraintRegistry{
 		// actors
 		"chk_actors_type":                      "actor type must be one of: human, service, machine",
 		"chk_actors_auth_method":               "auth method must be one of: api_key, password, google, github",
@@ -68,5 +68,5 @@ func SetupConstraintMessages() {
 		// blacklist_entries
 		"chk_blacklist_entries_type":         "blacklist entry type must be one of: actor, token, api_key, email, ip",
 		"uniq_blacklist_target_type_project": "this target is already blacklisted for this scope",
-	})
+	}
 }

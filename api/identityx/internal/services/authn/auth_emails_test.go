@@ -28,6 +28,8 @@ func emailOps(t *testing.T, actors ports.ActorRepo, actionTokens *tokens.ActionT
 		tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo](), mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
 		actionTokens,
 		mock.Mock[ports.EmailSender](),
+		newTestTosOps(t),
+		nopTxRunner{},
 	)
 }
 
@@ -332,5 +334,7 @@ func newOpsWithSender(t *testing.T, actors ports.ActorRepo, sender ports.EmailSe
 		tokens.NewManager(mock.Mock[ports.CryptoKeysRepo](), mock.Mock[ports.BlacklistRepo](), mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
 		actionMgr(repo),
 		sender,
+		newTestTosOps(t),
+		nopTxRunner{},
 	)
 }

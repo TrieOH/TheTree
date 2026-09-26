@@ -121,7 +121,6 @@ func newResumeOps(t *testing.T, intents checkouts.IntentClient) (*repos.Repos, *
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	tx := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(tx)
 	r := repos.New(q)
 
 	// The resume path only touches purchases + intents; the checkout-only

@@ -7,6 +7,7 @@ import (
 
 	"Informd/internal/handlers"
 	"Informd/internal/services"
+	libauthz "lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -20,7 +21,7 @@ func rejectJWT(_ http.Handler) http.Handler {
 
 func TestSwapSmokeAuthDispatch(t *testing.T) {
 	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(t, server, middlewares{jwt: rejectJWT})
+	r := newTestRouter(t, server, libauthz.Primitives{JWT: rejectJWT})
 
 	// JWT-only namespace route without a token -> 401 fun envelope
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/namespaces", nil)

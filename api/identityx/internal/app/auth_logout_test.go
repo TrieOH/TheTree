@@ -7,13 +7,17 @@ import (
 	"strings"
 	"testing"
 
+	"IdentityX/internal/authz"
+	"IdentityX/internal/emails"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
+	"IdentityX/internal/services/tos"
+	"IdentityX/internal/setup"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
-	"lib/globals"
+	libauthz "lib/authz"
 	"lib/validator"
 
 	"github.com/MintzyG/fun"
@@ -40,6 +44,14 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), projects, tokens.Config{}),
 		tokens.NewActionTokenManager(mock.Mock[ports.ActionTokenRepo](), []byte("test-hmac"), tokens.ActionTokenConfig{}),
 		mock.Mock[ports.EmailSender](),
+		tos.NewOperations(
+			mock.Mock[ports.TosRepo](),
+			projects,
+			mock.Mock[ports.ActorRepo](),
+			authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
+			emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
+		),
+		nopTxRunner{},
 	)
 	server := handlers.NewServer(&services.Operations{Authn: ops})
 	jwtStub := func(next http.Handler) http.Handler {
@@ -51,12 +63,12 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	globals.MarkSetupComplete()
-	return newTestRouter(t, server, middlewares{
-		jwtAuth:    jwtStub,
-		apiKeyAuth: mwJWT,
-		anyAuth:    mwAnyAuth,
-		scopes:     testScopeCheckers(),
+	setup.MarkComplete()
+	return newTestRouter(t, server, libauthz.Primitives{
+		JWT:    jwtStub,
+		APIKey: mwJWT,
+		Any:    mwAnyAuth,
+		Scopes: testScopeCheckers(),
 	})
 }
 

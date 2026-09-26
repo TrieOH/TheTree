@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"Informd/models"
-	"lib/database"
 	"lib/telemetry"
 )
 
@@ -25,7 +24,7 @@ func (o *Operations) Create(ctx context.Context, name string) (*models.Namespace
 	}
 
 	var created *models.Namespace
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.namespaces.Create(ctx, *project)
 		if err != nil {
 			return err

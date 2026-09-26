@@ -2,6 +2,7 @@ package events_test
 
 import (
 	"context"
+	"lib/database"
 	"testing"
 
 	"github.com/google/uuid"
@@ -19,12 +20,13 @@ func TestRemoveMember_StaffForbidden(t *testing.T) {
 
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
+	var txr = mock.Mock[database.TxRunner]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
 	staffID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps](), txr)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: staffID},
@@ -52,11 +54,12 @@ func TestRemoveMember_OwnerGetsPastAuth(t *testing.T) {
 
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
+	var txr = mock.Mock[database.TxRunner]()
 
 	eventID := uuid.New()
 	ownerID := uuid.New()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps](), txr)
 
 	ctx := idx.WithIdentity(context.Background(), &idx.Identity{
 		Sub: idx.Subject{ID: ownerID},
@@ -87,8 +90,9 @@ func TestRemoveMember_NoIdentity(t *testing.T) {
 
 	var repo = mock.Mock[ports.EventRepo]()
 	authzSvc := authz.New(repo)
+	var txr = mock.Mock[database.TxRunner]()
 
-	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps]())
+	cmd := events.NewOperations(repo, nil, nil, authzSvc, mock.Mock[ports.BadgeStaffOps](), txr)
 
 	err := cmd.RemoveMember(context.Background(), uuid.New(), models.RemoveMemberInput{
 		Email: "someone@example.com",

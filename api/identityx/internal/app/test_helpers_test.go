@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	spec "IdentityX"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/handlers"
 	libauthz "lib/authz"
@@ -26,13 +27,16 @@ func testScopeCheckers() map[string]libauthz.ScopeChecker {
 // newTestRouter mounts the strict server with the real middleware stack
 // (validation + auth dispatch + fun-envelope error handlers) on a fresh
 // chi router plus harness routes.
-func newTestRouter(t *testing.T, h *handlers.Server, mw middlewares) *chi.Mux {
+func newTestRouter(t *testing.T, h *handlers.Server, primitives libauthz.Primitives) *chi.Mux {
 	t.Helper()
-	chains, err := resolveAuthChains(mw)
+	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, libauthz.Options{
+		SetupGuard:     setupGuard(),
+		SkipSetupGuard: []string{"getSetup", "postSetup"},
+	})
 	if err != nil {
-		t.Fatalf("resolveAuthChains: %v", err)
+		t.Fatalf("resolve auth chains: %v", err)
 	}
 	r := chi.NewRouter()
-	mountStrict(r, h, chains)
+	mountStrict(r, h, resolver.Chains())
 	return r
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	libconfig "lib/config"
 	"lib/database"
 	"lib/email"
 	"lib/errx"
@@ -12,48 +13,33 @@ import (
 )
 
 type Config struct {
-	// Server
-	Port        string `env:"PORT"                 envDefault:"8080"`
-	ProfilePort string `env:"PROFILE_PORT"         envDefault:"6060"`
-	AppName     string `env:"APP_NAME,required"`
-	AppURL      string `env:"APP_URL,required"`
-	DebugMode   bool   `env:"DEBUG_MODE"`
-	HmacSecret  string `env:"HMAC_SECRET,required"`
+	libconfig.Server
+	libconfig.RootPostgres
+	libconfig.IdentityX
+	libconfig.CORS
 
-	// Security
-	// WsJwtSecret string `env:"WS_JWT_SECRET,required"`
+	// Own database, prefixed UNIVENTS_.
+	Postgres libconfig.Postgres `envPrefix:"UNIVENTS_"`
+
+	// Migration
+	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
+
+	// Profiling
+	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
+
+	// Feature fields
+	AppURL string `env:"APP_URL,required"`
 
 	// When true, every JWT-authenticated route requires the actor's email to
 	// be verified (identityx subject.verified_at set). Unverified actors get
 	// 403. Public routes (webhooks, health, ws) are unaffected.
 	RequireVerifiedEmail bool `env:"REQUIRE_VERIFIED_EMAIL" envDefault:"false"`
 
-	// IdentityX
-	IdxURL       string    `env:"IDENTITY_X_URL,required"`
-	IdxAPIKey    string    `env:"IDENTITY_X_API_KEY,required"`
-	IdxProjectID uuid.UUID `env:"IDENTITY_X_PROJECT_ID,required"`
-
 	// Payssage
 	PayssageURL           string    `env:"PAYSSAGE_URL,required"`
 	PayssageAPIKey        string    `env:"PAYSSAGE_API_KEY,required"`
 	PayssageWalletID      uuid.UUID `env:"PAYSSAGE_WALLET_ID,required"` // one platform wallet shared by every event (D6)
 	PayssageWebhookSecret string    `env:"PAYSSAGE_WEBHOOK_SECRET,required"`
-	// PayssageProvider string `env:"PAYSSAGE_PROVIDER,required"` // single provider (mercado_pago) today
-
-	// Postgres (own DB)
-	PostgresHost     string `env:"UNIVENTS_POSTGRES_HOST,required"`
-	PostgresPort     string `env:"UNIVENTS_POSTGRES_PORT"              envDefault:"5432"`
-	PostgresDB       string `env:"UNIVENTS_POSTGRES_DB,required"`
-	PostgresUser     string `env:"UNIVENTS_POSTGRES_USER,required"`
-	PostgresPassword string `env:"UNIVENTS_POSTGRES_PASSWORD,required"`
-
-	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
-
-	// Postgres (root — from .env)
-	RootPostgresUser     string `env:"POSTGRES_USER,required"`
-	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
-	RootPostgresDB       string `env:"POSTGRES_DB"                envDefault:"postgres"`
 
 	// Object Storage (RustFS)
 	ObjStorageEndpoint  string `env:"OBJECT_STORAGE_ENDPOINT,required"`
@@ -62,13 +48,6 @@ type Config struct {
 	ObjStorageUseSSL    bool   `env:"OBJECT_STORAGE_USE_SSL"             envDefault:"true"`
 	ObjStorageRegion    string `env:"OBJECT_STORAGE_REGION"              envDefault:"us-east-1"`
 
-	// CORS
-	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
-	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
-
-	// Feature flags
-	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
-
 	// SMTP / Email
 	SMTPHost     string `env:"SMTP_HOST,required"`
 	SMTPPort     int    `env:"SMTP_PORT"          envDefault:"587"`
@@ -76,32 +55,17 @@ type Config struct {
 	SMTPPassword string `env:"SMTP_PASSWORD"`
 	SMTPFrom     string `env:"SMTP_FROM,required"`
 	SMTPTLS      bool   `env:"SMTPTLS"            envDefault:"true"`
+
+	// Webhook HMAC
+	HmacSecret string `env:"HMAC_SECRET,required"`
 }
 
 func (cfg Config) ToIdentityXConfig() idx.Config {
-	return idx.Config{
-		BaseURL:   cfg.IdxURL,
-		APIKey:    cfg.IdxAPIKey,
-		ProjectID: cfg.IdxProjectID,
-		Debug:     cfg.DebugMode,
-	}
+	return libconfig.IdentityXConfig(cfg.IdentityX, cfg.DebugMode)
 }
 
 func (cfg Config) ToDBConfig() database.Config {
-	return database.Config{
-		Host:          cfg.PostgresHost,
-		Port:          cfg.PostgresPort,
-		DB:            cfg.PostgresDB,
-		User:          cfg.PostgresUser,
-		Password:      cfg.PostgresPassword,
-		SSLMode:       "disable",
-		RootUser:      cfg.RootPostgresUser,
-		RootPassword:  cfg.RootPostgresPassword,
-		RootDB:        cfg.RootPostgresDB,
-		RootHost:      "postgres",
-		RootPort:      "5432",
-		MigrationPath: cfg.MigrationPath,
-	}
+	return libconfig.DBConfig(cfg.Postgres, cfg.RootPostgres, cfg.MigrationPath)
 }
 
 func (cfg Config) ToEmailConfig() email.Config {

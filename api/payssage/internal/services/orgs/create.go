@@ -2,7 +2,6 @@ package orgs
 
 import (
 	"context"
-	"lib/database"
 	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -24,7 +23,7 @@ func (o *Operations) Create(ctx context.Context, in models.CreateOrganizationInp
 	}
 
 	var created *models.Organization
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.orgs.Create(ctx, org)
 		if err != nil {
 			return err

@@ -1,7 +1,10 @@
 package main
 
-import "Informd/internal/app"
+import (
+	"Informd/internal/app"
+	"lib/errx"
+)
 
 func main() {
-	app.Start()
+	errx.Exit(app.Run(), "informd exited with error")
 }

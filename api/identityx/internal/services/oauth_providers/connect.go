@@ -14,7 +14,11 @@ import (
 // authorization URL for the caller to redirect to. Provider policy lives
 // in this module, so this is the flow's only contact with "is this
 // provider configured/enabled".
-func (o *Operations) Connect(ctx context.Context, provider string, projectID *uuid.UUID) (string, error) {
+//
+// acceptedTos is the clickwrap consent flag: a project with terms only
+// starts flows whose caller agreed to them, so the consent screen precedes
+// the provider redirect (the callback itself has no UI to ask in).
+func (o *Operations) Connect(ctx context.Context, provider string, projectID *uuid.UUID, acceptedTos bool) (string, error) {
 	ctx, span := telemetry.StartSpan(ctx, "Connect")
 	defer span.End()
 
@@ -29,6 +33,13 @@ func (o *Operations) Connect(ctx context.Context, provider string, projectID *uu
 		_, err := o.projects.GetByID(ctx, *projectID)
 		if err != nil {
 			return "", err
+		}
+		_, hasTos, err := o.tos.CurrentTos(ctx, *projectID)
+		if err != nil {
+			return "", err
+		}
+		if hasTos && !acceptedTos {
+			return "", fun.ErrValidation("you must accept the terms of service to register")
 		}
 	}
 

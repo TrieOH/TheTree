@@ -26,7 +26,6 @@ func newRefundOps(t *testing.T) (*repos.Repos, *checkouts.Operations, *fakes, fi
 	pool := testdb.Postgres(t, "../../../db/migrations")
 	q := sqlc.New(pool)
 	tx := database.NewPGXTxRunner(pool)
-	database.SetDefaultRunner(tx)
 	r := repos.New(q)
 
 	ps := newFakePayssage(func(uuid.UUID, payssage.CreateIntentRequest) (*payssage.Intent, error) {

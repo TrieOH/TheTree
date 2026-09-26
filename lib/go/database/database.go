@@ -140,11 +140,13 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 
 type ConstraintRegistry map[string]string
 
-var ConstraintErrorRegistry ConstraintRegistry
-
-func SetConstraintErrorRegistry(registry ConstraintRegistry) {
-	ConstraintErrorRegistry = registry
-}
+// constraintRegistry maps constraint/index names to the client-facing
+// messages repos surface on violation. SetupDB — the one owner of DB boot —
+// receives it as an argument and stores it here for the error mapper, so
+// there is no init-order contract with callers: the registry travels as
+// data into the one function that owns DB setup, and boot fails loudly
+// when a constraint has no message (see validateConstraints).
+var constraintRegistry ConstraintRegistry
 
 func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
 	rows, err := db.Query(ctx, `
@@ -173,7 +175,7 @@ func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
 	for rows.Next() {
 		var name string
 		_ = rows.Scan(&name)
-		if _, ok := ConstraintErrorRegistry[name]; !ok {
+		if _, ok := constraintRegistry[name]; !ok {
 			missing = append(missing, name)
 		}
 	}

@@ -12,6 +12,7 @@ import (
 	"Informd/internal/services/namespaces"
 	"Informd/internal/services/responses"
 	"Informd/internal/services/steps"
+	"lib/database"
 )
 
 // Type and constructor aliases for each feature's operations package.
@@ -44,12 +45,12 @@ type Operations struct {
 // NewOperations wires every feature's operations from the shared repos.
 // Authorization arrives by injection through the same seam — no
 // service-locator globals.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service) *Operations {
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, tx database.TxRunner) *Operations {
 	return &Operations{
-		Namespaces: NewNamespaces(r.Namespaces, r.Forms, r.Steps, r.Fields, r.Answers, r.Responses, r.Responders, authzSvc),
-		Forms:      NewForms(r.Forms, r.Steps, r.Namespaces, r.Fields, r.Answers, r.Responses, r.Responders, authzSvc),
+		Namespaces: NewNamespaces(r.Namespaces, r.Forms, r.Steps, r.Fields, r.Answers, r.Responses, r.Responders, authzSvc, tx),
+		Forms:      NewForms(r.Forms, r.Steps, r.Namespaces, r.Fields, r.Answers, r.Responses, r.Responders, authzSvc, tx),
 		Steps:      NewSteps(r.Forms, r.Steps, r.Namespaces, authzSvc),
-		Fields:     NewFields(r.Forms, r.Steps, r.Fields, r.Namespaces, authzSvc),
-		Responses:  NewResponses(r.Responders, r.Responses, r.Answers, r.Forms),
+		Fields:     NewFields(r.Forms, r.Steps, r.Fields, r.Namespaces, authzSvc, tx),
+		Responses:  NewResponses(r.Responders, r.Responses, r.Answers, r.Forms, tx),
 	}
 }

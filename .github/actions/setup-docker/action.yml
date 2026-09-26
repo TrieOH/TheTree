@@ -1,0 +1,45 @@
+name: Setup Docker CLI
+description: >
+  Installs the docker CLI from a pinned static tarball (no latest, no apt).
+  No caching — installed fresh every run. NOTE: on GitHub-hosted
+  ubuntu-latest runners, Docker + buildx are already preinstalled, so this
+  action is only needed on self-hosted runners without Docker.
+  Keep `version` in sync with the DinD daemon image in
+  infra/forgejo/compose.yml (docker:<version>-dind), if still relevant.
+inputs:
+  version:
+    description: Docker CLI version (static tarball on download.docker.com)
+    required: false
+    default: "29.7.2"
+  buildx-version:
+    description: buildx plugin version (docker 29 requires it for `docker build`)
+    required: false
+    default: "v0.37.0"
+runs:
+  using: composite
+  steps:
+    - name: Install pinned docker CLI + buildx
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p /opt/docker-cli/cli-plugins
+        curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${{ inputs.version }}.tgz" -o /tmp/docker.tgz
+        tar -xzf /tmp/docker.tgz -C /tmp docker/docker
+        install -m 0755 /tmp/docker/docker /opt/docker-cli/docker
+        rm -f /tmp/docker.tgz
+        curl -fsSL "https://github.com/docker/buildx/releases/download/${{ inputs.buildx-version }}/buildx-${{ inputs.buildx-version }}.linux-amd64" \
+          -o /opt/docker-cli/cli-plugins/docker-buildx
+        chmod 0755 /opt/docker-cli/cli-plugins/docker-buildx
+
+    - name: Register plugin dir + add to PATH
+      shell: bash
+      run: |
+        echo "/opt/docker-cli" >> "$GITHUB_PATH"
+        mkdir -p ~/.docker
+        printf '{"cliPluginsExtraDirs":["/opt/docker-cli/cli-plugins"]}' > ~/.docker/config.json
+
+    - name: Smoke test
+      shell: bash
+      run: |
+        docker version --format '{{.Client.Version}}'
+        docker buildx version

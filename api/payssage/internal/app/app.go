@@ -2,11 +2,16 @@ package app
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"lib/database"
 	"lib/httpserver"
 	libriver "lib/river"
-	"lib/telemetry"
+	spec "payssage"
 	"payssage/internal/config"
+	webhooksjobs "payssage/internal/services/webhooks/jobs"
+	"payssage/internal/sqlc"
 
 	idx "sdk/identityx"
 
@@ -22,27 +27,68 @@ type Payssage struct {
 	cfg config.Config
 }
 
-var app Payssage
+// Run boots Payssage through the Harness: the process sequence (FUN
+// runtime, tracer, serving, shutdown ordering) is httpserver.Boot's
+// implementation; everything Payssage varies on — its IdentityX client,
+// its Postgres adapter with the constraint messages, its webhook delivery
+// workers and the river UI — happens in the start hook. Storage never
+// crosses Boot's interface: the pool is created here and closed in the
+// returned shutdown.
+func Run() error {
+	cfg := config.LoadConfig()
+	app := &Payssage{cfg: cfg}
 
-func Start() {
-	ctx := context.Background()
-	SetupConstraintMessages()
+	start := func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
+		idxClient, err := idx.Bootstrap(ctx, cfg.ToIdentityXConfig())
+		if err != nil {
+			return nil, nil, err
+		}
+		app.idxClient = idxClient
+		app.httpClient = resty.New().SetTimeout(15 * time.Second)
 
-	app.cfg = config.LoadConfig()
+		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		if err != nil {
+			return nil, nil, err
+		}
+		app.db = pool
 
-	httpserver.SetupFUN(app.cfg.AppName)
+		tx := database.NewPGXTxRunner(pool)
 
-	app.idxClient = SetupIdentityX(app.cfg)
+		repos := app.initRepos(sqlc.New(pool))
+		app.initProviders(repos)
 
-	app.httpClient = SetupHTTPClient()
+		riverClient, err := libriver.Start(ctx, pool, libriver.NewWorkers(
+			libriver.Register[webhooksjobs.DeliverWebhookArgs](webhooksjobs.NewDeliverWebhookWorker(
+				repos.WebhookDeliveries, repos.WebhookEvents, repos.WebhookEndpoints, app.httpClient,
+			)),
+		), nil, nil)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	app.db = database.SetupDB(app.cfg.ToDBConfig())
-	defer database.CloseDB(app.db)
+		riverUI, err := libriver.Dashboard(ctx, riverClient)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	libriver.Migrate(ctx, app.db)
+		ops := app.initOperations(riverClient, repos, tx)
+		handlers := app.initHandlers(ops)
+		primitives := app.initMiddlewares()
 
-	shutdown := telemetry.InitTracer(ctx, app.cfg.AppName)
-	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)
+		mux := app.CreateRouter(primitives, handlers, riverUI)
+		return mux, func(ctx context.Context) error {
+			libriver.LogStop(ctx, riverClient)
+			database.CloseDB(pool)
+			return nil
+		}, nil
+	}
 
-	app.run()
+	return httpserver.Boot(httpserver.Config{
+		AppName:            cfg.AppName,
+		Port:               cfg.Port,
+		ProfilePort:        cfg.ProfilePort,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
+	}, start)
 }

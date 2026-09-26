@@ -2,7 +2,6 @@ package fields
 
 import (
 	"context"
-	"lib/database"
 	"lib/telemetry"
 	idx "sdk/identityx"
 
@@ -41,7 +40,7 @@ func (o *Operations) CreateNamespaced(ctx context.Context, payload models.Create
 	}
 
 	var created *models.Field
-	err = database.RunTx(ctx, func(ctx context.Context) error {
+	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = o.fields.Create(ctx, *field)
 		if err != nil {
 			return err

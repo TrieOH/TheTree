@@ -5,6 +5,7 @@
 package services
 
 import (
+	"lib/database"
 	"payssage/internal/authz"
 	"payssage/internal/repos"
 	"payssage/internal/services/collectors"
@@ -69,15 +70,15 @@ type Operations struct {
 // NewOperations wires every feature's operations from the shared repos.
 // Authorization arrives by injection through the same seam — no
 // service-locator globals.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, riverClient *river.Client[pgx.Tx], idxClient *idx.Client) *Operations {
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, riverClient *river.Client[pgx.Tx], idxClient *idx.Client, tx database.TxRunner) *Operations {
 	return &Operations{
-		Organizations:     NewOrganizations(r.Organizations, idxClient, authzSvc),
+		Organizations:     NewOrganizations(r.Organizations, idxClient, authzSvc, tx),
 		Wallets:           NewWallets(r.Wallets, r.Organizations, authzSvc),
 		OAuth:             NewOAuth(r.Wallets, r.Organizations, r.OAuth, r.Collectors, r.Sellers, authzSvc),
 		Collectors:        NewCollectors(r.Collectors, r.Organizations, authzSvc),
 		Sellers:           NewSellers(r.Sellers, r.Wallets, r.Organizations, authzSvc),
 		Intents:           NewIntents(r.Intents, r.Wallets, r.Organizations, r.Collectors, r.Sellers, authzSvc),
-		Webhooks:          NewWebhooks(riverClient, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc),
+		Webhooks:          NewWebhooks(riverClient, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc, tx),
 		WebhookEndpoints:  NewWebhookEndpoints(r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),
 		WebhookEvents:     NewWebhookEvents(r.WebhookEvents, r.Wallets, r.Organizations, authzSvc),
 		WebhookDeliveries: NewWebhookDeliveries(r.WebhookDeliveries, r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),

@@ -8,7 +8,11 @@ import (
 )
 
 func (h *Handlers) GetOAuthConnect(ctx context.Context, req openapi.GetOAuthConnectRequestObject) (openapi.GetOAuthConnectResponseObject, error) {
-	url, err := h.ops.Connect(ctx, string(req.Provider), req.Params.ProjectId)
+	acceptedTos := false
+	if req.Params.AcceptedTos != nil {
+		acceptedTos = *req.Params.AcceptedTos
+	}
+	url, err := h.ops.Connect(ctx, string(req.Provider), req.Params.ProjectId, acceptedTos)
 	if err != nil {
 		return nil, err
 	}

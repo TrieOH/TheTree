@@ -31,7 +31,7 @@ func NewErrorHandler(resource string) ErrorHandler {
 			return fun.ErrInternal(err.Error())
 		}
 
-		constraintMessage, hasCustom := ConstraintErrorRegistry[pgErr.ConstraintName]
+		constraintMessage, hasCustom := constraintRegistry[pgErr.ConstraintName]
 		switch pgErr.Code {
 		case "23505":
 			msg := res + ": " + pgErr.Error()

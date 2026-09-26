@@ -83,7 +83,7 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 
 **Fix.** `go test -race -count=1 ./...` in the `tests` job (and optionally in `just test`). Cost: slower runs (race builds) — acceptable for the integration-only job. Note: `-race` needs CGO; the runner image has gcc, fine.
 
-**Where.** `.forgejo/workflows/ci.yml`, `justfile`.
+**Where.** `../.github`, `justfile`.
 
 **Effort.** XS.
 
@@ -93,7 +93,7 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 
 **Fix.** A CI step (or pre-commit): `go mod tidy && git diff --exit-code` — fails if tidy changes anything. One workflow in `ci.yml` (path-filtered to `**/go.mod`, `**/go.sum`, `go.work*`).
 
-**Where.** `.forgejo/workflows/ci.yml` (+ `.husky/pre-commit` if wanted).
+**Where.** `../.github` (+ `.husky/pre-commit` if wanted).
 
 **Effort.** XS.
 
@@ -103,7 +103,7 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 
 **Fix.** `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` per module (or in the dagger `ci` step) as a complement: precise, only real reachable vulns. Add it to the `ci` job's hermetic pipeline.
 
-**Where.** `.dagger/main.go` (`ci`), `.forgejo/workflows/ci.yml`.
+**Where.** `.dagger/main.go` (`ci`), `../.github`.
 
 **Effort.** S.
 

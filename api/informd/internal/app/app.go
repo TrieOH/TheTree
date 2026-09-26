@@ -1,12 +1,14 @@
 package app
 
 import (
-	"Informd/internal/config"
 	"context"
+	"net/http"
 
+	spec "Informd"
+	"Informd/internal/config"
+	"Informd/internal/sqlc"
 	"lib/database"
 	"lib/httpserver"
-	"lib/telemetry"
 
 	idx "sdk/identityx"
 
@@ -19,23 +21,49 @@ type Informd struct {
 	cfg       config.Config
 }
 
-var app Informd
+// Run boots Informd through the Harness: the process sequence (FUN runtime,
+// tracer, serving, shutdown ordering) is httpserver.Boot's implementation;
+// everything Informd varies on — its IdentityX client, its Postgres adapter
+// with the constraint messages, repos, operations, routes — happens in the
+// start hook. Storage never crosses Boot's interface: the pool is created
+// here and closed in the returned shutdown.
+func Run() error {
+	cfg := config.LoadConfig()
+	app := &Informd{cfg: cfg}
 
-func Start() {
-	ctx := context.Background()
-	SetupConstraintMessages()
+	start := func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
+		idxClient, err := idx.Bootstrap(ctx, cfg.ToIdentityXConfig())
+		if err != nil {
+			return nil, nil, err
+		}
+		app.idxClient = idxClient
 
-	app.cfg = config.LoadConfig()
+		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		if err != nil {
+			return nil, nil, err
+		}
+		app.db = pool
 
-	httpserver.SetupFUN(app.cfg.AppName)
+		tx := database.NewPGXTxRunner(pool)
 
-	app.idxClient = SetupIdentityX(app.cfg)
+		repos := app.initRepos(sqlc.New(pool))
+		ops := app.initOperations(repos, tx)
+		handlers := app.initHandlers(ops)
+		primitives := app.initMiddlewares()
 
-	app.db = database.SetupDB(app.cfg.ToDBConfig())
-	defer database.CloseDB(app.db)
+		mux := app.CreateRouter(handlers, primitives)
+		return mux, func(context.Context) error {
+			database.CloseDB(pool)
+			return nil
+		}, nil
+	}
 
-	shutdown := telemetry.InitTracer(ctx, app.cfg.AppName)
-	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)
-
-	app.run()
+	return httpserver.Boot(httpserver.Config{
+		AppName:            cfg.AppName,
+		Port:               cfg.Port,
+		ProfilePort:        cfg.ProfilePort,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
+	}, start)
 }

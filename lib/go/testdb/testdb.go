@@ -59,7 +59,7 @@ func Postgres(tb testing.TB, mPath string) *pgxpool.Pool {
 		// -short mode: skip all testcontainers-backed tests. This is how the
 		// deploy pipeline splits "unit" (R2, fast, no docker needed) from
 		// "integration" (R6, testcontainers on the runner) — see
-		// .forgejo/workflows/deploy.yml.
+		// .github/workflows/deploy.yml.
 		if testing.Short() {
 			t.Skip("testdb: -short mode: skipping testcontainers-backed test")
 		}

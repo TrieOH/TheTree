@@ -6,16 +6,10 @@ import (
 	"Informd/internal/repos"
 	"Informd/internal/services"
 	"Informd/internal/sqlc"
-	"net/http"
+	"lib/database"
+
+	libauthz "lib/authz"
 )
-
-// ── Wire types ────────────────────────────────────────────────────────────
-
-type middlewares struct {
-	jwt     func(http.Handler) http.Handler
-	apiKey  func(http.Handler) http.Handler
-	anyAuth func(http.Handler) http.Handler
-}
 
 // ── Init functions ────────────────────────────────────────────────────────
 
@@ -23,18 +17,22 @@ func (app *Informd) initRepos(q *sqlc.Queries) *repos.Repos {
 	return repos.New(q)
 }
 
-func (app *Informd) initOperations(r *repos.Repos) *services.Operations {
+func (app *Informd) initOperations(r *repos.Repos, tx database.TxRunner) *services.Operations {
 	authzSvc := authz.New(r.Forms, r.Namespaces)
-	return services.NewOperations(r, authzSvc)
+	return services.NewOperations(r, authzSvc, tx)
 }
 
-func (app *Informd) initMiddlewares() middlewares {
-	var mw middlewares
+// initMiddlewares builds the auth primitives the spec-derived chains
+// resolve against; construction stays per-backend, everything downstream
+// (chain derivation, dispatch, fail-closed) is the Access-check and
+// Harness modules' implementation.
+func (app *Informd) initMiddlewares() libauthz.Primitives {
 	authMW := app.setupAuthMiddlewares()
-	mw.jwt = authMW.JWT()
-	mw.apiKey = authMW.APIKey()
-	mw.anyAuth = authMW.AnyAuth()
-	return mw
+	return libauthz.Primitives{
+		JWT:    authMW.JWT(),
+		APIKey: authMW.APIKey(),
+		Any:    authMW.AnyAuth(),
+	}
 }
 
 func (app *Informd) initHandlers(ops *services.Operations) *handlers.Server {

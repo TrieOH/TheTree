@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"net/http"
+
 	"lib/database"
 	"lib/email"
 	"lib/httpserver"
 	"lib/objectstorage"
-	"lib/telemetry"
+	libriver "lib/river"
+	spec "univents"
 	"univents/internal/config"
 
 	idx "sdk/identityx"
@@ -25,30 +28,83 @@ type Univents struct {
 	cfg config.Config
 }
 
-var app Univents
+// Run boots Univents through the Harness: the process sequence (FUN
+// runtime, tracer, serving, shutdown ordering) is httpserver.Boot's
+// implementation; everything Univents varies on — its clients (IdentityX,
+// Payssage, object storage, email), the platform-wallet fail-fast check,
+// its Postgres adapter with the constraint messages, the store notifier,
+// river workers and jobs — happens in the start hook. Storage never
+// crosses Boot's interface: the pool is created here and closed in the
+// returned shutdown.
+func Run() error {
+	cfg := config.Load()
+	app := &Univents{cfg: cfg}
 
-func Start() {
-	ctx := context.Background()
-	SetupConstraintMessages()
+	start := func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
+		idxClient, err := idx.Bootstrap(ctx, cfg.ToIdentityXConfig())
+		if err != nil {
+			return nil, nil, err
+		}
+		app.idxClient = idxClient
 
-	app.cfg = config.Load()
+		objStorage, err := SetupObjectStorage(cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+		app.objStorage = objStorage
+		app.emailClient = email.NewClient(cfg.ToEmailConfig())
+		app.payssage = SetupPayssage(cfg)
 
-	httpserver.SetupFUN(app.cfg.AppName)
+		// Fail fast on the platform wallet: wrong/missing PAYSSAGE_WALLET_ID
+		// or an unreachable Payssage must stop the boot, not surface at
+		// checkout (D6).
+		err = VerifyPayssageWallet(ctx, app.payssage, cfg.PayssageWalletID)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	app.idxClient = SetupIdentityX(app.cfg)
-	app.objStorage = SetupObjectStorage(app.cfg)
-	app.emailClient = email.NewClient(app.cfg.ToEmailConfig())
-	app.payssage = SetupPayssage(app.cfg)
+		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		if err != nil {
+			return nil, nil, err
+		}
+		app.db = pool
 
-	// Fail fast on the platform wallet: wrong/missing PAYSSAGE_WALLET_ID or
-	// an unreachable Payssage must stop the boot, not surface at checkout.
-	VerifyPayssageWallet(ctx, app.payssage, app.cfg.PayssageWalletID)
+		// The notifier (lib/go/database) is the store's LISTEN/NOTIFY bridge:
+		// the webhook receiver publishes on it (split 4); the SSE relay and
+		// WS hub subscribe in split 6. Notify opens its own connection per
+		// call, so nothing needs starting here.
+		notifier := database.NewNotifier(cfg.ToDBConfig().DSN())
 
-	app.db = database.SetupDB(app.cfg.ToDBConfig())
-	defer database.CloseDB(app.db)
+		tx := database.NewPGXTxRunner(pool)
 
-	shutdown := telemetry.InitTracer(ctx, app.cfg.AppName)
-	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)
+		repos := app.initRepos()
 
-	app.run()
+		// River must exist before the operations: the webhook receiver
+		// cancels the expiry job on approve via the client (best-effort;
+		// split 7 checkout schedules the job).
+		riverClient, riverUI, err := app.initRiver(ctx, repos, notifier, tx)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		ops := app.initOperations(repos, notifier, riverClient, tx)
+		primitives := app.initMiddlewares()
+		handlers := app.initHandlers(ops)
+
+		mux := app.CreateRouter(primitives, handlers, riverUI)
+		return mux, func(ctx context.Context) error {
+			libriver.LogStop(ctx, riverClient)
+			database.CloseDB(pool)
+			return nil
+		}, nil
+	}
+
+	return httpserver.Boot(httpserver.Config{
+		AppName:            cfg.AppName,
+		Port:               cfg.Port,
+		ProfilePort:        cfg.ProfilePort,
+		CorsAllowedOrigins: cfg.AllowedOrigins,
+		CorsAllowedHeaders: cfg.AllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
+	}, start)
 }

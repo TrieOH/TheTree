@@ -10,38 +10,38 @@ Everything here is single-server-shaped: cheap, compose-native, and mostly "wire
 
 ## 🧰 Infra/DevOps — do it solo (30 items)
 
-| # | Item | Effort |
-|---|------|--------|
-| 1 | Offsite automated backups (restic → R2/B2) | M |
-| 2 | Grafana alerts → ntfy (phone) | S |
-| 3 | External uptime checks as a Cloudflare Worker cron (+ status page) | S |
-| 4 | Container log rotation / disk-full alert | S |
-| 5 | zram / swapfile | S |
-| 6 | Profile container memory before setting limits | XS |
-| 7 | Resource limits on every compose stack | S |
-| 8 | TLS certificate expiry alert | S |
-| 10 | Latency alerts on existing traces | S |
-| 12 | Auth gate on staging (CF Access + Caddy basic_auth) | S |
-| 13 | Wildcard DNS for staging (4 records, not 8) | XS |
-| 14 | mailpit retention flags | XS |
-| 15 | Nightly staging reset (Forgejo schedule) | S |
-| 17 | Compose drift check prod ↔ staging | S |
-| 19 | Server crontab into git (`cron/` + `just install-crons`) | S |
-| 20 | Host image GC (beyond DinD) | XS |
-| 21 | unattended-upgrades (security-only) | S |
-| 22 | SSH hardening (key-only, fail2ban) | S |
-| 23 | Host firewall (ufw, default-deny) | S |
-| 24 | Secret scanning (gitleaks) — CI tooling | S |
-| 25 | DNS-as-code via the CF API | S |
-| 26 | Dockge (compose web UI) | M |
-| 27 | Auto-bump PRs in the deploy repo | M |
-| 28 | `docker compose up -d --wait` in deploy recipe | XS |
-| 29 | Validate the Caddyfile before reload | XS |
-| 30 | Server ops kit in the infra justfile (+ rollback paths) | S |
-| 31 | Pin `informd` | XS |
-| 32 | Tailscale (replace SSH tunnels) | M |
-| 33 | PgBouncer — only if connection errors appear | XS |
-| 34 | PITR via WAL archiving | L |
+| #  | Item                                                               | Effort |
+|----|--------------------------------------------------------------------|--------|
+| 1  | Offsite automated backups (restic → R2/B2)                         | M      |
+| 2  | Grafana alerts → ntfy (phone)                                      | S      |
+| 3  | External uptime checks as a Cloudflare Worker cron (+ status page) | S      | DONE (2026-09-17, `front/uptime-check`)
+| 4  | Container log rotation / disk-full alert                           | S      |
+| 5  | zram / swapfile                                                    | S      |  DONE (Swapfile added 4.0G)
+| 6  | Profile container memory before setting limits                     | XS     |
+| 7  | Resource limits on every compose stack                             | S      |
+| 8  | TLS certificate expiry alert                                       | S      |
+| 10 | Latency alerts on existing traces                                  | S      |
+| 12 | Auth gate on staging (CF Access + Caddy basic_auth)                | S      | DEFERRED
+| 13 | Wildcard DNS for staging (4 records, not 8)                        | XS     |
+| 14 | mailpit retention flags                                            | XS     |
+| 15 | Nightly staging reset (Forgejo schedule)                           | S      | DEFERRED
+| 17 | Compose drift check prod ↔ staging                                 | S      | DEFERRED
+| 19 | Server crontab into git (`cron/` + `just install-crons`)           | S      |
+| 20 | Host image GC (beyond DinD)                                        | XS     |
+| 21 | unattended-upgrades (security-only)                                | S      |
+| 22 | SSH hardening (key-only, fail2ban)                                 | S      |
+| 23 | Host firewall (ufw, default-deny)                                  | S      |
+| 24 | Secret scanning (gitleaks) — CI tooling                            | S      | DONE
+| 25 | DNS-as-code via the CF API                                         | S      |
+| 26 | Dockge (compose web UI)                                            | M      | WHY?
+| 27 | Auto-bump PRs in the deploy repo                                   | M      | DONE
+| 28 | `docker compose up -d --wait` in deploy recipe                     | XS     | 
+| 29 | Validate the Caddyfile before reload                               | XS     |
+| 30 | Server ops kit in the infra justfile (+ rollback paths)            | S      |
+| 31 | Pin `informd`                                                      | XS     | DONE
+| 32 | Tailscale (replace SSH tunnels)                                    | M      | NO
+| 33 | PgBouncer — only if connection errors appear                       | XS     |
+| 34 | PITR via WAL archiving                                             | L      |
 
 ## 🤝 Shared — infra + a developer (2 items)
 
@@ -63,25 +63,25 @@ Everything here is single-server-shaped: cheap, compose-native, and mostly "wire
 
 The things that make the box *movable*: rebuild from scratch, relocate to another server, or just operate without a checklist in someone's head. These pair with existing items — #35 with #1, #36 with #5/#19/#21/#22/#23, #37/#39 with each other.
 
-| # | Item | Effort | Why it matters for DX |
-|---|------|--------|------------------------|
-| 35 | Off-box secrets vault (age/sops) | M | Today every secret lives only on the box — a move without the old box is impossible |
-| 36 | `just bootstrap` — whole box from nothing | M–L | setup.sh covers only caddy+forgejo; obs-net is created by no script |
-| 37 | Rebuild runbook doc | S | The ordering (registry chicken-and-egg, DNS first) is written nowhere |
-| 38 | Cert provisioning into git | S | Zero docs on how the wildcard + mox certs are obtained/renewed |
-| 39 | Rebuild drill (annual) | M | A runbook nobody has executed is a fiction |
+| #  | Item                                      | Effort | Why it matters for DX                                                               |
+|----|-------------------------------------------|--------|-------------------------------------------------------------------------------------|
+| 35 | Off-box secrets vault (age/sops)          | M      | Today every secret lives only on the box — a move without the old box is impossible |
+| 36 | `just bootstrap` — whole box from nothing | M–L    | setup.sh covers only caddy+forgejo; obs-net is created by no script                 |
+| 37 | Rebuild runbook doc                       | S      | The ordering (registry chicken-and-egg, DNS first) is written nowhere               |
+| 38 | Cert provisioning into git                | S      | Zero docs on how the wildcard + mox certs are obtained/renewed                      |
+| 39 | Rebuild drill (annual)                    | M      | A runbook nobody has executed is a fiction                                          |
 
 ## 🧰 Infra simplifications — deletion over addition (6 items, all infra-owned)
 
-| # | Item | Effort | What it deletes |
-|---|------|--------|-----------------|
-| 40 | Delete dead Caddyfile config | XS | `api.trieoh.com` block + `(api_routes)` snippet — zero consumers (verified) + mailpit comment |
-| 41 | Snippet-ify the repeated mail blocks | S | 3× acme-challenge handlers + 3× identical letsencrypt tls lines |
-| 42 | Consolidate cert provisioning to one source | M | The `/etc/letsencrypt` path + hand-rolled acme-challenge blocks vanish |
-| 43 | Kill the forgejo-restart cron by fixing its root cause | M | A nightly restart is a symptom patch; delete the cron |
-| 44 | Rename forgejo's confusing `internal` network | XS | Same name as thetree's `internal`, different meaning (`internal: false`!) |
-| 45 | `just register-runner <token>` script | XS | The manual `docker run` registration dance in the README |
-| 46 | Forgejo composite action — pinned, cached docker CLI | S | 5× copy-pasted `curl \| sh` installs a redundant daemon, unpinned, downloads every run |
+| #  | Item                                                   | Effort | What it deletes                                                                               |
+|----|--------------------------------------------------------|--------|-----------------------------------------------------------------------------------------------|
+| 40 | Delete dead Caddyfile config                           | XS     | `api.trieoh.com` block + `(api_routes)` snippet — zero consumers (verified) + mailpit comment |
+| 41 | Snippet-ify the repeated mail blocks                   | S      | 3× acme-challenge handlers + 3× identical letsencrypt tls lines                               |
+| 42 | Consolidate cert provisioning to one source            | M      | The `/etc/letsencrypt` path + hand-rolled acme-challenge blocks vanish                        |
+| 43 | Kill the forgejo-restart cron by fixing its root cause | M      | A nightly restart is a symptom patch; delete the cron                                         |
+| 44 | Rename forgejo's confusing `internal` network          | XS     | Same name as thetree's `internal`, different meaning (`internal: false`!)                     |
+| 45 | `just register-runner <token>` script                  | XS     | The manual `docker run` registration dance in the README                                      |
+| 46 | Forgejo composite action — pinned, cached docker CLI   | S      | 5× copy-pasted `curl \| sh` installs a redundant daemon, unpinned, downloads every run        |
 
 ---
 
@@ -116,7 +116,9 @@ The things that make the box *movable*: rebuild from scratch, relocate to anothe
 
 **Effort.** S.
 
-### 3. External uptime checks — Cloudflare Worker cron
+### 3. External uptime checks — Cloudflare Worker cron ✅ **done 2026-09-17**
+
+**Implemented:** `front/uptime-check/` in TheTree (one Worker, two crons, one KV namespace, ~15KB). Diverges from the sketch below in three ways, by decision: checks run **only** for the four public product APIs (forgejo/ntfy dropped — the status page is the fallback surface); failure handling uses a **retry-then-classify** flow (fail → 3 retries @30s in the same invocation → recovered = degraded/silent/counts-as-up, all failed = dead/urgent ping on transition + recovery ping); retention is a **tiered average ladder** (5-min raw 7d → hourly avg 30d → daily avg 1y) instead of a flat log. KV keys are batched (one write per 5-min run) to stay inside the free tier's 1k writes/day. Status page served by the worker itself from KV (green/amber/red buckets, 7d strip, 7d/30d/1y rollups). Setup steps in `front/uptime-check/README.md` — KV namespace id + `NTFY_URL` secret **already wired and deployed** (2026-09-17). ⚠️ **Known issue at handoff:** CF's cron scheduler is not invoking the worker (registered schedules, zero dispatches — known Cloudflare platform bug, see community threads /922869 and /928936). Manual invocation works: `GET /__trigger` (temp, tokenless — remove or protect). Heavy diagnostic logging enabled. 30-min diagnostic cron still set instead of `*/5`. Follow-ups: fix cron via CF support ticket, revert cron to `*/5`, strip logging/`__trigger`.
 
 **Problem.** The original idea was a server cron curling `/health`. A check living on the box dies with the box — the worst moment to go blind. Grafana is on the same box too.
 
@@ -663,11 +665,11 @@ The infra README documents a manual `docker run --rm -it … forgejo-runner regi
 
 ### 46. Forgejo composite action — pinned, cached docker CLI ✅ **done 2026-08-24**
 
-**Implemented:** `.forgejo/actions/setup-docker/action.yml` (TheTree) + all 5 workflow call sites swapped; stale runner label in `infra/README.md` fixed.
+**Implemented:** `../.github` (TheTree) + all 5 workflow call sites swapped; stale runner label in `infra/README.md` fixed.
 
 **Verified:** "Set up Docker" (`curl -fsSL https://get.docker.com | sh`) is copy-pasted in **5 spots across 4 workflows** (ci ×2, frontend-lint-tsc, publish, trivy). Worse, it installs a **full Docker daemon that is never used** — the runner config already automounts the Docker socket into job containers (`docker_host: automount`), so jobs only need the **CLI**. And it's unpinned (`get.docker.com` = latest every run) + re-downloads every run.
 
-**Design:** `.forgejo/actions/setup-docker/action.yml` (local composite action, `uses: ./.forgejo/actions/setup-docker`):
+**Design:** `../.github` (local composite action, `uses: ./.forgejo/actions/setup-docker`):
 
 ```yaml
 name: Setup Docker CLI

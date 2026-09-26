@@ -6,6 +6,7 @@
 package services
 
 import (
+	"lib/database"
 	"time"
 
 	"IdentityX/internal/authz"
@@ -22,7 +23,9 @@ import (
 	"IdentityX/internal/services/profile_schemas"
 	"IdentityX/internal/services/profiles"
 	"IdentityX/internal/services/projects"
+	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
+	"IdentityX/ports"
 
 	"lib/oauth"
 
@@ -41,6 +44,7 @@ type (
 	ProfileSchemas = profile_schemas.Operations
 	Profiles       = profiles.Operations
 	Projects       = projects.Operations
+	Tos            = tos.Operations
 )
 
 var (
@@ -54,6 +58,7 @@ var (
 	NewProfileSchemas = profile_schemas.NewOperations
 	NewProfiles       = profiles.NewOperations
 	NewProjects       = projects.NewOperations
+	NewTos            = tos.NewOperations
 )
 
 // Operations is the aggregate of every feature's operations, constructed
@@ -69,6 +74,7 @@ type Operations struct {
 	ProfileSchemas *ProfileSchemas
 	Profiles       *Profiles
 	Projects       *Projects
+	Tos            *Tos
 }
 
 // NewOperations wires every feature's operations from the shared repos.
@@ -78,24 +84,28 @@ type Operations struct {
 // tokensMgr owns the session-token lifecycle; authn crosses it instead of
 // touching keys or the blacklist directly. keysMgr owns the Key-lifecycle;
 // project creation (projects and organizations) crosses its Ensure seam
-// instead of reaching into the crypto-key repo.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager, hmacSecret string, sender *emails.Sender) *Operations {
+// instead of reaching into the crypto-key repo. tosNotifier enqueues the
+// ToS-change notification fan-out; the tos service crosses it instead of
+// touching the queue.
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, tokensMgr *tokens.Manager, actionTokenMgr *tokens.ActionTokenManager, keysMgr *keys.Manager, hmacSecret string, sender *emails.Sender, tosNotifier ports.TosNotifier, tx database.TxRunner) *Operations {
+	tosOps := NewTos(r.Tos, r.Projects, r.Actors, authzSvc, tosNotifier)
 	oauthProviders := NewOAuthProviders(
 		r.OAuthProviders, r.OAuthProviders, r.Projects, r.ExternalIdentities, r.Actors,
-		authzSvc, tokensMgr,
+		authzSvc, tokensMgr, tosOps,
 		resty.New().SetTimeout(15*time.Second),
-		oauth.Registry,
+		oauth.Registry, tx,
 	)
 	return &Operations{
 		Actors:         NewActors(r.Actors, r.Projects, authzSvc),
 		APIKeys:        NewAPIKeys([]byte(hmacSecret), r.Actors, r.APIKeys, r.Capabilities, r.Projects, authzSvc),
-		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, actionTokenMgr, sender),
+		Authn:          NewAuthn(r.Actors, r.Projects, r.PlatformRoles, tokensMgr, actionTokenMgr, sender, tosOps, tx),
 		Capabilities:   NewCapabilities(r.Actors, r.Capabilities, r.Projects, authzSvc),
 		EmailTemplates: NewEmailTemplates(r.EmailTemplates, authzSvc),
-		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, keysMgr, authzSvc),
+		Organizations:  NewOrganizations(r.Projects, r.Actors, r.Organizations, keysMgr, authzSvc, tx),
 		OAuthProviders: oauthProviders,
 		ProfileSchemas: NewProfileSchemas(r.ProfileSchemas, r.Projects, authzSvc),
 		Profiles:       NewProfiles(r.Profiles, r.ProfileSchemas, r.Actors, authzSvc),
-		Projects:       NewProjects(r.Projects, r.Actors, keysMgr, authzSvc),
+		Projects:       NewProjects(r.Projects, r.Actors, keysMgr, authzSvc, tx),
+		Tos:            tosOps,
 	}
 }

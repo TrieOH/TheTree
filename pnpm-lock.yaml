@@ -1005,6 +1005,18 @@ importers:
         specifier: 'catalog:'
         version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
 
+  front/uptime-check:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.4
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
+
   lib/ts/api-client:
     devDependencies:
       '@trieoh/envoy-fetch-ts':

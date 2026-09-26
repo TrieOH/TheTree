@@ -9,8 +9,10 @@ package oauth_providers
 
 import (
 	"IdentityX/internal/authz"
+	"IdentityX/internal/services/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/ports"
+	"lib/database"
 	"lib/errx"
 	"lib/oauth"
 
@@ -27,11 +29,17 @@ type Operations struct {
 	// tokens owns the JWT lifecycle; the callback crosses it to mint the
 	// session pair for a signed-in actor.
 	tokens *tokens.Manager
+	// tos owns the terms documents and the consent ledger; connect gates
+	// on it and first-time registrations pin the acceptance row through it.
+	tos *tos.Operations
 	// client and meta are the HTTP seam: the token exchange and userinfo
 	// calls go through the injected resty client, and provider metadata
 	// (endpoints, userinfo URL) comes from the injected registry.
 	client *resty.Client
 	meta   map[string]oauth.Provider
+	// tx opens the transactions multi-step writes run in; threaded
+	// from boot, no package-level runner.
+	tx database.TxRunner
 }
 
 func NewOperations(
@@ -42,8 +50,10 @@ func NewOperations(
 	actors ports.ActorRepo,
 	authz *authz.Service,
 	tokensMgr *tokens.Manager,
+	tosOps *tos.Operations,
 	client *resty.Client,
 	meta map[string]oauth.Provider,
+	tx database.TxRunner,
 ) *Operations {
 	return errx.MustProvide(&Operations{
 		providers:   providers,
@@ -53,7 +63,9 @@ func NewOperations(
 		actors:      actors,
 		authz:       authz,
 		tokens:      tokensMgr,
+		tos:         tosOps,
 		client:      client,
 		meta:        meta,
+		tx:          tx,
 	})
 }

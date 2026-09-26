@@ -74,7 +74,24 @@ func (o *Operations) updateExistingIdentity(
 	if err != nil {
 		return nil, err
 	}
-	return o.actors.GetByID(ctx, identity.ActorID)
+	actor, err := o.actors.GetByID(ctx, identity.ActorID)
+	if err != nil {
+		return nil, err
+	}
+	// An existing identity signing in is continued use: after a version's
+	// effective date the first login records the ledger row (no-op inside
+	// the notice window or when already accepted). Never blocks the login.
+	if actor.ProjectID != nil {
+		err = o.tos.StampUse(ctx, actor.ID, *actor.ProjectID)
+		if err != nil {
+			telemetry.Log().Error("failed to stamp tos continued-use acceptance",
+				zap.String("actor_id", actor.ID.String()),
+				zap.String("project_id", actor.ProjectID.String()),
+				zap.Error(err),
+			)
+		}
+	}
+	return actor, nil
 }
 
 // registerNewIdentity creates the actor and its external identity for a
@@ -89,26 +106,46 @@ func (o *Operations) registerNewIdentity(
 	tokenExpiresAt *time.Time,
 	projectID *uuid.UUID,
 ) (*models.Actor, error) {
-	actor, err := o.actors.Register(ctx, models.Actor{
-		ProjectID:  projectID,
-		AuthMethod: models.AuthMethod(provider),
-		Email:      &info.Email,
-		Type:       models.HumanActorType,
-		// The provider already verified the email (Google/GitHub), so the
-		// account ships verified and never needs the verify link.
-		VerifiedAt: new(time.Now()),
-	})
-	if err != nil {
-		return nil, err
-	}
-	_, err = o.external.Create(ctx, models.ActorExternalIdentities{
-		ActorID:               actor.ID,
-		Provider:              models.OAuthProvider(provider),
-		Subject:               info.SubString(),
-		Email:                 &info.Email,
-		EncryptedAccessToken:  &encryptedAccess,
-		EncryptedRefreshToken: encryptedRefresh,
-		TokenExpiresAt:        tokenExpiresAt,
+	// The account, its external identity, and its consent row commit
+	// together: a compliance artifact must never exist without the ledger
+	// entry that proves it. A failure rolls back everything and the
+	// callback surfaces the error — no half-registered actor.
+	var actor *models.Actor
+	var txErr error
+	err := o.tx.WithinTx(ctx, func(ctx context.Context) error {
+		actor, txErr = o.actors.Register(ctx, models.Actor{
+			ProjectID:  projectID,
+			AuthMethod: models.AuthMethod(provider),
+			Email:      &info.Email,
+			Type:       models.HumanActorType,
+			// The provider already verified the email (Google/GitHub), so the
+			// account ships verified and never needs the verify link.
+			VerifiedAt: new(time.Now()),
+		})
+		if txErr != nil {
+			return txErr
+		}
+		_, txErr = o.external.Create(ctx, models.ActorExternalIdentities{
+			ActorID:               actor.ID,
+			Provider:              models.OAuthProvider(provider),
+			Subject:               info.SubString(),
+			Email:                 &info.Email,
+			EncryptedAccessToken:  &encryptedAccess,
+			EncryptedRefreshToken: encryptedRefresh,
+			TokenExpiresAt:        tokenExpiresAt,
+		})
+		if txErr != nil {
+			return txErr
+		}
+		if projectID == nil {
+			return nil
+		}
+		var currentTos *models.TermsOfService
+		currentTos, _, tosErr := o.tos.CurrentTos(ctx, *projectID)
+		if tosErr != nil {
+			return tosErr
+		}
+		return o.tos.BindRegistration(ctx, actor.ID, *projectID, currentTos)
 	})
 	if err != nil {
 		return nil, err

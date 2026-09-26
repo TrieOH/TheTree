@@ -1,0 +1,25 @@
+name: Setup Go
+description: >
+  Go toolchain with automatic module/build caching via setup-go's built-in
+  cache, pointed at the workspace's go.work.sum and per-module go.sum files
+  (there's no root go.sum in this go.work multi-module layout). Run before
+  setup-go-tools (which needs the go toolchain for `go install`).
+inputs:
+  go-version:
+    description: Go version (keep in sync with the Dockerfiles' golang image)
+    required: false
+    default: "1.26.4"
+runs:
+  using: composite
+  steps:
+    - name: Toolchain
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache-dependency-path: |
+          go.work.sum
+          **/go.sum
+
+    - name: Report
+      shell: bash
+      run: go version
