@@ -106,6 +106,7 @@ overrides:
   "@opentelemetry/core": ">=2.8.0"
   "@tanstack/query-core": "5.101.4"
   postcss: ">=8.5.23"
+  devalue: ">=5.9.2"
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
