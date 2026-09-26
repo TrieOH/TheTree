@@ -34,7 +34,7 @@ const spanFrom = (spy: ReturnType<typeof captureSpan>) => {
 };
 
 describe("server span emission", () => {
-  it("links the span to the caller's trace", async () => {
+  it("links the span to the caller's trace with legacy env", async () => {
     const spy = captureSpan();
 
     await emitServerSpan(
@@ -79,6 +79,35 @@ describe("server span emission", () => {
     );
   });
 
+  it("links the span using standard OTEL_EXPORTER_OTLP_HEADERS and ENDPOINT", async () => {
+    const spy = captureSpan();
+
+    await emitServerSpan(
+      {
+        name: "bff.refresh",
+        traceparent: TRACEPARENT,
+        durationMs: 10,
+        success: true,
+        status: 200,
+      },
+      {
+        TRACES_ENABLED: "true",
+        OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com/v1/traces",
+        OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer otel-token-123,X-Custom-Tenant=my-org",
+      },
+    );
+
+    const { init } = spanFrom(spy);
+    const calledUrl = spy.mock.calls[0]?.[0];
+
+    expect(calledUrl).toBe("https://otel.example.com/v1/traces");
+    expect(init.headers).toMatchObject({
+      Authorization: "Bearer otel-token-123",
+      "X-Custom-Tenant": "my-org",
+      "Content-Type": "application/json",
+    });
+  });
+
   it("starts a new trace when the caller sends no traceparent", async () => {
     const spy = captureSpan();
 
@@ -103,7 +132,7 @@ describe("server span emission", () => {
     await emitServerSpan({ name: "bff.login", durationMs: 1 }, { TRACES_ENABLED: "true" });
     // No credentials: the span is dropped, but loudly — and only once.
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toContain("TRACES_OTLP_USER");
+    expect(warn.mock.calls[0]?.[0]).toContain("OTEL_EXPORTER_OTLP_HEADERS");
 
     expect(spy).not.toHaveBeenCalled();
 

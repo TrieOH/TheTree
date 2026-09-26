@@ -1,7 +1,7 @@
-import type { TracesIngestEnv } from "./ingest";
-
-const DEFAULT_TRACES_INGEST_URL =
-  "https://traces.trieoh.com/insert/opentelemetry/v1/traces";
+import {
+  type TracesIngestEnv,
+  resolveOtlpConfig,
+} from "./ingest";
 
 const TRACEPARENT = /^([\da-f]{2})-([\da-f]{32})-([\da-f]{16})-([\da-f]{2})$/i;
 
@@ -25,15 +25,14 @@ const randomHex = (bytes: number): string =>
     Math.floor(Math.random() * 256).toString(16).padStart(2, "0"),
   ).join("");
 
-
 let warnedMissingCredentials = false;
 
 function warnMissingCredentials(env: TracesIngestEnv): void {
   if (warnedMissingCredentials) return;
   warnedMissingCredentials = true;
   console.warn(
-    "[tracing] server spans are not being exported: set TRACES_OTLP_USER and " +
-    `TRACES_OTLP_PASSWORD (TRACES_ENABLED=${env.TRACES_ENABLED ?? "unset"})`,
+    "[tracing] server spans are not being exported: configure OTEL_EXPORTER_OTLP_HEADERS or TRACES_OTLP_USER " +
+    `and TRACES_OTLP_PASSWORD (TRACES_ENABLED=${env.TRACES_ENABLED ?? "unset"})`,
   );
 }
 
@@ -60,9 +59,8 @@ export async function emitServerSpan(
 ): Promise<void> {
   if (env.TRACES_ENABLED === "false") return;
 
-  const user = env.TRACES_OTLP_USER;
-  const password = env.TRACES_OTLP_PASSWORD;
-  if (!user || !password) {
+  const { targetUrl, headers, hasCredentials } = resolveOtlpConfig(env);
+  if (!hasCredentials) {
     warnMissingCredentials(env);
     return;
   }
@@ -113,10 +111,10 @@ export async function emitServerSpan(
   };
 
   try {
-    await fetch(env.TRACES_OTLP_URL ?? DEFAULT_TRACES_INGEST_URL, {
+    await fetch(targetUrl, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${btoa(`${user}:${password}`)}`,
+        ...headers,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
