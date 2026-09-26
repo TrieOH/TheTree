@@ -9,6 +9,7 @@ import SettingsIcon from "~icons/lucide/settings";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { UniventsProfile } from "../model/profile-data";
 import { ProfileShareButton } from "./ProfileShareButton";
+import type { ProfileTab } from "./profile-tabs";
 
 const Calendar = CalendarIcon as unknown as (p: {
   class?: string;
@@ -18,16 +19,14 @@ const Pencil = PencilIcon as unknown as (p: { class?: string }) => JSX.Element;
 const Settings = SettingsIcon as unknown as (p: {
   class?: string;
 }) => JSX.Element;
-type Tab = "about" | "badges" | "certificates" | "purchases";
-
 export function ProfileHeader(props: {
   profile: UniventsProfile;
   name: string;
   handle?: string;
   ownProfile: boolean;
   profileUrl: string;
-  activeTab: Tab;
-  onTabChange: (tab: Tab) => void;
+  activeTab: ProfileTab;
+  onTabChange: (tab: ProfileTab) => void;
 }) {
   const bannerUrl = () => resolveStorageUrl(props.profile.bannerUrl);
 
@@ -131,7 +130,7 @@ export function ProfileHeader(props: {
   );
 }
 
-function tabs(own: boolean): [Tab, string][] {
+function tabs(own: boolean): [ProfileTab, string][] {
   return [
     ["about", "Sobre"],
     ["badges", "Crachás"],
@@ -141,7 +140,7 @@ function tabs(own: boolean): [Tab, string][] {
         ["purchases", "Compras"],
       ]
       : []),
-  ] as [Tab, string][];
+  ] as [ProfileTab, string][];
 }
 
 function Identity(props: {
@@ -233,11 +232,7 @@ function Avatar(props: {
       )}
     >
       {url() ? (
-        <img
-          src={url()}
-          alt={props.name}
-          class="size-full object-cover"
-        />
+        <img src={url()} alt={props.name} class="size-full object-cover" />
       ) : (
         <span class="flex size-full items-center justify-center rounded-full bg-muted text-muted-foreground">
           {props.name.slice(0, 2).toUpperCase()}

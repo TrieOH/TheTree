@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/solid-router'
-import { useAuth } from '@trieoh/identityx-sdk-ts-solid';
-import { createMemo } from 'solid-js';
-import z from 'zod'
+import { createFileRoute } from "@tanstack/solid-router";
+import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
+import { createMemo } from "solid-js";
+import z from "zod";
 import { setOwnProfilePath } from "@/features/profile/lib/own-profile-path";
 import { ProfileView } from "@/features/profile/ui/ProfileView";
 
@@ -12,7 +12,7 @@ const PROFILE_TAB_TITLES: Record<string, string> = {
   purchases: "Compras",
 };
 
-export const Route = createFileRoute('/profile/$actorId/')({
+export const Route = createFileRoute("/profile/$actorId/")({
   validateSearch: z.object({
     tab: z
       .enum(["about", "badges", "certificates", "purchases"])
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/profile/$actorId/')({
     ],
   }),
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
   const params = Route.useParams();
@@ -56,8 +56,9 @@ function RouteComponent() {
   });
 
   const loadProfile = async (identifier: string) => {
-    const isActorId =
-      /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(identifier);
+    const isActorId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
+      identifier,
+    );
 
     const response = isActorId
       ? await auth.getActorProfile(identifier)
@@ -93,11 +94,10 @@ function RouteComponent() {
     <ProfileView
       actorId={params().actorId}
       loadProfile={loadProfile}
-      ownProfile={isOwn()}
-      viewerActorId={viewerActorId()}
+      ownProfile={isOwn}
+      viewerActorId={viewerActorId}
       activeTab={search().tab}
       onTabChange={(nextTab) => {
-
         if (nextTab === search().tab) return;
 
         void navigate({
