@@ -6,22 +6,8 @@ import Icons from "unplugin-icons/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 
 export default defineConfig(({ mode }) => ({
-  resolve: {
-    tsconfigPaths: true,
-    alias: {
-      "@trieoh/identityx-sdk-ts-solid/styles.css": new URL(
-        "../../sdk/ts/identityx-solid/src/solid/components/tailwind.css",
-        import.meta.url,
-      ).pathname,
-      "@trieoh/identityx-sdk-ts-solid": new URL(
-        "../../sdk/ts/identityx-solid/src/index.ts",
-        import.meta.url,
-      ).pathname,
-    },
-  },
-  optimizeDeps: {
-    exclude: ["@trieoh/identityx-sdk-ts-solid"],
-  },
+  resolve: { tsconfigPaths: true },
+
   // Turnkey client mode: no index.html and no mount file — the plugin
   // generates the entries around src/App.tsx, wrapped in src/Document.tsx
   // (or a built-in shell). `vite build` prerenders the shell into

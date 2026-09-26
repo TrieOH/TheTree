@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@source "../../../sdk/ts/identityx-solid/src";
+@source "../node_modules/@trieoh/identityx-sdk-ts-solid/dist";
 @source "../node_modules/@trieoh/ui-solid/src";
 
 @layer base {

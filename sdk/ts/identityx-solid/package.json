@@ -1,12 +1,12 @@
 {
   "name": "@trieoh/identityx-sdk-ts-solid",
-  "version": "0.16.2",
+  "version": "0.16.3",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      "require": "./dist/cjs/index.cjs"
     },
     "./styles.css": "./dist/solid/components/tailwind.css"
   },
@@ -14,7 +14,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm run clean && pnpm exec tsup && pnpm exec tsc -p tsconfig.types.json && mkdir -p dist/solid/components && cp src/solid/components/tailwind.css dist/solid/components/tailwind.css",
+    "build": "pnpm run clean && pnpm exec vite build && pnpm exec tsc -p tsconfig.types.json && mkdir -p dist/solid/components && cp src/solid/components/tailwind.css dist/solid/components/tailwind.css",
     "clean": "rm -rf dist",
     "typecheck": "pnpm exec tsc -p . --noEmit"
   },
@@ -31,7 +31,8 @@
     "@types/node": "catalog:",
     "solid-js": "catalog:solid",
     "tailwindcss": "catalog:",
-    "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@solidjs/vite-plugin": "catalog:",
+    "vite": "catalog:"
   }
 }
