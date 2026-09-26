@@ -14,7 +14,7 @@
     "@tanstack/solid-router": "^2.0.0-rc.6",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-sdk-ts": "workspace:*",
-    "@trieoh/identityx-sdk-ts-solid": "workspace:*",
+    "@trieoh/identityx-sdk-ts-solid": "catalog:",
     "posthog-js": "catalog:",
     "solid-js": "catalog:solid"
   },
@@ -23,7 +23,7 @@
     "@tanstack/solid-router": "^2.0.0-rc.6",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-sdk-ts": "workspace:*",
-    "@trieoh/identityx-sdk-ts-solid": "workspace:*",
+    "@trieoh/identityx-sdk-ts-solid": "catalog:",
     "posthog-js": "catalog:",
     "solid-js": "catalog:solid"
   }

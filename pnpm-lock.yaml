@@ -96,6 +96,9 @@ catalogs:
     '@trieoh/identityx-sdk-ts-react':
       specifier: ^0.15.5
       version: 0.15.5
+    '@trieoh/identityx-sdk-ts-solid':
+      specifier: ^0.16.2
+      version: 0.16.2
     '@types/d3-scale':
       specifier: ^4.0.9
       version: 4.0.9
@@ -888,8 +891,8 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ts/front-core-solid
       '@trieoh/identityx-sdk-ts-solid':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-solid
+        specifier: 'catalog:'
+        version: 0.16.2(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
       '@trieoh/ui-solid':
         specifier: workspace:*
         version: link:../../lib/ts/ui-solid
@@ -1123,8 +1126,8 @@ importers:
         specifier: workspace:*
         version: link:../../../sdk/ts/identityx
       '@trieoh/identityx-sdk-ts-solid':
-        specifier: workspace:*
-        version: link:../../../sdk/ts/identityx-solid
+        specifier: 'catalog:'
+        version: 0.16.2(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)
       posthog-js:
         specifier: 'catalog:'
         version: 1.427.2(@types/react@19.2.17)(react@19.2.7)
@@ -1304,34 +1307,6 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.25)(supports-color@10.2.2)(typescript@7.0.2)(yaml@2.9.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-
-  sdk/ts/identityx-solid:
-    dependencies:
-      '@trieoh/envoy-fetch-ts':
-        specifier: 'catalog:'
-        version: 0.1.5
-      '@trieoh/identityx-sdk-ts':
-        specifier: workspace:*
-        version: link:../identityx
-    devDependencies:
-      '@solidjs/web':
-        specifier: catalog:solid
-        version: 2.0.0-rc.6(solid-js@2.0.0-rc.6)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.2
-      solid-js:
-        specifier: catalog:solid
-        version: 2.0.0-rc.6
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.3.3
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.25)(supports-color@10.2.2)(typescript@7.0.2)(yaml@2.9.0)
@@ -4269,8 +4244,17 @@ packages:
     peerDependencies:
       react: ^19.2.0
 
+  '@trieoh/identityx-sdk-ts-solid@0.16.2':
+    resolution: {integrity: sha512-WoVeUuW9Ped+wkV5eDx0A+fyBdC64uD2G+1CyDodjytlVYrdB7O4CCLR/F6OmOqO3u36L7IVSbViSlQYi7H2xg==}
+    peerDependencies:
+      '@solidjs/web': 2.0.0-rc.6
+      solid-js: 2.0.0-rc.6
+
   '@trieoh/identityx-sdk-ts@0.15.5':
     resolution: {integrity: sha512-Bie7qchdbVohReXYrrgd/2Xyk+qEkxnzcKuyujPKc0X+FeXQQAlKtb2/IQxgCQWpkABkJVngBEQhjDnYaE7d2w==}
+
+  '@trieoh/identityx-sdk-ts@0.16.1':
+    resolution: {integrity: sha512-6EfDx2QYkt5GeZp1Nw3aUcIdut/8rHo4hzYX2zDTXfX2p/kJ2qCRy3d9hkGUj3PwK4hv2eTAZZPyaoBafdV9ZA==}
 
   '@tybys/wasm-util@0.10.2':
     resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
@@ -9858,7 +9842,20 @@ snapshots:
       - '@emotion/is-prop-valid'
       - react-dom
 
+  '@trieoh/identityx-sdk-ts-solid@0.16.2(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)':
+    dependencies:
+      '@solidjs/web': 2.0.0-rc.6(solid-js@2.0.0-rc.6)
+      '@trieoh/envoy-fetch-ts': 0.1.5
+      '@trieoh/identityx-sdk-ts': 0.16.1
+      solid-js: 2.0.0-rc.6
+
   '@trieoh/identityx-sdk-ts@0.15.5':
+    dependencies:
+      '@trieoh/envoy-fetch-ts': 0.1.5
+      ua-parser-js: 2.0.10
+      zod: 4.4.3
+
+  '@trieoh/identityx-sdk-ts@0.16.1':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
       ua-parser-js: 2.0.10
