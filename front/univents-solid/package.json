@@ -1,6 +1,6 @@
 {
-  "name": "univents-solid",
-  "version": "0.0.0",
+  "name": "univents",
+  "version": "0.10.10",
   "description": "",
   "type": "module",
   "scripts": {

@@ -89,7 +89,7 @@ catalog:
   "@opentelemetry/otlp-transformer": ^0.221.0
 
 overrides:
-  'univents>solid-js': 1.9.15
+  'univents-legacy>solid-js': 1.9.15
   'payssage>solid-js': 1.9.15
   'informd>solid-js': 1.9.15
   'identityx>solid-js': 1.9.15

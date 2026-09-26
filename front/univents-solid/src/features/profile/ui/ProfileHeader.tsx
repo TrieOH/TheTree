@@ -1,6 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { For, untrack } from "solid-js";
 import { Link } from "@tanstack/solid-router";
+import { cn } from "@trieoh/ui-solid";
 import CalendarIcon from "~icons/lucide/calendar";
 import MailIcon from "~icons/lucide/mail";
 import PencilIcon from "~icons/lucide/pencil";
@@ -46,7 +47,7 @@ export function ProfileHeader(props: {
           <ProfileShareButton
             name={props.name}
             url={props.profileUrl}
-            class="absolute right-4 top-4 flex!"
+            class="absolute right-4 top-4 size-11 rounded-full border border-border/40 bg-background/90 text-foreground shadow-lg backdrop-blur-sm"
           />
         )}
         <div class="relative mx-auto px-4">
@@ -106,7 +107,12 @@ export function ProfileHeader(props: {
             {([tab, label]) => (
               <button
                 type="button"
-                class={`shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${props.activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                class={cn(
+                  "shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                  props.activeTab === tab
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
                 onClick={() => props.onTabChange(tab)}
               >
                 {label}
@@ -145,12 +151,18 @@ function Identity(props: {
   centered?: boolean;
 }) {
   return (
-    <div class={props.centered ? "text-center" : "text-left"}>
+    <div class={cn(props.centered ? "text-center" : "text-left")}>
       <div
-        class={`flex items-baseline gap-2 ${props.centered ? "justify-center" : ""}`}
+        class={cn(
+          "flex items-baseline gap-2",
+          props.centered && "justify-center",
+        )}
       >
         <h1
-          class={`${props.centered ? "text-2xl" : "text-3xl"} font-semibold tracking-tight text-card-foreground`}
+          class={cn(
+            "font-semibold tracking-tight text-card-foreground",
+            props.centered ? "text-2xl" : "text-3xl",
+          )}
         >
           {props.name}
         </h1>
@@ -172,11 +184,10 @@ function Identity(props: {
         )}
       {(props.profile.role || props.profile.organization) && (
         <p
-          class={
-            props.centered
-              ? "mt-1 text-sm text-muted-foreground"
-              : "text-[15px] text-muted-foreground"
-          }
+          class={cn(
+            "text-muted-foreground",
+            props.centered ? "mt-1 text-sm" : "text-[15px]",
+          )}
         >
           {[props.profile.role, props.profile.organization]
             .filter(Boolean)
@@ -190,7 +201,10 @@ function Identity(props: {
 function MemberSince(props: { createdAt?: string; centered?: boolean }) {
   return (
     <p
-      class={`mt-1 flex items-center gap-1.5 text-sm text-muted-foreground ${props.centered ? "justify-center" : ""}`}
+      class={cn(
+        "mt-1 flex items-center gap-1.5 text-sm text-muted-foreground",
+        props.centered && "justify-center",
+      )}
     >
       <Calendar class="size-3.5" />
       Membro desde{" "}
@@ -213,7 +227,10 @@ function Avatar(props: {
 
   return (
     <div
-      class={`relative shrink-0 ${props.size === "mobile" ? "size-24" : "size-32"} flex items-center justify-center overflow-hidden rounded-full border-4 border-background bg-background text-2xl font-semibold shadow-xl`}
+      class={cn(
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-background text-2xl font-semibold shadow-xl",
+        props.size === "mobile" ? "size-24" : "size-32",
+      )}
     >
       {url() ? (
         <img
@@ -241,14 +258,20 @@ function Actions(props: {
       <div class="mb-4 flex gap-2">
         <Link
           to="/profile/edit"
-          class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm text-primary-foreground shadow-sm"
+          class={cn(
+            "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm text-primary-foreground shadow-sm",
+            "transition-all active:scale-95",
+          )}
         >
           <Pencil class="size-4" />
           Editar perfil
         </Link>
         <Link
           to="/profile/config"
-          class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background shadow-sm"
+          class={cn(
+            "inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background shadow-sm",
+            "transition-all active:scale-95",
+          )}
           aria-label="Configurações do perfil"
         >
           <Settings class="size-4" />
@@ -256,22 +279,35 @@ function Actions(props: {
       </div>
     );
   return (
-    <div class="absolute right-0 top-6 flex gap-2">
+    <div class="absolute right-0 top-4 flex gap-2">
+      <ProfileShareButton
+        name={props.name ?? ""}
+        url={props.profileUrl ?? ""}
+        class={cn(
+          "size-10 rounded-md border border-border bg-background text-foreground shadow-sm hover:bg-accent",
+          "transition-all active:scale-95",
+        )}
+      />
       <Link
         to="/profile/edit"
-        class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
+        class={cn(
+          "inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90",
+          "transition-all active:scale-95",
+        )}
       >
-        <Pencil class="size-3.5" />
+        <Pencil class="size-4" />
         Editar perfil
       </Link>
       <Link
         to="/profile/config"
-        class="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-xs transition-colors hover:bg-accent"
-        aria-label="Configurações do perfil"
+        class={cn(
+          "inline-flex size-10 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm hover:bg-accent",
+          "transition-all active:scale-95",
+        )}
+        aria-label="Configurações"
       >
         <Settings class="size-4" />
       </Link>
-      <ProfileShareButton name={props.name ?? ""} url={props.profileUrl ?? ""} />
     </div>
   );
 }

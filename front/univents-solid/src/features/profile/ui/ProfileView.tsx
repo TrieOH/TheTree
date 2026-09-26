@@ -22,6 +22,7 @@ import TwitterIcon from "~icons/simple-icons/twitter";
 import TwitchIcon from "~icons/simple-icons/twitch";
 import BlueskyIcon from "~icons/simple-icons/bluesky";
 import DiscordIcon from "~icons/simple-icons/discord";
+import { cn } from "@trieoh/ui-solid";
 import { useQuery } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import type { BadgeProfileGroups } from "@/features/badges/model";
@@ -243,21 +244,23 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
                         <EmptyState message="Nenhuma informação de contato compartilhada." />
                       }
                     >
-                      <div class="space-y-1">
+                      <div class="grid grid-cols-2 gap-1">
                         <Show when={profile().website}>
                           {(site) => (
                             <Social href={site()} label="Website" network="website" />
                           )}
-                        </Show>{" "}
+                        </Show>
                         <Show when={profile().contactEmail}>
                           {(email) => (
-                            <Social
-                              href={`mailto:${email()}`}
-                              label="E-mail"
-                              network="email"
-                            />
+                            <div class="hidden md:block min-w-0">
+                              <Social
+                                href={`mailto:${email()}`}
+                                label="E-mail"
+                                network="email"
+                              />
+                            </div>
                           )}
-                        </Show>{" "}
+                        </Show>
                         <For each={socials()}>
                           {([network, value]) => (
                             <Social
@@ -436,15 +439,23 @@ function Card(props: { title: string; children: unknown }) {
   );
 }
 
-function Social(props: { href: string; label: string; network?: string }) {
+function Social(props: {
+  href: string;
+  label: string;
+  network?: string;
+  class?: string;
+}) {
   return (
     <a
       href={props.href}
       target={props.href.startsWith("mailto:") ? undefined : "_blank"}
       rel="noreferrer"
-      class="flex items-center gap-2.5 rounded-md p-2 text-sm hover:bg-muted transition-colors"
+      class={cn(
+        "flex min-w-0 items-center gap-2.5 rounded-md p-2 text-sm text-card-foreground transition-colors hover:bg-muted",
+        props.class,
+      )}
     >
-      <span class="flex size-7 items-center justify-center rounded-md bg-muted text-foreground">
+      <span class="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
         <SocialIcon label={props.label} network={props.network} />
       </span>
       <span class="truncate font-medium">{props.label}</span>
