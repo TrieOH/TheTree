@@ -888,7 +888,7 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ts/front-core-solid
       '@trieoh/identityx-sdk-ts-solid':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../sdk/ts/identityx-solid
       '@trieoh/ui-solid':
         specifier: workspace:*
@@ -1123,7 +1123,7 @@ importers:
         specifier: workspace:*
         version: link:../../../sdk/ts/identityx
       '@trieoh/identityx-sdk-ts-solid':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../../sdk/ts/identityx-solid
       posthog-js:
         specifier: 'catalog:'
