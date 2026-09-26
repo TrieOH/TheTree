@@ -16,10 +16,10 @@ export default defineConfig({
         // Dummy S3 settings so `validateEnv` passes and the request reaches the
         // validation/moderation branches. Nothing ever leaves the isolate.
         bindings: {
-          MINIO_ENDPOINT: "http://minio.test",
-          BUCKET_NAME: "univents-test",
-          MINIO_ACCESS_KEY: "test-access-key",
-          MINIO_SECRET_KEY: "test-secret-key",
+          S3_ENDPOINT: "http://minio.test",
+          S3_BUCKET: "univents-test",
+          S3_ACCESS_KEY_ID: "test-access-key",
+          S3_SECRET_ACCESS_KEY: "test-secret-key",
         },
       },
     }),

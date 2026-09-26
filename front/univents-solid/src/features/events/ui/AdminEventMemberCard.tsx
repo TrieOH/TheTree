@@ -6,6 +6,7 @@ import CopyIcon from "~icons/lucide/copy";
 import TrashIcon from "~icons/lucide/trash";
 
 import { Button, cn } from "@trieoh/ui-solid";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { Reveal } from "@/shared/ui/Reveal";
 import { toast } from "@/shared/ui/toast";
 import { formatMemberViewModel, type EventMemberWithEmailI } from "../model/member";
@@ -51,7 +52,7 @@ export function AdminEventMemberCard(props: AdminEventMemberCardProps): JSX.Elem
               >
                 {(src) => (
                   <img
-                    src={src()}
+                    src={resolveStorageUrl(src())}
                     alt={`Avatar de ${vm().primaryLabel}`}
                     class="size-full object-cover"
                   />

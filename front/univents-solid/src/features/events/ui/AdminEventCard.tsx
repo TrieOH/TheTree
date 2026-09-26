@@ -6,7 +6,7 @@ import MailIcon from "~icons/lucide/mail";
 import PencilIcon from "~icons/lucide/pencil";
 
 import { Button, cn } from "@trieoh/ui-solid";
-
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { Reveal } from "@/shared/ui/Reveal";
 
 import type { EventI } from "../model";
@@ -30,6 +30,8 @@ export interface AdminEventCardProps {
 
 export function AdminEventCard(props: AdminEventCardProps): JSX.Element {
   const status = () => STATUS_CONFIG[props.event.status];
+  const visual = () =>
+    resolveStorageUrl(props.event.logo_url ?? props.event.banner_url);
 
   return (
     <Reveal delay={(props.index ?? 0) * 0.05} animate={props.animate}>
@@ -37,7 +39,7 @@ export function AdminEventCard(props: AdminEventCardProps): JSX.Element {
         <div class="relative size-10 shrink-0">
           <div class="flex size-10 items-center justify-center overflow-hidden rounded-lg bg-muted">
             <Show
-              when={props.event.logo_url ?? props.event.banner_url}
+              when={visual()}
               fallback={
                 <span class="text-sm font-semibold text-muted-foreground/50">
                   {props.event.acronym?.charAt(0) ?? props.event.full_name.charAt(0)}

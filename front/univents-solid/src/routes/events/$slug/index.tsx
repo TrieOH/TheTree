@@ -15,6 +15,7 @@ import { EditionSummaryCard } from "@/features/editions/ui/EditionSummaryCard";
 import { EventCatalog } from "@/features/events/ui/EventCatalog";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { handleShare } from "@/shared/lib/share";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 
 const Calendar = CalendarIcon as unknown as () => JSX.Element;
 const MapPin = MapPinIcon as unknown as () => JSX.Element;
@@ -47,13 +48,16 @@ function EventPage() {
 function EventContent(props: { event: EventI | null }) {
   const event = untrack(() => props.event);
   if (!event) return <div class="p-12 text-center">Evento não encontrado.</div>;
+  const bannerUrl = () => resolveStorageUrl(event.banner_url);
+  const logoUrl = () => resolveStorageUrl(event.logo_url);
+
   return (
     <main class="min-h-screen bg-background pb-24">
       <div class="relative">
         <div class="relative h-40 w-full border-b-4 border-b-accent min-[300px]:h-48 sm:h-52 md:h-64">
-          {event.banner_url ? (
+          {bannerUrl() ? (
             <img
-              src={event.banner_url}
+              src={bannerUrl()}
               alt={event.full_name}
               class="h-full w-full object-cover"
             />
@@ -70,10 +74,18 @@ function EventContent(props: { event: EventI | null }) {
           <Share />
         </button>
         <div class="absolute inset-x-0 top-full z-10 flex -translate-y-1/2 justify-center">
-          <div class="flex size-37.5 items-center justify-center rounded-full border-4 border-accent bg-primary shadow-lg sm:size-40">
-            <span class="text-xl font-bold text-primary-foreground sm:text-2xl md:text-3xl">
-              {event.acronym ?? event.full_name.slice(0, 2).toUpperCase()}
-            </span>
+          <div class="flex size-37.5 items-center justify-center overflow-hidden rounded-full border-4 border-accent bg-primary shadow-lg sm:size-40">
+            {logoUrl() ? (
+              <img
+                src={logoUrl()}
+                alt={event.full_name}
+                class="size-full object-cover"
+              />
+            ) : (
+              <span class="text-xl font-bold text-primary-foreground sm:text-2xl md:text-3xl">
+                {event.acronym ?? event.full_name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -96,18 +96,16 @@ export const uploadProfileImageEffect = (
   Effect.gen(function* () {
     yield* validateImageFile(file);
 
-    const uploadAttempt = Effect.gen(function* () {
-      const data = new FormData();
-      data.append("file", file);
-      data.append("path", "profiles/images");
-      data.append("idempotencyKey", crypto.randomUUID());
-      data.append("field", field);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("field", field);
 
+    const uploadAttempt = Effect.gen(function* () {
       const response = yield* Effect.tryPromise({
         try: () =>
-          fetch("/storage/image/preprocess", {
+          fetch("/api/storage/profile", {
             method: "POST",
-            body: data,
+            body: formData,
           }),
         catch: (cause) =>
           new StorageUploadNetworkError({
@@ -119,6 +117,7 @@ export const uploadProfileImageEffect = (
       const result = yield* Effect.tryPromise({
         try: () =>
           response.json().catch(() => ({})) as Promise<{
+            key?: string;
             publicUrl?: string;
             error?: string;
             approved?: boolean;
@@ -126,11 +125,11 @@ export const uploadProfileImageEffect = (
         catch: (cause) =>
           new StorageUploadNetworkError({
             cause,
-            message: "Falha ao processar a resposta do servidor de imagens.",
+            message: "Falha ao processar resposta do servidor.",
           }),
       });
 
-      if (!response.ok || !result.publicUrl) {
+      if (!response.ok || (!result.key && !result.publicUrl)) {
         return yield* Effect.fail(
           new StorageModerationError({
             reason: result.error ?? "A imagem não foi aprovada.",
@@ -139,7 +138,7 @@ export const uploadProfileImageEffect = (
         );
       }
 
-      return result.publicUrl;
+      return result.key ?? result.publicUrl!;
     });
 
     const schedule = options?.retrySchedule ?? uploadRetrySchedule;

@@ -5,6 +5,7 @@ import CalendarIcon from "~icons/lucide/calendar";
 import MailIcon from "~icons/lucide/mail";
 import PencilIcon from "~icons/lucide/pencil";
 import SettingsIcon from "~icons/lucide/settings";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { UniventsProfile } from "../model/profile-data";
 import { ProfileShareButton } from "./ProfileShareButton";
 
@@ -27,12 +28,14 @@ export function ProfileHeader(props: {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
 }) {
+  const bannerUrl = () => resolveStorageUrl(props.profile.bannerUrl);
+
   return (
     <section class="relative w-full border-b border-border bg-card shadow-md">
       <div class="h-40 w-full overflow-hidden bg-background bg-linear-to-br from-primary/40 via-primary/15 to-muted sm:h-48 md:h-56">
-        {props.profile.bannerUrl && (
+        {bannerUrl() && (
           <img
-            src={props.profile.bannerUrl}
+            src={bannerUrl()}
             alt=""
             class="size-full object-cover object-center"
           />
@@ -206,13 +209,15 @@ function Avatar(props: {
   imageUrl?: string | null;
   size: "mobile" | "desktop";
 }) {
+  const url = () => resolveStorageUrl(props.imageUrl);
+
   return (
     <div
       class={`relative shrink-0 ${props.size === "mobile" ? "size-24" : "size-32"} flex items-center justify-center overflow-hidden rounded-full border-4 border-background bg-background text-2xl font-semibold shadow-xl`}
     >
-      {props.imageUrl ? (
+      {url() ? (
         <img
-          src={props.imageUrl}
+          src={url()}
           alt={props.name}
           class="size-full object-cover"
         />
@@ -251,26 +256,22 @@ function Actions(props: {
       </div>
     );
   return (
-    <div class="absolute right-0 top-4 flex gap-2">
-      <ProfileShareButton
-        name={props.name ?? ""}
-        url={props.profileUrl ?? ""}
-        class="flex! size-10 rounded-md shadow-sm"
-      />
+    <div class="absolute right-0 top-6 flex gap-2">
       <Link
         to="/profile/edit"
-        class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm text-primary-foreground shadow-sm"
+        class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
       >
-        <Pencil class="size-4" />
+        <Pencil class="size-3.5" />
         Editar perfil
       </Link>
       <Link
         to="/profile/config"
-        class="inline-flex size-10 items-center justify-center rounded-md border border-border bg-background shadow-sm"
-        aria-label="Configurações"
+        class="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-xs transition-colors hover:bg-accent"
+        aria-label="Configurações do perfil"
       >
         <Settings class="size-4" />
       </Link>
+      <ProfileShareButton name={props.name ?? ""} url={props.profileUrl ?? ""} />
     </div>
   );
 }

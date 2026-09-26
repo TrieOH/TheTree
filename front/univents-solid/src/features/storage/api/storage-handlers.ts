@@ -35,14 +35,30 @@ export class StorageUploadError extends Data.TaggedError("StorageUploadError")<{
   readonly cause?: unknown;
 }> { }
 
-function getS3Url(key: string, env: StorageRuntimeEnv): URL {
-  const endpoint = env.MINIO_ENDPOINT.trim();
-  if (!endpoint || !/^https?:\/\//.test(endpoint))
-    throw new Error("Invalid or missing MINIO_ENDPOINT protocol (http/https)");
+export function getStorageConfig(env: StorageRuntimeEnv) {
+  const endpoint = (env.S3_ENDPOINT ?? "").trim();
+  const bucket = (env.S3_BUCKET ?? "").trim();
+  const accessKeyId = (env.S3_ACCESS_KEY_ID ?? "").trim();
+  const secretAccessKey = (env.S3_SECRET_ACCESS_KEY ?? "").trim();
+  const publicBaseUrl = (env.VITE_STORAGE_URL ?? "").trim().replace(/\/+$/, "");
 
-  const baseUrl = endpoint.replace(/\/+$/, "");
+  return {
+    endpoint,
+    bucket,
+    accessKeyId,
+    secretAccessKey,
+    publicBaseUrl,
+  };
+}
+
+function getS3Url(key: string, env: StorageRuntimeEnv): URL {
+  const config = getStorageConfig(env);
+  if (!config.endpoint || !/^https?:\/\//.test(config.endpoint))
+    throw new Error("Invalid or missing S3_ENDPOINT protocol (http/https)");
+
+  const baseUrl = config.endpoint.replace(/\/+$/, "");
   const cleanKey = key.replace(/^\/+/, "");
-  return new URL(`${baseUrl}/${env.BUCKET_NAME}/${cleanKey}`);
+  return new URL(`${baseUrl}/${config.bucket}/${cleanKey}`);
 }
 
 function getAllowedTypes(env: StorageRuntimeEnv) {
@@ -92,17 +108,17 @@ function buildAllowedTypesErrorMessage(types: string[]) {
 }
 
 /**
- * Validates that all required environment variables are present
+ * Validates that all required S3 environment variables are present
  */
 export const validateEnvEffect = (
   env: StorageRuntimeEnv,
 ): Effect.Effect<void, StorageConfigError> =>
   Effect.gen(function* () {
-    const keys: (keyof Env)[] = [
-      "MINIO_ENDPOINT",
-      "BUCKET_NAME",
-      "MINIO_ACCESS_KEY",
-      "MINIO_SECRET_KEY",
+    const keys: (keyof StorageRuntimeEnv)[] = [
+      "S3_ENDPOINT",
+      "S3_BUCKET",
+      "S3_ACCESS_KEY_ID",
+      "S3_SECRET_ACCESS_KEY",
     ];
     for (const key of keys) {
       if (!env[key]) {
@@ -115,13 +131,15 @@ export const validateEnvEffect = (
     }
   });
 
-const getAwsClient = (env: StorageRuntimeEnv) =>
-  new AwsClient({
-    accessKeyId: env.MINIO_ACCESS_KEY,
-    secretAccessKey: env.MINIO_SECRET_KEY,
+const getAwsClient = (env: StorageRuntimeEnv) => {
+  const config = getStorageConfig(env);
+  return new AwsClient({
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
     service: "s3",
     region: "auto",
   });
+};
 
 function sanitizePath(path?: string | null) {
   const value = (path ?? "").trim();
@@ -206,7 +224,12 @@ export const putFileToStorageEffect = (
         );
       }
 
-      return `${getS3Url("", env).toString()}${key}`;
+      const config = getStorageConfig(env);
+      const cleanKey = key.replace(/^\/+/, "");
+      if (config.publicBaseUrl) {
+        return `${config.publicBaseUrl}/${cleanKey}`;
+      }
+      return `${getS3Url("", env).toString()}${cleanKey}`;
     },
     catch: (cause) =>
       new StorageUploadError({
@@ -257,7 +280,7 @@ export const handleStorageUploadEffect = (
     yield* validateEnvEffect(env);
 
     const { filename, contentType, size } = yield* Effect.tryPromise({
-      try: () => request.json<StorageUploadRequest>(),
+      try: () => request.json() as Promise<StorageUploadRequest>,
       catch: () =>
         new StorageValidationError({
           message: "Invalid JSON payload",
@@ -283,6 +306,7 @@ export const handleStorageUploadEffect = (
       );
     }
 
+    const config = getStorageConfig(env);
     const aws = getAwsClient(env);
     const uploadUrl = getS3Url(filename, env);
     uploadUrl.searchParams.set(
@@ -306,7 +330,10 @@ export const handleStorageUploadEffect = (
         }),
     });
 
-    const publicUrl = `${getS3Url("", env).toString()}${filename}`;
+    const cleanFilename = filename.replace(/^\/+/, "");
+    const publicUrl = config.publicBaseUrl
+      ? `${config.publicBaseUrl}/${cleanFilename}`
+      : `${getS3Url("", env).toString()}${cleanFilename}`;
 
     return privateJsonResponse({
       uploadUrl: signed.url,
@@ -397,7 +424,7 @@ export const handleStorageImagePreprocessEffect = (
 
     const key = buildStorageKey(file.name, path, idempotencyKey);
     const publicUrl = yield* putFileToStorageEffect(file, key, env);
-    return privateJsonResponse({ approved: true, publicUrl });
+    return privateJsonResponse({ approved: true, key, publicUrl });
   }).pipe(
     Effect.catchTags({
       StorageValidationError: (err) =>

@@ -7,6 +7,7 @@ import MapPinIcon from "~icons/lucide/map-pin";
 import PencilIcon from "~icons/lucide/pencil";
 
 import { Button, cn } from "@trieoh/ui-solid";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { Reveal } from "@/shared/ui/Reveal";
 import type { EditionI, EditionStatus } from "../model";
 
@@ -70,6 +71,8 @@ function formatDateRange(startsAt: string, endsAt: string): string {
 export function AdminEditionCard(props: AdminEditionCardProps): JSX.Element {
   const status = () => STATUS_CONFIG[props.edition.status] ?? STATUS_CONFIG.draft;
   const dateRange = () => formatDateRange(props.edition.starts_at, props.edition.ends_at);
+  const visual = () =>
+    resolveStorageUrl(props.edition.banner_url ?? props.edition.logo_url);
 
   return (
     <Reveal delay={(props.index ?? 0) * 0.05} animate={props.animate} class="h-full">
@@ -80,7 +83,7 @@ export function AdminEditionCard(props: AdminEditionCardProps): JSX.Element {
           <div class="relative size-10 shrink-0 select-none">
             <div class="flex size-10 items-center justify-center overflow-hidden rounded-lg bg-muted text-xs font-semibold text-muted-foreground/70">
               <Show
-                when={props.edition.banner_url ?? props.edition.logo_url}
+                when={visual()}
                 fallback={
                   <span class="text-sm font-semibold text-muted-foreground/50">
                     {props.edition.name.slice(0, 2).toUpperCase()}

@@ -1,4 +1,5 @@
 import type { EditionI } from "@/features/editions/model";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
 import type { JSX } from "@solidjs/web";
@@ -16,12 +17,15 @@ export function EditionSummaryCard(props: { edition: EditionI }) {
   };
   const date = () =>
     `${new Date(props.edition.starts_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")} – ${new Date(props.edition.ends_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).replace(".", "")}`;
+  const bannerOrLogo = () =>
+    resolveStorageUrl(props.edition.banner_url ?? props.edition.logo_url ?? "");
+
   return (
     <article class="group flex min-w-64 max-w-96 flex-1 overflow-hidden rounded-xl border border-border/60 bg-card transition-all duration-200 hover:border-border hover:shadow-md">
       <div class="relative w-24 shrink-0 overflow-hidden bg-muted">
-        {(props.edition.banner_url ?? props.edition.logo_url) ? (
+        {bannerOrLogo() ? (
           <img
-            src={props.edition.banner_url ?? props.edition.logo_url ?? ""}
+            src={bannerOrLogo()}
             alt={props.edition.name}
             class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />

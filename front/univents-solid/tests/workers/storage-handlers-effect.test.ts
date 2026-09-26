@@ -15,14 +15,14 @@ describe("storage-handlers Effect pipeline", () => {
     });
 
     it("fails with StorageConfigError when an env var is missing", async () => {
-      const brokenEnv = { ...env, BUCKET_NAME: "" };
+      const brokenEnv = { ...env, S3_BUCKET: "" };
       const exit = await Effect.runPromiseExit(validateEnvEffect(brokenEnv));
       expect(Exit.isFailure(exit)).toBe(true);
       if (Exit.isFailure(exit)) {
         const res = Cause.findError(exit.cause) as { _tag: string; success?: unknown };
         expect(res._tag).toBe("Success");
         expect(res.success).toBeInstanceOf(StorageConfigError);
-        expect((res.success as StorageConfigError).message).toContain("BUCKET_NAME");
+        expect((res.success as StorageConfigError).message).toContain("S3_BUCKET");
       }
     });
   });

@@ -7,6 +7,7 @@ import UploadIcon from "~icons/lucide/upload";
 import { Button, cn } from "@trieoh/ui-solid";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import { useUploadQueue } from "@/features/upload-queue";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { usePatchEditionMutation } from "../api/mutations";
 import type { EditionI } from "../model";
 
@@ -47,10 +48,10 @@ export function EditionVisualCard(props: {
   const isUploading = (field: ImageField) => Boolean(getTask(field));
 
   const currentBannerUrl = () =>
-    getTask("banner_url")?.uploadedUrl ?? props.edition.banner_url;
+    resolveStorageUrl(getTask("banner_url")?.uploadedUrl ?? props.edition.banner_url);
 
   const currentLogoUrl = () =>
-    getTask("logo_url")?.uploadedUrl ?? props.edition.logo_url;
+    resolveStorageUrl(getTask("logo_url")?.uploadedUrl ?? props.edition.logo_url);
 
   const upload = async (field: ImageField, file?: File) => {
     if (!file || isUploading(field) || isPending()) return;

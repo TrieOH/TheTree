@@ -4,6 +4,7 @@ import {
   type MultiStepField,
   type MultiStepItem,
 } from "@trieoh/ui-solid";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { toast } from "@/shared/ui/toast";
 import type { EventI } from "../model";
 
@@ -294,7 +295,7 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
                   >
                     {(banner) => (
                       <img
-                        src={banner()}
+                        src={resolveStorageUrl(banner())}
                         alt="Banner do evento"
                         class="size-full object-cover"
                       />
@@ -315,7 +316,7 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
                     >
                       {(logo) => (
                         <img
-                          src={logo()}
+                          src={resolveStorageUrl(logo())}
                           alt="Logo do evento"
                           class="size-full object-cover"
                         />

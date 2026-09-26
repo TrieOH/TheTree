@@ -5,6 +5,7 @@ import ImagePlusIcon from "~icons/lucide/image-plus";
 import TrashIcon from "~icons/lucide/trash";
 
 import { useUploadQueue } from "@/features/upload-queue";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { Button, Dialog } from "@trieoh/ui-solid";
 import { patchVariantFn } from "../api";
 import type { VariantI } from "../model";
@@ -95,7 +96,7 @@ export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Elem
             {(url, index) => (
               <div class="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
                 <img
-                  src={url}
+                  src={resolveStorageUrl(url)}
                   alt={`Foto ${index() + 1} de ${props.variant.name}`}
                   class="size-full object-cover"
                 />

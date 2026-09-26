@@ -34,6 +34,8 @@ export interface OccurrenceI {
   deleted_at: string | null;
 }
 
+export type ProgramOccurrenceI = OccurrenceI;
+
 export const occurrenceSchema = z.object({
   starts_at: z.string().min(1, "Início é obrigatório"),
   ends_at: z.string().min(1, "Término é obrigatório"),

@@ -13,6 +13,7 @@ import UploadIcon from "~icons/lucide/upload";
 
 import { Button, cn } from "@trieoh/ui-solid";
 import { useUploadQueue } from "@/features/upload-queue";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { Reveal } from "@/shared/ui/Reveal";
 import type { OccurrenceI, ProgramI } from "../model";
 
@@ -34,10 +35,10 @@ export interface AdminProgramCardProps {
   animate?: boolean;
   hasCertificate?: boolean;
   isEmittingCertificates?: boolean;
-  emissionCooldownLabel?: string;
+  emissionCooldownLabel?: string | null;
   onEdit: (program: ProgramI) => void;
   onDelete: (program: ProgramI) => void;
-  onOpenCalendar?: (program: ProgramI) => void;
+  onOpenCalendar?: (program: ProgramI) => void | Promise<void>;
   onManageOccurrences?: (program: ProgramI) => void;
   onManageCertificate?: (program: ProgramI) => void;
   onUnlinkCertificate?: (program: ProgramI) => void;
@@ -63,7 +64,8 @@ export function AdminProgramCard(props: AdminProgramCardProps): JSX.Element {
     );
 
   const isUploading = () => Boolean(getTask());
-  const currentBannerUrl = () => getTask()?.uploadedUrl ?? props.program.banner_url;
+  const currentBannerUrl = () =>
+    resolveStorageUrl(getTask()?.uploadedUrl ?? props.program.banner_url);
 
   const handleUpload = async (file?: File) => {
     if (!file || isUploading()) return;

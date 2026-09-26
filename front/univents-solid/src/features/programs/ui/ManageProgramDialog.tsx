@@ -12,6 +12,7 @@ import {
   cn,
 } from "@trieoh/ui-solid";
 import { formatPrice } from "@/shared/lib/money";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { ProgramCreateInput, ProgramI } from "../model";
 
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -428,7 +429,7 @@ export function ManageProgramDialog(props: ManageProgramDialogProps): JSX.Elemen
                 <Show when={values().banner_url}>
                   <div class="relative max-h-32 w-full overflow-hidden rounded-lg bg-card">
                     <img
-                      src={values().banner_url}
+                      src={resolveStorageUrl(values().banner_url)}
                       alt={values().name}
                       class="h-28 w-full object-cover"
                       onError={(e) => {

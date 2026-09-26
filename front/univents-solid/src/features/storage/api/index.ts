@@ -135,7 +135,7 @@ export async function preprocessImageUpload(
     }
 
     const data: StoragePreprocessResponse = await res.json();
-    if (!data.approved || !data.publicUrl) {
+    if (!data.approved || (!data.key && !data.publicUrl)) {
       throw new StorageImageError(
         "A imagem não foi aprovada pela moderação.",
         "MODERATION_REJECTED",
@@ -143,7 +143,7 @@ export async function preprocessImageUpload(
       );
     }
 
-    return data.publicUrl;
+    return data.key ?? data.publicUrl!;
   });
 }
 
@@ -169,7 +169,7 @@ export const uploadFile = async (file: File, path?: string): Promise<string> =>
       const errorData: { error?: string } = await uploadRes.json();
       throw new Error(errorData.error ?? "Failed to get upload URL");
     }
-    const { uploadUrl, publicUrl }: StorageUploadResponse =
+    const { uploadUrl, key, publicUrl }: StorageUploadResponse =
       await uploadRes.json();
 
     const putRes = await fetch(uploadUrl, {
@@ -180,5 +180,5 @@ export const uploadFile = async (file: File, path?: string): Promise<string> =>
 
     if (!putRes.ok) throw new Error("Failed to upload file");
 
-    return publicUrl;
+    return key ?? publicUrl;
   });

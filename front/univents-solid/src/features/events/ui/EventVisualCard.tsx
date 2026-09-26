@@ -7,6 +7,7 @@ import UploadIcon from "~icons/lucide/upload";
 import { Button, cn } from "@trieoh/ui-solid";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import { useUploadQueue } from "@/features/upload-queue";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { usePatchEventMutation } from "../api/mutations";
 import type { EventI } from "../model";
 
@@ -48,10 +49,10 @@ export function EventVisualCard(props: { event: EventI }): JSX.Element {
   const isUploading = (field: ImageField) => Boolean(getTask(field));
 
   const currentBannerUrl = () =>
-    getTask("banner_url")?.uploadedUrl ?? props.event.banner_url;
+    resolveStorageUrl(getTask("banner_url")?.uploadedUrl ?? props.event.banner_url);
 
   const currentLogoUrl = () =>
-    getTask("logo_url")?.uploadedUrl ?? props.event.logo_url;
+    resolveStorageUrl(getTask("logo_url")?.uploadedUrl ?? props.event.logo_url);
 
   const upload = async (field: ImageField, file?: File) => {
     if (!file || isUploading(field) || isPending()) return;

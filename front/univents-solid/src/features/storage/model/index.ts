@@ -16,5 +16,6 @@ export interface StorageErrorResponse {
 
 export interface StoragePreprocessResponse {
   approved: boolean;
+  key?: string;
   publicUrl?: string;
 }

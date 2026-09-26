@@ -5,6 +5,7 @@ import {
   type MultiStepField,
   type MultiStepItem,
 } from "@trieoh/ui-solid";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { toast } from "@/shared/ui/toast";
 import type { EditionI } from "../model";
 
@@ -343,7 +344,7 @@ export function ManageEditionDialog(props: ManageEditionDialogProps): JSX.Elemen
                 >
                   {(banner) => (
                     <img
-                      src={banner()}
+                      src={resolveStorageUrl(banner())}
                       alt="Banner da edição"
                       class="size-full object-cover"
                     />
@@ -363,7 +364,7 @@ export function ManageEditionDialog(props: ManageEditionDialogProps): JSX.Elemen
                   >
                     {(logo) => (
                       <img
-                        src={logo()}
+                        src={resolveStorageUrl(logo())}
                         alt="Logo da edição"
                         class="size-full object-cover"
                       />

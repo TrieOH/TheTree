@@ -3,6 +3,7 @@ import { createSignal, Show } from "solid-js";
 import ImagePlusIcon from "~icons/lucide/image-plus";
 import UploadIcon from "~icons/lucide/upload";
 import { validateImageFileSync } from "@/features/storage/api";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 
 const ImagePlus = ImagePlusIcon as unknown as () => JSX.Element;
 const Upload = UploadIcon as unknown as () => JSX.Element;
@@ -54,17 +55,21 @@ export function ProfileImageInput(props: {
       >
         <Show when={preview() || props.currentUrl}>
           <img
-            src={preview() ?? props.currentUrl ?? ""}
+            src={preview() ?? resolveStorageUrl(props.currentUrl) ?? ""}
             alt={`Prévia de ${props.label.toLowerCase()}`}
             class="absolute inset-0 size-full object-cover"
           />
         </Show>
-        <span
+        <div
           class={`relative z-10 flex items-center gap-2 rounded-lg bg-background/90 px-3 py-2 text-xs font-medium shadow-md backdrop-blur-sm ${props.variant === "avatar" ? "size-9 justify-center rounded-full p-0 opacity-90" : ""}`}
         >
           {props.variant === "avatar" ? <ImagePlus /> : <Upload />}
-          {props.variant === "banner" && `Alterar ${props.label.toLowerCase()}`}
-        </span>
+          {props.variant === "banner" && (
+            <span>
+              {props.currentUrl ? `Trocar ${props.label}` : `Adicionar ${props.label}`}
+            </span>
+          )}
+        </div>
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
@@ -72,11 +77,9 @@ export function ProfileImageInput(props: {
           onChange={(event) => select(event.currentTarget.files?.[0])}
         />
       </label>
-      <Show when={error()}>
-        <p class="absolute left-2 top-full z-20 mt-1 rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">
-          {error()}
-        </p>
-      </Show>
+      {error() && (
+        <span class="mt-1 block text-xs text-destructive">{error()}</span>
+      )}
     </div>
   );
 }
