@@ -103,7 +103,7 @@ export const uploadProfileImageEffect = (
     const uploadAttempt = Effect.gen(function* () {
       const response = yield* Effect.tryPromise({
         try: () =>
-          fetch("/api/storage/profile", {
+          fetch("/storage/image/preprocess", {
             method: "POST",
             body: formData,
           }),

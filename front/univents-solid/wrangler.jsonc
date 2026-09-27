@@ -2,13 +2,27 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "univents",
   "compatibility_date": "2026-06-08",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "main": "src/server.ts",
+  "vars": {
+    "TRACES_ENABLED": "true",
+    "VITE_API_URL": "https://api.univents.com.br",
+    "VITE_AUTH_API_URL": "https://auth.univents.com.br",
+    "VITE_STORAGE_URL": "https://media.univents.com.br",
+    "VITE_TRACING_ENABLED": "true"
+  },
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
-  "ai": { "binding": "AI", "remote": true },
-  "observability": { "enabled": true }
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
+  "observability": {
+    "enabled": true
+  }
 }
