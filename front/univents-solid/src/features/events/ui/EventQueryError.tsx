@@ -8,7 +8,7 @@ export function EventQueryError(props: {
       <button
         type="button"
         class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
-        onClick={props.onRetry}
+        onClick={() => props.onRetry()}
       >
         Tentar novamente
       </button>
