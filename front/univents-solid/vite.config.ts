@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => ({
     },
     globals: false,
     setupFiles: ["./tests/ui/setup.ts"],
-    isolate: false,
+    isolate: true,
     // UI/component tests live here; Worker and handler tests run inside workerd
     // through vitest.workers.config.ts.
     include: ["tests/ui/**/*.test.{ts,tsx}"],
