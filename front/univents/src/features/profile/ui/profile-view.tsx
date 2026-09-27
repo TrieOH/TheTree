@@ -1,8 +1,8 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { queryError } from "@trieoh/front-core";
+import { queryError } from "@trieoh/front-core-react";
 import type { ActorProfile } from "@trieoh/identityx-sdk-ts";
-import { CardSkeleton, CardsGridSkeleton } from "@trieoh/ui-base";
+import { CardSkeleton, CardsGridSkeleton } from "@trieoh/ui-react";
 import { Globe, Mail } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { userBadgesQueryOptions } from "@/features/badges/api";

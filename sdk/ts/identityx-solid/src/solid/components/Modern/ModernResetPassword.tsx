@@ -41,16 +41,7 @@ export function ModernResetPassword(props: ModernResetPasswordProps) {
   };
 
   return (
-    <div class="w-full max-w-md mx-auto space-y-6">
-      <div class="text-center space-y-2">
-        <h1 class="font-heading text-3xl font-bold tracking-tight">
-          Redefinir Senha
-        </h1>
-        <p class="text-muted-foreground text-sm">
-          Crie uma nova senha para sua conta
-        </p>
-      </div>
-
+    <>
       <form onSubmit={submit} class="space-y-4">
         {success() && (
           <div class="p-4 bg-emerald-500/10 text-emerald-600 rounded-md text-sm text-center">
@@ -97,7 +88,7 @@ export function ModernResetPassword(props: ModernResetPasswordProps) {
       </form>
       
       {props.signInRedirect && (
-        <div class="text-center">
+        <div class="mt-6 text-center">
           <button
             type="button"
             onClick={props.signInRedirect}
@@ -107,6 +98,6 @@ export function ModernResetPassword(props: ModernResetPasswordProps) {
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }

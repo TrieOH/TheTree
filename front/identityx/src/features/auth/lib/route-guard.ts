@@ -2,9 +2,9 @@ import { redirect } from "@tanstack/react-router";
 import {
   requireAuth as requireAuthCore,
   requireGuest as requireGuestCore,
-} from "@trieoh/front-core";
+} from "@trieoh/front-core-react";
 
-export { requireSetup, requireSetupNotDone } from "@trieoh/front-core";
+export { requireSetup, requireSetupNotDone } from "@trieoh/front-core-react";
 
 type AuthGuardArgs = Parameters<typeof requireAuthCore>[0];
 type GuestGuardArgs = Parameters<typeof requireGuestCore>[0];

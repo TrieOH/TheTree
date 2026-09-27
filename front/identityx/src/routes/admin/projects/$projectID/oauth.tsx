@@ -4,7 +4,7 @@ import {
   EmptyState,
   PaginatedContainer,
   useLayoutHeader,
-} from "@trieoh/ui-base";
+} from "@trieoh/ui-react";
 import { Code2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";

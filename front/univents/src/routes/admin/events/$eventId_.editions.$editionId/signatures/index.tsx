@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import { PenLine, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { allSignaturesQueryOptions } from "@/features/signatures/api";

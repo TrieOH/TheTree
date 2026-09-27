@@ -4,7 +4,7 @@ import {
   EmptyState,
   PaginatedContainer,
   useLayoutHeader,
-} from "@trieoh/ui-base";
+} from "@trieoh/ui-react";
 import {
   Bot,
   Cpu,

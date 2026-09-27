@@ -1,4 +1,7 @@
-import { createQueryClient, TanStackQueryProvider } from "@trieoh/front-core";
+import {
+  createQueryClient,
+  TanStackQueryProvider,
+} from "@trieoh/front-core-react";
 import type { ReactNode } from "react";
 
 let context: { queryClient: ReturnType<typeof createQueryClient> } | undefined;

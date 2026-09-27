@@ -1,5 +1,9 @@
 import { defineConfig } from "orval"
 
+// The generated clients are framework-free on purpose: they expose plain
+// `fetch`-based functions and types, so both the React and the Solid apps (and
+// Workers/tests) can import them. Data-layer hooks live with each app's feature
+// code, not here — see `tools/check-package-boundaries.mjs`.
 const services = ["identityx", "informd", "payssage", "univents"] as const
 
 export default defineConfig(
@@ -16,7 +20,7 @@ export default defineConfig(
         output: {
           target: `lib/ts/${svc}/client/endpoints.ts`,
           schemas: `lib/ts/${svc}/client/schemas`,
-          client: "react-query",
+          client: "fetch",
           httpClient: "fetch",
           clean: true,
           override: {
@@ -25,6 +29,11 @@ export default defineConfig(
               name: "customInstance",
             },
           },
+        },
+        // Drops type imports the generator emits but never uses — see the
+        // script for why it is needed.
+        hooks: {
+          afterAllFilesWrite: ["node tools/orval-prune-unused-imports.mjs"],
         },
       },
     ]),

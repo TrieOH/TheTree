@@ -20,7 +20,8 @@
     "strict": true,
     "skipLibCheck": true,
     "types": [
-      "vite/client"
+      "vite/client",
+      "@cloudflare/vitest-plugin"
     ]
   }
 }

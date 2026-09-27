@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useLayoutHeader } from "@trieoh/ui-base";
+import { useLayoutHeader } from "@trieoh/ui-react";
 import { Braces, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";

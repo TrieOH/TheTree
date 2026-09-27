@@ -4,7 +4,7 @@ import {
   Outlet,
   useRouterState,
 } from "@tanstack/react-router";
-import { LayoutContext } from "@trieoh/ui-base";
+import { LayoutContext } from "@trieoh/ui-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";

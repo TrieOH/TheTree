@@ -7,6 +7,7 @@ import ShoppingCartIcon from "~icons/lucide/shopping-cart";
 import TrashIcon from "~icons/lucide/trash-2";
 import XIcon from "~icons/lucide/x";
 import { useCart } from "../hooks/use-cart";
+import { Link } from "@tanstack/solid-router";
 
 const Minus = MinusIcon as unknown as () => JSX.Element;
 const Plus = PlusIcon as unknown as () => JSX.Element;
@@ -19,7 +20,7 @@ const money = (cents: number) =>
     currency: "BRL",
   }).format(cents / 100);
 
-export function EventCart(props: { editionId: string; checkoutHref?: string }) {
+export function EventCart(props: { editionId: string; eventSlug: string }) {
   const [open, setOpen] = createSignal(false);
   const editionId = untrack(() => props.editionId);
   const cart = useCart(editionId);
@@ -142,14 +143,15 @@ export function EventCart(props: { editionId: string; checkoutHref?: string }) {
                     {money(cart.total())}
                   </strong>
                 </div>
-                <Show when={props.checkoutHref}>
-                  {(href) => (
-                    <a
-                      href={href()}
+                <Show when={props.eventSlug}>
+                  {(slug) => (
+                    <Link
+                      to="/events/$slug/checkout"
+                      params={{ slug: slug() }}
                       class="flex h-10 w-full items-center justify-center rounded-md bg-primary font-semibold text-primary-foreground"
                     >
                       Comprar
-                    </a>
+                    </Link>
                   )}
                 </Show>
                 <button

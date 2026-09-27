@@ -74,20 +74,6 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
-
 import type {
   Actor,
   ActorProfile,
@@ -150,31 +136,6 @@ import type {
 } from './schemas';
 
 import { customInstance } from '../../api-client/src/orval-mutator';
-import type { ErrorType , BodyType } from '../../api-client/src/orval-mutator';
-type AwaitedInput<T> = PromiseLike<T> | T;
-
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
-  for (const key of Object.keys(query)) {
-    // The explicit queryKey always wins, matching the previous
-    // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
-    Object.defineProperty(result, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => (query as Record<string, unknown>)[key],
-    });
-  }
-  return result;
-};
-
 export type getOpenAPISpecResponse200 = {
   data: string
   status: 200
@@ -215,59 +176,6 @@ export const getOpenAPISpec = async ( options?: Parameters<typeof customInstance
 
 
 
-
-
-export const getGetOpenAPISpecQueryKey = () => {
-    return [
-    `/docs/openapi.yml`
-    ] as const;
-    }
-
-
-export const getGetOpenAPISpecQueryOptions = <TData = Awaited<ReturnType<typeof getOpenAPISpec>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOpenAPISpecQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenAPISpec>>> = ({ signal }) => getOpenAPISpec({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOpenAPISpecQueryResult = NonNullable<Awaited<ReturnType<typeof getOpenAPISpec>>>
-export type GetOpenAPISpecQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Get the OpenAPI specification
- */
-
-export function useGetOpenAPISpec<TData = Awaited<ReturnType<typeof getOpenAPISpec>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOpenAPISpecQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getHealthResponse200 = {
   data: GetHealth200
   status: 200
@@ -303,59 +211,6 @@ export const getHealth = async ( options?: Parameters<typeof customInstance>[1])
 
   }
 );}
-
-
-
-
-
-export const getGetHealthQueryKey = () => {
-    return [
-    `/health`
-    ] as const;
-    }
-
-
-export const getGetHealthQueryOptions = <TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetHealthQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({ signal }) => getHealth({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getHealth>>>
-export type GetHealthQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Health check
- */
-
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetHealthQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -402,59 +257,6 @@ export const getSetup = async ( options?: Parameters<typeof customInstance>[1]):
 
   }
 );}
-
-
-
-
-
-export const getGetSetupQueryKey = () => {
-    return [
-    `/auth/setup`
-    ] as const;
-    }
-
-
-export const getGetSetupQueryOptions = <TData = Awaited<ReturnType<typeof getSetup>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSetup>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetSetupQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSetup>>> = ({ signal }) => getSetup({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSetup>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetSetupQueryResult = NonNullable<Awaited<ReturnType<typeof getSetup>>>
-export type GetSetupQueryError = ErrorType<ErrorResponse>
-
-
-/**
- * @summary Check if IdentityX is set up
- */
-
-export function useGetSetup<TData = Awaited<ReturnType<typeof getSetup>>, TError = ErrorType<ErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSetup>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetSetupQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -514,53 +316,6 @@ export const postSetup = async (credentialRequest: CredentialRequest, options?: 
 );}
 
 
-
-
-
-export const getPostSetupMutationOptions = <TError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postSetup>>, TError,{data: BodyType<CredentialRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postSetup>>, TError,{data: BodyType<CredentialRequest>}, TContext> => {
-
-const mutationKey = ['postSetup'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postSetup>>, {data: BodyType<CredentialRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postSetup(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostSetupMutationResult = NonNullable<Awaited<ReturnType<typeof postSetup>>>
-    export type PostSetupMutationBody = BodyType<CredentialRequest>
-    export type PostSetupMutationError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Set up IdentityX
- */
-export const usePostSetup = <TError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postSetup>>, TError,{data: BodyType<CredentialRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postSetup>>,
-        TError,
-        {data: BodyType<CredentialRequest>},
-        TContext
-      > => {
-      return useMutation(getPostSetupMutationOptions(options));
-    }
 
 export type postRegisterResponse201 = {
   data: void
@@ -637,53 +392,6 @@ export const postRegister = async (registerRequest: RegisterRequest,
 
 
 
-
-
-export const getPostRegisterMutationOptions = <TError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<RegisterRequest>;params?: PostRegisterParams}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<RegisterRequest>;params?: PostRegisterParams}, TContext> => {
-
-const mutationKey = ['postRegister'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRegister>>, {data: BodyType<RegisterRequest>;params?: PostRegisterParams}> = (props) => {
-          const {data,params} = props ?? {};
-
-          return  postRegister(data,params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof postRegister>>>
-    export type PostRegisterMutationBody = BodyType<RegisterRequest>
-    export type PostRegisterMutationError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Register a user
- */
-export const usePostRegister = <TError = ErrorType<BadRequestResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRegister>>, TError,{data: BodyType<RegisterRequest>;params?: PostRegisterParams}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postRegister>>,
-        TError,
-        {data: BodyType<RegisterRequest>;params?: PostRegisterParams},
-        TContext
-      > => {
-      return useMutation(getPostRegisterMutationOptions(options));
-    }
-
 export type postVerifyEmailResponse200 = {
   data: unknown
   status: 200
@@ -742,53 +450,6 @@ export const postVerifyEmail = async (verifyEmailRequest: VerifyEmailRequest, op
 
 
 
-
-
-export const getPostVerifyEmailMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postVerifyEmail>>, TError,{data: BodyType<VerifyEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postVerifyEmail>>, TError,{data: BodyType<VerifyEmailRequest>}, TContext> => {
-
-const mutationKey = ['postVerifyEmail'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postVerifyEmail>>, {data: BodyType<VerifyEmailRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postVerifyEmail(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostVerifyEmailMutationResult = NonNullable<Awaited<ReturnType<typeof postVerifyEmail>>>
-    export type PostVerifyEmailMutationBody = BodyType<VerifyEmailRequest>
-    export type PostVerifyEmailMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Verify an email address
- */
-export const usePostVerifyEmail = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postVerifyEmail>>, TError,{data: BodyType<VerifyEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postVerifyEmail>>,
-        TError,
-        {data: BodyType<VerifyEmailRequest>},
-        TContext
-      > => {
-      return useMutation(getPostVerifyEmailMutationOptions(options));
-    }
-
 export type postResendVerificationResponse200 = {
   data: unknown
   status: 200
@@ -845,53 +506,6 @@ export const postResendVerification = async (resendVerificationRequest: ResendVe
 );}
 
 
-
-
-
-export const getPostResendVerificationMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResendVerification>>, TError,{data: BodyType<ResendVerificationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postResendVerification>>, TError,{data: BodyType<ResendVerificationRequest>}, TContext> => {
-
-const mutationKey = ['postResendVerification'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postResendVerification>>, {data: BodyType<ResendVerificationRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postResendVerification(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostResendVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof postResendVerification>>>
-    export type PostResendVerificationMutationBody = BodyType<ResendVerificationRequest>
-    export type PostResendVerificationMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Resend the verification email
- */
-export const usePostResendVerification = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResendVerification>>, TError,{data: BodyType<ResendVerificationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postResendVerification>>,
-        TError,
-        {data: BodyType<ResendVerificationRequest>},
-        TContext
-      > => {
-      return useMutation(getPostResendVerificationMutationOptions(options));
-    }
 
 export type postForgotPasswordResponse200 = {
   data: unknown
@@ -950,53 +564,6 @@ export const postForgotPassword = async (forgotPasswordRequest: ForgotPasswordRe
 
 
 
-
-
-export const getPostForgotPasswordMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postForgotPassword>>, TError,{data: BodyType<ForgotPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postForgotPassword>>, TError,{data: BodyType<ForgotPasswordRequest>}, TContext> => {
-
-const mutationKey = ['postForgotPassword'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postForgotPassword>>, {data: BodyType<ForgotPasswordRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postForgotPassword(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostForgotPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postForgotPassword>>>
-    export type PostForgotPasswordMutationBody = BodyType<ForgotPasswordRequest>
-    export type PostForgotPasswordMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Request a password reset link
- */
-export const usePostForgotPassword = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postForgotPassword>>, TError,{data: BodyType<ForgotPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postForgotPassword>>,
-        TError,
-        {data: BodyType<ForgotPasswordRequest>},
-        TContext
-      > => {
-      return useMutation(getPostForgotPasswordMutationOptions(options));
-    }
-
 export type postResetPasswordResponse200 = {
   data: unknown
   status: 200
@@ -1054,53 +621,6 @@ export const postResetPassword = async (resetPasswordRequest: ResetPasswordReque
 );}
 
 
-
-
-
-export const getPostResetPasswordMutationOptions = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResetPassword>>, TError,{data: BodyType<ResetPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postResetPassword>>, TError,{data: BodyType<ResetPasswordRequest>}, TContext> => {
-
-const mutationKey = ['postResetPassword'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postResetPassword>>, {data: BodyType<ResetPasswordRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  postResetPassword(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postResetPassword>>>
-    export type PostResetPasswordMutationBody = BodyType<ResetPasswordRequest>
-    export type PostResetPasswordMutationError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Set a new password with a reset link
- */
-export const usePostResetPassword = <TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postResetPassword>>, TError,{data: BodyType<ResetPasswordRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postResetPassword>>,
-        TError,
-        {data: BodyType<ResetPasswordRequest>},
-        TContext
-      > => {
-      return useMutation(getPostResetPasswordMutationOptions(options));
-    }
 
 export type postLoginResponse200 = {
   data: UserTokensOutput
@@ -1173,53 +693,6 @@ export const postLogin = async (credentialRequest: CredentialRequest,
 
 
 
-
-
-export const getPostLoginMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postLogin>>, TError,{data: BodyType<CredentialRequest>;params?: PostLoginParams}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postLogin>>, TError,{data: BodyType<CredentialRequest>;params?: PostLoginParams}, TContext> => {
-
-const mutationKey = ['postLogin'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postLogin>>, {data: BodyType<CredentialRequest>;params?: PostLoginParams}> = (props) => {
-          const {data,params} = props ?? {};
-
-          return  postLogin(data,params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostLoginMutationResult = NonNullable<Awaited<ReturnType<typeof postLogin>>>
-    export type PostLoginMutationBody = BodyType<CredentialRequest>
-    export type PostLoginMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Log in a user
- */
-export const usePostLogin = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postLogin>>, TError,{data: BodyType<CredentialRequest>;params?: PostLoginParams}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postLogin>>,
-        TError,
-        {data: BodyType<CredentialRequest>;params?: PostLoginParams},
-        TContext
-      > => {
-      return useMutation(getPostLoginMutationOptions(options));
-    }
-
 export type postLogoutResponse200 = {
   data: unknown
   status: 200
@@ -1276,53 +749,6 @@ export const postLogout = async ( options?: Parameters<typeof customInstance>[1]
 
 
 
-
-
-export const getPostLogoutMutationOptions = <TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postLogout>>, TError,void, TContext> => {
-
-const mutationKey = ['postLogout'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postLogout>>, void> = () => {
-
-
-          return  postLogout(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof postLogout>>>
-
-    export type PostLogoutMutationError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Log out a user
- */
-export const usePostLogout = <TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postLogout>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getPostLogoutMutationOptions(options));
-    }
-
 export type postRefreshResponse200 = {
   data: UserTokensOutput
   status: 200
@@ -1378,53 +804,6 @@ export const postRefresh = async ( options?: Parameters<typeof customInstance>[1
 );}
 
 
-
-
-
-export const getPostRefreshMutationOptions = <TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postRefresh>>, TError,void, TContext> => {
-
-const mutationKey = ['postRefresh'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postRefresh>>, void> = () => {
-
-
-          return  postRefresh(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof postRefresh>>>
-
-    export type PostRefreshMutationError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Refresh a user session
- */
-export const usePostRefresh = <TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postRefresh>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postRefresh>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getPostRefreshMutationOptions(options));
-    }
 
 export type getOAuthConnectResponse200 = {
   data: GetOAuthConnect200
@@ -1489,62 +868,6 @@ export const getOAuthConnect = async (provider: SupportedOAuthProviders,
 
   }
 );}
-
-
-
-
-
-export const getGetOAuthConnectQueryKey = (provider: SupportedOAuthProviders,
-    params?: GetOAuthConnectParams,) => {
-    return [
-    `/auth/${provider}/connect`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetOAuthConnectQueryOptions = <TData = Awaited<ReturnType<typeof getOAuthConnect>>, TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(provider: SupportedOAuthProviders,
-    params?: GetOAuthConnectParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthConnect>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOAuthConnectQueryKey(provider,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOAuthConnect>>> = ({ signal }) => getOAuthConnect(provider,params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: provider !== null && provider !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOAuthConnect>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOAuthConnectQueryResult = NonNullable<Awaited<ReturnType<typeof getOAuthConnect>>>
-export type GetOAuthConnectQueryError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Start a social login
- */
-
-export function useGetOAuthConnect<TData = Awaited<ReturnType<typeof getOAuthConnect>>, TError = ErrorType<BadRequestResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- provider: SupportedOAuthProviders,
-    params?: GetOAuthConnectParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthConnect>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOAuthConnectQueryOptions(provider,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1619,62 +942,6 @@ export const getOAuthCallback = async (provider: SupportedOAuthProviders,
 
 
 
-
-
-export const getGetOAuthCallbackQueryKey = (provider: SupportedOAuthProviders,
-    params?: GetOAuthCallbackParams,) => {
-    return [
-    `/auth/${provider}/callback`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetOAuthCallbackQueryOptions = <TData = Awaited<ReturnType<typeof getOAuthCallback>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(provider: SupportedOAuthProviders,
-    params: GetOAuthCallbackParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthCallback>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOAuthCallbackQueryKey(provider,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOAuthCallback>>> = ({ signal }) => getOAuthCallback(provider,params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: provider !== null && provider !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOAuthCallback>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOAuthCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof getOAuthCallback>>>
-export type GetOAuthCallbackQueryError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Conclude a social login
- */
-
-export function useGetOAuthCallback<TData = Awaited<ReturnType<typeof getOAuthCallback>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- provider: SupportedOAuthProviders,
-    params: GetOAuthCallbackParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthCallback>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOAuthCallbackQueryOptions(provider,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getOAuthProvidersResponse200 = {
   data: OAuthProviderDiscoveryItem[]
   status: 200
@@ -1745,59 +1012,6 @@ export const getOAuthProviders = async (params?: GetOAuthProvidersParams, option
 
 
 
-
-
-export const getGetOAuthProvidersQueryKey = (params?: GetOAuthProvidersParams,) => {
-    return [
-    `/auth/oauth-providers`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetOAuthProvidersQueryOptions = <TData = Awaited<ReturnType<typeof getOAuthProviders>>, TError = ErrorType<BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(params?: GetOAuthProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOAuthProvidersQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOAuthProviders>>> = ({ signal }) => getOAuthProviders(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOAuthProviders>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOAuthProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof getOAuthProviders>>>
-export type GetOAuthProvidersQueryError = ErrorType<BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Discover enabled social login providers
- */
-
-export function useGetOAuthProviders<TData = Awaited<ReturnType<typeof getOAuthProviders>>, TError = ErrorType<BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- params?: GetOAuthProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOAuthProvidersQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getIntrospectResponse200 = {
   data: Identity
   status: 200
@@ -1852,59 +1066,6 @@ export const getIntrospect = async ( options?: Parameters<typeof customInstance>
 
   }
 );}
-
-
-
-
-
-export const getGetIntrospectQueryKey = () => {
-    return [
-    `/auth/introspect`
-    ] as const;
-    }
-
-
-export const getGetIntrospectQueryOptions = <TData = Awaited<ReturnType<typeof getIntrospect>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntrospect>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetIntrospectQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntrospect>>> = ({ signal }) => getIntrospect({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntrospect>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetIntrospectQueryResult = NonNullable<Awaited<ReturnType<typeof getIntrospect>>>
-export type GetIntrospectQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Introspect the current identity
- */
-
-export function useGetIntrospect<TData = Awaited<ReturnType<typeof getIntrospect>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntrospect>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetIntrospectQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1968,59 +1129,6 @@ export const getJWKS = async (params?: GetJWKSParams, options?: Parameters<typeo
 
 
 
-
-
-export const getGetJWKSQueryKey = (params?: GetJWKSParams,) => {
-    return [
-    `/.well-known/jwks.json`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetJWKSQueryOptions = <TData = Awaited<ReturnType<typeof getJWKS>>, TError = ErrorType<InternalServerErrorResponse | ServiceUnavailableResponse>>(params?: GetJWKSParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJWKS>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetJWKSQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJWKS>>> = ({ signal }) => getJWKS(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJWKS>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetJWKSQueryResult = NonNullable<Awaited<ReturnType<typeof getJWKS>>>
-export type GetJWKSQueryError = ErrorType<InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a JWKS
- */
-
-export function useGetJWKS<TData = Awaited<ReturnType<typeof getJWKS>>, TError = ErrorType<InternalServerErrorResponse | ServiceUnavailableResponse>>(
- params?: GetJWKSParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJWKS>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetJWKSQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listOrganizationsResponse200 = {
   data: Organization[]
   status: 200
@@ -2074,59 +1182,6 @@ export const listOrganizations = async ( options?: Parameters<typeof customInsta
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationsQueryKey = () => {
-    return [
-    `/organizations`
-    ] as const;
-    }
-
-
-export const getListOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizations>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizations>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizations>>> = ({ signal }) => listOrganizations({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizations>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizations>>>
-export type ListOrganizationsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List your organizations
- */
-
-export function useListOrganizations<TData = Awaited<ReturnType<typeof listOrganizations>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizations>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2190,53 +1245,6 @@ export const createOrganization = async (createOrganizationRequest: CreateOrgani
 
 
 
-
-
-export const getCreateOrganizationMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{data: BodyType<CreateOrganizationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{data: BodyType<CreateOrganizationRequest>}, TContext> => {
-
-const mutationKey = ['createOrganization'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOrganization>>, {data: BodyType<CreateOrganizationRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createOrganization(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof createOrganization>>>
-    export type CreateOrganizationMutationBody = BodyType<CreateOrganizationRequest>
-    export type CreateOrganizationMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create an organization
- */
-export const useCreateOrganization = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{data: BodyType<CreateOrganizationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createOrganization>>,
-        TError,
-        {data: BodyType<CreateOrganizationRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateOrganizationMutationOptions(options));
-    }
-
 export type listOrganizationMembersResponse200 = {
   data: OrganizationMember[]
   status: 200
@@ -2299,59 +1307,6 @@ export const listOrganizationMembers = async (organizationId: string, options?: 
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationMembersQueryKey = (organizationId: string,) => {
-    return [
-    `/organizations/${organizationId}/members`
-    ] as const;
-    }
-
-
-export const getListOrganizationMembersQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationMembersQueryKey(organizationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationMembers>>> = ({ signal }) => listOrganizationMembers(organizationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationMembers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationMembers>>>
-export type ListOrganizationMembersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List organization members
- */
-
-export function useListOrganizationMembers<TData = Awaited<ReturnType<typeof listOrganizationMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationMembersQueryOptions(organizationId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2432,53 +1387,6 @@ export const addOrganizationMember = async (organizationId: string,
 
 
 
-
-
-export const getAddOrganizationMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addOrganizationMember>>, TError,{organizationId: string;data: BodyType<AddOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addOrganizationMember>>, TError,{organizationId: string;data: BodyType<AddOrganizationMemberRequest>}, TContext> => {
-
-const mutationKey = ['addOrganizationMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addOrganizationMember>>, {organizationId: string;data: BodyType<AddOrganizationMemberRequest>}> = (props) => {
-          const {organizationId,data} = props ?? {};
-
-          return  addOrganizationMember(organizationId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddOrganizationMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addOrganizationMember>>>
-    export type AddOrganizationMemberMutationBody = BodyType<AddOrganizationMemberRequest>
-    export type AddOrganizationMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Add an organization member
- */
-export const useAddOrganizationMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addOrganizationMember>>, TError,{organizationId: string;data: BodyType<AddOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addOrganizationMember>>,
-        TError,
-        {organizationId: string;data: BodyType<AddOrganizationMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddOrganizationMemberMutationOptions(options));
-    }
-
 export type removeOrganizationMemberResponse200 = {
   data: unknown
   status: 200
@@ -2551,53 +1459,6 @@ export const removeOrganizationMember = async (organizationId: string,
 
 
 
-
-
-export const getRemoveOrganizationMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationMember>>, TError,{organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationMember>>, TError,{organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeOrganizationMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeOrganizationMember>>, {organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}> = (props) => {
-          const {organizationId,data} = props ?? {};
-
-          return  removeOrganizationMember(organizationId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveOrganizationMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeOrganizationMember>>>
-    export type RemoveOrganizationMemberMutationBody = BodyType<RemoveOrganizationMemberRequest>
-    export type RemoveOrganizationMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Remove an organization member
- */
-export const useRemoveOrganizationMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationMember>>, TError,{organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeOrganizationMember>>,
-        TError,
-        {organizationId: string;data: BodyType<RemoveOrganizationMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveOrganizationMemberMutationOptions(options));
-    }
-
 export type listOrganizationProjectsResponse200 = {
   data: Project[]
   status: 200
@@ -2660,59 +1521,6 @@ export const listOrganizationProjects = async (organizationId: string, options?:
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationProjectsQueryKey = (organizationId: string,) => {
-    return [
-    `/organizations/${organizationId}/projects`
-    ] as const;
-    }
-
-
-export const getListOrganizationProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationProjects>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjects>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationProjectsQueryKey(organizationId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationProjects>>> = ({ signal }) => listOrganizationProjects(organizationId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjects>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationProjects>>>
-export type ListOrganizationProjectsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List organization projects
- */
-
-export function useListOrganizationProjects<TData = Awaited<ReturnType<typeof listOrganizationProjects>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- organizationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjects>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationProjectsQueryOptions(organizationId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2787,53 +1595,6 @@ export const createOrganizationProject = async (organizationId: string,
 
 
 
-
-
-export const getCreateOrganizationProjectMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganizationProject>>, TError,{organizationId: string;data: BodyType<CreateOrgProjectRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createOrganizationProject>>, TError,{organizationId: string;data: BodyType<CreateOrgProjectRequest>}, TContext> => {
-
-const mutationKey = ['createOrganizationProject'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOrganizationProject>>, {organizationId: string;data: BodyType<CreateOrgProjectRequest>}> = (props) => {
-          const {organizationId,data} = props ?? {};
-
-          return  createOrganizationProject(organizationId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateOrganizationProjectMutationResult = NonNullable<Awaited<ReturnType<typeof createOrganizationProject>>>
-    export type CreateOrganizationProjectMutationBody = BodyType<CreateOrgProjectRequest>
-    export type CreateOrganizationProjectMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create an organization project
- */
-export const useCreateOrganizationProject = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganizationProject>>, TError,{organizationId: string;data: BodyType<CreateOrgProjectRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createOrganizationProject>>,
-        TError,
-        {organizationId: string;data: BodyType<CreateOrgProjectRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateOrganizationProjectMutationOptions(options));
-    }
-
 export type listOrganizationProjectActorsResponse200 = {
   data: Actor[]
   status: 200
@@ -2898,62 +1659,6 @@ export const listOrganizationProjectActors = async (orgId: string,
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationProjectActorsQueryKey = (orgId: string,
-    projectId: string,) => {
-    return [
-    `/organizations/${orgId}/projects/${projectId}/actors`
-    ] as const;
-    }
-
-
-export const getListOrganizationProjectActorsQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationProjectActors>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(orgId: string,
-    projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjectActors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationProjectActorsQueryKey(orgId,projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationProjectActors>>> = ({ signal }) => listOrganizationProjectActors(orgId,projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: orgId !== null && orgId !== undefined && projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjectActors>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationProjectActorsQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationProjectActors>>>
-export type ListOrganizationProjectActorsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List project actors
- */
-
-export function useListOrganizationProjectActors<TData = Awaited<ReturnType<typeof listOrganizationProjectActors>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- orgId: string,
-    projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjectActors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationProjectActorsQueryOptions(orgId,projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3030,53 +1735,6 @@ export const createOrganizationProjectActor = async (orgId: string,
 
 
 
-
-
-export const getCreateOrganizationProjectActorMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganizationProjectActor>>, TError,{orgId: string;projectId: string;data: BodyType<CreateActorRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createOrganizationProjectActor>>, TError,{orgId: string;projectId: string;data: BodyType<CreateActorRequest>}, TContext> => {
-
-const mutationKey = ['createOrganizationProjectActor'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOrganizationProjectActor>>, {orgId: string;projectId: string;data: BodyType<CreateActorRequest>}> = (props) => {
-          const {orgId,projectId,data} = props ?? {};
-
-          return  createOrganizationProjectActor(orgId,projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateOrganizationProjectActorMutationResult = NonNullable<Awaited<ReturnType<typeof createOrganizationProjectActor>>>
-    export type CreateOrganizationProjectActorMutationBody = BodyType<CreateActorRequest>
-    export type CreateOrganizationProjectActorMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create a project actor
- */
-export const useCreateOrganizationProjectActor = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganizationProjectActor>>, TError,{orgId: string;projectId: string;data: BodyType<CreateActorRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createOrganizationProjectActor>>,
-        TError,
-        {orgId: string;projectId: string;data: BodyType<CreateActorRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateOrganizationProjectActorMutationOptions(options));
-    }
-
 export type listOrganizationProjectMembersResponse200 = {
   data: ProjectMember[]
   status: 200
@@ -3141,62 +1799,6 @@ export const listOrganizationProjectMembers = async (organizationId: string,
 
   }
 );}
-
-
-
-
-
-export const getListOrganizationProjectMembersQueryKey = (organizationId: string,
-    projectId: string,) => {
-    return [
-    `/organizations/${organizationId}/projects/${projectId}/members`
-    ] as const;
-    }
-
-
-export const getListOrganizationProjectMembersQueryOptions = <TData = Awaited<ReturnType<typeof listOrganizationProjectMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(organizationId: string,
-    projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjectMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOrganizationProjectMembersQueryKey(organizationId,projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrganizationProjectMembers>>> = ({ signal }) => listOrganizationProjectMembers(organizationId,projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined && projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjectMembers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOrganizationProjectMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listOrganizationProjectMembers>>>
-export type ListOrganizationProjectMembersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List project members
- */
-
-export function useListOrganizationProjectMembers<TData = Awaited<ReturnType<typeof listOrganizationProjectMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- organizationId: string,
-    projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrganizationProjectMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOrganizationProjectMembersQueryOptions(organizationId,projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3279,53 +1881,6 @@ export const addOrganizationProjectMember = async (organizationId: string,
 
 
 
-
-
-export const getAddOrganizationProjectMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addOrganizationProjectMember>>, TError,{organizationId: string;projectId: string;data: BodyType<AddOrgProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addOrganizationProjectMember>>, TError,{organizationId: string;projectId: string;data: BodyType<AddOrgProjectMemberRequest>}, TContext> => {
-
-const mutationKey = ['addOrganizationProjectMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addOrganizationProjectMember>>, {organizationId: string;projectId: string;data: BodyType<AddOrgProjectMemberRequest>}> = (props) => {
-          const {organizationId,projectId,data} = props ?? {};
-
-          return  addOrganizationProjectMember(organizationId,projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddOrganizationProjectMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addOrganizationProjectMember>>>
-    export type AddOrganizationProjectMemberMutationBody = BodyType<AddOrgProjectMemberRequest>
-    export type AddOrganizationProjectMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Add a project member
- */
-export const useAddOrganizationProjectMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addOrganizationProjectMember>>, TError,{organizationId: string;projectId: string;data: BodyType<AddOrgProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addOrganizationProjectMember>>,
-        TError,
-        {organizationId: string;projectId: string;data: BodyType<AddOrgProjectMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddOrganizationProjectMemberMutationOptions(options));
-    }
-
 export type removeOrganizationProjectMemberResponse200 = {
   data: unknown
   status: 200
@@ -3399,53 +1954,6 @@ export const removeOrganizationProjectMember = async (organizationId: string,
 
 
 
-
-
-export const getRemoveOrganizationProjectMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationProjectMember>>, TError,{organizationId: string;projectId: string;data: BodyType<RemoveOrgProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationProjectMember>>, TError,{organizationId: string;projectId: string;data: BodyType<RemoveOrgProjectMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeOrganizationProjectMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeOrganizationProjectMember>>, {organizationId: string;projectId: string;data: BodyType<RemoveOrgProjectMemberRequest>}> = (props) => {
-          const {organizationId,projectId,data} = props ?? {};
-
-          return  removeOrganizationProjectMember(organizationId,projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveOrganizationProjectMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeOrganizationProjectMember>>>
-    export type RemoveOrganizationProjectMemberMutationBody = BodyType<RemoveOrgProjectMemberRequest>
-    export type RemoveOrganizationProjectMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Remove a project member
- */
-export const useRemoveOrganizationProjectMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeOrganizationProjectMember>>, TError,{organizationId: string;projectId: string;data: BodyType<RemoveOrgProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeOrganizationProjectMember>>,
-        TError,
-        {organizationId: string;projectId: string;data: BodyType<RemoveOrgProjectMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveOrganizationProjectMemberMutationOptions(options));
-    }
-
 export type getOrganizationProjectActorResponse200 = {
   data: Actor
   status: 200
@@ -3515,65 +2023,6 @@ export const getOrganizationProjectActor = async (organizationId: string,
 
 
 
-
-
-export const getGetOrganizationProjectActorQueryKey = (organizationId: string,
-    projectId: string,
-    actorId: string,) => {
-    return [
-    `/organizations/${organizationId}/projects/${projectId}/actors/${actorId}`
-    ] as const;
-    }
-
-
-export const getGetOrganizationProjectActorQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationProjectActor>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(organizationId: string,
-    projectId: string,
-    actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationProjectActor>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationProjectActorQueryKey(organizationId,projectId,actorId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrganizationProjectActor>>> = ({ signal }) => getOrganizationProjectActor(organizationId,projectId,actorId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined && projectId !== null && projectId !== undefined && actorId !== null && actorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationProjectActor>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOrganizationProjectActorQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationProjectActor>>>
-export type GetOrganizationProjectActorQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a project actor by ID
- */
-
-export function useGetOrganizationProjectActor<TData = Awaited<ReturnType<typeof getOrganizationProjectActor>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- organizationId: string,
-    projectId: string,
-    actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationProjectActor>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOrganizationProjectActorQueryOptions(organizationId,projectId,actorId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listProjectsResponse200 = {
   data: Project[]
   status: 200
@@ -3626,59 +2075,6 @@ export const listProjects = async ( options?: Parameters<typeof customInstance>[
 
   }
 );}
-
-
-
-
-
-export const getListProjectsQueryKey = () => {
-    return [
-    `/projects`
-    ] as const;
-    }
-
-
-export const getListProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listProjects>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListProjectsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjects>>> = ({ signal }) => listProjects({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjects>>>
-export type ListProjectsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List your projects
- */
-
-export function useListProjects<TData = Awaited<ReturnType<typeof listProjects>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListProjectsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3743,53 +2139,6 @@ export const createProject = async (createProjectRequest: CreateProjectRequest, 
 
 
 
-
-
-export const getCreateProjectMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<CreateProjectRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<CreateProjectRequest>}, TContext> => {
-
-const mutationKey = ['createProject'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProject>>, {data: BodyType<CreateProjectRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createProject(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof createProject>>>
-    export type CreateProjectMutationBody = BodyType<CreateProjectRequest>
-    export type CreateProjectMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create a project
- */
-export const useCreateProject = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<CreateProjectRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createProject>>,
-        TError,
-        {data: BodyType<CreateProjectRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateProjectMutationOptions(options));
-    }
-
 export type listProjectMembersResponse200 = {
   data: ProjectMember[]
   status: 200
@@ -3852,59 +2201,6 @@ export const listProjectMembers = async (projectId: string, options?: Parameters
 
   }
 );}
-
-
-
-
-
-export const getListProjectMembersQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/members`
-    ] as const;
-    }
-
-
-export const getListProjectMembersQueryOptions = <TData = Awaited<ReturnType<typeof listProjectMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListProjectMembersQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectMembers>>> = ({ signal }) => listProjectMembers(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectMembers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListProjectMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectMembers>>>
-export type ListProjectMembersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List project members
- */
-
-export function useListProjectMembers<TData = Awaited<ReturnType<typeof listProjectMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListProjectMembersQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3985,53 +2281,6 @@ export const addProjectMember = async (projectId: string,
 
 
 
-
-
-export const getAddProjectMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addProjectMember>>, TError,{projectId: string;data: BodyType<AddProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addProjectMember>>, TError,{projectId: string;data: BodyType<AddProjectMemberRequest>}, TContext> => {
-
-const mutationKey = ['addProjectMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addProjectMember>>, {projectId: string;data: BodyType<AddProjectMemberRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  addProjectMember(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddProjectMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addProjectMember>>>
-    export type AddProjectMemberMutationBody = BodyType<AddProjectMemberRequest>
-    export type AddProjectMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Add a project member
- */
-export const useAddProjectMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addProjectMember>>, TError,{projectId: string;data: BodyType<AddProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addProjectMember>>,
-        TError,
-        {projectId: string;data: BodyType<AddProjectMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddProjectMemberMutationOptions(options));
-    }
-
 export type removeProjectMemberResponse200 = {
   data: unknown
   status: 200
@@ -4103,53 +2352,6 @@ export const removeProjectMember = async (projectId: string,
 
 
 
-
-
-export const getRemoveProjectMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeProjectMember>>, TError,{projectId: string;data: BodyType<RemoveProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeProjectMember>>, TError,{projectId: string;data: BodyType<RemoveProjectMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeProjectMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeProjectMember>>, {projectId: string;data: BodyType<RemoveProjectMemberRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  removeProjectMember(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveProjectMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeProjectMember>>>
-    export type RemoveProjectMemberMutationBody = BodyType<RemoveProjectMemberRequest>
-    export type RemoveProjectMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Remove a project member
- */
-export const useRemoveProjectMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeProjectMember>>, TError,{projectId: string;data: BodyType<RemoveProjectMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeProjectMember>>,
-        TError,
-        {projectId: string;data: BodyType<RemoveProjectMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveProjectMemberMutationOptions(options));
-    }
-
 export type listActorsResponse200 = {
   data: Actor[]
   status: 200
@@ -4208,59 +2410,6 @@ export const listActors = async (projectId: string, options?: Parameters<typeof 
 
   }
 );}
-
-
-
-
-
-export const getListActorsQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/actors`
-    ] as const;
-    }
-
-
-export const getListActorsQueryOptions = <TData = Awaited<ReturnType<typeof listActors>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListActorsQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listActors>>> = ({ signal }) => listActors(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listActors>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListActorsQueryResult = NonNullable<Awaited<ReturnType<typeof listActors>>>
-export type ListActorsQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List project actors
- */
-
-export function useListActors<TData = Awaited<ReturnType<typeof listActors>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActors>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListActorsQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4332,53 +2481,6 @@ export const createActor = async (projectId: string,
 
 
 
-
-
-export const getCreateActorMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createActor>>, TError,{projectId: string;data: BodyType<CreateActorRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createActor>>, TError,{projectId: string;data: BodyType<CreateActorRequest>}, TContext> => {
-
-const mutationKey = ['createActor'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createActor>>, {projectId: string;data: BodyType<CreateActorRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  createActor(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateActorMutationResult = NonNullable<Awaited<ReturnType<typeof createActor>>>
-    export type CreateActorMutationBody = BodyType<CreateActorRequest>
-    export type CreateActorMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create a project actor
- */
-export const useCreateActor = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createActor>>, TError,{projectId: string;data: BodyType<CreateActorRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createActor>>,
-        TError,
-        {projectId: string;data: BodyType<CreateActorRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateActorMutationOptions(options));
-    }
-
 export type getActorResponse200 = {
   data: Actor
   status: 200
@@ -4439,62 +2541,6 @@ export const getActor = async (projectId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetActorQueryKey = (projectId: string,
-    actorId: string,) => {
-    return [
-    `/projects/${projectId}/actors/${actorId}`
-    ] as const;
-    }
-
-
-export const getGetActorQueryOptions = <TData = Awaited<ReturnType<typeof getActor>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string,
-    actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActor>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetActorQueryKey(projectId,actorId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActor>>> = ({ signal }) => getActor(projectId,actorId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && actorId !== null && actorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActor>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetActorQueryResult = NonNullable<Awaited<ReturnType<typeof getActor>>>
-export type GetActorQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a project actor by ID
- */
-
-export function useGetActor<TData = Awaited<ReturnType<typeof getActor>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string,
-    actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActor>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetActorQueryOptions(projectId,actorId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4559,62 +2605,6 @@ export const getActorByEmail = async (projectId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetActorByEmailQueryKey = (projectId: string,
-    actorEmail: string,) => {
-    return [
-    `/projects/${projectId}/actors/${actorEmail}:by_email`
-    ] as const;
-    }
-
-
-export const getGetActorByEmailQueryOptions = <TData = Awaited<ReturnType<typeof getActorByEmail>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string,
-    actorEmail: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActorByEmail>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetActorByEmailQueryKey(projectId,actorEmail);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActorByEmail>>> = ({ signal }) => getActorByEmail(projectId,actorEmail, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && actorEmail !== null && actorEmail !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActorByEmail>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetActorByEmailQueryResult = NonNullable<Awaited<ReturnType<typeof getActorByEmail>>>
-export type GetActorByEmailQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a project actor by email
- */
-
-export function useGetActorByEmail<TData = Awaited<ReturnType<typeof getActorByEmail>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string,
-    actorEmail: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActorByEmail>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetActorByEmailQueryOptions(projectId,actorEmail,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4685,59 +2675,6 @@ export const listEmailTemplates = async (projectId: string, options?: Parameters
 
 
 
-
-
-export const getListEmailTemplatesQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/email-templates`
-    ] as const;
-    }
-
-
-export const getListEmailTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listEmailTemplates>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailTemplates>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListEmailTemplatesQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEmailTemplates>>> = ({ signal }) => listEmailTemplates(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEmailTemplates>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListEmailTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listEmailTemplates>>>
-export type ListEmailTemplatesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List a project's effective email templates
- */
-
-export function useListEmailTemplates<TData = Awaited<ReturnType<typeof listEmailTemplates>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailTemplates>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListEmailTemplatesQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getEmailTemplateResponse200 = {
   data: EffectiveEmailTemplate
   status: 200
@@ -4803,62 +2740,6 @@ export const getEmailTemplate = async (projectId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetEmailTemplateQueryKey = (projectId: string,
-    kind: 'verify' | 'reset' | 'tos',) => {
-    return [
-    `/projects/${projectId}/email-templates/${kind}`
-    ] as const;
-    }
-
-
-export const getGetEmailTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getEmailTemplate>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string,
-    kind: 'verify' | 'reset' | 'tos', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetEmailTemplateQueryKey(projectId,kind);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailTemplate>>> = ({ signal }) => getEmailTemplate(projectId,kind, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && kind !== null && kind !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetEmailTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailTemplate>>>
-export type GetEmailTemplateQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a project's effective email template
- */
-
-export function useGetEmailTemplate<TData = Awaited<ReturnType<typeof getEmailTemplate>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string,
-    kind: 'verify' | 'reset' | 'tos', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailTemplate>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetEmailTemplateQueryOptions(projectId,kind,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4940,53 +2821,6 @@ export const putEmailTemplate = async (projectId: string,
 
 
 
-
-
-export const getPutEmailTemplateMutationOptions = <TError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}, TContext> => {
-
-const mutationKey = ['putEmailTemplate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}> = (props) => {
-          const {projectId,kind,data} = props ?? {};
-
-          return  putEmailTemplate(projectId,kind,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PutEmailTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof putEmailTemplate>>>
-    export type PutEmailTemplateMutationBody = BodyType<EmailTemplateBody>
-    export type PutEmailTemplateMutationError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Upsert a project's email template override
- */
-export const usePutEmailTemplate = <TError = ErrorType<ErrorResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putEmailTemplate>>,
-        TError,
-        {projectId: string;kind: 'verify' | 'reset' | 'tos';data: BodyType<EmailTemplateBody>},
-        TContext
-      > => {
-      return useMutation(getPutEmailTemplateMutationOptions(options));
-    }
-
 export type deleteEmailTemplateResponse200 = {
   data: unknown
   status: 200
@@ -5056,53 +2890,6 @@ export const deleteEmailTemplate = async (projectId: string,
 
 
 
-
-
-export const getDeleteEmailTemplateMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos'}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos'}, TContext> => {
-
-const mutationKey = ['deleteEmailTemplate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEmailTemplate>>, {projectId: string;kind: 'verify' | 'reset' | 'tos'}> = (props) => {
-          const {projectId,kind} = props ?? {};
-
-          return  deleteEmailTemplate(projectId,kind,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteEmailTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEmailTemplate>>>
-
-    export type DeleteEmailTemplateMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Delete a project's email template override
- */
-export const useDeleteEmailTemplate = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailTemplate>>, TError,{projectId: string;kind: 'verify' | 'reset' | 'tos'}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteEmailTemplate>>,
-        TError,
-        {projectId: string;kind: 'verify' | 'reset' | 'tos'},
-        TContext
-      > => {
-      return useMutation(getDeleteEmailTemplateMutationOptions(options));
-    }
-
 export type getProjectTosResponse200 = {
   data: ProjectTos
   status: 200
@@ -5157,59 +2944,6 @@ export const getProjectTos = async (projectId: string, options?: Parameters<type
 
   }
 );}
-
-
-
-
-
-export const getGetProjectTosQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/terms-of-service`
-    ] as const;
-    }
-
-
-export const getGetProjectTosQueryOptions = <TData = Awaited<ReturnType<typeof getProjectTos>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectTos>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetProjectTosQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectTos>>> = ({ signal }) => getProjectTos(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectTos>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetProjectTosQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectTos>>>
-export type GetProjectTosQueryError = ErrorType<NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a project's current terms of service
- */
-
-export function useGetProjectTos<TData = Awaited<ReturnType<typeof getProjectTos>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectTos>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetProjectTosQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -5294,53 +3028,6 @@ export const postProjectTos = async (projectId: string,
 
 
 
-
-
-export const getPostProjectTosMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext> => {
-
-const mutationKey = ['postProjectTos'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postProjectTos>>, {projectId: string;data: BodyType<TosContentBody>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  postProjectTos(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostProjectTosMutationResult = NonNullable<Awaited<ReturnType<typeof postProjectTos>>>
-    export type PostProjectTosMutationBody = BodyType<TosContentBody>
-    export type PostProjectTosMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Introduce a project's terms of service (v1)
- */
-export const usePostProjectTos = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postProjectTos>>,
-        TError,
-        {projectId: string;data: BodyType<TosContentBody>},
-        TContext
-      > => {
-      return useMutation(getPostProjectTosMutationOptions(options));
-    }
-
 export type putProjectTosResponse200 = {
   data: ProjectTos
   status: 200
@@ -5415,53 +3102,6 @@ export const putProjectTos = async (projectId: string,
 
 
 
-
-
-export const getPutProjectTosMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof putProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext> => {
-
-const mutationKey = ['putProjectTos'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putProjectTos>>, {projectId: string;data: BodyType<TosContentBody>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  putProjectTos(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PutProjectTosMutationResult = NonNullable<Awaited<ReturnType<typeof putProjectTos>>>
-    export type PutProjectTosMutationBody = BodyType<TosContentBody>
-    export type PutProjectTosMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Update a project's terms of service (bumps the version)
- */
-export const usePutProjectTos = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProjectTos>>, TError,{projectId: string;data: BodyType<TosContentBody>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof putProjectTos>>,
-        TError,
-        {projectId: string;data: BodyType<TosContentBody>},
-        TContext
-      > => {
-      return useMutation(getPutProjectTosMutationOptions(options));
-    }
-
 export type listTosAcceptancesResponse200 = {
   data: TosAcceptance[]
   status: 200
@@ -5526,59 +3166,6 @@ export const listTosAcceptances = async (projectId: string, options?: Parameters
 
   }
 );}
-
-
-
-
-
-export const getListTosAcceptancesQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/terms-of-service/acceptances`
-    ] as const;
-    }
-
-
-export const getListTosAcceptancesQueryOptions = <TData = Awaited<ReturnType<typeof listTosAcceptances>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTosAcceptances>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListTosAcceptancesQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTosAcceptances>>> = ({ signal }) => listTosAcceptances(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTosAcceptances>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListTosAcceptancesQueryResult = NonNullable<Awaited<ReturnType<typeof listTosAcceptances>>>
-export type ListTosAcceptancesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List a project's terms acceptances
- */
-
-export function useListTosAcceptances<TData = Awaited<ReturnType<typeof listTosAcceptances>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTosAcceptances>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListTosAcceptancesQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -5650,53 +3237,6 @@ export const postTosAcceptance = async (projectId: string, options?: Parameters<
 
 
 
-
-
-export const getPostTosAcceptanceMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postTosAcceptance>>, TError,{projectId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postTosAcceptance>>, TError,{projectId: string}, TContext> => {
-
-const mutationKey = ['postTosAcceptance'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postTosAcceptance>>, {projectId: string}> = (props) => {
-          const {projectId} = props ?? {};
-
-          return  postTosAcceptance(projectId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostTosAcceptanceMutationResult = NonNullable<Awaited<ReturnType<typeof postTosAcceptance>>>
-
-    export type PostTosAcceptanceMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Record the caller's acceptance of the current terms
- */
-export const usePostTosAcceptance = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postTosAcceptance>>, TError,{projectId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof postTosAcceptance>>,
-        TError,
-        {projectId: string},
-        TContext
-      > => {
-      return useMutation(getPostTosAcceptanceMutationOptions(options));
-    }
-
 export type createAPIKeyResponse201 = {
   data: CreateAPIKeyResponse
   status: 201
@@ -5766,53 +3306,6 @@ export const createAPIKey = async (projectId: string,
 
 
 
-
-
-export const getCreateAPIKeyMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAPIKey>>, TError,{projectId: string;data: BodyType<CreateAPIKeyRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createAPIKey>>, TError,{projectId: string;data: BodyType<CreateAPIKeyRequest>}, TContext> => {
-
-const mutationKey = ['createAPIKey'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAPIKey>>, {projectId: string;data: BodyType<CreateAPIKeyRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  createAPIKey(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateAPIKeyMutationResult = NonNullable<Awaited<ReturnType<typeof createAPIKey>>>
-    export type CreateAPIKeyMutationBody = BodyType<CreateAPIKeyRequest>
-    export type CreateAPIKeyMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create an API key
- */
-export const useCreateAPIKey = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAPIKey>>, TError,{projectId: string;data: BodyType<CreateAPIKeyRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createAPIKey>>,
-        TError,
-        {projectId: string;data: BodyType<CreateAPIKeyRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateAPIKeyMutationOptions(options));
-    }
-
 export type listProjectOAuthProvidersResponse200 = {
   data: OAuthProviderOutput[]
   status: 200
@@ -5876,59 +3369,6 @@ export const listProjectOAuthProviders = async (projectId: string, options?: Par
 
   }
 );}
-
-
-
-
-
-export const getListProjectOAuthProvidersQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/oauth-providers`
-    ] as const;
-    }
-
-
-export const getListProjectOAuthProvidersQueryOptions = <TData = Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListProjectOAuthProvidersQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectOAuthProviders>>> = ({ signal }) => listProjectOAuthProviders(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListProjectOAuthProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectOAuthProviders>>>
-export type ListProjectOAuthProvidersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List the project's OAuth providers
- */
-
-export function useListProjectOAuthProviders<TData = Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectOAuthProviders>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListProjectOAuthProvidersQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -6010,53 +3450,6 @@ export const createProjectOAuthProvider = async (projectId: string,
 
 
 
-
-
-export const getCreateProjectOAuthProviderMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProjectOAuthProvider>>, TError,{projectId: string;data: BodyType<CreateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createProjectOAuthProvider>>, TError,{projectId: string;data: BodyType<CreateOAuthProviderRequest>}, TContext> => {
-
-const mutationKey = ['createProjectOAuthProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProjectOAuthProvider>>, {projectId: string;data: BodyType<CreateOAuthProviderRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  createProjectOAuthProvider(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateProjectOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof createProjectOAuthProvider>>>
-    export type CreateProjectOAuthProviderMutationBody = BodyType<CreateOAuthProviderRequest>
-    export type CreateProjectOAuthProviderMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Configure an OAuth provider for the project
- */
-export const useCreateProjectOAuthProvider = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProjectOAuthProvider>>, TError,{projectId: string;data: BodyType<CreateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createProjectOAuthProvider>>,
-        TError,
-        {projectId: string;data: BodyType<CreateOAuthProviderRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateProjectOAuthProviderMutationOptions(options));
-    }
-
 export type updateOAuthProviderResponse200 = {
   data: OAuthProviderOutput
   status: 200
@@ -6130,53 +3523,6 @@ export const updateOAuthProvider = async (oauthProviderId: string,
 
 
 
-
-
-export const getUpdateOAuthProviderMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOAuthProvider>>, TError,{oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateOAuthProvider>>, TError,{oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}, TContext> => {
-
-const mutationKey = ['updateOAuthProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOAuthProvider>>, {oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}> = (props) => {
-          const {oauthProviderId,data} = props ?? {};
-
-          return  updateOAuthProvider(oauthProviderId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof updateOAuthProvider>>>
-    export type UpdateOAuthProviderMutationBody = BodyType<UpdateOAuthProviderRequest>
-    export type UpdateOAuthProviderMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Update an OAuth provider's credentials
- */
-export const useUpdateOAuthProvider = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOAuthProvider>>, TError,{oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof updateOAuthProvider>>,
-        TError,
-        {oauthProviderId: string;data: BodyType<UpdateOAuthProviderRequest>},
-        TContext
-      > => {
-      return useMutation(getUpdateOAuthProviderMutationOptions(options));
-    }
-
 export type deleteOAuthProviderResponse200 = {
   data: unknown
   status: 200
@@ -6242,53 +3588,6 @@ export const deleteOAuthProvider = async (oauthProviderId: string, options?: Par
 );}
 
 
-
-
-
-export const getDeleteOAuthProviderMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteOAuthProvider>>, TError,{oauthProviderId: string}, TContext> => {
-
-const mutationKey = ['deleteOAuthProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteOAuthProvider>>, {oauthProviderId: string}> = (props) => {
-          const {oauthProviderId} = props ?? {};
-
-          return  deleteOAuthProvider(oauthProviderId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOAuthProvider>>>
-
-    export type DeleteOAuthProviderMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Remove an OAuth provider from the project
- */
-export const useDeleteOAuthProvider = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteOAuthProvider>>,
-        TError,
-        {oauthProviderId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteOAuthProviderMutationOptions(options));
-    }
 
 export type disableOAuthProviderResponse200 = {
   data: OAuthProviderOutput
@@ -6356,53 +3655,6 @@ export const disableOAuthProvider = async (oauthProviderId: string, options?: Pa
 
 
 
-
-
-export const getDisableOAuthProviderMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof disableOAuthProvider>>, TError,{oauthProviderId: string}, TContext> => {
-
-const mutationKey = ['disableOAuthProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disableOAuthProvider>>, {oauthProviderId: string}> = (props) => {
-          const {oauthProviderId} = props ?? {};
-
-          return  disableOAuthProvider(oauthProviderId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DisableOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof disableOAuthProvider>>>
-
-    export type DisableOAuthProviderMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Disable an OAuth provider
- */
-export const useDisableOAuthProvider = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof disableOAuthProvider>>,
-        TError,
-        {oauthProviderId: string},
-        TContext
-      > => {
-      return useMutation(getDisableOAuthProviderMutationOptions(options));
-    }
-
 export type enableOAuthProviderResponse200 = {
   data: OAuthProviderOutput
   status: 200
@@ -6468,53 +3720,6 @@ export const enableOAuthProvider = async (oauthProviderId: string, options?: Par
 
 
 
-
-
-export const getEnableOAuthProviderMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof enableOAuthProvider>>, TError,{oauthProviderId: string}, TContext> => {
-
-const mutationKey = ['enableOAuthProvider'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enableOAuthProvider>>, {oauthProviderId: string}> = (props) => {
-          const {oauthProviderId} = props ?? {};
-
-          return  enableOAuthProvider(oauthProviderId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type EnableOAuthProviderMutationResult = NonNullable<Awaited<ReturnType<typeof enableOAuthProvider>>>
-
-    export type EnableOAuthProviderMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Enable an OAuth provider
- */
-export const useEnableOAuthProvider = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enableOAuthProvider>>, TError,{oauthProviderId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof enableOAuthProvider>>,
-        TError,
-        {oauthProviderId: string},
-        TContext
-      > => {
-      return useMutation(getEnableOAuthProviderMutationOptions(options));
-    }
-
 export type listCapabilitiesResponse200 = {
   data: Capability[]
   status: 200
@@ -6571,59 +3776,6 @@ export const listCapabilities = async (projectId: string, options?: Parameters<t
 
   }
 );}
-
-
-
-
-
-export const getListCapabilitiesQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/capabilities`
-    ] as const;
-    }
-
-
-export const getListCapabilitiesQueryOptions = <TData = Awaited<ReturnType<typeof listCapabilities>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCapabilities>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListCapabilitiesQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCapabilities>>> = ({ signal }) => listCapabilities(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCapabilities>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListCapabilitiesQueryResult = NonNullable<Awaited<ReturnType<typeof listCapabilities>>>
-export type ListCapabilitiesQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List project capabilities
- */
-
-export function useListCapabilities<TData = Awaited<ReturnType<typeof listCapabilities>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCapabilities>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListCapabilitiesQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -6693,53 +3845,6 @@ export const createCapability = async (projectId: string,
 
 
 
-
-
-export const getCreateCapabilityMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCapability>>, TError,{projectId: string;data: BodyType<CreateCapabilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createCapability>>, TError,{projectId: string;data: BodyType<CreateCapabilityRequest>}, TContext> => {
-
-const mutationKey = ['createCapability'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCapability>>, {projectId: string;data: BodyType<CreateCapabilityRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  createCapability(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateCapabilityMutationResult = NonNullable<Awaited<ReturnType<typeof createCapability>>>
-    export type CreateCapabilityMutationBody = BodyType<CreateCapabilityRequest>
-    export type CreateCapabilityMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Create a capability
- */
-export const useCreateCapability = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCapability>>, TError,{projectId: string;data: BodyType<CreateCapabilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createCapability>>,
-        TError,
-        {projectId: string;data: BodyType<CreateCapabilityRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateCapabilityMutationOptions(options));
-    }
-
 export type getPlatformProfileSchemaResponse200 = {
   data: ProjectProfileSchema
   status: 200
@@ -6797,59 +3902,6 @@ export const getPlatformProfileSchema = async ( options?: Parameters<typeof cust
 
   }
 );}
-
-
-
-
-
-export const getGetPlatformProfileSchemaQueryKey = () => {
-    return [
-    `/profile-schema`
-    ] as const;
-    }
-
-
-export const getGetPlatformProfileSchemaQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformProfileSchema>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformProfileSchema>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetPlatformProfileSchemaQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformProfileSchema>>> = ({ signal }) => getPlatformProfileSchema({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformProfileSchema>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetPlatformProfileSchemaQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformProfileSchema>>>
-export type GetPlatformProfileSchemaQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get the platform-wide profile schema
- */
-
-export function useGetPlatformProfileSchema<TData = Awaited<ReturnType<typeof getPlatformProfileSchema>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformProfileSchema>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetPlatformProfileSchemaQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -6913,53 +3965,6 @@ export const upsertPlatformProfileSchema = async (upsertProfileSchemaRequest: Up
 
 
 
-
-
-export const getUpsertPlatformProfileSchemaMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPlatformProfileSchema>>, TError,{data: BodyType<UpsertProfileSchemaRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof upsertPlatformProfileSchema>>, TError,{data: BodyType<UpsertProfileSchemaRequest>}, TContext> => {
-
-const mutationKey = ['upsertPlatformProfileSchema'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertPlatformProfileSchema>>, {data: BodyType<UpsertProfileSchemaRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  upsertPlatformProfileSchema(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpsertPlatformProfileSchemaMutationResult = NonNullable<Awaited<ReturnType<typeof upsertPlatformProfileSchema>>>
-    export type UpsertPlatformProfileSchemaMutationBody = BodyType<UpsertProfileSchemaRequest>
-    export type UpsertPlatformProfileSchemaMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Upsert the platform-wide profile schema
- */
-export const useUpsertPlatformProfileSchema = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPlatformProfileSchema>>, TError,{data: BodyType<UpsertProfileSchemaRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof upsertPlatformProfileSchema>>,
-        TError,
-        {data: BodyType<UpsertProfileSchemaRequest>},
-        TContext
-      > => {
-      return useMutation(getUpsertPlatformProfileSchemaMutationOptions(options));
-    }
-
 export type getProjectProfileSchemaResponse200 = {
   data: ProjectProfileSchema
   status: 200
@@ -7017,59 +4022,6 @@ export const getProjectProfileSchema = async (projectId: string, options?: Param
 
   }
 );}
-
-
-
-
-
-export const getGetProjectProfileSchemaQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/profile-schema`
-    ] as const;
-    }
-
-
-export const getGetProjectProfileSchemaQueryOptions = <TData = Awaited<ReturnType<typeof getProjectProfileSchema>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectProfileSchema>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetProjectProfileSchemaQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectProfileSchema>>> = ({ signal }) => getProjectProfileSchema(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectProfileSchema>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetProjectProfileSchemaQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectProfileSchema>>>
-export type GetProjectProfileSchemaQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get the project profile schema
- */
-
-export function useGetProjectProfileSchema<TData = Awaited<ReturnType<typeof getProjectProfileSchema>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectProfileSchema>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetProjectProfileSchemaQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -7139,53 +4091,6 @@ export const upsertProjectProfileSchema = async (projectId: string,
 
 
 
-
-
-export const getUpsertProjectProfileSchemaMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertProjectProfileSchema>>, TError,{projectId: string;data: BodyType<UpsertProfileSchemaRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof upsertProjectProfileSchema>>, TError,{projectId: string;data: BodyType<UpsertProfileSchemaRequest>}, TContext> => {
-
-const mutationKey = ['upsertProjectProfileSchema'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertProjectProfileSchema>>, {projectId: string;data: BodyType<UpsertProfileSchemaRequest>}> = (props) => {
-          const {projectId,data} = props ?? {};
-
-          return  upsertProjectProfileSchema(projectId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpsertProjectProfileSchemaMutationResult = NonNullable<Awaited<ReturnType<typeof upsertProjectProfileSchema>>>
-    export type UpsertProjectProfileSchemaMutationBody = BodyType<UpsertProfileSchemaRequest>
-    export type UpsertProjectProfileSchemaMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Upsert the project profile schema
- */
-export const useUpsertProjectProfileSchema = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertProjectProfileSchema>>, TError,{projectId: string;data: BodyType<UpsertProfileSchemaRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof upsertProjectProfileSchema>>,
-        TError,
-        {projectId: string;data: BodyType<UpsertProfileSchemaRequest>},
-        TContext
-      > => {
-      return useMutation(getUpsertProjectProfileSchemaMutationOptions(options));
-    }
-
 export type getPlatformProfileResponse200 = {
   data: ActorProfile
   status: 200
@@ -7243,59 +4148,6 @@ export const getPlatformProfile = async (actorId: string, options?: Parameters<t
 
   }
 );}
-
-
-
-
-
-export const getGetPlatformProfileQueryKey = (actorId: string,) => {
-    return [
-    `/actors/${actorId}/profile`
-    ] as const;
-    }
-
-
-export const getGetPlatformProfileQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformProfile>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformProfile>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetPlatformProfileQueryKey(actorId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformProfile>>> = ({ signal }) => getPlatformProfile(actorId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: actorId !== null && actorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformProfile>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetPlatformProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformProfile>>>
-export type GetPlatformProfileQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a platform actor's profile
- */
-
-export function useGetPlatformProfile<TData = Awaited<ReturnType<typeof getPlatformProfile>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformProfile>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetPlatformProfileQueryOptions(actorId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -7366,53 +4218,6 @@ export const upsertPlatformProfile = async (actorId: string,
 
 
 
-
-
-export const getUpsertPlatformProfileMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPlatformProfile>>, TError,{actorId: string;data: BodyType<UpsertProfileRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof upsertPlatformProfile>>, TError,{actorId: string;data: BodyType<UpsertProfileRequest>}, TContext> => {
-
-const mutationKey = ['upsertPlatformProfile'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertPlatformProfile>>, {actorId: string;data: BodyType<UpsertProfileRequest>}> = (props) => {
-          const {actorId,data} = props ?? {};
-
-          return  upsertPlatformProfile(actorId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpsertPlatformProfileMutationResult = NonNullable<Awaited<ReturnType<typeof upsertPlatformProfile>>>
-    export type UpsertPlatformProfileMutationBody = BodyType<UpsertProfileRequest>
-    export type UpsertPlatformProfileMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Upsert a platform actor's profile
- */
-export const useUpsertPlatformProfile = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPlatformProfile>>, TError,{actorId: string;data: BodyType<UpsertProfileRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof upsertPlatformProfile>>,
-        TError,
-        {actorId: string;data: BodyType<UpsertProfileRequest>},
-        TContext
-      > => {
-      return useMutation(getUpsertPlatformProfileMutationOptions(options));
-    }
-
 export type getProjectProfileResponse200 = {
   data: ActorProfile
   status: 200
@@ -7472,62 +4277,6 @@ export const getProjectProfile = async (projectId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetProjectProfileQueryKey = (projectId: string,
-    actorId: string,) => {
-    return [
-    `/projects/${projectId}/actors/${actorId}/profile`
-    ] as const;
-    }
-
-
-export const getGetProjectProfileQueryOptions = <TData = Awaited<ReturnType<typeof getProjectProfile>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string,
-    actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectProfile>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetProjectProfileQueryKey(projectId,actorId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectProfile>>> = ({ signal }) => getProjectProfile(projectId,actorId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && actorId !== null && actorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectProfile>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetProjectProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectProfile>>>
-export type GetProjectProfileQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a project actor's profile
- */
-
-export function useGetProjectProfile<TData = Awaited<ReturnType<typeof getProjectProfile>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string,
-    actorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectProfile>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetProjectProfileQueryOptions(projectId,actorId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -7601,53 +4350,6 @@ export const upsertProjectProfile = async (projectId: string,
 
 
 
-
-
-export const getUpsertProjectProfileMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertProjectProfile>>, TError,{projectId: string;actorId: string;data: BodyType<UpsertProfileRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof upsertProjectProfile>>, TError,{projectId: string;actorId: string;data: BodyType<UpsertProfileRequest>}, TContext> => {
-
-const mutationKey = ['upsertProjectProfile'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertProjectProfile>>, {projectId: string;actorId: string;data: BodyType<UpsertProfileRequest>}> = (props) => {
-          const {projectId,actorId,data} = props ?? {};
-
-          return  upsertProjectProfile(projectId,actorId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpsertProjectProfileMutationResult = NonNullable<Awaited<ReturnType<typeof upsertProjectProfile>>>
-    export type UpsertProjectProfileMutationBody = BodyType<UpsertProfileRequest>
-    export type UpsertProjectProfileMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-    /**
- * @summary Upsert a project actor's profile
- */
-export const useUpsertProjectProfile = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertProjectProfile>>, TError,{projectId: string;actorId: string;data: BodyType<UpsertProfileRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof upsertProjectProfile>>,
-        TError,
-        {projectId: string;actorId: string;data: BodyType<UpsertProfileRequest>},
-        TContext
-      > => {
-      return useMutation(getUpsertProjectProfileMutationOptions(options));
-    }
-
 export type getProfileByHandleResponse200 = {
   data: ActorProfile
   status: 200
@@ -7708,59 +4410,6 @@ export const getProfileByHandle = async (handle: string, options?: Parameters<ty
 
 
 
-
-
-export const getGetProfileByHandleQueryKey = (handle: string,) => {
-    return [
-    `/profiles/by-handle/${handle}`
-    ] as const;
-    }
-
-
-export const getGetProfileByHandleQueryOptions = <TData = Awaited<ReturnType<typeof getProfileByHandle>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfileByHandle>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetProfileByHandleQueryKey(handle);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileByHandle>>> = ({ signal }) => getProfileByHandle(handle, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: handle !== null && handle !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfileByHandle>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetProfileByHandleQueryResult = NonNullable<Awaited<ReturnType<typeof getProfileByHandle>>>
-export type GetProfileByHandleQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary Get a profile by handle
- */
-
-export function useGetProfileByHandle<TData = Awaited<ReturnType<typeof getProfileByHandle>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- handle: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfileByHandle>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetProfileByHandleQueryOptions(handle,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listOutdatedPlatformProfilesResponse200 = {
   data: ActorProfile[]
   status: 200
@@ -7815,59 +4464,6 @@ export const listOutdatedPlatformProfiles = async ( options?: Parameters<typeof 
 
   }
 );}
-
-
-
-
-
-export const getListOutdatedPlatformProfilesQueryKey = () => {
-    return [
-    `/profiles/outdated`
-    ] as const;
-    }
-
-
-export const getListOutdatedPlatformProfilesQueryOptions = <TData = Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOutdatedPlatformProfilesQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>> = ({ signal }) => listOutdatedPlatformProfiles({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOutdatedPlatformProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>>
-export type ListOutdatedPlatformProfilesQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List outdated platform actor profiles
- */
-
-export function useListOutdatedPlatformProfiles<TData = Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedPlatformProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOutdatedPlatformProfilesQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -7929,52 +4525,3 @@ export const listOutdatedProjectProfiles = async (projectId: string, options?: P
 
   }
 );}
-
-
-
-
-
-export const getListOutdatedProjectProfilesQueryKey = (projectId: string,) => {
-    return [
-    `/projects/${projectId}/profiles/outdated`
-    ] as const;
-    }
-
-
-export const getListOutdatedProjectProfilesQueryOptions = <TData = Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListOutdatedProjectProfilesQueryKey(projectId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>> = ({ signal }) => listOutdatedProjectProfiles(projectId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListOutdatedProjectProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>>
-export type ListOutdatedProjectProfilesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
-
-
-/**
- * @summary List outdated project actor profiles
- */
-
-export function useListOutdatedProjectProfiles<TData = Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
- projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOutdatedProjectProfiles>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListOutdatedProjectProfilesQueryOptions(projectId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}

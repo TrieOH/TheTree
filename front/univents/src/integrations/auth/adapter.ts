@@ -1,4 +1,4 @@
-import { createTanStackIdentityXIntegration } from "@trieoh/front-core/auth/tanstack/client";
+import { createTanStackIdentityXIntegration } from "@trieoh/front-core-react";
 import { env } from "@/env";
 import {
   authenticatedProxyServerFn,
@@ -20,12 +20,7 @@ export const identityXIntegration = createTanStackIdentityXIntegration(
     restore: () => restoreSessionServerFn(),
     request: authenticatedProxyServerFn,
   },
-  {
-    mode: env.VITE_AUTH_TRANSPORT,
-    apiBaseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_AUTH_API_URL,
-    projectId: env.VITE_TRIEOH_AUTH_PROJECT_ID,
-  },
+  { projectId: env.VITE_TRIEOH_AUTH_PROJECT_ID },
 );
 
 export const identityXAuthAdapter = identityXIntegration.authAdapter;

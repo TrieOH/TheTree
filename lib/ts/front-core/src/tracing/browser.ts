@@ -7,8 +7,7 @@ import {
   type SpanExporter,
   type SpanProcessor,
 } from "@opentelemetry/sdk-trace-base"
-import { WebTracerProvider } from "@opentelemetry/sdk-trace-web"
-import { ZoneContextManager } from "@opentelemetry/context-zone"
+import { StackContextManager, WebTracerProvider } from "@opentelemetry/sdk-trace-web"
 import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch"
 import { registerInstrumentations } from "@opentelemetry/instrumentation"
 import { JsonTraceSerializer } from "@opentelemetry/otlp-transformer/build/src/trace/json/trace"
@@ -115,7 +114,7 @@ function startPageTrace(pathname = window.location.pathname): void {
   }, 0)
 }
 
-class PageContextManager extends ZoneContextManager {
+class PageContextManager extends StackContextManager {
   active(): Context {
     const current = super.active()
     if (trace.getSpan(current) || !pageSpan) return current

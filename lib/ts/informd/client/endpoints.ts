@@ -85,20 +85,6 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult
-} from '@tanstack/react-query';
-
 import type {
   AddFormMemberRequest,
   AddNamespaceMemberRequest,
@@ -133,31 +119,6 @@ import type {
 } from './schemas';
 
 import { customInstance } from '../../api-client/src/orval-mutator';
-import type { ErrorType , BodyType } from '../../api-client/src/orval-mutator';
-type AwaitedInput<T> = PromiseLike<T> | T;
-
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
-  for (const key of Object.keys(query)) {
-    // The explicit queryKey always wins, matching the previous
-    // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
-    Object.defineProperty(result, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => (query as Record<string, unknown>)[key],
-    });
-  }
-  return result;
-};
-
 export type getOpenAPISpecResponse200 = {
   data: string
   status: 200
@@ -198,59 +159,6 @@ export const getOpenAPISpec = async ( options?: Parameters<typeof customInstance
 
 
 
-
-
-export const getGetOpenAPISpecQueryKey = () => {
-    return [
-    `/docs/openapi.yml`
-    ] as const;
-    }
-
-
-export const getGetOpenAPISpecQueryOptions = <TData = Awaited<ReturnType<typeof getOpenAPISpec>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetOpenAPISpecQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenAPISpec>>> = ({ signal }) => getOpenAPISpec({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetOpenAPISpecQueryResult = NonNullable<Awaited<ReturnType<typeof getOpenAPISpec>>>
-export type GetOpenAPISpecQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Get the OpenAPI specification
- */
-
-export function useGetOpenAPISpec<TData = Awaited<ReturnType<typeof getOpenAPISpec>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenAPISpec>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetOpenAPISpecQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type getHealthResponse200 = {
   data: GetHealth200
   status: 200
@@ -285,59 +193,6 @@ export const getHealth = async ( options?: Parameters<typeof customInstance>[1])
 
   }
 );}
-
-
-
-
-
-export const getGetHealthQueryKey = () => {
-    return [
-    `/health`
-    ] as const;
-    }
-
-
-export const getGetHealthQueryOptions = <TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetHealthQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({ signal }) => getHealth({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getHealth>>>
-export type GetHealthQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Health check
- */
-
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetHealthQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -388,59 +243,6 @@ export const listNamespaces = async ( options?: Parameters<typeof customInstance
 
   }
 );}
-
-
-
-
-
-export const getListNamespacesQueryKey = () => {
-    return [
-    `/namespaces`
-    ] as const;
-    }
-
-
-export const getListNamespacesQueryOptions = <TData = Awaited<ReturnType<typeof listNamespaces>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaces>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListNamespacesQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNamespaces>>> = ({ signal }) => listNamespaces({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNamespaces>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListNamespacesQueryResult = NonNullable<Awaited<ReturnType<typeof listNamespaces>>>
-export type ListNamespacesQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your namespaces
- */
-
-export function useListNamespaces<TData = Awaited<ReturnType<typeof listNamespaces>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaces>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListNamespacesQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -499,53 +301,6 @@ export const createNamespace = async (createNamespaceRequest: CreateNamespaceReq
 
 
 
-
-
-export const getCreateNamespaceMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNamespace>>, TError,{data: BodyType<CreateNamespaceRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createNamespace>>, TError,{data: BodyType<CreateNamespaceRequest>}, TContext> => {
-
-const mutationKey = ['createNamespace'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createNamespace>>, {data: BodyType<CreateNamespaceRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createNamespace(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateNamespaceMutationResult = NonNullable<Awaited<ReturnType<typeof createNamespace>>>
-    export type CreateNamespaceMutationBody = BodyType<CreateNamespaceRequest>
-    export type CreateNamespaceMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a namespace
- */
-export const useCreateNamespace = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNamespace>>, TError,{data: BodyType<CreateNamespaceRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createNamespace>>,
-        TError,
-        {data: BodyType<CreateNamespaceRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateNamespaceMutationOptions(options));
-    }
-
 export type listNamespaceMembersResponse200 = {
   data: NamespaceMember[]
   status: 200
@@ -603,59 +358,6 @@ export const listNamespaceMembers = async (namespaceId: string, options?: Parame
 
   }
 );}
-
-
-
-
-
-export const getListNamespaceMembersQueryKey = (namespaceId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/members`
-    ] as const;
-    }
-
-
-export const getListNamespaceMembersQueryOptions = <TData = Awaited<ReturnType<typeof listNamespaceMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaceMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListNamespaceMembersQueryKey(namespaceId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNamespaceMembers>>> = ({ signal }) => listNamespaceMembers(namespaceId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNamespaceMembers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListNamespaceMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listNamespaceMembers>>>
-export type ListNamespaceMembersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List namespace members
- */
-
-export function useListNamespaceMembers<TData = Awaited<ReturnType<typeof listNamespaceMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaceMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListNamespaceMembersQueryOptions(namespaceId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -730,53 +432,6 @@ export const addNamespaceMember = async (namespaceId: string,
 
 
 
-
-
-export const getAddNamespaceMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addNamespaceMember>>, TError,{namespaceId: string;data: BodyType<AddNamespaceMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addNamespaceMember>>, TError,{namespaceId: string;data: BodyType<AddNamespaceMemberRequest>}, TContext> => {
-
-const mutationKey = ['addNamespaceMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addNamespaceMember>>, {namespaceId: string;data: BodyType<AddNamespaceMemberRequest>}> = (props) => {
-          const {namespaceId,data} = props ?? {};
-
-          return  addNamespaceMember(namespaceId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddNamespaceMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addNamespaceMember>>>
-    export type AddNamespaceMemberMutationBody = BodyType<AddNamespaceMemberRequest>
-    export type AddNamespaceMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Add a namespace member
- */
-export const useAddNamespaceMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addNamespaceMember>>, TError,{namespaceId: string;data: BodyType<AddNamespaceMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addNamespaceMember>>,
-        TError,
-        {namespaceId: string;data: BodyType<AddNamespaceMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddNamespaceMemberMutationOptions(options));
-    }
-
 export type removeNamespaceMemberResponse200 = {
   data: unknown
   status: 200
@@ -843,53 +498,6 @@ export const removeNamespaceMember = async (namespaceId: string,
 
 
 
-
-
-export const getRemoveNamespaceMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeNamespaceMember>>, TError,{namespaceId: string;data: BodyType<RemoveNamespaceMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeNamespaceMember>>, TError,{namespaceId: string;data: BodyType<RemoveNamespaceMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeNamespaceMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeNamespaceMember>>, {namespaceId: string;data: BodyType<RemoveNamespaceMemberRequest>}> = (props) => {
-          const {namespaceId,data} = props ?? {};
-
-          return  removeNamespaceMember(namespaceId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveNamespaceMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeNamespaceMember>>>
-    export type RemoveNamespaceMemberMutationBody = BodyType<RemoveNamespaceMemberRequest>
-    export type RemoveNamespaceMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Remove a namespace member
- */
-export const useRemoveNamespaceMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeNamespaceMember>>, TError,{namespaceId: string;data: BodyType<RemoveNamespaceMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeNamespaceMember>>,
-        TError,
-        {namespaceId: string;data: BodyType<RemoveNamespaceMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveNamespaceMemberMutationOptions(options));
-    }
-
 export type listNamespaceFormsResponse200 = {
   data: Form[]
   status: 200
@@ -947,59 +555,6 @@ export const listNamespaceForms = async (namespaceId: string, options?: Paramete
 
   }
 );}
-
-
-
-
-
-export const getListNamespaceFormsQueryKey = (namespaceId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms`
-    ] as const;
-    }
-
-
-export const getListNamespaceFormsQueryOptions = <TData = Awaited<ReturnType<typeof listNamespaceForms>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaceForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListNamespaceFormsQueryKey(namespaceId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNamespaceForms>>> = ({ signal }) => listNamespaceForms(namespaceId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNamespaceForms>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListNamespaceFormsQueryResult = NonNullable<Awaited<ReturnType<typeof listNamespaceForms>>>
-export type ListNamespaceFormsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a namespace's forms
- */
-
-export function useListNamespaceForms<TData = Awaited<ReturnType<typeof listNamespaceForms>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaceForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListNamespaceFormsQueryOptions(namespaceId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1069,53 +624,6 @@ export const createNamespaceForm = async (namespaceId: string,
 
 
 
-
-
-export const getCreateNamespaceFormMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNamespaceForm>>, TError,{namespaceId: string;data: BodyType<CreateFormRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createNamespaceForm>>, TError,{namespaceId: string;data: BodyType<CreateFormRequest>}, TContext> => {
-
-const mutationKey = ['createNamespaceForm'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createNamespaceForm>>, {namespaceId: string;data: BodyType<CreateFormRequest>}> = (props) => {
-          const {namespaceId,data} = props ?? {};
-
-          return  createNamespaceForm(namespaceId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateNamespaceFormMutationResult = NonNullable<Awaited<ReturnType<typeof createNamespaceForm>>>
-    export type CreateNamespaceFormMutationBody = BodyType<CreateFormRequest>
-    export type CreateNamespaceFormMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a form in a namespace
- */
-export const useCreateNamespaceForm = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNamespaceForm>>, TError,{namespaceId: string;data: BodyType<CreateFormRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createNamespaceForm>>,
-        TError,
-        {namespaceId: string;data: BodyType<CreateFormRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateNamespaceFormMutationOptions(options));
-    }
-
 export type listNamespaceArchivedFormsResponse200 = {
   data: Form[]
   status: 200
@@ -1176,59 +684,6 @@ export const listNamespaceArchivedForms = async (namespaceId: string, options?: 
 
 
 
-
-
-export const getListNamespaceArchivedFormsQueryKey = (namespaceId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/archived`
-    ] as const;
-    }
-
-
-export const getListNamespaceArchivedFormsQueryOptions = <TData = Awaited<ReturnType<typeof listNamespaceArchivedForms>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaceArchivedForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListNamespaceArchivedFormsQueryKey(namespaceId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNamespaceArchivedForms>>> = ({ signal }) => listNamespaceArchivedForms(namespaceId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNamespaceArchivedForms>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListNamespaceArchivedFormsQueryResult = NonNullable<Awaited<ReturnType<typeof listNamespaceArchivedForms>>>
-export type ListNamespaceArchivedFormsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a namespace's archived forms
- */
-
-export function useListNamespaceArchivedForms<TData = Awaited<ReturnType<typeof listNamespaceArchivedForms>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNamespaceArchivedForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListNamespaceArchivedFormsQueryOptions(namespaceId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listMyFormsResponse200 = {
   data: Form[]
   status: 200
@@ -1276,59 +731,6 @@ export const listMyForms = async ( options?: Parameters<typeof customInstance>[1
 
   }
 );}
-
-
-
-
-
-export const getListMyFormsQueryKey = () => {
-    return [
-    `/forms`
-    ] as const;
-    }
-
-
-export const getListMyFormsQueryOptions = <TData = Awaited<ReturnType<typeof listMyForms>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListMyFormsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyForms>>> = ({ signal }) => listMyForms({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyForms>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListMyFormsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyForms>>>
-export type ListMyFormsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your forms
- */
-
-export function useListMyForms<TData = Awaited<ReturnType<typeof listMyForms>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListMyFormsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1387,53 +789,6 @@ export const createForm = async (createFormRequest: CreateFormRequest, options?:
 
 
 
-
-
-export const getCreateFormMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createForm>>, TError,{data: BodyType<CreateFormRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createForm>>, TError,{data: BodyType<CreateFormRequest>}, TContext> => {
-
-const mutationKey = ['createForm'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createForm>>, {data: BodyType<CreateFormRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createForm(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateFormMutationResult = NonNullable<Awaited<ReturnType<typeof createForm>>>
-    export type CreateFormMutationBody = BodyType<CreateFormRequest>
-    export type CreateFormMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a form
- */
-export const useCreateForm = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createForm>>, TError,{data: BodyType<CreateFormRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createForm>>,
-        TError,
-        {data: BodyType<CreateFormRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateFormMutationOptions(options));
-    }
-
 export type listMyArchivedFormsResponse200 = {
   data: Form[]
   status: 200
@@ -1480,59 +835,6 @@ export const listMyArchivedForms = async ( options?: Parameters<typeof customIns
 
   }
 );}
-
-
-
-
-
-export const getListMyArchivedFormsQueryKey = () => {
-    return [
-    `/forms/archived`
-    ] as const;
-    }
-
-
-export const getListMyArchivedFormsQueryOptions = <TData = Awaited<ReturnType<typeof listMyArchivedForms>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyArchivedForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListMyArchivedFormsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyArchivedForms>>> = ({ signal }) => listMyArchivedForms({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyArchivedForms>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListMyArchivedFormsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyArchivedForms>>>
-export type ListMyArchivedFormsQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List your archived forms
- */
-
-export function useListMyArchivedForms<TData = Awaited<ReturnType<typeof listMyArchivedForms>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyArchivedForms>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListMyArchivedFormsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1585,59 +887,6 @@ export const getAnswerableForm = async (formId: string, options?: Parameters<typ
 
   }
 );}
-
-
-
-
-
-export const getGetAnswerableFormQueryKey = (formId: string,) => {
-    return [
-    `/forms/${formId}/asnwerable`
-    ] as const;
-    }
-
-
-export const getGetAnswerableFormQueryOptions = <TData = Awaited<ReturnType<typeof getAnswerableForm>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse>>(formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnswerableForm>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetAnswerableFormQueryKey(formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnswerableForm>>> = ({ signal }) => getAnswerableForm(formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnswerableForm>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetAnswerableFormQueryResult = NonNullable<Awaited<ReturnType<typeof getAnswerableForm>>>
-export type GetAnswerableFormQueryError = ErrorType<NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get the answerable view of a form
- */
-
-export function useGetAnswerableForm<TData = Awaited<ReturnType<typeof getAnswerableForm>>, TError = ErrorType<NotFoundResponse | InternalServerErrorResponse>>(
- formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnswerableForm>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetAnswerableFormQueryOptions(formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1702,59 +951,6 @@ export const getFullForm = async (formId: string, options?: Parameters<typeof cu
 
 
 
-
-
-export const getGetFullFormQueryKey = (formId: string,) => {
-    return [
-    `/forms/${formId}/full`
-    ] as const;
-    }
-
-
-export const getGetFullFormQueryOptions = <TData = Awaited<ReturnType<typeof getFullForm>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFullForm>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetFullFormQueryKey(formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFullForm>>> = ({ signal }) => getFullForm(formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFullForm>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetFullFormQueryResult = NonNullable<Awaited<ReturnType<typeof getFullForm>>>
-export type GetFullFormQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get the full form with answers
- */
-
-export function useGetFullForm<TData = Awaited<ReturnType<typeof getFullForm>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFullForm>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetFullFormQueryOptions(formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listFormMembersResponse200 = {
   data: FormMember[]
   status: 200
@@ -1812,59 +1008,6 @@ export const listFormMembers = async (formId: string, options?: Parameters<typeo
 
   }
 );}
-
-
-
-
-
-export const getListFormMembersQueryKey = (formId: string,) => {
-    return [
-    `/forms/${formId}/members`
-    ] as const;
-    }
-
-
-export const getListFormMembersQueryOptions = <TData = Awaited<ReturnType<typeof listFormMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFormMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListFormMembersQueryKey(formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFormMembers>>> = ({ signal }) => listFormMembers(formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFormMembers>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListFormMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listFormMembers>>>
-export type ListFormMembersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List form members
- */
-
-export function useListFormMembers<TData = Awaited<ReturnType<typeof listFormMembers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFormMembers>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListFormMembersQueryOptions(formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -1939,53 +1082,6 @@ export const addFormMember = async (formId: string,
 
 
 
-
-
-export const getAddFormMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFormMember>>, TError,{formId: string;data: BodyType<AddFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addFormMember>>, TError,{formId: string;data: BodyType<AddFormMemberRequest>}, TContext> => {
-
-const mutationKey = ['addFormMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFormMember>>, {formId: string;data: BodyType<AddFormMemberRequest>}> = (props) => {
-          const {formId,data} = props ?? {};
-
-          return  addFormMember(formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddFormMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addFormMember>>>
-    export type AddFormMemberMutationBody = BodyType<AddFormMemberRequest>
-    export type AddFormMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Add a form member
- */
-export const useAddFormMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFormMember>>, TError,{formId: string;data: BodyType<AddFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addFormMember>>,
-        TError,
-        {formId: string;data: BodyType<AddFormMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddFormMemberMutationOptions(options));
-    }
-
 export type removeFormMemberResponse200 = {
   data: unknown
   status: 200
@@ -2052,53 +1148,6 @@ export const removeFormMember = async (formId: string,
 
 
 
-
-
-export const getRemoveFormMemberMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFormMember>>, TError,{formId: string;data: BodyType<RemoveFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeFormMember>>, TError,{formId: string;data: BodyType<RemoveFormMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeFormMember'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFormMember>>, {formId: string;data: BodyType<RemoveFormMemberRequest>}> = (props) => {
-          const {formId,data} = props ?? {};
-
-          return  removeFormMember(formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveFormMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeFormMember>>>
-    export type RemoveFormMemberMutationBody = BodyType<RemoveFormMemberRequest>
-    export type RemoveFormMemberMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Remove a form member
- */
-export const useRemoveFormMember = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFormMember>>, TError,{formId: string;data: BodyType<RemoveFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeFormMember>>,
-        TError,
-        {formId: string;data: BodyType<RemoveFormMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveFormMemberMutationOptions(options));
-    }
-
 export type openFormResponse200 = {
   data: Form
   status: 200
@@ -2163,53 +1212,6 @@ export const openForm = async (formId: string, options?: Parameters<typeof custo
 );}
 
 
-
-
-
-export const getOpenFormMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof openForm>>, TError,{formId: string}, TContext> => {
-
-const mutationKey = ['openForm'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openForm>>, {formId: string}> = (props) => {
-          const {formId} = props ?? {};
-
-          return  openForm(formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type OpenFormMutationResult = NonNullable<Awaited<ReturnType<typeof openForm>>>
-
-    export type OpenFormMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Open a form
- */
-export const useOpenForm = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof openForm>>,
-        TError,
-        {formId: string},
-        TContext
-      > => {
-      return useMutation(getOpenFormMutationOptions(options));
-    }
 
 export type closeFormResponse200 = {
   data: Form
@@ -2276,53 +1278,6 @@ export const closeForm = async (formId: string, options?: Parameters<typeof cust
 
 
 
-
-
-export const getCloseFormMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof closeForm>>, TError,{formId: string}, TContext> => {
-
-const mutationKey = ['closeForm'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeForm>>, {formId: string}> = (props) => {
-          const {formId} = props ?? {};
-
-          return  closeForm(formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CloseFormMutationResult = NonNullable<Awaited<ReturnType<typeof closeForm>>>
-
-    export type CloseFormMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Close a form
- */
-export const useCloseForm = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof closeForm>>,
-        TError,
-        {formId: string},
-        TContext
-      > => {
-      return useMutation(getCloseFormMutationOptions(options));
-    }
-
 export type archiveFormResponse200 = {
   data: Form
   status: 200
@@ -2387,53 +1342,6 @@ export const archiveForm = async (formId: string, options?: Parameters<typeof cu
 );}
 
 
-
-
-
-export const getArchiveFormMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof archiveForm>>, TError,{formId: string}, TContext> => {
-
-const mutationKey = ['archiveForm'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveForm>>, {formId: string}> = (props) => {
-          const {formId} = props ?? {};
-
-          return  archiveForm(formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ArchiveFormMutationResult = NonNullable<Awaited<ReturnType<typeof archiveForm>>>
-
-    export type ArchiveFormMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Archive a form
- */
-export const useArchiveForm = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof archiveForm>>,
-        TError,
-        {formId: string},
-        TContext
-      > => {
-      return useMutation(getArchiveFormMutationOptions(options));
-    }
 
 export type redraftFormResponse200 = {
   data: Form
@@ -2500,53 +1408,6 @@ export const redraftForm = async (formId: string, options?: Parameters<typeof cu
 
 
 
-
-
-export const getRedraftFormMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redraftForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof redraftForm>>, TError,{formId: string}, TContext> => {
-
-const mutationKey = ['redraftForm'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redraftForm>>, {formId: string}> = (props) => {
-          const {formId} = props ?? {};
-
-          return  redraftForm(formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RedraftFormMutationResult = NonNullable<Awaited<ReturnType<typeof redraftForm>>>
-
-    export type RedraftFormMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Redraft a form
- */
-export const useRedraftForm = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redraftForm>>, TError,{formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof redraftForm>>,
-        TError,
-        {formId: string},
-        TContext
-      > => {
-      return useMutation(getRedraftFormMutationOptions(options));
-    }
-
 export type getFormResponseCountResponse200 = {
   data: GetFormResponseCount200
   status: 200
@@ -2607,59 +1468,6 @@ export const getFormResponseCount = async (formId: string, options?: Parameters<
 
 
 
-
-
-export const getGetFormResponseCountQueryKey = (formId: string,) => {
-    return [
-    `/forms/${formId}/responses/count`
-    ] as const;
-    }
-
-
-export const getGetFormResponseCountQueryOptions = <TData = Awaited<ReturnType<typeof getFormResponseCount>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFormResponseCount>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetFormResponseCountQueryKey(formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFormResponseCount>>> = ({ signal }) => getFormResponseCount(formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFormResponseCount>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetFormResponseCountQueryResult = NonNullable<Awaited<ReturnType<typeof getFormResponseCount>>>
-export type GetFormResponseCountQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Count a form's responses
- */
-
-export function useGetFormResponseCount<TData = Awaited<ReturnType<typeof getFormResponseCount>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFormResponseCount>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetFormResponseCountQueryOptions(formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listStepsResponse200 = {
   data: Step[]
   status: 200
@@ -2717,59 +1525,6 @@ export const listSteps = async (formId: string, options?: Parameters<typeof cust
 
   }
 );}
-
-
-
-
-
-export const getListStepsQueryKey = (formId: string,) => {
-    return [
-    `/forms/${formId}/steps`
-    ] as const;
-    }
-
-
-export const getListStepsQueryOptions = <TData = Awaited<ReturnType<typeof listSteps>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSteps>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListStepsQueryKey(formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSteps>>> = ({ signal }) => listSteps(formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSteps>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListStepsQueryResult = NonNullable<Awaited<ReturnType<typeof listSteps>>>
-export type ListStepsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a form's steps
- */
-
-export function useListSteps<TData = Awaited<ReturnType<typeof listSteps>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSteps>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListStepsQueryOptions(formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -2839,53 +1594,6 @@ export const createStep = async (formId: string,
 
 
 
-
-
-export const getCreateStepMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStep>>, TError,{formId: string;data: BodyType<CreateStepRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createStep>>, TError,{formId: string;data: BodyType<CreateStepRequest>}, TContext> => {
-
-const mutationKey = ['createStep'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStep>>, {formId: string;data: BodyType<CreateStepRequest>}> = (props) => {
-          const {formId,data} = props ?? {};
-
-          return  createStep(formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateStepMutationResult = NonNullable<Awaited<ReturnType<typeof createStep>>>
-    export type CreateStepMutationBody = BodyType<CreateStepRequest>
-    export type CreateStepMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a step
- */
-export const useCreateStep = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStep>>, TError,{formId: string;data: BodyType<CreateStepRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createStep>>,
-        TError,
-        {formId: string;data: BodyType<CreateStepRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateStepMutationOptions(options));
-    }
-
 export type bulkEditStepsResponse200 = {
   data: unknown
   status: 200
@@ -2954,53 +1662,6 @@ export const bulkEditSteps = async (formId: string,
 
 
 
-
-
-export const getBulkEditStepsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditSteps>>, TError,{formId: string;data: BodyType<UpdateStepRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkEditSteps>>, TError,{formId: string;data: BodyType<UpdateStepRequest[]>}, TContext> => {
-
-const mutationKey = ['bulkEditSteps'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkEditSteps>>, {formId: string;data: BodyType<UpdateStepRequest[]>}> = (props) => {
-          const {formId,data} = props ?? {};
-
-          return  bulkEditSteps(formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type BulkEditStepsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkEditSteps>>>
-    export type BulkEditStepsMutationBody = BodyType<UpdateStepRequest[]>
-    export type BulkEditStepsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Bulk-edit a form's steps
- */
-export const useBulkEditSteps = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditSteps>>, TError,{formId: string;data: BodyType<UpdateStepRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof bulkEditSteps>>,
-        TError,
-        {formId: string;data: BodyType<UpdateStepRequest[]>},
-        TContext
-      > => {
-      return useMutation(getBulkEditStepsMutationOptions(options));
-    }
-
 export type listFieldsResponse200 = {
   data: Field[]
   status: 200
@@ -3060,62 +1721,6 @@ export const listFields = async (formId: string,
 
   }
 );}
-
-
-
-
-
-export const getListFieldsQueryKey = (formId: string,
-    stepId: string,) => {
-    return [
-    `/forms/${formId}/steps/${stepId}/fields`
-    ] as const;
-    }
-
-
-export const getListFieldsQueryOptions = <TData = Awaited<ReturnType<typeof listFields>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(formId: string,
-    stepId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFields>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListFieldsQueryKey(formId,stepId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFields>>> = ({ signal }) => listFields(formId,stepId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined && stepId !== null && stepId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFields>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListFieldsQueryResult = NonNullable<Awaited<ReturnType<typeof listFields>>>
-export type ListFieldsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a step's fields
- */
-
-export function useListFields<TData = Awaited<ReturnType<typeof listFields>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- formId: string,
-    stepId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFields>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListFieldsQueryOptions(formId,stepId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3188,53 +1793,6 @@ export const createField = async (formId: string,
 
 
 
-
-
-export const getCreateFieldMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createField>>, TError,{formId: string;stepId: string;data: BodyType<CreateFieldRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createField>>, TError,{formId: string;stepId: string;data: BodyType<CreateFieldRequest>}, TContext> => {
-
-const mutationKey = ['createField'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createField>>, {formId: string;stepId: string;data: BodyType<CreateFieldRequest>}> = (props) => {
-          const {formId,stepId,data} = props ?? {};
-
-          return  createField(formId,stepId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateFieldMutationResult = NonNullable<Awaited<ReturnType<typeof createField>>>
-    export type CreateFieldMutationBody = BodyType<CreateFieldRequest>
-    export type CreateFieldMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a field
- */
-export const useCreateField = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createField>>, TError,{formId: string;stepId: string;data: BodyType<CreateFieldRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createField>>,
-        TError,
-        {formId: string;stepId: string;data: BodyType<CreateFieldRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateFieldMutationOptions(options));
-    }
-
 export type bulkEditFieldsResponse200 = {
   data: unknown
   status: 200
@@ -3304,53 +1862,6 @@ export const bulkEditFields = async (formId: string,
 
 
 
-
-
-export const getBulkEditFieldsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditFields>>, TError,{formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkEditFields>>, TError,{formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}, TContext> => {
-
-const mutationKey = ['bulkEditFields'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkEditFields>>, {formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}> = (props) => {
-          const {formId,stepId,data} = props ?? {};
-
-          return  bulkEditFields(formId,stepId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type BulkEditFieldsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkEditFields>>>
-    export type BulkEditFieldsMutationBody = BodyType<UpdateFieldRequest[]>
-    export type BulkEditFieldsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Bulk-edit a step's fields
- */
-export const useBulkEditFields = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditFields>>, TError,{formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof bulkEditFields>>,
-        TError,
-        {formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>},
-        TContext
-      > => {
-      return useMutation(getBulkEditFieldsMutationOptions(options));
-    }
-
 export type getSelectConfigResponse200 = {
   data: FieldSelectConfig
   status: 200
@@ -3413,65 +1924,6 @@ export const getSelectConfig = async (formId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetSelectConfigQueryKey = (formId: string,
-    stepId: string,
-    fieldId: string,) => {
-    return [
-    `/forms/${formId}/steps/${stepId}/fields/${fieldId}/select`
-    ] as const;
-    }
-
-
-export const getGetSelectConfigQueryOptions = <TData = Awaited<ReturnType<typeof getSelectConfig>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(formId: string,
-    stepId: string,
-    fieldId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSelectConfig>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetSelectConfigQueryKey(formId,stepId,fieldId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSelectConfig>>> = ({ signal }) => getSelectConfig(formId,stepId,fieldId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: formId !== null && formId !== undefined && stepId !== null && stepId !== undefined && fieldId !== null && fieldId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSelectConfig>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetSelectConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getSelectConfig>>>
-export type GetSelectConfigQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a field's select configuration
- */
-
-export function useGetSelectConfig<TData = Awaited<ReturnType<typeof getSelectConfig>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- formId: string,
-    stepId: string,
-    fieldId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSelectConfig>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetSelectConfigQueryOptions(formId,stepId,fieldId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -3545,53 +1997,6 @@ export const editSelectConfig = async (formId: string,
 
 
 
-
-
-export const getEditSelectConfigMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editSelectConfig>>, TError,{formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof editSelectConfig>>, TError,{formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}, TContext> => {
-
-const mutationKey = ['editSelectConfig'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof editSelectConfig>>, {formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}> = (props) => {
-          const {formId,stepId,fieldId,data} = props ?? {};
-
-          return  editSelectConfig(formId,stepId,fieldId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type EditSelectConfigMutationResult = NonNullable<Awaited<ReturnType<typeof editSelectConfig>>>
-    export type EditSelectConfigMutationBody = BodyType<EditSelectConfigRequest>
-    export type EditSelectConfigMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Edit a field's select configuration
- */
-export const useEditSelectConfig = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editSelectConfig>>, TError,{formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof editSelectConfig>>,
-        TError,
-        {formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>},
-        TContext
-      > => {
-      return useMutation(getEditSelectConfigMutationOptions(options));
-    }
-
 export type deleteFieldResponse200 = {
   data: unknown
   status: 200
@@ -3656,53 +2061,6 @@ export const deleteField = async (formId: string,
 
 
 
-
-
-export const getDeleteFieldMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteField>>, TError,{formId: string;stepId: string;fieldId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteField>>, TError,{formId: string;stepId: string;fieldId: string}, TContext> => {
-
-const mutationKey = ['deleteField'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteField>>, {formId: string;stepId: string;fieldId: string}> = (props) => {
-          const {formId,stepId,fieldId} = props ?? {};
-
-          return  deleteField(formId,stepId,fieldId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteFieldMutationResult = NonNullable<Awaited<ReturnType<typeof deleteField>>>
-
-    export type DeleteFieldMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Delete a field
- */
-export const useDeleteField = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteField>>, TError,{formId: string;stepId: string;fieldId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteField>>,
-        TError,
-        {formId: string;stepId: string;fieldId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteFieldMutationOptions(options));
-    }
-
 export type submitResponseResponse201 = {
   data: void
   status: 201
@@ -3765,53 +2123,6 @@ export const submitResponse = async (formId: string,
 );}
 
 
-
-
-
-export const getSubmitResponseMutationOptions = <TError = ErrorType<BadRequestResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitResponse>>, TError,{formId: string;data: BodyType<SubmitRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof submitResponse>>, TError,{formId: string;data: BodyType<SubmitRequest>}, TContext> => {
-
-const mutationKey = ['submitResponse'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitResponse>>, {formId: string;data: BodyType<SubmitRequest>}> = (props) => {
-          const {formId,data} = props ?? {};
-
-          return  submitResponse(formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SubmitResponseMutationResult = NonNullable<Awaited<ReturnType<typeof submitResponse>>>
-    export type SubmitResponseMutationBody = BodyType<SubmitRequest>
-    export type SubmitResponseMutationError = ErrorType<BadRequestResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Submit a response
- */
-export const useSubmitResponse = <TError = ErrorType<BadRequestResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitResponse>>, TError,{formId: string;data: BodyType<SubmitRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof submitResponse>>,
-        TError,
-        {formId: string;data: BodyType<SubmitRequest>},
-        TContext
-      > => {
-      return useMutation(getSubmitResponseMutationOptions(options));
-    }
 
 export type getFullFormNamespacedResponse200 = {
   data: FullForm
@@ -3876,62 +2187,6 @@ export const getFullFormNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getGetFullFormNamespacedQueryKey = (namespaceId: string,
-    formId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/${formId}/full`
-    ] as const;
-    }
-
-
-export const getGetFullFormNamespacedQueryOptions = <TData = Awaited<ReturnType<typeof getFullFormNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFullFormNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetFullFormNamespacedQueryKey(namespaceId,formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFullFormNamespaced>>> = ({ signal }) => getFullFormNamespaced(namespaceId,formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined && formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFullFormNamespaced>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetFullFormNamespacedQueryResult = NonNullable<Awaited<ReturnType<typeof getFullFormNamespaced>>>
-export type GetFullFormNamespacedQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get the full form with answers (namespaced)
- */
-
-export function useGetFullFormNamespaced<TData = Awaited<ReturnType<typeof getFullFormNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFullFormNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetFullFormNamespacedQueryOptions(namespaceId,formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listFormMembersNamespacedResponse200 = {
   data: FormMember[]
   status: 200
@@ -3990,62 +2245,6 @@ export const listFormMembersNamespaced = async (namespaceId: string,
 
   }
 );}
-
-
-
-
-
-export const getListFormMembersNamespacedQueryKey = (namespaceId: string,
-    formId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/${formId}/members`
-    ] as const;
-    }
-
-
-export const getListFormMembersNamespacedQueryOptions = <TData = Awaited<ReturnType<typeof listFormMembersNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFormMembersNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListFormMembersNamespacedQueryKey(namespaceId,formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFormMembersNamespaced>>> = ({ signal }) => listFormMembersNamespaced(namespaceId,formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined && formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFormMembersNamespaced>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListFormMembersNamespacedQueryResult = NonNullable<Awaited<ReturnType<typeof listFormMembersNamespaced>>>
-export type ListFormMembersNamespacedQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List form members (namespaced)
- */
-
-export function useListFormMembersNamespaced<TData = Awaited<ReturnType<typeof listFormMembersNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFormMembersNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListFormMembersNamespacedQueryOptions(namespaceId,formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -4121,53 +2320,6 @@ export const addFormMemberNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getAddFormMemberNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFormMemberNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<AddFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof addFormMemberNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<AddFormMemberRequest>}, TContext> => {
-
-const mutationKey = ['addFormMemberNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFormMemberNamespaced>>, {namespaceId: string;formId: string;data: BodyType<AddFormMemberRequest>}> = (props) => {
-          const {namespaceId,formId,data} = props ?? {};
-
-          return  addFormMemberNamespaced(namespaceId,formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AddFormMemberNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof addFormMemberNamespaced>>>
-    export type AddFormMemberNamespacedMutationBody = BodyType<AddFormMemberRequest>
-    export type AddFormMemberNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Add a form member (namespaced)
- */
-export const useAddFormMemberNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFormMemberNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<AddFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof addFormMemberNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;data: BodyType<AddFormMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getAddFormMemberNamespacedMutationOptions(options));
-    }
-
 export type removeFormMemberNamespacedResponse200 = {
   data: unknown
   status: 200
@@ -4235,53 +2387,6 @@ export const removeFormMemberNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getRemoveFormMemberNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFormMemberNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<RemoveFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeFormMemberNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<RemoveFormMemberRequest>}, TContext> => {
-
-const mutationKey = ['removeFormMemberNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFormMemberNamespaced>>, {namespaceId: string;formId: string;data: BodyType<RemoveFormMemberRequest>}> = (props) => {
-          const {namespaceId,formId,data} = props ?? {};
-
-          return  removeFormMemberNamespaced(namespaceId,formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveFormMemberNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof removeFormMemberNamespaced>>>
-    export type RemoveFormMemberNamespacedMutationBody = BodyType<RemoveFormMemberRequest>
-    export type RemoveFormMemberNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Remove a form member (namespaced)
- */
-export const useRemoveFormMemberNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFormMemberNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<RemoveFormMemberRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof removeFormMemberNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;data: BodyType<RemoveFormMemberRequest>},
-        TContext
-      > => {
-      return useMutation(getRemoveFormMemberNamespacedMutationOptions(options));
-    }
-
 export type openFormNamespacedResponse200 = {
   data: Form
   status: 200
@@ -4347,53 +2452,6 @@ export const openFormNamespaced = async (namespaceId: string,
 );}
 
 
-
-
-
-export const getOpenFormNamespacedMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof openFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext> => {
-
-const mutationKey = ['openFormNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openFormNamespaced>>, {namespaceId: string;formId: string}> = (props) => {
-          const {namespaceId,formId} = props ?? {};
-
-          return  openFormNamespaced(namespaceId,formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type OpenFormNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof openFormNamespaced>>>
-
-    export type OpenFormNamespacedMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Open a form (namespaced)
- */
-export const useOpenFormNamespaced = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof openFormNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string},
-        TContext
-      > => {
-      return useMutation(getOpenFormNamespacedMutationOptions(options));
-    }
 
 export type closeFormNamespacedResponse200 = {
   data: Form
@@ -4461,53 +2519,6 @@ export const closeFormNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getCloseFormNamespacedMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof closeFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext> => {
-
-const mutationKey = ['closeFormNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeFormNamespaced>>, {namespaceId: string;formId: string}> = (props) => {
-          const {namespaceId,formId} = props ?? {};
-
-          return  closeFormNamespaced(namespaceId,formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CloseFormNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof closeFormNamespaced>>>
-
-    export type CloseFormNamespacedMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Close a form (namespaced)
- */
-export const useCloseFormNamespaced = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof closeFormNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string},
-        TContext
-      > => {
-      return useMutation(getCloseFormNamespacedMutationOptions(options));
-    }
-
 export type archiveFormNamespacedResponse200 = {
   data: Form
   status: 200
@@ -4573,53 +2584,6 @@ export const archiveFormNamespaced = async (namespaceId: string,
 );}
 
 
-
-
-
-export const getArchiveFormNamespacedMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof archiveFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext> => {
-
-const mutationKey = ['archiveFormNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveFormNamespaced>>, {namespaceId: string;formId: string}> = (props) => {
-          const {namespaceId,formId} = props ?? {};
-
-          return  archiveFormNamespaced(namespaceId,formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ArchiveFormNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof archiveFormNamespaced>>>
-
-    export type ArchiveFormNamespacedMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Archive a form (namespaced)
- */
-export const useArchiveFormNamespaced = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof archiveFormNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string},
-        TContext
-      > => {
-      return useMutation(getArchiveFormNamespacedMutationOptions(options));
-    }
 
 export type redraftFormNamespacedResponse200 = {
   data: Form
@@ -4687,53 +2651,6 @@ export const redraftFormNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getRedraftFormNamespacedMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redraftFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof redraftFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext> => {
-
-const mutationKey = ['redraftFormNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redraftFormNamespaced>>, {namespaceId: string;formId: string}> = (props) => {
-          const {namespaceId,formId} = props ?? {};
-
-          return  redraftFormNamespaced(namespaceId,formId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RedraftFormNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof redraftFormNamespaced>>>
-
-    export type RedraftFormNamespacedMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Redraft a form (namespaced)
- */
-export const useRedraftFormNamespaced = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | ConflictResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redraftFormNamespaced>>, TError,{namespaceId: string;formId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof redraftFormNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string},
-        TContext
-      > => {
-      return useMutation(getRedraftFormNamespacedMutationOptions(options));
-    }
-
 export type getFormResponseCountNamespacedResponse200 = {
   data: GetFormResponseCountNamespaced200
   status: 200
@@ -4795,62 +2712,6 @@ export const getFormResponseCountNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getGetFormResponseCountNamespacedQueryKey = (namespaceId: string,
-    formId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/${formId}/responses/count`
-    ] as const;
-    }
-
-
-export const getGetFormResponseCountNamespacedQueryOptions = <TData = Awaited<ReturnType<typeof getFormResponseCountNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFormResponseCountNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetFormResponseCountNamespacedQueryKey(namespaceId,formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFormResponseCountNamespaced>>> = ({ signal }) => getFormResponseCountNamespaced(namespaceId,formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined && formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFormResponseCountNamespaced>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetFormResponseCountNamespacedQueryResult = NonNullable<Awaited<ReturnType<typeof getFormResponseCountNamespaced>>>
-export type GetFormResponseCountNamespacedQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Count a form's responses (namespaced)
- */
-
-export function useGetFormResponseCountNamespaced<TData = Awaited<ReturnType<typeof getFormResponseCountNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFormResponseCountNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetFormResponseCountNamespacedQueryOptions(namespaceId,formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export type listStepsNamespacedResponse200 = {
   data: Step[]
   status: 200
@@ -4909,62 +2770,6 @@ export const listStepsNamespaced = async (namespaceId: string,
 
   }
 );}
-
-
-
-
-
-export const getListStepsNamespacedQueryKey = (namespaceId: string,
-    formId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/${formId}/steps`
-    ] as const;
-    }
-
-
-export const getListStepsNamespacedQueryOptions = <TData = Awaited<ReturnType<typeof listStepsNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStepsNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListStepsNamespacedQueryKey(namespaceId,formId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStepsNamespaced>>> = ({ signal }) => listStepsNamespaced(namespaceId,formId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined && formId !== null && formId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStepsNamespaced>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListStepsNamespacedQueryResult = NonNullable<Awaited<ReturnType<typeof listStepsNamespaced>>>
-export type ListStepsNamespacedQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a form's steps (namespaced)
- */
-
-export function useListStepsNamespaced<TData = Awaited<ReturnType<typeof listStepsNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string,
-    formId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStepsNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListStepsNamespacedQueryOptions(namespaceId,formId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -5035,53 +2840,6 @@ export const createStepNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getCreateStepNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStepNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<CreateStepRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createStepNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<CreateStepRequest>}, TContext> => {
-
-const mutationKey = ['createStepNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStepNamespaced>>, {namespaceId: string;formId: string;data: BodyType<CreateStepRequest>}> = (props) => {
-          const {namespaceId,formId,data} = props ?? {};
-
-          return  createStepNamespaced(namespaceId,formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateStepNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof createStepNamespaced>>>
-    export type CreateStepNamespacedMutationBody = BodyType<CreateStepRequest>
-    export type CreateStepNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a step (namespaced)
- */
-export const useCreateStepNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStepNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<CreateStepRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createStepNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;data: BodyType<CreateStepRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateStepNamespacedMutationOptions(options));
-    }
-
 export type bulkEditStepsNamespacedResponse200 = {
   data: unknown
   status: 200
@@ -5149,53 +2907,6 @@ export const bulkEditStepsNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getBulkEditStepsNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditStepsNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<UpdateStepRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkEditStepsNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<UpdateStepRequest[]>}, TContext> => {
-
-const mutationKey = ['bulkEditStepsNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkEditStepsNamespaced>>, {namespaceId: string;formId: string;data: BodyType<UpdateStepRequest[]>}> = (props) => {
-          const {namespaceId,formId,data} = props ?? {};
-
-          return  bulkEditStepsNamespaced(namespaceId,formId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type BulkEditStepsNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof bulkEditStepsNamespaced>>>
-    export type BulkEditStepsNamespacedMutationBody = BodyType<UpdateStepRequest[]>
-    export type BulkEditStepsNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Bulk-edit a form's steps (namespaced)
- */
-export const useBulkEditStepsNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditStepsNamespaced>>, TError,{namespaceId: string;formId: string;data: BodyType<UpdateStepRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof bulkEditStepsNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;data: BodyType<UpdateStepRequest[]>},
-        TContext
-      > => {
-      return useMutation(getBulkEditStepsNamespacedMutationOptions(options));
-    }
-
 export type listFieldsNamespacedResponse200 = {
   data: Field[]
   status: 200
@@ -5256,65 +2967,6 @@ export const listFieldsNamespaced = async (namespaceId: string,
 
   }
 );}
-
-
-
-
-
-export const getListFieldsNamespacedQueryKey = (namespaceId: string,
-    formId: string,
-    stepId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/${formId}/steps/${stepId}/fields`
-    ] as const;
-    }
-
-
-export const getListFieldsNamespacedQueryOptions = <TData = Awaited<ReturnType<typeof listFieldsNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string,
-    formId: string,
-    stepId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFieldsNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListFieldsNamespacedQueryKey(namespaceId,formId,stepId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFieldsNamespaced>>> = ({ signal }) => listFieldsNamespaced(namespaceId,formId,stepId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined && formId !== null && formId !== undefined && stepId !== null && stepId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFieldsNamespaced>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListFieldsNamespacedQueryResult = NonNullable<Awaited<ReturnType<typeof listFieldsNamespaced>>>
-export type ListFieldsNamespacedQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary List a step's fields (namespaced)
- */
-
-export function useListFieldsNamespaced<TData = Awaited<ReturnType<typeof listFieldsNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string,
-    formId: string,
-    stepId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFieldsNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListFieldsNamespacedQueryOptions(namespaceId,formId,stepId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -5387,53 +3039,6 @@ export const createFieldNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getCreateFieldNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFieldNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;data: BodyType<CreateFieldRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createFieldNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;data: BodyType<CreateFieldRequest>}, TContext> => {
-
-const mutationKey = ['createFieldNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFieldNamespaced>>, {namespaceId: string;formId: string;stepId: string;data: BodyType<CreateFieldRequest>}> = (props) => {
-          const {namespaceId,formId,stepId,data} = props ?? {};
-
-          return  createFieldNamespaced(namespaceId,formId,stepId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateFieldNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof createFieldNamespaced>>>
-    export type CreateFieldNamespacedMutationBody = BodyType<CreateFieldRequest>
-    export type CreateFieldNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Create a field (namespaced)
- */
-export const useCreateFieldNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFieldNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;data: BodyType<CreateFieldRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createFieldNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;stepId: string;data: BodyType<CreateFieldRequest>},
-        TContext
-      > => {
-      return useMutation(getCreateFieldNamespacedMutationOptions(options));
-    }
-
 export type bulkEditFieldsNamespacedResponse200 = {
   data: unknown
   status: 200
@@ -5503,53 +3108,6 @@ export const bulkEditFieldsNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getBulkEditFieldsNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditFieldsNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkEditFieldsNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}, TContext> => {
-
-const mutationKey = ['bulkEditFieldsNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkEditFieldsNamespaced>>, {namespaceId: string;formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}> = (props) => {
-          const {namespaceId,formId,stepId,data} = props ?? {};
-
-          return  bulkEditFieldsNamespaced(namespaceId,formId,stepId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type BulkEditFieldsNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof bulkEditFieldsNamespaced>>>
-    export type BulkEditFieldsNamespacedMutationBody = BodyType<UpdateFieldRequest[]>
-    export type BulkEditFieldsNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Bulk-edit a step's fields (namespaced)
- */
-export const useBulkEditFieldsNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkEditFieldsNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof bulkEditFieldsNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;stepId: string;data: BodyType<UpdateFieldRequest[]>},
-        TContext
-      > => {
-      return useMutation(getBulkEditFieldsNamespacedMutationOptions(options));
-    }
-
 export type getSelectConfigNamespacedResponse200 = {
   data: FieldSelectConfig
   status: 200
@@ -5612,68 +3170,6 @@ export const getSelectConfigNamespaced = async (namespaceId: string,
 
   }
 );}
-
-
-
-
-
-export const getGetSelectConfigNamespacedQueryKey = (namespaceId: string,
-    formId: string,
-    stepId: string,
-    fieldId: string,) => {
-    return [
-    `/namespaces/${namespaceId}/forms/${formId}/steps/${stepId}/fields/${fieldId}/select`
-    ] as const;
-    }
-
-
-export const getGetSelectConfigNamespacedQueryOptions = <TData = Awaited<ReturnType<typeof getSelectConfigNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(namespaceId: string,
-    formId: string,
-    stepId: string,
-    fieldId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSelectConfigNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetSelectConfigNamespacedQueryKey(namespaceId,formId,stepId,fieldId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSelectConfigNamespaced>>> = ({ signal }) => getSelectConfigNamespaced(namespaceId,formId,stepId,fieldId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: namespaceId !== null && namespaceId !== undefined && formId !== null && formId !== undefined && stepId !== null && stepId !== undefined && fieldId !== null && fieldId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSelectConfigNamespaced>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetSelectConfigNamespacedQueryResult = NonNullable<Awaited<ReturnType<typeof getSelectConfigNamespaced>>>
-export type GetSelectConfigNamespacedQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-
-/**
- * @summary Get a field's select configuration (namespaced)
- */
-
-export function useGetSelectConfigNamespaced<TData = Awaited<ReturnType<typeof getSelectConfigNamespaced>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>>(
- namespaceId: string,
-    formId: string,
-    stepId: string,
-    fieldId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSelectConfigNamespaced>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetSelectConfigNamespacedQueryOptions(namespaceId,formId,stepId,fieldId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 
@@ -5748,53 +3244,6 @@ export const editSelectConfigNamespaced = async (namespaceId: string,
 
 
 
-
-
-export const getEditSelectConfigNamespacedMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editSelectConfigNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof editSelectConfigNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}, TContext> => {
-
-const mutationKey = ['editSelectConfigNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof editSelectConfigNamespaced>>, {namespaceId: string;formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}> = (props) => {
-          const {namespaceId,formId,stepId,fieldId,data} = props ?? {};
-
-          return  editSelectConfigNamespaced(namespaceId,formId,stepId,fieldId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type EditSelectConfigNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof editSelectConfigNamespaced>>>
-    export type EditSelectConfigNamespacedMutationBody = BodyType<EditSelectConfigRequest>
-    export type EditSelectConfigNamespacedMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Edit a field's select configuration (namespaced)
- */
-export const useEditSelectConfigNamespaced = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editSelectConfigNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof editSelectConfigNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;stepId: string;fieldId: string;data: BodyType<EditSelectConfigRequest>},
-        TContext
-      > => {
-      return useMutation(getEditSelectConfigNamespacedMutationOptions(options));
-    }
-
 export type deleteFieldNamespacedResponse200 = {
   data: unknown
   status: 200
@@ -5857,52 +3306,3 @@ export const deleteFieldNamespaced = async (namespaceId: string,
 
   }
 );}
-
-
-
-
-
-export const getDeleteFieldNamespacedMutationOptions = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFieldNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;fieldId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteFieldNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;fieldId: string}, TContext> => {
-
-const mutationKey = ['deleteFieldNamespaced'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFieldNamespaced>>, {namespaceId: string;formId: string;stepId: string;fieldId: string}> = (props) => {
-          const {namespaceId,formId,stepId,fieldId} = props ?? {};
-
-          return  deleteFieldNamespaced(namespaceId,formId,stepId,fieldId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteFieldNamespacedMutationResult = NonNullable<Awaited<ReturnType<typeof deleteFieldNamespaced>>>
-
-    export type DeleteFieldNamespacedMutationError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>
-
-    /**
- * @summary Delete a field (namespaced)
- */
-export const useDeleteFieldNamespaced = <TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFieldNamespaced>>, TError,{namespaceId: string;formId: string;stepId: string;fieldId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof deleteFieldNamespaced>>,
-        TError,
-        {namespaceId: string;formId: string;stepId: string;fieldId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteFieldNamespacedMutationOptions(options));
-    }

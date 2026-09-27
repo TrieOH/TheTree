@@ -44,8 +44,7 @@ export function ModernVerifyEmail(props: ModernVerifyEmailProps) {
   });
 
   return (
-    <div class="w-full max-w-md mx-auto">
-      <div class="bg-card p-8 rounded-2xl border shadow-sm text-center flex flex-col items-center gap-6">
+    <div class="text-center flex flex-col items-center gap-6">
         {status() === "loading" && (
           <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             <Loader2 class="w-8 h-8 animate-spin" />
@@ -85,6 +84,5 @@ export function ModernVerifyEmail(props: ModernVerifyEmailProps) {
           </Button>
         )}
       </div>
-    </div>
   );
 }

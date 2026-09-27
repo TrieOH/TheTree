@@ -16,6 +16,9 @@ export interface AuthCallbacks {
   onRefresh?: (res?: ApiResponse<AuthTokens>) => void;
 }
 
+/** Session of the api instance this service was built for. */
+const tokensOf = (apiInstance: Api) => apiInstance.interceptor.tokenStore;
+
 export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) => ({
   isSetupDone: async () => apiInstance.get<void>("/auth/setup", { requiresAuth: false }),
 
@@ -29,7 +32,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     );
 
     if (res.success) {
-      saveAuthSession(res.data);
+      saveAuthSession(res.data, tokensOf(apiInstance));
       callbacks?.onSetup?.(res);
     }
 
@@ -46,7 +49,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     );
 
     if (res.success) {
-      saveAuthSession(res.data);
+      saveAuthSession(res.data, tokensOf(apiInstance));
       callbacks?.onLogin?.(res);
     }
 
@@ -68,7 +71,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     const url = `/auth/${provider}/callback?${query}`;
     const res = await apiInstance.get<AuthTokens>(url, { requiresAuth: false });
     if (res.success) {
-      saveAuthSession(res.data);
+      saveAuthSession(res.data, tokensOf(apiInstance));
       callbacks?.onLogin?.(res);
     }
     return res;
@@ -87,28 +90,33 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
   logout: async (options?: { forceLogout?: boolean }) => {
     const url = `/auth/logout${env.PROJECT_ID ? `?project_id=${env.PROJECT_ID}` : ""}`;
     const res = await apiInstance.post<void>(url, undefined, {
-      headers: { "Refresh-Token": getStoredRefreshToken() ?? "" },
+      headers: { "Refresh-Token": getStoredRefreshToken(tokensOf(apiInstance)) ?? "" },
     });
-    if (res.success || options?.forceLogout) clearAuthTokens();
+    if (res.success || options?.forceLogout) clearAuthTokens(tokensOf(apiInstance));
     return res;
   },
 
   refresh: async () => {
+    // `/auth/refresh` takes the token in a header, never in the body, and the
+    // interceptor only adds `Authorization` — without this the call is rejected.
     const res = await apiInstance.post<AuthTokens>(
       "/auth/refresh",
       undefined,
-      { skipRefresh: true }
+      {
+        skipRefresh: true,
+        headers: { "Refresh-Token": getStoredRefreshToken(tokensOf(apiInstance)) ?? "" },
+      }
     );
 
     if (res.success) {
-      saveAuthSession(res.data);
+      saveAuthSession(res.data, tokensOf(apiInstance));
       callbacks?.onRefresh?.(res);
     }
 
     return res;
   },
 
-  profile: () => getUserInfo(),
+  profile: () => getUserInfo(tokensOf(apiInstance)),
 
   sendForgotPassword: async (email: string) => {
     const options = { requiresAuth: false };

@@ -401,13 +401,13 @@ function ToastItem(props: ToastItemProps) {
     >
       <Show when={iconMeta()}>
         {(meta) => (
-          <div class={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full p-1 ${meta().wrapper}`}>
+          <div class={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full p-1 ${meta().wrapper}`}>
             {meta().icon()}
           </div>
         )}
       </Show>
 
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0 flex-1 mt-px">
         <p class="font-medium leading-snug">{toast.title}</p>
         <Show when={toast.description}>
           <p class="mt-0.5 text-xs leading-snug text-muted-foreground">{toast.description}</p>

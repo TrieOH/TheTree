@@ -25,7 +25,10 @@ export const env = createEnv({
   clientPrefix: "VITE_",
 
   client: {
-    VITE_TRACING_ENABLED: z.coerce.boolean().default(false),
+    VITE_TRACING_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
     VITE_POSTHOG_KEY: z.string(),
     VITE_POSTHOG_HOST: z.url().optional(),
 
@@ -33,7 +36,6 @@ export const env = createEnv({
     VITE_API_URL: z.url(),
     VITE_AUTH_API_URL: z.url(),
     VITE_STORAGE_URL: z.url(),
-    VITE_AUTH_TRANSPORT: z.enum(["bff", "direct"]).default("bff"),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
 
     VITE_UPLOAD_MAX_RETRIES: z.coerce.number().int().min(0).default(5),

@@ -1,4 +1,7 @@
-import { createQueryClient, TanStackQueryProvider } from "@trieoh/front-core";
+import {
+  createQueryClient,
+  TanStackQueryProvider,
+} from "@trieoh/front-core-react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { isVerifiedEmailRequiredError } from "@/shared/lib/errors";

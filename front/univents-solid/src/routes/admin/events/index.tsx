@@ -1,0 +1,242 @@
+import type { JSX } from "@solidjs/web";
+import { createFileRoute } from "@tanstack/solid-router";
+import { useQuery } from "@trieoh/front-core-solid";
+import { Button, EmptyState, PaginatedContainer, type SortState } from "@trieoh/ui-solid";
+import { For, Show, createMemo, createSignal } from "solid-js";
+
+import CalendarIcon from "~icons/lucide/calendar";
+import PlusIcon from "~icons/lucide/plus";
+
+import {
+  allJoinedEventsQueryOptions,
+  allOwnEventsQueryOptions,
+} from "@/features/events/api";
+import { useCreateEventMutation, usePatchEventMutation } from "@/features/events/api/mutations";
+import type { EventI } from "@/features/events/model";
+import { AdminEventCard } from "@/features/events/ui/AdminEventCard";
+import {
+  ManageEventDialog,
+  type ManageEventValues,
+} from "@/features/events/ui/ManageEventDialog";
+import { AdminCreateEventCard } from "@/features/events/ui/AdminCreateEventCard";
+
+const Calendar = CalendarIcon as unknown as (props: { class?: string }) => JSX.Element;
+const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
+
+export const Route = createFileRoute("/admin/events/")({
+  head: () => ({ meta: [{ title: "Eventos - Admin - Univents" }] }),
+  component: AdminEventsPage,
+});
+
+const STATUS_SORT_ORDER: Record<EventI["status"], number> = {
+  draft: 0,
+  active: 1,
+  discontinued: 2,
+};
+
+function AdminEventsPage(): JSX.Element {
+  const [filter, setFilter] = createSignal("");
+  const [sort, setSort] = createSignal<SortState<EventI>>({
+    field: "created_at",
+    direction: "desc",
+  });
+  const [editing, setEditing] = createSignal<EventI | null>(null);
+  const [creating, setCreating] = createSignal(false);
+  const createMutation = useCreateEventMutation();
+  const patchMutation = usePatchEventMutation();
+  const ownedQuery = useQuery(allOwnEventsQueryOptions());
+  const joinedQuery = useQuery(allJoinedEventsQueryOptions());
+
+  const events = createMemo(() => {
+    const owned = ownedQuery().data;
+    const joined = joinedQuery().data;
+    if (!owned || !joined) return [];
+
+    const seen = new Set<string>();
+    return [...owned, ...joined].filter((event) => {
+      if (seen.has(event.id)) return false;
+      seen.add(event.id);
+      return true;
+    });
+  });
+
+  const saveEvent = async (values: ManageEventValues): Promise<boolean> => {
+    const current = editing();
+    const payload = {
+      full_name: values.full_name,
+      slug: values.slug,
+      acronym: values.acronym || null,
+      description: values.description || null,
+      contact_email: values.contact_email || null,
+      logo_url: values.logo_url ?? current?.logo_url ?? null,
+      banner_url: values.banner_url ?? current?.banner_url ?? null,
+    };
+
+    try {
+      if (current) await patchMutation.mutateAsync({ eventId: current.id, data: payload });
+      else await createMutation.mutateAsync(payload);
+    } catch {
+      return false;
+    }
+
+    setCreating(false);
+    setEditing(null);
+    return true;
+  };
+
+  return (
+    <Show
+      when={ownedQuery().isSuccess && joinedQuery().isSuccess}
+      fallback={
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-6">
+          <For each={[1, 2, 3, 4]}>
+            {() => <div class="h-40 animate-pulse rounded-lg bg-muted" />}
+          </For>
+        </div>
+      }
+    >
+      <AdminEventsContent
+        events={events()}
+        filter={filter()}
+        onFilterChange={setFilter}
+        sort={sort()}
+        onSortChange={setSort}
+        onEdit={setEditing}
+        onCreate={() => setCreating(true)}
+      />
+
+      <Show when={editing()} keyed fallback={
+        <ManageEventDialog
+          open={creating()}
+          event={null}
+          onOpenChange={(open) => !open && setCreating(false)}
+          onSubmit={saveEvent}
+        />
+      }>
+        {(current) => (
+          <ManageEventDialog
+            open
+            event={current}
+            onOpenChange={(open) => !open && setEditing(null)}
+            onSubmit={saveEvent}
+          />
+        )}
+      </Show>
+    </Show>
+  );
+}
+
+function AdminEventsContent(props: {
+  events: EventI[];
+  filter: string;
+  onFilterChange: (value: string) => void;
+  sort: SortState<EventI>;
+  onSortChange: (sort: SortState<EventI>) => void;
+  onEdit: (event: EventI) => void;
+  onCreate: () => void;
+}): JSX.Element {
+
+  const visible = createMemo(() => {
+    const search = props.filter.trim().toLowerCase();
+    if (!search) return props.events;
+
+    return props.events.filter((event) =>
+      [
+        event.full_name,
+        event.slug,
+        event.acronym ?? "",
+        event.contact_email ?? "",
+        event.status,
+      ].some((value) => value.toLowerCase().includes(search)),
+    );
+  });
+
+  const emptyStateAction = (
+    <Button
+      size="sm"
+      class="gap-2 rounded-sm py-4"
+      onClick={() => props.onCreate()}
+    >
+      <Plus class="size-4" />
+      Novo evento
+    </Button>
+  );
+
+  return (
+    <PaginatedContainer<EventI>
+      items={visible()}
+      layout="grid"
+      minItemWidth="16rem"
+      maxRows={(columns) => (columns === 1 ? 8 : 2)}
+      gap="2"
+      sort={props.sort}
+      onSortChange={props.onSortChange}
+      sortFields={[
+        {
+          key: "created_at",
+          label: "Data de criação",
+          ascLabel: "Mais antigos primeiro",
+          descLabel: "Mais recentes primeiro",
+          comparator: (a, b) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime(),
+        },
+        {
+          key: "full_name",
+          label: "Nome",
+          ascLabel: "A → Z",
+          descLabel: "Z → A",
+        },
+        {
+          key: "slug",
+          label: "Slug",
+          ascLabel: "A → Z",
+          descLabel: "Z → A",
+        },
+        {
+          key: "status",
+          label: "Status",
+          ascLabel: "Rascunho primeiro",
+          descLabel: "Descontinuado primeiro",
+          comparator: (a, b) =>
+            STATUS_SORT_ORDER[a.status] -
+            STATUS_SORT_ORDER[b.status],
+        },
+      ]}
+      filterValue={props.filter}
+      onFilterChange={props.onFilterChange}
+      filterPlaceholder="Buscar por nome, slug, sigla ou e-mail..."
+      itemLabel="eventos"
+      renderItems={(slice, options) => (
+        <>
+          <AdminCreateEventCard
+            index={0}
+            animate={options.animate}
+            onCreate={props.onCreate}
+          />
+
+          <For each={slice}>
+            {(event, index) => (
+              <AdminEventCard
+                event={event}
+                index={index() + 1}
+                animate={options.animate}
+                onEdit={props.onEdit}
+              />
+            )}
+          </For>
+        </>
+      )}
+      emptyState={
+        <EmptyState
+          class="border-0 bg-transparent px-0 py-4 shadow-none"
+          icon={<Calendar class="size-6" />}
+          eyebrow="Eventos"
+          title="Nenhum evento encontrado"
+          description="Crie um evento para começar a organizar o dashboard do admin."
+          action={emptyStateAction}
+        />
+      }
+    />
+  );
+}

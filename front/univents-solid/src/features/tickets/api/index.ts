@@ -1,6 +1,18 @@
 import { orvalData } from "@trieoh/api-client";
-import { getEditionMyTicket, listTicketTypes } from "@trieoh/univents-api";
-import type { MyTicket, TicketType } from "@trieoh/univents-api/schemas";
+import {
+  createTicketType,
+  getEditionAttendeeCount,
+  getEditionMyTicket,
+  listTicketTypes,
+  patchTicketType,
+} from "@trieoh/univents-api";
+import type {
+  AttendeeCount,
+  CreateTicketTypeRequest,
+  MyTicket,
+  PatchTicketTypeRequest,
+  TicketType,
+} from "@trieoh/univents-api/schemas";
 import { ticketKeys } from "./query-keys";
 
 export const ticketsQueryOptions = (editionId: string) => ({
@@ -9,6 +21,8 @@ export const ticketsQueryOptions = (editionId: string) => ({
     listTicketTypes(editionId, { public: true }).then(orvalData<TicketType[]>),
 });
 
+export const allTicketsQueryOptions = ticketsQueryOptions;
+
 export const myTicketQueryOptions = (editionId: string) => ({
   queryKey: ticketKeys.mine(editionId),
   queryFn: () =>
@@ -16,3 +30,23 @@ export const myTicketQueryOptions = (editionId: string) => ({
       .then((response) => orvalData<MyTicket | null>(response) ?? null)
       .catch(() => null),
 });
+
+export const attendeeCountQueryOptions = (editionId: string) => ({
+  queryKey: ticketKeys.attendeeCount(editionId),
+  queryFn: () =>
+    getEditionAttendeeCount(editionId, { public: true }).then(
+      orvalData<AttendeeCount>,
+    ),
+});
+
+export const createTicketFn = (
+  data: CreateTicketTypeRequest,
+  editionId: string,
+) =>
+  createTicketType(editionId, data).then(orvalData<TicketType>);
+
+export const patchTicketFn = (
+  data: PatchTicketTypeRequest,
+  ticketId: string,
+) =>
+  patchTicketType(ticketId, data).then(orvalData<TicketType>);

@@ -3,7 +3,7 @@ import { redirect } from "@tanstack/react-router";
 import {
   requireAuth as requireAuthBase,
   requireGuest as requireGuestBase,
-} from "@trieoh/front-core";
+} from "@trieoh/front-core-react";
 
 type GuardArgs = Parameters<typeof requireAuthBase>[0];
 

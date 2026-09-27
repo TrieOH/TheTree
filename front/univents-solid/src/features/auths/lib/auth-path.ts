@@ -56,7 +56,7 @@ export function isAuthOnlyPath(pathname: string) {
 }
 
 export function requiresVerifiedEmail(pathname: string) {
-  if (pathname === "/auth/verify-email") return false;
+  if (pathname === "/auth/verify") return false;
   return (
     isAuthOnlyPath(pathname) ||
     /^\/events\/[^/]+(?:\/|$)/.test(pathname) ||

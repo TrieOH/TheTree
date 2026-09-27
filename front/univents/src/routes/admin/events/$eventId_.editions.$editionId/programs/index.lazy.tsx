@@ -1,7 +1,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
-import type { SortState } from "@trieoh/ui-base";
-import { EmptyState, PaginatedContainer } from "@trieoh/ui-base";
+import type { SortState } from "@trieoh/ui-react";
+import { EmptyState, PaginatedContainer } from "@trieoh/ui-react";
 import { CalendarClock, CalendarDays, CalendarRange, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {

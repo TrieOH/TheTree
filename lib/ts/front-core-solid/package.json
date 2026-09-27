@@ -1,0 +1,30 @@
+{
+  "name": "@trieoh/front-core-solid",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@tanstack/query-core": "catalog:"
+  },
+  "peerDependencies": {
+    "@tanstack/solid-router": "^2.0.0-rc.6",
+    "@trieoh/front-core": "workspace:*",
+    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts-solid": "catalog:",
+    "posthog-js": "catalog:",
+    "solid-js": "catalog:solid"
+  },
+  "devDependencies": {
+    "@tanstack/query-core": "catalog:",
+    "@tanstack/solid-router": "^2.0.0-rc.6",
+    "@trieoh/front-core": "workspace:*",
+    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/identityx-sdk-ts-solid": "catalog:",
+    "posthog-js": "catalog:",
+    "solid-js": "catalog:solid"
+  }
+}

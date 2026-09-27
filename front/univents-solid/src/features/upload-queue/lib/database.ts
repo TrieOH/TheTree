@@ -1,0 +1,91 @@
+import type { UploadTask } from "../model/types";
+
+const DATABASE_NAME = "univents-upload-queue";
+const DATABASE_VERSION = 3;
+const TASK_STORE = "tasks";
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+function openDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(TASK_STORE)) {
+        database.createObjectStore(TASK_STORE, { keyPath: "id" });
+      }
+
+      if (event.oldVersion < 2) {
+        const store = request.transaction?.objectStore(TASK_STORE);
+        const cursorRequest = store?.openCursor();
+        if (cursorRequest) {
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (!cursor) return;
+            if (String(cursor.primaryKey).startsWith("upload-demo-")) {
+              cursor.delete();
+            }
+            cursor.continue();
+          };
+        }
+      }
+
+      if (event.oldVersion < 3) {
+        const store = request.transaction?.objectStore(TASK_STORE);
+        const cursorRequest = store?.openCursor();
+        if (cursorRequest) {
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (!cursor) return;
+
+            const task = cursor.value as UploadTask;
+            if (!ALLOWED_IMAGE_TYPES.has(task.contentType)) cursor.delete();
+            cursor.continue();
+          };
+        }
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () =>
+      reject(
+        request.error ?? new Error("Não foi possível abrir a fila de uploads."),
+      );
+  });
+}
+
+function requestResult<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () =>
+      reject(
+        request.error ??
+          new Error("Falha na operação com o banco de dados da fila."),
+      );
+  });
+}
+
+export async function readUploadTasks(): Promise<UploadTask[]> {
+  const database = await openDatabase();
+  const transaction = database.transaction(TASK_STORE, "readonly");
+  const store = transaction.objectStore(TASK_STORE);
+  const tasks = await requestResult(store.getAll());
+  database.close();
+  return (tasks as UploadTask[]).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function writeUploadTask(task: UploadTask): Promise<void> {
+  const database = await openDatabase();
+  const transaction = database.transaction(TASK_STORE, "readwrite");
+  const store = transaction.objectStore(TASK_STORE);
+  await requestResult(store.put(task));
+  database.close();
+}
+
+export async function deleteUploadTask(taskId: string): Promise<void> {
+  const database = await openDatabase();
+  const transaction = database.transaction(TASK_STORE, "readwrite");
+  const store = transaction.objectStore(TASK_STORE);
+  await requestResult(store.delete(taskId));
+  database.close();
+}

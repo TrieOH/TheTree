@@ -1,4 +1,4 @@
-import { AuthenticatedPostHogProvider } from "@trieoh/front-core";
+import { AuthenticatedPostHogProvider } from "@trieoh/front-core-react";
 import type { ReactNode } from "react";
 import { env } from "#/env";
 

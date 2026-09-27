@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/solid-router";
-import { useQueryClient } from "@trieoh/front-core/solid";
-import { Loading, createMemo, untrack } from "solid-js";
+import { createFileRoute, Link } from "@tanstack/solid-router";
+import { useQuery } from "@trieoh/front-core-solid";
+import { Show, createMemo, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
 import ShareIcon from "~icons/lucide/share-2";
+import ArrowRightIcon from "~icons/lucide/arrow-right";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
 import { ContactSection } from "@/features/events/ui/ContactSection";
@@ -12,12 +13,15 @@ import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { EditionSummaryCard } from "@/features/editions/ui/EditionSummaryCard";
 import { EventCatalog } from "@/features/events/ui/EventCatalog";
+import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { handleShare } from "@/shared/lib/share";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 
 const Calendar = CalendarIcon as unknown as () => JSX.Element;
 const MapPin = MapPinIcon as unknown as () => JSX.Element;
 const Share = ShareIcon as unknown as () => JSX.Element;
+const ArrowRight = ArrowRightIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/events/$slug/")({
   head: ({ params }) => ({
@@ -28,27 +32,48 @@ export const Route = createFileRoute("/events/$slug/")({
 
 function EventPage() {
   const params = Route.useParams();
-  const queryClient = useQueryClient();
-  const event = createMemo(() =>
-    queryClient.fetchQuery(publicEventBySlugQueryOptions(params().slug)),
-  );
+  const eventQuery = useQuery(() => publicEventBySlugQueryOptions(params().slug));
+  const event = createMemo(() => eventQuery().data);
   return (
-    <Loading fallback={<div class="min-h-screen animate-pulse bg-muted" />}>
-      <EventContent event={event()} />
-    </Loading>
+    <Show
+      when={!eventQuery().isPending}
+      fallback={<div class="min-h-screen animate-pulse bg-muted" />}
+    >
+      <Show
+        when={!eventQuery().isError}
+        fallback={
+          <main class="grid min-h-screen place-items-center bg-background px-6">
+            <EventQueryError
+              message="Não foi possível carregar este evento. Verifique sua conexão e tente novamente."
+              onRetry={() => void eventQuery().refetch()}
+            />
+          </main>
+        }
+      >
+        <Show
+          when={event()}
+          fallback={<div class="p-12 text-center">Evento não encontrado.</div>}
+        >
+          {(loaded) => <EventContent event={loaded()} />}
+        </Show>
+      </Show>
+    </Show>
   );
 }
 
 function EventContent(props: { event: EventI | null }) {
   const event = untrack(() => props.event);
   if (!event) return <div class="p-12 text-center">Evento não encontrado.</div>;
+  const bannerUrl = () => resolveStorageUrl(event.banner_url);
+  const logoUrl = () => resolveStorageUrl(event.logo_url);
+
   return (
     <main class="min-h-screen bg-background pb-24">
       <div class="relative">
         <div class="relative h-40 w-full border-b-4 border-b-accent min-[300px]:h-48 sm:h-52 md:h-64">
-          {event.banner_url ? (
+          {bannerUrl() ? (
             <img
-              src={event.banner_url}
+              src={bannerUrl()}
               alt={event.full_name}
               class="h-full w-full object-cover"
             />
@@ -65,10 +90,18 @@ function EventContent(props: { event: EventI | null }) {
           <Share />
         </button>
         <div class="absolute inset-x-0 top-full z-10 flex -translate-y-1/2 justify-center">
-          <div class="flex size-37.5 items-center justify-center rounded-full border-4 border-accent bg-primary shadow-lg sm:size-40">
-            <span class="text-xl font-bold text-primary-foreground sm:text-2xl md:text-3xl">
-              {event.acronym ?? event.full_name.slice(0, 2).toUpperCase()}
-            </span>
+          <div class="flex size-37.5 items-center justify-center overflow-hidden rounded-full border-4 border-accent bg-primary shadow-lg sm:size-40">
+            {logoUrl() ? (
+              <img
+                src={logoUrl()}
+                alt={event.full_name}
+                class="size-full object-cover"
+              />
+            ) : (
+              <span class="text-xl font-bold text-primary-foreground sm:text-2xl md:text-3xl">
+                {event.acronym ?? event.full_name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -83,12 +116,11 @@ function EventContent(props: { event: EventI | null }) {
 }
 
 function EditionDetails(props: { event: EventI }) {
-  const queryClient = useQueryClient();
-  const editions = createMemo(() =>
-    queryClient.fetchQuery(allPublicEditionsQueryOptions(props.event.id)),
-  );
+  const editionsQuery = useQuery(() => allPublicEditionsQueryOptions(props.event.id));
+  const editions = createMemo(() => editionsQuery().data ?? []);
   return (
-    <Loading
+    <Show
+      when={!editionsQuery().isPending}
       fallback={
         <div class="mt-6 grid gap-4 md:grid-cols-2">
           <div class="h-28 animate-pulse rounded-xl bg-muted" />
@@ -96,8 +128,18 @@ function EditionDetails(props: { event: EventI }) {
         </div>
       }
     >
-      <EditionBody event={props.event} editions={editions()} />
-    </Loading>
+      <Show
+        when={!editionsQuery().isError}
+        fallback={
+          <EventQueryError
+            message="Não foi possível carregar as edições deste evento."
+            onRetry={() => void editionsQuery().refetch()}
+          />
+        }
+      >
+        <EditionBody event={props.event} editions={editions()} />
+      </Show>
+    </Show>
   );
 }
 
@@ -165,12 +207,17 @@ function EditionBody(props: { event: EventI; editions: EditionI[] }) {
               <EditionSummaryCard edition={edition} />
             ))}
           </div>
-          <a
-            class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
-            href={`/events/${props.event.slug}/editions`}
-          >
-            Ver todas as Edições <span aria-hidden="true">→</span>
-          </a>
+          {/* View all */}
+          <div class="mt-5">
+            <Link
+              to="/events/$slug/editions"
+              params={{ slug: props.event.slug }}
+              class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:gap-2.5 transition-all duration-200"
+            >
+              Ver todas as Edições
+              <ArrowRight class="w-4 h-4" />
+            </Link>
+          </div>
         </section>
       )}
       {active?.location_name && (
@@ -202,7 +249,7 @@ function EditionBody(props: { event: EventI; editions: EditionI[] }) {
       {active && (
         <EventCart
           editionId={active.id}
-          checkoutHref={`/events/${props.event.slug}/checkout`}
+          eventSlug={props.event.slug}
         />
       )}
     </>

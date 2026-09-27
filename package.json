@@ -16,8 +16,9 @@
     "deploy": "pnpm -r deploy",
     "typegen": "pnpm -r cf-typegen",
     "orval": "orval",
-    "prepare": "husky",
-    "clean": "pnpm -r exec rm -rf dist .turbo node_modules"
+    "check:boundaries": "node tools/check-package-boundaries.mjs",
+    "clean": "pnpm -r exec rm -rf dist .turbo node_modules",
+    "prepare": "husky"
   },
   "devDependencies": {
     "husky": "^9.1.7",

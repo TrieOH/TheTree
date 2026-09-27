@@ -63,8 +63,12 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>();
 
 export function AuthProvider(props: AuthProviderProps) {
-  const [state, setState] = createSignal(authStore.getSnapshot());
-  const [profile, setProfile] = createSignal<TokenSubject | null>(null);
+  const [state, setState] = createSignal(authStore.getSnapshot(), {
+    ownedWrite: true,
+  });
+  const [profile, setProfile] = createSignal<TokenSubject | null>(null, {
+    ownedWrite: true,
+  });
   const unsubscribe = authStore.subscribe(() =>
     setState(authStore.getSnapshot()),
   );
@@ -110,40 +114,52 @@ export function AuthProvider(props: AuthProviderProps) {
         if (props.adapter) {
           try {
             const restored = await props.adapter.restoreSession();
-            if (typeof restored === "boolean")
-              authStore.set({
-                isAuthenticated: restored,
-                isInitializing: false,
-              });
-            else {
-              setProfile(restored.profile);
-              authStore.set({
-                isAuthenticated: restored.isAuthenticated,
-                isInitializing: false,
-              });
-            }
+            queueMicrotask(() => {
+              if (typeof restored === "boolean") {
+                authStore.set({
+                  isAuthenticated: restored,
+                  isInitializing: false,
+                });
+              } else {
+                setProfile(restored.profile);
+                authStore.set({
+                  isAuthenticated: restored.isAuthenticated,
+                  isInitializing: false,
+                });
+              }
+            });
           } catch {
-            authStore.reset();
-            logger.warn("Could not restore server-managed session.");
+            queueMicrotask(() => {
+              authStore.reset();
+              logger.warn("Could not restore server-managed session.");
+            });
           }
           return;
         }
         if (getTokenClaims()) {
-          authStore.set({ isAuthenticated: true, isInitializing: false });
+          queueMicrotask(() => {
+            authStore.set({ isAuthenticated: true, isInitializing: false });
+          });
           return;
         }
         if (isRefreshSessionExpired()) {
-          authStore.reset();
-          authStore.set({ isInitializing: false });
+          queueMicrotask(() => {
+            authStore.reset();
+            authStore.set({ isInitializing: false });
+          });
           return;
         }
         try {
           await api.interceptor.refreshToken();
         } catch {
-          authStore.reset();
-          logger.warn("Could not restore session.");
+          queueMicrotask(() => {
+            authStore.reset();
+            logger.warn("Could not restore session.");
+          });
         } finally {
-          authStore.set({ isInitializing: false });
+          queueMicrotask(() => {
+            authStore.set({ isInitializing: false });
+          });
         }
       })(),
   );

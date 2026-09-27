@@ -53,10 +53,17 @@ Serves the production build locally.
 
 ### `npm test`
 
-Runs the test suite.
+Runs both suites:
+
+- `pnpm test:ui` — Solid component tests in `tests/ui/` (jsdom).
+- `pnpm test:workers` — Worker/handler tests in `tests/workers/` (real `workerd`
+  via `@cloudflare/vitest-plugin`, using the bindings from `wrangler.jsonc`).
+
+Worker tests never hit the network: `remoteBindings: false` makes bindings like
+`AI` local stubs, and each test spies on `env.AI.run` it needs.
 
 ## Deployment
 
-Deploy the `dist/client` folder to any static host provider (netlify, surge, now, etc.)
+Run `pnpm deploy` to build and deploy the Worker and static assets.
 
 ## This project was created with the [Solid CLI](https://github.com/solidjs-community/solid-cli)

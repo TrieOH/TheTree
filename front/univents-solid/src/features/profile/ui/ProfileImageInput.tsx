@@ -1,0 +1,85 @@
+import type { JSX } from "@solidjs/web";
+import { createSignal, Show } from "solid-js";
+import ImagePlusIcon from "~icons/lucide/image-plus";
+import UploadIcon from "~icons/lucide/upload";
+import { validateImageFileSync } from "@/features/storage/api";
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
+
+const ImagePlus = ImagePlusIcon as unknown as () => JSX.Element;
+const Upload = UploadIcon as unknown as () => JSX.Element;
+
+export function ProfileImageInput(props: {
+  label: string;
+  currentUrl?: string | null;
+  variant: "banner" | "avatar";
+  onSelect: (file: File) => void;
+}) {
+  const [preview, setPreview] = createSignal<string>();
+  const [error, setError] = createSignal<string>();
+  const [dragging, setDragging] = createSignal(false);
+  let dragDepth = 0;
+  const select = (file?: File) => {
+    if (!file) return;
+    const validation = validateImageFileSync(file);
+    if (!validation.ok) return setError(validation.error);
+    setError();
+    setPreview(URL.createObjectURL(file));
+    props.onSelect(file);
+  };
+  return (
+    <div
+      class={`relative ${props.variant === "banner" ? "absolute inset-0 h-full" : ""}`}
+    >
+      <label
+        class={`group relative flex cursor-pointer overflow-hidden border border-dashed bg-background transition-colors hover:border-primary ${dragging() ? "border-primary bg-primary/10" : "border-border"} ${props.variant === "avatar" ? "size-24 items-center justify-center rounded-full border-4 border-background shadow-xl md:size-32" : "absolute inset-0 size-full items-center justify-center"}`}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          dragDepth += 1;
+          setDragging(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          dragDepth -= 1;
+          if (dragDepth <= 0) {
+            dragDepth = 0;
+            setDragging(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          dragDepth = 0;
+          setDragging(false);
+          select(event.dataTransfer?.files[0]);
+        }}
+      >
+        <Show when={preview() || props.currentUrl}>
+          <img
+            src={preview() ?? resolveStorageUrl(props.currentUrl) ?? ""}
+            alt={`Prévia de ${props.label.toLowerCase()}`}
+            class="absolute inset-0 size-full object-cover"
+          />
+        </Show>
+        <div
+          class={`relative z-10 flex items-center gap-2 rounded-lg bg-background/90 px-3 py-2 text-xs font-medium shadow-md backdrop-blur-sm ${props.variant === "avatar" ? "size-9 justify-center rounded-full p-0 opacity-90" : ""}`}
+        >
+          {props.variant === "avatar" ? <ImagePlus /> : <Upload />}
+          {props.variant === "banner" && (
+            <span>
+              {props.currentUrl ? `Trocar ${props.label}` : `Adicionar ${props.label}`}
+            </span>
+          )}
+        </div>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          class="sr-only"
+          onChange={(event) => select(event.currentTarget.files?.[0])}
+        />
+      </label>
+      {error() && (
+        <span class="mt-1 block text-xs text-destructive">{error()}</span>
+      )}
+    </div>
+  );
+}

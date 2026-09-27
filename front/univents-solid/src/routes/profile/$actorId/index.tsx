@@ -1,0 +1,115 @@
+import { createFileRoute } from "@tanstack/solid-router";
+import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
+import { createMemo } from "solid-js";
+import z from "zod";
+import { setOwnProfilePath } from "@/features/profile/lib/own-profile-path";
+import { ProfileView } from "@/features/profile/ui/ProfileView";
+
+const PROFILE_TAB_TITLES: Record<string, string> = {
+  about: "Perfil",
+  badges: "Crachás",
+  certificates: "Certificados",
+  purchases: "Compras",
+};
+
+export const Route = createFileRoute("/profile/$actorId/")({
+  validateSearch: z.object({
+    tab: z
+      .enum(["about", "badges", "certificates", "purchases"])
+      .catch("about"),
+  }),
+  // `head` receives the match, so changing the tab changes the title too.
+  head: ({ match, params }) => ({
+    meta: [
+      {
+        title: `${PROFILE_TAB_TITLES[match.search.tab] ?? "Perfil"} de ${params.actorId} - Univents`,
+      },
+    ],
+  }),
+  component: RouteComponent,
+});
+
+function RouteComponent() {
+  const params = Route.useParams();
+  const search = Route.useSearch();
+
+  const { auth } = useAuth();
+
+  const navigate = Route.useNavigate();
+
+  const viewerActorId = createMemo(() => auth.profile()?.id);
+
+  const isOwn = createMemo(() => {
+    const viewerId = viewerActorId();
+    const actorParam = params().actorId;
+    if (viewerId && actorParam === viewerId) return true;
+    const authProfile = auth.profile();
+    if (
+      authProfile &&
+      "handle" in authProfile &&
+      typeof authProfile.handle === "string" &&
+      actorParam === authProfile.handle
+    ) {
+      return true;
+    }
+    return false;
+  });
+
+  const loadProfile = async (identifier: string) => {
+    const isActorId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
+      identifier,
+    );
+
+    const response = isActorId
+      ? await auth.getActorProfile(identifier)
+      : await auth.getProfileByHandle(identifier);
+
+    if (!response.success) return response;
+
+    const handle = response.data?.handle;
+
+    if (isActorId && handle && handle !== identifier) {
+      await navigate({
+        to: "/profile/$actorId",
+        params: {
+          actorId: handle,
+        },
+        search: {
+          tab: search().tab,
+        },
+        replace: true,
+      });
+    }
+
+    setOwnProfilePath(
+      response.data?.actor_id && response.data.actor_id === viewerActorId()
+        ? `/profile/${handle ?? identifier}`
+        : null,
+    );
+
+    return response;
+  };
+
+  return (
+    <ProfileView
+      actorId={params().actorId}
+      loadProfile={loadProfile}
+      ownProfile={isOwn}
+      viewerActorId={viewerActorId}
+      activeTab={search().tab}
+      onTabChange={(nextTab) => {
+        if (nextTab === search().tab) return;
+
+        void navigate({
+          to: "/profile/$actorId",
+          params: {
+            actorId: params().actorId,
+          },
+          search: {
+            tab: nextTab,
+          },
+        });
+      }}
+    />
+  );
+}

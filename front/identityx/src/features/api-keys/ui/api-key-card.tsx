@@ -1,5 +1,5 @@
 import { timeAgo } from "@trieoh/shared-utils";
-import { Badge } from "@trieoh/ui-base/shadcn/badge";
+import { Badge } from "@trieoh/ui-react/shadcn/badge";
 import { Copy, KeySquare, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";

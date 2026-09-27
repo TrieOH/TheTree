@@ -1,5 +1,6 @@
 import { AuthInterceptor, type RequestOptions as InterceptorOptions } from "./interceptor";
 import type { AuthTokenClaims } from "../types/token-types";
+import type { TokenStore } from "../store/token-store";
 import {
   createDefaultFetchClient,
   type DefaultFetchClientConfig,
@@ -15,6 +16,16 @@ export type { DefaultFetchResult as ApiResponse };
 export interface ApiRequestOptions extends FetchClientOptions {
   requiresAuth?: boolean;
   skipRefresh?: boolean;
+}
+
+/**
+ * Fetch-client config plus the session storage and transport the auth
+ * interceptor uses. Without them the SDK keeps using the browser's storages and
+ * the global `fetch`.
+ */
+export interface ApiClientConfig extends Omit<DefaultFetchClientConfig, "adapter"> {
+  tokenStore?: TokenStore;
+  fetch?: typeof fetch;
 }
 
 function toFetchOptions(options?: ApiRequestOptions): FetchClientOptions | undefined {
@@ -43,16 +54,20 @@ export class Api {
     baseURL?: string,
     authBaseURL?: string,
     onTokenRefreshed?: (claims: AuthTokenClaims) => void,
-    clientConfig?: Omit<DefaultFetchClientConfig, "adapter">,
+    clientConfig?: ApiClientConfig,
   ) {
+    const { tokenStore, fetch: fetchImpl, ...fetchConfig } = clientConfig ?? {};
+
     this.interceptor = new AuthInterceptor({
       baseURL,
       authBaseURL,
       onTokenRefreshed,
+      tokenStore,
+      fetch: fetchImpl,
     });
 
     this.client = createDefaultFetchClient({
-      ...clientConfig,
+      ...fetchConfig,
       adapter: this.interceptor.fetch.bind(this.interceptor),
     });
   }
@@ -89,7 +104,7 @@ export class Api {
 export function createFetcher(config?: {
   baseURL?: string;
   authBaseURL?: string;
-  clientConfig?: Omit<DefaultFetchClientConfig, "adapter">;
+  clientConfig?: ApiClientConfig;
 }) {
   const api = new Api(
     config?.baseURL,
@@ -112,7 +127,7 @@ export function createFetcher(config?: {
 export function createQueryFetcher(config?: {
   baseURL?: string;
   authBaseURL?: string;
-  clientConfig?: Omit<DefaultFetchClientConfig, "adapter">;
+  clientConfig?: ApiClientConfig;
 }) {
   const api = new Api(
     config?.baseURL,

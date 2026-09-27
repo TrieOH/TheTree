@@ -3,7 +3,7 @@ import { redirect } from "@tanstack/react-router";
 import {
   requireAuth as requireAuthCore,
   requireGuest as requireGuestCore,
-} from "@trieoh/front-core";
+} from "@trieoh/front-core-react";
 import type { useAuth } from "@trieoh/identityx-sdk-ts-react";
 import { profileKeys } from "@/features/profile/api/query-keys";
 

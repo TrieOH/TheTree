@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { appLocalStorage } from "@/shared/lib/browser-storage";
 
 export type CartItem = {
   id: string;
@@ -9,22 +10,38 @@ export type CartItem = {
   stock: number | null;
 };
 
-type Carts = Record<string, CartItem[]>;
-const storageKey = "univents-cart";
+export type Carts = Record<string, CartItem[]>;
+export const CART_STORAGE_KEY = "univents-cart";
+
+const isValidCartItem = (item: unknown): item is CartItem =>
+  typeof item === "object" &&
+  item !== null &&
+  typeof (item as CartItem).id === "string" &&
+  ((item as CartItem).type === "ticket" || (item as CartItem).type === "product") &&
+  typeof (item as CartItem).name === "string" &&
+  typeof (item as CartItem).price_cents === "number" &&
+  typeof (item as CartItem).quantity === "number";
+
+export function sanitizeCarts(raw: unknown): Carts {
+  if (typeof raw !== "object" || raw === null) return {};
+  const cartsObj = (raw as { carts?: Record<string, unknown[]> }).carts;
+  if (typeof cartsObj !== "object" || cartsObj === null) return {};
+
+  const sanitized: Carts = {};
+  for (const [editionId, items] of Object.entries(cartsObj)) {
+    if (Array.isArray(items)) {
+      sanitized[editionId] = items.filter(isValidCartItem);
+    }
+  }
+  return sanitized;
+}
 
 function initialCarts(): Carts {
-  if (typeof window === "undefined") return {};
-  try {
-    return (
-      (
-        JSON.parse(localStorage.getItem(storageKey) ?? "{}") as {
-          carts?: Carts;
-        }
-      ).carts ?? {}
-    );
-  } catch {
-    return {};
-  }
+  const raw = appLocalStorage.getJson<{ carts?: Carts } | null>(
+    CART_STORAGE_KEY,
+    null,
+  );
+  return sanitizeCarts(raw);
 }
 
 const [carts, setCarts] = createSignal<Carts>(initialCarts(), {
@@ -34,7 +51,7 @@ const [carts, setCarts] = createSignal<Carts>(initialCarts(), {
 function update(editionId: string, items: CartItem[]) {
   setCarts((current) => {
     const next = { ...current, [editionId]: items };
-    localStorage.setItem(storageKey, JSON.stringify({ carts: next }));
+    appLocalStorage.setJson(CART_STORAGE_KEY, { carts: next });
     return next;
   });
 }

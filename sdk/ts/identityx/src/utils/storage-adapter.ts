@@ -4,6 +4,25 @@ export interface StorageAdapter {
   removeItem(key: string): void;
 }
 
+/**
+ * In-memory adapter: servers, tests, and the base for custom storages.
+ * Each call returns an isolated store, so two sessions never share tokens.
+ */
+export function createMemoryStorage(
+  initial: Record<string, string> = {},
+): StorageAdapter {
+  const values = new Map(Object.entries(initial));
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      values.set(key, value);
+    },
+    removeItem: (key) => {
+      values.delete(key);
+    },
+  };
+}
+
 export const browserStorage: StorageAdapter = {
   getItem: (key) => (typeof window !== "undefined" ? localStorage.getItem(key) : null),
   setItem: (key, value) => {

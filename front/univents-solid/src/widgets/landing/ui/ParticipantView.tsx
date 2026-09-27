@@ -1,8 +1,8 @@
-import { useNavigate, useRouter } from "@tanstack/solid-router";
+import { useNavigate } from "@tanstack/solid-router";
 import { For, Loading, Show, createMemo } from "solid-js";
-import { useQueryClient } from "@trieoh/front-core/solid";
+import { useQuery } from "@trieoh/front-core-solid";
+import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
-import type { EventI } from "@/features/events/model";
 import { FAQSection, type FAQItem } from "./FAQSection";
 import { EventCard } from "./EventCard";
 import { Reveal } from "@/shared/ui/Reveal";
@@ -87,18 +87,13 @@ const faqs: FAQItem[] = [
 
 export function ParticipantView() {
   const navigate = useNavigate();
-  const router = useRouter();
-  const authenticated = () =>
-    (router.options.context as { auth?: { isAuthenticated: boolean } }).auth
-      ?.isAuthenticated === true;
+  const { isAuthenticated } = useAuth();
 
   const go = () =>
-    void navigate({ to: authenticated() ? "/events" : "/auth" } as never);
+    void navigate({ to: isAuthenticated() ? "/events" : "/auth" } as never);
 
-  const queryClient = useQueryClient();
-  const events = createMemo(() =>
-    queryClient.fetchQuery<EventI[]>(allPublicEventsQueryOptions()),
-  );
+  const eventsQuery = useQuery(allPublicEventsQueryOptions());
+  const events = createMemo(() => eventsQuery().data ?? []);
 
   return (
     <Reveal>
@@ -113,7 +108,7 @@ export function ParticipantView() {
               class="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
               onClick={go}
             >
-              {authenticated()
+              {isAuthenticated()
                 ? "Continuar explorando"
                 : "Entrar para ver eventos"}
             </button>
@@ -224,7 +219,7 @@ export function ParticipantView() {
             class="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             onClick={go}
           >
-            Criar conta grátis
+            {isAuthenticated() ? "Ver eventos" : "Criar conta grátis"}
           </button>
           <p class="text-xs text-muted-foreground/70">
             100% gratuito. Sem cartão de crédito.

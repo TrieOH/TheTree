@@ -1,20 +1,12 @@
 import { authStore } from "../store/auth-store";
-import { tokenStore } from "../store/token-store";
+import { defaultTokenStore, type TokenStore } from "../store/token-store";
 import { logger } from "@trieoh/envoy-fetch-ts";
-import { browserStorage } from "./storage-adapter";
 import type {
   AuthTokenClaims,
   AuthTokens,
   TokenClaims,
   TokenSubject,
 } from "../types/token-types";
-
-
-// Stored only in memory
-let _cachedClaims: AuthTokenClaims | null = null;
-const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
-const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
-const REFRESH_TOKEN_KEY = "trieoh_refresh_token";
 
 export function decodeJwt<T>(token: string): T | null {
   try {
@@ -40,7 +32,10 @@ export function decodeJwt<T>(token: string): T | null {
   }
 }
 
-export function saveAuthSession(tokens: AuthTokens): void {
+export function saveAuthSession(
+  tokens: AuthTokens,
+  store: TokenStore = defaultTokenStore,
+): void {
   const {
     access_token,
     refresh_token,
@@ -55,21 +50,17 @@ export function saveAuthSession(tokens: AuthTokens): void {
     return;
   }
 
-  tokenStore.setAccessToken(access_token);
-
-  const refreshExpiry = new Date(refresh_expires_at).getTime();
   const accessExpiry = new Date(access_expires_at).getTime();
+  const refreshExpiry = new Date(refresh_expires_at).getTime();
 
-  browserStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
-  browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
-  browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
-
-  const sessionData: AuthTokenClaims = {
+  store.setAccessToken(access_token);
+  store.setRefreshToken(refresh_token);
+  store.setAccessExpiry(accessExpiry);
+  store.setRefreshExpiry(refreshExpiry);
+  store.setClaims({
     access_data: claims,
     refresh_expiry_date: refreshExpiry,
-  };
-
-  _cachedClaims = sessionData;
+  });
 
   authStore.set({
     isAuthenticated: true,
@@ -79,14 +70,19 @@ export function saveAuthSession(tokens: AuthTokens): void {
   logger.log("Auth session saved");
 }
 
-export function getStoredRefreshToken(): string | null {
-  return browserStorage.getItem(REFRESH_TOKEN_KEY);
+export function getStoredRefreshToken(
+  store: TokenStore = defaultTokenStore,
+): string | null {
+  return store.getRefreshToken();
 }
 
-export function getTokenClaims(): AuthTokenClaims | null {
-  if (_cachedClaims) return _cachedClaims;
+export function getTokenClaims(
+  store: TokenStore = defaultTokenStore,
+): AuthTokenClaims | null {
+  const cached = store.getClaims();
+  if (cached) return cached;
 
-  const token = tokenStore.getAccessToken();
+  const token = store.getAccessToken();
   if (!token) return null;
 
   const claims = decodeJwt<TokenClaims>(token);
@@ -95,28 +91,26 @@ export function getTokenClaims(): AuthTokenClaims | null {
   // Check if token is expired
   if (claims.exp * 1000 <= Date.now()) return null;
 
-  const refreshExpiryStr = browserStorage.getItem(REFRESH_EXPIRY_KEY);
-  if (!refreshExpiryStr) return null;
+  const refreshExpiry = store.getRefreshExpiry();
+  if (refreshExpiry === null) return null;
 
-  const refreshExpiry = Number(refreshExpiryStr);
-  if (isNaN(refreshExpiry)) return null;
-
-  const sessionData = {
+  const sessionData: AuthTokenClaims = {
     access_data: claims,
     refresh_expiry_date: refreshExpiry,
   };
 
-  _cachedClaims = sessionData;
+  store.setClaims(sessionData);
 
   return sessionData;
 }
 
-function isExpiringSoon(key: string, thresholdSeconds: number): boolean {
+function isExpiringSoon(
+  readExpiry: () => number | null,
+  thresholdSeconds: number,
+): boolean {
   try {
-    const stored = browserStorage.getItem(key);
-    if (!stored) return true;
-    const expiry = Number(stored);
-    if (isNaN(expiry)) return true;
+    const expiry = readExpiry();
+    if (expiry === null) return true;
     return (expiry - Date.now()) <= thresholdSeconds * 1000;
   } catch (e) {
     logger.warn("Error reading expiry:", e);
@@ -124,32 +118,30 @@ function isExpiringSoon(key: string, thresholdSeconds: number): boolean {
   }
 }
 
-export const isTokenExpiringSoon = (t = 30) => isExpiringSoon(ACCESS_EXPIRY_KEY, t);
-export const isRefreshSessionExpired = (t = 10) => isExpiringSoon(REFRESH_EXPIRY_KEY, t);
+export const isTokenExpiringSoon = (t = 30, store: TokenStore = defaultTokenStore) =>
+  isExpiringSoon(() => store.getAccessExpiry(), t);
+export const isRefreshSessionExpired = (t = 10, store: TokenStore = defaultTokenStore) =>
+  isExpiringSoon(() => store.getRefreshExpiry(), t);
 
-export function isAuthenticated(): boolean {
-  if (!tokenStore.getAccessToken()) return false;
-  const stored = browserStorage.getItem(ACCESS_EXPIRY_KEY);
-  if (!stored) return false;
-  const accessExpiryTimestamp = Number(stored);
-  if (isNaN(accessExpiryTimestamp)) return false;
-  return accessExpiryTimestamp > Date.now();
+export function isAuthenticated(store: TokenStore = defaultTokenStore): boolean {
+  if (!store.getAccessToken()) return false;
+  const accessExpiry = store.getAccessExpiry();
+  if (accessExpiry === null) return false;
+  return accessExpiry > Date.now();
 }
 
-export function clearAuthTokens(): void {
-  _cachedClaims = null;
-  tokenStore.clear();
-  browserStorage.removeItem(ACCESS_EXPIRY_KEY);
-  browserStorage.removeItem(REFRESH_EXPIRY_KEY);
-  browserStorage.removeItem(REFRESH_TOKEN_KEY);
+export function clearAuthTokens(store: TokenStore = defaultTokenStore): void {
+  store.clear();
 
   authStore.reset();
 
   logger.log("Auth tokens and claims cleared");
 }
 
-export function getUserInfo(): TokenSubject | null {
-  const claims = getTokenClaims();
+export function getUserInfo(
+  store: TokenStore = defaultTokenStore,
+): TokenSubject | null {
+  const claims = getTokenClaims(store);
   if (!claims) return null;
 
   return claims.access_data.subject;

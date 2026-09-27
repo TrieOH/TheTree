@@ -3,12 +3,16 @@ packages:
   - 'lib/ts/*'
   - 'sdk/ts/*'
 
+catalogs:
+  solid:
+    solid-js: 2.0.0-rc.6
+    '@solidjs/web': 2.0.0-rc.6
+
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.15.5
-  '@trieoh/identityx-sdk-ts-react': ^0.15.5
-  solid-js: 2.0.0-rc.6
-  '@solidjs/web': 2.0.0-rc.6
+  '@trieoh/identityx-sdk-ts': ^0.16.1
+  '@trieoh/identityx-sdk-ts-react': ^0.16.0
+  '@trieoh/identityx-sdk-ts-solid': ^0.16.3
   '@trieoh/identityx-access-sdk-ts': ^0.1.7
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -53,7 +57,8 @@ catalog:
 
   # === Build / Tooling ===
   typescript: ^7.0.2
-  vite: ^8.0.16
+  vite: ^8.2.2
+  '@solidjs/vite-plugin': ^3.0.0-next.39
   '@vitejs/plugin-react': ^6.0.2
   '@cloudflare/vite-plugin': ^1.39.2
   wrangler: ^4.97.0
@@ -86,7 +91,15 @@ catalog:
   "@opentelemetry/otlp-transformer": ^0.221.0
 
 overrides:
+  'univents-legacy>solid-js': 1.9.15
+  'payssage>solid-js': 1.9.15
+  'informd>solid-js': 1.9.15
+  'identityx>solid-js': 1.9.15
+  '@tanstack/devtools>solid-js': 1.9.15
+  '@tanstack/devtools-ui>solid-js': 1.9.15
+  '@tanstack/react-devtools>solid-js': 1.9.15
   browserslist: 4.28.7
+  'posthog-js>fflate': ^0.4.9
   fflate: 0.8.3
   dompurify: 3.4.13
   js-yaml: 4.3.2
@@ -95,12 +108,14 @@ overrides:
   "@opentelemetry/core": ">=2.8.0"
   "@tanstack/query-core": "5.101.4"
   postcss: ">=8.5.23"
+  devalue: ">=5.9.2"
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@trieoh/identityx-sdk-ts'
   - '@trieoh/identityx-sdk-ts-react'
   - '@trieoh/identityx-access-sdk-ts'
+  - '@trieoh/identityx-sdk-ts-solid'
   - 'shiki'
   - '@shikijs/*'
 blockExoticSubdeps: true
@@ -127,6 +142,10 @@ allowBuilds:
 patchedDependencies:
   '@tanstack/solid-router@2.0.0-rc.6': patches/@tanstack__solid-router@2.0.0-rc.6.patch
 
-pnpm:
-  overrides:
-    posthog-js>fflate: ^0.4.9
+packageExtensions:
+  '@tanstack/devtools':
+    peerDependencies:
+      solid-js: '^1.9.9'
+  '@tanstack/devtools-ui':
+    peerDependencies:
+      solid-js: '^1.9.9'

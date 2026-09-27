@@ -1,4 +1,4 @@
-export { cn } from "@trieoh/ui-base";
+export { cn } from "@trieoh/ui-react";
 
 import z from "zod";
 

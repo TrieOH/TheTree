@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { useLayoutHeader } from "@trieoh/ui-base";
+import { useLayoutHeader } from "@trieoh/ui-react";
 import {
   KeyRound,
   Link2,

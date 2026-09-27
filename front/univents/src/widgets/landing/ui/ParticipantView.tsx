@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useRouteContext } from "@tanstack/react-router";
-import { CardSkeleton, CardsStateGrid, EmptyState } from "@trieoh/ui-base";
+import { CardSkeleton, CardsStateGrid, EmptyState } from "@trieoh/ui-react";
 import { CalendarX } from "lucide-react";
 import { motion } from "motion/react";
 import { allPublicEventsQueryOptions } from "@/features/events/api";

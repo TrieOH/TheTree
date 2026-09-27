@@ -40,7 +40,7 @@ svg.ts-chart:focus-visible {
     -webkit-print-color-adjust: exact;
   }
 }
-@source "../node_modules/@trieoh/ui-base/src";
+@source "../node_modules/@trieoh/ui-react/src";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {

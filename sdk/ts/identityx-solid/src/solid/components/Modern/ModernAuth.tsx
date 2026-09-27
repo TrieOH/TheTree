@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, type ParentProps } from "solid-js";
 import type { OAuthProviderI } from "@trieoh/identityx-sdk-ts";
 import { AuthLayout } from "./Shared";
 import { ModernSignIn } from "./ModernSignIn";
@@ -12,7 +12,7 @@ export interface ModernAuthProps {
   onLoginSuccess?: (message?: string) => Promise<void>;
   onSignUpSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
-  backLink?: any;
+  backLink?: ParentProps["children"];
   providers?: OAuthProviderI[];
 }
 
@@ -49,7 +49,7 @@ export function ModernAuth(props: ModernAuthProps) {
   };
 
   return (
-    <AuthLayout backLink={props.backLink as never}>
+    <AuthLayout backLink={props.backLink}>
       <div class="w-full max-w-md z-10 flex flex-col">
         <div class="text-center mb-6">
           <h1 class="font-heading text-3xl font-bold tracking-tight mb-2">
@@ -58,44 +58,45 @@ export function ModernAuth(props: ModernAuthProps) {
           <p class="text-muted-foreground text-sm mb-4">
             {viewConfig[view()].subtitle}
           </p>
-
-          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-xs font-medium text-muted-foreground">
-            {viewConfig[view()].toggleLabel}
-            <button
-              type="button"
-              onClick={() => setView(viewConfig[view()].toggleTo)}
-              class="text-primary font-semibold hover:underline"
-            >
-              {viewConfig[view()].toggleAction}
-            </button>
-          </div>
         </div>
 
-        <div class="relative min-h-112">
-          <div class="absolute inset-0">
-            {view() === "signin" && (
-              <ModernSignIn
-                onSuccess={props.onLoginSuccess}
-                onFailed={props.onFailed}
-                providers={props.providers}
-                signUpRedirect={() => setView("signup")}
-                forgotPasswordRedirect={() => setView("forgot-password")}
-              />
-            )}
-            {view() === "signup" && (
-              <ModernSignUp
-                onSuccess={signupSuccess}
-                onFailed={props.onFailed}
-                signInRedirect={() => setView("signin")}
-              />
-            )}
-            {view() === "forgot-password" && (
-              <ModernForgotPassword
-                onFailed={props.onFailed}
-                signInRedirect={() => setView("signin")}
-              />
-            )}
-          </div>
+        {view() === "signin" && (
+          <ModernSignIn
+            onSuccess={props.onLoginSuccess}
+            onFailed={props.onFailed}
+            forgotPasswordRedirect={() => setView("forgot-password")}
+            signUpRedirect={() => setView("signup")}
+            providers={props.providers}
+          />
+        )}
+
+        {view() === "signup" && (
+          <ModernSignUp
+            onSuccess={signupSuccess}
+            onFailed={props.onFailed}
+            signInRedirect={() => setView("signin")}
+          />
+        )}
+
+        {view() === "forgot-password" && (
+          <ModernForgotPassword
+            onSuccess={async () => {
+              setView("signin");
+            }}
+            onFailed={props.onFailed}
+            signInRedirect={() => setView("signin")}
+          />
+        )}
+
+        <div class="mt-6 text-center text-sm">
+          <span class="text-muted-foreground">{viewConfig[view()].toggleLabel} </span>
+          <button
+            type="button"
+            onClick={() => setView(viewConfig[view()].toggleTo)}
+            class="text-primary hover:underline font-medium"
+          >
+            {viewConfig[view()].toggleAction}
+          </button>
         </div>
       </div>
     </AuthLayout>
