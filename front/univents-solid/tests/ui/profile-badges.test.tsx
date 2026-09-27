@@ -191,8 +191,10 @@ describe("ProfileBadges component", () => {
     expect(
       screen.getByLabelText("Abrir badge Crachá Staff"),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("TrieOH Conf")).toHaveLength(2);
-    expect(screen.getAllByText("Maria da Silva")).toHaveLength(2);
-    expect(screen.getAllByText("VIP")).toHaveLength(2);
+    const badgeLinks = screen.getAllByRole("link", { name: /^Abrir badge / });
+    expect(badgeLinks).toHaveLength(2);
+    expect(badgeLinks[0]).toHaveTextContent("TrieOH Conf");
+    expect(badgeLinks[0]).toHaveTextContent("Maria da Silva");
+    expect(badgeLinks[0]).toHaveTextContent("VIP");
   });
 });
