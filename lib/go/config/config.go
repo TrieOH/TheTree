@@ -1,8 +1,7 @@
 // Package config holds the env blocks every Backend shares: the server
-// settings, its own Postgres database, the root Postgres used for
-// migrations, the IdentityX client, and CORS. Embed the blocks into the
-// backend's Config; the own-DB block takes the service's env prefix via
-// the envPrefix tag ("POSTGRES_HOST" + "INFORMD_" → INFORMD_POSTGRES_HOST).
+// settings, its own Postgres database, the IdentityX client, and CORS. Embed
+// the blocks into the backend's Config; the own-DB block takes its service
+// env prefix from the envPrefix tag, e.g. INFORMD_POSTGRES_HOST.
 // Genuinely per-backend settings (feature fields, SMTP, providers) stay in
 // the backend's config.go.
 package config
@@ -24,22 +23,16 @@ type Server struct {
 	DisableRateLimit bool   `env:"DISABLE_RATE_LIMIT"`
 }
 
-// Postgres is the backend's own database. Declare it with the service's
-// env prefix: `Postgres Postgres \`envPrefix:"INFORMD_"\“.
+// Postgres is the backend's own database, configured by POSTGRES_* in the
+// service's environment.
 type Postgres struct {
-	Host     string `env:"POSTGRES_HOST,required"`
-	Port     string `env:"POSTGRES_PORT"              envDefault:"5432"`
-	DB       string `env:"POSTGRES_DB,required"`
-	User     string `env:"POSTGRES_USER,required"`
-	Password string `env:"POSTGRES_PASSWORD,required"`
-}
-
-// RootPostgres is the shared root database used for migrations
-// (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB), unprefixed.
-type RootPostgres struct {
-	User     string `env:"POSTGRES_USER,required"`
-	Password string `env:"POSTGRES_PASSWORD,required"`
-	DB       string `env:"POSTGRES_DB"                envDefault:"postgres"`
+	Host           string `env:"POSTGRES_HOST,required"`
+	Port           string `env:"POSTGRES_PORT"              envDefault:"5432"`
+	DB             string `env:"POSTGRES_DB,required"`
+	User           string `env:"POSTGRES_USER,required"`
+	Password       string `env:"POSTGRES_PASSWORD,required"`
+	SSLMode        string `env:"POSTGRES_SSLMODE"           envDefault:"require"`
+	ChannelBinding string `env:"POSTGRES_CHANNEL_BINDING"   envDefault:"require"`
 }
 
 // IdentityX is the IdentityX client block (IDENTITY_X_URL / _API_KEY /
@@ -56,22 +49,17 @@ type CORS struct {
 	AllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 }
 
-// DBConfig assembles the lib/database config from the shared blocks. The
-// connection-shaping policy (SSL mode, root host/port) lives here, once.
-func DBConfig(p Postgres, r RootPostgres, migrationPath string) database.Config {
+// DBConfig assembles the service's direct database connection settings.
+func DBConfig(p Postgres, migrationPath string) database.Config {
 	return database.Config{
-		Host:          p.Host,
-		Port:          p.Port,
-		DB:            p.DB,
-		User:          p.User,
-		Password:      p.Password,
-		SSLMode:       "disable",
-		RootUser:      r.User,
-		RootPassword:  r.Password,
-		RootDB:        r.DB,
-		RootHost:      "postgres",
-		RootPort:      "5432",
-		MigrationPath: migrationPath,
+		Host:           p.Host,
+		Port:           p.Port,
+		DB:             p.DB,
+		User:           p.User,
+		Password:       p.Password,
+		SSLMode:        p.SSLMode,
+		ChannelBinding: p.ChannelBinding,
+		MigrationPath:  migrationPath,
 	}
 }
 

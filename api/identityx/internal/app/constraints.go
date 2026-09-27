@@ -62,6 +62,15 @@ func constraintMessages() database.ConstraintRegistry {
 		"chk_email_templates_kind":        "email template kind must be one of: verify, reset",
 		"uniq_email_template_per_project": "this project already has an email template of this kind",
 
+		// terms_of_service
+		"chk_terms_of_service_content":      "terms of service content must not be empty",
+		"chk_terms_of_service_version":      "terms of service version must be at least 1",
+		"uniq_terms_of_service_per_project": "this project already has terms of service",
+
+		// tos_acceptances
+		"chk_tos_acceptances_source":            "terms acceptance source must be clickwrap or continued_use",
+		"uniq_tos_acceptance_per_actor_version": "this actor has already accepted this terms version",
+
 		// action_tokens
 		"chk_action_tokens_purpose": "action token purpose must be one of: email_verify, password_reset",
 

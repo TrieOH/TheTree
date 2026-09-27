@@ -7,7 +7,7 @@ ps:
     docker ps
 
 up:
-    docker compose up
+    docker compose up --remove-orphans
 
 down:
     docker compose down
@@ -15,7 +15,7 @@ down:
 identityx +CMD="":
     #!/usr/bin/env bash
     case "{{CMD}}" in
-      "")   docker compose up --build identityx ;;
+      "")   docker compose up --build --remove-orphans identityx ;;
       lint) golangci-lint run ./api/identityx/... ;;
       test) cd api/identityx && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
@@ -24,9 +24,9 @@ identityx +CMD="":
 univents +CMD="":
     #!/usr/bin/env bash
     case "{{CMD}}" in
-      "")   docker compose up --build identityx -d
-            docker compose up --build payssage -d
-            docker compose up --build univents ;;
+      "")   docker compose up --build --remove-orphans identityx -d
+            docker compose up --build --remove-orphans payssage -d
+            docker compose up --build --remove-orphans univents ;;
       lint) golangci-lint run ./api/univents/... ;;
       test) cd api/univents && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
@@ -35,8 +35,8 @@ univents +CMD="":
 payssage +CMD="":
     #!/usr/bin/env bash
     case "{{CMD}}" in
-      "")   docker compose up --build identityx -d
-            docker compose up --build payssage ;;
+      "")   docker compose up --build --remove-orphans identityx -d
+            docker compose up --build --remove-orphans payssage ;;
       lint) golangci-lint run ./api/payssage/... ;;
       test) cd api/payssage && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
@@ -45,8 +45,8 @@ payssage +CMD="":
 informd +CMD="":
     #!/usr/bin/env bash
     case "{{CMD}}" in
-      "")   docker compose up --build identityx -d
-            docker compose up --build informd ;;
+      "")   docker compose up --build --remove-orphans identityx -d
+            docker compose up --build --remove-orphans informd ;;
       lint) golangci-lint run ./api/informd/... ;;
       test) cd api/informd && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;

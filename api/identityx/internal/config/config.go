@@ -14,10 +14,8 @@ import (
 
 type Config struct {
 	libconfig.Server
-	libconfig.RootPostgres
 	libconfig.CORS
 
-	// Own database, prefixed IDX_.
 	Postgres libconfig.Postgres `envPrefix:"IDX_"`
 
 	// Migration
@@ -53,7 +51,7 @@ type Config struct {
 }
 
 func (cfg *Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.RootPostgres, cfg.MigrationPath)
+	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
 }
 
 func (cfg *Config) ToEmailConfig() email.Config {

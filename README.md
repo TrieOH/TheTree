@@ -16,7 +16,7 @@ tag here; the `TrieOH/deploy` repo is the pipeline-written ledger (see
 | Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval TS clients, `ui-*`, `front-core*`) | framework-free by default, see *Package boundaries* |
 | SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |
 | CI/CD | Forgejo Actions (`deploy.yml`) | tag-gated checks → publish digests to `git.trieoh.com/trieoh/<svc>` → digest-pinned deploys |
-| Dev infra | Docker Compose (`compose.yml`) | postgres, rustfs, mailpit + hot-rebuilt services |
+| Dev infra | Docker Compose (`compose.yml`) | four service Postgres containers, rustfs, mailpit + hot-rebuilt services |
 
 ## Repo layout
 
@@ -89,9 +89,9 @@ releases.
 
 **Backend:**
 ```bash
-cp .example.env .env                       # root: postgres + rustfs creds
+cp .example.env .env                       # root: rustfs creds
 cp api/<svc>/.example.env api/<svc>/.env   # per service (×4: identityx, univents, payssage, informd)
-just up               # postgres, rustfs, mailpit + all four services (built locally)
+just up               # postgres (with four service DBs), rustfs, mailpit + all four services
 just identityx        # run one service in dev — or: univents, payssage, informd
 ```
 
@@ -111,9 +111,14 @@ Env notes (all `*.env` files are gitignored):
 - Auth runs through the app's BFF (`AUTH_TRANSPORT=bff`) — the browser talks
   to TanStack Start server functions, which call the APIs.
 
-Dev ports: postgres `5432` · rustfs `9000/9001` · backends `8080`–`8083`
+Dev database ports: IdentityX `5432`, Univents `5433`, Payssage `5434`, Informd `5435`
+(each app gets its own local Postgres container). RustFS `9000/9001` · backends `8080`–`8083`
 (pprof `6060`–`6063`) · frontends `3000`, `3001`, `3002`, `3004` · mailpit
 `8025`.
+
+Each local Postgres container creates its database and role from its service
+env file. Each backend connects directly and runs its own migrations during
+startup.
 
 ## Daily commands
 

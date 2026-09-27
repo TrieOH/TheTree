@@ -11,7 +11,6 @@ import (
 	"lib/errx"
 
 	"github.com/exaring/otelpgx"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -21,14 +20,9 @@ func WaitForDB(timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	err := provisionDB(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to provision database: %w", err)
-	}
-
 	pool, err := tryConnect(ctx, cfg.DSN(), 5)
 	if err != nil {
-		return nil, fmt.Errorf("database unreachable after provisioning: %w", err)
+		return nil, fmt.Errorf("database unreachable: %w", err)
 	}
 	return pool, nil
 }
@@ -71,51 +65,6 @@ func tryConnect(ctx context.Context, dsn string, maxAttempts int) (*pgxpool.Pool
 
 	pool.Close()
 	return nil, fmt.Errorf("failed to connect after %d attempts", maxAttempts)
-}
-
-func provisionDB(ctx context.Context, cfg Config) error {
-	conn, err := pgx.Connect(ctx, cfg.RootDSN())
-	if err != nil {
-		return fmt.Errorf("unable to connect to root postgres: %w", err)
-	}
-	defer func() {
-		_ = conn.Close(ctx)
-	}()
-
-	_, err = conn.Exec(ctx, fmt.Sprintf(
-		`DO $$ BEGIN
-            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '%s') THEN
-                CREATE ROLE "%s" LOGIN PASSWORD '%s';
-            END IF;
-        END $$;`,
-		cfg.User, cfg.User, cfg.Password,
-	))
-	if err != nil {
-		return fmt.Errorf("failed to create role: %w", err)
-	}
-	log.Printf("role %q ensured\n", cfg.User)
-
-	var exists bool
-	err = conn.QueryRow(ctx,
-		`SELECT EXISTS(SELECT FROM pg_database WHERE datname = $1)`, cfg.DB,
-	).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("failed to check database existence: %w", err)
-	}
-
-	if !exists {
-		_, err = conn.Exec(ctx, fmt.Sprintf(
-			`CREATE DATABASE "%s" OWNER "%s"`, cfg.DB, cfg.User,
-		))
-		if err != nil {
-			return fmt.Errorf("failed to create database: %w", err)
-		}
-		log.Printf("database %q created\n", cfg.DB)
-	} else {
-		log.Printf("database %q already exists\n", cfg.DB)
-	}
-
-	return nil
 }
 
 // RunMigrations uses pgx/stdlib to provide *sql.DB compatibility for goose

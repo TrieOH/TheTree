@@ -33,25 +33,11 @@ func TestPostgresPrefixInjection(t *testing.T) {
 	if cfg.Postgres.Port != "5432" {
 		t.Errorf("Port default = %q, want 5432", cfg.Postgres.Port)
 	}
+	if cfg.Postgres.SSLMode != "require" || cfg.Postgres.ChannelBinding != "require" {
+		t.Errorf("secure connection defaults = sslmode:%q channel_binding:%q", cfg.Postgres.SSLMode, cfg.Postgres.ChannelBinding)
+	}
 	if cfg.Postgres.DB != "univents" || cfg.Postgres.User != "univents" || cfg.Postgres.Password != "secret" {
 		t.Errorf("Postgres fields not parsed: %+v", cfg.Postgres)
-	}
-}
-
-func TestRootPostgresDefaults(t *testing.T) {
-	var cfg struct {
-		RootPostgres
-	}
-	parse(t, map[string]string{
-		"POSTGRES_USER":     "root",
-		"POSTGRES_PASSWORD": "root-secret",
-	}, &cfg)
-
-	if cfg.User != "root" || cfg.Password != "root-secret" {
-		t.Errorf("root creds not parsed: %+v", cfg.RootPostgres)
-	}
-	if cfg.DB != "postgres" {
-		t.Errorf("RootPostgres.DB default = %q, want postgres", cfg.DB)
 	}
 }
 
@@ -93,9 +79,10 @@ func TestIdentityXBlock(t *testing.T) {
 func TestDBConfigShapesConnections(t *testing.T) {
 	got := DBConfig(Postgres{
 		Host: "h", Port: "5433", DB: "db", User: "u", Password: "p",
-	}, RootPostgres{User: "ru", Password: "rp", DB: "rdb"}, "./db/migrations")
+		SSLMode: "require", ChannelBinding: "require",
+	}, "./db/migrations")
 
-	if got.SSLMode != "disable" || got.RootHost != "postgres" || got.RootPort != "5432" {
+	if got.SSLMode != "require" || got.ChannelBinding != "require" {
 		t.Errorf("connection policy drifted: %+v", got)
 	}
 	if got.Host != "h" || got.Port != "5433" || got.MigrationPath != "./db/migrations" {

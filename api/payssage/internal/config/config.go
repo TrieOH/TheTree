@@ -14,11 +14,9 @@ type Config struct {
 	MercadoPagoConfig
 
 	libconfig.Server
-	libconfig.RootPostgres
 	libconfig.IdentityX
 	libconfig.CORS
 
-	// Own database, prefixed PAYSSAGE_.
 	Postgres libconfig.Postgres `envPrefix:"PAYSSAGE_"`
 
 	// Migration
@@ -47,7 +45,7 @@ func (cfg Config) ToIdentityXConfig() idx.Config {
 }
 
 func (cfg Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.RootPostgres, cfg.MigrationPath)
+	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
 }
 
 func LoadConfig() Config {

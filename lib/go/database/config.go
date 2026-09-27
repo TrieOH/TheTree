@@ -11,49 +11,32 @@ import (
 )
 
 type Config struct {
-	Host     string
-	Port     string
-	DB       string
-	User     string
-	Password string
-	SSLMode  string
+	Host           string
+	Port           string
+	DB             string
+	User           string
+	Password       string
+	SSLMode        string
+	ChannelBinding string
 
 	MigrationPath string
-
-	RootUser     string
-	RootPassword string
-	RootDB       string
-	RootHost     string
-	RootPort     string
 }
 
 func (c Config) DSN() string {
 	ssl := c.SSLMode
 	if ssl == "" {
-		ssl = "disable"
+		ssl = "require"
 	}
+	channelBinding := c.ChannelBinding
+	if channelBinding == "" {
+		channelBinding = "require"
+	}
+	query := url.Values{}
+	query.Set("sslmode", ssl)
+	query.Set("channel_binding", channelBinding)
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s/%s?sslmode=%s",
-		url.QueryEscape(c.User), url.QueryEscape(c.Password), net.JoinHostPort(c.Host, c.port()), c.DB, ssl,
-	)
-}
-
-func (c Config) RootDSN() string {
-	host := c.RootHost
-	if host == "" {
-		host = c.Host
-	}
-	rootPort := c.RootPort
-	if rootPort == "" {
-		rootPort = c.port()
-	}
-	rootDB := c.RootDB
-	if rootDB == "" {
-		rootDB = "postgres"
-	}
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s/%s?sslmode=disable",
-		url.QueryEscape(c.RootUser), url.QueryEscape(c.RootPassword), net.JoinHostPort(host, rootPort), rootDB,
+		"postgres://%s@%s/%s?%s",
+		url.UserPassword(c.User, c.Password).String(), net.JoinHostPort(c.Host, c.port()), url.PathEscape(c.DB), query.Encode(),
 	)
 }
 
@@ -64,10 +47,10 @@ func (c Config) port() string {
 	return c.Port
 }
 
-// SetupDB is the Postgres adapter's one boot entry point: provision the
-// role and database, wait for connectivity, run migrations, and validate
-// that every constraint carries a registered message. It returns errors
-// instead of exiting so the caller's boot path owns process failure.
+// SetupDB is the Postgres adapter's one boot entry point: connect to the
+// service database, run migrations, and validate that every constraint
+// carries a registered message. It returns errors instead of exiting so the
+// caller's boot path owns process failure.
 func SetupDB(cfg Config, messages ConstraintRegistry) (*pgxpool.Pool, error) {
 	db, err := WaitForDB(30*time.Second, cfg)
 	if err != nil {

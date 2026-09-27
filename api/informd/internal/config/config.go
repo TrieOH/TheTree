@@ -12,11 +12,9 @@ import (
 
 type Config struct {
 	libconfig.Server
-	libconfig.RootPostgres
 	libconfig.IdentityX
 	libconfig.CORS
 
-	// Own database, prefixed INFORMD_.
 	Postgres libconfig.Postgres `envPrefix:"INFORMD_"`
 
 	// Migration
@@ -32,7 +30,7 @@ func (cfg Config) ToIdentityXConfig() idx.Config {
 }
 
 func (cfg Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.RootPostgres, cfg.MigrationPath)
+	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
 }
 
 func LoadConfig() Config {
