@@ -99,6 +99,7 @@ services:
     build:
       context: .
       dockerfile: api/identityx/Dockerfile
+    image: 000000000000.dkr.ecr.us-east-1.amazonaws.com/trieoh/identityx:dev
     networks:
       - internal
       - obs-net
@@ -111,6 +112,27 @@ services:
     env_file:
       - .env
       - api/identityx/.env
+
+  floci:
+    image: floci/floci:2.1.0-compat
+    container_name: floci
+    profiles: [managed]
+    # The host Docker socket is group-restricted and the host's GID differs.
+    user: "0:0"
+    restart: unless-stopped
+    environment:
+      FLOCI_HOSTNAME: floci
+      FLOCI_RUN_AS_ROOT: "true"
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    ports:
+      - "127.0.0.1:4566:4566"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - floci_data:/app/data
+    networks:
+      - internal
 
   univents:
     container_name: univents
@@ -198,3 +220,4 @@ volumes:
   informd_db_data:
   rustfs_data:
   rustfs_logs:
+  floci_data:

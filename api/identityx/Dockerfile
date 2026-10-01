@@ -34,12 +34,17 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
 # Static health probe for the distroless runtime (no shell/wget/curl there).
 RUN CGO_ENABLED=0 GOOS=linux go build -o /healthcheck lib/cmd/healthcheck
 
+# Lambda Web Adapter lets the same HTTP server run behind Lambda's Runtime API.
+# The extension is inert outside Lambda, so this image still serves directly in
+# Hosted mode.
+FROM public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 AS lambda-adapter
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /app/api/identityx/identityx .
 COPY --from=builder /healthcheck /usr/local/bin/healthcheck
-COPY --from=builder /app/api/identityx/db/migrations ./db/migrations
+COPY --from=lambda-adapter /lambda-adapter /opt/extensions/lambda-adapter
 USER nonroot:nonroot
 EXPOSE 8080
+ENV PORT=8080 AWS_LWA_PORT=8080 AWS_LWA_READINESS_CHECK_PATH=/health
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/healthcheck"]
 CMD ["./identityx"]

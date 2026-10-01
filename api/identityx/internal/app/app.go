@@ -36,7 +36,7 @@ func Run() error {
 	app := &IdentityX{cfg: cfg}
 
 	start := func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
-		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		pool, err := database.SetupDBWithoutMigrations(cfg.ToDBConfig(), constraintMessages())
 		if err != nil {
 			return nil, nil, err
 		}

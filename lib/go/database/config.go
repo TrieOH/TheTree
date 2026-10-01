@@ -52,13 +52,27 @@ func (c Config) port() string {
 // carries a registered message. It returns errors instead of exiting so the
 // caller's boot path owns process failure.
 func SetupDB(cfg Config, messages ConstraintRegistry) (*pgxpool.Pool, error) {
+	return setupDB(cfg, messages, true)
+}
+
+// SetupDBWithoutMigrations connects to the service database and validates its
+// constraints without changing its schema. Use this when schema migrations
+// are owned by a separate deployment or developer command.
+func SetupDBWithoutMigrations(cfg Config, messages ConstraintRegistry) (*pgxpool.Pool, error) {
+	return setupDB(cfg, messages, false)
+}
+
+func setupDB(cfg Config, messages ConstraintRegistry, runMigrations bool) (*pgxpool.Pool, error) {
 	db, err := WaitForDB(30*time.Second, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
 	}
-	err = RunMigrations(db, cfg.MigrationPath)
-	if err != nil {
-		return nil, fmt.Errorf("migrate: %w", err)
+	if runMigrations {
+		err = RunMigrations(db, cfg.MigrationPath)
+		if err != nil {
+			CloseDB(db)
+			return nil, fmt.Errorf("migrate: %w", err)
+		}
 	}
 	constraintRegistry = messages
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

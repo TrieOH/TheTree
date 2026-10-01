@@ -18,9 +18,6 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"IDX_"`
 
-	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
-
 	// Server extras
 	AppURL      string `env:"APP_URL,required"`
 	ProfilePort string `env:"PROFILE_PORT"     envDefault:"6060"`
@@ -51,7 +48,7 @@ type Config struct {
 }
 
 func (cfg *Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
+	return libconfig.DBConnectionConfig(cfg.Postgres)
 }
 
 func (cfg *Config) ToEmailConfig() email.Config {

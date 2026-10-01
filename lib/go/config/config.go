@@ -51,6 +51,14 @@ type CORS struct {
 
 // DBConfig assembles the service's direct database connection settings.
 func DBConfig(p Postgres, migrationPath string) database.Config {
+	cfg := DBConnectionConfig(p)
+	cfg.MigrationPath = migrationPath
+	return cfg
+}
+
+// DBConnectionConfig assembles database connection settings for a service
+// whose schema lifecycle is managed outside the API process.
+func DBConnectionConfig(p Postgres) database.Config {
 	return database.Config{
 		Host:           p.Host,
 		Port:           p.Port,
@@ -59,7 +67,6 @@ func DBConfig(p Postgres, migrationPath string) database.Config {
 		Password:       p.Password,
 		SSLMode:        p.SSLMode,
 		ChannelBinding: p.ChannelBinding,
-		MigrationPath:  migrationPath,
 	}
 }
 
