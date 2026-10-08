@@ -20,7 +20,7 @@ func WaitForDB(timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	pool, err := tryConnect(ctx, cfg.DSN(), 5)
+	pool, err := tryConnect(ctx, cfg.DSN(), cfg.MaxConns, 5)
 	if err != nil {
 		return nil, fmt.Errorf("database unreachable: %w", err)
 	}
@@ -31,10 +31,13 @@ func CloseDB(pool *pgxpool.Pool) {
 	pool.Close()
 }
 
-func tryConnect(ctx context.Context, dsn string, maxAttempts int) (*pgxpool.Pool, error) {
+func tryConnect(ctx context.Context, dsn string, maxConns int32, maxAttempts int) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse database URL: %w", err)
+	}
+	if maxConns > 0 {
+		cfg.MaxConns = maxConns
 	}
 	cfg.ConnConfig.Tracer = otelpgx.NewTracer()
 

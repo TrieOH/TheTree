@@ -18,6 +18,8 @@ type Config struct {
 	Password       string
 	SSLMode        string
 	ChannelBinding string
+	// MaxConns caps the pgx pool; zero keeps pgx's default.
+	MaxConns int32
 
 	MigrationPath string
 }
