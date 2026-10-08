@@ -2,9 +2,13 @@ package httpserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"lib/telemetry"
 )
@@ -20,7 +24,7 @@ type StartFunc func(ctx context.Context) (handler http.Handler, shutdown func(co
 
 // Boot is the shared process lifecycle every Backend runs through: FUN
 // runtime, tracer, the backend's components (via start), serving, then
-// shutdown in reverse order. The sequence lives here once — the per-backend
+// shutdown in reverse order on SIGTERM/SIGINT. The sequence lives here once — the per-backend
 // "call this before X" contracts it replaces (FUN before any request,
 // tracer before any span, constraint messages before constraint
 // validation, tx runner before the first query) are either owned here,
@@ -34,19 +38,40 @@ func Boot(cfg Config, start StartFunc) error {
 	SetupFUN(cfg.AppName)
 
 	ctx := context.Background()
-	shutdownTracer := telemetry.InitTracer(ctx, cfg.AppName)
+	shutdownTelemetry, err := telemetry.Start(ctx, cfg.AppName)
+	if err != nil {
+		return fmt.Errorf("%s boot: %w", cfg.AppName, err)
+	}
 
 	handler, shutdown, err := start(ctx)
 	if err != nil {
-		telemetry.ShutdownTracer(ctx, shutdownTracer, cfg.AppName)
+		telemetry.Shutdown(ctx, shutdownTelemetry, cfg.AppName)
 		return fmt.Errorf("%s boot: %w", cfg.AppName, err)
 	}
 
 	if cfg.ProfilePort != "" {
 		go servePprof(cfg.ProfilePort, cfg.AppName)
 	}
+
+	// SIGTERM is how both runtimes stop the process (docker stop, and Lambda
+	// when it reclaims an instance — the Lambda Web Adapter extension makes
+	// Lambda deliver it), so stopping gracefully is what lets the shutdown
+	// hook drain background work and telemetry flush its last batch.
+	srv := newServer(handler, cfg.Port)
+	stopCtx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	go func() {
+		<-stopCtx.Done()
+		drainCtx, cancel := context.WithTimeout(ctx, shutdownTimeout)
+		defer cancel()
+		_ = srv.Shutdown(drainCtx)
+	}()
+
 	log.Printf("%s listening on :%s", cfg.AppName, cfg.Port)
-	serveErr := newServer(handler, cfg.Port).ListenAndServe()
+	serveErr := srv.ListenAndServe()
+	if errors.Is(serveErr, http.ErrServerClosed) {
+		serveErr = nil
+	}
 
 	if shutdown != nil {
 		err := shutdown(ctx)
@@ -54,6 +79,10 @@ func Boot(cfg Config, start StartFunc) error {
 			log.Printf("%s shutdown: %v", cfg.AppName, err)
 		}
 	}
-	telemetry.ShutdownTracer(ctx, shutdownTracer, cfg.AppName)
+	telemetry.Shutdown(ctx, shutdownTelemetry, cfg.AppName)
 	return serveErr
 }
+
+// shutdownTimeout bounds how long in-flight requests get to finish after a
+// stop signal.
+const shutdownTimeout = 10 * time.Second
