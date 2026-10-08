@@ -12,10 +12,14 @@ import (
 )
 
 func (h *Handlers) PostSetup(ctx context.Context, req openapi.PostSetupRequestObject) (openapi.PostSetupResponseObject, error) {
-	if setup.Complete() {
+	done, err := setup.Check(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if done {
 		return nil, fun.Err("setup already complete").Conflict()
 	}
-	err := h.ops.Setup(ctx, models.SetupInput{
+	err = h.ops.Setup(ctx, models.SetupInput{
 		Email:    req.Body.Email,
 		Password: req.Body.Password,
 	})

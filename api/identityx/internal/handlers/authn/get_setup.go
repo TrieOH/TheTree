@@ -9,8 +9,12 @@ import (
 	"IdentityX/internal/setup"
 )
 
-func (h *Handlers) GetSetup(_ context.Context, _ openapi.GetSetupRequestObject) (openapi.GetSetupResponseObject, error) {
-	if setup.Complete() {
+func (h *Handlers) GetSetup(ctx context.Context, _ openapi.GetSetupRequestObject) (openapi.GetSetupResponseObject, error) {
+	done, err := setup.Check(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if done {
 		return nil, fun.Err("setup already complete").Conflict()
 	}
 	return openapi.GetSetup204Response{}, nil
