@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"IdentityX/internal/keys"
-
-	"github.com/riverqueue/river"
 )
 
 // RotateKeysArgs drives the periodic Key-lifecycle sweep: it runs the
@@ -19,8 +17,6 @@ type RotateKeysArgs struct{}
 func (RotateKeysArgs) Kind() string { return "keys.rotate" }
 
 type RotateKeysWorker struct {
-	river.WorkerDefaults[RotateKeysArgs]
-
 	keys *keys.Manager
 }
 
@@ -28,6 +24,6 @@ func NewRotateKeysWorker(keys *keys.Manager) *RotateKeysWorker {
 	return &RotateKeysWorker{keys: keys}
 }
 
-func (w *RotateKeysWorker) Work(ctx context.Context, _ *river.Job[RotateKeysArgs]) error {
+func (w *RotateKeysWorker) Work(ctx context.Context, _ RotateKeysArgs) error {
 	return w.keys.EnsureAll(ctx)
 }

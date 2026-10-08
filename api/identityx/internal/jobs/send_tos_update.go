@@ -9,7 +9,6 @@ import (
 	"lib/email"
 	"lib/telemetry"
 
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -20,14 +19,12 @@ import (
 // promises — a full outage is visible in the logs and the update can be
 // re-announced by bumping a correction version).
 type SendTosUpdateWorker struct {
-	river.WorkerDefaults[emails.SendTosUpdateArgs]
-
-	emailClient *email.Client
+	emailClient email.Sender
 	actors      ports.ActorRepo
 	templates   ports.EmailTemplateRepo
 }
 
-func NewSendTosUpdateWorker(emailClient *email.Client, actors ports.ActorRepo, templates ports.EmailTemplateRepo) *SendTosUpdateWorker {
+func NewSendTosUpdateWorker(emailClient email.Sender, actors ports.ActorRepo, templates ports.EmailTemplateRepo) *SendTosUpdateWorker {
 	return &SendTosUpdateWorker{
 		emailClient: emailClient,
 		actors:      actors,
@@ -35,8 +32,7 @@ func NewSendTosUpdateWorker(emailClient *email.Client, actors ports.ActorRepo, t
 	}
 }
 
-func (w *SendTosUpdateWorker) Work(ctx context.Context, job *river.Job[emails.SendTosUpdateArgs]) error {
-	args := job.Args
+func (w *SendTosUpdateWorker) Work(ctx context.Context, args emails.SendTosUpdateArgs) error {
 
 	actors, err := w.actors.List(ctx, args.ProjectID)
 	if err != nil {
@@ -87,5 +83,3 @@ func (w *SendTosUpdateWorker) Work(ctx context.Context, job *river.Job[emails.Se
 	}
 	return nil
 }
-
-var _ river.Worker[emails.SendTosUpdateArgs] = (*SendTosUpdateWorker)(nil)

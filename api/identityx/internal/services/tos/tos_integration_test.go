@@ -11,22 +11,21 @@ import (
 	"IdentityX/internal/repos"
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
+	"lib/jobs"
 	"lib/testdb"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
-// fakeEnqueuer captures the notification fan-out without a River client.
+// fakeEnqueuer captures the notification fan-out without a job carrier.
 type fakeEnqueuer struct {
 	args []emails.SendTosUpdateArgs
 }
 
-func (f *fakeEnqueuer) Insert(_ context.Context, args river.JobArgs, _ *river.InsertOpts) (*rivertype.JobInsertResult, error) {
-	f.args = append(f.args, args.(emails.SendTosUpdateArgs))
-	return &rivertype.JobInsertResult{}, nil
+func (f *fakeEnqueuer) Enqueue(_ context.Context, job jobs.Job) error {
+	f.args = append(f.args, job.(emails.SendTosUpdateArgs))
+	return nil
 }
 
 var _ emails.Enqueuer = (*fakeEnqueuer)(nil)
