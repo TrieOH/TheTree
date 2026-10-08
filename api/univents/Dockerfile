@@ -1,8 +1,10 @@
-FROM git.trieoh.com/trieoh/go-tools:3 AS tools
+FROM ghcr.io/trieoh/go-tools:latest@sha256:efa2452249f75dc25d5228a499c11a0b6911ae4367850c8514f36e8f1dbbf351 AS tools
 FROM golang:1.26.4 AS builder
 WORKDIR /app
 COPY --from=tools /go/bin/sqlc /go/bin/sqlc
-COPY --from=tools /go/bin/oapi-codegen /go/bin/oapi-codegen
+# go-tools does not ship oapi-codegen; pinned to the justfile's version.
+RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
+    GOBIN=/go/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
 # --- Dependency layer ---
 COPY go.work go.work.sum ./
 COPY lib/go/go.mod lib/go/go.sum ./lib/go/
