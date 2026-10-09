@@ -9,28 +9,24 @@ import (
 	"lib/email"
 	"lib/telemetry"
 
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
-// SendAuthEmailWorker renders and SMTP-sends the async verify/reset email.
+// SendAuthEmailWorker renders and sends the async verify/reset email.
 // The action token is minted and persisted in the request path, so a
-// River retry after a send failure reuses the same token (single-use
-// semantics stay intact). Send errors are returned so River retries with
-// backoff; the email client is only ever touched here.
+// retry after a send failure reuses the same token (single-use
+// semantics stay intact). Send errors are returned so the carrier retries
+// it; the email client is only ever touched here.
 type SendAuthEmailWorker struct {
-	river.WorkerDefaults[emails.SendAuthEmailArgs]
-
-	emailClient *email.Client
+	emailClient email.Sender
 	templates   ports.EmailTemplateRepo
 }
 
-func NewSendAuthEmailWorker(emailClient *email.Client, templates ports.EmailTemplateRepo) *SendAuthEmailWorker {
+func NewSendAuthEmailWorker(emailClient email.Sender, templates ports.EmailTemplateRepo) *SendAuthEmailWorker {
 	return &SendAuthEmailWorker{emailClient: emailClient, templates: templates}
 }
 
-func (w *SendAuthEmailWorker) Work(ctx context.Context, job *river.Job[emails.SendAuthEmailArgs]) error {
-	args := job.Args
+func (w *SendAuthEmailWorker) Work(ctx context.Context, args emails.SendAuthEmailArgs) error {
 	kind := models.EmailTemplateKind(args.TemplateKind)
 
 	tpl, err := emails.ResolveTemplate(ctx, w.templates, args.ProjectID, kind)
@@ -65,5 +61,3 @@ func (w *SendAuthEmailWorker) Work(ctx context.Context, job *river.Job[emails.Se
 	}
 	return nil
 }
-
-var _ river.Worker[emails.SendAuthEmailArgs] = (*SendAuthEmailWorker)(nil)

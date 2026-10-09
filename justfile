@@ -1,5 +1,7 @@
 set shell := ["bash", "-cu"]
 
+import 'tools/floci/floci.just'
+
 default:
     just --list
 
@@ -13,7 +15,11 @@ up:
 down:
     docker compose down
 
-# Run IdentityX in Hosted mode (local HTTP port) or Managed mode (Floci Lambda/API Gateway).
+# hosted: a local HTTP server, jobs in-process, SMTP to mailpit.
+# managed: Floci Lambda functions behind an HTTP API, jobs on SQS +
+# EventBridge Scheduler, SES, config from Secrets Manager.
+#
+# Run IdentityX: hosted (default) | managed | db-init | db-up | db-status | lint | test
 identityx +CMD="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -25,7 +31,7 @@ identityx +CMD="":
       managed)
             docker compose stop identityx 2>/dev/null || true
             just identityx-db-init
-            python3 tools/floci/identityx-managed.py ;;
+            just identityx-floci-deploy ;;
       db-init)   just identityx-db-init ;;
       db-up)     just identityx-goose up ;;
       db-status) just identityx-goose status ;;
@@ -34,20 +40,25 @@ identityx +CMD="":
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
-# Migrate IdentityX outside the API process. `IDX_DB_*` overrides let the
-# helper target an isolated test database; otherwise it uses api/identityx/.env.
+# Start IdentityX's database and pooler, then migrate it.
 identityx-db-init:
-    docker compose up --detach --wait identityx-db
+    docker compose up --detach --wait identityx-db identityx-pooler
     just identityx-goose up
 
+# Goose takes advisory locks, which need a session, not a transaction-mode
+# pooler, hence the direct (unpooled) endpoint. `IDX_DB_*` overrides let the
+# helper target an isolated test database; otherwise it uses
+# api/identityx/.env.
+#
+# Migrate IdentityX outside the API process, over the direct endpoint
 identityx-goose +ACTION="up":
     #!/usr/bin/env bash
     set -euo pipefail
     set -a
     source api/identityx/.env
     set +a
-    db_host="${IDX_DB_HOST:-localhost}"
-    db_port="${IDX_DB_PORT:-${IDX_POSTGRES_PORT:-5432}}"
+    db_host="${IDX_DB_HOST:-${IDX_POSTGRES_DIRECT_HOST:-localhost}}"
+    db_port="${IDX_DB_PORT:-${IDX_POSTGRES_DIRECT_PORT:-5432}}"
     db_name="${IDX_DB_NAME:-$IDX_POSTGRES_DB}"
     export PGPASSWORD="$IDX_POSTGRES_PASSWORD"
     dsn="host=$db_host port=$db_port user=$IDX_POSTGRES_USER dbname=$db_name sslmode=$IDX_POSTGRES_SSLMODE channel_binding=$IDX_POSTGRES_CHANNEL_BINDING"

@@ -1,6 +1,7 @@
 // Package httpserver is the HTTP-serving harness shared by every TrieOH backend:
 // server lifecycle, pprof, fun configuration, and the standard router skeleton
-// (middleware stack, /metrics, /health, OpenTelemetry wrapping).
+// (middleware stack, /health, OpenTelemetry wrapping). Telemetry is pushed
+// over OTLP (see lib/telemetry); nothing is scraped from the process.
 package httpserver
 
 import (
@@ -22,11 +23,11 @@ import (
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 // Config carries everything a backend must tell the harness about itself.
@@ -37,8 +38,11 @@ type Config struct {
 	CorsAllowedOrigins string
 	CorsAllowedHeaders string
 	// SkipLogPrefixes are extra request prefixes the request logger should
-	// ignore, on top of the always-skipped /metrics and /health.
+	// ignore, on top of the always-skipped /health.
 	SkipLogPrefixes []string
+	// RateLimit configures the per-client rate limiter. The zero value
+	// keeps the historical defaults (400 rps, burst 20).
+	RateLimit RateLimit
 	// OpenAPISpec, when set, is served at GET /docs/openapi.yml — the
 	// service's OpenAPI 3.1 specification (the same content as
 	// api/<svc>/api-spec.yml), for docs tooling to fetch and render.
@@ -46,6 +50,25 @@ type Config struct {
 	// Routes receives the chi router and registers the backend's feature
 	// routes, auth middlewares, and any extra mounts (riverui, websockets).
 	Routes func(r *chi.Mux)
+}
+
+// RateLimit is the per-client (real IP) token bucket. It limits per process:
+// in managed mode every function instance has its own bucket, so the
+// gateway's throttling is the global limit and this one is a backstop.
+type RateLimit struct {
+	Disabled bool
+	RPS      float64
+	Burst    int
+}
+
+func (rl RateLimit) withDefaults() RateLimit {
+	if rl.RPS <= 0 {
+		rl.RPS = 400
+	}
+	if rl.Burst <= 0 {
+		rl.Burst = 20
+	}
+	return rl
 }
 
 // SetupFUN configures the shared fun runtime for the process. Call once at
@@ -119,8 +142,8 @@ func spanRouteNameMiddleware(next http.Handler) http.Handler {
 }
 
 // NewRouter builds the standard router skeleton: chi with the standard
-// middleware stack, /metrics, the backend's routes, /health, wrapped in
-// OpenTelemetry instrumentation that skips /metrics, /health and OPTIONS.
+// middleware stack, the backend's routes, /health, wrapped in OpenTelemetry
+// instrumentation that skips /health and OPTIONS.
 func NewRouter(cfg Config) http.Handler {
 	r := chi.NewRouter()
 
@@ -128,8 +151,6 @@ func NewRouter(cfg Config) http.Handler {
 	for _, mw := range stack(cfg) {
 		r.Use(mw)
 	}
-
-	r.Handle("/metrics", promhttp.Handler())
 
 	if cfg.Routes != nil {
 		cfg.Routes(r)
@@ -154,9 +175,6 @@ func NewRouter(cfg Config) http.Handler {
 		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/health" && r.URL.Path != "/docs/openapi.yml"
-		}),
-		otelhttp.WithFilter(func(r *http.Request) bool {
-			return r.URL.Path != "/metrics"
 		}),
 		// The river queue UI is a dev-only surface: don't trace it.
 		otelhttp.WithFilter(func(r *http.Request) bool {
@@ -219,32 +237,34 @@ func collectors() (*mws.Collectors, error) {
 
 // stack is the standard middleware stack shared by every backend.
 func stack(cfg Config) []func(http.Handler) http.Handler {
-	skipLog := append([]string{"/metrics", "/health", "/docs/openapi.yml"}, cfg.SkipLogPrefixes...)
+	skipLog := append([]string{"/health", "/docs/openapi.yml"}, cfg.SkipLogPrefixes...)
 
 	collectors, err := collectors()
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")
 	}
 
-	return []func(http.Handler) http.Handler{
+	mwStack := []func(http.Handler) http.Handler{
 		mws.RealIP(),
 		mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"}),
 		mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: skipLog, RequestIDHeader: "X-Request-ID"}),
-		mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}}),
+		mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/health"}}),
 		mws.Recover(telemetry.Log()),
 		mws.Timeout(60 * time.Second),
 		mws.MaxBodySize(1 << 20),
-		mws.RateLimit(mws.RateLimitConfig{
-			RPS:   400,
-			Burst: 20,
+	}
+	if rl := cfg.RateLimit.withDefaults(); !rl.Disabled {
+		mwStack = append(mwStack, mws.RateLimit(mws.RateLimitConfig{
+			RPS:   rate.Limit(rl.RPS),
+			Burst: rl.Burst,
 			KeyExtractor: func(r *http.Request) string {
 				return r.RemoteAddr
 			},
-		}),
-		mws.CORS(mws.CORSConfig{
-			AllowedOrigins:   cleanCSV(cfg.CorsAllowedOrigins),
-			AllowedHeaders:   cleanCSV(cfg.CorsAllowedHeaders),
-			AllowCredentials: true,
-		}),
+		}))
 	}
+	return append(mwStack, mws.CORS(mws.CORSConfig{
+		AllowedOrigins:   cleanCSV(cfg.CorsAllowedOrigins),
+		AllowedHeaders:   cleanCSV(cfg.CorsAllowedHeaders),
+		AllowCredentials: true,
+	}))
 }

@@ -22,6 +22,16 @@ type Config struct {
 	Insecure bool
 }
 
+// Sender is the transport seam: what a Backend depends on to deliver a
+// message. Client (SMTP) and ses.Sender (AWS SES) satisfy it, so moving
+// between providers is a wiring change.
+type Sender interface {
+	Send(msg Message) error
+}
+
+var _ Sender = (*Client)(nil)
+
+// Client is the SMTP Sender.
 type Client struct {
 	cfg Config
 }

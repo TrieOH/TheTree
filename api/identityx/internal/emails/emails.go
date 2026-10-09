@@ -202,9 +202,9 @@ func DomainHost(baseDomain string) string {
 	return strings.TrimPrefix(strings.TrimPrefix(baseDomain, "https://"), "http://")
 }
 
-// SendAuthEmailArgs is the River job payload for an async verify/reset
+// SendAuthEmailArgs is the background job payload for an async verify/reset
 // email. The token is minted and persisted in the request path (retry-safe:
-// a River retry reuses the same token instead of minting a second one);
+// a retry reuses the same token instead of minting a second one);
 // the worker only resolves the template, renders, and sends.
 type SendAuthEmailArgs struct {
 	TemplateKind string     `json:"kind"`
@@ -218,7 +218,7 @@ type SendAuthEmailArgs struct {
 
 func (SendAuthEmailArgs) Kind() string { return "auth_email.send" }
 
-// SendTosUpdateArgs is the River job payload for a ToS-change notification:
+// SendTosUpdateArgs is the background job payload for a ToS-change notification:
 // one job per update, and the worker fans out to every human actor of the
 // project. No action token is involved — the email informs and points at
 // the account-termination path, it does not link to a redeemable flow.

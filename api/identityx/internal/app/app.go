@@ -7,30 +7,37 @@ import (
 
 	spec "IdentityX"
 	"IdentityX/internal/config"
+	"IdentityX/internal/jobs"
 	"IdentityX/internal/setup"
 	"IdentityX/internal/sqlc"
 	"lib/database"
 	"lib/email"
 	"lib/httpserver"
-	libriver "lib/river"
+	"lib/jobs/lambdaevents"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type IdentityX struct {
-	db          *pgxpool.Pool
-	emailClient *email.Client
+	db    *pgxpool.Pool
+	email email.Sender
 
 	cfg config.Config
 }
 
 // Run boots IdentityX through the Harness: the process sequence (FUN
-// runtime, tracer, serving, shutdown ordering) is httpserver.Boot's
+// runtime, telemetry, serving, shutdown ordering) is httpserver.Boot's
 // implementation; everything IdentityX varies on — its Postgres adapter
-// with the constraint messages, the setup-state flag, the Key-lifecycle
-// provisioning, river workers and jobs — happens in the start hook.
-// Storage never crosses Boot's interface: the pool is created here and
-// closed in the returned shutdown.
+// with the constraint messages, the setup-state probe, the Key-lifecycle
+// provisioning, the email transport and the background-job carrier —
+// happens in the start hook. Storage never crosses Boot's interface: the
+// pool is created here and closed in the returned shutdown.
+//
+// The runtime mode decides the carrier: hosted runs jobs in-process
+// (workers plus tickers); managed sends them to a queue drained by the
+// worker role, whose periodic jobs a scheduler fires (see `identityx
+// schedules`). The schema is never migrated here — `just identityx-goose`
+// owns it.
 func Run() error {
 	cfg := config.LoadConfig()
 	app := &IdentityX{cfg: cfg}
@@ -41,16 +48,15 @@ func Run() error {
 			return nil, nil, err
 		}
 		app.db = pool
-		app.emailClient = email.NewClient(cfg.ToEmailConfig())
+
+		app.email, err = app.initEmail(ctx)
+		if err != nil {
+			database.CloseDB(pool)
+			return nil, nil, err
+		}
 
 		q := sqlc.New(pool)
-		has, err := q.HasAnyActor(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("check setup state: %w", err)
-		}
-		if has {
-			setup.MarkComplete()
-		}
+		setup.UseProbe(q.HasAnyActor)
 
 		tx := database.NewPGXTxRunner(pool)
 
@@ -61,36 +67,55 @@ func Run() error {
 		// Provision every scope's keys before the router accepts traffic:
 		// the Key-lifecycle module creates what is missing, rotates expired
 		// or legacy no-expiry keys, and sweeps retiring keys. The periodic
-		// RotateKeysWorker keeps them fresh afterwards.
+		// RotateKeys job keeps them fresh afterwards.
 		err = keysMgr.EnsureAll(ctx)
 		if err != nil {
+			database.CloseDB(pool)
 			return nil, nil, fmt.Errorf("ensure crypto keys: %w", err)
 		}
 
-		riverClient, riverUI, err := app.initRiver(ctx, q, actionTokenMgr, keysMgr)
+		registry := jobs.Registry(jobs.Deps{
+			Queries:      q,
+			ActionTokens: actionTokenMgr,
+			Keys:         keysMgr,
+			Email:        app.email,
+		})
+		enqueuer, stopJobs, err := app.initJobs(ctx, registry)
 		if err != nil {
+			database.CloseDB(pool)
 			return nil, nil, err
 		}
 
 		tokensMgr := app.initTokens(repos)
-		ops, authzSvc := app.initOperations(repos, tokensMgr, actionTokenMgr, keysMgr, riverClient, tx)
+		ops, authzSvc := app.initOperations(repos, tokensMgr, actionTokenMgr, keysMgr, enqueuer, tx)
 		handlers := app.initHandlers(ops)
 		primitives := app.initMiddlewares(ops, tokensMgr, authzSvc)
 
-		mux := app.CreateRouter(primitives, handlers, riverUI)
+		var events http.Handler
+		if cfg.Worker() {
+			events = lambdaevents.Handler(registry)
+		}
+
+		mux := app.CreateRouter(primitives, handlers, events)
 		return mux, func(ctx context.Context) error {
-			libriver.LogStop(ctx, riverClient)
+			err := stopJobs(ctx)
 			database.CloseDB(pool)
-			return nil
+			return err
 		}, nil
 	}
 
+	profilePort := cfg.ProfilePort
+	if cfg.Managed() {
+		// A function has no reachable side port.
+		profilePort = ""
+	}
 	return httpserver.Boot(httpserver.Config{
 		AppName:            cfg.AppName,
 		Port:               cfg.Port,
-		ProfilePort:        cfg.ProfilePort,
+		ProfilePort:        profilePort,
 		CorsAllowedOrigins: cfg.AllowedOrigins,
 		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          cfg.ToRateLimit(),
 	}, start)
 }

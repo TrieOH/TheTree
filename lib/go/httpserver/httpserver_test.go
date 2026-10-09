@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func testRouter(t *testing.T, cfg Config) http.Handler {
@@ -37,7 +38,10 @@ func TestHealthReturnsAppName(t *testing.T) {
 	}
 }
 
-func TestMetricsEndpoint(t *testing.T) {
+// Metrics are pushed (lib/telemetry bridges the default Prometheus registry
+// to OTLP), so the request collectors must land in the default registry and
+// nothing is served for scraping.
+func TestMetricsCollectedNotServed(t *testing.T) {
 	h := testRouter(t, Config{
 		Routes: func(r *chi.Mux) {
 			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
@@ -48,14 +52,64 @@ func TestMetricsEndpoint(t *testing.T) {
 
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/work", nil))
 
+	families, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatalf("gather: %v", err)
+	}
+	found := false
+	for _, f := range families {
+		if f.GetName() == "http_requests_total" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("default registry does not contain http_requests_total")
+	}
+
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/metrics", nil))
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("metrics status = %d, want 200", rec.Code)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("metrics status = %d, want 404 (metrics are pushed, not scraped)", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "http_requests_total") {
-		t.Fatalf("metrics body does not contain http_requests_total")
+}
+
+func TestRateLimitDisabled(t *testing.T) {
+	h := testRouter(t, Config{
+		RateLimit: RateLimit{Disabled: true},
+		Routes: func(r *chi.Mux) {
+			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			})
+		},
+	})
+	for range 50 {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/work", nil))
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("status = %d with the limiter disabled, want 204", rec.Code)
+		}
+	}
+}
+
+func TestRateLimitConfigured(t *testing.T) {
+	h := testRouter(t, Config{
+		RateLimit: RateLimit{RPS: 1, Burst: 1},
+		Routes: func(r *chi.Mux) {
+			r.Get("/work", func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			})
+		},
+	})
+	limited := false
+	for range 5 {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/work", nil))
+		if rec.Code == http.StatusTooManyRequests {
+			limited = true
+		}
+	}
+	if !limited {
+		t.Fatalf("no request was limited at 1 rps / burst 1")
 	}
 }
 
