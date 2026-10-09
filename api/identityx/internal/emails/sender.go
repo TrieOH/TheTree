@@ -8,17 +8,16 @@ import (
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 
+	"lib/jobs"
+
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
-// Enqueuer is the River insert seam the Sender depends on; *river.Client
-// satisfies it, and tests mock it.
-type Enqueuer interface {
-	Insert(ctx context.Context, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
-}
+// Enqueuer is the background-work seam the Sender depends on: the hosted
+// in-process runner and the managed SQS carrier both satisfy it, and tests
+// mock it.
+type Enqueuer = jobs.Enqueuer
 
 // Sender dispatches verify/reset emails: it mints the single-use action
 // token through the ActionTokenManager and enqueues the async email job
@@ -74,7 +73,7 @@ func (s *Sender) send(
 		return err
 	}
 
-	_, err = s.enqueuer.Insert(ctx, SendAuthEmailArgs{
+	return s.enqueuer.Enqueue(ctx, SendAuthEmailArgs{
 		TemplateKind: string(kind),
 		Token:        token,
 		ToEmail:      *actor.Email,
@@ -82,8 +81,7 @@ func (s *Sender) send(
 		ProjectName:  projectName,
 		BaseDomain:   baseDomain,
 		Expiry:       int(ttl.Minutes()),
-	}, nil)
-	return err
+	})
 }
 
 // jobProjectID prefers the resolved project: a project-scoped actor always

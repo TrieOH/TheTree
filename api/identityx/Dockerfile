@@ -1,8 +1,10 @@
-FROM git.trieoh.com/trieoh/go-tools:3 AS tools
+FROM ghcr.io/trieoh/go-tools:latest@sha256:efa2452249f75dc25d5228a499c11a0b6911ae4367850c8514f36e8f1dbbf351 AS tools
 FROM golang:1.26.4 AS builder
 WORKDIR /app
 COPY --from=tools /go/bin/sqlc /go/bin/sqlc
-COPY --from=tools /go/bin/oapi-codegen /go/bin/oapi-codegen
+# go-tools does not ship oapi-codegen; pinned to the justfile's version.
+RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
+    GOBIN=/go/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
 # --- Dependency layer ---
 COPY go.work go.work.sum ./
 COPY lib/go/go.mod lib/go/go.sum ./lib/go/
@@ -34,12 +36,19 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
 # Static health probe for the distroless runtime (no shell/wget/curl there).
 RUN CGO_ENABLED=0 GOOS=linux go build -o /healthcheck lib/cmd/healthcheck
 
+# Lambda Web Adapter lets the same HTTP server run behind Lambda's Runtime API.
+# The extension is inert outside Lambda, so this image still serves directly in
+# hosted mode. In managed mode it forwards HTTP API events as requests, and
+# every other event (SQS batches, scheduled jobs) as a POST to the
+# pass-through path, which only the worker role mounts.
+FROM public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 AS lambda-adapter
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /app/api/identityx/identityx .
 COPY --from=builder /healthcheck /usr/local/bin/healthcheck
-COPY --from=builder /app/api/identityx/db/migrations ./db/migrations
+COPY --from=lambda-adapter /lambda-adapter /opt/extensions/lambda-adapter
 USER nonroot:nonroot
 EXPOSE 8080
+ENV PORT=8080 AWS_LWA_PORT=8080 AWS_LWA_READINESS_CHECK_PATH=/health AWS_LWA_PASS_THROUGH_PATH=/events
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/healthcheck"]
 CMD ["./identityx"]

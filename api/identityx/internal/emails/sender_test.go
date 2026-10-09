@@ -10,10 +10,12 @@ import (
 	"IdentityX/ports"
 	"lib/crypto"
 
+	"lib/jobs"
+
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
+
 	"github.com/ovechkin-dm/mockio/mock"
-	"github.com/riverqueue/river"
 )
 
 const testHMAC = "test-hmac"
@@ -22,10 +24,10 @@ func stubSender(t *testing.T, actionTokens ports.ActionTokenRepo) (*Sender, *[]S
 	t.Helper()
 	var enqueued []SendAuthEmailArgs
 	enqueuer := mock.Mock[Enqueuer]()
-	_ = mock.When(enqueuer.Insert(mock.AnyContext(), mock.Any[river.JobArgs](), mock.Any[*river.InsertOpts]())).
+	_ = mock.When(enqueuer.Enqueue(mock.AnyContext(), mock.Any[jobs.Job]())).
 		ThenAnswer(func(args []any) []any {
 			enqueued = append(enqueued, args[1].(SendAuthEmailArgs))
-			return []any{nil, nil}
+			return []any{nil}
 		})
 	mgr := tokens.NewActionTokenManager(actionTokens, []byte(testHMAC), tokens.ActionTokenConfig{
 		VerifyTTL: 10 * time.Minute,

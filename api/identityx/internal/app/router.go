@@ -9,12 +9,17 @@ import (
 	libauthz "lib/authz"
 	"lib/errx"
 	"lib/httpserver"
-	libriver "lib/river"
+	"lib/jobs/lambdaevents"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, riverUI http.Handler) http.Handler {
+// CreateRouter builds the API router. events, when non-nil, is the worker
+// role's background-event endpoint (queue batches and scheduled jobs); it
+// is outside the spec and its auth chains because only the Lambda Web
+// Adapter inside the worker function can reach it — the api role never
+// mounts it, so the gateway cannot expose it.
+func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, events http.Handler) http.Handler {
 	// The setup guard and its op list are validated against the spec at
 	// construction; a mismatch fails boot, never production. Platform-vs-
 	// project scope is also a chain concern, derived from each operation's
@@ -32,12 +37,12 @@ func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.S
 		CorsAllowedOrigins: app.cfg.AllowedOrigins,
 		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          app.cfg.ToRateLimit(),
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())
 
-			// nil in tests; wired in run via initRiver
-			if riverUI != nil {
-				libriver.MountDashboard(r, riverUI)
+			if events != nil {
+				r.Method(http.MethodPost, lambdaevents.Path, events)
 			}
 		},
 	})

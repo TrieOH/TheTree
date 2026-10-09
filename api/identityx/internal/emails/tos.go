@@ -11,7 +11,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-// TosNotifier enqueues the ToS-change notification job: one River job per
+// TosNotifier enqueues the ToS-change notification job: one job per
 // update, fanned out to the project's users by the worker. It is the ToS
 // module's only contact with the queue; the token-minting Sender stays
 // untouched because ToS notifications carry no action token.
@@ -38,13 +38,12 @@ func (n *TosNotifier) NotifyUpdate(ctx context.Context, project *models.Project,
 		domain = "https://" + domain
 	}
 
-	_, err := n.enqueuer.Insert(ctx, SendTosUpdateArgs{
+	return n.enqueuer.Enqueue(ctx, SendTosUpdateArgs{
 		ProjectID:     project.ID,
 		ProjectName:   project.Name,
 		BaseDomain:    domain,
 		TosVersion:    tos.Version,
 		TosContent:    tos.Content,
 		EffectiveDate: tos.EffectiveAt.Format(time.DateOnly),
-	}, nil)
-	return err
+	})
 }

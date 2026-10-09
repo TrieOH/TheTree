@@ -17,6 +17,41 @@ services:
       timeout: 5s
       retries: 5
 
+  # Connection pooler in front of identityx-db, so local runs talk to a
+  # transaction-mode pgbouncer the same way the deployed API talks to Neon's
+  # pooled endpoint. Migrations bypass it (just identityx-goose uses the
+  # direct host). Prepared statements (pgx's default) need
+  # max_prepared_statements in transaction mode.
+  identityx-pooler:
+    # Pinned 2026-10-08 (v1.26.0-p0 is newer than two weeks).
+    image: edoburu/pgbouncer:v1.25.2-p0
+    container_name: identityx-pooler
+    restart: unless-stopped
+    env_file:
+      - api/identityx/.env
+    environment:
+      DB_HOST: identityx-db
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_PREPARED_STATEMENTS: "200"
+      DEFAULT_POOL_SIZE: "20"
+    # The image reads DB_USER/DB_PASSWORD/DB_NAME; the service .env names
+    # them for the Postgres image, so map them before the stock entrypoint.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - DB_USER="$$POSTGRES_USER" DB_PASSWORD="$$POSTGRES_PASSWORD" DB_NAME="$$POSTGRES_DB" exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini
+    depends_on:
+      identityx-db:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   univents-db:
     image: postgres:18
     container_name: univents-db
@@ -99,6 +134,7 @@ services:
     build:
       context: .
       dockerfile: api/identityx/Dockerfile
+    image: 000000000000.dkr.ecr.us-east-1.amazonaws.com/trieoh/identityx:dev
     networks:
       - internal
       - obs-net
@@ -106,11 +142,37 @@ services:
       - "8080:8080"
       - "6060:6060"
     depends_on:
-      identityx-db:
+      identityx-pooler:
         condition: service_healthy
     env_file:
       - .env
       - api/identityx/.env
+
+  # Local AWS for managed mode (just identityx managed): Lambda, API
+  # Gateway, SQS, EventBridge Scheduler, SES and Secrets Manager. Function
+  # containers join the internal network so they reach the pooler and Floci.
+  # Emails sent through SES are listed at http://localhost:4566/_aws/ses.
+  floci:
+    image: floci/floci:2.1.0-compat
+    container_name: floci
+    profiles: [managed]
+    # The host Docker socket is group-restricted and the host's GID differs.
+    user: "0:0"
+    restart: unless-stopped
+    environment:
+      FLOCI_HOSTNAME: floci
+      FLOCI_RUN_AS_ROOT: "true"
+      FLOCI_SERVICES_LAMBDA_DOCKER_NETWORK: thetree-internal
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    ports:
+      - "127.0.0.1:4566:4566"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - floci_data:/app/data
+    networks:
+      - internal
 
   univents:
     container_name: univents
@@ -187,6 +249,8 @@ services:
 
 networks:
   internal:
+    # Named explicitly so Floci can attach Lambda containers to it.
+    name: thetree-internal
     driver: bridge
   obs-net:
     external: true
@@ -198,3 +262,4 @@ volumes:
   informd_db_data:
   rustfs_data:
   rustfs_logs:
+  floci_data:

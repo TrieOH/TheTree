@@ -7,6 +7,8 @@
 package config
 
 import (
+	"fmt"
+
 	"lib/database"
 
 	idx "sdk/identityx"
@@ -14,13 +16,72 @@ import (
 	"github.com/google/uuid"
 )
 
-// Server is the process-level block, unprefixed in every backend: PORT,
-// APP_NAME, DEBUG_MODE, DISABLE_RATE_LIMIT.
+// Server is the process-level block, unprefixed in every backend: the
+// Runtime block, PORT, APP_NAME, DEBUG_MODE, and the rate limit knobs.
 type Server struct {
-	Port             string `env:"PORT"               envDefault:"8080"`
-	AppName          string `env:"APP_NAME,required"`
-	DebugMode        bool   `env:"DEBUG_MODE"`
-	DisableRateLimit bool   `env:"DISABLE_RATE_LIMIT"`
+	Runtime
+
+	Port             string  `env:"PORT"               envDefault:"8080"`
+	AppName          string  `env:"APP_NAME,required"`
+	DebugMode        bool    `env:"DEBUG_MODE"`
+	DisableRateLimit bool    `env:"DISABLE_RATE_LIMIT"`
+	RateLimitRPS     float64 `env:"RATE_LIMIT_RPS"     envDefault:"400"`
+	RateLimitBurst   int     `env:"RATE_LIMIT_BURST"   envDefault:"20"`
+}
+
+// RuntimeMode is how the Backend process is run.
+//
+//   - hosted: a long-lived HTTP server (compose, a VM). Background work runs
+//     in-process next to the server.
+//   - managed: a request-scoped function (AWS Lambda behind the Lambda Web
+//     Adapter). The process may be frozen between requests, so background
+//     work is handed to an external queue and scheduler instead.
+type RuntimeMode string
+
+const (
+	HostedMode  RuntimeMode = "hosted"
+	ManagedMode RuntimeMode = "managed"
+)
+
+// RuntimeRole is what a managed function does. Every role serves the same
+// image; the role only decides what is mounted on top of the API.
+//
+//   - api: serves the HTTP API.
+//   - worker: additionally serves the background event endpoint (queue
+//     batches and scheduled jobs). Never exposed through the API gateway.
+type RuntimeRole string
+
+const (
+	APIRole    RuntimeRole = "api"
+	WorkerRole RuntimeRole = "worker"
+)
+
+// Runtime is the RUNTIME_MODE / RUNTIME_ROLE pair, unprefixed.
+type Runtime struct {
+	Mode RuntimeMode `env:"RUNTIME_MODE" envDefault:"hosted"`
+	Role RuntimeRole `env:"RUNTIME_ROLE" envDefault:"api"`
+}
+
+// Managed reports whether the process runs as a managed function.
+func (r Runtime) Managed() bool { return r.Mode == ManagedMode }
+
+// Worker reports whether the process serves the background event endpoint.
+func (r Runtime) Worker() bool { return r.Managed() && r.Role == WorkerRole }
+
+// Validate rejects unknown modes and roles so a typo fails boot instead of
+// silently falling back to a different process shape.
+func (r Runtime) Validate() error {
+	switch r.Mode {
+	case HostedMode, ManagedMode:
+	default:
+		return fmt.Errorf("RUNTIME_MODE must be %q or %q, got %q", HostedMode, ManagedMode, r.Mode)
+	}
+	switch r.Role {
+	case APIRole, WorkerRole:
+	default:
+		return fmt.Errorf("RUNTIME_ROLE must be %q or %q, got %q", APIRole, WorkerRole, r.Role)
+	}
+	return nil
 }
 
 // Postgres is the backend's own database, configured by POSTGRES_* in the
@@ -33,6 +94,10 @@ type Postgres struct {
 	Password       string `env:"POSTGRES_PASSWORD,required"`
 	SSLMode        string `env:"POSTGRES_SSLMODE"           envDefault:"require"`
 	ChannelBinding string `env:"POSTGRES_CHANNEL_BINDING"   envDefault:"require"`
+	// MaxConns caps the pool. Zero keeps pgx's default (max(4, NumCPU)).
+	// Behind a pooler (Neon's pooled endpoint, pgbouncer) and in managed
+	// functions keep it small: every function instance holds its own pool.
+	MaxConns int32 `env:"POSTGRES_MAX_CONNS"`
 }
 
 // IdentityX is the IdentityX client block (IDENTITY_X_URL / _API_KEY /
@@ -51,6 +116,14 @@ type CORS struct {
 
 // DBConfig assembles the service's direct database connection settings.
 func DBConfig(p Postgres, migrationPath string) database.Config {
+	cfg := DBConnectionConfig(p)
+	cfg.MigrationPath = migrationPath
+	return cfg
+}
+
+// DBConnectionConfig assembles database connection settings for a service
+// whose schema lifecycle is managed outside the API process.
+func DBConnectionConfig(p Postgres) database.Config {
 	return database.Config{
 		Host:           p.Host,
 		Port:           p.Port,
@@ -59,7 +132,7 @@ func DBConfig(p Postgres, migrationPath string) database.Config {
 		Password:       p.Password,
 		SSLMode:        p.SSLMode,
 		ChannelBinding: p.ChannelBinding,
-		MigrationPath:  migrationPath,
+		MaxConns:       p.MaxConns,
 	}
 }
 
