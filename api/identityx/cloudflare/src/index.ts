@@ -16,7 +16,7 @@ const EVENTS_PATH = "/events";
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
 const PERIODIC: Record<string, string[]> = {
-	"*/5 * * * *": ["cleanup_blacklist", "cleanup_action_tokens"],
+	"0 * * * *": ["cleanup_blacklist", "cleanup_action_tokens"],
 	"0 3 * * *": ["keys.rotate"],
 };
 

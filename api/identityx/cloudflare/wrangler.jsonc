@@ -37,7 +37,7 @@
 	},
 
 	// Periodic jobs; must match PERIODIC in src/index.ts.
-	"triggers": { "crons": ["*/5 * * * *", "0 3 * * *"] },
+	"triggers": { "crons": ["0 * * * *", "0 3 * * *"] },
 
 	// Config: none lives here. The whole IdentityX env (the same keys as
 	// api/identityx/.example.env, minus JOBS_URL) is the IDENTITYX_API_ENV

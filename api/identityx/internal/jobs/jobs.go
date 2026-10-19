@@ -33,8 +33,10 @@ func Registry(d Deps) *libjobs.Registry {
 	return reg
 }
 
-// CleanupInterval is the blacklist and action-token sweep cadence.
-const CleanupInterval = 5 * time.Minute
+// CleanupInterval is the blacklist and action-token sweep cadence. Lookups
+// already ignore expired rows, so the sweep only bounds table growth; hourly
+// also lets the Cloudflare container sleep between runs.
+const CleanupInterval = time.Hour
 
 // Periodic declares the recurring jobs. The in-process runner runs them on
 // tickers; on Cloudflare the Worker's cron triggers fire the same kinds, so
