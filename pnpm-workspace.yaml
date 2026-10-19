@@ -28,7 +28,7 @@ catalog:
 
   # === TanStack ===
   '@tanstack/react-router': ^1.170.16
-  '@tanstack/react-start': ^1.168.26
+  '@tanstack/react-start': ^1.168.60
   '@tanstack/react-query': ^5.101.4
   '@tanstack/router-plugin': ^1.168.18
   '@tanstack/react-router-ssr-query': ^1.167.1
@@ -103,7 +103,7 @@ overrides:
   browserslist: 4.28.7
   'posthog-js>fflate': ^0.4.9
   fflate: 0.8.3
-  dompurify: 3.4.13
+  dompurify: 3.4.16
   js-yaml: 4.3.2
   nanoid: 3.3.18
   esbuild: ">=0.28.1"
@@ -111,6 +111,8 @@ overrides:
   "@tanstack/query-core": "5.101.4"
   postcss: ">=8.5.23"
   devalue: ">=5.9.2"
+  seroval: ">=1.6.3 <2"
+  source-map-js: ">=1.2.2 <2"
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
