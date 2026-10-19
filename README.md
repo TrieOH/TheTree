@@ -95,17 +95,15 @@ just up               # postgres (with four service DBs), rustfs, mailpit + all 
 just identityx        # run one service in dev — or: univents, payssage, informd
 ```
 
-**IdentityX runtime modes** (ADR-0010) — the same image runs either way:
+**IdentityX** (ADR-0011) — one image, no runtime modes:
 ```bash
-just identityx hosted    # (default) compose container, jobs in-process, SMTP → mailpit
-just identityx managed   # Floci (local AWS): api + worker Lambdas behind an HTTP API,
-                         # jobs on SQS + EventBridge Scheduler, SES, Secrets Manager
-just inject identityx    # re-seed the identityx secret from .env + api/identityx/.env
+just identityx           # compose container, jobs in-process, SMTP → mailpit
 just identityx db-up     # migrate over the direct (unpooled) endpoint
 ```
 The API always connects through a pooler (`identityx-pooler` locally, Neon's
-pooled endpoint when deployed). In managed mode, emails sent through SES are
-listed at `http://localhost:4566/_aws/ses`.
+pooled endpoint when deployed). It deploys to Cloudflare Containers from
+`api/identityx/cloudflare` (`pnpm -C api/identityx/cloudflare deploy`), with
+jobs on a Cloudflare Queue and Cron Triggers.
 
 **Frontend:**
 ```bash
