@@ -4,10 +4,13 @@
 // learns what carries the work:
 //
 //   - inprocess: a bounded worker pool plus tickers, for a long-lived
-//     process.
+//     process (local compose).
+//   - httpjobs: the Envelope POSTed to an external queue, which delivers it
+//     back to the Backend's events endpoint; an external scheduler fires
+//     the periodic jobs there (Cloudflare Queues and Cron Triggers).
 //
-// The Envelope is the only wire format, so any future carrier delivers the
-// same bytes to the same Registry.
+// The Envelope is the only wire format, so every carrier delivers the same
+// bytes to the same Registry.
 package jobs
 
 import (
@@ -49,8 +52,8 @@ func Encode(job Job) (Envelope, error) {
 	return Envelope{Kind: job.Kind(), Args: args}, nil
 }
 
-// Periodic declares a job to run on an interval; the carrier decides how
-// (the in-process runner uses a ticker), so the cadence lives in one place.
+// Periodic declares a job to run on an interval. The in-process runner runs
+// it on a ticker; with httpjobs the deploy's scheduler fires it instead.
 type Periodic struct {
 	Job        Job
 	Every      time.Duration
