@@ -15,7 +15,7 @@ import (
 )
 
 // Enqueuer is the background-work seam the Sender depends on: the
-// in-process runner satisfies it, and tests mock it.
+// in-process runner and the HTTP carrier both satisfy it, and tests mock it.
 type Enqueuer = jobs.Enqueuer
 
 // Sender dispatches verify/reset emails: it mints the single-use action

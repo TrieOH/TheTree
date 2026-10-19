@@ -36,8 +36,9 @@ func Registry(d Deps) *libjobs.Registry {
 // CleanupInterval is the blacklist and action-token sweep cadence.
 const CleanupInterval = 5 * time.Minute
 
-// Periodic declares the recurring jobs, run on tickers by the in-process
-// runner.
+// Periodic declares the recurring jobs. The in-process runner runs them on
+// tickers; on Cloudflare the Worker's cron triggers fire the same kinds, so
+// keep its crons in step with these cadences.
 //
 // Boot provisions every scope's keys inline, so the rotation job does not
 // run on start: it is the ongoing heartbeat that rotates and sweeps keys

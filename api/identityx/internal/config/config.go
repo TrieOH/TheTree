@@ -33,6 +33,11 @@ type Config struct {
 	SMTPTLS      bool   `env:"SMTP_TLS"`
 	SMTPStartTLS bool   `env:"SMTP_STARTTLS"`
 
+	// Background jobs. Empty: run them in-process (local compose). Set: POST
+	// them to this queue producer, which delivers them back to /events; the
+	// deploy's scheduler fires the periodic ones there.
+	JobsURL string `env:"JOBS_URL"`
+
 	// Auth / crypto
 	Issuer                string        `env:"ISSUER,required"`
 	EncryptionKey         string        `env:"ENCRYPTION_KEY,required"`

@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"time"
 
 	"IdentityX/internal/authz"
@@ -16,6 +18,7 @@ import (
 	libauthz "lib/authz"
 	"lib/database"
 	libjobs "lib/jobs"
+	"lib/jobs/httpjobs"
 	"lib/jobs/inprocess"
 )
 
@@ -83,15 +86,28 @@ func (app *IdentityX) initHandlers(ops *services.Operations) *handlers.Server {
 // jobsDrainTimeout bounds how long shutdown waits for queued jobs.
 const jobsDrainTimeout = 15 * time.Second
 
-// initJobs starts the in-process job runner: it executes enqueued jobs and
-// runs the periodic ones on tickers. Queued work lives in memory only.
-// Returns the enqueuer the services use plus its shutdown.
-func (app *IdentityX) initJobs(registry *libjobs.Registry) (libjobs.Enqueuer, func(context.Context) error) { //nolint:ireturn
+// initJobs picks the background-job carrier and returns the enqueuer the
+// services use, the events endpoint to mount (nil when there is none), and
+// the carrier's shutdown.
+//
+//   - JOBS_URL unset: an in-process runner executes the jobs and runs the
+//     periodic ones on tickers. Queued work lives in memory only.
+//   - JOBS_URL set: jobs are POSTed there; the queue delivers them, and the
+//     scheduler fires the periodic ones, at the events endpoint.
+func (app *IdentityX) initJobs(registry *libjobs.Registry) (libjobs.Enqueuer, http.Handler, func(context.Context) error, error) { //nolint:ireturn
+	if app.cfg.JobsURL != "" {
+		enqueuer, err := httpjobs.New(app.cfg.JobsURL)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("jobs carrier: %w", err)
+		}
+		return enqueuer, httpjobs.Handler(registry), func(context.Context) error { return nil }, nil
+	}
+
 	runner := inprocess.New(registry, inprocess.Options{})
 	runner.Start(jobs.Periodic(app.cfg.RotateKeysJobDuration)...)
-	return runner, func(ctx context.Context) error {
+	return runner, nil, func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, jobsDrainTimeout)
 		defer cancel()
 		return runner.Stop(ctx)
-	}
+	}, nil
 }

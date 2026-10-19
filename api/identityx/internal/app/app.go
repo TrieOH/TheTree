@@ -32,9 +32,9 @@ type IdentityX struct {
 // happens in the start hook. Storage never crosses Boot's interface: the
 // pool is created here and closed in the returned shutdown.
 //
-// Background jobs run in-process (workers plus tickers) next to the
-// server. The schema is never migrated here — `just identityx-goose` owns
-// it.
+// Background jobs run in-process locally, or through an external queue and
+// scheduler when JOBS_URL is set (see initJobs). The schema is never
+// migrated here — `just identityx-goose` owns it.
 func Run() error {
 	cfg := config.LoadConfig()
 	app := &IdentityX{cfg: cfg}
@@ -73,14 +73,18 @@ func Run() error {
 			Keys:         keysMgr,
 			Email:        app.email,
 		})
-		enqueuer, stopJobs := app.initJobs(registry)
+		enqueuer, events, stopJobs, err := app.initJobs(registry)
+		if err != nil {
+			database.CloseDB(pool)
+			return nil, nil, err
+		}
 
 		tokensMgr := app.initTokens(repos)
 		ops, authzSvc := app.initOperations(repos, tokensMgr, actionTokenMgr, keysMgr, enqueuer, tx)
 		handlers := app.initHandlers(ops)
 		primitives := app.initMiddlewares(ops, tokensMgr, authzSvc)
 
-		mux := app.CreateRouter(primitives, handlers)
+		mux := app.CreateRouter(primitives, handlers, events)
 		return mux, func(ctx context.Context) error {
 			err := stopJobs(ctx)
 			database.CloseDB(pool)
