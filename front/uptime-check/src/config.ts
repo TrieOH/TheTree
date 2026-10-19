@@ -11,7 +11,7 @@ export interface Endpoint {
  */
 export const ENDPOINTS: Endpoint[] = [
   { name: "univents", url: "https://api.univents.com.br/health" },
-  { name: "identityx", url: "https://api.identityx.com.br/health" },
+  { name: "identityx", url: "https://api.identityx.trieoh.com/health" },
   { name: "payssage", url: "https://api.payssage.trieoh.com/health" },
   { name: "informd", url: "https://api.informd.trieoh.com/health" },
 ];
