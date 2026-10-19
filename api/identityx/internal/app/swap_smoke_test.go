@@ -33,7 +33,7 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,
 		Scopes: testScopeCheckers(),
-	}, server, nil)
+	}, server)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/auth/logout", nil)
 	req.Header.Set("Origin", "http://localhost:3000")

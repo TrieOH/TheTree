@@ -14,9 +14,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// Enqueuer is the background-work seam the Sender depends on: the hosted
-// in-process runner and the managed SQS carrier both satisfy it, and tests
-// mock it.
+// Enqueuer is the background-work seam the Sender depends on: the
+// in-process runner satisfies it, and tests mock it.
 type Enqueuer = jobs.Enqueuer
 
 // Sender dispatches verify/reset emails: it mints the single-use action

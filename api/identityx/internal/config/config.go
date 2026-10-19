@@ -1,9 +1,7 @@
 package config
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -12,17 +10,8 @@ import (
 	"lib/email"
 	"lib/errx"
 	"lib/httpserver"
-	"lib/secrets/provider"
 
 	"github.com/caarlos0/env/v11"
-)
-
-// EmailTransport selects the email.Sender adapter.
-type EmailTransport string
-
-const (
-	SMTPTransport EmailTransport = "smtp"
-	SESTransport  EmailTransport = "ses"
 )
 
 type Config struct {
@@ -35,22 +24,14 @@ type Config struct {
 	AppURL      string `env:"APP_URL,required"`
 	ProfilePort string `env:"PROFILE_PORT"     envDefault:"6060"`
 
-	// Email: the transport picks the adapter (smtp, or ses through the
-	// standard AWS environment); EMAIL_FROM is the sender either way.
-	EmailTransport EmailTransport `env:"EMAIL_TRANSPORT"     envDefault:"smtp"`
-	EmailFrom      string         `env:"EMAIL_FROM,required"`
-
-	// SMTP (EMAIL_TRANSPORT=smtp)
-	SMTPHost     string `env:"SMTP_HOST"`
-	SMTPPort     string `env:"SMTP_PORT"`
+	// Email over SMTP (mailpit locally, any SMTP relay when deployed).
+	EmailFrom    string `env:"EMAIL_FROM,required"`
+	SMTPHost     string `env:"SMTP_HOST,required"`
+	SMTPPort     string `env:"SMTP_PORT,required"`
 	SMTPUser     string `env:"SMTP_USERNAME"`
 	SMTPPass     string `env:"SMTP_PASSWORD"`
 	SMTPTLS      bool   `env:"SMTP_TLS"`
 	SMTPStartTLS bool   `env:"SMTP_STARTTLS"`
-
-	// Background jobs. Hosted mode runs them in-process; managed mode sends
-	// them to this queue, drained by the worker role.
-	JobsQueueURL string `env:"JOBS_QUEUE_URL"`
 
 	// Auth / crypto
 	Issuer                string        `env:"ISSUER,required"`
@@ -97,31 +78,19 @@ func (cfg *Config) ToRateLimit() httpserver.RateLimit {
 
 // Validate checks the cross-field rules env tags cannot express.
 func (cfg *Config) Validate() error {
-	errs := []error{cfg.Runtime.Validate()}
-	switch cfg.EmailTransport {
-	case SMTPTransport:
-		if cfg.SMTPHost == "" || cfg.SMTPPort == "" {
-			errs = append(errs, errors.New("EMAIL_TRANSPORT=smtp requires SMTP_HOST and SMTP_PORT"))
-		}
-	case SESTransport:
-	default:
-		errs = append(errs, fmt.Errorf("EMAIL_TRANSPORT must be %q or %q, got %q", SMTPTransport, SESTransport, cfg.EmailTransport))
+	_, err := strconv.Atoi(cfg.SMTPPort)
+	if err != nil {
+		return errors.New("SMTP_PORT must be a number")
 	}
-	if cfg.Managed() && cfg.JobsQueueURL == "" {
-		errs = append(errs, errors.New("RUNTIME_MODE=managed requires JOBS_QUEUE_URL"))
-	}
-	return errors.Join(errs...)
+	return nil
 }
 
-// LoadConfig fills the environment from the configured secret store
-// (SECRETS_PROVIDER; explicit environment wins), then parses and validates.
+// LoadConfig parses the environment and validates it. Secrets arrive as
+// plain environment variables (compose env_file locally, Worker secrets
+// passed into the container on Cloudflare).
 func LoadConfig() Config {
-	err := provider.Load(context.Background())
-	if err != nil {
-		errx.Exit(err, "error loading secrets")
-	}
 	var cfg Config
-	err = env.Parse(&cfg)
+	err := env.Parse(&cfg)
 	if err != nil {
 		errx.Exit(err, "error loading config")
 	}
