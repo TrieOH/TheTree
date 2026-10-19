@@ -6,7 +6,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "types": "wrangler types",
-    "tsc": "wrangler types && tsc --noEmit"
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {
     "@cloudflare/containers": "^0.3.7"
