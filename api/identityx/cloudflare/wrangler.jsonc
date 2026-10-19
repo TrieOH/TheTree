@@ -39,43 +39,8 @@
 	// Periodic jobs; must match PERIODIC in src/index.ts.
 	"triggers": { "crons": ["*/5 * * * *", "0 3 * * *"] },
 
-	// Non-secret config. Every string binding, these and the secrets below,
-	// is passed to the container as an environment variable.
-	"vars": {
-		// APP_URL and CORS_ALLOWED_ORIGINS: the IdentityX front's production URL.
-		"APP_NAME": "IdentityX",
-		"APP_URL": "https://identityx.com.br",
-		"ISSUER": "https://identityx.com.br",
-
-		"IDX_POSTGRES_PORT": "5432",
-		"IDX_POSTGRES_DB": "identityx",
-		"IDX_POSTGRES_SSLMODE": "require",
-		"IDX_POSTGRES_CHANNEL_BINDING": "require",
-		"IDX_POSTGRES_MAX_CONNS": "4",
-
-		"IDENTITY_X_KEY_LIFETIME": "168h",
-		"ROTATE_KEYS_JOB_DURATION": "24h",
-		"ACCESS_TOKEN_LIFETIME": "15m",
-		"REFRESH_TOKEN_LIFETIME": "168h",
-
-		"CORS_ALLOWED_ORIGINS": "https://identityx.com.br",
-		"CORS_ALLOWED_HEADERS": "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-KEY",
-
-		"DEBUG_MODE": "false",
-		"DISABLE_RATE_LIMIT": "false",
-		"RATE_LIMIT_RPS": "400",
-		"RATE_LIMIT_BURST": "20",
-
-		"EMAIL_FROM": "noreply@identityx.com.br",
-		"SMTP_TLS": "true",
-		"SMTP_STARTTLS": "false"
-	}
-
-	// Secrets (wrangler secret put <NAME>):
-	//   IDX_POSTGRES_HOST (Neon pooled endpoint), IDX_POSTGRES_USER,
-	//   IDX_POSTGRES_PASSWORD, ENCRYPTION_KEY, HMAC_SECRET,
-	//   SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
-	//   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI,
-	//   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI,
-	//   OTEL_EXPORTER_OTLP_ENDPOINT (and OTEL_EXPORTER_OTLP_HEADERS if needed)
+	// Config: none lives here. The whole IdentityX env (the same keys as
+	// api/identityx/.example.env, minus JOBS_URL) is the IDENTITYX_API_ENV
+	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
+	// binding is passed to the container as an environment variable.
 }
