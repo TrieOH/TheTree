@@ -1,7 +1,5 @@
 set shell := ["bash", "-cu"]
 
-import 'tools/floci/floci.just'
-
 default:
     just --list
 
@@ -15,23 +13,14 @@ up:
 down:
     docker compose down
 
-# hosted: a local HTTP server, jobs in-process, SMTP to mailpit.
-# managed: Floci Lambda functions behind an HTTP API, jobs on SQS +
-# EventBridge Scheduler, SES, config from Secrets Manager.
-#
-# Run IdentityX: hosted (default) | managed | db-init | db-up | db-status | lint | test
+# Run IdentityX: (default: compose container) | db-init | db-up | db-status | lint | test
 identityx +CMD="":
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{CMD}}" in
-      ""|hosted)
-            docker compose --profile managed stop floci 2>/dev/null || true
+      "")
             just identityx-db-init
             docker compose up --build --remove-orphans identityx ;;
-      managed)
-            docker compose stop identityx 2>/dev/null || true
-            just identityx-db-init
-            just identityx-floci-deploy ;;
       db-init)   just identityx-db-init ;;
       db-up)     just identityx-goose up ;;
       db-status) just identityx-goose status ;;
