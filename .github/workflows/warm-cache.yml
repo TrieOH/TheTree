@@ -1,31 +1,26 @@
-name: Warm cache
-# Saves the Go tool binaries and the Go module/build cache from main, the
-# one ref every tag run can restore from (a cache saved on a tag is visible
-# only to that tag). Checks nothing and gates nothing — ADR-0007's deploy
-# gate stays the only CI.
+name: Warm tool cache
+# Saves the Go tool binaries (setup-go-tools) from main, the one ref every
+# tag run can restore from (a cache saved on a tag is visible only to that
+# tag). Checks nothing and gates nothing — ADR-0007's deploy gate stays the
+# only CI.
 #
-# Runs when a tool version or a dependency sum changes, or by hand; dispatch
-# with refresh=true to drop the main caches first and rebuild them.
+# Runs when a tool version changes, or by hand; dispatch with refresh=true
+# to drop main's tool caches first and rebuild them.
 
 on:
   push:
     branches: [main]
-    # only what changes a cache key: the tool versions, and the sums
-    # setup-go hashes for the module cache
     paths:
-      - '.github/actions/setup-go/**'
       - '.github/actions/setup-go-tools/**'
-      - 'go.work.sum'
-      - '**/go.sum'
   workflow_dispatch:
     inputs:
       refresh:
-        description: Delete main's tool and Go caches before rebuilding them
+        description: Delete main's tool caches before rebuilding them
         type: boolean
         default: false
 
 concurrency:
-  group: warm-cache
+  group: warm-tool-cache
   cancel-in-progress: true
 
 permissions:
@@ -42,23 +37,21 @@ jobs:
     steps:
       - uses: useblacksmith/checkout@v1
 
-      - name: Drop main's caches
+      - name: Drop main's tool caches
         if: ${{ inputs.refresh }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          for prefix in thetree-tool- setup-go-; do
-            gh cache list --repo "$GITHUB_REPOSITORY" --ref refs/heads/main --key "$prefix" --limit 100 --json id --jq '.[].id' \
-              | while read -r id; do gh cache delete "$id" --repo "$GITHUB_REPOSITORY"; done
-          done
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref refs/heads/main --key thetree-tool- --limit 100 --json id --jq '.[].id' \
+            | while read -r id; do gh cache delete "$id" --repo "$GITHUB_REPOSITORY"; done
 
-      - name: Setup Go
-        uses: ./.github/actions/setup-go
+      # go install needs the toolchain; its module cache is not warmed here
+      - name: Go toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.4"
+          cache: false
 
       - name: Setup Go tools
         uses: ./.github/actions/setup-go-tools
-
-      # fills the module cache setup-go saves at the end of the job
-      - name: Download modules
-        run: go mod download
