@@ -111,7 +111,8 @@ overrides:
   "@tanstack/query-core": "5.101.4"
   postcss: ">=8.5.23"
   devalue: ">=5.9.2"
-  seroval: ">=1.6.3 <2"
+  seroval: 1.6.11
+  seroval-plugins: 1.6.11
   source-map-js: ">=1.2.2 <2"
 
 minimumReleaseAge: 1440
