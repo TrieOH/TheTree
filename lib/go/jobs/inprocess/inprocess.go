@@ -1,7 +1,7 @@
 // Package inprocess carries jobs inside a long-lived process: a bounded
 // queue drained by a worker pool, with retries and backoff, plus a ticker
 // per periodic job. It holds work in memory only — work still queued when
-// the process dies is lost — which is the accepted trade for hosted mode.
+// the process dies is lost — the accepted trade for running in-process.
 package inprocess
 
 import (

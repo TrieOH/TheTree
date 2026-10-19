@@ -53,10 +53,10 @@ func Boot(cfg Config, start StartFunc) error {
 		go servePprof(cfg.ProfilePort, cfg.AppName)
 	}
 
-	// SIGTERM is how both runtimes stop the process (docker stop, and Lambda
-	// when it reclaims an instance — the Lambda Web Adapter extension makes
-	// Lambda deliver it), so stopping gracefully is what lets the shutdown
-	// hook drain background work and telemetry flush its last batch.
+	// SIGTERM is how the process is stopped (docker stop, and Cloudflare
+	// when a container sleeps or is replaced), so stopping gracefully is what
+	// lets the shutdown hook drain background work and telemetry flush its
+	// last batch.
 	srv := newServer(handler, cfg.Port)
 	stopCtx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
 	defer stop()

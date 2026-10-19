@@ -53,8 +53,8 @@ type Config struct {
 }
 
 // RateLimit is the per-client (real IP) token bucket. It limits per process:
-// in managed mode every function instance has its own bucket, so the
-// gateway's throttling is the global limit and this one is a backstop.
+// with several instances each has its own bucket, so an edge rate limit is
+// the global limit and this one is a backstop.
 type RateLimit struct {
 	Disabled bool
 	RPS      float64

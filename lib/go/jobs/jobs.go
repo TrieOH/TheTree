@@ -4,13 +4,10 @@
 // learns what carries the work:
 //
 //   - inprocess: a bounded worker pool plus tickers, for a long-lived
-//     process (hosted mode).
-//   - sqsjobs: an SQS queue, drained by a worker function through
-//     lambdaevents (managed mode). Periodic jobs are then fired by a
-//     scheduler that invokes the same worker with an Envelope.
+//     process.
 //
-// The Envelope is the only wire format, so every carrier delivers the same
-// bytes to the same Registry.
+// The Envelope is the only wire format, so any future carrier delivers the
+// same bytes to the same Registry.
 package jobs
 
 import (
@@ -52,9 +49,8 @@ func Encode(job Job) (Envelope, error) {
 	return Envelope{Kind: job.Kind(), Args: args}, nil
 }
 
-// Periodic declares a job to run on an interval. Hosted mode runs it on a
-// ticker; managed mode turns the same declaration into a schedule at deploy
-// time, so the cadence lives in one place.
+// Periodic declares a job to run on an interval; the carrier decides how
+// (the in-process runner uses a ticker), so the cadence lives in one place.
 type Periodic struct {
 	Job        Job
 	Every      time.Duration
