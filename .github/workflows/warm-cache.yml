@@ -4,18 +4,18 @@ name: Warm cache
 # only to that tag). Checks nothing and gates nothing — ADR-0007's deploy
 # gate stays the only CI.
 #
-# Runs when a tool version or a dependency changes, or by hand; dispatch
+# Runs when a tool version or a dependency sum changes, or by hand; dispatch
 # with refresh=true to drop the main caches first and rebuild them.
 
 on:
   push:
     branches: [main]
+    # only what changes a cache key: the tool versions, and the sums
+    # setup-go hashes for the module cache
     paths:
       - '.github/actions/setup-go/**'
       - '.github/actions/setup-go-tools/**'
-      - 'go.work'
       - 'go.work.sum'
-      - '**/go.mod'
       - '**/go.sum'
   workflow_dispatch:
     inputs:
