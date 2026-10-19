@@ -1,10 +1,10 @@
 name: Setup Go tools
 description: >
-  Installs pinned Go-ecosystem tools into ~/.local/thetree-tools/bin (added
-  to PATH): sqlc, oapi-codegen, golangci-lint, gotestsum — the same versions
+  Installs pinned Go-ecosystem tools, one dir each under
+  ~/.local/thetree-tools (all added to PATH): sqlc, oapi-codegen, golangci-lint, gotestsum — the same versions
   `just setup` installs on dev machines. Requires setup-go to run first
-  (needs `go install`). The bin dir is cached per tool-version set, so
-  `go install` only compiles on a version bump.
+  (needs `go install`). Each tool is cached on its own version, so a bump
+  reinstalls only that tool.
 inputs:
   sqlc-version:
     description: sqlc version (no leading v — matches the tarball name)
@@ -25,34 +25,73 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Restore tools
-      id: cache
+    # ── sqlc — tarball name uses underscores ───────────────────────────────
+    - name: Restore sqlc
+      id: sqlc
       uses: actions/cache@v4
       with:
-        path: ~/.local/thetree-tools/bin
-        key: thetree-tools-${{ runner.os }}-sqlc${{ inputs.sqlc-version }}-oapi${{ inputs.oapi-codegen-version }}-gcl${{ inputs.golangci-lint-version }}-gts${{ inputs.gotestsum-version }}
+        path: ~/.local/thetree-tools/sqlc
+        key: thetree-tool-${{ runner.os }}-sqlc-${{ inputs.sqlc-version }}
 
-    - name: Install tools
-      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Install sqlc
+      if: steps.sqlc.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
-        DIR="$HOME/.local/thetree-tools"
-        mkdir -p "$DIR/bin"
-        # sqlc — tarball name uses underscores (matches old ci.yml recipe)
+        mkdir -p "$HOME/.local/thetree-tools/sqlc"
         curl -sSL "https://downloads.sqlc.dev/sqlc_${{ inputs.sqlc-version }}_linux_amd64.tar.gz" \
-          | tar -xz -C "$DIR/bin" sqlc
-        # golangci-lint — release tag gets the v-prefix, dirname doesn't
+          | tar -xz -C "$HOME/.local/thetree-tools/sqlc" sqlc
+
+    # ── golangci-lint — release tag gets the v-prefix, dirname doesn't ─────
+    - name: Restore golangci-lint
+      id: gcl
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/thetree-tools/golangci-lint
+        key: thetree-tool-${{ runner.os }}-golangci-lint-${{ inputs.golangci-lint-version }}
+
+    - name: Install golangci-lint
+      if: steps.gcl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
         GCL="${{ inputs.golangci-lint-version }}"
+        mkdir -p "$HOME/.local/thetree-tools/golangci-lint"
         curl -sSL "https://github.com/golangci/golangci-lint/releases/download/v${GCL}/golangci-lint-${GCL}-linux-amd64.tar.gz" \
-          | tar -xz --strip-components=1 -C "$DIR/bin" "golangci-lint-${GCL}-linux-amd64/golangci-lint"
-        # oapi-codegen + gotestsum — via go install (needs the go toolchain)
-        GOBIN="$DIR/bin" go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${{ inputs.oapi-codegen-version }}"
-        GOBIN="$DIR/bin" go install "gotest.tools/gotestsum@${{ inputs.gotestsum-version }}"
+          | tar -xz --strip-components=1 -C "$HOME/.local/thetree-tools/golangci-lint" "golangci-lint-${GCL}-linux-amd64/golangci-lint"
+
+    # ── oapi-codegen — go install (needs the go toolchain) ─────────────────
+    - name: Restore oapi-codegen
+      id: oapi
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/thetree-tools/oapi-codegen
+        key: thetree-tool-${{ runner.os }}-oapi-codegen-${{ inputs.oapi-codegen-version }}
+
+    - name: Install oapi-codegen
+      if: steps.oapi.outputs.cache-hit != 'true'
+      shell: bash
+      run: GOBIN="$HOME/.local/thetree-tools/oapi-codegen" go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${{ inputs.oapi-codegen-version }}"
+
+    # ── gotestsum — go install (needs the go toolchain) ────────────────────
+    - name: Restore gotestsum
+      id: gts
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/thetree-tools/gotestsum
+        key: thetree-tool-${{ runner.os }}-gotestsum-${{ inputs.gotestsum-version }}
+
+    - name: Install gotestsum
+      if: steps.gts.outputs.cache-hit != 'true'
+      shell: bash
+      run: GOBIN="$HOME/.local/thetree-tools/gotestsum" go install "gotest.tools/gotestsum@${{ inputs.gotestsum-version }}"
 
     - name: Add to PATH
       shell: bash
-      run: echo "$HOME/.local/thetree-tools/bin" >> "$GITHUB_PATH"
+      run: |
+        for t in sqlc golangci-lint oapi-codegen gotestsum; do
+          echo "$HOME/.local/thetree-tools/$t" >> "$GITHUB_PATH"
+        done
 
     - name: Report + smoke test
       shell: bash
