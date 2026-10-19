@@ -24,7 +24,8 @@ type Envelope = { kind: string; args?: unknown };
 
 export class IdentityXContainer extends Container<Env> {
 	defaultPort = 8080;
-	sleepAfter = "10m";
+	// Idle time before the container sleeps; the next request cold-starts it.
+	sleepAfter = "5m";
 
 	static outboundByHost = {
 		[JOBS_HOST]: async (req: Request, env: Env) => {
