@@ -12,9 +12,9 @@
 			// The Dockerfile copies the Go workspace, so it builds from the repo root.
 			"image_build_context": "../../..",
 			"instance_type": "basic",
-			"max_instances": 3
-			// Pin placement near the Neon region once it is decided, e.g.
-			// "constraints": { "regions": ["SAM"] }
+			"max_instances": 3,
+			// Next to Neon (São Paulo).
+			"constraints": { "regions": ["SAM"] }
 		}
 	],
 	"durable_objects": {
