@@ -1,5 +1,9 @@
 import { Container, getRandom } from "@cloudflare/containers";
 
+// Required by outboundByHost: the container's outbound requests are routed
+// through this entrypoint.
+export { ContainerProxy } from "@cloudflare/containers";
+
 // How many container instances share the traffic. IdentityX keeps no state
 // between requests that matters across instances (the in-memory rate limit
 // is a per-instance backstop), so any instance can serve any request.
