@@ -3,7 +3,8 @@ description: >
   Installs pinned Go-ecosystem tools into ~/.local/thetree-tools/bin (added
   to PATH): sqlc, oapi-codegen, golangci-lint, gotestsum — the same versions
   `just setup` installs on dev machines. Requires setup-go to run first
-  (needs `go install`). No caching — installed fresh every run.
+  (needs `go install`). The bin dir is cached per tool-version set, so
+  `go install` only compiles on a version bump.
 inputs:
   sqlc-version:
     description: sqlc version (no leading v — matches the tarball name)
@@ -24,7 +25,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Restore tools
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/thetree-tools/bin
+        key: thetree-tools-${{ runner.os }}-sqlc${{ inputs.sqlc-version }}-oapi${{ inputs.oapi-codegen-version }}-gcl${{ inputs.golangci-lint-version }}-gts${{ inputs.gotestsum-version }}
+
     - name: Install tools
+      if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
