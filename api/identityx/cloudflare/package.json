@@ -9,10 +9,10 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@cloudflare/containers": "^0.3.7"
+    "@cloudflare/containers": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "wrangler": "^4.151.2"
+    "typescript": "catalog:",
+    "wrangler": "catalog:"
   }
 }

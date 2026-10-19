@@ -2,6 +2,7 @@ packages:
   - 'front/*'
   - 'lib/ts/*'
   - 'sdk/ts/*'
+  - 'api/*/cloudflare'
 
 catalogs:
   solid:
@@ -61,6 +62,7 @@ catalog:
   '@solidjs/vite-plugin': ^3.0.0-next.39
   '@vitejs/plugin-react': ^6.0.2
   '@cloudflare/vite-plugin': ^1.39.2
+  '@cloudflare/containers': ^0.3.7
   wrangler: ^4.97.0
   '@biomejs/biome': 2.2.4
   '@rolldown/plugin-babel': ^0.2.3
