@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"IdentityX/internal/authz"
-	"IdentityX/internal/config"
 	"IdentityX/internal/emails"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/jobs"
@@ -17,11 +17,9 @@ import (
 	"IdentityX/internal/tokens"
 	libauthz "lib/authz"
 	"lib/database"
-	"lib/email"
-	"lib/email/ses"
 	libjobs "lib/jobs"
+	"lib/jobs/httpjobs"
 	"lib/jobs/inprocess"
-	"lib/jobs/sqsjobs"
 )
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -85,42 +83,29 @@ func (app *IdentityX) initHandlers(ops *services.Operations) *handlers.Server {
 	return handlers.NewServer(ops)
 }
 
-// initEmail builds the configured email transport.
-func (app *IdentityX) initEmail(ctx context.Context) (email.Sender, error) { //nolint:ireturn
-	switch app.cfg.EmailTransport {
-	case config.SESTransport:
-		sender, err := ses.New(ctx, app.cfg.EmailFrom)
-		if err != nil {
-			return nil, fmt.Errorf("email transport: %w", err)
-		}
-		return sender, nil
-	default:
-		return email.NewClient(app.cfg.ToEmailConfig()), nil
-	}
-}
-
-// jobsDrainTimeout bounds how long hosted shutdown waits for queued jobs.
+// jobsDrainTimeout bounds how long shutdown waits for queued jobs.
 const jobsDrainTimeout = 15 * time.Second
 
-// initJobs picks the background-job carrier for the runtime mode and
-// returns the enqueuer the services use plus its shutdown.
+// initJobs picks the background-job carrier and returns the enqueuer the
+// services use, the events endpoint to mount (nil when there is none), and
+// the carrier's shutdown.
 //
-//   - hosted: an in-process runner executes the jobs and runs the periodic
-//     ones on tickers. Queued work lives in memory only.
-//   - managed: jobs go to the SQS queue; the worker role drains it through
-//     the /events endpoint, and the scheduler fires the periodic ones there.
-func (app *IdentityX) initJobs(ctx context.Context, registry *libjobs.Registry) (libjobs.Enqueuer, func(context.Context) error, error) { //nolint:ireturn
-	if app.cfg.Managed() {
-		enqueuer, err := sqsjobs.New(ctx, app.cfg.JobsQueueURL)
+//   - JOBS_URL unset: an in-process runner executes the jobs and runs the
+//     periodic ones on tickers. Queued work lives in memory only.
+//   - JOBS_URL set: jobs are POSTed there; the queue delivers them, and the
+//     scheduler fires the periodic ones, at the events endpoint.
+func (app *IdentityX) initJobs(registry *libjobs.Registry) (libjobs.Enqueuer, http.Handler, func(context.Context) error, error) { //nolint:ireturn
+	if app.cfg.JobsURL != "" {
+		enqueuer, err := httpjobs.New(app.cfg.JobsURL)
 		if err != nil {
-			return nil, nil, fmt.Errorf("jobs carrier: %w", err)
+			return nil, nil, nil, fmt.Errorf("jobs carrier: %w", err)
 		}
-		return enqueuer, func(context.Context) error { return nil }, nil
+		return enqueuer, httpjobs.Handler(registry), func(context.Context) error { return nil }, nil
 	}
 
 	runner := inprocess.New(registry, inprocess.Options{})
 	runner.Start(jobs.Periodic(app.cfg.RotateKeysJobDuration)...)
-	return runner, func(ctx context.Context) error {
+	return runner, nil, func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, jobsDrainTimeout)
 		defer cancel()
 		return runner.Stop(ctx)

@@ -10,9 +10,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.35
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.34
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.5
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.2
-	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.78.0
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.2
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/exaring/otelpgx v0.11.1
 	github.com/go-chi/chi/v5 v5.3.1

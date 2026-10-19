@@ -13,7 +13,6 @@ import (
 	"lib/database"
 	"lib/email"
 	"lib/httpserver"
-	"lib/jobs/lambdaevents"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -33,11 +32,9 @@ type IdentityX struct {
 // happens in the start hook. Storage never crosses Boot's interface: the
 // pool is created here and closed in the returned shutdown.
 //
-// The runtime mode decides the carrier: hosted runs jobs in-process
-// (workers plus tickers); managed sends them to a queue drained by the
-// worker role, whose periodic jobs a scheduler fires (see `identityx
-// schedules`). The schema is never migrated here — `just identityx-goose`
-// owns it.
+// Background jobs run in-process locally, or through an external queue and
+// scheduler when JOBS_URL is set (see initJobs). The schema is never
+// migrated here — `just identityx-goose` owns it.
 func Run() error {
 	cfg := config.LoadConfig()
 	app := &IdentityX{cfg: cfg}
@@ -49,11 +46,7 @@ func Run() error {
 		}
 		app.db = pool
 
-		app.email, err = app.initEmail(ctx)
-		if err != nil {
-			database.CloseDB(pool)
-			return nil, nil, err
-		}
+		app.email = email.NewClient(cfg.ToEmailConfig())
 
 		q := sqlc.New(pool)
 		setup.UseProbe(q.HasAnyActor)
@@ -80,7 +73,7 @@ func Run() error {
 			Keys:         keysMgr,
 			Email:        app.email,
 		})
-		enqueuer, stopJobs, err := app.initJobs(ctx, registry)
+		enqueuer, events, stopJobs, err := app.initJobs(registry)
 		if err != nil {
 			database.CloseDB(pool)
 			return nil, nil, err
@@ -91,11 +84,6 @@ func Run() error {
 		handlers := app.initHandlers(ops)
 		primitives := app.initMiddlewares(ops, tokensMgr, authzSvc)
 
-		var events http.Handler
-		if cfg.Worker() {
-			events = lambdaevents.Handler(registry)
-		}
-
 		mux := app.CreateRouter(primitives, handlers, events)
 		return mux, func(ctx context.Context) error {
 			err := stopJobs(ctx)
@@ -104,15 +92,10 @@ func Run() error {
 		}, nil
 	}
 
-	profilePort := cfg.ProfilePort
-	if cfg.Managed() {
-		// A function has no reachable side port.
-		profilePort = ""
-	}
 	return httpserver.Boot(httpserver.Config{
 		AppName:            cfg.AppName,
 		Port:               cfg.Port,
-		ProfilePort:        profilePort,
+		ProfilePort:        cfg.ProfilePort,
 		CorsAllowedOrigins: cfg.AllowedOrigins,
 		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,

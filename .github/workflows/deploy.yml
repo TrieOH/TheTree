@@ -377,6 +377,45 @@ jobs:
           └───────────────────────────────────────────────────────
           EOF
 
+      # ── Services on Cloudflare (identityx): the SAME image just pushed
+      #    to GHCR → Cloudflare registry → Worker + Container rollout.
+      #    The service env is the IDENTITYX_API_ENV secret (dotenv format).
+      - name: Setup Node + pnpm (cloudflare service)
+        if: ${{ env.ARTIFACT == 'identityx' }}
+        uses: ./.github/actions/setup-node
+
+      - name: Deploy to Cloudflare (identityx)
+        if: ${{ env.ARTIFACT == 'identityx' }}
+        working-directory: api/identityx/cloudflare
+        run: |
+          echo "▶ publish: cloudflare"
+          set -euo pipefail
+          pnpm install --ignore-workspace --frozen-lockfile
+          SRC="ghcr.io/trieoh/$ARTIFACT@${{ steps.digest.outputs.digest }}"
+          LOCAL="identityx-api:$VERSION"
+          docker pull "$SRC"
+          docker tag "$SRC" "$LOCAL"
+          pnpm exec wrangler containers push "$LOCAL"
+          IMAGE="registry.cloudflare.com/$CLOUDFLARE_ACCOUNT_ID/$LOCAL"
+          # deploy the pushed image instead of rebuilding from the Dockerfile
+          sed -i -E "s|\"image\": \"[^\"]*\"|\"image\": \"$IMAGE\"|; /\"image_build_context\"/d" wrangler.jsonc
+          grep -n '"image"' wrangler.jsonc
+          # the service env travels with the version (secrets are additive:
+          # keys removed from the file stay set until deleted by hand)
+          [ -n "$IDENTITYX_API_ENV" ] || { echo "::error::IDENTITYX_API_ENV secret is empty"; exit 1; }
+          umask 077
+          printf '%s\n' "$IDENTITYX_API_ENV" > "$RUNNER_TEMP/identityx.env"
+          trap 'rm -f "$RUNNER_TEMP/identityx.env"' EXIT
+          pnpm exec wrangler deploy --secrets-file "$RUNNER_TEMP/identityx.env" \
+            --tag "$VERSION" --message "release: $ARTIFACT $VERSION" | tee deploy.log
+          ID=$(grep -oE 'Current Version ID: [a-f0-9-]+' deploy.log | awk '{print $NF}' || true)
+          echo "[release] $ARTIFACT $VERSION → Cloudflare ($IMAGE, worker version ${ID:-unknown})"
+        env:
+          # backends deploy with their own token (Workers, Containers, Queues)
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          IDENTITYX_API_ENV: ${{ secrets.IDENTITYX_API_ENV }}
+
       # ── Fronts: build once → upload Worker version → promote SAME
       #    version to production (staging/E2E slots in here later) ────────
       - name: Setup Node + pnpm

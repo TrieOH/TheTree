@@ -1,7 +1,6 @@
 // Package jobs holds IdentityX's background work: the handlers, and the one
 // declaration of which jobs exist and how often the periodic ones run. The
-// carrier (in-process in hosted mode, SQS plus a scheduler in managed mode)
-// is chosen by the app wiring; nothing here knows it.
+// carrier is chosen by the app wiring; nothing here knows it.
 package jobs
 
 import (
@@ -37,9 +36,9 @@ func Registry(d Deps) *libjobs.Registry {
 // CleanupInterval is the blacklist and action-token sweep cadence.
 const CleanupInterval = 5 * time.Minute
 
-// Periodic declares the recurring jobs. Hosted mode runs them on tickers;
-// managed mode gets the same list from `identityx schedules` and turns it
-// into scheduler entries, so the cadence is declared once.
+// Periodic declares the recurring jobs. The in-process runner runs them on
+// tickers; on Cloudflare the Worker's cron triggers fire the same kinds, so
+// keep its crons in step with these cadences.
 //
 // Boot provisions every scope's keys inline, so the rotation job does not
 // run on start: it is the ongoing heartbeat that rotates and sweeps keys

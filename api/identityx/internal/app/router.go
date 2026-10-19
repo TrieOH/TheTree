@@ -9,16 +9,15 @@ import (
 	libauthz "lib/authz"
 	"lib/errx"
 	"lib/httpserver"
-	"lib/jobs/lambdaevents"
+	"lib/jobs/httpjobs"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// CreateRouter builds the API router. events, when non-nil, is the worker
-// role's background-event endpoint (queue batches and scheduled jobs); it
-// is outside the spec and its auth chains because only the Lambda Web
-// Adapter inside the worker function can reach it — the api role never
-// mounts it, so the gateway cannot expose it.
+// CreateRouter builds the API router. events, when non-nil, is the job
+// events endpoint the queue and scheduler deliver to; it is outside the spec
+// and its auth chains, so the deploy must keep it unreachable from the
+// internet (the Cloudflare Worker refuses it on public requests).
 func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, events http.Handler) http.Handler {
 	// The setup guard and its op list are validated against the spec at
 	// construction; a mismatch fails boot, never production. Platform-vs-
@@ -42,7 +41,7 @@ func (app *IdentityX) CreateRouter(primitives libauthz.Primitives, h *handlers.S
 			mountStrict(r, h, resolver.Chains())
 
 			if events != nil {
-				r.Method(http.MethodPost, lambdaevents.Path, events)
+				r.Method(http.MethodPost, httpjobs.Path, events)
 			}
 		},
 	})

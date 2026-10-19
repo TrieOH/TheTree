@@ -1,0 +1,46 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "identityx-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-19",
+	"observability": { "enabled": true },
+
+	"containers": [
+		{
+			"class_name": "IdentityXContainer",
+			"image": "../Dockerfile",
+			// The Dockerfile copies the Go workspace, so it builds from the repo root.
+			"image_build_context": "../../..",
+			"instance_type": "basic",
+			"max_instances": 3,
+			// Next to Neon (São Paulo).
+			"constraints": { "regions": ["SAM"] }
+		}
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "IDENTITYX", "class_name": "IdentityXContainer" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["IdentityXContainer"] }],
+
+	// Background jobs: the container enqueues through the producer, the
+	// consumer delivers each job back to the container's /events.
+	"queues": {
+		"producers": [{ "queue": "identityx-jobs", "binding": "JOBS" }],
+		"consumers": [
+			{
+				"queue": "identityx-jobs",
+				"max_batch_size": 10,
+				"max_retries": 5,
+				"dead_letter_queue": "identityx-jobs-dlq"
+			}
+		]
+	},
+
+	// Periodic jobs; must match PERIODIC in src/index.ts.
+	"triggers": { "crons": ["*/5 * * * *", "0 3 * * *"] },
+
+	// Config: none lives here. The whole IdentityX env (the same keys as
+	// api/identityx/.example.env, minus JOBS_URL) is the IDENTITYX_API_ENV
+	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
+	// binding is passed to the container as an environment variable.
+}

@@ -148,32 +148,6 @@ services:
       - .env
       - api/identityx/.env
 
-  # Local AWS for managed mode (just identityx managed): Lambda, API
-  # Gateway, SQS, EventBridge Scheduler, SES and Secrets Manager. Function
-  # containers join the internal network so they reach the pooler and Floci.
-  # Emails sent through SES are listed at http://localhost:4566/_aws/ses.
-  floci:
-    image: floci/floci:2.1.0-compat
-    container_name: floci
-    profiles: [managed]
-    # The host Docker socket is group-restricted and the host's GID differs.
-    user: "0:0"
-    restart: unless-stopped
-    environment:
-      FLOCI_HOSTNAME: floci
-      FLOCI_RUN_AS_ROOT: "true"
-      FLOCI_SERVICES_LAMBDA_DOCKER_NETWORK: thetree-internal
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      AWS_DEFAULT_REGION: us-east-1
-    ports:
-      - "127.0.0.1:4566:4566"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - floci_data:/app/data
-    networks:
-      - internal
-
   univents:
     container_name: univents
     restart: unless-stopped
@@ -249,8 +223,6 @@ services:
 
 networks:
   internal:
-    # Named explicitly so Floci can attach Lambda containers to it.
-    name: thetree-internal
     driver: bridge
   obs-net:
     external: true
@@ -262,4 +234,3 @@ volumes:
   informd_db_data:
   rustfs_data:
   rustfs_logs:
-  floci_data:
