@@ -4,6 +4,7 @@
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-19",
 	"observability": { "enabled": true },
+	"routes": [{ "pattern": "api.identityx.trieoh.com", "custom_domain": true }],
 
 	"containers": [
 		{
