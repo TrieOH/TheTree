@@ -27,7 +27,7 @@ catalog:
   '@types/node': ^24.10.1
 
   # === TanStack ===
-  '@tanstack/react-router': ^1.170.16
+  '@tanstack/react-router': 1.170.42
   '@tanstack/react-start': ~1.168.60
   '@tanstack/react-query': ^5.101.4
   '@tanstack/router-plugin': ^1.168.18
@@ -109,6 +109,9 @@ overrides:
   esbuild: ">=0.28.1"
   "@opentelemetry/core": ">=2.8.0"
   "@tanstack/query-core": "5.101.4"
+  # must be the version @tanstack/react-start pins, or the app and Start
+  # end up on two routers with different APIs
+  "@tanstack/react-router": "1.170.42"
   postcss: ">=8.5.23"
   devalue: ">=5.9.2"
   seroval: 1.6.11
