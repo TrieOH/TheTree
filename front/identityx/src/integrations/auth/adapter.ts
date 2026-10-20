@@ -26,7 +26,10 @@ export const identityXIntegration = createTanStackIdentityXIntegration(
     restore: () => restoreSessionServerFn(),
     introspect: introspectServerFn,
     request: ({ data }) =>
-      apiServerFn({ data, fetch: (input, init) => fetch(labelApiCall(input, data), init) }),
+      apiServerFn({
+        data,
+        fetch: (input, init) => fetch(labelApiCall(input, data), init),
+      }),
   },
   {},
 );
