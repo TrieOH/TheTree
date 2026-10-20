@@ -21,12 +21,12 @@ const config = defineConfig({
     },
     tanstackStart({
       serverFns: {
-        // Readable /_serverFn/<file>.<fn> URLs in devtools instead of hashes;
+        // Readable /fn/<name> URLs in devtools instead of /_serverFn/<hash>;
         // the code is source-available, so the hashes only hide it from us.
-        generateFunctionId: ({ filename, functionName }) => {
-          const file = filename.split('/').pop()?.replace(/\.[jt]sx?$/, '')
-          return `${file}.${functionName.replace(/(ServerFn)?_createServerFn_handler$/, '')}`
-        },
+        // Names must stay unique across files.
+        base: '/fn',
+        generateFunctionId: ({ functionName }) =>
+          functionName.replace(/(ServerFn)?_createServerFn_handler$/, ''),
       },
     }),
     viteReact(),
