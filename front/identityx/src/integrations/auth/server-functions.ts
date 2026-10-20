@@ -68,7 +68,7 @@ export const introspectServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ apiKey: z.string().optional() }).optional())
   .handler(({ data }) => bff.introspect(data?.apiKey));
 
-export const authenticatedProxyServerFn = createServerFn({ method: "POST" })
+export const apiServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
       path: z
