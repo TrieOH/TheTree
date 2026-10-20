@@ -19,11 +19,22 @@ const config = defineConfig({
       }),
       enforce: 'post'
     },
-    tanstackStart(),
+    tanstackStart({
+      serverFns: {
+        // Readable /_serverFn/<file>.<fn> URLs in devtools instead of hashes;
+        // the code is source-available, so the hashes only hide it from us.
+        generateFunctionId: ({ filename, functionName }) => {
+          const file = filename.split('/').pop()?.replace(/\.[jt]sx?$/, '')
+          return `${file}.${functionName.replace(/(ServerFn)?_createServerFn_handler$/, '')}`
+        },
+      },
+    }),
     viteReact(),
   ],
   build: {
     chunkSizeWarningLimit: 1000,
+    // real file names and lines in the Sources tab and stack traces
+    sourcemap: true,
   },
 })
 
