@@ -35,7 +35,7 @@ export function MultiStepTextField<T = Record<string, unknown>>(
       <Label for={id}>
         {props.field.label}
         <Show when={props.field.required}>
-          <span aria-hidden="true" class="ml-0.5 text-destructive">
+          <span aria-hidden="true" class="ml-0.5 text-destructive dark:text-destructive-foreground">
             *
           </span>
         </Show>
@@ -67,7 +67,7 @@ export function MultiStepTextField<T = Record<string, unknown>>(
           </Show>
         }
       >
-        <p id={errorId} role="alert" class="text-xs font-medium text-destructive">
+        <p id={errorId} role="alert" class="border-l-2 border-destructive dark:border-destructive-foreground pl-2 text-xs font-medium text-foreground">
           {props.error}
         </p>
       </Show>

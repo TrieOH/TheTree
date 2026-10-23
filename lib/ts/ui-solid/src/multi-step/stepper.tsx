@@ -36,7 +36,7 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
           aria-label={`Passo ${safeCurrent() + 1} de ${total()}: ${activeStep()?.title ?? ""}`}
         >
           <div
-            class="h-full bg-primary transition-all duration-300 ease-out"
+            class="h-full bg-accent transition-all duration-300 ease-out"
             style={{ width: `${progressPercent()}%` }}
           />
         </div>
@@ -69,7 +69,7 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
                       isCompleted()
                         ? "bg-primary text-primary-foreground shadow-xs"
                         : isActive()
-                          ? "border-2 border-primary bg-primary/10 text-primary font-bold shadow-xs"
+                          ? "border-2 border-accent bg-accent text-accent-foreground font-bold shadow-xs"
                           : "border border-border bg-muted/50 text-muted-foreground",
                     )}
                   >

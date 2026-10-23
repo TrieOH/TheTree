@@ -270,15 +270,24 @@ export function Combobox(props: ComboboxProps): JSX.Element {
                         }}
                         class={cn(
                           "flex w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors cursor-pointer disabled:pointer-events-none disabled:opacity-50",
-                          idx() === highlightedIndex()
-                            ? "bg-primary/10 text-primary"
-                            : "hover:bg-muted text-foreground",
+                          option.value === props.value
+                            ? "bg-accent text-accent-foreground"
+                            : idx() === highlightedIndex()
+                              ? "bg-muted text-foreground"
+                              : "hover:bg-muted text-foreground",
                         )}
                       >
                         <span class="min-w-0">
                           <span class="block truncate">{option.label}</span>
                           <Show when={option.description}>
-                            <span class="block truncate text-xs text-muted-foreground">
+                            <span
+                              class={cn(
+                                "block truncate text-xs",
+                                option.value === props.value
+                                  ? "text-accent-foreground"
+                                  : "text-muted-foreground",
+                              )}
+                            >
                               {option.description}
                             </span>
                           </Show>

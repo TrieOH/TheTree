@@ -141,17 +141,20 @@ export default function App() {
       description: "Seleção booleana com rótulo e descrição.",
       defaults: {
         label: "Receber notificações",
+        description: "Novidades e atualizações dos seus projetos.",
         checked: true,
         disabled: false,
       },
       controls: [
         text("label", "Rótulo"),
+        text("description", "Descrição"),
         text("checked", "Marcado"),
         text("disabled", "Desabilitado"),
       ],
       render: (v, update) => (
         <Checkbox
           label={String(v.label)}
+          description={String(v.description)}
           checked={!!v.checked}
           disabled={!!v.disabled}
           onChange={(value) => update("checked", value)}

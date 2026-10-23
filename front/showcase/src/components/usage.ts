@@ -12,7 +12,7 @@ export function usage(name: string, v: Values): string {
   switch (name) {
     case "Checkbox":
       setup = state(q("checked"), "checked");
-      jsx = `<Checkbox label={${q("label")}} disabled={${q("disabled")}} checked={checked()} onChange={setChecked} />`;
+      jsx = `<Checkbox label={${q("label")}} description={${q("description")}} disabled={${q("disabled")}} checked={checked()} onChange={setChecked} />`;
       break;
     case "SearchInput":
       setup = state(q("value"));

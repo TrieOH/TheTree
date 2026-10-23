@@ -330,13 +330,13 @@ const ICON_STYLE: Record<
   { wrapper: string; icon: () => JSX.Element }
 > = {
   success: {
-    wrapper: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    wrapper: "bg-primary text-primary-foreground",
     icon: CheckIcon,
   },
-  error: { wrapper: "bg-destructive/15 text-destructive", icon: ErrorIcon },
-  warning: { wrapper: "bg-accent/15 text-accent", icon: WarningIcon },
+  error: { wrapper: "bg-destructive text-primary", icon: ErrorIcon },
+  warning: { wrapper: "bg-accent text-accent-foreground", icon: WarningIcon },
   info: {
-    wrapper: "bg-secondary/25 text-secondary-foreground",
+    wrapper: "bg-secondary text-secondary-foreground",
     icon: InfoIcon,
   },
   loading: {

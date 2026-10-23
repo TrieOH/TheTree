@@ -43,7 +43,7 @@ function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.El
                 </div>
               }
             >
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-xs">
+              <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-secondary bg-secondary text-secondary-foreground shadow-xs">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
                   <circle cx="12" cy="12" r="10" stroke-linecap="round" stroke-linejoin="round" />
                   <path d="M12 16v-4M12 8h.01" stroke-linecap="round" />
@@ -52,7 +52,7 @@ function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.El
             </Show>
           }
         >
-          <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-xs">
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-accent bg-accent text-accent-foreground shadow-xs">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
               <circle cx="12" cy="12" r="10" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M12 8v4M12 16h.01" stroke-linecap="round" />
@@ -61,7 +61,7 @@ function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.El
         </Show>
       }
     >
-      <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive shadow-xs">
+      <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-destructive bg-destructive text-primary shadow-xs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
           <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
@@ -164,8 +164,8 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
             onClick={handleConfirm}
             class={cn(
               "h-9 min-w-20 px-4 text-xs sm:text-sm font-medium rounded-xl shadow-xs transition-all active:scale-95",
-              displayVariant() === "warning" && "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-zinc-950 dark:hover:bg-amber-400",
-              displayVariant() === "info" && "bg-sky-600 text-white hover:bg-sky-700 dark:bg-sky-500 dark:text-zinc-950 dark:hover:bg-sky-400",
+              displayVariant() === "warning" && "bg-accent text-accent-foreground hover:bg-accent/90",
+              displayVariant() === "info" && "bg-secondary text-secondary-foreground hover:bg-secondary/90",
             )}
           >
             <Show when={props.loading}>

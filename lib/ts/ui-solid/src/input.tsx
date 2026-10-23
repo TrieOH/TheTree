@@ -170,7 +170,7 @@ export interface FormErrorProps {
 export function FormError(props: FormErrorProps) {
   return (
     <Show when={props.children}>
-      <p id={props.id} role="alert" class="text-xs text-destructive">
+      <p id={props.id} role="alert" class="border-l-2 border-destructive dark:border-destructive-foreground pl-2 text-xs text-foreground">
         {props.children}
       </p>
     </Show>
@@ -217,7 +217,7 @@ export function Field(props: FieldProps) {
       <Label for={id()}>
         {props.label}
         <Show when={props.required}>
-          <span aria-hidden="true" class="ml-0.5 text-destructive">
+          <span aria-hidden="true" class="ml-0.5 text-destructive dark:text-destructive-foreground">
             *
           </span>
         </Show>
@@ -238,7 +238,7 @@ export function Field(props: FieldProps) {
         <p
           id={errorId()}
           role="alert"
-          class="text-xs font-medium text-destructive"
+          class="border-l-2 border-destructive dark:border-destructive-foreground pl-2 text-xs font-medium text-foreground"
         >
           {props.error}
         </p>
