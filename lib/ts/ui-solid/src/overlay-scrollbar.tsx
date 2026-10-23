@@ -53,102 +53,290 @@ export const OverlayScrollbar: Component<OverlayScrollbarProps> = (props) => {
 
     const measure = () => {
       const root = document.documentElement;
-      const docHeight = Math.max(
-        root.scrollHeight,
-        document.body.scrollHeight,
-      );
-      const viewportHeight = window.innerHeight;
-      const maxScroll = Math.max(0, docHeight - viewportHeight);
 
-      const trackHeight = viewportHeight - TRACK_PADDING * 2;
-      const thumbHeight =
-        maxScroll > 0
-          ? Math.max(
-              MIN_THUMB_HEIGHT,
-              Math.round((viewportHeight / docHeight) * trackHeight),
-            )
-          : 0;
+      const trackHeight = window.innerHeight - TRACK_PADDING * 2;
+      const contentHeight = root.scrollHeight;
+      const maxScroll = Math.max(
+        0,
+        contentHeight - window.innerHeight,
+      );
+
+      const isVisible = maxScroll > 0;
+
+      const thumbHeight = isVisible
+        ? Math.max(
+            MIN_THUMB_HEIGHT,
+            (window.innerHeight / contentHeight) * trackHeight,
+          )
+        : 0;
 
       metrics.trackHeight = trackHeight;
       metrics.thumbHeight = thumbHeight;
       metrics.maxScroll = maxScroll;
 
-      const shouldShow = maxScroll > 8;
-      setVisible(shouldShow);
+      setVisible(isVisible);
 
-      if (thumbRef) {
-        thumbRef.style.height = `${thumbHeight}px`;
-      }
+      if (thumbRef) thumbRef.style.height = `${thumbHeight}px`;
 
       applyPosition();
     };
 
     const onScroll = () => {
-      if (!scrollScheduled) {
-        scrollScheduled = true;
-        frame = window.requestAnimationFrame(() => {
-          scrollScheduled = false;
-          applyPosition();
-        });
-      }
+      if (scrollScheduled) return;
+
+      scrollScheduled = true;
+
+      frame = requestAnimationFrame(() => {
+        applyPosition();
+        scrollScheduled = false;
+      });
     };
 
-    const teardown = () => {
-      if (!active) return;
-      active = false;
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", measure);
-      observer?.disconnect();
-      observer = null;
-      window.cancelAnimationFrame(frame);
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+
+      frame = requestAnimationFrame(measure);
     };
 
-    const setup = () => {
+    const enable = () => {
       if (active) return;
+
       active = true;
+
+      document.documentElement.classList.add("overlay-scrollbar");
+
       measure();
-      window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("resize", measure, { passive: true });
-      observer = new ResizeObserver(measure);
+
+      window.addEventListener("scroll", onScroll, {
+        passive: true,
+      });
+
+      window.addEventListener("resize", onResize);
+
+      observer = new ResizeObserver(onResize);
       observer.observe(document.body);
     };
 
-    const handleMedia = (event: MediaQueryList | MediaQueryListEvent) => {
-      if (event.matches) {
-        setup();
+    const disable = () => {
+      if (!active) return;
+
+      active = false;
+
+      cancelAnimationFrame(frame);
+
+      observer?.disconnect();
+      observer = null;
+
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+
+      document.documentElement.classList.remove("overlay-scrollbar");
+
+      setVisible(false);
+    };
+
+    const onMediaChange = () => {
+      if (desktop.matches) {
+        enable();
       } else {
-        teardown();
-        setVisible(false);
+        disable();
       }
     };
 
-    handleMedia(desktop);
-    desktop.addEventListener("change", handleMedia);
+    if (desktop.matches) {
+      enable();
+    }
+
+    desktop.addEventListener("change", onMediaChange);
 
     return () => {
-      desktop.removeEventListener("change", handleMedia);
-      teardown();
+      desktop.removeEventListener("change", onMediaChange);
+      disable();
     };
   });
 
+  const move = (clientY: number) => {
+    const { trackHeight, thumbHeight, maxScroll } = metrics;
+
+    if (maxScroll <= 0) return;
+
+    const maxTop = Math.max(0, trackHeight - thumbHeight);
+
+    const nextTop = Math.max(
+      TRACK_PADDING,
+      Math.min(
+        clientY - thumbHeight / 2,
+        maxTop + TRACK_PADDING,
+      ),
+    );
+
+    const progress =
+      maxTop > 0
+        ? (nextTop - TRACK_PADDING) / maxTop
+        : 0;
+
+    window.scrollTo({
+      top: progress * maxScroll,
+      behavior: "auto",
+    });
+  };
+
+  const handleTrackPointerDown = (
+    event: PointerEvent,
+  ) => {
+    if (event.target !== event.currentTarget) return;
+
+    const {
+      trackHeight,
+      thumbHeight,
+      maxScroll,
+    } = metrics;
+
+    if (maxScroll <= 0) return;
+
+    const maxTop = Math.max(
+      0,
+      trackHeight - thumbHeight,
+    );
+
+    const targetTop = Math.max(
+      0,
+      Math.min(
+        event.clientY - thumbHeight / 2,
+        maxTop,
+      ),
+    );
+
+    window.scrollTo({
+      top: maxTop
+        ? (targetTop / maxTop) * maxScroll
+        : 0,
+      behavior: "smooth",
+    });
+  };
+
+  const handleThumbPointerDown = (
+    event: PointerEvent,
+  ) => {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    thumbRef?.setPointerCapture(event.pointerId);
+
+    document.body.style.userSelect = "none";
+
+    const movePointer = (moveEvent: PointerEvent) => {
+      move(moveEvent.clientY);
+    };
+
+    const stop = () => {
+      window.removeEventListener(
+        "pointermove",
+        movePointer,
+      );
+
+      window.removeEventListener(
+        "pointerup",
+        stop,
+      );
+
+      window.removeEventListener(
+        "pointercancel",
+        stop,
+      );
+
+      document.body.style.removeProperty("user-select");
+    };
+
+    window.addEventListener(
+      "pointermove",
+      movePointer,
+    );
+
+    window.addEventListener(
+      "pointerup",
+      stop,
+    );
+
+    window.addEventListener(
+      "pointercancel",
+      stop,
+    );
+  };
+
+  const handleKeyDown = (
+    event: KeyboardEvent,
+  ) => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        window.scrollBy({ top: 80 });
+        break;
+
+      case "ArrowUp":
+        event.preventDefault();
+        window.scrollBy({ top: -80 });
+        break;
+
+      case "PageDown":
+        event.preventDefault();
+        window.scrollBy({
+          top: window.innerHeight,
+        });
+        break;
+
+      case "PageUp":
+        event.preventDefault();
+        window.scrollBy({
+          top: -window.innerHeight,
+        });
+        break;
+
+      case "Home":
+        event.preventDefault();
+        window.scrollTo({
+          top: 0,
+        });
+        break;
+
+      case "End":
+        event.preventDefault();
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+        });
+        break;
+    }
+  };
+
   return (
-    <aside
+    <div
       class={cn(
-        "pointer-events-none fixed top-0 right-0 z-50 h-screen w-3 transition-opacity duration-300",
-        visible() ? "opacity-100" : "opacity-0",
+        "pointer-events-auto fixed inset-y-0 right-0 z-40 hidden w-3 md:block",
         props.class,
       )}
-      aria-hidden="true"
+      style={{
+        display: visible() ? "block" : "none",
+      }}
+      onPointerDown={handleTrackPointerDown}
     >
       <div
-        ref={(el) => (thumbRef = el)}
-        class="absolute right-0.5 w-1.5 rounded-full bg-foreground/20 backdrop-blur-sm transition-[width,background-color] duration-150 will-change-transform hover:w-2 hover:bg-foreground/40"
+        ref={(element) => {
+          thumbRef = element;
+        }}
         role="scrollbar"
+        tabindex={0}
+        aria-label="Rolagem da página"
         aria-orientation="vertical"
+        aria-controls="root"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={0}
+        class="pointer-events-auto absolute right-0.5 w-2 cursor-grab select-none rounded-full bg-primary/45 shadow-sm shadow-primary/20 outline-none transition-colors duration-200 hover:bg-primary/75 focus-visible:bg-primary/75 active:cursor-grabbing will-change-transform"
+        onKeyDown={handleKeyDown}
+        onPointerDown={handleThumbPointerDown}
       />
-    </aside>
+    </div>
   );
 };

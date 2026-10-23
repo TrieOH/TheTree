@@ -117,6 +117,9 @@ catalogs:
     '@trieoh/identityx-sdk-ts-react':
       specifier: ^0.16.0
       version: 0.16.0
+    '@trieoh/identityx-sdk-ts-solid':
+      specifier: ^0.16.5
+      version: 0.16.5
     '@types/d3-scale':
       specifier: ^4.0.9
       version: 4.0.9
@@ -968,8 +971,8 @@ importers:
         specifier: workspace:*
         version: link:../../lib/ts/front-core-solid
       '@trieoh/identityx-sdk-ts-solid':
-        specifier: workspace:*
-        version: link:../../sdk/ts/identityx-solid
+        specifier: 'catalog:'
+        version: 0.16.5(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
       '@trieoh/ui-solid':
         specifier: workspace:*
         version: link:../../lib/ts/ui-solid
@@ -1200,8 +1203,8 @@ importers:
         specifier: 'catalog:'
         version: 0.16.1
       '@trieoh/identityx-sdk-ts-solid':
-        specifier: workspace:*
-        version: link:../../../sdk/ts/identityx-solid
+        specifier: 'catalog:'
+        version: 0.16.5(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
       posthog-js:
         specifier: 'catalog:'
         version: 1.427.2(@types/react@19.2.17)(react@19.2.7)
@@ -4249,6 +4252,12 @@ packages:
       react: ^19.2.0
       react-hook-form: ^7.78.0
       sonner: ^2.0.7
+
+  '@trieoh/identityx-sdk-ts-solid@0.16.5':
+    resolution: {integrity: sha512-iP7xPEYPRKJ+PLdu3F0XGvHDZd1Dn8CA82OlEQL6o/jHjfAZUUjSSpWRvF/E02l621cE5363xzE4S1hIBT36bg==}
+    peerDependencies:
+      '@solidjs/web': 2.0.0-rc.17
+      solid-js: 2.0.0-rc.17
 
   '@trieoh/identityx-sdk-ts@0.16.1':
     resolution: {integrity: sha512-6EfDx2QYkt5GeZp1Nw3aUcIdut/8rHo4hzYX2zDTXfX2p/kJ2qCRy3d9hkGUj3PwK4hv2eTAZZPyaoBafdV9ZA==}
@@ -9674,6 +9683,13 @@ snapshots:
     transitivePeerDependencies:
       - '@emotion/is-prop-valid'
       - react-dom
+
+  '@trieoh/identityx-sdk-ts-solid@0.16.5(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)':
+    dependencies:
+      '@solidjs/web': 2.0.0-rc.17(solid-js@2.0.0-rc.17)
+      '@trieoh/envoy-fetch-ts': 0.1.5
+      '@trieoh/identityx-sdk-ts': 0.16.1
+      solid-js: 2.0.0-rc.17
 
   '@trieoh/identityx-sdk-ts@0.16.1':
     dependencies:

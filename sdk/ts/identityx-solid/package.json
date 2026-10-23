@@ -1,10 +1,10 @@
 {
   "name": "@trieoh/identityx-sdk-ts-solid",
-  "version": "0.16.4",
+  "version": "0.16.5",
   "type": "module",
   "exports": {
     ".": {
-      "solid": "./src/index.ts",
+      "solid": "./dist/esm/index.js",
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs"
