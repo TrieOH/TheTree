@@ -54,8 +54,8 @@ All services follow a consistent internal structure:
 - Multi-tenant namespace isolation
 - Form definitions with step-based workflows
 - API key management per namespace
-- Authorization via SpiceDB
-- Job queue: Asynq + Redis
+- No background jobs
+- Runs on Cloudflare Containers behind a Worker (`api/informd/cloudflare`, ADR-0011)
 
 ### 4. Univents — Event Management
 - Events → Editions → Activities hierarchy
