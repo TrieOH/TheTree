@@ -6,8 +6,12 @@ packages:
 
 catalogs:
   solid:
-    solid-js: 2.0.0-rc.6
-    '@solidjs/web': 2.0.0-rc.6
+    solid-js: 2.0.0-rc.17
+    '@solidjs/web': 2.0.0-rc.17
+    '@solidjs/diagnostics': ^2.0.0-rc.17
+    '@solidjs/testing-library': ^1.0.0-rc.1
+    '@tanstack/solid-router': 2.0.0-rc.9
+    eslint-plugin-solid: ~0.17.0
 
 catalog:
   # === @trieoh ===
@@ -51,21 +55,32 @@ catalog:
   motion: ^12.40.0
   lucide-react: ^1.18.0
   lucide-solid: ^1.41.0
+  '@iconify-json/lucide': ^1.2.129
+  '@iconify-json/simple-icons': ^1.2.95
+  unplugin-icons: ^22.1.0
 
-  # === Validation ===
+  # === Validation & Effects ===
   zod: ^4.4.3
   react-hook-form: ^7.78.0
+  effect: 4.0.0-rc.115
 
   # === Build / Tooling ===
   typescript: ^7.0.2
   vite: ^8.2.2
-  '@solidjs/vite-plugin': ^3.0.0-next.39
+  '@solidjs/vite-plugin': ^3.0.0-next.51
   '@vitejs/plugin-react': ^6.0.2
   '@cloudflare/vite-plugin': ^1.39.2
   '@cloudflare/containers': ^0.3.7
   wrangler: ^4.97.0
   '@biomejs/biome': 2.2.4
   '@rolldown/plugin-babel': ^0.2.3
+
+  # === Testing & Quality ===
+  vitest: ^4.0.0
+  jsdom: ^25.0.1
+  oxlint: ~1.79.0
+  '@testing-library/jest-dom': ^6.6.3
+  '@cloudflare/vitest-plugin': 1.1.6
 
   # === Misc ===
   sonner: ^2.0.7
@@ -79,6 +94,13 @@ catalog:
   '@types/d3-scale': ^4.0.9
   d3-shape: ^3.2.0
   '@types/d3-shape': ^3.1.8
+  '@mercadopago/sdk-js': ^0.0.3
+  '@zxing/browser': ^0.1.5
+  aws4fetch: ^1.0.20
+  html-to-image: ^1.11.13
+  jspdf: ^4.2.1
+  qrcode: ^1.5.4
+  '@types/qrcode': ^1.5.6
 
   # === Tracing ===
   "@opentelemetry/api": ^1.9.1
@@ -147,8 +169,6 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   workerd: true
-patchedDependencies:
-  '@tanstack/solid-router@2.0.0-rc.6': patches/@tanstack__solid-router@2.0.0-rc.6.patch
 
 packageExtensions:
   '@tanstack/devtools':
