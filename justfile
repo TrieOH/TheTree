@@ -9,6 +9,7 @@ ps:
 up:
     just identityx-db-init
     just payssage-db-init
+    just informd-db-init
     docker compose up --remove-orphans
 
 down:
@@ -111,14 +112,45 @@ payssage-goose +ACTION="up":
       *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
+# Run Informd: (default: compose container) | db-init | db-up | db-status | lint | test
 informd +CMD="":
     #!/usr/bin/env bash
+    set -euo pipefail
     case "{{CMD}}" in
-      "")   docker compose up --build --remove-orphans identityx -d
+      "")   just identityx-db-init
+            just informd-db-init
+            docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans informd ;;
+      db-init)   just informd-db-init ;;
+      db-up)     just informd-goose up ;;
+      db-status) just informd-goose status ;;
       lint) golangci-lint run ./api/informd/... ;;
       test) cd api/informd && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
+    esac
+
+# Start Informd's database, then migrate it.
+informd-db-init:
+    docker compose up --detach --wait informd-db
+    just informd-goose up
+
+# Migrate Informd outside the API process, over the direct endpoint (see
+# identityx-goose). `INFORMD_DB_*` overrides target another database;
+# otherwise it uses api/informd/.env against the local informd-db.
+informd-goose +ACTION="up":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -a
+    source api/informd/.env
+    set +a
+    db_host="${INFORMD_DB_HOST:-localhost}"
+    db_port="${INFORMD_DB_PORT:-5435}"
+    db_name="${INFORMD_DB_NAME:-$INFORMD_POSTGRES_DB}"
+    export PGPASSWORD="$INFORMD_POSTGRES_PASSWORD"
+    dsn="host=$db_host port=$db_port user=$INFORMD_POSTGRES_USER dbname=$db_name sslmode=$INFORMD_POSTGRES_SSLMODE channel_binding=$INFORMD_POSTGRES_CHANNEL_BINDING"
+    case "{{ACTION}}" in
+      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/informd/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
 test +NAME="":
