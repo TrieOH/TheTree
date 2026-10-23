@@ -80,7 +80,7 @@ jobs:
               # this runner has been shown to mis-evaluate !contains()).
               # Services on Cloudflare deploy from publish and skip the ledger.
               case "$ARTIFACT:$VERSION" in
-                *sandbox*|identityx:*|payssage:*|informd:*) ;;
+                *sandbox*|identityx:*|payssage:*|informd:*|univents:*) ;;
                 *) ACTIVATE=true ;;
               esac
               ;;
@@ -378,17 +378,17 @@ jobs:
           └───────────────────────────────────────────────────────
           EOF
 
-      # ── Services on Cloudflare (identityx, payssage, informd): the SAME image just
+      # ── Services on Cloudflare (all four backends): the SAME image just
       #    pushed to GHCR → Cloudflare registry → Worker + Container rollout.
       #    The service env is the <SERVICE>_API_ENV secret (dotenv format).
       - name: Setup Node + pnpm (cloudflare service)
-        if: ${{ env.ARTIFACT == 'identityx' || env.ARTIFACT == 'payssage' || env.ARTIFACT == 'informd' }}
+        if: ${{ env.TYPE == 'service' }}
         uses: ./.github/actions/setup-node
         with:
           install: 'true'
 
       - name: Deploy to Cloudflare (${{ env.ARTIFACT }})
-        if: ${{ env.ARTIFACT == 'identityx' || env.ARTIFACT == 'payssage' || env.ARTIFACT == 'informd' }}
+        if: ${{ env.TYPE == 'service' }}
         working-directory: api/${{ env.ARTIFACT }}/cloudflare
         run: |
           echo "▶ publish: cloudflare"
@@ -397,6 +397,7 @@ jobs:
             identityx) SERVICE_ENV="$IDENTITYX_API_ENV"; ENV_NAME=IDENTITYX_API_ENV ;;
             payssage)  SERVICE_ENV="$PAYSSAGE_API_ENV";  ENV_NAME=PAYSSAGE_API_ENV ;;
             informd)   SERVICE_ENV="$INFORMD_API_ENV";   ENV_NAME=INFORMD_API_ENV ;;
+            univents)  SERVICE_ENV="$UNIVENTS_API_ENV";  ENV_NAME=UNIVENTS_API_ENV ;;
           esac
           SRC="ghcr.io/trieoh/$ARTIFACT@${{ steps.digest.outputs.digest }}"
           LOCAL="$ARTIFACT-api:$VERSION"
@@ -424,6 +425,7 @@ jobs:
           IDENTITYX_API_ENV: ${{ secrets.IDENTITYX_API_ENV }}
           PAYSSAGE_API_ENV: ${{ secrets.PAYSSAGE_API_ENV }}
           INFORMD_API_ENV: ${{ secrets.INFORMD_API_ENV }}
+          UNIVENTS_API_ENV: ${{ secrets.UNIVENTS_API_ENV }}
 
       # ── Fronts: build once → upload Worker version → promote SAME
       #    version to production (staging/E2E slots in here later) ────────
