@@ -14,8 +14,8 @@ func (r *Repo) ListUnsent(ctx context.Context, olderThan time.Duration, limit in
 	ctx, span := telemetry.StartSpan(ctx, "ListUnsent")
 	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListUnsentWebhookDeliveries(ctx, sqlc.ListUnsentWebhookDeliveriesParams{
-		OlderThanSeconds: int(olderThan / time.Second),
-		MaxRows:          limit,
+		CreatedBefore: time.Now().Add(-olderThan),
+		MaxRows:       limit,
 	})
 	if err != nil {
 		return nil, r.dbe(err)
