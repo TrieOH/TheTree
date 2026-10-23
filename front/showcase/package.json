@@ -1,0 +1,29 @@
+{
+  "name": "@trieoh/showcase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "oxlint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@solidjs/web": "catalog:solid",
+    "@trieoh/ui-solid": "workspace:*",
+    "solid-js": "catalog:solid"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "catalog:",
+    "@solidjs/vite-plugin": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "unplugin-icons": "catalog:",
+    "vite": "catalog:"
+  }
+}

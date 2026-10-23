@@ -115,7 +115,7 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
       )}
       style={{
         "max-width": "340px",
-        ...(props.style ?? {}),
+        ...props.style,
       }}
       contentClass="p-5 sm:p-6"
     >

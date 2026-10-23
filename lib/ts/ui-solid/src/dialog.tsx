@@ -205,7 +205,7 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
           tabindex="-1"
           style={{
             [props.fixedHeight ? "height" : "max-height"]: "calc(100dvh - 2rem)",
-            ...(props.style ?? {}),
+            ...props.style,
           }}
           class={cn(
             "relative z-10 flex w-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-2xl shadow-black/25 ring-1 ring-black/5 transition-[opacity,transform] duration-200 ease-out dark:shadow-black/70 dark:ring-white/10",

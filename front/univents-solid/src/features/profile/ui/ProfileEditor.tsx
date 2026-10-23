@@ -1,3 +1,4 @@
+import { Checkbox as Toggle } from "@trieoh/ui-solid";
 import { Show, createSignal, onSettled, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
@@ -546,24 +547,6 @@ function SocialFields(props: {
 function renderSocialIcon(key: string, label: string) {
   const Icon = SocialIcons[key];
   return Icon ? <Icon /> : label.slice(0, 2).toUpperCase();
-}
-
-function Toggle(props: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label class="flex items-center justify-between gap-4 rounded-md border border-border bg-background p-3 text-sm">
-      <span>{props.label}</span>
-      <input
-        type="checkbox"
-        checked={props.checked}
-        onChange={(event) => props.onChange(event.currentTarget.checked)}
-        class="size-4 accent-primary"
-      />
-    </label>
-  );
 }
 
 function TimezoneField(props: {

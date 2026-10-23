@@ -37,6 +37,7 @@ export interface InputProps {
   minlength?: number;
   maxlength?: number;
   class?: string;
+  "aria-label"?: string;
   "aria-describedby"?: string;
   "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling";
   onInput?: JSX.EventHandler<HTMLInputElement, InputEvent>;
@@ -58,8 +59,7 @@ export function Input(props: InputProps) {
   };
 
   const isDateOrTime = () =>
-    props.type === "date" ||
-    props.type === "datetime-local";
+    props.type === "date" || props.type === "datetime-local";
 
   return (
     <input
@@ -79,6 +79,7 @@ export function Input(props: InputProps) {
       step={props.step}
       minlength={props.minlength}
       maxlength={props.maxlength}
+      aria-label={props["aria-label"]}
       aria-describedby={props["aria-describedby"]}
       aria-invalid={ariaInvalid()}
       onInput={props.onInput}
@@ -102,6 +103,7 @@ export interface TextareaProps {
   readonly?: boolean;
   rows?: number;
   class?: string;
+  "aria-label"?: string;
   "aria-describedby"?: string;
   "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling";
   onInput?: JSX.EventHandler<HTMLTextAreaElement, InputEvent>;
@@ -130,6 +132,7 @@ export function Textarea(props: TextareaProps) {
       required={props.required}
       readonly={props.readonly}
       rows={props.rows ?? 3}
+      aria-label={props["aria-label"]}
       aria-describedby={props["aria-describedby"]}
       aria-invalid={ariaInvalid()}
       onInput={props.onInput}
@@ -232,7 +235,11 @@ export function Field(props: FieldProps) {
           </Show>
         }
       >
-        <p id={errorId()} role="alert" class="text-xs font-medium text-destructive">
+        <p
+          id={errorId()}
+          role="alert"
+          class="text-xs font-medium text-destructive"
+        >
           {props.error}
         </p>
       </Show>

@@ -2,7 +2,13 @@
  * Solid bindings for the TrieOH design system.
  */
 export { cn } from "./lib/cn";
-export { Button, buttonVariants, type ButtonProps } from "./button";
+export {
+  Button,
+  buttonVariants,
+  type ButtonProps,
+  type ButtonVariant,
+  type ButtonSize,
+} from "./button";
 export {
   Field,
   Input,
@@ -91,3 +97,8 @@ export {
   OverlayScrollbar,
   type OverlayScrollbarProps,
 } from "./overlay-scrollbar";
+export { Checkbox, type CheckboxProps } from "./checkbox";
+export { Card, type CardProps } from "./card";
+export { Link, type LinkProps } from "./link";
+export { SearchInput, type SearchInputProps } from "./search-input";
+export { CodeBlock, type CodeBlockProps } from "./code-block";

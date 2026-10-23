@@ -1,11 +1,5 @@
 import { Portal, type JSX } from "@solidjs/web";
-import {
-  For,
-  Show,
-  createEffect,
-  createMemo,
-  createSignal,
-} from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface ComboboxOption {
@@ -16,6 +10,9 @@ export interface ComboboxOption {
 }
 
 export interface ComboboxProps {
+  id?: string;
+  "aria-describedby"?: string;
+  "aria-label"?: string;
   value?: string;
   options: readonly ComboboxOption[];
   placeholder: string;
@@ -35,7 +32,7 @@ export function Combobox(props: ComboboxProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
   const [query, setQuery] = createSignal("");
   const [highlightedIndex, setHighlightedIndex] = createSignal(0);
-  const [position, setPosition] = createSignal({ top: 0, left: 0, minWidth: 0 });
+  const [position, setPosition] = createSignal({ top: 0, left: 0, width: 0 });
 
   let containerRef: HTMLDivElement | undefined;
   let dropdownRef: HTMLDivElement | undefined;
@@ -44,18 +41,29 @@ export function Combobox(props: ComboboxProps): JSX.Element {
   const updatePosition = () => {
     if (!containerRef) return;
     const rect = containerRef.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const estimatedHeight = 280;
-
-    let top = rect.bottom + 4;
-    if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
-      top = rect.top - estimatedHeight - 4;
-    }
+    const margin = 8;
+    const width = Math.min(rect.width, window.innerWidth - margin * 2);
+    const height = Math.min(
+      dropdownRef?.getBoundingClientRect().height || 280,
+      window.innerHeight - margin * 2,
+    );
+    const below = window.innerHeight - rect.bottom - margin;
+    const above = rect.top - margin;
+    const top =
+      below < height + 4 && above > below
+        ? rect.top - height - 4
+        : rect.bottom + 4;
 
     setPosition({
-      top: Math.max(top, 8),
-      left: Math.max(rect.left, 8),
-      minWidth: rect.width,
+      top: Math.max(
+        margin,
+        Math.min(top, window.innerHeight - height - margin),
+      ),
+      left: Math.max(
+        margin,
+        Math.min(rect.left, window.innerWidth - width - margin),
+      ),
+      width,
     });
   };
 
@@ -85,10 +93,17 @@ export function Combobox(props: ComboboxProps): JSX.Element {
       window.addEventListener("resize", handleScrollOrResize);
       window.addEventListener("scroll", handleScrollOrResize, true);
 
-      // Focus input
-      setTimeout(() => inputRef?.focus(), 10);
+      // Measure the mounted portal instead of assuming a 280px menu.
+      const observer = new ResizeObserver(updatePosition);
+      const frame = requestAnimationFrame(() => {
+        updatePosition();
+        if (dropdownRef) observer.observe(dropdownRef);
+        inputRef?.focus();
+      });
 
       return () => {
+        cancelAnimationFrame(frame);
+        observer.disconnect();
         document.removeEventListener("mousedown", handlePointerDown);
         window.removeEventListener("resize", handleScrollOrResize);
         window.removeEventListener("scroll", handleScrollOrResize, true);
@@ -125,8 +140,7 @@ export function Combobox(props: ComboboxProps): JSX.Element {
   const rootClass = () => props.class ?? props.className ?? "w-full";
   const triggerCls = () =>
     props.triggerClass ?? props.triggerClassName ?? "h-10";
-  const dropdownCls = () =>
-    props.dropdownClass ?? props.dropdownClassName ?? "w-full";
+  const dropdownCls = () => props.dropdownClass ?? props.dropdownClassName;
 
   return (
     <div
@@ -136,15 +150,23 @@ export function Combobox(props: ComboboxProps): JSX.Element {
       <button
         type="button"
         disabled={props.disabled}
+        id={props.id}
+        aria-describedby={props["aria-describedby"]}
+        aria-label={props["aria-label"]}
         aria-haspopup="listbox"
         aria-expanded={open() ? "true" : "false"}
         onClick={() => setOpen((v) => !v)}
         class={cn(
-          "flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 text-left text-sm outline-none transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+          "flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
           triggerCls(),
         )}
       >
-        <span class={cn("truncate", selected() ? "text-foreground" : "text-muted-foreground")}>
+        <span
+          class={cn(
+            "truncate",
+            selected() ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
           {selected()?.label ?? props.placeholder}
         </span>
         <svg
@@ -169,10 +191,12 @@ export function Combobox(props: ComboboxProps): JSX.Element {
               position: "fixed",
               top: `${position().top}px`,
               left: `${position().left}px`,
-              "min-width": `${position().minWidth}px`,
+              width: `${position().width}px`,
+              "max-height": "calc(100dvh - 16px)",
+              "overflow-y": "auto",
             }}
             class={cn(
-              "fixed z-70 w-max max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl animate-in fade-in-0 zoom-in-95",
+              "fixed z-70 max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl animate-in fade-in-0 zoom-in-95",
               dropdownCls(),
             )}
           >

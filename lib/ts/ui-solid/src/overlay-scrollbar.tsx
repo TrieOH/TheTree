@@ -1,8 +1,5 @@
-import {
-  createSignal,
-  onSettled,
-  type Component,
-} from "solid-js";
+import { Portal } from "@solidjs/web";
+import { createSignal, onSettled, type Component } from "solid-js";
 import { cn } from "./lib/cn";
 
 const MIN_THUMB_HEIGHT = 32;
@@ -56,10 +53,7 @@ export const OverlayScrollbar: Component<OverlayScrollbarProps> = (props) => {
 
       const trackHeight = window.innerHeight - TRACK_PADDING * 2;
       const contentHeight = root.scrollHeight;
-      const maxScroll = Math.max(
-        0,
-        contentHeight - window.innerHeight,
-      );
+      const maxScroll = Math.max(0, contentHeight - window.innerHeight);
 
       const isVisible = maxScroll > 0;
 
@@ -164,16 +158,10 @@ export const OverlayScrollbar: Component<OverlayScrollbarProps> = (props) => {
 
     const nextTop = Math.max(
       TRACK_PADDING,
-      Math.min(
-        clientY - thumbHeight / 2,
-        maxTop + TRACK_PADDING,
-      ),
+      Math.min(clientY - thumbHeight / 2, maxTop + TRACK_PADDING),
     );
 
-    const progress =
-      maxTop > 0
-        ? (nextTop - TRACK_PADDING) / maxTop
-        : 0;
+    const progress = maxTop > 0 ? (nextTop - TRACK_PADDING) / maxTop : 0;
 
     window.scrollTo({
       top: progress * maxScroll,
@@ -181,43 +169,27 @@ export const OverlayScrollbar: Component<OverlayScrollbarProps> = (props) => {
     });
   };
 
-  const handleTrackPointerDown = (
-    event: PointerEvent,
-  ) => {
+  const handleTrackPointerDown = (event: PointerEvent) => {
     if (event.target !== event.currentTarget) return;
 
-    const {
-      trackHeight,
-      thumbHeight,
-      maxScroll,
-    } = metrics;
+    const { trackHeight, thumbHeight, maxScroll } = metrics;
 
     if (maxScroll <= 0) return;
 
-    const maxTop = Math.max(
-      0,
-      trackHeight - thumbHeight,
-    );
+    const maxTop = Math.max(0, trackHeight - thumbHeight);
 
     const targetTop = Math.max(
       0,
-      Math.min(
-        event.clientY - thumbHeight / 2,
-        maxTop,
-      ),
+      Math.min(event.clientY - thumbHeight / 2, maxTop),
     );
 
     window.scrollTo({
-      top: maxTop
-        ? (targetTop / maxTop) * maxScroll
-        : 0,
+      top: maxTop ? (targetTop / maxTop) * maxScroll : 0,
       behavior: "smooth",
     });
   };
 
-  const handleThumbPointerDown = (
-    event: PointerEvent,
-  ) => {
+  const handleThumbPointerDown = (event: PointerEvent) => {
     if (event.button !== 0) return;
 
     event.preventDefault();
@@ -232,43 +204,23 @@ export const OverlayScrollbar: Component<OverlayScrollbarProps> = (props) => {
     };
 
     const stop = () => {
-      window.removeEventListener(
-        "pointermove",
-        movePointer,
-      );
+      window.removeEventListener("pointermove", movePointer);
 
-      window.removeEventListener(
-        "pointerup",
-        stop,
-      );
+      window.removeEventListener("pointerup", stop);
 
-      window.removeEventListener(
-        "pointercancel",
-        stop,
-      );
+      window.removeEventListener("pointercancel", stop);
 
       document.body.style.removeProperty("user-select");
     };
 
-    window.addEventListener(
-      "pointermove",
-      movePointer,
-    );
+    window.addEventListener("pointermove", movePointer);
 
-    window.addEventListener(
-      "pointerup",
-      stop,
-    );
+    window.addEventListener("pointerup", stop);
 
-    window.addEventListener(
-      "pointercancel",
-      stop,
-    );
+    window.addEventListener("pointercancel", stop);
   };
 
-  const handleKeyDown = (
-    event: KeyboardEvent,
-  ) => {
+  const handleKeyDown = (event: KeyboardEvent) => {
     switch (event.key) {
       case "ArrowDown":
         event.preventDefault();
@@ -311,32 +263,34 @@ export const OverlayScrollbar: Component<OverlayScrollbarProps> = (props) => {
   };
 
   return (
-    <div
-      class={cn(
-        "pointer-events-auto fixed inset-y-0 right-0 z-40 hidden w-3 md:block",
-        props.class,
-      )}
-      style={{
-        display: visible() ? "block" : "none",
-      }}
-      onPointerDown={handleTrackPointerDown}
-    >
+    <Portal>
       <div
-        ref={(element) => {
-          thumbRef = element;
+        class={cn(
+          "pointer-events-auto fixed inset-y-0 right-0 z-40 hidden w-3 md:block",
+          props.class,
+        )}
+        style={{
+          display: visible() ? "block" : "none",
         }}
-        role="scrollbar"
-        tabindex={0}
-        aria-label="Rolagem da página"
-        aria-orientation="vertical"
-        aria-controls="root"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={0}
-        class="pointer-events-auto absolute right-0.5 w-2 cursor-grab select-none rounded-full bg-primary/45 shadow-sm shadow-primary/20 outline-none transition-colors duration-200 hover:bg-primary/75 focus-visible:bg-primary/75 active:cursor-grabbing will-change-transform"
-        onKeyDown={handleKeyDown}
-        onPointerDown={handleThumbPointerDown}
-      />
-    </div>
+        onPointerDown={handleTrackPointerDown}
+      >
+        <div
+          ref={(element) => {
+            thumbRef = element;
+          }}
+          role="scrollbar"
+          tabindex={0}
+          aria-label="Rolagem da página"
+          aria-orientation="vertical"
+          aria-controls="root"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={0}
+          class="pointer-events-auto absolute right-0.5 w-2 cursor-grab select-none rounded-full bg-primary/45 shadow-sm shadow-primary/20 outline-none transition-colors duration-200 hover:bg-primary/75 focus-visible:bg-primary/75 active:cursor-grabbing will-change-transform"
+          onKeyDown={handleKeyDown}
+          onPointerDown={handleThumbPointerDown}
+        />
+      </div>
+    </Portal>
   );
 };

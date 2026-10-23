@@ -3,12 +3,7 @@ import { Show, createEffect, createSignal } from "solid-js";
 import { Button } from "./button";
 import { Dialog, type DialogProps } from "./dialog";
 import { cn } from "./lib/cn";
-import {
-  MultiStepCustomField,
-  MultiStepFields,
-  MultiStepTextField,
-  MultiStepTextareaField,
-} from "./multi-step/fields";
+import { MultiStepFields } from "./multi-step/fields";
 import { MultiStepStepper } from "./multi-step/stepper";
 import { MultiStepSummaryCard } from "./multi-step/summary-card";
 import type {
