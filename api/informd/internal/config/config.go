@@ -4,6 +4,7 @@ import (
 	libconfig "lib/config"
 	"lib/database"
 	"lib/errx"
+	"lib/httpserver"
 
 	idx "sdk/identityx"
 
@@ -17,9 +18,6 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"INFORMD_"`
 
-	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
-
 	// Feature fields
 	AppURL      string `env:"APP_URL,required"`
 	ProfilePort string `env:"PROFILE_PORT"`
@@ -29,8 +27,18 @@ func (cfg Config) ToIdentityXConfig() idx.Config {
 	return libconfig.IdentityXConfig(cfg.IdentityX, true)
 }
 
+// ToDBConfig is the connection only: the schema is migrated outside the
+// API process (`just informd-goose`).
 func (cfg Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
+	return libconfig.DBConnectionConfig(cfg.Postgres)
+}
+
+func (cfg Config) ToRateLimit() httpserver.RateLimit {
+	return httpserver.RateLimit{
+		Disabled: cfg.DisableRateLimit,
+		RPS:      cfg.RateLimitRPS,
+		Burst:    cfg.RateLimitBurst,
+	}
 }
 
 func LoadConfig() Config {

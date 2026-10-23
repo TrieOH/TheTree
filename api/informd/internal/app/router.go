@@ -21,6 +21,7 @@ func (app *Informd) CreateRouter(h *handlers.Server, primitives libauthz.Primiti
 		CorsAllowedOrigins: app.cfg.AllowedOrigins,
 		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          app.cfg.ToRateLimit(),
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())
 		},
