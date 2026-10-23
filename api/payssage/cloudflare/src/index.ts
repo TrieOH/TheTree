@@ -13,9 +13,9 @@ const INSTANCES = 3;
 // request never leaves Cloudflare: outboundByHost hands it to the queue.
 const JOBS_HOST = "jobs.internal";
 
-// The container's job events endpoint (lib/jobs/httpjobs.Path). Only this
-// Worker may reach it.
-const EVENTS_PATH = "/events";
+// The container's job endpoint (lib/jobs/httpjobs.Path). Only this Worker
+// may reach it.
+const EVENTS_PATH = "/_jobs";
 
 // Queue names, as in wrangler.jsonc.
 const DEAD_LETTER_QUEUE = "payssage-jobs-dlq";
@@ -109,7 +109,8 @@ function jobFor(queue: string, envelope: Envelope): Envelope | null {
 
 export default {
 	async fetch(request, env) {
-		if (new URL(request.url).pathname.startsWith(EVENTS_PATH)) {
+		const { pathname } = new URL(request.url);
+		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
 		const container = await instance(env);

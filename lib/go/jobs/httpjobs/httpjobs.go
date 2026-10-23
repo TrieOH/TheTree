@@ -29,8 +29,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// Path is where Handler is mounted.
-const Path = "/events"
+// Path is where Handler is mounted. It must not collide with any API
+// route: Univents has its own /events resource.
+const Path = "/_jobs"
 
 // DelayHeader carries a delayed job's delay, in whole seconds, to the queue
 // producer.

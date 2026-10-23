@@ -17,9 +17,9 @@ const JOBS_HOST = "jobs.internal";
 // (lib/jobs/httpjobs.DelayHeader).
 const DELAY_HEADER = "Job-Delay-Seconds";
 
-// The container's job events endpoint (lib/jobs/httpjobs.Path). Only this
-// Worker may reach it.
-const EVENTS_PATH = "/events";
+// The container's job endpoint (lib/jobs/httpjobs.Path). Only this Worker
+// may reach it.
+const EVENTS_PATH = "/_jobs";
 
 // Retry backoff: 30s, doubling per attempt, capped at an hour.
 const RETRY_BASE_SECONDS = 30;
@@ -85,7 +85,8 @@ async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
 
 export default {
 	async fetch(request, env) {
-		if (new URL(request.url).pathname.startsWith(EVENTS_PATH)) {
+		const { pathname } = new URL(request.url);
+		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
 		const container = await instance(env);
