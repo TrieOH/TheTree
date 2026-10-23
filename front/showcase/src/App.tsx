@@ -281,6 +281,7 @@ export default function App() {
                           when={control.options}
                           fallback={
                             <KnobText
+                              multiline={control.key === "code"}
                               label={control.label}
                               value={String(values[selected()][control.key])}
                               onChange={(value) =>

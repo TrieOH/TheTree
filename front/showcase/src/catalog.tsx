@@ -312,13 +312,25 @@ export function createCatalog(options: {
       name: "CodeBlock",
       group: "Layout",
       description: "Exemplo de código com ação de copiar.",
-      defaults: { code: "<Button>Salvar</Button>", filename: "example.tsx" },
-      controls: [text("code", "Código"), text("filename", "Nome do arquivo")],
+      defaults: {
+        code: 'import { Button } from "@trieoh/ui-solid";\n\nexport function SaveButton() {\n  return (\n    <Button onClick={() => console.log("Salvo")}>\n      Salvar projeto\n    </Button>\n  );\n}',
+        filename: "save-button.tsx",
+        showLineNumbers: true,
+        format: true,
+      },
+      controls: [
+        text("code", "Código"),
+        text("filename", "Nome do arquivo"),
+        text("showLineNumbers", "Números de linha"),
+        text("format", "Formatar código"),
+      ],
       render: (v) => (
         <CodeBlock
           class={String(v.class)}
           shape={v.shape as Shape}
           code={String(v.code)}
+          showLineNumbers={!!v.showLineNumbers}
+          format={!!v.format}
           filename={String(v.filename)}
         />
       ),

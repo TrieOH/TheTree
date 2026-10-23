@@ -181,7 +181,7 @@ const steps: MultiStepItem<{ name: string; description: string }>[] = [
     Field: ["required", "name"],
     Combobox: ["disabled", "searchPlaceholder", "emptyMessage"],
     SectionTabs: ["ariaLabel"],
-    CodeBlock: ["filename"],
+    CodeBlock: ["filename", "showLineNumbers", "format"],
     Dialog: ["description", "closable", "preventClose"],
     AlertModal: ["loading", "confirmLabel", "cancelLabel"],
     MultiStepDialog: [

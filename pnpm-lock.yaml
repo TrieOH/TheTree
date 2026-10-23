@@ -1313,6 +1313,10 @@ importers:
         version: 3.6.0
 
   lib/ts/ui-solid:
+    dependencies:
+      prettier:
+        specifier: 3.8.3
+        version: 3.8.3
     devDependencies:
       '@solidjs/web':
         specifier: catalog:solid

@@ -28,5 +28,8 @@
     "solid-js": "catalog:solid",
     "tailwind-merge": "catalog:",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "prettier": "3.8.3"
   }
 }
