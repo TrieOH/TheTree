@@ -6,17 +6,20 @@ import (
 	libauthz "lib/authz"
 	"lib/errx"
 	"lib/httpserver"
+	"lib/jobs/httpjobs"
 	spec "payssage"
 	"payssage/internal/handlers"
 	"payssage/internal/handlers/webhooks"
 	"payssage/internal/openapi"
 
-	libriver "lib/river"
-
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *Payssage) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, riverUI http.Handler) http.Handler {
+// CreateRouter builds the API router. events, when non-nil, is the job
+// events endpoint the queue and scheduler deliver to; it is outside the spec
+// and its auth chains, so the deploy must keep it unreachable from the
+// internet (the Cloudflare Worker refuses it on public requests).
+func (app *Payssage) CreateRouter(primitives libauthz.Primitives, h *handlers.Server, events http.Handler) http.Handler {
 	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, libauthz.Options{})
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
@@ -24,10 +27,13 @@ func (app *Payssage) CreateRouter(primitives libauthz.Primitives, h *handlers.Se
 		CorsAllowedOrigins: app.cfg.AllowedOrigins,
 		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          app.cfg.ToRateLimit(),
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())
 
-			libriver.MountDashboard(r, riverUI)
+			if events != nil {
+				r.Method(http.MethodPost, httpjobs.Path, events)
+			}
 		},
 	})
 }

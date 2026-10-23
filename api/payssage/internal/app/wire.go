@@ -1,19 +1,25 @@
 package app
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"time"
+
 	libauthz "lib/authz"
 	"lib/database"
+	libjobs "lib/jobs"
+	"lib/jobs/httpjobs"
+	"lib/jobs/inprocess"
 	"payssage/internal/authz"
 	"payssage/internal/features/providers"
 	"payssage/internal/handlers"
+	"payssage/internal/jobs"
 	providers2 "payssage/internal/providers"
 	"payssage/internal/repos"
 	"payssage/internal/services"
 	"payssage/internal/sqlc"
 	"payssage/ports"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
 )
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -38,9 +44,56 @@ func (app *Payssage) initProviders(r *repos.Repos) {
 	}
 }
 
-func (app *Payssage) initOperations(riverClient *river.Client[pgx.Tx], r *repos.Repos, tx database.TxRunner) *services.Operations {
+func (app *Payssage) initOperations(enqueuer libjobs.Enqueuer, r *repos.Repos, tx database.TxRunner) *services.Operations {
 	authzSvc := authz.New(r.Organizations, r.Wallets)
-	return services.NewOperations(r, authzSvc, riverClient, app.idxClient, tx)
+	return services.NewOperations(r, authzSvc, enqueuer, app.idxClient, tx)
+}
+
+// jobsDrainTimeout bounds how long shutdown waits for queued jobs.
+const jobsDrainTimeout = 15 * time.Second
+
+// lateEnqueuer lets the job handlers hold the enqueuer before the carrier
+// exists: the in-process runner is built from the registry, and the redrive
+// handler in that registry enqueues through the runner.
+type lateEnqueuer struct {
+	libjobs.Enqueuer
+}
+
+// initJobs builds the job registry, picks the carrier, and returns the
+// enqueuer the services use, the events endpoint to mount (nil when there
+// is none), and the carrier's shutdown.
+//
+//   - JOBS_URL unset: an in-process runner executes the jobs and runs the
+//     periodic ones on tickers. Queued work lives in memory only.
+//   - JOBS_URL set: jobs are POSTed there; the queue delivers them, and the
+//     scheduler fires the periodic ones, at the events endpoint.
+func (app *Payssage) initJobs(r *repos.Repos) (libjobs.Enqueuer, http.Handler, func(context.Context) error, error) { //nolint:ireturn
+	enqueuer := &lateEnqueuer{}
+	registry := jobs.Registry(jobs.Deps{
+		Deliveries: r.WebhookDeliveries,
+		Events:     r.WebhookEvents,
+		Endpoints:  r.WebhookEndpoints,
+		HTTPClient: app.httpClient,
+		Enqueuer:   enqueuer,
+	})
+
+	if app.cfg.JobsURL != "" {
+		carrier, err := httpjobs.New(app.cfg.JobsURL)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("jobs carrier: %w", err)
+		}
+		enqueuer.Enqueuer = carrier
+		return carrier, httpjobs.Handler(registry), func(context.Context) error { return nil }, nil
+	}
+
+	runner := inprocess.New(registry, inprocess.Options{})
+	enqueuer.Enqueuer = runner
+	runner.Start(jobs.Periodic()...)
+	return runner, nil, func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(ctx, jobsDrainTimeout)
+		defer cancel()
+		return runner.Stop(ctx)
+	}, nil
 }
 
 // initMiddlewares builds the auth primitives the spec-derived chains

@@ -1,0 +1,55 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "payssage-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-19",
+	"observability": { "enabled": true },
+	"routes": [{ "pattern": "api.payssage.trieoh.com", "custom_domain": true }],
+
+	"containers": [
+		{
+			"class_name": "PayssageContainer",
+			"image": "../Dockerfile",
+			// The Dockerfile copies the Go workspace, so it builds from the repo root.
+			"image_build_context": "../../..",
+			"instance_type": "basic",
+			"max_instances": 3,
+			// Next to Neon (São Paulo).
+			"constraints": { "regions": ["SAM"] }
+		}
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "PAYSSAGE", "class_name": "PayssageContainer" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["PayssageContainer"] }],
+
+	// Background jobs: the container enqueues through the producer, the
+	// consumer delivers each job back to the container's /events. Retries
+	// back off per message (src/index.ts); a job out of retries lands on the
+	// dead-letter queue, whose consumer runs the give-up job for it
+	// (webhook.deliver → webhook.fail).
+	"queues": {
+		"producers": [{ "queue": "payssage-jobs", "binding": "JOBS" }],
+		"consumers": [
+			{
+				"queue": "payssage-jobs",
+				"max_batch_size": 10,
+				"max_retries": 10,
+				"dead_letter_queue": "payssage-jobs-dlq"
+			},
+			{
+				"queue": "payssage-jobs-dlq",
+				"max_batch_size": 10,
+				"max_retries": 10
+			}
+		]
+	},
+
+	// Periodic jobs; must match PERIODIC in src/index.ts.
+	"triggers": { "crons": ["*/15 * * * *"] },
+
+	// Config: none lives here. The whole Payssage env (the same keys as
+	// api/payssage/.example.env, minus JOBS_URL) is the PAYSSAGE_API_ENV
+	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
+	// binding is passed to the container as an environment variable.
+}

@@ -1,11 +1,12 @@
 // Package services aggregates every feature's operations layer. Import this
 // package instead of the per-feature subpackages:
 //
-//	ops := services.NewOperations(r, riverClient, idxClient)
+//	ops := services.NewOperations(r, authzSvc, enqueuer, idxClient, tx)
 package services
 
 import (
 	"lib/database"
+	libjobs "lib/jobs"
 	"payssage/internal/authz"
 	"payssage/internal/repos"
 	"payssage/internal/services/collectors"
@@ -19,9 +20,6 @@ import (
 	"payssage/internal/services/webhook_events"
 	"payssage/internal/services/webhooks"
 	idx "sdk/identityx"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
 )
 
 // Type and constructor aliases for each feature's operations package.
@@ -67,10 +65,9 @@ type Operations struct {
 }
 
 // NewOperations wires every feature's operations from the shared repos.
-// NewOperations wires every feature's operations from the shared repos.
 // Authorization arrives by injection through the same seam — no
 // service-locator globals.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, riverClient *river.Client[pgx.Tx], idxClient *idx.Client, tx database.TxRunner) *Operations {
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, enqueuer libjobs.Enqueuer, idxClient *idx.Client, tx database.TxRunner) *Operations {
 	return &Operations{
 		Organizations:     NewOrganizations(r.Organizations, idxClient, authzSvc, tx),
 		Wallets:           NewWallets(r.Wallets, r.Organizations, authzSvc),
@@ -78,7 +75,7 @@ func NewOperations(r *repos.Repos, authzSvc *authz.Service, riverClient *river.C
 		Collectors:        NewCollectors(r.Collectors, r.Organizations, authzSvc),
 		Sellers:           NewSellers(r.Sellers, r.Wallets, r.Organizations, authzSvc),
 		Intents:           NewIntents(r.Intents, r.Wallets, r.Organizations, r.Collectors, r.Sellers, authzSvc),
-		Webhooks:          NewWebhooks(riverClient, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc, tx),
+		Webhooks:          NewWebhooks(enqueuer, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc, tx),
 		WebhookEndpoints:  NewWebhookEndpoints(r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),
 		WebhookEvents:     NewWebhookEvents(r.WebhookEvents, r.Wallets, r.Organizations, authzSvc),
 		WebhookDeliveries: NewWebhookDeliveries(r.WebhookDeliveries, r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),

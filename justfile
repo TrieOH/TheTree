@@ -8,6 +8,7 @@ ps:
 
 up:
     just identityx-db-init
+    just payssage-db-init
     docker compose up --remove-orphans
 
 down:
@@ -59,7 +60,9 @@ identityx-goose +ACTION="up":
 univents +CMD="":
     #!/usr/bin/env bash
     case "{{CMD}}" in
-      "")   docker compose up --build --remove-orphans identityx -d
+      "")   just identityx-db-init
+            just payssage-db-init
+            docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans payssage -d
             docker compose up --build --remove-orphans univents ;;
       lint) golangci-lint run ./api/univents/... ;;
@@ -67,14 +70,45 @@ univents +CMD="":
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
+# Run Payssage: (default: compose container) | db-init | db-up | db-status | lint | test
 payssage +CMD="":
     #!/usr/bin/env bash
+    set -euo pipefail
     case "{{CMD}}" in
-      "")   docker compose up --build --remove-orphans identityx -d
+      "")   just identityx-db-init
+            just payssage-db-init
+            docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans payssage ;;
+      db-init)   just payssage-db-init ;;
+      db-up)     just payssage-goose up ;;
+      db-status) just payssage-goose status ;;
       lint) golangci-lint run ./api/payssage/... ;;
       test) cd api/payssage && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
+    esac
+
+# Start Payssage's database, then migrate it.
+payssage-db-init:
+    docker compose up --detach --wait payssage-db
+    just payssage-goose up
+
+# Migrate Payssage outside the API process, over the direct endpoint (see
+# identityx-goose). `PAYSSAGE_DB_*` overrides target another database;
+# otherwise it uses api/payssage/.env against the local payssage-db.
+payssage-goose +ACTION="up":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -a
+    source api/payssage/.env
+    set +a
+    db_host="${PAYSSAGE_DB_HOST:-localhost}"
+    db_port="${PAYSSAGE_DB_PORT:-5434}"
+    db_name="${PAYSSAGE_DB_NAME:-$PAYSSAGE_POSTGRES_DB}"
+    export PGPASSWORD="$PAYSSAGE_POSTGRES_PASSWORD"
+    dsn="host=$db_host port=$db_port user=$PAYSSAGE_POSTGRES_USER dbname=$db_name sslmode=$PAYSSAGE_POSTGRES_SSLMODE channel_binding=$PAYSSAGE_POSTGRES_CHANNEL_BINDING"
+    case "{{ACTION}}" in
+      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/payssage/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
 informd +CMD="":
