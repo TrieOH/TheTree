@@ -40,14 +40,15 @@ All services follow a consistent internal structure:
 - Organizations with role-based membership (member/admin/owner)
 - JWT issuance, JWKS endpoint, token introspection, refresh
 - Crypto key management, token blacklisting
-- Job queue: River; rate-limiting: chi/httprate
+- Background jobs: `lib/jobs` (in-process locally, Cloudflare Queue when deployed); rate-limiting: chi/httprate
+- Runs on Cloudflare Containers behind a Worker (`api/identityx/cloudflare`, ADR-0011)
 
 ### 2. Payssage — Payment Orchestration
 - Workspaces with API keys and webhooks
 - Payment intents (MercadoPago SDK integration)
 - OAuth marketplace connections
-- Authorization via SpiceDB
-- Job queue: Asynq + Redis; WebSocket support
+- Background jobs: `lib/jobs` — webhook delivery, redrive sweep, dead-letter give-up (ADR-0012)
+- Runs on Cloudflare Containers behind a Worker (`api/payssage/cloudflare`, ADR-0011)
 
 ### 3. Informd — Forms & Notifications
 - Multi-tenant namespace isolation
