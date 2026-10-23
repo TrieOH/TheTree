@@ -1,7 +1,9 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { cn } from "./lib/cn";
 
 export interface TooltipProps {
+  shape?: Shape;
   label: JSX.Element;
   children: JSX.Element;
   placement?: "top" | "bottom";
@@ -26,6 +28,7 @@ export function Tooltip(props: TooltipProps): JSX.Element {
             : props.align === "end"
               ? "right-0"
               : "left-1/2 -translate-x-1/2",
+          shapeClass(props.shape, "surface"),
           props.tooltipClass,
         )}
       >

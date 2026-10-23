@@ -1,6 +1,8 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import { cn } from "./lib/cn";
 
 export interface SkeletonProps {
+  shape?: Shape;
   class?: string;
 }
 
@@ -8,17 +10,22 @@ export function Skeleton(props: SkeletonProps) {
   return (
     <div
       aria-hidden="true"
-      class={cn("animate-pulse rounded-md bg-muted", props.class)}
+      class={cn(
+        "animate-pulse rounded-md bg-muted",
+        shapeClass(props.shape),
+        props.class,
+      )}
     />
   );
 }
 
 /** Card-shaped placeholder that matches the admin grid's item height. */
-export function CardSkeleton(props: { class?: string }) {
+export function CardSkeleton(props: { class?: string; shape?: Shape }) {
   return (
     <div
       class={cn(
         "flex flex-col gap-3 rounded-lg border border-border bg-card p-4",
+        shapeClass(props.shape, "surface"),
         props.class,
       )}
     >

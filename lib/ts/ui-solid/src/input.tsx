@@ -1,8 +1,10 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface InputProps {
+  shape?: Shape;
   ref?: HTMLInputElement | ((el: HTMLInputElement) => void);
   id?: string;
   name?: string;
@@ -87,12 +89,18 @@ export function Input(props: InputProps) {
       onBlur={props.onBlur}
       onFocus={props.onFocus}
       onKeyDown={props.onKeyDown}
-      class={cn(fieldBase, isDateOrTime() && "relative pr-9", props.class)}
+      class={cn(
+        fieldBase,
+        isDateOrTime() && "relative pr-9",
+        shapeClass(props.shape),
+        props.class,
+      )}
     />
   );
 }
 
 export interface TextareaProps {
+  shape?: Shape;
   ref?: HTMLTextAreaElement | ((el: HTMLTextAreaElement) => void);
   id?: string;
   name?: string;
@@ -140,7 +148,12 @@ export function Textarea(props: TextareaProps) {
       onBlur={props.onBlur}
       onFocus={props.onFocus}
       onKeyDown={props.onKeyDown}
-      class={cn(fieldBase, "min-h-20 custom-scrollbar", props.class)}
+      class={cn(
+        fieldBase,
+        "min-h-20 custom-scrollbar",
+        shapeClass(props.shape, "surface"),
+        props.class,
+      )}
     />
   );
 }
@@ -170,7 +183,11 @@ export interface FormErrorProps {
 export function FormError(props: FormErrorProps) {
   return (
     <Show when={props.children}>
-      <p id={props.id} role="alert" class="border-l-2 border-destructive dark:border-destructive-foreground pl-2 text-xs text-foreground">
+      <p
+        id={props.id}
+        role="alert"
+        class="border-l-2 border-destructive dark:border-destructive-foreground pl-2 text-xs text-foreground"
+      >
         {props.children}
       </p>
     </Show>
@@ -217,7 +234,10 @@ export function Field(props: FieldProps) {
       <Label for={id()}>
         {props.label}
         <Show when={props.required}>
-          <span aria-hidden="true" class="ml-0.5 text-destructive dark:text-destructive-foreground">
+          <span
+            aria-hidden="true"
+            class="ml-0.5 text-destructive dark:text-destructive-foreground"
+          >
             *
           </span>
         </Show>

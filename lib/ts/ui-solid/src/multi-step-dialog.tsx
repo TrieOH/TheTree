@@ -46,7 +46,8 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   const [internalStep, setInternalStep] = createSignal(0);
 
   const isControlled = () => props.currentStep !== undefined;
-  const stepIndex = () => (isControlled() ? props.currentStep! : internalStep());
+  const stepIndex = () =>
+    isControlled() ? props.currentStep! : internalStep();
 
   const setStep = (next: number) => {
     const clamped = Math.max(0, Math.min(next, props.steps.length - 1));
@@ -117,7 +118,8 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   const submitLabel = () => props.submitLabel ?? "Salvar";
   const nextLabel = () => props.nextLabel ?? "Continuar";
   const backLabel = () =>
-    props.backLabel ?? (isFirst() ? (props.cancelLabel ?? "Cancelar") : "Voltar");
+    props.backLabel ??
+    (isFirst() ? (props.cancelLabel ?? "Cancelar") : "Voltar");
 
   const renderContext: MultiStepRenderContext<T> = {
     get currentStep() {
@@ -133,7 +135,8 @@ export function MultiStepDialog<T = Record<string, unknown>>(
       return isLast();
     },
     values: () => (props.values ?? {}) as T,
-    errors: () => (props.errors ?? {}) as Partial<Record<keyof T & string, string>>,
+    errors: () =>
+      (props.errors ?? {}) as Partial<Record<keyof T & string, string>>,
     next: () => void handleNext(),
     prev: handleBack,
     cancel: () => props.onOpenChange(false),
@@ -149,6 +152,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
 
   return (
     <Dialog
+      shape={props.shape}
       open={props.open}
       onOpenChange={props.onOpenChange}
       size={props.size ?? "lg"}

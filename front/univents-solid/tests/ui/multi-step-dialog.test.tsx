@@ -77,6 +77,7 @@ describe("MultiStepDialog", () => {
     ));
 
     expect(screen.getByText("Passo ativo: 0")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
 
     // Advance to step 1
     const nextBtn = screen.getByRole("button", { name: /continuar/i });
@@ -84,6 +85,11 @@ describe("MultiStepDialog", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Passo ativo: 1")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+      expect(screen.getByRole("progressbar")).toHaveAttribute(
+        "aria-valuetext",
+        "Etapa 2 de 2: Segundo Passo",
+      );
     });
 
     // Step 1 has "Voltar" and "Salvar"
@@ -97,6 +103,7 @@ describe("MultiStepDialog", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Passo ativo: 0")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
     });
   });
 
@@ -127,6 +134,7 @@ describe("MultiStepDialog", () => {
       expect(guard).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByText("Passo ativo: 0")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
 
     // Now permit
     allowed = true;

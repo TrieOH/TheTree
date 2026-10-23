@@ -1,11 +1,19 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Portal } from "@solidjs/web";
-import { Show, createEffect, createMemo, createSignal, onSettled } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createMemo,
+  createSignal,
+  onSettled,
+} from "solid-js";
 import { cn } from "./lib/cn";
 
 export type DialogSize = "sm" | "md" | "lg" | "xl" | "full";
 
 export interface DialogProps {
+  shape?: Shape;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: JSX.Element;
@@ -56,7 +64,10 @@ export function Dialog(props: DialogProps): JSX.Element {
     (isOpen) => {
       if (isOpen) {
         setMounted(true);
-        if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestAnimationFrame === "function"
+        ) {
           const raf = requestAnimationFrame(() => setActive(true));
           return () => cancelAnimationFrame(raf);
         } else {
@@ -81,7 +92,10 @@ export function Dialog(props: DialogProps): JSX.Element {
   );
 }
 
-function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean }): JSX.Element {
+function DialogSurface(surfaceProps: {
+  dialogProps: DialogProps;
+  active: boolean;
+}): JSX.Element {
   const props = surfaceProps.dialogProps;
   const [panel, setPanel] = createSignal<HTMLDivElement>();
   const idPrefix = Math.random().toString(36).slice(2, 9);
@@ -90,11 +104,21 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
 
   // Idiomatic Solid: createMemo with accumulator (prev) freezes content when open === false,
   // preventing stale state flashes during exit transitions without mutable `let` references.
-  const displayTitle = createMemo<JSX.Element>((prev) => (props.open ? props.title : prev));
-  const displayDescription = createMemo<JSX.Element>((prev) => (props.open ? props.description : prev));
-  const displayChildren = createMemo<JSX.Element>((prev) => (props.open ? props.children : prev));
-  const displayFooter = createMemo<JSX.Element>((prev) => (props.open ? props.footer : prev));
-  const displayHeader = createMemo<JSX.Element>((prev) => (props.open ? props.header : prev));
+  const displayTitle = createMemo<JSX.Element>((prev) =>
+    props.open ? props.title : prev,
+  );
+  const displayDescription = createMemo<JSX.Element>((prev) =>
+    props.open ? props.description : prev,
+  );
+  const displayChildren = createMemo<JSX.Element>((prev) =>
+    props.open ? props.children : prev,
+  );
+  const displayFooter = createMemo<JSX.Element>((prev) =>
+    props.open ? props.footer : prev,
+  );
+  const displayHeader = createMemo<JSX.Element>((prev) =>
+    props.open ? props.header : prev,
+  );
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
@@ -109,7 +133,9 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
     const element = panel();
     if (!element) return;
 
-    const focusable = Array.from(element.querySelectorAll<HTMLElement>(FOCUSABLE));
+    const focusable = Array.from(
+      element.querySelectorAll<HTMLElement>(FOCUSABLE),
+    );
     if (!focusable.length) {
       event.preventDefault();
       return;
@@ -135,7 +161,8 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
     // Compensate scrollbar width to prevent desktop layout shift (capped to realistic max)
-    const rawScrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const rawScrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
     const scrollbarWidth = Math.max(0, Math.min(32, rawScrollbarWidth));
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
@@ -183,7 +210,9 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
           aria-hidden="true"
           class={cn(
             "fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200 ease-out sm:backdrop-blur-sm",
-            surfaceProps.active ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+            surfaceProps.active
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none",
           )}
           onClick={handleBackdropClick}
         />
@@ -204,7 +233,8 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
           aria-describedby={props.description ? descriptionId : undefined}
           tabindex="-1"
           style={{
-            [props.fixedHeight ? "height" : "max-height"]: "calc(100dvh - 2rem)",
+            [props.fixedHeight ? "height" : "max-height"]:
+              "calc(100dvh - 2rem)",
             ...props.style,
           }}
           class={cn(
@@ -213,6 +243,7 @@ function DialogSurface(surfaceProps: { dialogProps: DialogProps; active: boolean
             surfaceProps.active
               ? "translate-y-0 opacity-100 scale-100"
               : "translate-y-3 opacity-0 scale-[0.97] sm:scale-[0.98]",
+            shapeClass(props.shape, "surface"),
             props.class,
           )}
           onClick={(e) => e.stopPropagation()}

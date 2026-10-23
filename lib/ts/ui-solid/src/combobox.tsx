@@ -1,3 +1,4 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import { Portal, type JSX } from "@solidjs/web";
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import { cn } from "./lib/cn";
@@ -10,6 +11,7 @@ export interface ComboboxOption {
 }
 
 export interface ComboboxProps {
+  shape?: Shape;
   id?: string;
   "aria-describedby"?: string;
   "aria-label"?: string;
@@ -158,6 +160,7 @@ export function Combobox(props: ComboboxProps): JSX.Element {
         onClick={() => setOpen((v) => !v)}
         class={cn(
           "flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+          shapeClass(props.shape),
           triggerCls(),
         )}
       >

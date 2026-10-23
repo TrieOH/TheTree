@@ -1,7 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { For, untrack } from "solid-js";
 import { Link } from "@tanstack/solid-router";
-import { cn } from "@trieoh/ui-solid";
+import { Avatar as UIAvatar, cn } from "@trieoh/ui-solid";
 import CalendarIcon from "~icons/lucide/calendar";
 import MailIcon from "~icons/lucide/mail";
 import PencilIcon from "~icons/lucide/pencil";
@@ -222,23 +222,18 @@ function Avatar(props: {
   imageUrl?: string | null;
   size: "mobile" | "desktop";
 }) {
-  const url = () => resolveStorageUrl(props.imageUrl);
-
   return (
-    <div
+    <UIAvatar
+      name={props.name}
+      src={resolveStorageUrl(props.imageUrl) || undefined}
+      initials={props.name.slice(0, 2).toUpperCase()}
+      shape="pill"
+      size="lg"
       class={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-background text-2xl font-semibold shadow-xl",
+        "relative border-4 border-background bg-muted text-2xl text-muted-foreground shadow-xl",
         props.size === "mobile" ? "size-24" : "size-32",
       )}
-    >
-      {url() ? (
-        <img src={url()} alt={props.name} class="size-full object-cover" />
-      ) : (
-        <span class="flex size-full items-center justify-center rounded-full bg-muted text-muted-foreground">
-          {props.name.slice(0, 2).toUpperCase()}
-        </span>
-      )}
-    </div>
+    />
   );
 }
 

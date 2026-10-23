@@ -77,11 +77,7 @@ export {
   type SectionTabsProps,
 } from "./section-tabs";
 export { Drawer, type DrawerProps } from "./drawer";
-export {
-  Combobox,
-  type ComboboxOption,
-  type ComboboxProps,
-} from "./combobox";
+export { Combobox, type ComboboxOption, type ComboboxProps } from "./combobox";
 export {
   Toaster,
   toast,
@@ -102,3 +98,9 @@ export { Card, type CardProps } from "./card";
 export { Link, type LinkProps } from "./link";
 export { SearchInput, type SearchInputProps } from "./search-input";
 export { CodeBlock, type CodeBlockProps } from "./code-block";
+export { shapes, type Shape } from "./lib/shape";
+export { Badge, type BadgeProps } from "./badge";
+export { Avatar, type AvatarProps } from "./avatar";
+
+export { Spinner, type SpinnerProps } from "./spinner";
+export { Loading, type LoadingProps } from "./loading";

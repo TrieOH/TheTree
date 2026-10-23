@@ -1,3 +1,4 @@
+import type { Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Show, createMemo } from "solid-js";
 import { Button } from "./button";
@@ -7,6 +8,7 @@ import { cn } from "./lib/cn";
 export type AlertModalVariant = "destructive" | "warning" | "info" | "default";
 
 export interface AlertModalProps {
+  shape?: Shape;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: JSX.Element;
@@ -24,7 +26,9 @@ export interface AlertModalProps {
   style?: JSX.CSSProperties;
 }
 
-function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.Element {
+function DefaultVariantIcon(props: {
+  variant: () => AlertModalVariant;
+}): JSX.Element {
   return (
     <Show
       when={props.variant() === "destructive"}
@@ -36,16 +40,44 @@ function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.El
               when={props.variant() === "info"}
               fallback={
                 <div class="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-xs">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linecap="round" stroke-linejoin="round" />
-                    <polyline points="14 2 14 8 20 8" stroke-linecap="round" stroke-linejoin="round" />
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="size-4.5"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <polyline
+                      points="14 2 14 8 20 8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                 </div>
               }
             >
               <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-secondary bg-secondary text-secondary-foreground shadow-xs">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" stroke-linecap="round" stroke-linejoin="round" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="size-4.5"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                   <path d="M12 16v-4M12 8h.01" stroke-linecap="round" />
                 </svg>
               </div>
@@ -53,8 +85,21 @@ function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.El
           }
         >
           <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-accent bg-accent text-accent-foreground shadow-xs">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" stroke-linecap="round" stroke-linejoin="round" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="size-4.5"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
               <path d="M12 8v4M12 16h.01" stroke-linecap="round" />
             </svg>
           </div>
@@ -62,8 +107,19 @@ function DefaultVariantIcon(props: { variant: () => AlertModalVariant }): JSX.El
       }
     >
       <div class="flex size-10 shrink-0 items-center justify-center rounded-full border border-destructive bg-destructive text-primary shadow-xs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-4.5" aria-hidden="true">
-          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke-linecap="round" stroke-linejoin="round" />
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          class="size-4.5"
+          aria-hidden="true"
+        >
+          <path
+            d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </div>
     </Show>
@@ -82,11 +138,21 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
 
   // Idiomatic Solid: createMemo with accumulator (prev) freezes content when open === false,
   // preventing stale state flashes during exit transitions without mutable `let` references.
-  const displayTitle = createMemo<JSX.Element>((prev) => (props.open ? props.title : prev));
-  const displayDescription = createMemo<JSX.Element>((prev) => (props.open ? props.description : prev));
-  const displayIcon = createMemo<JSX.Element>((prev) => (props.open ? props.icon : prev));
-  const displayVariant = createMemo<AlertModalVariant>((prev) => (props.open ? (props.variant ?? "default") : (prev ?? "default")));
-  const displayChildren = createMemo<JSX.Element>((prev) => (props.open ? props.children : prev));
+  const displayTitle = createMemo<JSX.Element>((prev) =>
+    props.open ? props.title : prev,
+  );
+  const displayDescription = createMemo<JSX.Element>((prev) =>
+    props.open ? props.description : prev,
+  );
+  const displayIcon = createMemo<JSX.Element>((prev) =>
+    props.open ? props.icon : prev,
+  );
+  const displayVariant = createMemo<AlertModalVariant>((prev) =>
+    props.open ? (props.variant ?? "default") : (prev ?? "default"),
+  );
+  const displayChildren = createMemo<JSX.Element>((prev) =>
+    props.open ? props.children : prev,
+  );
 
   const handleConfirm = async () => {
     await props.onConfirm?.();
@@ -99,6 +165,7 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
 
   return (
     <Dialog
+      shape={props.shape}
       open={props.open}
       onOpenChange={(v) => {
         if (!props.loading) {
@@ -122,7 +189,10 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
       <div class="flex flex-col">
         {/* Status icon badge */}
         <div>
-          <Show when={displayIcon()} fallback={<DefaultVariantIcon variant={displayVariant} />}>
+          <Show
+            when={displayIcon()}
+            fallback={<DefaultVariantIcon variant={displayVariant} />}
+          >
             {(customIcon) => <div class="shrink-0">{customIcon()}</div>}
           </Show>
         </div>
@@ -141,9 +211,7 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
 
         {/* Optional custom children */}
         <Show when={displayChildren()}>
-          <div class="mt-3 text-sm text-foreground">
-            {displayChildren()}
-          </div>
+          <div class="mt-3 text-sm text-foreground">{displayChildren()}</div>
         </Show>
 
         {/* Action buttons strictly using theme tokens */}
@@ -158,14 +226,18 @@ export function AlertModal(props: AlertModalProps): JSX.Element {
             {cancelLabel()}
           </Button>
           <Button
-            variant={displayVariant() === "destructive" ? "destructive" : "default"}
+            variant={
+              displayVariant() === "destructive" ? "destructive" : "default"
+            }
             size="sm"
             disabled={props.loading}
             onClick={handleConfirm}
             class={cn(
               "h-9 min-w-20 px-4 text-xs sm:text-sm font-medium rounded-xl shadow-xs transition-all active:scale-95",
-              displayVariant() === "warning" && "bg-accent text-accent-foreground hover:bg-accent/90",
-              displayVariant() === "info" && "bg-secondary text-secondary-foreground hover:bg-secondary/90",
+              displayVariant() === "warning" &&
+                "bg-accent text-accent-foreground hover:bg-accent/90",
+              displayVariant() === "info" &&
+                "bg-secondary text-secondary-foreground hover:bg-secondary/90",
             )}
           >
             <Show when={props.loading}>

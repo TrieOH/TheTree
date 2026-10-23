@@ -1,8 +1,10 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Portal } from "@solidjs/web";
 import { cn } from "./lib/cn";
 
 export interface DrawerProps {
+  shape?: Shape;
   open: boolean;
   title?: JSX.Element;
   onClose: () => void;
@@ -63,6 +65,7 @@ export function Drawer(props: DrawerProps): JSX.Element {
           class={cn(
             "fixed! bottom-0! left-0! right-0! top-auto! max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-border bg-card p-4 pb-8 shadow-2xl transition-transform duration-300 ease-out",
             props.open ? "translate-y-0" : "translate-y-full",
+            shapeClass(props.shape, "surface"),
             props.class,
           )}
         >
@@ -70,7 +73,9 @@ export function Drawer(props: DrawerProps): JSX.Element {
           <div class="mx-auto -mt-1 mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/30" />
 
           <header class="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
-            <h2 class="text-base font-semibold text-foreground">{props.title}</h2>
+            <h2 class="text-base font-semibold text-foreground">
+              {props.title}
+            </h2>
             <button
               type="button"
               aria-label="Fechar gaveta"

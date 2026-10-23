@@ -2,6 +2,12 @@ import { Input, type InputProps } from "./input";
 import { cn } from "./lib/cn";
 
 export interface SearchInputProps {
+  shape?: InputProps["shape"];
+  disabled?: boolean;
+  required?: boolean;
+  readonly?: boolean;
+  id?: string;
+  name?: string;
   value: string;
   onInput: NonNullable<InputProps["onInput"]>;
   placeholder?: string;
@@ -25,6 +31,12 @@ export function SearchInput(props: SearchInputProps) {
       </svg>
       <Input
         type="search"
+        shape={props.shape}
+        disabled={props.disabled}
+        required={props.required}
+        readonly={props.readonly}
+        id={props.id}
+        name={props.name}
         value={props.value}
         onInput={props.onInput}
         placeholder={props.placeholder}

@@ -1,9 +1,11 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import { createMemo, For } from "solid-js";
 import { Button } from "./button";
 import { toast } from "./toast";
 import { cn } from "./lib/cn";
 
 export interface CodeBlockProps {
+  shape?: Shape;
   code: string;
   filename?: string;
   class?: string;
@@ -52,6 +54,7 @@ export function CodeBlock(props: CodeBlockProps) {
     <figure
       class={cn(
         "min-w-0 overflow-hidden rounded-lg border border-border bg-code-background text-foreground",
+        shapeClass(props.shape, "surface"),
         props.class,
       )}
     >
