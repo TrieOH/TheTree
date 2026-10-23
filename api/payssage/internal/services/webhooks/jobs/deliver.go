@@ -13,8 +13,8 @@ import (
 	"lib/telemetry"
 	"payssage/models"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 	"resty.dev/v3"
 )
@@ -29,16 +29,13 @@ type DeliverWebhookArgs struct {
 
 func (DeliverWebhookArgs) Kind() string { return "webhook.deliver" }
 
-// maxDeliveryAttempts is OUR retry budget for a delivery, tracked in
-// webhook_deliveries.attempts. This is distinct from River's own
-// per-job attempt tracking (InsertOpts.MaxAttempts) — River governs
-// "should this job run again", this governs "have we given up on ever
-// reaching this customer endpoint."
-const maxDeliveryAttempts = 5
-
+// DeliverWebhookWorker POSTs one delivery to its tenant endpoint. Retries
+// belong to the job carrier (the Cloudflare Queue's retry policy, or the
+// in-process runner's backoff): a failed attempt is recorded and returned
+// as an error so the carrier tries again. When the carrier gives up, the
+// webhook.fail job marks the delivery failed. The row is the source of
+// truth, so a duplicate or stale job is a no-op.
 type DeliverWebhookWorker struct {
-	river.WorkerDefaults[DeliverWebhookArgs]
-
 	deliveries ports.WebhookDeliveryRepo
 	events     ports.WebhookEventRepo
 	endpoints  ports.WebhookEndpointRepo
@@ -89,11 +86,14 @@ func buildEnvelope(event *models.WebhookEvent) ([]byte, error) {
 	})
 }
 
-func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[DeliverWebhookArgs]) error {
-	delivery, err := w.deliveries.GetByID(ctx, job.Args.DeliveryID)
+func (w *DeliverWebhookWorker) Work(ctx context.Context, args DeliverWebhookArgs) error {
+	delivery, err := w.deliveries.GetByID(ctx, args.DeliveryID)
 	if err != nil {
-		telemetry.Log().Error("webhook delivery: delivery not found", zap.String("delivery_id", job.Args.DeliveryID.String()), zap.Error(err))
-		return nil
+		if fun.Is(err, fun.CodeNotFound) {
+			telemetry.Log().Error("webhook delivery: delivery not found", zap.String("delivery_id", args.DeliveryID.String()), zap.Error(err))
+			return nil
+		}
+		return err // the database is unreachable — retry
 	}
 
 	if delivery.Status != models.WebhookDeliveryStatusPending {
@@ -104,20 +104,26 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[DeliverW
 
 	event, err := w.events.GetByID(ctx, delivery.EventID)
 	if err != nil {
+		if !fun.Is(err, fun.CodeNotFound) {
+			return err // the database is unreachable — retry
+		}
 		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("event not found: %v", err))
-		return err
+		return nil
 	}
 
 	endpoint, err := w.endpoints.GetByID(ctx, delivery.EndpointID)
 	if err != nil {
+		if !fun.Is(err, fun.CodeNotFound) {
+			return err // the database is unreachable — retry
+		}
 		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("endpoint not found: %v", err))
-		return err
+		return nil
 	}
 
 	envelope, err := buildEnvelope(event)
 	if err != nil {
 		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("build envelope: %v", err))
-		return err
+		return nil
 	}
 
 	signature := signPayload(endpoint.Secret, envelope)
@@ -170,10 +176,9 @@ func (w *DeliverWebhookWorker) recordSuccess(
 	return nil
 }
 
-// recordAttempt records a failed attempt. If our own retry budget
-// (maxDeliveryAttempts) isn't exhausted, it returns an error so River
-// retries the job. Once exhausted, it marks the delivery permanently
-// failed and returns nil so River stops.
+// recordAttempt records a failed attempt and returns an error, so the
+// carrier retries the job. The delivery stays pending: when the carrier's
+// retries run out, the webhook.fail job marks it failed.
 func (w *DeliverWebhookWorker) recordAttempt(
 	ctx context.Context,
 	delivery *models.WebhookDelivery,
@@ -182,11 +187,6 @@ func (w *DeliverWebhookWorker) recordAttempt(
 	responseStatus int,
 	responseBody string,
 ) error {
-	status := models.WebhookDeliveryStatusPending
-	if attempts >= maxDeliveryAttempts {
-		status = models.WebhookDeliveryStatusFailed
-	}
-
 	var respStatusPtr *int
 	if responseStatus != 0 {
 		respStatusPtr = &responseStatus
@@ -194,7 +194,7 @@ func (w *DeliverWebhookWorker) recordAttempt(
 
 	_, updateErr := w.deliveries.Update(ctx, models.UpdateDeliveryParams{
 		ID:              delivery.ID,
-		Status:          status,
+		Status:          models.WebhookDeliveryStatusPending,
 		Attempts:        attempts,
 		LastAttemptedAt: &attemptedAt,
 		ResponseStatus:  respStatusPtr,
@@ -204,16 +204,6 @@ func (w *DeliverWebhookWorker) recordAttempt(
 		telemetry.Log().Error("webhook delivery: failed to record attempt", zap.String("delivery_id", delivery.ID.String()), zap.Error(updateErr))
 	}
 
-	if status == models.WebhookDeliveryStatusFailed {
-		telemetry.Log().Warn("webhook delivery: giving up after max attempts",
-			zap.String("delivery_id", delivery.ID.String()),
-			zap.Int("attempts", attempts),
-		)
-		return nil // stop River retries — we've made our own final decision
-	}
-
-	// Under our budget — return an error so River retries with its own
-	// backoff policy.
 	return fmt.Errorf("webhook delivery attempt %d failed: status %d", attempts, responseStatus)
 }
 

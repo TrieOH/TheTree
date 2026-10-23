@@ -49,3 +49,12 @@ SET status            = @status,
     updated_at        = NOW()
 WHERE id = @id
     RETURNING *;
+
+-- name: ListUnsentWebhookDeliveries :many
+SELECT *
+FROM webhook_deliveries
+WHERE status = 'pending'
+  AND attempts = 0
+  AND created_at < NOW() - (@older_than_seconds::int * INTERVAL '1 second')
+ORDER BY created_at
+LIMIT @max_rows::int;
