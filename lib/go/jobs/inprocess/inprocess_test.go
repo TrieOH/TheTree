@@ -90,3 +90,37 @@ func TestStopDrainsAndRefuses(t *testing.T) {
 		t.Fatalf("enqueue after stop = %v, want ErrStopped", err)
 	}
 }
+
+func TestEnqueueAfterWaits(t *testing.T) {
+	reg := jobs.NewRegistry()
+	ran := make(chan time.Time, 1)
+	jobs.Register(reg, func(context.Context, ping) error {
+		ran <- time.Now()
+		return nil
+	})
+	r := inprocess.New(reg, inprocess.Options{})
+	r.Start()
+	defer func() { _ = r.Stop(context.Background()) }()
+
+	start := time.Now()
+	err := r.EnqueueAfter(context.Background(), ping{}, 50*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case at := <-ran:
+		if at.Sub(start) < 50*time.Millisecond {
+			t.Fatalf("job ran after %s, before its delay", at.Sub(start))
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("delayed job did not run")
+	}
+}
+
+func TestEnqueueAfterRefusesLongDelays(t *testing.T) {
+	r := inprocess.New(jobs.NewRegistry(), inprocess.Options{})
+	err := r.EnqueueAfter(context.Background(), ping{}, jobs.MaxDelay+time.Second)
+	if !errors.Is(err, jobs.ErrDelayTooLong) {
+		t.Fatalf("err = %v, want ErrDelayTooLong", err)
+	}
+}

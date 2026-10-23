@@ -37,6 +37,21 @@ type Enqueuer interface {
 	Enqueue(ctx context.Context, job Job) error
 }
 
+// DelayedEnqueuer also hands over a Job to run no sooner than delay from
+// now. Both carriers implement it: the in-process runner holds a timer, and
+// httpjobs passes the delay to the queue, which holds the message.
+type DelayedEnqueuer interface {
+	Enqueuer
+	EnqueueAfter(ctx context.Context, job Job, delay time.Duration) error
+}
+
+// MaxDelay is the longest delay every carrier honors: Cloudflare Queues
+// hold a message for at most 12 hours.
+const MaxDelay = 12 * time.Hour
+
+// ErrDelayTooLong is returned for a delay over MaxDelay.
+var ErrDelayTooLong = errors.New("job delay over the maximum")
+
 // Envelope is the wire format every carrier transports.
 type Envelope struct {
 	Kind string          `json:"kind"`

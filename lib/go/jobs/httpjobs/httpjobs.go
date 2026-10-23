@@ -2,7 +2,8 @@
 // outside the process queues and schedules the work:
 //
 //   - Enqueuer POSTs each job's Envelope as JSON to a URL. Whatever answers
-//     there (a queue producer) owns delivery and retries.
+//     there (a queue producer) owns delivery and retries. A delayed job
+//     carries its delay in the DelayHeader, in whole seconds.
 //   - Handler serves Path: it receives one Envelope per POST, from the queue
 //     consumer or a scheduler, and dispatches it. 2xx means done; 5xx means
 //     the job failed and should be retried; 4xx means it never will succeed.
@@ -19,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"lib/jobs"
@@ -29,6 +31,10 @@ import (
 
 // Path is where Handler is mounted.
 const Path = "/events"
+
+// DelayHeader carries a delayed job's delay, in whole seconds, to the queue
+// producer.
+const DelayHeader = "Job-Delay-Seconds"
 
 // maxEnvelopeBytes bounds one Envelope.
 const maxEnvelopeBytes = 1 << 20
@@ -41,7 +47,7 @@ type Enqueuer struct {
 	client *http.Client
 }
 
-var _ jobs.Enqueuer = (*Enqueuer)(nil)
+var _ jobs.DelayedEnqueuer = (*Enqueuer)(nil)
 
 // New builds an Enqueuer that POSTs to url.
 func New(url string) (*Enqueuer, error) {
@@ -52,6 +58,19 @@ func New(url string) (*Enqueuer, error) {
 }
 
 func (e *Enqueuer) Enqueue(ctx context.Context, job jobs.Job) error {
+	return e.post(ctx, job, 0)
+}
+
+// EnqueueAfter POSTs the job with its delay, rounded up to whole seconds;
+// the queue holds the message until then.
+func (e *Enqueuer) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Duration) error {
+	if delay > jobs.MaxDelay {
+		return jobs.ErrDelayTooLong
+	}
+	return e.post(ctx, job, delay)
+}
+
+func (e *Enqueuer) post(ctx context.Context, job jobs.Job, delay time.Duration) error {
 	env, err := jobs.Encode(job)
 	if err != nil {
 		return err
@@ -65,6 +84,9 @@ func (e *Enqueuer) Enqueue(ctx context.Context, job jobs.Job) error {
 		return fmt.Errorf("httpjobs: build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if delay > 0 {
+		req.Header.Set(DelayHeader, strconv.FormatInt(int64((delay+time.Second-1)/time.Second), 10))
+	}
 	resp, err := e.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("httpjobs: enqueue %s: %w", env.Kind, err)
