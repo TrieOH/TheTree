@@ -156,7 +156,7 @@ func seedStoreOpts(t *testing.T, r *repos.Repos, o storeOpts) fixture {
 type fakes struct {
 	badges   *fakeBadges
 	notifier *fakeNotifier
-	river    *fakeRiver
+	jobs     *fakeJobs
 	tokens   *fakeTokens
 	payssage *fakePayssage
 	actors   *fakeActors
@@ -164,7 +164,7 @@ type fakes struct {
 
 // newOps wires the real repos (disposable Postgres with the real
 // migrations) behind faked external seams: payssage (intent creation),
-// badges, notifier, river, ws tokens, identityx actor resolution.
+// badges, notifier, jobs, ws tokens, identityx actor resolution.
 func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentRequest) (*payssage.Intent, error)) (*repos.Repos, *checkouts.Operations, *fakes, *sqlc.Queries) {
 	t.Helper()
 	pool := testdb.Postgres(t, "../../../db/migrations")
@@ -176,7 +176,7 @@ func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentReques
 	fs := &fakes{
 		badges:   &fakeBadges{},
 		notifier: &fakeNotifier{},
-		river:    &fakeRiver{},
+		jobs:     &fakeJobs{},
 		tokens:   &fakeTokens{},
 		payssage: ps,
 		actors:   newFakeActors(),
@@ -184,7 +184,7 @@ func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentReques
 	ops := checkouts.NewOperations(
 		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
 		r.Registrations, r.Products, r.Programs,
-		fs.badges, fs.notifier, fs.river, tx,
+		fs.badges, fs.notifier, fs.jobs, tx,
 		nil, ps, walletID, fs.tokens, fs.actors, authz.New(r.Events),
 	)
 	return r, ops, fs, q
@@ -211,7 +211,7 @@ func TestCheckout_HappyPathPix(t *testing.T) {
 }
 
 // assertPixReservation checks every side effect of a successful pix
-// checkout: response shape, persisted purchase (pending + river job +
+// checkout: response shape, persisted purchase (pending +
 // intent), materialized pending rows, expiry job + ws token, and the stock
 // notification. Extracted so the happy-path test stays under the cyclomatic
 // budget.
@@ -221,16 +221,16 @@ func assertPixReservation(t *testing.T, r *repos.Repos, fs *fakes, purchaserID u
 	assertPersistedPix(t, r, res)
 }
 
-// assertPersistedPix checks the persisted purchase row: pending, river job
-// linked, intent stored.
+// assertPersistedPix checks the persisted purchase row: pending, intent
+// stored.
 func assertPersistedPix(t *testing.T, r *repos.Repos, res *checkouts.CheckoutResult) {
 	t.Helper()
 	persisted, err := r.Purchases.GetByID(context.Background(), res.PurchaseID)
 	if err != nil {
 		t.Fatalf("load purchase: %v", err)
 	}
-	if persisted.Status != models.PurchaseStatusPending || persisted.RiverJobID == nil {
-		t.Fatalf("persisted = %+v, want pending with river job", persisted)
+	if persisted.Status != models.PurchaseStatusPending {
+		t.Fatalf("persisted = %+v, want pending", persisted)
 	}
 	if persisted.PayssageIntentID == nil || *persisted.PayssageIntentID != *res.PayssageIntentID {
 		t.Fatalf("persisted intent id = %v, want %v", persisted.PayssageIntentID, res.PayssageIntentID)
@@ -280,8 +280,8 @@ func assertPixReservationShape(t *testing.T, r *repos.Repos, fs *fakes, purchase
 	}
 
 	// Expiry job scheduled (10:01) + ws token issued in-tx.
-	if got := fs.river.insertCount(); got != 1 {
-		t.Fatalf("river inserts = %d, want 1", got)
+	if got := fs.jobs.insertCount(); got != 1 {
+		t.Fatalf("jobs enqueued = %d, want 1", got)
 	}
 	if got := fs.tokens.issuedCount(); got != 1 {
 		t.Fatalf("ws tokens issued = %d, want 1", got)
@@ -400,8 +400,8 @@ func TestCheckout_FreeOrderConfirmsImmediately(t *testing.T) {
 	if got := fs.badges.emittedCount(); got != 1 {
 		t.Fatalf("badge emissions = %d, want 1", got)
 	}
-	if got := fs.river.insertCount(); got != 0 {
-		t.Fatalf("river inserts = %d, want 0 (no expiry job for free orders)", got)
+	if got := fs.jobs.insertCount(); got != 0 {
+		t.Fatalf("jobs enqueued = %d, want 0 (no expiry job for free orders)", got)
 	}
 }
 

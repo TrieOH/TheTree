@@ -11,12 +11,16 @@ import (
 	"univents/internal/handlers/webhooks"
 	"univents/internal/openapi"
 
-	libriver "lib/river"
+	"lib/jobs/httpjobs"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Server, riverUI http.Handler) http.Handler {
+// CreateRouter builds the API router. events, when non-nil, is the job
+// events endpoint the queue delivers to; it is outside the spec and its auth
+// chains, so the deploy must keep it unreachable from the internet (the
+// Cloudflare Worker refuses it on public requests).
+func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Server, events http.Handler) http.Handler {
 	resolver, err := authz.NewResolver(spec.OpenAPISpec, primitives, authz.Options{})
 	errx.Exit(err, "resolve auth chains")
 	return httpserver.NewRouter(httpserver.Config{
@@ -24,7 +28,7 @@ func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Serve
 		CorsAllowedOrigins: app.cfg.AllowedOrigins,
 		CorsAllowedHeaders: app.cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
-		SkipLogPrefixes:    []string{"/admin/asynq"},
+		RateLimit:          app.cfg.ToRateLimit(),
 		Routes: func(r *chi.Mux) {
 			mountStrict(r, h, resolver.Chains())
 
@@ -36,7 +40,9 @@ func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Serve
 			r.Get("/editions/{edition_id}/store/stream", h.ServeStoreStream)
 			r.Handle("/ws", http.HandlerFunc(h.ServeWS))
 
-			libriver.MountDashboard(r, riverUI)
+			if events != nil {
+				r.Method(http.MethodPost, httpjobs.Path, events)
+			}
 		},
 	})
 }

@@ -1,0 +1,46 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "univents-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-19",
+	"observability": { "enabled": true },
+	"routes": [{ "pattern": "api.univents.com.br", "custom_domain": true }],
+
+	"containers": [
+		{
+			"class_name": "UniventsContainer",
+			"image": "../Dockerfile",
+			// The Dockerfile copies the Go workspace, so it builds from the repo root.
+			"image_build_context": "../../..",
+			"instance_type": "basic",
+			"max_instances": 3,
+			// Next to Neon (São Paulo).
+			"constraints": { "regions": ["SAM"] }
+		}
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "UNIVENTS", "class_name": "UniventsContainer" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["UniventsContainer"] }],
+
+	// Background jobs: the container enqueues through the producer (delayed
+	// jobs carry their delay), the consumer delivers each job back to the
+	// container's /events. Retries back off per message (src/index.ts); a
+	// job out of retries lands on the dead-letter queue, kept for inspection.
+	"queues": {
+		"producers": [{ "queue": "univents-jobs", "binding": "JOBS" }],
+		"consumers": [
+			{
+				"queue": "univents-jobs",
+				"max_batch_size": 10,
+				"max_retries": 10,
+				"dead_letter_queue": "univents-jobs-dlq"
+			}
+		]
+	}
+
+	// Config: none lives here. The whole Univents env (the same keys as
+	// api/univents/.example.env, minus JOBS_URL) is the UNIVENTS_API_ENV
+	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
+	// binding is passed to the container as an environment variable.
+}

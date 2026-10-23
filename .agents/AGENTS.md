@@ -64,7 +64,8 @@ All services follow a consistent internal structure:
 - Payment integration via Payssage SDK
 - Authorization via SpiceDB with granular permissions
 - File upload via RustFS (MinIO SDK)
-- Job queue: Asynq + Redis; WebSocket support
+- Background jobs: `lib/jobs` with delayed enqueue — purchase expiry, gift email, certificates (ADR-0013); WebSocket + SSE realtime (off on Cloudflare for now)
+- Runs on Cloudflare Containers behind a Worker (`api/univents/cloudflare`, ADR-0011)
 
 ## Front-End Apps (TypeScript + React 19)
 
@@ -94,7 +95,7 @@ Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written d
 - **validator** — Input validation
 - **utils** — General-purpose utilities
 - **xslices** — Generic slice utilities
-- **river** — River job queue integration
+- **jobs** — background-work seam: in-process or Cloudflare Queues (`lib/go/river` is no longer used by any backend)
 
 ## Key Technology Choices
 
@@ -106,7 +107,7 @@ Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written d
 - **Caddy** — reverse proxy with TLS, Cloudflare origin certs
 - **OpenTelemetry** — distributed tracing across all services
 - **Prometheus** — metrics scraped by VictoriaMetrics
-- **River / Asynq** — durable job queues (IdentityX uses River; rest use Asynq)
+- **lib/jobs** — background jobs on Cloudflare Queues when deployed, in-process locally (ADR-0011)
 - **`just`** — command runner
 
 ## Go 1.26 language features in use

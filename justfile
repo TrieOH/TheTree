@@ -10,6 +10,7 @@ up:
     just identityx-db-init
     just payssage-db-init
     just informd-db-init
+    just univents-db-init
     docker compose up --remove-orphans
 
 down:
@@ -58,17 +59,47 @@ identityx-goose +ACTION="up":
       *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
+# Run Univents: (default: compose container) | db-init | db-up | db-status | lint | test
 univents +CMD="":
     #!/usr/bin/env bash
+    set -euo pipefail
     case "{{CMD}}" in
       "")   just identityx-db-init
             just payssage-db-init
+            just univents-db-init
             docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans payssage -d
             docker compose up --build --remove-orphans univents ;;
+      db-init)   just univents-db-init ;;
+      db-up)     just univents-goose up ;;
+      db-status) just univents-goose status ;;
       lint) golangci-lint run ./api/univents/... ;;
       test) cd api/univents && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
+    esac
+
+# Start Univents' database, then migrate it.
+univents-db-init:
+    docker compose up --detach --wait univents-db
+    just univents-goose up
+
+# Migrate Univents outside the API process, over the direct endpoint (see
+# identityx-goose). `UNIVENTS_DB_*` overrides target another database;
+# otherwise it uses api/univents/.env against the local univents-db.
+univents-goose +ACTION="up":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -a
+    source api/univents/.env
+    set +a
+    db_host="${UNIVENTS_DB_HOST:-localhost}"
+    db_port="${UNIVENTS_DB_PORT:-5433}"
+    db_name="${UNIVENTS_DB_NAME:-$UNIVENTS_POSTGRES_DB}"
+    export PGPASSWORD="$UNIVENTS_POSTGRES_PASSWORD"
+    dsn="host=$db_host port=$db_port user=$UNIVENTS_POSTGRES_USER dbname=$db_name sslmode=$UNIVENTS_POSTGRES_SSLMODE channel_binding=$UNIVENTS_POSTGRES_CHANNEL_BINDING"
+    case "{{ACTION}}" in
+      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/univents/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
 # Run Payssage: (default: compose container) | db-init | db-up | db-status | lint | test

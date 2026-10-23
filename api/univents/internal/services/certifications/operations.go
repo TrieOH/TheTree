@@ -4,19 +4,17 @@ import (
 	"context"
 
 	"lib/email"
+	libjobs "lib/jobs"
 	"univents/internal/authz"
 	"univents/ports"
-
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
-// River is the cert-grant scheduling surface: river.Insert outside any tx
+// Jobs is the cert-grant scheduling surface: a plain enqueue outside any tx
 // (the emit endpoint is a fire-and-forget enqueue of the grant job; the job
 // itself re-checks existing certs, so re-emission is safe). Satisfied by
-// *river.Client[pgx.Tx].
-type River interface {
-	Insert(ctx context.Context, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
+// the lib/jobs carriers.
+type Jobs interface {
+	Enqueue(ctx context.Context, job libjobs.Job) error
 }
 
 type Operations struct {
@@ -25,7 +23,7 @@ type Operations struct {
 	certs    ports.CertificationRepo
 	programs ports.ProgramRepo
 	email    *email.Client
-	river    River
+	jobs     Jobs
 	authz    *authz.Service
 }
 
@@ -35,7 +33,7 @@ func NewOperations(
 	certs ports.CertificationRepo,
 	programs ports.ProgramRepo,
 	email *email.Client,
-	river River,
+	jobs Jobs,
 	authz *authz.Service,
 ) *Operations {
 	return &Operations{
@@ -44,7 +42,7 @@ func NewOperations(
 		certs:    certs,
 		programs: programs,
 		email:    email,
-		river:    river,
+		jobs:     jobs,
 		authz:    authz,
 	}
 }

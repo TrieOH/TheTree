@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"lib/jobs"
 	"lib/jobs/httpjobs"
@@ -97,5 +98,33 @@ func TestEnqueueFailsOnNon2xx(t *testing.T) {
 	}
 	if e.Enqueue(context.Background(), work{}) == nil {
 		t.Fatal("expected an error")
+	}
+}
+
+func TestEnqueueAfterSendsTheDelay(t *testing.T) {
+	headers := make(chan string, 2)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headers <- r.Header.Get(httpjobs.DelayHeader)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	e, err := httpjobs.New(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = e.EnqueueAfter(context.Background(), work{}, 1500*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := <-headers; got != "2" {
+		t.Fatalf("delay header = %q, want 2 (rounded up)", got)
+	}
+	err = e.Enqueue(context.Background(), work{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := <-headers; got != "" {
+		t.Fatalf("delay header = %q on a plain enqueue, want none", got)
 	}
 }

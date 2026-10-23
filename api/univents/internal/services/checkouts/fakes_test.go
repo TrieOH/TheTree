@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	libjobs "lib/jobs"
+
 	"univents/internal/services/checkouts"
 	"univents/internal/services/checkouts/jobs"
 	"univents/models"
@@ -15,9 +17,6 @@ import (
 	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
 // ── External-seam fakes (the DB-backed ports use the real repos) ──────────
@@ -109,46 +108,39 @@ func (f *fakeNotifier) payloadsCopy() []string {
 	return append([]string(nil), f.payloads...)
 }
 
-// fakeRiver records river.InsertTx calls (the expiry job scheduling) and
-// returns incrementing job ids.
-type fakeRiver struct {
+// fakeJobs records EnqueueAfter calls (the expiry and gift-email jobs).
+type fakeJobs struct {
 	mu       sync.Mutex
-	inserted []struct {
-		args        river.JobArgs
-		scheduledAt time.Time
+	enqueued []struct {
+		job   libjobs.Job
+		delay time.Duration
 	}
-	nextJobID int64
 }
 
-func (f *fakeRiver) InsertTx(_ context.Context, _ pgx.Tx, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error) {
+func (f *fakeJobs) EnqueueAfter(_ context.Context, job libjobs.Job, delay time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.nextJobID++
-	scheduledAt := time.Time{}
-	if opts != nil {
-		scheduledAt = opts.ScheduledAt
-	}
-	f.inserted = append(f.inserted, struct {
-		args        river.JobArgs
-		scheduledAt time.Time
-	}{args: args, scheduledAt: scheduledAt})
-	return &rivertype.JobInsertResult{Job: &rivertype.JobRow{ID: f.nextJobID}}, nil
+	f.enqueued = append(f.enqueued, struct {
+		job   libjobs.Job
+		delay time.Duration
+	}{job: job, delay: delay})
+	return nil
 }
 
-func (f *fakeRiver) insertCount() int {
+func (f *fakeJobs) insertCount() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return len(f.inserted)
+	return len(f.enqueued)
 }
 
 // giftEmailArgs returns the registration ids of every enqueued
 // gifts.send_email job (the accountless gifted-recipient email).
-func (f *fakeRiver) giftEmailArgs() []jobs.SendGiftEmailArgs {
+func (f *fakeJobs) giftEmailArgs() []jobs.SendGiftEmailArgs {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out []jobs.SendGiftEmailArgs
-	for _, in := range f.inserted {
-		if a, ok := in.args.(jobs.SendGiftEmailArgs); ok {
+	for _, in := range f.enqueued {
+		if a, ok := in.job.(jobs.SendGiftEmailArgs); ok {
 			out = append(out, a)
 		}
 	}

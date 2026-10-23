@@ -230,7 +230,7 @@ func TestCheckout_GiftEmailOnlyFreeOrder(t *testing.T) {
 
 	// The gifted-ticket email is enqueued atomically with the confirmation
 	// (the recipient must be told to create an account and claim).
-	giftJobs := fs.river.giftEmailArgs()
+	giftJobs := fs.jobs.giftEmailArgs()
 	if len(giftJobs) != 1 || giftJobs[0].RegistrationID != reg.ID {
 		t.Fatalf("gifts.send_email jobs = %+v, want [{registration: %s}]", giftJobs, reg.ID)
 	}

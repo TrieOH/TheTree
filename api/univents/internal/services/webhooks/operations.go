@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"lib/database"
+	libjobs "lib/jobs"
 	"univents/internal/services/notify"
 	"univents/models"
 	"univents/ports"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
 // Badges is the badge-emission surface the receiver calls on approval and
@@ -35,13 +33,14 @@ type Notifier interface {
 	Notify(ctx context.Context, channel, payload string) error
 }
 
-// River is the checkout-side river surface: cancelling the 10:01 expiry
-// job on approval, and enqueuing the gifted-ticket email inside the approve
-// tx (gifts.send_email) for accountless recipients. Satisfied by
-// *river.Client[pgx.Tx].
-type River interface {
-	JobCancel(ctx context.Context, jobID int64) (*rivertype.JobRow, error)
-	InsertTx(ctx context.Context, tx pgx.Tx, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
+// Jobs is the background-work surface: the gifted-ticket email
+// (gifts.send_email) is enqueued inside the approve tx, before commit, with
+// a delay so it cannot run before the confirmation is visible. Approval
+// does not cancel the purchase's expiry job — a queued message cannot be
+// withdrawn; the expiry worker no-ops on a purchase that is no longer
+// pending. Satisfied by the lib/jobs carriers.
+type Jobs interface {
+	EnqueueAfter(ctx context.Context, job libjobs.Job, delay time.Duration) error
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes
@@ -57,7 +56,7 @@ type Operations struct {
 	participations   ports.ProgramParticipationRepo
 	badges           Badges
 	notifier         Notifier
-	river            River
+	jobs             Jobs
 	tx               database.TxRunner
 	secret           string
 	// cardRaceWait is the D3 wait before re-querying a purchase whose
@@ -76,7 +75,7 @@ func NewOperations(
 	participations ports.ProgramParticipationRepo,
 	badges Badges,
 	notifier Notifier,
-	river River,
+	jobs Jobs,
 	tx database.TxRunner,
 	secret string,
 ) *Operations {
@@ -87,7 +86,7 @@ func NewOperations(
 		participations:   participations,
 		badges:           badges,
 		notifier:         notifier,
-		river:            river,
+		jobs:             jobs,
 		tx:               tx,
 		secret:           secret,
 		cardRaceWait:     time.Second,

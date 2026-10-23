@@ -3,15 +3,14 @@ package webhooks
 import (
 	"context"
 	"encoding/json"
+	"time"
 
-	"lib/database"
 	"lib/telemetry"
 	"univents/internal/services/checkouts/jobs"
 	"univents/internal/services/notify"
 	"univents/models"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -53,7 +52,6 @@ func (o *Operations) approvePending(ctx context.Context, purchase *models.Purcha
 		if updated == nil {
 			return nil // guard missed — already flipped by a concurrent delivery
 		}
-		o.cancelExpiryJob(ctx, updated)
 		return o.flipConfirmed(ctx, updated)
 	})
 }
@@ -98,7 +96,6 @@ func (o *Operations) lateApprove(ctx context.Context, purchase *models.Purchase)
 		if updated == nil {
 			return nil // guard missed — concurrently flipped (re-expired or approved)
 		}
-		o.cancelExpiryJob(ctx, updated)
 		return o.flipConfirmed(ctx, updated)
 	})
 }
@@ -150,43 +147,24 @@ func (o *Operations) flipConfirmed(ctx context.Context, purchase *models.Purchas
 	return nil
 }
 
+// giftEmailDelay holds the gift email back long enough for the approve tx
+// to commit: it is enqueued inside the tx, before commit.
+const giftEmailDelay = 30 * time.Second
+
 // enqueueGiftEmail schedules the gifted-ticket email for an accountless
 // recipient (attendee_user_id NULL) inside the approve tx — the same tx
-// that just confirmed the registration, so the job commits atomically with
-// the confirmation (no email for abandoned or reverted reservations).
-// Account holders are skipped: they see the ticket in my-ticket and get the
-// badge email.
+// that just confirmed the registration. The delay keeps the job from
+// running before the confirmation commits; if the tx rolls back, the job
+// finds the registration unconfirmed and no-ops. Account holders are
+// skipped: they see the ticket in my-ticket and get the badge email.
 func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registration) {
 	if reg.AttendeeUserID != nil {
 		return
 	}
-	tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
-	if !ok {
-		telemetry.Log().Error("webhook: no transaction in context for gift email",
-			zap.String("registration_id", reg.ID.String()))
-		return
-	}
-	_, err := o.river.InsertTx(ctx, tx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, nil)
+	err := o.jobs.EnqueueAfter(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, giftEmailDelay)
 	if err != nil {
 		telemetry.Log().Error("webhook: failed to enqueue gift email",
 			zap.String("registration_id", reg.ID.String()),
-			zap.Error(err))
-	}
-}
-
-// cancelExpiryJob cancels the 10:01 expiry job when the purchase has one
-// (split 7 checkout schedules it; seeded split-4 purchases don't). Best-
-// effort: the expiry worker re-checks status before expiring, so a missed
-// cancellation is harmless.
-func (o *Operations) cancelExpiryJob(ctx context.Context, purchase *models.Purchase) {
-	if purchase.RiverJobID == nil {
-		return
-	}
-	_, err := o.river.JobCancel(ctx, *purchase.RiverJobID)
-	if err != nil {
-		telemetry.Log().Warn("webhook: failed to cancel expiry job",
-			zap.String("purchase_id", purchase.ID.String()),
-			zap.Int64("river_job_id", *purchase.RiverJobID),
 			zap.Error(err))
 	}
 }

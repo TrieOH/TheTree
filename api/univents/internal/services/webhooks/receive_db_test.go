@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 
 	"lib/database"
+	libjobs "lib/jobs"
 	"lib/testdb"
 
 	"univents/internal/repos"
@@ -58,38 +56,24 @@ func (b *recordingBadges) revokedIDs() []uuid.UUID {
 	return append([]uuid.UUID{}, b.revoked...)
 }
 
-// recordingRiver records JobCancel calls and captures InsertTx args (the
-// gifted-ticket email enqueue).
-type recordingRiver struct {
-	mu        sync.Mutex
-	cancelled []int64
-	inserted  []rivertype.JobArgs
+// recordingJobs captures EnqueueAfter args (the gifted-ticket email
+// enqueue).
+type recordingJobs struct {
+	mu       sync.Mutex
+	enqueued []libjobs.Job
 }
 
-func (r *recordingRiver) JobCancel(_ context.Context, id int64) (*rivertype.JobRow, error) {
+func (r *recordingJobs) EnqueueAfter(_ context.Context, job libjobs.Job, _ time.Duration) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.cancelled = append(r.cancelled, id)
-	return &rivertype.JobRow{}, nil
+	r.enqueued = append(r.enqueued, job)
+	return nil
 }
 
-func (r *recordingRiver) InsertTx(_ context.Context, _ pgx.Tx, args river.JobArgs, _ *river.InsertOpts) (*rivertype.JobInsertResult, error) {
+func (r *recordingJobs) insertedArgs() []libjobs.Job {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.inserted = append(r.inserted, args)
-	return &rivertype.JobInsertResult{}, nil
-}
-
-func (r *recordingRiver) ids() []int64 {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return append([]int64{}, r.cancelled...)
-}
-
-func (r *recordingRiver) insertedArgs() []rivertype.JobArgs {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return append([]rivertype.JobArgs{}, r.inserted...)
+	return append([]libjobs.Job{}, r.enqueued...)
 }
 
 type dbFixture struct {
@@ -190,7 +174,7 @@ func seedPendingPurchase(t *testing.T, r *repos.Repos, fx dbFixture, runner data
 	ctx := context.Background()
 	purchaserID := uuid.New()
 	intentID := uuid.New()
-	jobID := int64(99) // a fake river expiry job, as split 7 would schedule
+	jobID := int64(99) // a legacy river expiry job id; nothing reads it now
 	var seed pendingPurchaseSeed
 	seed.intentID = intentID
 
@@ -282,11 +266,11 @@ func TestReceiveDB_ApproveEndToEnd(t *testing.T) {
 	seed := seedPendingPurchase(t, r, fx, runner)
 
 	badges := &recordingBadges{}
-	river := &recordingRiver{}
+	enq := &recordingJobs{}
 	notifier := &recordingNotifier{}
 	ops := webhooks.NewOperations(
 		r.Purchases, r.Registrations, r.Products, r.Programs,
-		badges, notifier, river, runner, testSecret,
+		badges, notifier, enq, runner, testSecret,
 	)
 	ops.SetCardRaceWait(0)
 
@@ -337,19 +321,14 @@ func TestReceiveDB_ApproveEndToEnd(t *testing.T) {
 		t.Fatalf("badge emit = %v, want [%s]", emitted, seed.regID)
 	}
 
-	cancelled := river.ids()
-	if len(cancelled) != 1 || cancelled[0] != 99 {
-		t.Fatalf("river JobCancel = %v, want [99]", cancelled)
-	}
-
 	notifies := notifier.decoded()
 	if len(notifies) != 2 {
 		t.Fatalf("notifications = %d, want 2 (stock + purchase)", len(notifies))
 	}
 
 	// Account holders never get the gift email — no gifts.send_email job.
-	if got := river.insertedArgs(); len(got) != 0 {
-		t.Fatalf("river inserts = %v, want none (attendee has an account)", got)
+	if got := enq.insertedArgs(); len(got) != 0 {
+		t.Fatalf("jobs enqueued = %v, want none (attendee has an account)", got)
 	}
 }
 
@@ -412,10 +391,10 @@ func TestReceiveDB_ApproveGiftEmailOnly(t *testing.T) {
 	}
 
 	badges := &recordingBadges{}
-	river := &recordingRiver{}
+	enq := &recordingJobs{}
 	ops := webhooks.NewOperations(
 		r.Purchases, r.Registrations, r.Products, r.Programs,
-		badges, &recordingNotifier{}, river, runner, testSecret,
+		badges, &recordingNotifier{}, enq, runner, testSecret,
 	)
 	ops.SetCardRaceWait(0)
 
@@ -443,10 +422,10 @@ func TestReceiveDB_ApproveGiftEmailOnly(t *testing.T) {
 		t.Fatalf("badge emit = %v, want [%s] (deferred inside the badges service)", emitted, regID)
 	}
 
-	// The gift email job is enqueued atomically with the confirmation.
-	inserted := river.insertedArgs()
+	// The gift email job is enqueued inside the confirming tx.
+	inserted := enq.insertedArgs()
 	if len(inserted) != 1 {
-		t.Fatalf("river inserts = %d, want 1 (gifts.send_email)", len(inserted))
+		t.Fatalf("jobs enqueued = %d, want 1 (gifts.send_email)", len(inserted))
 	}
 	args, ok := inserted[0].(jobs.SendGiftEmailArgs)
 	if !ok {
@@ -470,11 +449,11 @@ func TestReceiveDB_DuplicateDeliveryIsNoOp(t *testing.T) {
 	seed := seedPendingPurchase(t, r, fx, runner)
 
 	badges := &recordingBadges{}
-	river := &recordingRiver{}
+	enq := &recordingJobs{}
 	notifier := &recordingNotifier{}
 	ops := webhooks.NewOperations(
 		r.Purchases, r.Registrations, r.Products, r.Programs,
-		badges, notifier, river, runner, testSecret,
+		badges, notifier, enq, runner, testSecret,
 	)
 	ops.SetCardRaceWait(0)
 
@@ -518,11 +497,11 @@ func TestReceiveDB_RefundEndToEnd(t *testing.T) {
 	seed := seedPendingPurchase(t, r, fx, runner)
 
 	badges := &recordingBadges{}
-	river := &recordingRiver{}
+	enq := &recordingJobs{}
 	notifier := &recordingNotifier{}
 	ops := webhooks.NewOperations(
 		r.Purchases, r.Registrations, r.Products, r.Programs,
-		badges, notifier, river, runner, testSecret,
+		badges, notifier, enq, runner, testSecret,
 	)
 	ops.SetCardRaceWait(0)
 

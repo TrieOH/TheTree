@@ -24,13 +24,12 @@ import (
 
 	"lib/database"
 	"lib/email"
+	libjobs "lib/jobs"
 	"lib/objectstorage"
 	idx "sdk/identityx"
 	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
 )
 
 // Type and constructor aliases for each feature's operations package.
@@ -101,7 +100,7 @@ func NewOperations(
 	payssageClient *payssage.Client,
 	platformWalletID uuid.UUID,
 	notifier *database.Notifier,
-	riverClient *river.Client[pgx.Tx],
+	jobs libjobs.DelayedEnqueuer,
 	tx database.TxRunner,
 	webhookSecret string,
 ) *Operations {
@@ -115,10 +114,10 @@ func NewOperations(
 		Programs:    NewPrograms(r.Events, r.Editions, r.Programs, r.Occurrences, r.Registrations, r.TicketTypes, r.Programs, authzSvc, notifier, tx),
 		Badges:      badgesOps,
 		Signatures:  NewSignatures(r.Events, r.Editions, r.Signatures, r.SignatureRequests, emailClient, hmacSecret, authzSvc),
-		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, riverClient, authzSvc),
+		Certs:       NewCerts(r.Events, r.Editions, r.Certs, r.Programs, emailClient, jobs, authzSvc),
 		Payments:    NewPayments(r.Events, payssageClient, authzSvc, platformWalletID),
-		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, webhookSecret),
-		Checkouts:   NewCheckouts(r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences, r.Registrations, r.Products, r.Programs, badgesOps, notifier, riverClient, tx, payssageClient, payssageClient, platformWalletID, wsOps, checkouts.NewSDKActorResolver(idxClient.Actors), authzSvc),
+		Webhooks:    NewWebhooks(r.Purchases, r.Registrations, r.Products, r.Programs, badgesOps, notifier, jobs, tx, webhookSecret),
+		Checkouts:   NewCheckouts(r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences, r.Registrations, r.Products, r.Programs, badgesOps, notifier, jobs, tx, payssageClient, payssageClient, platformWalletID, wsOps, checkouts.NewSDKActorResolver(idxClient.Actors), authzSvc),
 		Purchases:   NewPurchases(r.Purchases),
 		WS:          wsOps,
 		Store:       NewStore(r.Purchases, r.Editions, notifier),

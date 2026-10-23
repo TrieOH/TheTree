@@ -8,13 +8,11 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	libjobs "lib/jobs"
 	idx "sdk/identityx"
 	"univents/internal/authz"
 	"univents/internal/services/certifications"
 	"univents/ports"
-
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
 func TestMain(m *testing.M) {
@@ -34,25 +32,24 @@ func ownerCtx() context.Context {
 	})
 }
 
-// recordingRiver captures Insert calls (the emit endpoint's only river use);
-// satisfied by the same shape as *river.Client[pgx.Tx].
-type recordingRiver struct {
-	inserted []rivertype.JobArgs
+// recordingJobs captures Enqueue calls (the emit endpoint's only job use).
+type recordingJobs struct {
+	inserted []libjobs.Job
 }
 
-func (r *recordingRiver) Insert(_ context.Context, args river.JobArgs, _ *river.InsertOpts) (*rivertype.JobInsertResult, error) {
-	r.inserted = append(r.inserted, args)
-	return &rivertype.JobInsertResult{}, nil
+func (r *recordingJobs) Enqueue(_ context.Context, job libjobs.Job) error {
+	r.inserted = append(r.inserted, job)
+	return nil
 }
 
 // newOps builds a certifications Operations for the emit path: mocked
-// programs/editions/event repos (authz), the given river seam, and nil for
+// programs/editions/event repos (authz), the given jobs seam, and nil for
 // everything the emit path never touches (events, certs, email).
 func newOps(
 	programs ports.ProgramRepo,
 	editions ports.EditionRepo,
 	authzEvents ports.EventRepo,
-	river certifications.River,
+	enq certifications.Jobs,
 ) *certifications.Operations {
-	return certifications.NewOperations(nil, editions, nil, programs, nil, river, authz.New(authzEvents))
+	return certifications.NewOperations(nil, editions, nil, programs, nil, enq, authz.New(authzEvents))
 }
