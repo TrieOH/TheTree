@@ -22,7 +22,6 @@ import (
 	"univents/models"
 
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -120,9 +119,7 @@ func TestSendGiftEmail_SendsToAccountlessRecipient(t *testing.T) {
 	sender := &recordingSender{}
 	worker := newGiftWorker(t, r, sender)
 
-	err := worker.Work(context.Background(), &river.Job[jobs.SendGiftEmailArgs]{
-		Args: jobs.SendGiftEmailArgs{RegistrationID: reg.ID},
-	})
+	err := worker.Work(context.Background(), jobs.SendGiftEmailArgs{RegistrationID: reg.ID})
 	if err != nil {
 		t.Fatalf("Work: %v", err)
 	}
@@ -161,9 +158,7 @@ func TestSendGiftEmail_SkipsClaimedRegistration(t *testing.T) {
 	sender := &recordingSender{}
 	worker := newGiftWorker(t, r, sender)
 
-	err := worker.Work(context.Background(), &river.Job[jobs.SendGiftEmailArgs]{
-		Args: jobs.SendGiftEmailArgs{RegistrationID: reg.ID},
-	})
+	err := worker.Work(context.Background(), jobs.SendGiftEmailArgs{RegistrationID: reg.ID})
 	if err != nil {
 		t.Fatalf("Work: %v", err)
 	}
@@ -188,9 +183,7 @@ func TestSendGiftEmail_SkipsUnconfirmedRegistration(t *testing.T) {
 	sender := &recordingSender{}
 	worker := newGiftWorker(t, r, sender)
 
-	err = worker.Work(context.Background(), &river.Job[jobs.SendGiftEmailArgs]{
-		Args: jobs.SendGiftEmailArgs{RegistrationID: reg.ID},
-	})
+	err = worker.Work(context.Background(), jobs.SendGiftEmailArgs{RegistrationID: reg.ID})
 	if err != nil {
 		t.Fatalf("Work: %v", err)
 	}
@@ -200,7 +193,7 @@ func TestSendGiftEmail_SkipsUnconfirmedRegistration(t *testing.T) {
 }
 
 // TestSendGiftEmail_RetriesOnSendFailure pins the retry contract: a send
-// failure is returned so River retries with backoff.
+// failure is returned so the job carrier retries with backoff.
 func TestSendGiftEmail_RetriesOnSendFailure(t *testing.T) {
 	pool := testdb.Postgres(t, "../../../../db/migrations")
 	q := sqlc.New(pool)
@@ -210,9 +203,7 @@ func TestSendGiftEmail_RetriesOnSendFailure(t *testing.T) {
 	sender := &recordingSender{failAt: 1}
 	worker := newGiftWorker(t, r, sender)
 
-	err := worker.Work(context.Background(), &river.Job[jobs.SendGiftEmailArgs]{
-		Args: jobs.SendGiftEmailArgs{RegistrationID: reg.ID},
-	})
+	err := worker.Work(context.Background(), jobs.SendGiftEmailArgs{RegistrationID: reg.ID})
 	if err == nil {
 		t.Fatal("Work: err = nil, want the send error (River retries)")
 	}
@@ -268,9 +259,7 @@ func TestSendGiftEmail_DeliversViaSMTP(t *testing.T) {
 	sender := email.NewClient(email.Config{Host: host, Port: smtpPortNum, From: "univents@test", TLS: false})
 	worker := jobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, sender)
 
-	err = worker.Work(ctx, &river.Job[jobs.SendGiftEmailArgs]{
-		Args: jobs.SendGiftEmailArgs{RegistrationID: reg.ID},
-	})
+	err = worker.Work(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID})
 	if err != nil {
 		t.Fatalf("Work: %v", err)
 	}

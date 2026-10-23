@@ -188,8 +188,8 @@ func TestMyTicket_ClaimsGiftByEmail(t *testing.T) {
 	// The gift email job was enqueued at confirmation; the badge was not
 	// emitted for real (the free-order emit call happens, but the real
 	// service skips accountless registrations).
-	if len(fs.river.giftEmailArgs()) != 1 {
-		t.Fatalf("gifts.send_email jobs = %d, want 1", len(fs.river.giftEmailArgs()))
+	if len(fs.jobs.giftEmailArgs()) != 1 {
+		t.Fatalf("gifts.send_email jobs = %d, want 1", len(fs.jobs.giftEmailArgs()))
 	}
 
 	// The recipient created their account under the gifted email after the

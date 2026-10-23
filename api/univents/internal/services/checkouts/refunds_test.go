@@ -34,7 +34,7 @@ func newRefundOps(t *testing.T) (*repos.Repos, *checkouts.Operations, *fakes, fi
 	fs := &fakes{
 		badges:   &fakeBadges{},
 		notifier: &fakeNotifier{},
-		river:    &fakeRiver{},
+		jobs:     &fakeJobs{},
 		tokens:   &fakeTokens{},
 		payssage: ps,
 		actors:   newFakeActors(),
@@ -42,7 +42,7 @@ func newRefundOps(t *testing.T) (*repos.Repos, *checkouts.Operations, *fakes, fi
 	ops := checkouts.NewOperations(
 		r.Purchases, r.Editions, r.Events, r.TicketTypes, r.Products, r.Programs, r.Occurrences,
 		r.Registrations, r.Products, r.Programs,
-		fs.badges, fs.notifier, fs.river, tx,
+		fs.badges, fs.notifier, fs.jobs, tx,
 		nil, ps, walletID, fs.tokens, fs.actors, authz.New(r.Events),
 	)
 	fx := seedStore(t, r)

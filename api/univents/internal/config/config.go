@@ -5,6 +5,7 @@ import (
 	"lib/database"
 	"lib/email"
 	"lib/errx"
+	"lib/httpserver"
 
 	idx "sdk/identityx"
 
@@ -18,9 +19,6 @@ type Config struct {
 	libconfig.CORS
 
 	Postgres libconfig.Postgres `envPrefix:"UNIVENTS_"`
-
-	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
 
 	// Profiling
 	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
@@ -56,14 +54,28 @@ type Config struct {
 
 	// Webhook HMAC
 	HmacSecret string `env:"HMAC_SECRET,required"`
+
+	// Background jobs. Empty: run them in-process (local compose). Set: POST
+	// them to this queue producer, which delivers them back to /events.
+	JobsURL string `env:"JOBS_URL"`
 }
 
 func (cfg Config) ToIdentityXConfig() idx.Config {
 	return libconfig.IdentityXConfig(cfg.IdentityX, cfg.DebugMode)
 }
 
+// ToDBConfig is the connection only: the schema is migrated outside the
+// API process (`just univents-goose`).
 func (cfg Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
+	return libconfig.DBConnectionConfig(cfg.Postgres)
+}
+
+func (cfg Config) ToRateLimit() httpserver.RateLimit {
+	return httpserver.RateLimit{
+		Disabled: cfg.DisableRateLimit,
+		RPS:      cfg.RateLimitRPS,
+		Burst:    cfg.RateLimitBurst,
+	}
 }
 
 func (cfg Config) ToEmailConfig() email.Config {

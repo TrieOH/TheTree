@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"lib/database"
+	libjobs "lib/jobs"
 	"univents/internal/authz"
 	"univents/internal/services/notify"
 	"univents/models"
@@ -18,9 +19,6 @@ import (
 	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 )
 
 // defaultIntentAttempts / defaultIntentRetryDelay are the resume's intent
@@ -69,12 +67,13 @@ type Notifier interface {
 	Notify(ctx context.Context, channel, payload string) error
 }
 
-// River is the expiry-job scheduling surface: river.InsertTx inside the
-// checkout tx (payssage's dispatchDeliveries pattern) so the job + purchase
-// commit atomically — no orphan job on rollback, no job before the purchase
-// is visible. Satisfied by *river.Client[pgx.Tx].
-type River interface {
-	InsertTx(ctx context.Context, tx pgx.Tx, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error)
+// Jobs is the background-work surface: the expiry and gift-email jobs are
+// enqueued inside the checkout tx, before commit, with a delay — the job
+// cannot run before the purchase is visible, a failed enqueue fails the
+// checkout, and a rolled-back checkout leaves a job that finds nothing and
+// no-ops. Satisfied by the lib/jobs carriers.
+type Jobs interface {
+	EnqueueAfter(ctx context.Context, job libjobs.Job, delay time.Duration) error
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes
@@ -94,7 +93,7 @@ type Operations struct {
 	participations   ports.ProgramParticipationRepo
 	badges           Badges
 	notifier         Notifier
-	river            River
+	jobs             Jobs
 	tx               database.TxRunner
 	intents          IntentClient // resume (split 5)
 	payssage         PayssageClient
@@ -122,7 +121,7 @@ func NewOperations(
 	participations ports.ProgramParticipationRepo,
 	badges Badges,
 	notifier Notifier,
-	river River,
+	jobs Jobs,
 	tx database.TxRunner,
 	intents IntentClient,
 	payssage PayssageClient,
@@ -144,7 +143,7 @@ func NewOperations(
 		participations:   participations,
 		badges:           badges,
 		notifier:         notifier,
-		river:            river,
+		jobs:             jobs,
 		tx:               tx,
 		intents:          intents,
 		payssage:         payssage,

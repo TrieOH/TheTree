@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"lib/database"
 	"lib/telemetry"
 
 	"univents/internal/services/checkouts/jobs"
@@ -21,15 +20,12 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
-	"github.com/riverqueue/river/rivertype"
 	"go.uber.org/zap"
 )
 
 // reservationDuration is how long an unpaid reservation is held: 10:01 (the
 // master plan's expiry budget). The purchase's expires_at and the expiry
-// job's ScheduledAt share this one value.
+// job's delay share this one value.
 const reservationDuration = 10*time.Minute + time.Second
 
 // Payment method vocabulary from the checkout request (mirrors the spec).
@@ -152,7 +148,7 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 
 	// 3. Tx 1: lock the item rows, recompute prices, check availability,
 	//    create the purchase + items + materialized rows, schedule the
-	//    expiry job (river.InsertTx), issue the ws token — commit.
+	//    expiry job (delayed, enqueued before commit), issue the ws token — commit.
 	res, err := o.reserve(ctx, editionID, purchaserID, lines, in)
 	if err != nil {
 		return nil, err
@@ -204,7 +200,7 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 // deterministic order (no deadlocks), recomputes prices from the DB,
 // enforces availability, and materializes the purchase — the purchase row,
 // its purchase_items, the materialized registrations / product_purchases /
-// program_participations, the expiry river job (paid orders), and the
+// program_participations, the delayed expiry job (paid orders), and the
 // one-time ws token — all in one tx. Free orders branch inside: approved +
 // rows confirmed (+ badge emit), no job.
 func (o *Operations) reserve(ctx context.Context, editionID, purchaserID uuid.UUID, lines []CheckoutLine, in CheckoutInput) (*reservation, error) {
@@ -273,15 +269,10 @@ func (o *Operations) reserve(ctx context.Context, editionID, purchaserID uuid.UU
 		res.items = items
 
 		if !free {
-			job, err := o.insertExpiryJob(ctx, created.ID, expiresAt)
+			err = o.enqueueExpiry(ctx, created.ID, expiresAt)
 			if err != nil {
 				return err
 			}
-			updated, err := o.purchases.UpdateRiverJobID(ctx, created.ID, job.Job.ID)
-			if err != nil {
-				return err
-			}
-			res.purchase = updated
 		}
 
 		raw, tokenExp, err := o.tokens.IssueToken(ctx, created.ID, purchaserID)
@@ -591,22 +582,21 @@ func oneTicketPerPersonError(field, message string) error {
 	}).Conflict()
 }
 
+// giftEmailDelay holds the gift email back long enough for the confirming
+// tx to commit: it is enqueued inside the tx, before commit.
+const giftEmailDelay = 30 * time.Second
+
 // enqueueGiftEmail schedules the gifted-ticket email for an accountless
 // free-order recipient inside the checkout tx (the registration is already
-// confirmed at checkout — the gift email and the confirmation commit
-// atomically). Account holders are skipped: they see the ticket in
-// my-ticket and get the badge email.
+// confirmed at checkout). The delay keeps the job from running before the
+// confirmation commits; on rollback it finds no registration and no-ops.
+// Account holders are skipped: they see the ticket in my-ticket and get
+// the badge email.
 func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registration) {
 	if reg.AttendeeUserID != nil {
 		return
 	}
-	tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
-	if !ok {
-		telemetry.Log().Error("checkout: no transaction in context for gift email",
-			zap.String("registration_id", reg.ID.String()))
-		return
-	}
-	_, err := o.river.InsertTx(ctx, tx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, nil)
+	err := o.jobs.EnqueueAfter(ctx, jobs.SendGiftEmailArgs{RegistrationID: reg.ID}, giftEmailDelay)
 	if err != nil {
 		telemetry.Log().Error("checkout: failed to enqueue gift email",
 			zap.String("registration_id", reg.ID.String()),
@@ -614,15 +604,17 @@ func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registrat
 	}
 }
 
-// insertExpiryJob enqueues the purchases.expire job inside the checkout tx
-// (river.InsertTx against the tx from context — the payssage
-// dispatchDeliveries pattern), so the job + purchase commit atomically.
-func (o *Operations) insertExpiryJob(ctx context.Context, purchaseID uuid.UUID, scheduledAt time.Time) (*rivertype.JobInsertResult, error) {
-	tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx)
-	if !ok {
-		return nil, fun.Err("checkout: no transaction in context").Internal()
+// enqueueExpiry enqueues the purchases.expire job inside the checkout tx,
+// before commit, delayed to the purchase's expires_at. The delay means it
+// cannot run before the purchase is visible; an enqueue failure fails the
+// checkout; a rolled-back checkout leaves a job that finds no purchase and
+// no-ops.
+func (o *Operations) enqueueExpiry(ctx context.Context, purchaseID uuid.UUID, expiresAt time.Time) error {
+	err := o.jobs.EnqueueAfter(ctx, jobs.ExpirePurchaseArgs{PurchaseID: purchaseID}, time.Until(expiresAt))
+	if err != nil {
+		return fun.Errf("checkout: enqueue expiry: %v", err).Internal()
 	}
-	return o.river.InsertTx(ctx, tx, jobs.ExpirePurchaseArgs{PurchaseID: purchaseID}, &river.InsertOpts{ScheduledAt: scheduledAt})
+	return nil
 }
 
 // attachIntent stores the intent on the purchase in a second, short

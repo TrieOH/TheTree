@@ -1,4 +1,4 @@
-// Package jobs holds the checkout-side River workers (split 7): the
+// Package jobs holds the checkout-side workers (split 7): the
 // purchases.expire job that frees unpaid reservations.
 package jobs
 
@@ -13,8 +13,8 @@ import (
 	"univents/models"
 	"univents/ports"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -36,12 +36,10 @@ type Notifier interface {
 }
 
 // ExpirePurchaseWorker expires unpaid purchases. Idempotent: it re-checks
-// the purchase status first (approve cancels the job best-effort; this
-// worker is the backstop — a purchase already approved/cancelled/expired is
-// a no-op). Double-run safe by the same guard.
+// the purchase status first, so a purchase already approved, cancelled or
+// expired is a no-op — that is how approval "cancels" the expiry, since a
+// queued message cannot be withdrawn. Double-run safe by the same guard.
 type ExpirePurchaseWorker struct {
-	river.WorkerDefaults[ExpirePurchaseArgs]
-
 	purchases        ports.PurchaseRepo
 	registrations    ports.RegistrationRepo
 	productPurchases ports.ProductPurchaseRepo
@@ -72,17 +70,22 @@ func NewExpirePurchaseWorker(
 // rows flipped (registrations → expired, product_purchases → expired,
 // program_participations → cancelled — there is no expired status), NOTIFY
 // after commit. Returns nil for already-terminal purchases.
-func (w *ExpirePurchaseWorker) Work(ctx context.Context, job *river.Job[ExpirePurchaseArgs]) error {
+func (w *ExpirePurchaseWorker) Work(ctx context.Context, args ExpirePurchaseArgs) error {
 	ctx, span := telemetry.StartSpan(ctx, "ExpirePurchaseWorker.Work")
 	defer span.End()
 
-	purchase, err := w.purchases.GetByID(ctx, job.Args.PurchaseID)
+	purchase, err := w.purchases.GetByID(ctx, args.PurchaseID)
 	if err != nil {
-		return err // missing purchase is genuinely broken — let River retry
+		if fun.Is(err, fun.CodeNotFound) {
+			// The job is enqueued inside the checkout tx, before commit; a
+			// rolled-back checkout leaves a job for a purchase that never
+			// existed. Nothing to expire.
+			return nil
+		}
+		return err // the database is unreachable — retry
 	}
 	if purchase.Status != models.PurchaseStatusPending {
-		// Already approved/cancelled/expired — approve cancelled the job
-		// best-effort; this run is the backstop and has nothing to do.
+		// Already approved/cancelled/expired — nothing to do.
 		telemetry.Log().Info("expiry: purchase not pending — no-op",
 			zap.String("purchase_id", purchase.ID.String()),
 			zap.String("status", string(purchase.Status)))

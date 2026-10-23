@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 
 	"lib/database"
 	"lib/testdb"
@@ -188,10 +187,7 @@ func newWorker(t *testing.T) (*repos.Repos, *jobs.ExpirePurchaseWorker, *recordi
 
 func run(t *testing.T, w *jobs.ExpirePurchaseWorker, purchaseID uuid.UUID) error {
 	t.Helper()
-	job := &river.Job[jobs.ExpirePurchaseArgs]{
-		Args: jobs.ExpirePurchaseArgs{PurchaseID: purchaseID},
-	}
-	return w.Work(context.Background(), job)
+	return w.Work(context.Background(), jobs.ExpirePurchaseArgs{PurchaseID: purchaseID})
 }
 
 // TestExpire_PendingExpires pins the expiry path: purchase → expired,
@@ -301,5 +297,21 @@ func TestExpire_DoubleRunIsIdempotent(t *testing.T) {
 	}
 	if persisted.Status != models.PurchaseStatusExpired {
 		t.Fatalf("status = %s, want expired", persisted.Status)
+	}
+}
+
+// TestExpire_MissingPurchaseIsNoOp pins the rollback contract: the expiry
+// job is enqueued inside the checkout tx, before commit, so a rolled-back
+// checkout leaves a job for a purchase that never existed — a no-op, not a
+// retry.
+func TestExpire_MissingPurchaseIsNoOp(t *testing.T) {
+	_, w, notifier := newWorker(t)
+
+	err := run(t, w, uuid.New())
+	if err != nil {
+		t.Fatalf("expire missing purchase: %v, want nil", err)
+	}
+	if got := notifier.count(); got != 0 {
+		t.Fatalf("notifications = %d, want 0", got)
 	}
 }

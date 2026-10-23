@@ -40,9 +40,8 @@ func (o *Operations) EmitCertsForProgram(ctx context.Context, programID uuid.UUI
 		return err
 	}
 
-	_, err = o.river.Insert(ctx, jobs.GrantCertsForOccurrenceArgs{
+	return o.jobs.Enqueue(ctx, jobs.GrantCertsForOccurrenceArgs{
 		EditionID: program.EditionID,
 		ProgramID: program.ID,
-	}, nil)
-	return err
+	})
 }
