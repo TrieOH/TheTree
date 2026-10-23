@@ -1,0 +1,30 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "informd-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-19",
+	"observability": { "enabled": true },
+	"routes": [{ "pattern": "api.informd.trieoh.com", "custom_domain": true }],
+
+	"containers": [
+		{
+			"class_name": "InformdContainer",
+			"image": "../Dockerfile",
+			// The Dockerfile copies the Go workspace, so it builds from the repo root.
+			"image_build_context": "../../..",
+			"instance_type": "basic",
+			"max_instances": 3,
+			// Next to Neon (São Paulo).
+			"constraints": { "regions": ["SAM"] }
+		}
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "INFORMD", "class_name": "InformdContainer" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["InformdContainer"] }]
+
+	// Config: none lives here. The whole Informd env (the same keys as
+	// api/informd/.example.env) is the INFORMD_API_ENV GitHub secret,
+	// uploaded by deploy.yml with --secrets-file. Every string binding is
+	// passed to the container as an environment variable.
+}
