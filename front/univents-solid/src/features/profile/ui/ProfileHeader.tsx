@@ -9,7 +9,7 @@ import SettingsIcon from "~icons/lucide/settings";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { UniventsProfile } from "../model/profile-data";
 import { ProfileShareButton } from "./ProfileShareButton";
-import type { ProfileTab } from "./profile-tabs";
+import { PROFILE_TABS, PROFILE_TAB_LABELS, type ProfileTab } from "../model/profile-tabs";
 
 const Calendar = CalendarIcon as unknown as (p: {
   class?: string;
@@ -102,8 +102,8 @@ export function ProfileHeader(props: {
       </div>
       <div class="relative mx-auto max-w-7xl">
         <nav class="flex overflow-x-auto px-4 pr-12 sm:pr-4">
-          <For each={tabs(props.ownProfile)}>
-            {([tab, label]) => (
+          <For each={PROFILE_TABS.filter((tab) => props.ownProfile || tab === "about" || tab === "badges")}>
+            {(tab) => (
               <button
                 type="button"
                 class={cn(
@@ -114,7 +114,7 @@ export function ProfileHeader(props: {
                 )}
                 onClick={() => props.onTabChange(tab)}
               >
-                {label}
+                {PROFILE_TAB_LABELS[tab]}
               </button>
             )}
           </For>
@@ -128,19 +128,6 @@ export function ProfileHeader(props: {
       </div>
     </section>
   );
-}
-
-function tabs(own: boolean): [ProfileTab, string][] {
-  return [
-    ["about", "Sobre"],
-    ["badges", "Crachás"],
-    ...(own
-      ? [
-        ["certificates", "Certificados"],
-        ["purchases", "Compras"],
-      ]
-      : []),
-  ] as [ProfileTab, string][];
 }
 
 function Identity(props: {

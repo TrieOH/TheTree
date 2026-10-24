@@ -14,7 +14,7 @@ import { PurchasesContent } from "@/features/purchases/ui/PurchasesContent";
 import { ProfileCollectionItem } from "./ProfileCollectionItem";
 import { ProfileCard } from "./ProfileCard";
 import { ProfileEmptyState } from "./ProfileEmptyState";
-import type { ProfileTab } from "./profile-tabs";
+import { PROFILE_TAB_LABELS, type ProfileTab } from "../model/profile-tabs";
 
 export function ProfileTabContent(props: {
   tab: Exclude<ProfileTab, "about">;
@@ -95,7 +95,7 @@ export function ProfileTabContent(props: {
                   when={props.tab === "badges"}
                   fallback={
                     <div class="mx-auto mt-5 max-w-7xl px-4">
-                      <ProfileCard title={tabTitle(props.tab)}>
+                      <ProfileCard title={PROFILE_TAB_LABELS[props.tab]}>
                         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           <For each={collectItems(data())}>
                             {(item) => (
@@ -146,13 +146,6 @@ export function ProfileTabContent(props: {
   );
 }
 
-const tabTitle = (tab: Exclude<ProfileTab, "about">) =>
-  tab === "badges"
-    ? "Crachás"
-    : tab === "certificates"
-      ? "Certificados"
-      : "Compras";
-
 function collectItems(data: unknown): unknown[] {
   if (Array.isArray(data)) return data;
   if (data && typeof data === "object") {
@@ -164,7 +157,7 @@ function collectItems(data: unknown): unknown[] {
 function CollectionSkeleton(props: { tab: ProfileTab }) {
   return (
     <div class="mx-auto mt-5 max-w-7xl px-4">
-      <ProfileCard title={tabTitle(props.tab as Exclude<ProfileTab, "about">)}>
+      <ProfileCard title={PROFILE_TAB_LABELS[props.tab]}>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div class="h-44 rounded-md bg-muted animate-pulse" />
           <div class="h-44 rounded-md bg-muted animate-pulse" />

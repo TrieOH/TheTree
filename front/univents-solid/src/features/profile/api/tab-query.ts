@@ -1,32 +1,38 @@
-import type { QueryObserverOptions } from "@tanstack/query-core";
-import type {
-  BadgeProfileGroups,
-  Certification,
-} from "@trieoh/univents-api/schemas";
+import type { QueryClient } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
+import { myPurchasesQueryOptions } from "@/features/purchases/api";
+import type { ActorProfile } from "../model/profile-data";
+import type { ProfileTab } from "../model/profile-tabs";
+import { profileDetailQueryOptions, type ProfileApi } from "./queries";
 import { profileKeys } from "./query-keys";
 
-export type ProfileTab = "badges" | "certificates" | "purchases";
-export type ProfileTabData = BadgeProfileGroups | Certification[] | unknown[];
+/** Prepare the same cache entries consumed by the collection components. */
+export async function prefetchProfileTab(
+  client: QueryClient,
+  options: { tab: ProfileTab; identifier: string; viewerId?: string; auth: ProfileApi },
+) {
+  const { tab, identifier, viewerId, auth } = options;
+  if (tab === "about") return;
 
-export function profileTabQueryOptions(
-  tab: ProfileTab,
-  actorId: string,
-  ownProfile: boolean,
-): QueryObserverOptions<ProfileTabData, Error> {
-  return {
-    queryKey: profileKeys.tab(tab, actorId, ownProfile),
-    enabled: tab === "badges" || (ownProfile && tab === "certificates"),
-    queryFn: () => {
-      if (tab === "badges") {
-        return userBadgesQueryOptions(actorId).queryFn();
-      }
-      if (!ownProfile) return [];
-      if (tab === "certificates") {
-        return myCertificationsQueryOptions().queryFn();
-      }
-      return [];
-    },
-  };
+  if (tab === "badges") {
+    await client.prefetchQuery(profileDetailQueryOptions(identifier, auth));
+    const profile = client.getQueryData<ActorProfile>(profileKeys.detail(identifier));
+    if (profile?.actor_id) {
+      await client.prefetchQuery(userBadgesQueryOptions(profile.actor_id));
+    }
+    return;
+  }
+
+  const viewerProfile = viewerId
+    ? client.getQueryData<ActorProfile>(profileKeys.detail(viewerId))
+    : undefined;
+  const own = viewerId && (identifier === viewerId || identifier === viewerProfile?.handle);
+  if (!own) return;
+
+  if (tab === "certificates") {
+    await client.prefetchQuery(myCertificationsQueryOptions());
+  } else {
+    await client.prefetchQuery(myPurchasesQueryOptions());
+  }
 }

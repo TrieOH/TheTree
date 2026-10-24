@@ -4,25 +4,31 @@ import { createMemo } from "solid-js";
 import z from "zod";
 import { setOwnProfilePath } from "@/features/profile/lib/own-profile-path";
 import { ProfileView } from "@/features/profile/ui/ProfileView";
-
-const PROFILE_TAB_TITLES: Record<string, string> = {
-  about: "Perfil",
-  badges: "Crachás",
-  certificates: "Certificados",
-  purchases: "Compras",
-};
+import { loadProfile as fetchProfile, prefetchProfileTab } from "@/features/profile/api";
+import { PROFILE_TABS, PROFILE_TAB_LABELS } from "@/features/profile/model/profile-tabs";
+import { appQueryClient } from "@/shared/lib/query-client";
 
 export const Route = createFileRoute("/profile/$actorId/")({
   validateSearch: z.object({
     tab: z
-      .enum(["about", "badges", "certificates", "purchases"])
+      .enum(PROFILE_TABS)
       .catch("about"),
   }),
+  loaderDeps: ({ search }) => ({ tab: search.tab }),
+  loader: ({ deps, params, context }) => {
+    const auth = context.session?.service;
+    if (auth) return prefetchProfileTab(appQueryClient, {
+      tab: deps.tab,
+      identifier: params.actorId,
+      viewerId: auth.profile()?.id,
+      auth,
+    });
+  },
   // `head` receives the match, so changing the tab changes the title too.
   head: ({ match, params }) => ({
     meta: [
       {
-        title: `${PROFILE_TAB_TITLES[match.search.tab] ?? "Perfil"} de ${params.actorId} - Univents`,
+        title: `${match.search.tab === "about" ? "Perfil" : PROFILE_TAB_LABELS[match.search.tab]} de ${params.actorId} - Univents`,
       },
     ],
   }),
@@ -39,36 +45,14 @@ function RouteComponent() {
 
   const viewerActorId = createMemo(() => auth.profile()?.id);
 
-  const isOwn = createMemo(() => {
-    const viewerId = viewerActorId();
-    const actorParam = params().actorId;
-    if (viewerId && actorParam === viewerId) return true;
-    const authProfile = auth.profile();
-    if (
-      authProfile &&
-      "handle" in authProfile &&
-      typeof authProfile.handle === "string" &&
-      actorParam === authProfile.handle
-    ) {
-      return true;
-    }
-    return false;
-  });
-
   const loadProfile = async (identifier: string) => {
-    const isActorId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
-      identifier,
-    );
-
-    const response = isActorId
-      ? await auth.getActorProfile(identifier)
-      : await auth.getProfileByHandle(identifier);
+    const response = await fetchProfile(identifier, auth);
 
     if (!response.success) return response;
 
     const handle = response.data?.handle;
 
-    if (isActorId && handle && handle !== identifier) {
+    if (identifier === response.data?.actor_id && handle && handle !== identifier) {
       await navigate({
         to: "/profile/$actorId",
         params: {
@@ -94,7 +78,6 @@ function RouteComponent() {
     <ProfileView
       actorId={params().actorId}
       loadProfile={loadProfile}
-      ownProfile={isOwn}
       viewerActorId={viewerActorId}
       activeTab={search().tab}
       onTabChange={(nextTab) => {
@@ -108,6 +91,7 @@ function RouteComponent() {
           search: {
             tab: nextTab,
           },
+          resetScroll: false,
         });
       }}
     />

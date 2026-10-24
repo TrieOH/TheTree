@@ -17,7 +17,7 @@ import { ProfileEmptyState } from "./ProfileEmptyState";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileSkeleton } from "./ProfileSkeleton";
 import { ProfileTabContent } from "./ProfileTabContent";
-import type { ProfileTab } from "./profile-tabs";
+import type { ProfileTab } from "../model/profile-tabs";
 
 export interface ProfileViewProps {
   actorId: string;

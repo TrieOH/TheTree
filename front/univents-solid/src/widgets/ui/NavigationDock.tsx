@@ -1,6 +1,5 @@
-import { useLocation, useNavigate } from '@tanstack/solid-router';
+import { useLocation, useNavigate, useRouter } from '@tanstack/solid-router';
 import { useAuth } from '@trieoh/identityx-sdk-ts-solid';
-import { Dynamic } from '@solidjs/web';
 import {
   animate,
   mapValue,
@@ -120,13 +119,14 @@ function DesktopNavItem(props: {
   isActive: boolean;
   isAdmin: boolean;
   onClick: () => void;
+  onIntent: () => void;
   mouseX: NumericMotionValue;
 }) {
   let buttonRef: HTMLButtonElement | undefined;
   let iconRef: HTMLDivElement | undefined;
   let ringRef: HTMLDivElement | undefined;
   let tapAnimation: ReturnType<typeof animate> | undefined;
-  const icon = untrack(() => props.item.icon);
+  const Icon = untrack(() => props.item.icon);
   const mouseX = untrack(() => props.mouseX);
 
   const distance = transformValue(() => {
@@ -201,6 +201,8 @@ function DesktopNavItem(props: {
       <button
         ref={(element) => { buttonRef = element; }}
         type="button"
+        onPointerEnter={() => props.onIntent()}
+        onFocus={() => props.onIntent()}
         onPointerDown={() => {
           if (!buttonRef) return;
 
@@ -262,7 +264,7 @@ function DesktopNavItem(props: {
           }}
           class="flex items-center justify-center [&>svg]:h-full [&>svg]:w-full"
         >
-          <Dynamic component={icon} />
+          <Icon />
         </div>
       </button>
     </Tooltip>
@@ -280,7 +282,7 @@ function MobileNavItem(props: {
   let iconRef: HTMLDivElement | undefined;
   let tapAnimation: ReturnType<typeof animate> | undefined;
 
-  const icon = untrack(() => props.item.icon);
+  const Icon = untrack(() => props.item.icon);
 
   const iconTarget = motionValue(
     untrack(() => (props.isActive ? 1 : 0)),
@@ -374,7 +376,7 @@ function MobileNavItem(props: {
             'stroke-width': props.isActive ? '2.4' : '2',
           }}
         >
-          <Dynamic component={icon} />
+          <Icon />
         </div>
 
         <span
@@ -403,6 +405,7 @@ export function NavigationDock(props: NavigationDockProps) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const pathname = () => location().pathname;
   const locked = () => pathname() === '/profile/setup';
@@ -432,6 +435,13 @@ export function NavigationDock(props: NavigationDockProps) {
 
     return activeItem?.id ?? '';
   });
+
+  const preload = (item: NavItemType) => {
+    if (locked() || !item.href || item.onClick) return;
+    void router.preloadRoute({ to: item.href }).catch(() => {
+      // Navigation owns error handling; an intent preload is best effort.
+    });
+  };
 
   const handleNavigate = (item: NavItemType) => {
     if (locked() && !item.onClick) return;
@@ -552,6 +562,7 @@ export function NavigationDock(props: NavigationDockProps) {
                     isAdmin={isAdmin()}
                     onClick={() => handleNavigate(item)}
                     mouseX={mouseX}
+                    onIntent={() => preload(item)}
                   />
                 )}
               </For>

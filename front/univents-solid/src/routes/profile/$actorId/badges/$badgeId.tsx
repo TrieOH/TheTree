@@ -1,19 +1,18 @@
 import type { JSX } from "@solidjs/web";
 import { Link, createFileRoute } from "@tanstack/solid-router";
-import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { Show, createMemo } from "solid-js";
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
 import Loader2Icon from "~icons/lucide/loader-2";
 
-import { badgeKeys, userBadgesQueryOptions } from "@/features/badges/api";
+import { userBadgesQueryOptions } from "@/features/badges/api";
 import { allProfileBadges, badgeDesignSchema } from "@/features/badges/model";
-import type { BadgeProfileGroups } from "@/features/badges/model";
 import { BadgePreview } from "@/features/badges/ui/BadgePreview";
 import { editionLocationQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import type { EventI } from "@/features/events/model";
-import { profileDetailQueryOptions, profileKeys } from "@/features/profile/api";
+import { profileDetailQueryOptions } from "@/features/profile/api";
 import { asUniventsProfile } from "@/features/profile/model/profile-data";
 
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -26,7 +25,6 @@ export const Route = createFileRoute("/profile/$actorId/badges/$badgeId")({
 function ProfileBadgePage(): JSX.Element {
   const params = Route.useParams();
   const { auth } = useAuth();
-  const queryClient = useQueryClient();
 
   const profileQuery = useQuery(() =>
     profileDetailQueryOptions(params().actorId, auth),
@@ -53,24 +51,7 @@ function ProfileBadgePage(): JSX.Element {
     enabled: Boolean(actorProfileId()),
   }));
 
-  const badgeGroups = createMemo(() => {
-    if (badgesQuery().data) return badgesQuery().data;
-    const actorId = actorProfileId();
-    if (!actorId) return undefined;
-    const cachedDirect = queryClient.getQueryData<BadgeProfileGroups>(
-      badgeKeys.user(actorId),
-    );
-    if (cachedDirect) return cachedDirect;
-    const cachedOwn = queryClient.getQueryData<BadgeProfileGroups>(
-      profileKeys.tab("badges", actorId, true),
-    );
-    if (cachedOwn) return cachedOwn;
-    const cachedPublic = queryClient.getQueryData<BadgeProfileGroups>(
-      profileKeys.tab("badges", actorId, false),
-    );
-    if (cachedPublic) return cachedPublic;
-    return undefined;
-  });
+  const badgeGroups = () => badgesQuery().data;
 
   const badge = createMemo(() => {
     const groups = badgeGroups();

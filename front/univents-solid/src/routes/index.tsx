@@ -25,60 +25,11 @@ function HomePage() {
   const mode = () => search().as;
   let content!: HTMLDivElement;
 
-  const revealSections = () => {
-    if (!content) return;
-    const sections = content.querySelectorAll<HTMLElement>("section");
-    const items = content.querySelectorAll<HTMLElement>(".reveal-item");
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (reducedMotion) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const section = entry.target as HTMLElement;
-          observer.unobserve(section);
-          animate(
-            section,
-            { opacity: [0, 1], transform: ["translateY(20px)", "translateY(0)"] },
-            { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-          );
-        }
-      },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
-    );
-
-    for (const section of sections) {
-      section.style.opacity = "0";
-      observer.observe(section);
-    }
-
-    for (const [index, item] of items.entries()) {
-      item.style.opacity = "0";
-      const itemObserver = new IntersectionObserver(
-        ([entry]) => {
-          if (!entry?.isIntersecting) return;
-          itemObserver.disconnect();
-          animate(
-            item,
-            { opacity: [0, 1], transform: ["translateY(16px)", "translateY(0)"] },
-            { delay: (index % 6) * 0.08, duration: 0.4, ease: "easeOut" },
-          );
-        },
-        { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
-      );
-      itemObserver.observe(item);
-    }
-  };
-
   createEffect(
     () => mode(),
-    () => {
+    (_mode, previousMode) => {
       if (
-        content &&
+        previousMode !== undefined && content &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ) {
         animate(
@@ -87,7 +38,6 @@ function HomePage() {
           { duration: 0.3, ease: "easeOut" },
         );
       }
-      revealSections();
     },
   );
 
@@ -96,6 +46,7 @@ function HomePage() {
       void navigate({
         search: (previous) => ({ ...previous, as: next }),
         replace: true,
+        resetScroll: false,
       });
   };
 

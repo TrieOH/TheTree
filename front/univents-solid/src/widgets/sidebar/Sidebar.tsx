@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { Link, useLocation } from "@tanstack/solid-router";
-import { For, Show } from "solid-js";
+import { For, Show, dynamicComponent } from "solid-js";
 
 import ChevronLeftIcon from "~icons/lucide/chevron-left";
 import ChevronRightIcon from "~icons/lucide/chevron-right";
@@ -96,27 +96,28 @@ export function Sidebar(): JSX.Element {
         </div>
 
         <nav class="flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-3 py-4">
-          <For each={sections()}>
+          <For each={sections()} keyed={(section) => section.title}>
             {(section) => (
               <div class="space-y-2">
                 <Show when={!collapsed()}>
                   <p class="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground/70">
-                    {section.title}
+                    {section().title}
                   </p>
                 </Show>
 
                 <div class="space-y-1">
-                  <For each={section.items}>
+                  <For each={section().items} keyed={(item) => item.id}>
                     {(item) => {
+                      const Icon = dynamicComponent(() => item().icon);
                       const active = () =>
-                        isActivePath(location().pathname, item.to, item.exact);
+                        isActivePath(location().pathname, item().to, item().exact);
 
                       return (
                         <Link
-                          to={item.to}
-                          params={item.params}
+                          to={item().to}
+                          params={item().params}
                           onClick={(e: MouseEvent) => {
-                            if (isActivePath(location().pathname, item.to, true)) {
+                            if (isActivePath(location().pathname, item().to, true)) {
                               e.preventDefault();
                               setMobileOpen(false);
                               return;
@@ -138,14 +139,14 @@ export function Sidebar(): JSX.Element {
                             )}
                           />
 
-                          {item.icon({
-                            class: cn(
+                          <Icon
+                            class={cn(
                               "h-4 w-4 shrink-0 transition-colors",
                               active()
                                 ? "text-primary"
-                                : "text-muted-foreground group-hover:text-foreground",
-                            ),
-                          })}
+                                : "text-muted-foreground",
+                            )}
+                          />
 
                           <span
                             class={cn(
@@ -153,12 +154,12 @@ export function Sidebar(): JSX.Element {
                               collapsed() ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100",
                             )}
                           >
-                            {item.label}
+                            {item().label}
                           </span>
 
                           <Show when={collapsed()}>
                             <span class="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 lg:block">
-                              {item.label}
+                              {item().label}
                             </span>
                           </Show>
                         </Link>

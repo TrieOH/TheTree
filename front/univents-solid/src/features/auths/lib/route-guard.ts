@@ -1,5 +1,7 @@
 import { redirect } from '@tanstack/solid-router';
 import type { RouterSession } from '@trieoh/front-core-solid';
+import { ownProfileQueryOptions } from '@/features/profile/api';
+import { appQueryClient } from '@/shared/lib/query-client';
 
 type GuardArgs = {
   context: { session?: RouterSession };
@@ -18,8 +20,10 @@ export async function requireConfiguredProfile({ context, location }: GuardArgs)
   const actorId = context.session.service?.profile()?.id;
   if (!actorId) return;
 
-  const response = await context.session.service.getActorProfile(actorId);
-  const profileExists = response.success && Boolean(response.data);
+  const profile = await appQueryClient.fetchQuery(
+    ownProfileQueryOptions(actorId, context.session.service),
+  );
+  const profileExists = Boolean(profile);
 
   if (!profileExists && location.pathname !== "/profile/setup" && location.pathname !== "/auth/verify") {
     throw redirect({

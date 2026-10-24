@@ -22,6 +22,7 @@ vi.mock("@tanstack/solid-router", async () => {
   return {
     useLocation: () => location,
     useNavigate: () => () => undefined,
+    useRouter: () => ({ preloadRoute: async () => undefined }),
   };
 });
 
