@@ -1,5 +1,5 @@
 import { MutationObserver, QueryClient, QueryObserver, type MutationObserverOptions, type QueryObserverOptions } from "@tanstack/query-core"
-import { createComponent, createContext, createEffect, createSignal, onCleanup, useContext, untrack, type Accessor, type ParentProps } from "solid-js"
+import { createComponent, createContext, createEffect, createMemo, createSignal, onCleanup, useContext, untrack, type Accessor, type ParentProps } from "solid-js"
 
 const QueryClientContext = createContext<QueryClient>()
 
@@ -83,20 +83,29 @@ export function useQuery<TData, TError = Error>(
 ) {
   const client = useQueryClient()
   const isFn = typeof options === "function"
-  const observer = untrack(() => {
-    const initialOptions = isFn ? (options as Accessor<QueryObserverOptions<TData, TError>>)() : options
-    return new QueryObserver<TData, TError>(client, initialOptions)
-  })
+  const resolvedOptions = createMemo(() => ({
+    ...client.defaultQueryOptions(
+      isFn ? (options as Accessor<QueryObserverOptions<TData, TError>>)() : options,
+    ),
+    _optimisticResults: "optimistic" as const,
+  }), { name: "useQuery.options" })
+  const observer = untrack(() => new QueryObserver<TData, TError>(client, resolvedOptions()))
   const [state, setState] = createSignal(untrack(() => observer.getCurrentResult()), { ownedWrite: true })
   const unsubscribe = untrack(() => observer.subscribe((result) => setState(() => result)))
 
+  const result = createMemo(() => {
+    state() // Cache/fetch notifications invalidate this result.
+    observer.getOptimisticResult(resolvedOptions())
+    return observer.getCurrentResult()
+  }, { name: "useQuery.result" })
+
   if (isFn) {
     createEffect(
-      () => (options as Accessor<QueryObserverOptions<TData, TError>>)(),
+      resolvedOptions,
       (next) => untrack(() => observer.setOptions(next)),
     )
   }
 
   onCleanup(() => unsubscribe())
-  return state
+  return result
 }

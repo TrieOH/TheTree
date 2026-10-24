@@ -286,13 +286,16 @@ input[type="time"]::-webkit-datetime-edit {
   }
 }
 
-/* Hide native scrollbar when OverlayScrollbar widget is active */
-html.overlay-scrollbar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
+/* The document opts in before the app mounts, avoiding native scrollbar flash.
+   Match OverlayScrollbar's input query so touch devices retain native bars. */
+@media (hover: hover) and (pointer: fine) {
+  html.overlay-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 
-html.overlay-scrollbar::-webkit-scrollbar,
-html.overlay-scrollbar body::-webkit-scrollbar {
-  display: none;
+  html.overlay-scrollbar::-webkit-scrollbar,
+  html.overlay-scrollbar body::-webkit-scrollbar {
+    display: none;
+  }
 }

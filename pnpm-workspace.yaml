@@ -177,3 +177,6 @@ packageExtensions:
   '@tanstack/devtools-ui':
     peerDependencies:
       solid-js: '^1.9.9'
+
+patchedDependencies:
+  '@tanstack/solid-router@2.0.0-rc.9': patches/@tanstack__solid-router@2.0.0-rc.9.patch

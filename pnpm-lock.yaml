@@ -277,6 +277,9 @@ overrides:
 
 packageExtensionsChecksum: sha256-2Kt3mUPbxQ4VjmcX22DmZgXf2842q5Qn20Nvy4wA/Eg=
 
+patchedDependencies:
+  '@tanstack/solid-router@2.0.0-rc.9': 8e4bbdfd571a8ae66c6dd1a78b1bd3baf47e176df0f4da596c9ce85334dc82d3
+
 importers:
 
   .:
@@ -1039,7 +1042,7 @@ importers:
         version: 5.101.4
       '@tanstack/solid-router':
         specifier: catalog:solid
-        version: 2.0.0-rc.9(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
+        version: 2.0.0-rc.9(patch_hash=8e4bbdfd571a8ae66c6dd1a78b1bd3baf47e176df0f4da596c9ce85334dc82d3)(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
       '@trieoh/api-client':
         specifier: workspace:*
         version: link:../../lib/ts/api-client
@@ -1274,7 +1277,7 @@ importers:
     devDependencies:
       '@tanstack/solid-router':
         specifier: catalog:solid
-        version: 2.0.0-rc.9(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
+        version: 2.0.0-rc.9(patch_hash=8e4bbdfd571a8ae66c6dd1a78b1bd3baf47e176df0f4da596c9ce85334dc82d3)(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)
       '@trieoh/front-core':
         specifier: workspace:*
         version: link:../front-core
@@ -9461,7 +9464,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/solid-router@2.0.0-rc.9(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)':
+  '@tanstack/solid-router@2.0.0-rc.9(patch_hash=8e4bbdfd571a8ae66c6dd1a78b1bd3baf47e176df0f4da596c9ce85334dc82d3)(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(solid-js@2.0.0-rc.17)':
     dependencies:
       '@solid-devtools/logger': 0.9.11(solid-js@2.0.0-rc.17)
       '@solid-primitives/refs': 1.1.4(solid-js@2.0.0-rc.17)

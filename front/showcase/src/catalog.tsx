@@ -5,6 +5,7 @@ import {
   shapes,
   type Shape,
   Avatar,
+  Breadcrumb,
   Badge,
   Loading,
   Button,
@@ -959,6 +960,24 @@ export function createCatalog(options: {
             v.compact ? "w-full [&>div:first-child]:h-12" : "w-full",
             String(v.class),
           )}
+        />
+      ),
+    },
+    {
+      name: "Breadcrumb",
+      group: "Navegação",
+      description: "Trilha de navegação com links e indicação da página atual.",
+      defaults: { currentLabel: "Edições", ariaLabel: "Trilha de navegação" },
+      controls: [text("currentLabel", "Página atual"), text("ariaLabel", "Rótulo acessível")],
+      render: (v) => (
+        <Breadcrumb
+          class={cn("w-full", String(v.class))}
+          ariaLabel={String(v.ariaLabel)}
+          items={[
+            { path: "#admin", label: "Admin" },
+            { path: "#events", label: "Eventos" },
+            { path: "#editions", label: String(v.currentLabel) },
+          ]}
         />
       ),
     },

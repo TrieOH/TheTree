@@ -32,21 +32,21 @@ export function DashboardBarList(props: DashboardBarListProps): JSX.Element {
       }
     >
       <div class="space-y-4">
-        <For each={props.items}>
+        <For each={props.items} keyed={(item) => item.id}>
           {(item) => {
             const percentage = () =>
-              props.total ? (item.value / props.total) * 100 : 0;
+              props.total ? (item().value / props.total) * 100 : 0;
             const width = () =>
-              item.value ? Math.max((item.value / maximum()) * 100, 3) : 0;
+              item().value ? Math.max((item().value / maximum()) * 100, 3) : 0;
 
             return (
               <div class="space-y-1.5">
                 <div class="flex items-center justify-between gap-3 text-xs">
                   <span class="min-w-0 truncate font-medium text-foreground">
-                    {item.label}
+                    {item().label}
                   </span>
                   <span class="shrink-0 text-muted-foreground">
-                    {item.detail ?? item.value}
+                    {item().detail ?? item().value}
                     {props.showPercentage
                       ? ` · ${percentage().toFixed(0)}%`
                       : ""}
@@ -56,7 +56,7 @@ export function DashboardBarList(props: DashboardBarListProps): JSX.Element {
                   <div
                     class={cn(
                       "h-full rounded-full transition-all duration-500",
-                      item.color ?? "bg-primary",
+                      item().color ?? "bg-primary",
                     )}
                     style={{ width: `${width()}%` }}
                   />

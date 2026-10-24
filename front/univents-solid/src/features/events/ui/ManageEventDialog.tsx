@@ -1,4 +1,4 @@
-import { Show, createEffect, createSignal, untrack } from "solid-js";
+import { Show, createMemo, createSignal } from "solid-js";
 import {
   MultiStepDialog,
   type MultiStepField,
@@ -121,22 +121,19 @@ const CONTACT_FIELDS: MultiStepField<FormInternalValues>[] = [
 ];
 
 export function ManageEventDialog(props: ManageEventDialogProps) {
-  const [values, setValues] = createSignal<FormInternalValues>(untrack(() => valuesOf(props.event)));
-  const [currentStep, setCurrentStep] = createSignal(0);
-  const [submitting, setSubmitting] = createSignal(false);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>({});
-
-  // Reset or re-sync values only when the dialog opens (reading proxies inside compute function to avoid STRICT_READ_UNTRACKED)
-  createEffect(
-    () => (props.open ? valuesOf(props.event) : null),
-    (computedValues) => {
-      if (computedValues) {
-        setValues(computedValues);
-        setCurrentStep(0);
-        setErrors({});
-      }
-    },
+  const initialValues = createMemo(
+    () => (props.open ? valuesOf(props.event) : { ...emptyValues }),
   );
+  const [values, setValues] = createSignal(() => initialValues());
+  const [currentStep, setCurrentStep] = createSignal(() => {
+    initialValues();
+    return 0;
+  });
+  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>(() => {
+    initialValues();
+    return {};
+  });
+  const [submitting, setSubmitting] = createSignal(false);
 
   const update = <K extends keyof FormInternalValues>(key: K, value: FormInternalValues[K]) => {
     const current = values();

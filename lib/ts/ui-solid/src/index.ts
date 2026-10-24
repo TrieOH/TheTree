@@ -2,6 +2,7 @@
  * Solid bindings for the TrieOH design system.
  */
 export { cn } from "./lib/cn";
+export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./breadcrumb";
 export {
   Button,
   buttonVariants,

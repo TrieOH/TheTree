@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { Show, createEffect, createSignal, untrack } from "solid-js";
+import { Show, createMemo, createSignal } from "solid-js";
 import {
   MultiStepDialog,
   type MultiStepField,
@@ -154,24 +154,19 @@ const SCHEDULE_FIELDS: MultiStepField<FormInternalValues>[] = [
 ];
 
 export function ManageEditionDialog(props: ManageEditionDialogProps): JSX.Element {
-  const [values, setValues] = createSignal<FormInternalValues>(
-    untrack(() => valuesOf(props.edition)),
+  const initialValues = createMemo(
+    () => (props.open ? valuesOf(props.edition) : { ...emptyValues }),
   );
-  const [currentStep, setCurrentStep] = createSignal(0);
+  const [values, setValues] = createSignal(() => initialValues());
+  const [currentStep, setCurrentStep] = createSignal(() => {
+    initialValues();
+    return 0;
+  });
+  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>(() => {
+    initialValues();
+    return {};
+  });
   const [submitting, setSubmitting] = createSignal(false);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>({});
-
-  // Reset or re-sync values when dialog opens or edition changes
-  createEffect(
-    () => (props.open ? valuesOf(props.edition) : null),
-    (computedValues) => {
-      if (computedValues) {
-        setValues(computedValues);
-        setCurrentStep(0);
-        setErrors({});
-      }
-    },
-  );
 
   const update = <K extends keyof FormInternalValues>(key: K, value: FormInternalValues[K]) => {
     const current = values();

@@ -10,6 +10,9 @@ export function usage(name: string, v: Values): string {
   let setup = "";
   let jsx = "";
   switch (name) {
+    case "Breadcrumb":
+      jsx = `<Breadcrumb ariaLabel={${q("ariaLabel")}} items={[\n  { path: "/admin", label: "Admin" },\n  { path: "/admin/events", label: "Eventos" },\n  { path: "/admin/events/editions", label: ${q("currentLabel")} },\n]} />`;
+      break;
     case "Loading":
       jsx = `<Loading label={${q("label")}} showLabel={${q("showLabel")}} size={${q("size")}} tone={${q("tone")}} layout={${q("layout")}} />`;
       break;

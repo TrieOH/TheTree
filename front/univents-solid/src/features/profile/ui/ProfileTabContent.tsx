@@ -94,7 +94,7 @@ export function ProfileTabContent(props: {
                 <Show
                   when={props.tab === "badges"}
                   fallback={
-                    <div class="mx-auto mt-4 max-w-7xl px-4">
+                    <div class="mx-auto mt-5 max-w-7xl px-4">
                       <ProfileCard title={tabTitle(props.tab)}>
                         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           <For each={collectItems(data())}>
@@ -139,7 +139,7 @@ export function ProfileTabContent(props: {
         </Show>
       }
     >
-      <div class="mx-auto mt-4 max-w-7xl px-4">
+      <div class="mx-auto mt-5 max-w-7xl px-4">
         <PurchasesContent />
       </div>
     </Show>
@@ -163,7 +163,7 @@ function collectItems(data: unknown): unknown[] {
 
 function CollectionSkeleton(props: { tab: ProfileTab }) {
   return (
-    <div class="mx-auto mt-4 max-w-7xl px-4">
+    <div class="mx-auto mt-5 max-w-7xl px-4">
       <ProfileCard title={tabTitle(props.tab as Exclude<ProfileTab, "about">)}>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div class="h-44 rounded-md bg-muted animate-pulse" />
