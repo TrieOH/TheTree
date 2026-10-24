@@ -32,7 +32,7 @@ func newAuthMW(t *testing.T, key models.CryptoKey, blacklisted func(jti string) 
 			return []any{nil, fun.ErrNotFound("not blacklisted")}
 		})
 
-	mw := (&IdentityX{}).SetupAuthMiddlewares(
+	mw := authMiddlewares(
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
 		&services.Operations{},
 	)

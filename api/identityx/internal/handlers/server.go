@@ -3,7 +3,7 @@
 // methods of its feature; this package only wires them together.
 //
 // Auth, validation, scope, and error mapping run in the strict middleware
-// stack (see internal/app/auth_dispatch.go); the handlers here are pure
+// stack (see httpserver.MountStrict); the handlers here are pure
 // domain logic + fun envelope construction. Platform-vs-project scope is a
 // chain concern derived from each operation's x-scope annotation in the
 // spec — the Access-check module registers the checker, the resolver
@@ -23,6 +23,7 @@ import (
 	"IdentityX/internal/handlers/projects"
 	tosHandlers "IdentityX/internal/handlers/tos"
 	"IdentityX/internal/services"
+	"IdentityX/internal/setup"
 )
 
 // Server implements openapi.StrictServerInterface by embedding every
@@ -60,11 +61,12 @@ type Server struct {
 }
 
 // NewServer wires the per-feature handlers from the services aggregate.
-func NewServer(ops *services.Operations) *Server {
+// st is the setup state the /auth/setup handlers read and complete.
+func NewServer(ops *services.Operations, st *setup.State) *Server {
 	return &Server{
 		ActorHandlers:         actors.New(ops.Actors),
 		APIKeyHandlers:        api_keys.New(ops.APIKeys),
-		AuthnHandlers:         authn.New(ops.Authn),
+		AuthnHandlers:         authn.New(ops.Authn, st),
 		CapabilityHandlers:    capabilities.New(ops.Capabilities),
 		EmailTemplateHandlers: email_templates.New(ops.EmailTemplates),
 		OAuthProviderHandlers: oauth_providers.New(ops.OAuthProviders),

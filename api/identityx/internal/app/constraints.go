@@ -2,7 +2,10 @@ package app
 
 import "lib/database"
 
-func constraintMessages() database.ConstraintRegistry {
+// ConstraintMessages maps every named constraint in the schema to the
+// client-facing message repos surface on violation; the postgres module
+// takes it at boot.
+func ConstraintMessages() database.ConstraintRegistry {
 	return database.ConstraintRegistry{
 		// actors
 		"chk_actors_type":                      "actor type must be one of: human, service, machine",

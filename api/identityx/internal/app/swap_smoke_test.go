@@ -1,39 +1,48 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	spec "IdentityX"
 	"IdentityX/internal/config"
 	"IdentityX/internal/handlers"
 	"IdentityX/internal/services"
 	"IdentityX/internal/setup"
-	libauthz "lib/authz"
+	"lib/backend"
 	libconfig "lib/config"
+	"lib/httpserver"
 	"lib/validator"
+
+	"github.com/go-chi/chi/v5"
 )
 
-// TestCORSWiringThroughCreateRouter pins that the CORS values read from
-// env (config) actually reach the harness: a preflight requesting the
-// Refresh-Token header must be answered with it allowed, or the browser
-// blocks logout/refresh.
-func TestCORSWiringThroughCreateRouter(t *testing.T) {
+// TestCORSWiringThroughTheKit pins that the CORS values read from env
+// (config) reach the router frame: a preflight requesting the Refresh-Token
+// header must be answered with it allowed, or the browser blocks
+// logout/refresh.
+func TestCORSWiringThroughTheKit(t *testing.T) {
 	validator.SetupValidator()
-	server := handlers.NewServer(&services.Operations{})
-	app := &IdentityX{cfg: config.Config{
+	cfg := config.Config{
 		CORS: libconfig.CORS{
 			AllowedOrigins: "http://localhost:3000",
 			AllowedHeaders: "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-Key",
 		},
-	}}
-	r := app.CreateRouter(libauthz.Primitives{
-		JWT:    mwJWT,
-		APIKey: mwJWT,
-		Any:    mwAnyAuth,
-		Scopes: testScopeCheckers(),
-	}, server, nil)
+	}
+	srv := backend.ServerFrom(cfg.Server, cfg.CORS, "")
+	server := handlers.NewServer(&services.Operations{}, completedSetup())
+	r := httpserver.NewRouter(httpserver.Config{
+		CorsAllowedOrigins: srv.CorsAllowedOrigins,
+		CorsAllowedHeaders: srv.CorsAllowedHeaders,
+		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          httpserver.RateLimit{Disabled: true},
+		Routes: func(r *chi.Mux) {
+			mountStrict(r, server, newTestRouterChains(t, testPrimitives(), completedSetup()))
+		},
+	})
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/auth/logout", nil)
 	req.Header.Set("Origin", "http://localhost:3000")
@@ -51,21 +60,37 @@ func TestCORSWiringThroughCreateRouter(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("Access-Control-Allow-Headers %q missing Refresh-Token — CORS config not wired to the harness", allowed)
+		t.Fatalf("Access-Control-Allow-Headers %q missing Refresh-Token — CORS config not wired to the router frame", allowed)
+	}
+}
+
+// TestSetupGuardBlocksUntilSetup pins the guard: before setup completes,
+// every operation but the /auth/setup pair answers 503.
+func TestSetupGuardBlocksUntilSetup(t *testing.T) {
+	validator.SetupValidator()
+	st := setup.NewState(func(context.Context) (bool, error) { return false, nil })
+	r := newTestRouter(t, handlers.NewServer(&services.Operations{}, st), testPrimitives(), st)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/logout", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("want 503 before setup, got %d %s", rec.Code, rec.Body.String())
+	}
+
+	st.MarkComplete()
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code == http.StatusServiceUnavailable {
+		t.Fatalf("guard still blocking after setup: %s", rec.Body.String())
 	}
 }
 
 func TestSwapSmokeSetupFlow(t *testing.T) {
 	validator.SetupValidator() // normally done by httpserver.SetupFUN at startup
-	server := handlers.NewServer(&services.Operations{})
-	r := newTestRouter(t, server, libauthz.Primitives{
-		JWT:    mwJWT,
-		APIKey: mwJWT,
-		Any:    mwAnyAuth,
-		Scopes: testScopeCheckers(),
-	})
+	st := completedSetup()
+	r := newTestRouter(t, handlers.NewServer(&services.Operations{}, st), testPrimitives(), st)
 
-	setup.MarkComplete()
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/setup", nil)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
