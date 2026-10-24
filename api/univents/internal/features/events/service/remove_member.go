@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -15,17 +14,12 @@ func (o *Operations) RemoveMember(ctx context.Context, eventID uuid.UUID, payloa
 	ctx, span := telemetry.StartSpan(ctx, "RemoveMember")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

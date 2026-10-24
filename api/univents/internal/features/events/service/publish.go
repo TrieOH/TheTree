@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -14,11 +13,6 @@ func (o *Operations) Publish(ctx context.Context, eventID uuid.UUID) error {
 	ctx, span := telemetry.StartSpan(ctx, "EventService.Publish")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return err
@@ -28,7 +22,7 @@ func (o *Operations) Publish(ctx context.Context, eventID uuid.UUID) error {
 		return fun.ErrBadRequest("cannot publish non draft event")
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

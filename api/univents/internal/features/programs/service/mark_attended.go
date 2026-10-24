@@ -25,7 +25,7 @@ func (o *Operations) MarkAttended(ctx context.Context, participationID, actorID 
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckEvent(ctx, actorID, edition.EventID, models.EventMemberRoleStaff)
+	err = o.Authz.EventFor(ctx, actorID, edition.EventID, models.EventMemberRoleStaff)
 	if err != nil {
 		return nil, err
 	}

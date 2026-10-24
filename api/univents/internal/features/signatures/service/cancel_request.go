@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -13,11 +12,6 @@ import (
 func (o *Operations) CancelRequest(ctx context.Context, requestID uuid.UUID, reason *string) error {
 	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.CancelRequest")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
 
 	request, err := o.Requests.GetRequestByID(ctx, requestID)
 	if err != nil {
@@ -29,7 +23,7 @@ func (o *Operations) CancelRequest(ctx context.Context, requestID uuid.UUID, rea
 		return err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

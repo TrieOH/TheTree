@@ -110,6 +110,9 @@ func TestAddMember_NoIdentity(t *testing.T) {
 		Tx:     nopTxRunner{},
 	})
 
+	// The event loads before the access check finds no caller.
+	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(&models.Event{ID: uuid.New()}, nil)
+
 	_, err := cmd.AddMember(context.Background(), uuid.New(), models.AddEventMemberInput{
 		Email: "someone@example.com",
 		Role:  models.EventMemberRoleStaff,

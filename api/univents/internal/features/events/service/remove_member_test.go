@@ -109,6 +109,9 @@ func TestRemoveMember_NoIdentity(t *testing.T) {
 		Tx:     txr,
 	})
 
+	// The event loads before the access check finds no caller.
+	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(&models.Event{ID: uuid.New()}, nil)
+
 	err := cmd.RemoveMember(context.Background(), uuid.New(), models.RemoveMemberInput{
 		Email: "someone@example.com",
 	})

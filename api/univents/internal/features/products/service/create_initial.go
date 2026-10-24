@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 )
 
@@ -11,17 +10,12 @@ func (o *Operations) CreateInitial(ctx context.Context, payload models.CreateIni
 	ctx, span := telemetry.StartSpan(ctx, "ProductsService.CreateInitial")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	edition, err := o.Editions.GetByID(ctx, payload.EditionID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

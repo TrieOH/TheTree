@@ -188,6 +188,9 @@ func TestPublish_NoIdentityInCtx(t *testing.T) {
 	})
 	ctx := context.Background()
 
+	// The event loads before the access check finds no caller.
+	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(&models.Event{ID: uuid.New()}, nil)
+
 	err := cmd.Publish(ctx, uuid.New())
 	if err == nil {
 		t.Fatal("expected identity error, got nil")

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 )
 
@@ -11,17 +10,12 @@ func (o *Operations) Create(ctx context.Context, payload models.AddSignatureInpu
 	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.Create")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	edition, err := o.Editions.GetByID(ctx, payload.EditionID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	ident, err := o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

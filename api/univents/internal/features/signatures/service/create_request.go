@@ -7,7 +7,6 @@ import (
 	"lib/email"
 	"lib/telemetry"
 	"os"
-	idx "sdk/identityx"
 	"time"
 	"univents/assets"
 	"univents/models"
@@ -21,17 +20,12 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.CreateRequest")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	edition, err := o.Editions.GetByID(ctx, payload.EditionID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	ident, err := o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

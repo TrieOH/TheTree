@@ -3,18 +3,12 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 )
 
 func (o *Operations) Patch(ctx context.Context, payload models.PatchTicketTypeInput) (*models.TicketType, error) {
 	ctx, span := telemetry.StartSpan(ctx, "TicketTypesService.Patch")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	existing, err := o.TicketTypes.GetByID(ctx, payload.TicketTypeID)
 	if err != nil {
@@ -26,7 +20,7 @@ func (o *Operations) Patch(ctx context.Context, payload models.PatchTicketTypeIn
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

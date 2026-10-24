@@ -34,7 +34,7 @@ func (o *Operations) ListEditionPurchases(ctx context.Context, actorID, editionI
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckEvent(ctx, actorID, edition.EventID, models.EventMemberRoleAdmin)
+	err = o.Authz.EventFor(ctx, actorID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (o *Operations) RefundPurchase(ctx context.Context, actorID, purchaseID uui
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckEvent(ctx, actorID, edition.EventID, models.EventMemberRoleAdmin)
+	err = o.Authz.EventFor(ctx, actorID, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

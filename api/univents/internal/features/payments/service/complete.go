@@ -5,8 +5,6 @@ import (
 	"lib/telemetry"
 	"univents/models"
 
-	idx "sdk/identityx"
-
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
@@ -19,17 +17,12 @@ func (o *Operations) Complete(ctx context.Context, eventID, sellerID uuid.UUID, 
 	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Complete")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

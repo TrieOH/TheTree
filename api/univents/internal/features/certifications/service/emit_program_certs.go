@@ -6,8 +6,6 @@ import (
 	"univents/internal/features/certifications/jobs"
 	"univents/models"
 
-	idx "sdk/identityx"
-
 	"github.com/google/uuid"
 )
 
@@ -20,11 +18,6 @@ func (o *Operations) EmitCertsForProgram(ctx context.Context, programID uuid.UUI
 	ctx, span := telemetry.StartSpan(ctx, "CertificationsService.EmitCertsForProgram")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
 	program, err := o.Programs.GetByID(ctx, programID)
 	if err != nil {
 		return err
@@ -35,7 +28,7 @@ func (o *Operations) EmitCertsForProgram(ctx context.Context, programID uuid.UUI
 		return err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

@@ -6,8 +6,6 @@ import (
 	"lib/telemetry"
 	"univents/models"
 
-	idx "sdk/identityx"
-
 	"github.com/google/uuid"
 )
 
@@ -17,15 +15,11 @@ func (o *Operations) PrintByEdition(ctx context.Context, editionID uuid.UUID, em
 	ctx, span := telemetry.StartSpan(ctx, "BadgesService.PrintByEdition")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
 	edition, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

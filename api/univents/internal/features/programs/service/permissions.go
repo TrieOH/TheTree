@@ -55,7 +55,7 @@ func (o *Operations) checkProgramAccess(ctx context.Context, occ *models.Program
 		if err != nil {
 			return err
 		}
-		err = o.Authz.CheckEvent(ctx, userID, edition.EventID, models.EventMemberRoleStaff)
+		err = o.Authz.EventFor(ctx, userID, edition.EventID, models.EventMemberRoleStaff)
 		if err != nil {
 			return err
 		}

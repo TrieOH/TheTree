@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -15,11 +14,6 @@ import (
 func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
 	ctx, span := telemetry.StartSpan(ctx, "EditionService.Publish")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
 
 	edition, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
@@ -35,7 +29,7 @@ func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
 		return err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

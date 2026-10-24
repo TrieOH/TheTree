@@ -33,7 +33,7 @@ func (o *Operations) GetCertByID(ctx context.Context, id uuid.UUID) (*models.Cer
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleStaff)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleStaff)
 	if err != nil {
 		return nil, err
 	}

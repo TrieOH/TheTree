@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"lib/telemetry"
 	"os"
+	payssage "sdk/payssage"
 	"strings"
 	"univents/models"
-
-	idx "sdk/identityx"
-	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
 )
@@ -23,17 +21,12 @@ func (o *Operations) Connect(ctx context.Context, eventID uuid.UUID, provider st
 	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Connect")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, event.ID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

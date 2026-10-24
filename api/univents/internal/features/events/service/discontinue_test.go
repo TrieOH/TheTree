@@ -187,6 +187,9 @@ func TestDiscontinue_NoIdentity(t *testing.T) {
 		Tx:     txr,
 	})
 
+	// The event loads before the access check finds no caller.
+	mock.When(repo.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(&models.Event{ID: uuid.New()}, nil)
+
 	err := cmd.Discontinue(context.Background(), uuid.New())
 	if err == nil {
 		t.Fatal("expected identity error, got nil")

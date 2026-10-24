@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -12,11 +11,6 @@ import (
 func (o *Operations) DeleteProduct(ctx context.Context, id uuid.UUID) error {
 	ctx, span := telemetry.StartSpan(ctx, "ProductsService.DeleteProduct")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
 
 	existing, err := o.Products.GetProductByID(ctx, id)
 	if err != nil {
@@ -28,7 +22,7 @@ func (o *Operations) DeleteProduct(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

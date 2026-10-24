@@ -3,18 +3,12 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 	"univents/models"
 )
 
 func (o *Operations) CreateOccurrence(ctx context.Context, payload models.CreateProgramOccurrenceInput) (*models.ProgramOccurrence, error) {
 	ctx, span := telemetry.StartSpan(ctx, "ProgramsService.CreateOccurrence")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	program, err := o.Programs.GetByID(ctx, payload.ProgramID)
 	if err != nil {
@@ -26,7 +20,7 @@ func (o *Operations) CreateOccurrence(ctx context.Context, payload models.Create
 		return nil, err
 	}
 
-	err = o.Authz.CheckEvent(ctx, ident.Sub.ID, edition.EventID, models.EventMemberRoleAdmin)
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}
