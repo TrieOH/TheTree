@@ -60,13 +60,13 @@ catalog:
   unplugin-icons: ^22.1.0
 
   # === Validation & Effects ===
-  zod: ^4.4.3
+  zod: ^4.6.6
   react-hook-form: ^7.78.0
   effect: 4.0.0-rc.115
 
   # === Build / Tooling ===
   typescript: ^7.0.2
-  vite: ^8.2.2
+  vite: ~8.2.4
   '@solidjs/vite-plugin': ^3.0.0-next.51
   '@vitejs/plugin-react': ^6.0.2
   '@cloudflare/vite-plugin': ^1.39.2
@@ -125,7 +125,9 @@ overrides:
   browserslist: 4.28.7
   'posthog-js>fflate': ^0.4.9
   fflate: 0.8.3
-  dompurify: 3.4.16
+  dompurify: 3.4.17
+  launch-editor: 2.14.2
+  'zod@>=4.0.0 <4.6.6': ^4.6.6
   js-yaml: 4.3.2
   nanoid: 3.3.18
   esbuild: ">=0.28.1"
