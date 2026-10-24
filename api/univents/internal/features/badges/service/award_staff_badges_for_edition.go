@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -12,9 +11,6 @@ import (
 // edition's event. Called when an edition is published so staff added before
 // publication still get their badge.
 func (o *Operations) AwardStaffBadgesForEdition(ctx context.Context, editionID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.AwardStaffBadgesForEdition")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return err

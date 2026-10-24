@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, ticketType *models.TicketType) (*models.TicketType, error) {
-	ctx, span := telemetry.StartSpan(ctx, "TicketTypesRepo.Patch")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchTicketType(ctx, sqlc.PatchTicketTypeParams{
 		Name:        ticketType.Name,
 		Description: ticketType.Description,

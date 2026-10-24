@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) UpdateTemplate(ctx context.Context, input models.UpdateBadgeTemplateInput) (*models.BadgeTemplate, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.UpdateTemplate")
-	defer span.End()
-
 	template, err := o.Repo.GetByID(ctx, input.TemplateID)
 	if err != nil {
 		return nil, err

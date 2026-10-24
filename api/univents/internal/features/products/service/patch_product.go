@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) PatchProduct(ctx context.Context, payload models.PatchProductInput) (*models.Product, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProductsService.PatchProduct")
-	defer span.End()
-
 	existing, err := o.Products.GetProductByID(ctx, payload.ProductID)
 	if err != nil {
 		return nil, err

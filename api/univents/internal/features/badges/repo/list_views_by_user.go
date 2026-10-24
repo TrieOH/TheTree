@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListViewsByUser(ctx context.Context, userID uuid.UUID) ([]models.BadgeEmissionView, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgeEmissionsRepo.ListViewsByUser")
-	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).ListBadgeEmissionViewsByUser(ctx, userID)
 	if err != nil {
 		return nil, repo.dbe(err)

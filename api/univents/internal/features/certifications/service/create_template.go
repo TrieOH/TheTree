@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) CreateTemplate(ctx context.Context, input models.CreateCertificationTemplateInput) (*models.CertificationTemplate, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CertificationsService.CreateTemplate")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, input.EditionID)
 	if err != nil {
 		return nil, err

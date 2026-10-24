@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateEditionInput) (*models.Edition, error) {
-	ctx, span := telemetry.StartSpan(ctx, "EditionService.Create")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, payload.EventID)
 	if err != nil {
 		return nil, err

@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) DeleteTemplate(ctx context.Context, templateID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesCommands.DeleteTemplate")
-	defer span.End()
-
 	template, err := o.Repo.GetByID(ctx, templateID)
 	if err != nil {
 		return err

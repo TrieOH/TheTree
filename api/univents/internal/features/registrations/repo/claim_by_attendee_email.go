@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -18,8 +17,6 @@ import (
 // claimed; an absent match surfaces as NOT_FOUND (the shared ErrorHandler
 // maps ErrNoRows), which the service treats as "no gift to claim".
 func (repo *Repo) ClaimByAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string, userID uuid.UUID) (*models.Registration, error) {
-	ctx, span := telemetry.StartSpan(ctx, "RegistrationsRepo.ClaimByAttendeeEmail")
-	defer span.End()
 	row, err := database.Queries(ctx, repo.q).ClaimRegistrationByEmail(ctx, sqlc.ClaimRegistrationByEmailParams{
 		EditionID:      editionID,
 		AttendeeEmail:  attendeeEmail,

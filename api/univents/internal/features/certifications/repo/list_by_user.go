@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListByUser(ctx context.Context, userID uuid.UUID) ([]models.Certification, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CertificationsRepo.ListByUser")
-	defer span.End()
 	results, err := database.Queries(ctx, repo.q).ListCertificationsByUser(ctx, userID)
 	if err != nil {
 		return nil, repo.dbe(err)

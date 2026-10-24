@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,9 +10,6 @@ import (
 )
 
 func (repo *Repo) ListEventMembers(ctx context.Context, eventID uuid.UUID) ([]models.EventMember, error) {
-	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.ListEventMembers")
-	defer span.End()
-
 	members, err := database.Queries(ctx, repo.q).ListEventMembers(ctx, eventID)
 	if err != nil {
 		return nil, repo.dbe(err)

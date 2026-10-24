@@ -11,9 +11,6 @@ import (
 )
 
 func (o *Operations) AddMember(ctx context.Context, eventID uuid.UUID, payload models.AddEventMemberInput) (*models.EventMember, error) {
-	ctx, span := telemetry.StartSpan(ctx, "AddMember")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err

@@ -34,9 +34,6 @@ const (
 // Returning nil acknowledges with 200 (Payssage stops retrying); returning
 // an error is a non-2xx (Payssage retries).
 func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "WebhooksService.Receive")
-	defer span.End()
-
 	if !o.validSignature(input) {
 		telemetry.Log().Warn("webhook: invalid signature",
 			zap.String("intent_id", input.IntentID.String()))

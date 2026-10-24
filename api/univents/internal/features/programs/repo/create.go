@@ -3,14 +3,11 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate *models.Program) (*models.Program, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.Create")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreateProgram(ctx, sqlc.CreateProgramParams{
 		EditionID:      toCreate.EditionID,
 		Kind:           string(toCreate.Kind),
@@ -27,8 +24,6 @@ func (repo *Repo) Create(ctx context.Context, toCreate *models.Program) (*models
 }
 
 func (repo *Repo) CreateOccurrence(ctx context.Context, toCreate *models.ProgramOccurrence) (*models.ProgramOccurrence, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.CreateOccurrence")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreateProgramOccurrence(ctx, sqlc.CreateProgramOccurrenceParams{
 		ProgramID:   toCreate.ProgramID,
 		EditionID:   toCreate.EditionID,

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -19,8 +18,6 @@ import (
 // registrations so the caller can emit deferred badges for the confirmed
 // ones. No gifts → empty slice, nil.
 func (repo *Repo) ClaimAllByAttendeeEmail(ctx context.Context, attendeeEmail string, userID uuid.UUID) ([]*models.Registration, error) {
-	ctx, span := telemetry.StartSpan(ctx, "RegistrationsRepo.ClaimAllByAttendeeEmail")
-	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).ClaimAllByAttendeeEmail(ctx, sqlc.ClaimAllByAttendeeEmailParams{
 		AttendeeEmail:  attendeeEmail,
 		AttendeeUserID: &userID,

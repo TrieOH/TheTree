@@ -17,9 +17,6 @@ import (
 )
 
 func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSignatureRequestInput) (*models.SignatureRequest, error) {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.CreateRequest")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, payload.EditionID)
 	if err != nil {
 		return nil, err

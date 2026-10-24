@@ -3,14 +3,11 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 )
 
 func (repo *Repo) Upsert(ctx context.Context, emission *models.BadgeEmission) (*models.BadgeEmission, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgeEmissionsRepo.Upsert")
-	defer span.End()
 	row, err := database.Queries(ctx, repo.q).UpsertBadgeEmission(ctx, sqlc.UpsertBadgeEmissionParams{
 		EditionID:      emission.EditionID,
 		UserID:         emission.UserID,

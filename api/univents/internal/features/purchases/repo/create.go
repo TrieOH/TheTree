@@ -3,14 +3,11 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 )
 
 func (repo *Repo) CreatePurchase(ctx context.Context, toCreate *models.Purchase) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.CreatePurchase")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreatePurchase(ctx, sqlc.CreatePurchaseParams{
 		EditionID:        toCreate.EditionID,
 		PurchaserID:      toCreate.PurchaserID,
@@ -34,8 +31,6 @@ func (repo *Repo) CreatePurchase(ctx context.Context, toCreate *models.Purchase)
 }
 
 func (repo *Repo) CreatePurchaseItem(ctx context.Context, toCreate *models.PurchaseItem) (*models.PurchaseItem, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.CreatePurchaseItem")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreatePurchaseItem(ctx, sqlc.CreatePurchaseItemParams{
 		PurchaseID:        toCreate.PurchaseID,
 		ItemType:          string(toCreate.ItemType),

@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListVariantsByProduct(ctx context.Context, productID uuid.UUID) ([]models.ProductVariant, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProductsRepo.ListVariantsByProduct")
-	defer span.End()
 	results, err := database.Queries(ctx, repo.q).ListProductVariantsByProduct(ctx, productID)
 	if err != nil {
 		return nil, repo.dbe(err)

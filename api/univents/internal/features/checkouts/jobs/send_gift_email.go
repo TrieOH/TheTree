@@ -68,9 +68,6 @@ func NewSendGiftEmailWorker(
 // (attendee_user_id set), the registration no longer matches and a retry is
 // a no-op.
 func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) error {
-	ctx, span := telemetry.StartSpan(ctx, "SendGiftEmailWorker.Work")
-	defer span.End()
-
 	reg, err := w.registrations.GetByID(ctx, args.RegistrationID)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {

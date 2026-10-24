@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) PatchVariant(ctx context.Context, payload models.PatchProductVariantInput) (*models.ProductVariant, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProductsService.PatchVariant")
-	defer span.End()
-
 	existing, err := o.Products.GetVariantByID(ctx, payload.VariantID)
 	if err != nil {
 		return nil, err

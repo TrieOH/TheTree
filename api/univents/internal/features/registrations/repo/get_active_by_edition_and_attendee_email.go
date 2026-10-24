@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -19,8 +18,6 @@ import (
 // ErrNoRows); the service layer interprets "not found" as "holds no
 // ticket", which is a normal state there, not an error here.
 func (repo *Repo) GetActiveByEditionAndAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string) (*models.Registration, error) {
-	ctx, span := telemetry.StartSpan(ctx, "RegistrationsRepo.GetActiveByEditionAndAttendeeEmail")
-	defer span.End()
 	row, err := database.Queries(ctx, repo.q).GetActiveByEditionAndAttendeeEmail(ctx, sqlc.GetActiveByEditionAndAttendeeEmailParams{
 		EditionID:     editionID,
 		AttendeeEmail: attendeeEmail,

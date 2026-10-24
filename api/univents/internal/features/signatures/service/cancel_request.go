@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -10,9 +9,6 @@ import (
 )
 
 func (o *Operations) CancelRequest(ctx context.Context, requestID uuid.UUID, reason *string) error {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.CancelRequest")
-	defer span.End()
-
 	request, err := o.Requests.GetRequestByID(ctx, requestID)
 	if err != nil {
 		return err

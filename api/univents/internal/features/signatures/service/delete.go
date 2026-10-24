@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) Delete(ctx context.Context, id uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.Delete")
-	defer span.End()
-
 	existing, err := o.Signatures.GetByID(ctx, id)
 	if err != nil {
 		return err

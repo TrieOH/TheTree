@@ -3,15 +3,12 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (repo *Repo) GetRequestByIdempotencyKey(ctx context.Context, idempotencyKey uuid.UUID) (*models.SignatureRequest, error) {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesRepo.GetRequestByIdempotencyKey")
-	defer span.End()
 	err := repo.ExpireStaleRequests(ctx)
 	if err != nil {
 		return nil, err

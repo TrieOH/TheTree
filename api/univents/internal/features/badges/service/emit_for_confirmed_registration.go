@@ -15,9 +15,6 @@ import (
 // a registration is confirmed (paid: webhook approved; free: confirmed at
 // inscription). Non-confirmed registrations are a no-op.
 func (o *Operations) EmitForConfirmedRegistration(ctx context.Context, registrationID uuid.UUID) (*models.BadgeEmission, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.EmitForConfirmedRegistration")
-	defer span.End()
-
 	reg, err := o.Registrations.GetByID(ctx, registrationID)
 	if err != nil {
 		return nil, err

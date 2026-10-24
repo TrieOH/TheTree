@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -11,9 +10,6 @@ import (
 // ListByEdition returns all emissions of an edition for the owner/admin to
 // browse (all statuses; holder names are derived front-side).
 func (o *Operations) ListByEdition(ctx context.Context, editionID uuid.UUID) ([]models.BadgeEditionEmission, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.ListByEdition")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return nil, err

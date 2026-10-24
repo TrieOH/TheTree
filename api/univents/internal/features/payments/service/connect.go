@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"lib/telemetry"
 	"os"
 	payssage "sdk/payssage"
 	"strings"
@@ -18,9 +17,6 @@ import (
 // the path, so Payssage's own `?credential_id=…&public_key=…` append keeps
 // working untouched.
 func (o *Operations) Connect(ctx context.Context, eventID uuid.UUID, provider string) (*ConnectResult, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Connect")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"time"
 	"univents/models"
 
@@ -12,9 +11,6 @@ import (
 // RevokeStaffBadgesForUser revokes the user's staff badges on current and
 // future editions of the event. Past-edition badges are kept as keepsakes.
 func (o *Operations) RevokeStaffBadgesForUser(ctx context.Context, eventID, userID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.RevokeStaffBadgesForUser")
-	defer span.End()
-
 	editions, err := o.Editions.ListPublic(ctx, eventID)
 	if err != nil {
 		return err

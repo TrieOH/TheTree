@@ -17,9 +17,6 @@ import (
 // the purchase is still pending and carries an intent — the intent's
 // current status. Never transitions state.
 func (o *Operations) Get(ctx context.Context, purchaseID, purchaserID uuid.UUID) (*Resume, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CheckoutsService.Get")
-	defer span.End()
-
 	purchase, err := o.Purchases.GetByIDForOwner(ctx, purchaseID, purchaserID)
 	if err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) PatchProduct(ctx context.Context, id uuid.UUID, product *models.Product) (*models.Product, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProductsRepo.PatchProduct")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchProduct(ctx, sqlc.PatchProductParams{
 		VendorCode:           product.VendorCode,
 		RequiresRegistration: product.RequiresRegistration,

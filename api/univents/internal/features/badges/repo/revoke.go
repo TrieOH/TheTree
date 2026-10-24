@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) Revoke(ctx context.Context, editionID, userID uuid.UUID, origin models.BadgeEmissionOrigin, reason string) error {
-	ctx, span := telemetry.StartSpan(ctx, "BadgeEmissionsRepo.Revoke")
-	defer span.End()
 	err := database.Queries(ctx, repo.q).RevokeBadgeEmission(ctx, sqlc.RevokeBadgeEmissionParams{
 		EditionID: editionID,
 		UserID:    userID,

@@ -3,16 +3,12 @@ package service
 import (
 	"context"
 	"lib/crypto"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) DenyRequest(ctx context.Context, token string, reason *string) error {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.DenyRequest")
-	defer span.End()
-
 	var claims models.SignatureRequestClaims
 	_, err := crypto.ParseHMACJWT(token, &claims, []byte(o.HmacSecret))
 	if err != nil {

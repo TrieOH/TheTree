@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"time"
 	"univents/models"
 
@@ -14,9 +13,6 @@ import (
 // editions are never awarded retroactively; draft editions are awarded when
 // published (see AwardStaffBadgesForEdition).
 func (o *Operations) AwardStaffBadgesForUser(ctx context.Context, eventID, userID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.AwardStaffBadgesForUser")
-	defer span.End()
-
 	editions, err := o.Editions.ListPublic(ctx, eventID)
 	if err != nil {
 		return err

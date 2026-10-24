@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) CreateVariant(ctx context.Context, payload models.CreateProductVariantInput) (*models.ProductVariant, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProductsService.CreateVariant")
-	defer span.End()
-
 	product, err := o.Products.GetProductByID(ctx, payload.ProductID)
 	if err != nil {
 		return nil, err

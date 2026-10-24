@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/internal/features/certifications/jobs"
 	"univents/models"
 
@@ -15,9 +14,6 @@ import (
 // participants without one for the program — so re-enqueuing is safe and
 // acts as a per-program retry for previously failed emissions.
 func (o *Operations) EmitCertsForProgram(ctx context.Context, programID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "CertificationsService.EmitCertsForProgram")
-	defer span.End()
-
 	program, err := o.Programs.GetByID(ctx, programID)
 	if err != nil {
 		return err

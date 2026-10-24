@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListByEdition(ctx context.Context, editionID uuid.UUID) ([]models.Program, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.ListByEdition")
-	defer span.End()
 	results, err := database.Queries(ctx, repo.q).ListProgramsByEdition(ctx, editionID)
 	if err != nil {
 		return nil, repo.dbe(err)
@@ -21,8 +18,6 @@ func (repo *Repo) ListByEdition(ctx context.Context, editionID uuid.UUID) ([]mod
 }
 
 func (repo *Repo) ListOccurrencesByProgram(ctx context.Context, programID uuid.UUID) ([]models.ProgramOccurrence, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.ListOccurrencesByProgram")
-	defer span.End()
 	results, err := database.Queries(ctx, repo.q).ListProgramOccurrencesByProgram(ctx, programID)
 	if err != nil {
 		return nil, repo.dbe(err)
@@ -31,8 +26,6 @@ func (repo *Repo) ListOccurrencesByProgram(ctx context.Context, programID uuid.U
 }
 
 func (repo *Repo) ListOccurrencesByEdition(ctx context.Context, editionID uuid.UUID) ([]models.ProgramOccurrence, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.ListOccurrencesByEdition")
-	defer span.End()
 	results, err := database.Queries(ctx, repo.q).ListProgramOccurrencesByEdition(ctx, editionID)
 	if err != nil {
 		return nil, repo.dbe(err)

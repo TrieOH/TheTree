@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -10,9 +9,6 @@ import (
 )
 
 func (o *Operations) CreateTemplate(ctx context.Context, input models.CreateBadgeTemplateInput) (*models.BadgeTemplate, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgeTemplatesCommands.CreateTemplate")
-	defer span.End()
-
 	err := validateTemplateScope(input)
 	if err != nil {
 		return nil, err

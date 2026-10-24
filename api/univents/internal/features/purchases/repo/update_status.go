@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -14,8 +13,6 @@ import (
 )
 
 func (repo *Repo) UpdateStatus(ctx context.Context, id uuid.UUID, status models.PurchaseStatus, reason *string) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.UpdateStatus")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).UpdatePurchaseStatus(ctx, sqlc.UpdatePurchaseStatusParams{
 		ID:           id,
 		Status:       string(status),
@@ -33,8 +30,6 @@ func (repo *Repo) UpdateStatus(ctx context.Context, id uuid.UUID, status models.
 // 4): a duplicate delivery finds the purchase already flipped and becomes a
 // no-op instead of re-flipping materialized rows.
 func (repo *Repo) UpdateStatusIf(ctx context.Context, id uuid.UUID, from, to models.PurchaseStatus, reason *string) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.UpdateStatusIf")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).UpdatePurchaseStatusIf(ctx, sqlc.UpdatePurchaseStatusIfParams{
 		ID:           id,
 		FromStatus:   string(from),
@@ -56,8 +51,6 @@ func (repo *Repo) UpdateStatusIf(ctx context.Context, id uuid.UUID, from, to mod
 // and this write stores its id so the webhook receiver can cancel it on
 // approve.
 func (repo *Repo) UpdateRiverJobID(ctx context.Context, id uuid.UUID, riverJobID int64) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.UpdateRiverJobID")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).UpdatePurchaseRiverJob(ctx, sqlc.UpdatePurchaseRiverJobParams{
 		ID:         id,
 		RiverJobID: &riverJobID,
@@ -72,8 +65,6 @@ func (repo *Repo) UpdateRiverJobID(ctx context.Context, id uuid.UUID, riverJobID
 // was created (checkout, split 7, post-commit): seller, intent id (the D2
 // correlation key), and the pix QR.
 func (repo *Repo) AttachIntent(ctx context.Context, id uuid.UUID, sellerID, intentID uuid.UUID, qrCode, qrCodeBase64 *string) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.AttachIntent")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).AttachIntentToPurchase(ctx, sqlc.AttachIntentToPurchaseParams{
 		ID:               id,
 		PayssageSellerID: &sellerID,

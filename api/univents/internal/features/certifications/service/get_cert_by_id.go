@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	idx "sdk/identityx"
@@ -11,9 +10,6 @@ import (
 )
 
 func (o *Operations) GetCertByID(ctx context.Context, id uuid.UUID) (*models.Certification, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CertificationsService.GetCertByID")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

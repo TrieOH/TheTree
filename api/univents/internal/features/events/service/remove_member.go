@@ -11,9 +11,6 @@ import (
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, eventID uuid.UUID, payload models.RemoveMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "RemoveMember")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return err

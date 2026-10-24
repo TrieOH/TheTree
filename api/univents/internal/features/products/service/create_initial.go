@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) CreateInitial(ctx context.Context, payload models.CreateInitialProductInput) (*models.Product, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProductsService.CreateInitial")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, payload.EditionID)
 	if err != nil {
 		return nil, err

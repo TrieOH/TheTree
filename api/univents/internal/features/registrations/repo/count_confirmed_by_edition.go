@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"lib/database"
-	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
@@ -15,8 +14,6 @@ import (
 // rows do not. An edition with no confirmed registrations is 0, not an
 // error.
 func (repo *Repo) CountConfirmedByEdition(ctx context.Context, editionID uuid.UUID) (int64, error) {
-	ctx, span := telemetry.StartSpan(ctx, "RegistrationsRepo.CountConfirmedByEdition")
-	defer span.End()
 	count, err := database.Queries(ctx, repo.q).CountConfirmedByEdition(ctx, editionID)
 	if err != nil {
 		return 0, repo.dbe(err)

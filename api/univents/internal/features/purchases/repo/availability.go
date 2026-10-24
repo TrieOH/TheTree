@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -14,9 +13,6 @@ import (
 // to the three per-type queries so callers can run it inside the checkout
 // tx under the item row locks (split 7); item ids never cross tables.
 func (repo *Repo) Availability(ctx context.Context, editionID uuid.UUID) ([]models.ItemAvailability, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.Availability")
-	defer span.End()
-
 	var out []models.ItemAvailability
 
 	tickets, err := database.Queries(ctx, repo.q).ListTicketTypeAvailability(ctx, editionID)

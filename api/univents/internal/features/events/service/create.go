@@ -2,15 +2,11 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateEventInput) (*models.Event, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

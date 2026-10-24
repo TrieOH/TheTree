@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -14,9 +13,6 @@ import (
 // seller must belong to the platform wallet (env-configured, D6) — verified
 // against Payssage, so a forged or foreign seller id is rejected.
 func (o *Operations) Complete(ctx context.Context, eventID, sellerID uuid.UUID, publicKey string) (*models.Event, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Complete")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err

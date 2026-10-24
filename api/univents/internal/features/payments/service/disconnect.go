@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -13,9 +12,6 @@ import (
 // env-configured (D6) and untouched — reconnecting just re-OAuths a seller
 // onto it.
 func (o *Operations) Disconnect(ctx context.Context, eventID uuid.UUID) (*models.Event, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PaymentsService.Disconnect")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err

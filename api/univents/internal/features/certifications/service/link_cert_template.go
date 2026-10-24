@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) LinkCertTemplate(ctx context.Context, templateID, programID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "CertificationsService.LinkCertTemplate")
-	defer span.End()
-
 	template, err := o.Certs.GetTemplateByID(ctx, templateID)
 	if err != nil {
 		return err

@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListByEdition(ctx context.Context, editionID uuid.UUID) ([]models.Signature, error) {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesRepo.ListByEdition")
-	defer span.End()
 	results, err := database.Queries(ctx, repo.q).ListSignaturesByEdition(ctx, editionID)
 	if err != nil {
 		return nil, repo.dbe(err)

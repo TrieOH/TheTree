@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, program *models.Program) (*models.Program, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.Patch")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchProgram(ctx, sqlc.PatchProgramParams{
 		Kind:           string(program.Kind),
 		Name:           program.Name,
@@ -30,8 +27,6 @@ func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, program *models.Progr
 }
 
 func (repo *Repo) PatchOccurrence(ctx context.Context, id uuid.UUID, occurrence *models.ProgramOccurrence) (*models.ProgramOccurrence, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsRepo.PatchOccurrence")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchProgramOccurrence(ctx, sqlc.PatchProgramOccurrenceParams{
 		StartsAt:    occurrence.StartsAt,
 		EndsAt:      occurrence.EndsAt,

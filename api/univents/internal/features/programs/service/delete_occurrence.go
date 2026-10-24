@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) DeleteOccurrence(ctx context.Context, id uuid.UUID) (*models.ProgramOccurrence, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsService.DeleteOccurrence")
-	defer span.End()
-
 	existing, err := o.Occurrences.GetOccurrenceByID(ctx, id)
 	if err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, edition *models.Edition) (*models.Edition, error) {
-	ctx, span := telemetry.StartSpan(ctx, "EditionsRepo.Patch")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchEdition(ctx, sqlc.PatchEditionParams{
 		EditionName:         edition.Name,
 		Slug:                edition.Slug,

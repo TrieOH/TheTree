@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListJoined(ctx context.Context, userID uuid.UUID) ([]models.Event, error) {
-	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.ListJoined")
-	defer span.End()
 	sqlcEvents, err := database.Queries(ctx, repo.q).ListJoinedEvents(ctx, userID)
 	if err != nil {
 		return nil, repo.dbe(err)

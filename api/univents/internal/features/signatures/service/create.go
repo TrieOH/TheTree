@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.AddSignatureInput) (*models.Signature, error) {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.Create")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, payload.EditionID)
 	if err != nil {
 		return nil, err

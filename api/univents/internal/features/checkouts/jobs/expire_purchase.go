@@ -71,9 +71,6 @@ func NewExpirePurchaseWorker(
 // program_participations → cancelled — there is no expired status), NOTIFY
 // after commit. Returns nil for already-terminal purchases.
 func (w *ExpirePurchaseWorker) Work(ctx context.Context, args ExpirePurchaseArgs) error {
-	ctx, span := telemetry.StartSpan(ctx, "ExpirePurchaseWorker.Work")
-	defer span.End()
-
 	purchase, err := w.purchases.GetByID(ctx, args.PurchaseID)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {

@@ -3,16 +3,12 @@ package service
 import (
 	"context"
 	"lib/crypto"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) RevokeSignature(ctx context.Context, token string) error {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesService.RevokeSignature")
-	defer span.End()
-
 	var claims models.SignatureRevocationClaims
 	_, err := crypto.ParseHMACJWT(token, &claims, []byte(o.HmacSecret))
 	if err != nil {

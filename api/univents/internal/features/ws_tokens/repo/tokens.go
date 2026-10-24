@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -16,8 +15,6 @@ import (
 // split 7) the insert joins it via database.Queries — token + purchase
 // commit atomically, no separate in-tx variant.
 func (repo *Repo) Create(ctx context.Context, toCreate *models.WsToken) (*models.WsToken, error) {
-	ctx, span := telemetry.StartSpan(ctx, "WsTokensRepo.Create")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreateWsToken(ctx, sqlc.CreateWsTokenParams{
 		PurchaseID: toCreate.PurchaseID,
 		UserID:     toCreate.UserID,
@@ -36,8 +33,6 @@ func (repo *Repo) Create(ctx context.Context, toCreate *models.WsToken) (*models
 // update is atomic, so two concurrent handshakes with the same token race
 // on the same row and exactly one wins.
 func (repo *Repo) Consume(ctx context.Context, tokenHash string) (*models.WsToken, error) {
-	ctx, span := telemetry.StartSpan(ctx, "WsTokensRepo.Consume")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).ConsumeWsToken(ctx, tokenHash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

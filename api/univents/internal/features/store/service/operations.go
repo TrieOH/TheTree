@@ -61,9 +61,6 @@ func New(d Deps) *Operations {
 // the storefront needs the counts before/without subscribing to the stream.
 // Unknown editions are NOT_FOUND (the endpoint exists, the edition does not).
 func (o *Operations) Stock(ctx context.Context, editionID uuid.UUID) ([]stockItem, error) {
-	ctx, span := telemetry.StartSpan(ctx, "StoreService.Stock")
-	defer span.End()
-
 	_, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
@@ -12,9 +11,6 @@ import (
 // PrintByEdition returns the print payload for the edition's active emissions,
 // optionally filtered to specific emission ids. Owner/admin only.
 func (o *Operations) PrintByEdition(ctx context.Context, editionID uuid.UUID, emissionIDs []uuid.UUID) ([]models.BadgePrintItem, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.PrintByEdition")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return nil, err

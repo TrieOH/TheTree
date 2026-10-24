@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
@@ -10,9 +9,6 @@ import (
 )
 
 func (o *Operations) Discontinue(ctx context.Context, eventID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "EventService.Discontinue")
-	defer span.End()
-
 	event, err := o.Events.GetByID(ctx, eventID)
 	if err != nil {
 		return err

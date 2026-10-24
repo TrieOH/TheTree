@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"lib/telemetry"
 	"univents/models"
 	"univents/ports"
 
@@ -27,9 +26,6 @@ import (
 // deferred badge is emitted (the gift email told them to create the account
 // under that email, so the email is the proof).
 func (o *Operations) MyTicket(ctx context.Context, editionID, userID uuid.UUID) (*models.MyTicket, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CheckoutsService.MyTicket")
-	defer span.End()
-
 	_, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, event *models.Event) (*models.Event, error) {
-	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.Patch")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchEvent(ctx, sqlc.PatchEventParams{
 		FullName:     event.FullName,
 		Acronym:      event.Acronym,

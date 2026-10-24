@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) Patch(ctx context.Context, payload models.PatchEventInput) (*models.Event, error) {
-	ctx, span := telemetry.StartSpan(ctx, "EventService.Patch")
-	defer span.End()
-
 	existing, err := o.Events.GetByID(ctx, payload.EventID)
 	if err != nil {
 		return nil, err

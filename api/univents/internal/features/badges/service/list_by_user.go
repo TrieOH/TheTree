@@ -15,9 +15,6 @@ import (
 // staff), each split into current (edition ends_at >= now) and past editions,
 // most current first. Public: no identity or role required.
 func (o *Operations) ListByUser(ctx context.Context, userID uuid.UUID) (*models.BadgeProfileGroups, error) {
-	ctx, span := telemetry.StartSpan(ctx, "BadgesService.ListByUser")
-	defer span.End()
-
 	o.claimGiftsForUser(ctx, userID)
 
 	views, err := o.Emissions.ListViewsByUser(ctx, userID)

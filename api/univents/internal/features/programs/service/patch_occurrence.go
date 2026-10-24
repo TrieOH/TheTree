@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"univents/models"
 )
 
 func (o *Operations) PatchOccurrence(ctx context.Context, payload models.PatchProgramOccurrenceInput) (*models.ProgramOccurrence, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ProgramsService.PatchOccurrence")
-	defer span.End()
-
 	existing, err := o.Occurrences.GetOccurrenceByID(ctx, payload.OccurrenceID)
 	if err != nil {
 		return nil, err

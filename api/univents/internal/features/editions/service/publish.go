@@ -12,9 +12,6 @@ import (
 )
 
 func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "EditionService.Publish")
-	defer span.End()
-
 	edition, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return err

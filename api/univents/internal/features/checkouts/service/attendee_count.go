@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 )
 
@@ -15,9 +13,6 @@ import (
 // cancelled/expired rows do not. Unknown editions are NOT_FOUND (the
 // endpoint exists, the edition does not).
 func (o *Operations) AttendeeCount(ctx context.Context, editionID uuid.UUID) (int64, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CheckoutsService.AttendeeCount")
-	defer span.End()
-
 	_, err := o.Editions.GetByID(ctx, editionID)
 	if err != nil {
 		return 0, err

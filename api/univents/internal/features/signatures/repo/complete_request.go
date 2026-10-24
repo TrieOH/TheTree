@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 
 	"github.com/MintzyG/fun"
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) CompleteRequest(ctx context.Context, id, signatureID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "SignaturesRepo.CompleteRequest")
-	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).CompleteSignatureRequest(ctx, sqlc.CompleteSignatureRequestParams{
 		ID:          id,
 		SignatureID: &signatureID,

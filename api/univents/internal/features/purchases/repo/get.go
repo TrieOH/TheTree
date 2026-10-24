@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.GetByID")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).GetPurchaseByID(ctx, id)
 	if err != nil {
 		return nil, repo.dbe(err)
@@ -21,8 +18,6 @@ func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Purchase, 
 }
 
 func (repo *Repo) GetByIDForOwner(ctx context.Context, id, purchaserID uuid.UUID) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.GetByIDForOwner")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).GetPurchaseByIDForOwner(ctx, sqlc.GetPurchaseByIDForOwnerParams{
 		ID:          id,
 		PurchaserID: purchaserID,
@@ -34,8 +29,6 @@ func (repo *Repo) GetByIDForOwner(ctx context.Context, id, purchaserID uuid.UUID
 }
 
 func (repo *Repo) GetByIntentID(ctx context.Context, intentID uuid.UUID) (*models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.GetByIntentID")
-	defer span.End()
 	result, err := database.Queries(ctx, repo.q).GetPurchaseByIntentID(ctx, &intentID)
 	if err != nil {
 		return nil, repo.dbe(err)
@@ -44,8 +37,6 @@ func (repo *Repo) GetByIntentID(ctx context.Context, intentID uuid.UUID) (*model
 }
 
 func (repo *Repo) ListByPurchaser(ctx context.Context, purchaserID uuid.UUID) ([]models.Purchase, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.ListByPurchaser")
-	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).ListPurchasesByPurchaser(ctx, purchaserID)
 	if err != nil {
 		return nil, repo.dbe(err)
@@ -58,8 +49,6 @@ func (repo *Repo) ListByPurchaser(ctx context.Context, purchaserID uuid.UUID) ([
 }
 
 func (repo *Repo) ListItemsByPurchase(ctx context.Context, purchaseID uuid.UUID) ([]models.PurchaseItem, error) {
-	ctx, span := telemetry.StartSpan(ctx, "PurchasesRepo.ListItemsByPurchase")
-	defer span.End()
 	rows, err := database.Queries(ctx, repo.q).ListPurchaseItemsByPurchase(ctx, purchaseID)
 	if err != nil {
 		return nil, repo.dbe(err)

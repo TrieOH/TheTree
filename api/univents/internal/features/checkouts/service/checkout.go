@@ -113,9 +113,6 @@ type CheckoutResult struct {
 // (cards charge synchronously; the purchase stays pending until the webhook
 // confirms). Free orders (total 0) confirm immediately without an intent.
 func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.UUID, in CheckoutInput) (*CheckoutResult, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CheckoutsService.Checkout")
-	defer span.End()
-
 	// 1. Edition + event + payment config (plain reads — the tx only locks
 	//    the item rows).
 	edition, err := o.Editions.GetByID(ctx, editionID)
@@ -638,8 +635,6 @@ func (o *Operations) attachIntent(ctx context.Context, res *reservation, intent 
 // the original payment error is what the buyer sees; failures here are
 // logged (the expiry worker is the backstop).
 func (o *Operations) revert(ctx context.Context, purchase *models.Purchase, items []models.PurchaseItem) {
-	ctx, span := telemetry.StartSpan(ctx, "CheckoutsService.Revert")
-	defer span.End()
 	err := o.Tx.WithinTx(ctx, func(ctx context.Context) error {
 		updated, err := o.Purchases.UpdateStatusIf(ctx, purchase.ID,
 			models.PurchaseStatusPending, models.PurchaseStatusCancelled, nil)
