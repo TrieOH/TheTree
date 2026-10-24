@@ -18,9 +18,23 @@ on:
     tags:
       - '*/v*'
 
-# Release lock: one deploy at a time, queued, never cancelled (§3.8).
+# Release lock per artifact: tags for different artifacts deploy in
+# parallel; tags for the same artifact queue and never cancel (§3.8), so an
+# older version can't finish after a newer one. Expressions can't split the
+# tag, hence the prefix chain; anything unlisted (SDKs) locks per tag.
 concurrency:
-  group: release
+  group: >-
+    release-${{
+      startsWith(github.ref_name, 'identityx/') && 'identityx' ||
+      startsWith(github.ref_name, 'informd/') && 'informd' ||
+      startsWith(github.ref_name, 'payssage/') && 'payssage' ||
+      startsWith(github.ref_name, 'univents/') && 'univents' ||
+      startsWith(github.ref_name, 'identityx-ui/') && 'identityx-ui' ||
+      startsWith(github.ref_name, 'informd-ui/') && 'informd-ui' ||
+      startsWith(github.ref_name, 'payssage-ui/') && 'payssage-ui' ||
+      startsWith(github.ref_name, 'univents-ui/') && 'univents-ui' ||
+      github.ref_name
+    }}
   cancel-in-progress: false
 
 defaults:

@@ -49,6 +49,7 @@ when a package imports across that line.
 ## Prereqs
 
 - Go 1.27 (`go.work` at the root)
+- Node 26 (`NODE_VERSION` in `tools.versions`)
 - pnpm (pinned via `packageManager` in package.json — corepack picks it up)
 - Docker + Docker Compose
 - `just` — all dev recipes live in the `justfile`

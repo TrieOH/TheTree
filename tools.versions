@@ -1,9 +1,11 @@
-# Single source of truth for every pinned toolchain and tool version.
+# Single source of truth for every pinned toolchain and tool version
+# (pnpm itself is pinned by package.json's packageManager).
 # Read by the justfile (dotenv), the api/<svc>/Dockerfiles (sourced, plus the
 # GO_VERSION build arg) and CI (.github/actions/* load it into GITHUB_ENV).
 # Bare versions, no leading v. Bump here only; keep the go.work/go.mod `go`
 # directives on GO_VERSION (setup-go fails CI on a mismatch).
 GO_VERSION=1.27.3
+NODE_VERSION=26
 SQLC_VERSION=1.31.1
 OAPI_CODEGEN_VERSION=2.8.1
 OAPI_RUNTIME_VERSION=1.8.0
