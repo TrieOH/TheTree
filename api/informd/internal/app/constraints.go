@@ -4,11 +4,11 @@ import (
 	"lib/database"
 )
 
-// constraintMessages maps Informd's constraint and unique-index names to
+// ConstraintMessages maps Informd's constraint and unique-index names to
 // the client-facing messages repos surface on violation. They travel into
 // database.SetupDB as data — boot fails loudly when a migration adds a
 // constraint with no message here.
-func constraintMessages() database.ConstraintRegistry {
+func ConstraintMessages() database.ConstraintRegistry {
 	return database.ConstraintRegistry{
 		// forms
 		"chk_forms_valid_status":       "status must be one of: draft, open, closed, archived",
