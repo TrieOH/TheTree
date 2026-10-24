@@ -83,8 +83,8 @@ type Deps struct {
 	// identityx: the SDK client and the auth primitives built on it.
 	IDX *IdentityX
 
-	// email
-	Email email.Sender
+	// email: the SMTP client (it satisfies email.Sender).
+	Email *email.Client
 
 	// jobs: enqueue right away; hand over the registry with Serve in Build.
 	Jobs Jobs
