@@ -8,6 +8,7 @@ import (
 	"lib/database"
 	libjobs "lib/jobs"
 	"payssage/internal/authz"
+	"payssage/internal/providers"
 	"payssage/internal/repos"
 	"payssage/internal/services/collectors"
 	"payssage/internal/services/intents"
@@ -67,15 +68,15 @@ type Operations struct {
 // NewOperations wires every feature's operations from the shared repos.
 // Authorization arrives by injection through the same seam — no
 // service-locator globals.
-func NewOperations(r *repos.Repos, authzSvc *authz.Service, enqueuer libjobs.Enqueuer, idxClient *idx.Client, tx database.TxRunner) *Operations {
+func NewOperations(r *repos.Repos, authzSvc *authz.Service, enqueuer libjobs.Enqueuer, idxClient *idx.Client, tx database.TxRunner, registry providers.PaymentProviders) *Operations {
 	return &Operations{
 		Organizations:     NewOrganizations(r.Organizations, idxClient, authzSvc, tx),
 		Wallets:           NewWallets(r.Wallets, r.Organizations, authzSvc),
-		OAuth:             NewOAuth(r.Wallets, r.Organizations, r.OAuth, r.Collectors, r.Sellers, authzSvc),
+		OAuth:             NewOAuth(r.Wallets, r.Organizations, r.OAuth, r.Collectors, r.Sellers, authzSvc, registry),
 		Collectors:        NewCollectors(r.Collectors, r.Organizations, authzSvc),
 		Sellers:           NewSellers(r.Sellers, r.Wallets, r.Organizations, authzSvc),
-		Intents:           NewIntents(r.Intents, r.Wallets, r.Organizations, r.Collectors, r.Sellers, authzSvc),
-		Webhooks:          NewWebhooks(enqueuer, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc, tx),
+		Intents:           NewIntents(r.Intents, r.Wallets, r.Organizations, r.Collectors, r.Sellers, authzSvc, registry),
+		Webhooks:          NewWebhooks(enqueuer, r.WebhookEvents, r.WebhookEndpoints, r.WebhookDeliveries, authzSvc, tx, registry),
 		WebhookEndpoints:  NewWebhookEndpoints(r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),
 		WebhookEvents:     NewWebhookEvents(r.WebhookEvents, r.Wallets, r.Organizations, authzSvc),
 		WebhookDeliveries: NewWebhookDeliveries(r.WebhookDeliveries, r.WebhookEndpoints, r.Wallets, r.Organizations, authzSvc),

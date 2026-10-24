@@ -19,7 +19,7 @@ func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookI
 	if err != nil {
 		return fun.Err("unknown webhook provider").NotFound()
 	}
-	handler, ok := providers.PayssageProviders.Webhooks[providerEnum]
+	handler, ok := o.registry.Webhooks[providerEnum]
 	if !ok {
 		return fun.Err("webhook handling not implemented for this provider").BadRequest()
 	}
