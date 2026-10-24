@@ -29,7 +29,7 @@ func (o *Operations) UnbindCollector(ctx context.Context, walletID uuid.UUID) er
 		if err != nil {
 			return err
 		}
-		err = o.Authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+		_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
 		if err != nil {
 			return err
 		}

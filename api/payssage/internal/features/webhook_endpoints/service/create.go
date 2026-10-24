@@ -7,18 +7,13 @@ import (
 	"fmt"
 	"lib/telemetry"
 	"payssage/models"
-	idx "sdk/identityx"
 )
 
 func (o *Operations) Create(ctx context.Context, input models.CreateWebhookEndpointInput) (*models.WebhookEndpoint, error) {
 	ctx, span := telemetry.StartSpan(ctx, "CreateWebhookEndpoint")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-	err = o.Authz.CheckWalletAccess(ctx, ident.Sub.ID, input.WalletID, models.OrganizationRoleMember)
+	_, err := o.Authz.Wallet(ctx, input.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

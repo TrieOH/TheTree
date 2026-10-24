@@ -5,7 +5,6 @@ import (
 	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
-	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,11 +13,6 @@ import (
 func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentInput) (*models.Intent, error) {
 	ctx, span := telemetry.StartSpan(ctx, "Checkout")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	seller, err := o.Sellers.GetByID(ctx, payload.SellerID)
 	if err != nil {
@@ -29,7 +23,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleAdmin)
+	_, err = o.Authz.Wallet(ctx, wallet.ID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

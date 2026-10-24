@@ -5,7 +5,6 @@ import (
 	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
-	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -24,16 +23,11 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 	ctx, span := telemetry.StartSpan(ctx, "CancelIntent")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	intent, err := o.Intents.GetByID(ctx, intentID)
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckWalletAccess(ctx, ident.Sub.ID, intent.WalletID, models.OrganizationRoleAdmin)
+	_, err = o.Authz.Wallet(ctx, intent.WalletID, models.OrganizationRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

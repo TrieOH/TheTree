@@ -4,7 +4,6 @@ import (
 	"context"
 	"lib/telemetry"
 	"payssage/models"
-	idx "sdk/identityx"
 
 	"github.com/google/uuid"
 )
@@ -13,11 +12,7 @@ func (o *Operations) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]mo
 	ctx, span := telemetry.StartSpan(ctx, "ListEventsByWallet")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-	err = o.Authz.CheckWalletAccess(ctx, ident.Sub.ID, walletID, models.OrganizationRoleMember)
+	_, err := o.Authz.Wallet(ctx, walletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

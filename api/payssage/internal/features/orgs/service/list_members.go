@@ -4,7 +4,6 @@ import (
 	"context"
 	"lib/telemetry"
 	"payssage/models"
-	idx "sdk/identityx"
 
 	"github.com/google/uuid"
 )
@@ -13,12 +12,7 @@ func (o *Operations) ListMembers(ctx context.Context, orgID uuid.UUID) (members 
 	ctx, span := telemetry.StartSpan(ctx, "OrganizationService.GetMembers")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.Authz.CheckOrg(ctx, ident.Sub.ID, orgID, models.OrganizationRoleMember)
+	_, err = o.Authz.Org(ctx, orgID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

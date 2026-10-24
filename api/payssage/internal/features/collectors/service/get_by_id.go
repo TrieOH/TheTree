@@ -25,7 +25,7 @@ func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.Collect
 	}
 
 	if collector.OrganizationID != nil {
-		err = o.Authz.CheckOrg(ctx, ident.Sub.ID, *collector.OrganizationID, models.OrganizationRoleMember)
+		_, err = o.Authz.Org(ctx, *collector.OrganizationID, models.OrganizationRoleMember)
 		if err != nil {
 			return nil, err
 		}

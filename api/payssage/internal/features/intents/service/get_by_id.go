@@ -4,7 +4,6 @@ import (
 	"context"
 	"lib/telemetry"
 	"payssage/models"
-	idx "sdk/identityx"
 
 	"github.com/google/uuid"
 )
@@ -13,16 +12,11 @@ func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.Intent,
 	ctx, span := telemetry.StartSpan(ctx, "GetByID")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	intent, err := o.Intents.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	err = o.Authz.CheckWalletAccess(ctx, ident.Sub.ID, intent.WalletID, models.OrganizationRoleMember)
+	_, err = o.Authz.Wallet(ctx, intent.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err
 	}

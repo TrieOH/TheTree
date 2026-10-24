@@ -24,7 +24,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateWalletInpu
 		if err != nil {
 			return nil, err
 		}
-		err = o.Authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+		_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
 		if err != nil {
 			return nil, err
 		}

@@ -39,9 +39,9 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 			}
 		}
 		if org != nil {
-			err = o.Authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
 		} else {
-			err = o.Authz.CheckWalletAccess(ctx, ident.Sub.ID, wallet.ID, models.OrganizationRoleMember)
+			_, err = o.Authz.Wallet(ctx, wallet.ID, models.OrganizationRoleMember)
 		}
 		if err != nil {
 			return "", err
@@ -55,7 +55,7 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 			if err != nil {
 				return "", err
 			}
-			err = o.Authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return "", err
 			}

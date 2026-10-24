@@ -34,7 +34,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 			if err != nil {
 				return err
 			}
-			err = o.Authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 			if err != nil {
 				return err
 			}
-			err = o.Authz.CheckOrg(ctx, ident.Sub.ID, org.ID, models.OrganizationRoleAdmin)
+			_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
 			if err != nil {
 				return err
 			}
