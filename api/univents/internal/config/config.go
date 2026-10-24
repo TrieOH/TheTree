@@ -58,7 +58,7 @@ type Config struct {
 }
 
 // ToDBConfig is the connection only: the schema is migrated outside the
-// API process (`just univents-goose`).
+// API process (`just migrate univents`).
 func (cfg Config) ToDBConfig() database.Config {
 	return libconfig.DBConnectionConfig(cfg.Postgres)
 }
