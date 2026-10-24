@@ -80,9 +80,9 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 
 ## Infrastructure (Docker Compose)
 
-Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written digest ledger; server checks it out at `~/deploy/thetree`). This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
+Production backends run on **Cloudflare Containers**: `deploy.yml` pushes the GHCR image (by digest) to Cloudflare's registry and `wrangler deploy`s it from `api/<svc>/cloudflare/`. This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
 
-- Prod stack (postgres, rustfs, identityx, univents, payssage, informd): `TrieOH/deploy` → `thetree/compose.yml`
+- Prod backends (identityx, univents, payssage, informd): `api/<svc>/cloudflare/wrangler.jsonc`, service env from the `<SERVICE>_API_ENV` repo secret
 - Infra stacks (caddy, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
 
 ## Shared Go Library (`lib/go/`)
