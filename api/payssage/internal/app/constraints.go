@@ -4,7 +4,7 @@ import (
 	"lib/database"
 )
 
-func constraintMessages() database.ConstraintRegistry {
+func ConstraintMessages() database.ConstraintRegistry {
 	return database.ConstraintRegistry{
 		// intents
 		"chk_intents_amount_cents":  "amount must be greater than zero",
