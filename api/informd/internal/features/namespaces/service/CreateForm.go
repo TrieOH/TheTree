@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
@@ -14,17 +13,12 @@ func (o *Operations) CreateForm(ctx context.Context, title string, namespaceID u
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.CreateForm")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	namespace, err := o.Namespaces.GetByID(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
+	ident, err := o.Authz.Namespace(ctx, namespace.ID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

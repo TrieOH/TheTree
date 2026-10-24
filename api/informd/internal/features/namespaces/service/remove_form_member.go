@@ -10,7 +10,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) RemoveFormMember(ctx context.Context, payload models.RemoveNamespaceFormMemberInput) error {
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.RemoveFormMember")
 	defer span.End()
@@ -33,7 +33,7 @@ func (o *Operations) RemoveFormMember(ctx context.Context, payload models.Remove
 		return fun.ErrBadRequest("cannot remove owner of the namespace from form")
 	}
 
-	err = o.Authz.CheckNamespace(ctx, ident.Sub.ID, namespace.ID, models.NamespaceMemberRoleAdmin)
+	_, err = o.Authz.Namespace(ctx, namespace.ID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

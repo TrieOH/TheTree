@@ -37,7 +37,7 @@ type CreateFormStepInput struct {
 }
 
 type CreateNamespacedFormStepInput struct {
-	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+	// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 	NamespaceID  uuid.UUID `json:"namespace_id"`
 	FormID       uuid.UUID `json:"form_id"`
 	Title        string    `json:"title"`
@@ -64,7 +64,7 @@ type UpdateFormStepInput struct {
 }
 
 type UpdateNamespacedFormStepInput struct {
-	// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+	// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 	NamespaceID  uuid.UUID
 	FormID       uuid.UUID
 	ID           uuid.UUID

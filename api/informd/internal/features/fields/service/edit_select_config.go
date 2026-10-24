@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 
 	"Informd/models"
 
@@ -14,12 +13,7 @@ func (o *Operations) EditSelectConfig(ctx context.Context, formID uuid.UUID, pay
 	ctx, span := telemetry.StartSpan(ctx, "FieldService.EditSelectConfig")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

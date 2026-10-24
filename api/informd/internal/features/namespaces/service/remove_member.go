@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
@@ -14,17 +13,12 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveName
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.RemoveMember")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
 	namespace, err := o.Namespaces.GetByID(ctx, payload.NamespaceID)
 	if err != nil {
 		return err
 	}
 
-	err = o.Authz.CheckNamespace(ctx, ident.Sub.ID, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
+	_, err = o.Authz.Namespace(ctx, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

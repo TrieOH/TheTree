@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 
 	"Informd/models"
 )
@@ -12,12 +11,7 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateStepFieldI
 	ctx, span := telemetry.StartSpan(ctx, "FieldService.Create")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, payload.FormID, models.FormMemberRoleAdmin)
+	_, err := o.Authz.Form(ctx, payload.FormID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

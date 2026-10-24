@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 
 	"Informd/models"
 
@@ -14,12 +13,7 @@ func (o *Operations) Delete(ctx context.Context, formID, fieldID uuid.UUID) erro
 	ctx, span := telemetry.StartSpan(ctx, "FieldService.Delete")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

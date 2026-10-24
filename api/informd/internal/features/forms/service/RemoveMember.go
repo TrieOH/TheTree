@@ -32,7 +32,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveForm
 	if payload.UserID == form.OwnerID {
 		return fun.ErrBadRequest("cannot remove owner of the form")
 	}
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

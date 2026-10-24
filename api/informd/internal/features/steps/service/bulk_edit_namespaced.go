@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
@@ -12,17 +11,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) BulkEditNamespaced(ctx context.Context, formID, _ uuid.UUID, payload []models.UpdateNamespacedFormStepInput) error {
 	ctx, span := telemetry.StartSpan(ctx, "StepService.BulkEditNamespaced")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

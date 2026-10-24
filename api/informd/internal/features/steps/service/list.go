@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
@@ -14,12 +13,7 @@ func (o *Operations) List(ctx context.Context, formID uuid.UUID) ([]models.Step,
 	ctx, span := telemetry.StartSpan(ctx, "StepService.List")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleMember)
+	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleMember)
 	if err != nil {
 		return nil, err
 	}

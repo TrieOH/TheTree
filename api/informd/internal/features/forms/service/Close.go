@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
@@ -15,13 +14,7 @@ func (o *Operations) Close(ctx context.Context, formID uuid.UUID) (*models.Form,
 	ctx, span := telemetry.StartSpan(ctx, "FormService.Close")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var form *models.Form
-	form, err = o.Forms.GetByID(ctx, formID)
+	form, err := o.Forms.GetByID(ctx, formID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +23,7 @@ func (o *Operations) Close(ctx context.Context, formID uuid.UUID) (*models.Form,
 		return nil, fun.ErrBadRequest("cannot close a form not on open")
 	}
 
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

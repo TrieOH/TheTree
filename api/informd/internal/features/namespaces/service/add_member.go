@@ -33,7 +33,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddNamespaceM
 		return fun.ErrBadRequest("owners can't be added to namespaces they own")
 	}
 
-	err = o.Authz.CheckNamespace(ctx, ident.Sub.ID, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
+	_, err = o.Authz.Namespace(ctx, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

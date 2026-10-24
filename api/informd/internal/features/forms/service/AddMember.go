@@ -33,7 +33,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddFormMember
 	if payload.UserID == form.OwnerID {
 		return fun.ErrBadRequest("owner of the form is already a member of the form")
 	}
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, form.ID, models.FormMemberRoleAdmin)
+	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

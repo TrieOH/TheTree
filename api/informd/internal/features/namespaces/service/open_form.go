@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
@@ -11,15 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) OpenForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.OpenForm")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	form, err := o.Forms.GetByID(ctx, formID)
 	if err != nil {
@@ -30,7 +24,7 @@ func (o *Operations) OpenForm(ctx context.Context, namespaceID, formID uuid.UUID
 		return nil, fun.ErrBadRequest("cannot open a form not on draft")
 	}
 
-	err = o.Authz.CheckNamespace(ctx, ident.Sub.ID, namespaceID, models.NamespaceMemberRoleAdmin)
+	_, err = o.Authz.Namespace(ctx, namespaceID, models.NamespaceMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}

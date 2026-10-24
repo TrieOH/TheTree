@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"lib/telemetry"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/xslices"
@@ -16,12 +15,7 @@ func (o *Operations) BulkEdit(ctx context.Context, formID uuid.UUID, payload []m
 	ctx, span := telemetry.StartSpan(ctx, "FieldService.BulkEdit")
 	defer span.End()
 
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, formID, models.FormMemberRoleAdmin)
+	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err
 	}

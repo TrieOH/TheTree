@@ -2,28 +2,22 @@ package service
 
 import (
 	"context"
-	idx "sdk/identityx"
 
 	"Informd/models"
 	"lib/telemetry"
 )
 
-// TODO: kill this duplicated namespaced route — CheckForm already anchors via the form's namespace.
+// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) CreateNamespaced(ctx context.Context, payload models.CreateNamespacedFormStepInput) (*models.Step, error) {
 	ctx, span := telemetry.StartSpan(ctx, "StepService.CreateNamespaced")
 	defer span.End()
-
-	ident, err := idx.RequireIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	step, err := models.NewStep(payload.FormID, payload.Title, payload.Description, payload.PositionHint)
 	if err != nil {
 		return nil, err
 	}
 
-	err = o.Authz.CheckForm(ctx, ident.Sub.ID, payload.FormID, models.FormMemberRoleAdmin)
+	_, err = o.Authz.Form(ctx, payload.FormID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err
 	}
