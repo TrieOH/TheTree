@@ -71,7 +71,12 @@ func TestSetupGuardBlocksUntilSetup(t *testing.T) {
 	st := setup.NewState(func(context.Context) (bool, error) { return false, nil })
 	r := newTestRouter(t, handlers.NewServer(&services.Operations{}, st), testPrimitives(), st)
 
+	// Required params bind before the chains run, so the request carries
+	// both logout headers; the token lacks "Bearer " so the handler answers
+	// 401 after setup without reaching the nil services.
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/logout", nil)
+	req.Header.Set("Authorization", "token")
+	req.Header.Set("Refresh-Token", "token")
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 	if rec.Code != http.StatusServiceUnavailable {
