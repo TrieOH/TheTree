@@ -12,9 +12,6 @@ import (
 )
 
 func (o *Operations) Receive(ctx context.Context, payload models.ReceiveWebhookInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "ReceiveWebhook")
-	defer span.End()
-
 	providerEnum, err := providers.FromString(payload.Provider)
 	if err != nil {
 		return fun.Err("unknown webhook provider").NotFound()

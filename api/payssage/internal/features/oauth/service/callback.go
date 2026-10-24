@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	"strconv"
@@ -13,9 +12,6 @@ import (
 )
 
 func (o *Operations) Callback(ctx context.Context, providerStr, code, stateStr string) (string, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Callback")
-	defer span.End()
-
 	state, err := o.OAuth.Get(ctx, stateStr)
 	if err != nil {
 		return "", err

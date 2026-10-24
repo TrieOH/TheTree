@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) List(ctx context.Context, ownerID uuid.UUID) ([]models.Wallet, error) {
-	ctx, span := telemetry.StartSpan(ctx, "List")
-	defer span.End()
 	sqlcWallets, err := database.Queries(ctx, repo.q).ListWallets(ctx, ownerID)
 	if err != nil {
 		return nil, repo.dbe(err)

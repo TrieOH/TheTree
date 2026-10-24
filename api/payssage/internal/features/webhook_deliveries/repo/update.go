@@ -3,14 +3,11 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 )
 
 func (r *Repo) Update(ctx context.Context, params models.UpdateDeliveryParams) (*models.WebhookDelivery, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Update")
-	defer span.End()
 	row, err := database.Queries(ctx, r.q).UpdateWebhookDelivery(ctx, sqlc.UpdateWebhookDeliveryParams{
 		Status:          string(params.Status),
 		Attempts:        params.Attempts,

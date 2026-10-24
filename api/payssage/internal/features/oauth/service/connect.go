@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
@@ -13,9 +12,6 @@ import (
 )
 
 func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (string, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Connect")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return "", err

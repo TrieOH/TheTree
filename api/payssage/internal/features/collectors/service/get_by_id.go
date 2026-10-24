@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -11,9 +10,6 @@ import (
 )
 
 func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.Collector, error) {
-	ctx, span := telemetry.StartSpan(ctx, "GetByID")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

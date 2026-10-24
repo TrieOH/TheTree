@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) Delete(ctx context.Context, id uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "DeleteWebhookEndpoint")
-	defer span.End()
-
 	endpoint, err := o.Endpoints.GetByID(ctx, id)
 	if err != nil {
 		return err

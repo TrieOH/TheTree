@@ -2,15 +2,11 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 )
 
 func (o *Operations) Create(ctx context.Context, in models.CreateOrganizationInput) (*models.Organization, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

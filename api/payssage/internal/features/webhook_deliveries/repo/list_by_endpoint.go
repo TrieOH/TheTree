@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (r *Repo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListByEndpoint")
-	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListWebhookDeliveriesByEndpoint(ctx, endpointID)
 	if err != nil {
 		return nil, r.dbe(err)

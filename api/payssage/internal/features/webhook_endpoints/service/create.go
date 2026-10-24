@@ -5,14 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"lib/telemetry"
 	"payssage/models"
 )
 
 func (o *Operations) Create(ctx context.Context, input models.CreateWebhookEndpointInput) (*models.WebhookEndpoint, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CreateWebhookEndpoint")
-	defer span.End()
-
 	_, err := o.Authz.Wallet(ctx, input.WalletID, models.OrganizationRoleMember)
 	if err != nil {
 		return nil, err

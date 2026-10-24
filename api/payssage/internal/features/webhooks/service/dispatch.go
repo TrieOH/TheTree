@@ -25,9 +25,6 @@ import (
 // pending rows that were never attempted. Enqueueing before the commit
 // would let a worker look for a row that is not visible yet.
 func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.WebhookEvent) error {
-	ctx, span := telemetry.StartSpan(ctx, "dispatchDeliveries")
-	defer span.End()
-
 	endpoints, err := o.Endpoints.ListByWallet(ctx, event.WalletID)
 	if err != nil {
 		return fun.Errf("list webhook endpoints: %v", err).Internal()

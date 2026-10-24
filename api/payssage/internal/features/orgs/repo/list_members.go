@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -11,8 +10,6 @@ import (
 )
 
 func (repo *Repo) ListMembers(ctx context.Context, orgID uuid.UUID) ([]models.OrganizationMember, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListMembers")
-	defer span.End()
 	sqlcMembers, err := database.Queries(ctx, repo.q).ListOrganizationMembers(ctx, orgID)
 	if err != nil {
 		return nil, repo.dbe(err)

@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 )
 
 func (o *Operations) SetSandbox(ctx context.Context, payload models.SetSandboxInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "SetSandbox")
-	defer span.End()
-
 	wallet, err := o.Wallets.GetByID(ctx, payload.WalletID)
 	if err != nil {
 		return err

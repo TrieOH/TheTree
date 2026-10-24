@@ -3,15 +3,11 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error) {
-	ctx, span := telemetry.StartSpan(ctx, "IntentRepo.Create")
-	defer span.End()
-
 	var statusDetail *string
 	if toCreate.StatusDetail != nil {
 		statusDetail = new(string(*toCreate.StatusDetail))

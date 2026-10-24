@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -11,9 +10,6 @@ import (
 )
 
 func (repo *Repo) ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]models.Collector, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CollectorRepo.ListByOwner")
-	defer span.End()
-
 	sqlcCollectors, err := database.Queries(ctx, repo.q).ListCollectorsByOwner(ctx, ownerID)
 	if err != nil {
 		return nil, repo.dbe(err)

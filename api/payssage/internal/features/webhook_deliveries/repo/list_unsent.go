@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"payssage/internal/sqlc"
 	"payssage/models"
@@ -11,8 +10,6 @@ import (
 )
 
 func (r *Repo) ListUnsent(ctx context.Context, olderThan time.Duration, limit int) ([]models.WebhookDelivery, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListUnsent")
-	defer span.End()
 	rows, err := database.Queries(ctx, r.q).ListUnsentWebhookDeliveries(ctx, sqlc.ListUnsentWebhookDeliveriesParams{
 		CreatedBefore: time.Now().Add(-olderThan),
 		MaxRows:       limit,

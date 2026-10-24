@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 )
 
 func (o *Operations) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "SetFeeBPS")
-	defer span.End()
-
 	wallet, err := o.Wallets.GetByID(ctx, payload.WalletID)
 	if err != nil {
 		return err

@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"lib/xslices"
 	"payssage/models"
 
@@ -11,9 +10,6 @@ import (
 )
 
 func (repo *Repo) ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error) {
-	ctx, span := telemetry.StartSpan(ctx, "IntentRepo.ListByWallet")
-	defer span.End()
-
 	sqlcIntents, err := database.Queries(ctx, repo.q).ListIntentsByWallet(ctx, walletID)
 	if err != nil {
 		return nil, repo.dbe(err)

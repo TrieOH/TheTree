@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -11,9 +10,6 @@ import (
 )
 
 func (o *Operations) UnbindCollector(ctx context.Context, walletID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "UnbindCollector")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err

@@ -16,9 +16,6 @@ import (
 // the intent status stays `succeeded`; the payment.refunded webhook is what
 // flips it (webhook-only confirmation, mirroring approval, D3).
 func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
-	ctx, span := telemetry.StartSpan(ctx, "RefundIntent")
-	defer span.End()
-
 	intent, err := o.Intents.GetByID(ctx, intentID)
 	if err != nil {
 		return nil, err

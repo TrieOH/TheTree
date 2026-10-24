@@ -20,9 +20,6 @@ var cancellableStatuses = map[models.IntentStatus]bool{
 }
 
 func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CancelIntent")
-	defer span.End()
-
 	intent, err := o.Intents.GetByID(ctx, intentID)
 	if err != nil {
 		return nil, err

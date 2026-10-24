@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 	idx "sdk/identityx"
 
@@ -10,9 +9,6 @@ import (
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrganizationMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "OrganizationService.RemoveMember")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err

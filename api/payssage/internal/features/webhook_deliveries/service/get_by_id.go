@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
-	ctx, span := telemetry.StartSpan(ctx, "GetDeliveryByID")
-	defer span.End()
-
 	delivery, err := o.Deliveries.GetByID(ctx, id)
 	if err != nil {
 		return nil, err

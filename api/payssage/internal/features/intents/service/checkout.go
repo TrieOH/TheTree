@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 
@@ -11,9 +10,6 @@ import (
 )
 
 func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentInput) (*models.Intent, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Checkout")
-	defer span.End()
-
 	seller, err := o.Sellers.GetByID(ctx, payload.SellerID)
 	if err != nil {
 		return nil, err

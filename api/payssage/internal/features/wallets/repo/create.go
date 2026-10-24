@@ -3,14 +3,11 @@ package repo
 import (
 	"context"
 	"lib/database"
-	"lib/telemetry"
 	"payssage/internal/sqlc"
 	"payssage/models"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate models.Wallet) (*models.Wallet, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
 	sqlcWallet, err := database.Queries(ctx, repo.q).CreateWallet(ctx, sqlc.CreateWalletParams{
 		OwnerID:        toCreate.OwnerID,
 		OrganizationID: toCreate.OrganizationID,
