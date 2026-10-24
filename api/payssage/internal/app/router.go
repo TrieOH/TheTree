@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"lib/httpserver"
-	"payssage/internal/handlers/webhooks"
+	"payssage/internal/features/webhooks"
 	"payssage/internal/openapi"
 
 	"github.com/go-chi/chi/v5"
