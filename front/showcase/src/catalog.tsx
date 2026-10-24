@@ -6,6 +6,7 @@ import {
   type Shape,
   Avatar,
   Breadcrumb,
+  Sidebar,
   Badge,
   Loading,
   Button,
@@ -41,6 +42,10 @@ import {
   type AlertModalVariant,
 } from "@trieoh/ui-solid";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
+import IconHome from "~icons/lucide/house";
+import IconCalendar from "~icons/lucide/calendar-days";
+import IconUsers from "~icons/lucide/users";
+import IconPlus from "~icons/lucide/plus";
 
 export type Values = Record<string, string | boolean>;
 type Control = { key: string; label: string; options?: readonly string[] };
@@ -961,6 +966,61 @@ export function createCatalog(options: {
             String(v.class),
           )}
         />
+      ),
+    },
+    {
+      name: "Sidebar",
+      group: "Navegação",
+      description: "Painel lateral compacto, com seleção discreta, seções e modo recolhido.",
+      defaults: { title: "Workspace", subtitle: "Conta pessoal", collapsed: false, activeId: "overview" },
+      controls: [
+        text("title", "Título"),
+        text("subtitle", "Subtítulo"),
+        text("collapsed", "Recolhido"),
+        select("activeId", "Página ativa", ["overview", "events", "members"]),
+      ],
+      render: (v, update) => (
+        <div class="flex h-120 w-full min-w-0 overflow-hidden rounded-2xl border border-border bg-background">
+          <Sidebar
+            class={String(v.class)}
+            brand={<IconHome class="size-5" />}
+            title={String(v.title)}
+            subtitle={String(v.subtitle)}
+            collapsed={!!v.collapsed}
+            onCollapsedChange={(value) => update("collapsed", value)}
+            activeId={String(v.activeId)}
+            onSelect={(item) => update("activeId", item.id)}
+            sections={[{
+              title: "Workspace",
+              items: [
+                { id: "overview", label: "Visão geral", icon: IconHome },
+                { id: "events", label: "Eventos", icon: IconCalendar, badge: 8 },
+                { id: "members", label: "Membros", icon: IconUsers, badge: 24 },
+              ],
+            }]}
+            action={
+              <Button
+                variant="outline"
+                class={cn("rounded-full shadow-none", v.collapsed ? "size-11 p-0" : "w-full justify-start gap-3")}
+                aria-label="Novo projeto"
+                onClick={() => toast.info("Criar novo projeto")}
+              >
+                <IconPlus class="size-5 shrink-0" />
+                <Show when={!v.collapsed}>Novo projeto</Show>
+              </Button>
+            }
+            footer={<p class={cn("text-xs text-muted-foreground", v.collapsed ? "text-center" : "px-3")}>{v.collapsed ? "P" : "Plano pessoal"}</p>}
+          />
+          <div class="min-w-0 flex-1 p-6">
+            <p class="text-xs text-muted-foreground">Seu espaço de trabalho</p>
+            <h3 class="mt-2 text-lg font-semibold tracking-tight">{{ overview: "Visão geral", events: "Eventos", members: "Membros" }[String(v.activeId)]}</h3>
+            <div class="mt-6 space-y-3" aria-hidden="true">
+              <div class="h-24 rounded-2xl border border-border/60 bg-muted/30" />
+              <div class="h-3 w-3/4 rounded-full bg-muted" />
+              <div class="h-3 w-1/2 rounded-full bg-muted" />
+            </div>
+          </div>
+        </div>
       ),
     },
     {

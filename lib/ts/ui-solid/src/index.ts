@@ -2,6 +2,7 @@
  * Solid bindings for the TrieOH design system.
  */
 export { cn } from "./lib/cn";
+export { Sidebar, type SidebarProps, type SidebarItem, type SidebarSection, type SidebarItemRenderProps } from "./sidebar";
 export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./breadcrumb";
 export {
   Button,

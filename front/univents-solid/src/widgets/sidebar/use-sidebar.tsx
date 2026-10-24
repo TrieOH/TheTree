@@ -11,6 +11,7 @@ import {
 export interface SidebarContextValue {
   /** Icon-only mode. Only applies from `lg` up. */
   collapsed: () => boolean;
+  desktop: () => boolean;
   toggleCollapsed: () => void;
   /** Drawer state. Only applies below `lg`. */
   mobileOpen: () => boolean;
@@ -28,6 +29,7 @@ const DESKTOP_BREAKPOINT = 1024;
  * closing the drawer.
  */
 export function SidebarProvider(props: ParentProps) {
+  const [desktop, setDesktop] = createSignal(typeof window !== "undefined" && window.innerWidth >= DESKTOP_BREAKPOINT);
   const [collapsed, setCollapsed] = createSignal(false);
   const [mobileOpen, setMobileOpen] = createSignal(false);
 
@@ -46,7 +48,9 @@ export function SidebarProvider(props: ParentProps) {
   };
 
   const onResize = () => {
-    if (window.innerWidth >= DESKTOP_BREAKPOINT) setMobileOpen(false);
+    const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
+    setDesktop(isDesktop);
+    if (isDesktop) setMobileOpen(false);
   };
 
   // Listeners are attached after mount and cleaned up on the owner, never
@@ -64,6 +68,7 @@ export function SidebarProvider(props: ParentProps) {
   return createComponent(SidebarContext, {
     value: {
       collapsed,
+      desktop,
       toggleCollapsed: () => setCollapsed((value) => !value),
       mobileOpen,
       setMobileOpen,

@@ -10,6 +10,10 @@ export function usage(name: string, v: Values): string {
   let setup = "";
   let jsx = "";
   switch (name) {
+    case "Sidebar":
+      setup = `${state(q("collapsed"), "collapsed")}\n${state(q("activeId"), "activeId")}`;
+      jsx = `<div class="h-120">\n  <Sidebar\n    title={${q("title")}} subtitle={${q("subtitle")}}\n    collapsed={collapsed()} onCollapsedChange={setCollapsed}\n    activeId={activeId()} onSelect={item => setActiveId(item.id)}\n    sections={[{ title: "Workspace", items: [\n      { id: "overview", label: "Visão geral" },\n      { id: "events", label: "Eventos", badge: 8 },\n      { id: "members", label: "Membros", badge: 24 },\n    ] }]}\n  />\n</div>`;
+      break;
     case "Breadcrumb":
       jsx = `<Breadcrumb ariaLabel={${q("ariaLabel")}} items={[\n  { path: "/admin", label: "Admin" },\n  { path: "/admin/events", label: "Eventos" },\n  { path: "/admin/events/editions", label: ${q("currentLabel")} },\n]} />`;
       break;

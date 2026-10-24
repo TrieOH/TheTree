@@ -71,7 +71,7 @@ function AdminShell(): JSX.Element {
         <div
           class={cn(
             "flex min-h-dvh min-w-0 max-w-full flex-col transition-[padding] duration-300 ease-in-out",
-            collapsed() ? "lg:pl-18" : "lg:pl-72",
+            collapsed() ? "lg:pl-16" : "lg:pl-64",
           )}
         >
           <div class="print:hidden shrink-0 min-w-0 max-w-full">
