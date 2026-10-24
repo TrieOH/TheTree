@@ -20,6 +20,7 @@ import { bffTransport } from "@/features/auths/api/bff-client";
 import { ThemeProvider } from "@/shared/lib/theme";
 import { appQueryClient } from "@/shared/lib/query-client";
 import "./App.css";
+import { Loading } from "@trieoh/ui-solid";
 
 const authProjectId = import.meta.env.VITE_TRIEOH_AUTH_PROJECT_ID;
 
@@ -63,7 +64,13 @@ const router = createRouter({
   context: {
     session: undefined as RouterSession | undefined,
   },
-  defaultPendingComponent: () => <main>Loading…</main>,
+  defaultPendingComponent: () => (
+    <Loading
+      label="Carregando página…"
+      layout="stacked"
+      class="min-h-64 px-6 py-12"
+    />
+  ),
 });
 
 // Registers the router's types library-wide, so `to`/`params` on every
