@@ -16,7 +16,7 @@ export default function FormContainer({ formId }: FormContainerProps) {
     <CatchBoundary
       getResetKey={() => formId}
       errorComponent={({ error }) => {
-        const message = error.message;
+        const message = error instanceof Error ? error.message : String(error);
 
         return (
           <div className="flex min-h-[40vh] w-full max-w-xl flex-col items-center justify-center gap-4 rounded-lg border border-destructive/20 bg-destructive/5 p-8 text-center shadow-sm">
