@@ -9,10 +9,8 @@ import (
 
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
-	"IdentityX/internal/handlers"
-	"IdentityX/internal/services"
-	"IdentityX/internal/services/authn"
-	"IdentityX/internal/services/tos"
+	"IdentityX/internal/features/authn"
+	"IdentityX/internal/features/tos"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -36,24 +34,24 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 	mock.When(cryptoKeys.GetByID(mock.AnyContext(), mock.Equal(key.ID))).ThenReturn(&key, nil)
 
 	projects := mock.Mock[ports.ProjectRepo]()
-	ops := authn.NewOperations(
-		mock.Mock[ports.ActorRepo](),
-		projects,
-		mock.Mock[ports.PlatformRolesRepo](),
-		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), projects, tokens.Config{}),
-		tokens.NewActionTokenManager(mock.Mock[ports.ActionTokenRepo](), []byte("test-hmac"), tokens.ActionTokenConfig{}),
-		mock.Mock[ports.EmailSender](),
-		tos.NewOperations(
-			mock.Mock[ports.TosRepo](),
-			projects,
-			mock.Mock[ports.ActorRepo](),
-			authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
-			emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
-		),
-		nopTxRunner{},
-	)
+	ops := authn.New(authn.Deps{
+		Actors:        mock.Mock[ports.ActorRepo](),
+		Projects:      projects,
+		PlatformRoles: mock.Mock[ports.PlatformRolesRepo](),
+		Tokens:        tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), projects, tokens.Config{}),
+		ActionTokens:  tokens.NewActionTokenManager(mock.Mock[ports.ActionTokenRepo](), []byte("test-hmac"), tokens.ActionTokenConfig{}),
+		EmailSender:   mock.Mock[ports.EmailSender](),
+		Tos: tos.New(tos.Deps{
+			Tos:      mock.Mock[ports.TosRepo](),
+			Projects: projects,
+			Actors:   mock.Mock[ports.ActorRepo](),
+			Authz:    authz.New(mock.Mock[ports.OrganizationRepo](), projects, mock.Mock[ports.PlatformRolesRepo]()),
+			Notifier: emails.NewTosNotifier(mock.Mock[emails.Enqueuer]()),
+		}),
+		Tx: nopTxRunner{},
+	})
 	st := completedSetup()
-	server := handlers.NewServer(&services.Operations{Authn: ops}, st)
+	server := newServer(operations{authn: ops}, st)
 	jwtStub := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := models.WithIdentity(r.Context(), &models.Identity{

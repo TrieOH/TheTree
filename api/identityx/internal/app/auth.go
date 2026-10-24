@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"IdentityX/internal/authz"
-	"IdentityX/internal/services"
+	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	libauthz "lib/authz"
@@ -17,8 +17,8 @@ import (
 // instead of listing the kit's identityx module. The scope checkers come
 // from the Access-check module: adding a scope is one spec x-scope line plus
 // one entry in authz.ScopeCheckers.
-func authPrimitives(tokensMgr *tokens.Manager, ops *services.Operations, authzSvc *authz.Service) libauthz.Primitives {
-	authMW := authMiddlewares(tokensMgr, ops)
+func authPrimitives(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations, authzSvc *authz.Service) libauthz.Primitives {
+	authMW := authMiddlewares(tokensMgr, apiKeys)
 	return libauthz.Primitives{
 		JWT:    authMW.JWT(),
 		APIKey: authMW.APIKey(),
@@ -31,7 +31,7 @@ func authPrimitives(tokensMgr *tokens.Manager, ops *services.Operations, authzSv
 // Both cross the Token-lifecycle module and the api_keys feature's
 // Authenticate seam — neither touches the repos directly, so verification
 // logic lives where the concept lives and this factory stays a thin binding.
-func authMiddlewares(tokensMgr *tokens.Manager, ops *services.Operations) *mws.Middleware[*models.AccessClaims] {
+func authMiddlewares(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
 		err := tokensMgr.Verify(ctx, tokenStr, claims)
@@ -52,7 +52,7 @@ func authMiddlewares(tokensMgr *tokens.Manager, ops *services.Operations) *mws.M
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		identity, err := ops.APIKeys.Authenticate(ctx, rawKey)
+		identity, err := apiKeys.Authenticate(ctx, rawKey)
 		if err != nil {
 			return nil, err
 		}

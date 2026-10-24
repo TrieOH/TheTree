@@ -1,0 +1,26 @@
+package handlers
+
+import (
+	"context"
+	"time"
+
+	"IdentityX/internal/openapi"
+)
+
+func (h *Handlers) GetOAuthConnect(ctx context.Context, req openapi.GetOAuthConnectRequestObject) (openapi.GetOAuthConnectResponseObject, error) {
+	acceptedTos := false
+	if req.Params.AcceptedTos != nil {
+		acceptedTos = *req.Params.AcceptedTos
+	}
+	url, err := h.ops.Connect(ctx, string(req.Provider), req.Params.ProjectId, acceptedTos)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.GetOAuthConnect200JSONResponse{
+		Code: 200,
+		Data: &struct {
+			Url string `json:"url"` //nolint:revive // generated field name
+		}{Url: url},
+		Timestamp: time.Now(), Module: module,
+	}, nil
+}
