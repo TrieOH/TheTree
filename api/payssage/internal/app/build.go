@@ -7,10 +7,10 @@ import (
 	"lib/backend"
 	"payssage/internal/authz"
 	"payssage/internal/config"
-	mercadopago "payssage/internal/features/providers"
 	"payssage/internal/handlers"
 	"payssage/internal/jobs"
 	"payssage/internal/providers"
+	"payssage/internal/providers/mercado_pago_provider"
 	"payssage/internal/repos"
 	"payssage/internal/services"
 	"payssage/internal/sqlc"
@@ -54,7 +54,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 // paymentProviders builds the provider registry. MercadoPago is the only
 // provider and serves all three roles.
 func paymentProviders(cfg config.Config, r *repos.Repos, httpClient *resty.Client) providers.PaymentProviders {
-	mp := mercadopago.NewMercadoPago(cfg.MercadoPagoConfig, r.Intents, r.Collectors, r.Sellers, r.Wallets, httpClient)
+	mp := mercado_pago_provider.NewProvider(cfg.MercadoPagoConfig, r.Intents, r.Collectors, r.Sellers, r.Wallets, httpClient)
 	return providers.PaymentProviders{
 		OAuth:    map[providers.AvailableProviders]ports.OAuthProvider{providers.MercadoPagoProvider: mp},
 		Payments: map[providers.AvailableProviders]ports.PaymentAbstractionLayer{providers.MercadoPagoProvider: mp},
