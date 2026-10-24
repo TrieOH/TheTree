@@ -14,7 +14,7 @@ Everything here is single-server-shaped: cheap, compose-native, and mostly "wire
 |----|--------------------------------------------------------------------|--------|
 | 1  | Offsite automated backups (restic → R2/B2)                         | M      |
 | 2  | Grafana alerts → ntfy (phone)                                      | S      |
-| 3  | External uptime checks as a Cloudflare Worker cron (+ status page) | S      | DONE (2026-09-17, `front/uptime-check`)
+| 3  | External uptime checks as a Cloudflare Worker cron (+ status page) | S      | REMOVED (2026-10-23; was `front/uptime-check`)
 | 4  | Container log rotation / disk-full alert                           | S      |
 | 5  | zram / swapfile                                                    | S      |  DONE (Swapfile added 4.0G)
 | 6  | Profile container memory before setting limits                     | XS     |
@@ -117,6 +117,8 @@ The things that make the box *movable*: rebuild from scratch, relocate to anothe
 **Effort.** S.
 
 ### 3. External uptime checks — Cloudflare Worker cron ✅ **done 2026-09-17**
+
+**Removed 2026-10-23:** the worker, its KV namespace and `status.trieoh.com` were deleted along with `front/uptime-check`. The notes below are history.
 
 **Implemented:** `front/uptime-check/` in TheTree (one Worker, two crons, one KV namespace, ~15KB). Diverges from the sketch below in three ways, by decision: checks run **only** for the four public product APIs (forgejo/ntfy dropped — the status page is the fallback surface); failure handling uses a **retry-then-classify** flow (fail → 3 retries @30s in the same invocation → recovered = degraded/silent/counts-as-up, all failed = dead/urgent ping on transition + recovery ping); retention is a **tiered average ladder** (5-min raw 7d → hourly avg 30d → daily avg 1y) instead of a flat log. KV keys are batched (one write per 5-min run) to stay inside the free tier's 1k writes/day. Status page served by the worker itself from KV (green/amber/red buckets, 7d strip, 7d/30d/1y rollups). Setup steps in `front/uptime-check/README.md` — KV namespace id + `NTFY_URL` secret **already wired and deployed** (2026-09-17). ⚠️ **Known issue at handoff:** CF's cron scheduler is not invoking the worker (registered schedules, zero dispatches — known Cloudflare platform bug, see community threads /922869 and /928936). Manual invocation works: `GET /__trigger` (temp, tokenless — remove or protect). Heavy diagnostic logging enabled. 30-min diagnostic cron still set instead of `*/5`. Follow-ups: fix cron via CF support ticket, revert cron to `*/5`, strip logging/`__trigger`.
 
