@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { createMemo, Show } from "solid-js";
 import { Link } from "@tanstack/solid-router";
@@ -61,7 +62,7 @@ export function ProfileCollectionItem(props: { tab: Tab; item: unknown }) {
   return (
     <article class="group overflow-hidden rounded-md border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
       <Show when={image()}>
-        {(img) => <img src={img()} alt="" class="h-32 w-full object-cover" />}
+        {(img) => <img src={resolveStorageUrl(img())} alt="" class="h-32 w-full object-cover" />}
       </Show>
       <div class="flex gap-3 p-4">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">

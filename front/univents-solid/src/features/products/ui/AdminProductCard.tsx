@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 
@@ -86,7 +87,7 @@ export function AdminProductCard(props: AdminProductCardProps): JSX.Element {
                 >
                   {(url) => (
                     <img
-                      src={url()}
+                      src={resolveStorageUrl(url())}
                       alt={props.product.vendor_code}
                       class="size-full object-cover"
                     />

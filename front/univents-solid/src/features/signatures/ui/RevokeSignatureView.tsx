@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -240,7 +241,7 @@ export function RevokeSignatureView(
                 }}
               >
                 <img
-                  src={signature()?.image_url}
+                  src={resolveStorageUrl(signature()?.image_url)}
                   alt={`Assinatura de ${signature()?.signatory_name}`}
                   class="max-h-36 max-w-full object-contain filter drop-shadow-xs"
                 />

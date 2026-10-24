@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import type { ImageCertificateElement } from "../../types";
 
@@ -15,7 +16,7 @@ export function ImageElementView(props: ImageElementViewProps): JSX.Element {
       }}
     >
       <img
-        src={props.element.src}
+        src={resolveStorageUrl(props.element.src)}
         alt=""
         draggable={false}
         class="h-full w-full"

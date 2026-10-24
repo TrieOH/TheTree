@@ -5,7 +5,7 @@ export const signatureCreateSchema = z.object({
   signatory_title: z.string().trim().optional(),
   signatory_email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   signatory_user_id: z.string().uuid("ID de usuário inválido").optional().or(z.literal("")),
-  image_url: z.string().url("URL da assinatura inválida"),
+  image_url: z.string().trim().min(1, "Imagem da assinatura é obrigatória"),
 });
 
 export type SignatureCreateInputI = z.input<typeof signatureCreateSchema>;

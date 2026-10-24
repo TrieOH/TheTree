@@ -7,7 +7,6 @@ export interface StorageUploadRequest {
 export interface StorageUploadResponse {
   uploadUrl: string;
   key: string;
-  publicUrl: string;
 }
 
 export interface StorageErrorResponse {
@@ -17,5 +16,4 @@ export interface StorageErrorResponse {
 export interface StoragePreprocessResponse {
   approved: boolean;
   key?: string;
-  publicUrl?: string;
 }

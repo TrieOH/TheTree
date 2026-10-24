@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { type Accessor, For, Show, createMemo, createSignal, onCleanup } from "solid-js";
 import { QrRenderer } from "@/features/editor/qr-renderer";
@@ -194,7 +195,7 @@ export function BadgePreview(props: BadgePreviewProps): JSX.Element {
           "transform-origin": "top left",
           "background-color": design().backgroundColor,
           "background-image": design().background
-            ? `url(${design().background})`
+            ? `url(${resolveStorageUrl(design().background)})`
             : undefined,
           "background-position": "center",
           "background-repeat": "no-repeat",
@@ -250,7 +251,7 @@ function BadgeElementPreview(props: {
 
       <Show when={el().type === "image"}>
         <img
-          src={(el() as Extract<BadgeElement, { type: "image" }>).src}
+          src={resolveStorageUrl((el() as Extract<BadgeElement, { type: "image" }>).src)}
           alt="Elemento"
           class="h-full w-full object-contain pointer-events-none"
         />

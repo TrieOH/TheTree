@@ -8,13 +8,15 @@ import type { MultiStepStepperProps } from "./types";
 export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
   const total = () => props.steps.length;
   const current = () => Math.max(0, Math.min(props.currentStep, total() - 1));
+  const vertical = () => props.orientation === "vertical";
+  const automatic = () => !props.orientation || props.orientation === "auto";
 
   return (
     <Show when={total() > 0}>
       <nav
         aria-label={props.ariaLabel ?? "Etapas"}
         data-orientation={props.orientation ?? "auto"}
-        class={cn("trieoh-stepper w-full min-w-0", props.class)}
+        class={cn("@container/stepper w-full min-w-0", props.class)}
       >
         <div
           role="progressbar"
@@ -25,7 +27,7 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
           aria-valuenow={current() + 1}
           aria-valuetext={`Etapa ${current() + 1} de ${total()}: ${props.steps[current()]?.title ?? ""}`}
         />
-        <div class="trieoh-stepper-compact">
+        <div class={cn("hidden", automatic() && "@max-[28rem]/stepper:block")}>
           <div class="flex min-w-0 items-center justify-between gap-3 text-xs">
             <span class="truncate font-medium text-foreground">
               {props.steps[current()]?.title}
@@ -68,7 +70,11 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
             </p>
           </Show>
         </div>
-        <ol class="trieoh-stepper-list">
+        <ol class={cn(
+          "m-0 list-none p-0",
+          vertical() ? "grid gap-0" : "flex items-center gap-3",
+          automatic() && "@max-[28rem]/stepper:hidden",
+        )}>
           <For each={props.steps}>
             {(step, index) => {
               const completed = () => index() < current();
@@ -82,7 +88,12 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
                     : "Pendente";
 
               return (
-                <li class="trieoh-stepper-item">
+                <li class={cn(
+                  "min-w-0",
+                  vertical()
+                    ? "relative block pb-4 last:pb-0"
+                    : "flex flex-1 items-center gap-3 last:max-w-[45%] last:flex-[0_1_auto]",
+                )}>
                   <button
                     type="button"
                     disabled={!clickable()}
@@ -92,7 +103,7 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
                     aria-current={active() ? "step" : undefined}
                     aria-label={`${index() + 1}. ${step.title}. ${status()}`}
                     class={cn(
-                      "trieoh-stepper-step group w-full min-w-0 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      "group flex min-h-10 w-auto min-w-0 items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       clickable() ? "cursor-pointer" : "cursor-default",
                     )}
                   >
@@ -148,7 +159,10 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
                     <span
                       aria-hidden="true"
                       class={cn(
-                        "trieoh-stepper-connector",
+                        "pointer-events-none",
+                        vertical()
+                          ? "absolute top-9 bottom-1 left-[calc(0.75rem-0.5px)] h-auto w-px min-w-0"
+                          : "h-px min-w-4 flex-1",
                         completed() ? "bg-accent/60" : "bg-border",
                       )}
                     />

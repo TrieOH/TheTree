@@ -24,7 +24,6 @@ import {
   ManageEditionDialog,
   type ManageEditionValues,
 } from "@/features/editions/ui/ManageEditionDialog";
-import { toast } from "@/shared/ui/toast";
 
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -79,8 +78,7 @@ function AdminEventEditionsRoute(): JSX.Element {
     });
 
     if (overlaps) {
-      toast.error("Já existe uma edição cadastrada nesse período.");
-      return false;
+      throw new Error("Já existe uma edição cadastrada nesse período.");
     }
 
     try {
@@ -103,7 +101,6 @@ function AdminEventEditionsRoute(): JSX.Element {
             banner_url: values.banner_url ?? currentTarget.banner_url ?? null,
           },
         });
-        toast.success("Edição atualizada com sucesso!");
       } else {
         await createMutation.mutateAsync({
           eventId: eventId(),
@@ -114,14 +111,12 @@ function AdminEventEditionsRoute(): JSX.Element {
             ends_at: values.ends_at,
           },
         });
-        toast.success("Edição criada com sucesso!");
       }
       setCreating(false);
       setEditing(null);
       return true;
     } catch {
-      toast.error(currentTarget ? "Erro ao atualizar edição." : "Erro ao criar edição.");
-      return false;
+      throw new Error(currentTarget ? "Erro ao atualizar edição." : "Erro ao criar edição.");
     }
   };
 

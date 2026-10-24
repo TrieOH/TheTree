@@ -40,14 +40,12 @@ export function getStorageConfig(env: StorageRuntimeEnv) {
   const bucket = (env.S3_BUCKET ?? "").trim();
   const accessKeyId = (env.S3_ACCESS_KEY_ID ?? "").trim();
   const secretAccessKey = (env.S3_SECRET_ACCESS_KEY ?? "").trim();
-  const publicBaseUrl = (env.VITE_STORAGE_URL ?? "").trim().replace(/\/+$/, "");
 
   return {
     endpoint,
     bucket,
     accessKeyId,
     secretAccessKey,
-    publicBaseUrl,
   };
 }
 
@@ -224,12 +222,7 @@ export const putFileToStorageEffect = (
         );
       }
 
-      const config = getStorageConfig(env);
-      const cleanKey = key.replace(/^\/+/, "");
-      if (config.publicBaseUrl) {
-        return `${config.publicBaseUrl}/${cleanKey}`;
-      }
-      return `${getS3Url("", env).toString()}${cleanKey}`;
+      return key.replace(/^\/+/, "");
     },
     catch: (cause) =>
       new StorageUploadError({
@@ -306,7 +299,6 @@ export const handleStorageUploadEffect = (
       );
     }
 
-    const config = getStorageConfig(env);
     const aws = getAwsClient(env);
     const uploadUrl = getS3Url(filename, env);
     uploadUrl.searchParams.set(
@@ -330,15 +322,9 @@ export const handleStorageUploadEffect = (
         }),
     });
 
-    const cleanFilename = filename.replace(/^\/+/, "");
-    const publicUrl = config.publicBaseUrl
-      ? `${config.publicBaseUrl}/${cleanFilename}`
-      : `${getS3Url("", env).toString()}${cleanFilename}`;
-
     return privateJsonResponse({
       uploadUrl: signed.url,
-      key: filename,
-      publicUrl,
+      key: filename.replace(/^\/+/, ""),
     });
   }).pipe(
     Effect.catchTags({
@@ -423,8 +409,8 @@ export const handleStorageImagePreprocessEffect = (
     }
 
     const key = buildStorageKey(file.name, path, idempotencyKey);
-    const publicUrl = yield* putFileToStorageEffect(file, key, env);
-    return privateJsonResponse({ approved: true, key, publicUrl });
+    const storedKey = yield* putFileToStorageEffect(file, key, env);
+    return privateJsonResponse({ approved: true, key: storedKey });
   }).pipe(
     Effect.catchTags({
       StorageValidationError: (err) =>

@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { For, Show, createMemo, createSignal } from "solid-js";
 
@@ -123,7 +124,7 @@ export function CertificateTemplateStaticView(props: {
     resolveCertificationTemplate(props.template, props.variables ?? {}),
   );
 
-  const backgroundUrl = () => resolvedTemplate().design_data?.background;
+  const backgroundUrl = () => resolveStorageUrl(resolvedTemplate().design_data?.background);
 
   return (
     <div

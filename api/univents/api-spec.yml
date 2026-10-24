@@ -5723,9 +5723,9 @@ components:
           $ref: '#/components/schemas/NullableUUID'
         image_url:
           x-oapi-codegen-extra-tags:
-            validate: "required,url"
+            validate: "required"
           type: string
-          format: uri
+          description: Storage object key or legacy absolute image URL.
 
     SignatureRequestStatus:
       x-go-type: models.SignatureRequestStatus

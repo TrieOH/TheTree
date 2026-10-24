@@ -44,6 +44,22 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   },
 ): JSX.Element {
   const [internalStep, setInternalStep] = createSignal(0);
+  const [submissionPending, setSubmissionPending] = createSignal(false);
+  // Signals update the UI in a batch; this lock also covers same-turn submits.
+  let submissionInFlight = false;
+  const busy = () => props.loading || submissionPending() || submissionInFlight;
+
+  const runSubmission = async (action: () => Promise<void>) => {
+    if (busy()) return;
+    submissionInFlight = true;
+    setSubmissionPending(true);
+    try {
+      await action();
+    } finally {
+      submissionInFlight = false;
+      setSubmissionPending(false);
+    }
+  };
 
   const isControlled = () => props.currentStep !== undefined;
   const stepIndex = () =>
@@ -75,8 +91,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   const currentStepItem = () => props.steps[stepIndex()] ?? props.steps[0];
 
   const handleNext = async () => {
-    if (props.loading) return;
-
+    if (busy()) return;
     if (props.onBeforeNext) {
       const allowed = await props.onBeforeNext(stepIndex());
       if (allowed === false) return;
@@ -84,10 +99,12 @@ export function MultiStepDialog<T = Record<string, unknown>>(
 
     if (isLast()) {
       const submitFn = props.onFormSubmit ?? props.onSubmit;
-      const result = await submitFn?.();
-      if (result !== false) {
-        props.onOpenChange(false);
-      }
+      await runSubmission(async () => {
+        const result = await submitFn?.();
+        if (result !== false) {
+          props.onOpenChange(false);
+        }
+      });
       return;
     }
 
@@ -95,7 +112,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   };
 
   const handleBack = () => {
-    if (props.loading) return;
+    if (busy()) return;
     if (isFirst()) {
       props.onOpenChange(false);
       return;
@@ -105,11 +122,14 @@ export function MultiStepDialog<T = Record<string, unknown>>(
 
   const handleFormSubmit = async (event: SubmitEvent) => {
     event.preventDefault();
-    if (props.onFormSubmit) {
-      const result = await props.onFormSubmit();
-      if (result !== false) {
-        props.onOpenChange(false);
-      }
+    const submitFn = props.onFormSubmit;
+    if (submitFn) {
+      await runSubmission(async () => {
+        const result = await submitFn();
+        if (result !== false) {
+          props.onOpenChange(false);
+        }
+      });
       return;
     }
     await handleNext();
@@ -170,7 +190,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
                 type="button"
                 variant="ghost"
                 onClick={handleBack}
-                disabled={props.loading}
+                disabled={busy()}
               >
                 {backLabel()}
               </Button>
@@ -180,7 +200,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
                   type="button"
                   variant="default"
                   onClick={handleNext}
-                  disabled={props.loading}
+                  disabled={busy()}
                   class="min-w-28 font-medium transition-all shadow-xs"
                 >
                   {isLast() ? submitLabel() : nextLabel()}
@@ -199,7 +219,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
           steps={props.steps as MultiStepItem<any>[]}
           currentStep={stepIndex()}
           onStepClick={(target) => {
-            if (target < stepIndex()) {
+            if (!busy() && target < stepIndex()) {
               setStep(target);
             }
           }}

@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Show, createSignal, untrack } from "solid-js";
 import CheckCircle2Icon from "~icons/lucide/check-circle-2";
@@ -518,7 +519,7 @@ export function CreateSignatureModal(
                 }
               >
                 <img
-                  src={activeSignaturePreview()!}
+                  src={resolveStorageUrl(activeSignaturePreview())}
                   alt="Prévia da assinatura"
                   class="max-h-24 max-w-full object-contain filter contrast-125 dark:invert"
                 />

@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { Product, ProductVariant } from "@trieoh/univents-api/schemas";
 import { For, createSignal, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
@@ -82,7 +83,7 @@ function VariantCard(props: {
         <div class="relative size-16 shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-border/60">
           {images[image()] ? (
             <img
-              src={images[image()]}
+              src={resolveStorageUrl(images[image()])}
               alt={props.variant.name}
               class="size-full object-cover"
             />

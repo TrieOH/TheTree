@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { For, Show, createEffect, createSignal } from "solid-js";
 import ArrowDownIcon from "~icons/lucide/arrow-down";
@@ -323,7 +324,7 @@ export function CertificateToolsSidebar(): JSX.Element {
                 >
                   <span class="flex h-16 items-center justify-center bg-white p-2">
                     <img
-                      src={signature.url}
+                      src={resolveStorageUrl(signature.url)}
                       alt=""
                       class="max-h-full max-w-full object-contain"
                     />

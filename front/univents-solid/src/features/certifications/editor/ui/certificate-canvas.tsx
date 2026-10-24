@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import {
   For,
@@ -118,7 +119,7 @@ function CertificateCanvasElementItem(props: CertificateCanvasElementItemProps):
                   const img = () => el() as ImageCertificateElement;
                   return (
                     <img
-                      src={img().src}
+                      src={resolveStorageUrl(img().src)}
                       alt=""
                       class="h-full w-full pointer-events-none select-none"
                       style={{
@@ -334,7 +335,7 @@ export function CertificateCanvas(): JSX.Element {
             "background-color": "#ffffff",
             ...(backgroundUrl()
               ? {
-                  "background-image": `url(${backgroundUrl()})`,
+                  "background-image": `url(${resolveStorageUrl(backgroundUrl())})`,
                   "background-size": "cover",
                   "background-position": "center",
                   "background-repeat": "no-repeat",

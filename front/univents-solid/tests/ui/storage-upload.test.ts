@@ -64,12 +64,12 @@ describe("uploadProfileImageEffect", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("returns publicUrl on successful upload", async () => {
+  it("returns the object key on successful upload", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
       new Response(
         JSON.stringify({
           approved: true,
-          publicUrl: "https://storage.univents.test/profiles/images/avatar.png",
+          key: "profiles/images/avatar.png",
         }),
         { status: 200 },
       ),
@@ -78,7 +78,20 @@ describe("uploadProfileImageEffect", () => {
     const file = new File(["data"], "avatar.png", { type: "image/png" });
     const url = await Effect.runPromise(uploadProfileImageEffect(file, "pfpUrl"));
 
-    expect(url).toBe("https://storage.univents.test/profiles/images/avatar.png");
+    expect(url).toBe("profiles/images/avatar.png");
+  });
+
+  it("rejects an upload response that only supplies an absolute URL", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+      approved: true,
+      publicUrl: "https://old-storage.test/avatar.png",
+    }), { status: 200 }));
+
+    const exit = await Effect.runPromiseExit(uploadProfileImageEffect(
+      new File(["data"], "avatar.png", { type: "image/png" }),
+      "pfpUrl",
+    ));
+    expect(Exit.isFailure(exit)).toBe(true);
   });
 
   it("handles moderation rejection without retrying", async () => {
@@ -115,7 +128,7 @@ describe("uploadProfileImageEffect", () => {
       return new Response(
         JSON.stringify({
           approved: true,
-          publicUrl: "https://storage.univents.test/recovered.png",
+          key: "recovered.png",
         }),
         { status: 200 },
       );
@@ -131,7 +144,7 @@ describe("uploadProfileImageEffect", () => {
       }),
     );
 
-    expect(url).toBe("https://storage.univents.test/recovered.png");
+    expect(url).toBe("recovered.png");
     expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
@@ -165,7 +178,7 @@ describe("uploadProfileImagesBatch & uploadProfileImagesBatchEffect", () => {
           return new Response(
             JSON.stringify({
               approved: true,
-              publicUrl: "https://storage.univents.test/pfp.png",
+              key: "pfp.png",
             }),
             { status: 200 },
           );
@@ -189,7 +202,7 @@ describe("uploadProfileImagesBatch & uploadProfileImagesBatchEffect", () => {
     ]);
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(batch.uploaded.pfpUrl).toBe("https://storage.univents.test/pfp.png");
+    expect(batch.uploaded.pfpUrl).toBe("pfp.png");
     expect(batch.uploaded.bannerUrl).toBeUndefined();
     expect(batch.failed).toEqual(["banner"]);
   });

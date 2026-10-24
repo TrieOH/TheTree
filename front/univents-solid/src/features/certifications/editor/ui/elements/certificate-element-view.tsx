@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import { StaticText } from "@/features/editor";
@@ -43,7 +44,7 @@ export function CertificateElementView(
             const img = () => props.element as ImageCertificateElement;
             return (
               <img
-                src={img().src}
+                src={resolveStorageUrl(img().src)}
                 alt=""
                 class="h-full w-full pointer-events-none select-none"
                 style={{

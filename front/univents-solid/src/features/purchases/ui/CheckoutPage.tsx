@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import {
   createEffect,
   createMemo,
@@ -228,7 +229,7 @@ export default function CheckoutPage(props: { purchase: Purchase }) {
                         >
                           <img
                             src={
-                              itemData()?.image ??
+                              resolveStorageUrl(itemData()?.image) ||
                               undefined
                             }
                             alt=""

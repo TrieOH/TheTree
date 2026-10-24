@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import {
   For,
@@ -77,7 +78,7 @@ export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
           "transform-origin": "center center",
           "background-color": props.design.backgroundColor,
           "background-image": props.design.background
-            ? `url(${props.design.background})`
+            ? `url(${resolveStorageUrl(props.design.background)})`
             : undefined,
           "background-size": "cover",
           "background-position": "center",
@@ -197,7 +198,7 @@ function CanvasElementItem(props: {
                     el() as Extract<BadgeElement, { type: "image" }>;
                   return (
                     <img
-                      src={img().src}
+                      src={resolveStorageUrl(img().src)}
                       alt=""
                       class="h-full w-full pointer-events-none select-none"
                       style={{
