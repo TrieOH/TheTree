@@ -64,6 +64,7 @@ func TestFailedOpenClosesWhatOpened(t *testing.T) {
 
 type fakeJobs struct {
 	libjobs.DelayedEnqueuer
+
 	served  bool
 	handler http.Handler
 }

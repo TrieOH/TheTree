@@ -6,7 +6,7 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 
 | # | Item | Effort | Why |
 |---|------|--------|-----|
-| 1 | **Upgrade Go to 1.27** (must) | M | Newest release; unlocks stdlib uuid (#2) + json/v2; repo is on 1.26.2–1.26.4 |
+| 1 | ~~**Upgrade Go to 1.27** (must)~~ ✅ | M | Newest release; unlocks stdlib uuid (#2) + json/v2; repo is on 1.26.2–1.26.4 |
 | 2 | **Replace google/uuid with stdlib `uuid`** (must) | M | RFC 9562 in stdlib since 1.27; drops a dep; ~600 files but mechanical |
 | 3 | `-race` in CI integration tests | XS | `go test -count=1 ./...` runs today with no race detector |
 | 4 | `go mod tidy` drift check in CI | XS | go.work.sum/go.sum drift goes uncaught between `just goup` runs |
@@ -26,14 +26,16 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 | 18 | Dev seed data — `just seed` | S | Nothing seeds the dev DB; manual testing starts from empty postgres |
 | 19 | Compose-scoped ops recipes — `just logs <svc>` / `just status` | XS | justfile only has host-wide `just ps` |
 | 20 | `just nuke <svc>` — dev DB reset with confirmation | XS | Only blunt tool today is `down -v` (wipes everything) |
-| 21 | Centralize tool versions | S | Pins duplicated across justfile / dagger / ci with "keep in sync" comments |
+| 21 | ~~Centralize tool versions~~ ✅ | S | Pins duplicated across justfile / dagger / ci with "keep in sync" comments |
 | 22 | Faster integration tests — shared testcontainer | M | `lib/go/testdb` pays container startup on every run |
 
 ---
 
 ## Must-haves
 
-### 1. Upgrade Go to 1.27
+### 1. Upgrade Go to 1.27 ✅ **done 2026-10-24**
+
+*Done: `go.work` and every module (backends, `lib/go`, the Go SDKs) are on `go 1.27.3`; every tool bumped to its latest release (golangci-lint 2.15.0 needed for 1.27, plus its `modernize` fixes). The steps below predate #21 — `.dagger` and the `go-tools` image are gone; versions now live in `tools.versions`.*
 
 **Why.** Go 1.27 (2026-08-19) is out and the repo is on 1.26.2 (payssage, lib/go) / 1.26.4 (identityx, informd, univents, go.work). 1.27 is what makes #2 possible (stdlib `uuid`) and ships `encoding/json/v2` (#6), `crypto/mldsa`, and the usual toolchain improvements. Sticking on 1.26.4 means the stdlib uuid migration can't start.
 
@@ -216,7 +218,9 @@ Either way, errors land on #14's problem+json shape (SDKError/APIError map to it
 
 **Effort.** XS.
 
-### 21. Centralize tool versions
+### 21. Centralize tool versions ✅ **done 2026-10-24**
+
+*Done: `tools.versions` at the root is the single source — the justfile loads it as dotenv, the Dockerfiles source it (Go arrives as the `GO_VERSION` build arg from compose / the deploy workflow), and the CI setup actions load it into `GITHUB_ENV`. setup-go fails CI if `go.work`'s directive drifts from `GO_VERSION`. The `go-tools` image is gone: the Dockerfiles download sqlc and `go install` oapi-codegen themselves.*
 
 **Problem.** goVersion / sqlc / golangci / gotestsum / oapi-codegen / trivy pins live in `justfile`, `.dagger/main.go`, and `ci.yml` — with hand-written "keep in sync" comments (e.g. `oapiCodegenVersion` vs the binary baked into the go-tools image). That's exactly the drift class that already bit (go-tools image, toolchain mismatches).
 

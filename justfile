@@ -1,4 +1,8 @@
 set shell := ["bash", "-cu"]
+# Every pinned tool version (and GO_VERSION, which compose passes to the
+# Dockerfiles) comes from tools.versions — bump versions there only.
+set dotenv-load
+set dotenv-filename := "tools.versions"
 
 # Every recipe is `just <command> [target]`, e.g. `just test identityx`.
 
@@ -80,17 +84,13 @@ migrate SVC ACTION="up":
     db_name="$(var DB_NAME)"; db_name="${db_name:-$(var POSTGRES_DB)}"
     export PGPASSWORD="$(var POSTGRES_PASSWORD)"
     dsn="host=$db_host port=$db_port user=$(var POSTGRES_USER) dbname=$db_name sslmode=$(var POSTGRES_SSLMODE) channel_binding=$(var POSTGRES_CHANNEL_BINDING)"
-    go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir "api/{{SVC}}/db/migrations" postgres "$dsn" "{{ACTION}}"
+    go run github.com/pressly/goose/v3/cmd/goose@v$GOOSE_VERSION -dir "api/{{SVC}}/db/migrations" postgres "$dsn" "{{ACTION}}"
 
 # ── Code generation ───────────────────────────────────────────────────────
 
 # Generated bindings import github.com/oapi-codegen/runtime, which is not kept
 # in go.mod (the code is not committed, so `go mod tidy` drops it) — pinned
-# here and in the Dockerfiles at generation time. The Docker build images get
-# the binaries from the go-tools image instead (see api/<svc>/Dockerfile).
-oapi-codegen-version := "v2.8.0"
-oapi-runtime-version := "v1.6.0"
-
+# at generation time here and in the Dockerfiles (OAPI_RUNTIME_VERSION).
 # Per backend: sqlc queries and oapi-codegen bindings (internal/openapi);
 # then the orval TS clients (lib/ts/<svc>/client — orval always regenerates
 # all four).
@@ -108,11 +108,11 @@ gen +SERVICES=services:
       (
         cd "api/$svc"
         sqlc generate
-        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
+        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v$OAPI_CODEGEN_VERSION \
           --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
-        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
+        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v$OAPI_CODEGEN_VERSION \
           --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
-        go get github.com/oapi-codegen/runtime@{{oapi-runtime-version}}
+        go get github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION
       )
     done
     pnpm orval
@@ -158,9 +158,7 @@ _go-pkgs TARGET="":
 
 # ── Tooling ───────────────────────────────────────────────────────────────
 
-trivy-version := "v0.74.0"
-
-# Pinned to the same versions CI uses. go install puts binaries in
+# Pinned in tools.versions, the same versions CI uses. go install puts binaries in
 # $(go env GOPATH)/bin and trivy goes to ~/.local/bin — if `just test` /
 # `just lint` / the pre-commit gitleaks scan report "command not found", add
 # them to PATH:
@@ -171,12 +169,12 @@ trivy-version := "v0.74.0"
 setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
-    go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
-    go install gotest.tools/gotestsum@v1.13.0
-    go install github.com/zricethezav/gitleaks/v8@v8.30.1
-    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/{{trivy-version}}/contrib/install.sh \
-        | sh -s -- -b "$HOME/.local/bin" {{trivy-version}}
+    go install github.com/sqlc-dev/sqlc/cmd/sqlc@v$SQLC_VERSION
+    go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$GOLANGCI_LINT_VERSION
+    go install gotest.tools/gotestsum@v$GOTESTSUM_VERSION
+    go install github.com/zricethezav/gitleaks/v8@v$GITLEAKS_VERSION
+    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/v$TRIVY_VERSION/contrib/install.sh \
+        | sh -s -- -b "$HOME/.local/bin" "v$TRIVY_VERSION"
     echo "installed into $(go env GOPATH)/bin and $HOME/.local/bin"
     echo 'add to PATH if needed:  export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"'
 

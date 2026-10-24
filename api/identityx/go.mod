@@ -1,6 +1,6 @@
 module IdentityX
 
-go 1.26.4
+go 1.27.3
 
 require (
 	github.com/MintzyG/fun v0.10.6
@@ -11,7 +11,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.8.0
 	github.com/ovechkin-dm/mockio v1.0.2
 	go.uber.org/zap v1.28.0
 	golang.org/x/oauth2 v0.36.0

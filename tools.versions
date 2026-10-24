@@ -1,0 +1,14 @@
+# Single source of truth for every pinned toolchain and tool version.
+# Read by the justfile (dotenv), the api/<svc>/Dockerfiles (sourced, plus the
+# GO_VERSION build arg) and CI (.github/actions/* load it into GITHUB_ENV).
+# Bare versions, no leading v. Bump here only; keep the go.work/go.mod `go`
+# directives on GO_VERSION (setup-go fails CI on a mismatch).
+GO_VERSION=1.27.3
+SQLC_VERSION=1.31.1
+OAPI_CODEGEN_VERSION=2.8.1
+OAPI_RUNTIME_VERSION=1.8.0
+GOOSE_VERSION=3.29.0
+GOLANGCI_LINT_VERSION=2.15.0
+GOTESTSUM_VERSION=1.13.0
+GITLEAKS_VERSION=8.30.1
+TRIVY_VERSION=0.76.1

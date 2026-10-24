@@ -1,6 +1,6 @@
 module Informd
 
-go 1.26.4
+go 1.27.3
 
 require (
 	github.com/MintzyG/fun v0.10.6
@@ -10,7 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.8.0
 	github.com/stretchr/testify v1.11.1
 )
 

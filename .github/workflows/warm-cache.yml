@@ -11,6 +11,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'tools.versions'
       - '.github/actions/setup-go-tools/**'
   workflow_dispatch:
     inputs:
@@ -46,11 +47,14 @@ jobs:
           gh cache list --repo "$GITHUB_REPOSITORY" --ref refs/heads/main --key thetree-tool- --limit 100 --json id --jq '.[].id' \
             | while read -r id; do gh cache delete "$id" --repo "$GITHUB_REPOSITORY"; done
 
+      - name: Load tool versions
+        run: grep -E '^[A-Z0-9_]+=' tools.versions >> "$GITHUB_ENV"
+
       # go install needs the toolchain; its module cache is not warmed here
       - name: Go toolchain
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.4"
+          go-version: ${{ env.GO_VERSION }}
           cache: false
 
       - name: Setup Go tools

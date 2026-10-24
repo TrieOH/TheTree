@@ -92,12 +92,10 @@ func (m *ActionTokenManager) Mint(ctx context.Context, purpose models.ActionToke
 	now := m.now()
 	expiresAt := now.Add(ttl)
 	token, err := crypto.SignHMACJWT(models.ActionTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   actorID.String(),
-			ID:        jti.String(),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(now),
-		},
+		Subject:   actorID.String(),
+		ID:        jti.String(),
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		IssuedAt:  jwt.NewNumericDate(now),
 		Purpose:   string(purpose),
 		ProjectID: projectID,
 	}, m.hmacSecret)

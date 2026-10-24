@@ -118,16 +118,14 @@ func (repo *Repo) ListAcceptances(ctx context.Context, projectID uuid.UUID) ([]m
 	out := make([]models.TosAcceptanceWithActor, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, models.TosAcceptanceWithActor{
-			TosAcceptance: models.TosAcceptance{
-				ID:          row.ID,
-				ActorID:     row.ActorID,
-				ProjectID:   row.ProjectID,
-				TosVersion:  row.TosVersion,
-				ContentHash: row.ContentHash,
-				Source:      row.Source,
-				AcceptedAt:  row.AcceptedAt,
-			},
-			ActorEmail: row.ActorEmail,
+			ID:          row.ID,
+			ActorID:     row.ActorID,
+			ProjectID:   row.ProjectID,
+			TosVersion:  row.TosVersion,
+			ContentHash: row.ContentHash,
+			Source:      row.Source,
+			AcceptedAt:  row.AcceptedAt,
+			ActorEmail:  row.ActorEmail,
 		})
 	}
 	return out, nil

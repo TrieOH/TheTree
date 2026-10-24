@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"lib/authz"
 	"lib/database"
@@ -185,10 +186,10 @@ func openModules(ctx context.Context, d *Deps, modules []Module) (func(context.C
 	var closes []namedClose
 	closeAll := func(ctx context.Context) error {
 		var errs []error
-		for i := len(closes) - 1; i >= 0; i-- {
-			err := closes[i].close(ctx)
+		for _, c := range slices.Backward(closes) {
+			err := c.close(ctx)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("close %s: %w", closes[i].name, err))
+				errs = append(errs, fmt.Errorf("close %s: %w", c.name, err))
 			}
 		}
 		return errors.Join(errs...)

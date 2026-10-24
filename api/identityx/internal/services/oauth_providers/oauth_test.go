@@ -196,18 +196,14 @@ func mintPair(t *testing.T) *testPair {
 
 	accessJTI, refreshJTI := uuid.New(), uuid.New()
 	accessPayload := mintPayload(t, models.AccessClaims{
-		Sub: models.AccessSub{ID: actor.ID, ProjectID: actor.ProjectID, Email: actor.Email, Type: actor.Type},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
-			Issuer:    "test-issuer", ID: accessJTI.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
-		},
+		Sub:       models.AccessSub{ID: actor.ID, ProjectID: actor.ProjectID, Email: actor.Email, Type: actor.Type},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+		Issuer:    "test-issuer", ID: accessJTI.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
 	}, keyID)
 	refreshPayload := mintPayload(t, models.RefreshClaims{
-		Sub: models.RefreshSub{ID: actor.ID, ProjectID: actor.ProjectID, AccessJTI: accessJTI},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			Issuer:    "test-issuer", ID: refreshJTI.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
-		},
+		Sub:       models.RefreshSub{ID: actor.ID, ProjectID: actor.ProjectID, AccessJTI: accessJTI},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		Issuer:    "test-issuer", ID: refreshJTI.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
 	}, keyID)
 	accessToken, err := crypto.SignToken(accessPayload, kp)
 	if err != nil {

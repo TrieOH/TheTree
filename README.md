@@ -10,7 +10,7 @@ tag here (see [Releases & deploys](#releases--deploys)).
 
 | Layer | Tech | Notes |
 |---|---|---|
-| Backends | Go 1.26 · chi · sqlc · goose · river | 4 microservices in `api/` |
+| Backends | Go 1.27 · chi · sqlc · goose · river | 4 microservices in `api/` |
 | Frontends | React 19 · TanStack Start · Tailwind v4 | 4 SPAs in `front/`, deploy to Cloudflare Workers |
 | Shared | `lib/go` (authz, crypto, db, telemetry, oauth) · `lib/ts` (orval TS clients, `ui-*`, `front-core*`) | framework-free by default, see *Package boundaries* |
 | SDKs | `sdk/go`, `sdk/ts` | IdentityX + Payssage public SDKs |
@@ -48,7 +48,7 @@ when a package imports across that line.
 
 ## Prereqs
 
-- Go 1.26 (`go.work` at the root)
+- Go 1.27 (`go.work` at the root)
 - pnpm (pinned via `packageManager` in package.json — corepack picks it up)
 - Docker + Docker Compose
 - `just` — all dev recipes live in the `justfile`
@@ -58,7 +58,9 @@ when a package imports across that line.
 - `gitleaks` (for the pre-commit secret scan)
 - `trivy` (for the pre-push hook's whole-repo scan)
 
-All of them are installable with `just setup` (pinned versions). `go install`
+All of them are installable with `just setup`, at the versions pinned in
+`tools.versions` — the one file the justfile, the Dockerfiles and CI read, so
+a bump happens there and nowhere else. `go install`
 puts binaries in `$(go env GOPATH)/bin` and trivy goes to `~/.local/bin` —
 add both to `PATH` if a command reports "command not found":
 

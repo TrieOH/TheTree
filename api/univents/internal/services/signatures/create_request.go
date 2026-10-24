@@ -60,10 +60,8 @@ func (o *Operations) CreateRequest(ctx context.Context, payload models.CreateSig
 	token, err := crypto.SignHMACJWT(models.SignatureRequestClaims{
 		RequestID: request.ID,
 		EditionID: payload.EditionID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}, []byte(o.hmacSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode signature token: %w", err)

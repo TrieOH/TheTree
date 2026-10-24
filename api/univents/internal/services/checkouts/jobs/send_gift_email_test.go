@@ -219,12 +219,10 @@ func TestSendGiftEmail_DeliversViaSMTP(t *testing.T) {
 
 	ctx := context.Background()
 	mailpit, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "axllent/mailpit:v1.30.7",
-			ExposedPorts: []string{"1025/tcp", "8025/tcp"},
-			WaitingFor:   wait.ForHTTP("/api/v1/messages").WithPort("8025/tcp").WithStartupTimeout(60 * time.Second),
-		},
-		Started: true,
+		Image:        "axllent/mailpit:v1.30.7",
+		ExposedPorts: []string{"1025/tcp", "8025/tcp"},
+		WaitingFor:   wait.ForHTTP("/api/v1/messages").WithPort("8025/tcp").WithStartupTimeout(60 * time.Second),
+		Started:      true,
 	})
 	if err != nil {
 		t.Fatalf("start mailpit: %v", err)

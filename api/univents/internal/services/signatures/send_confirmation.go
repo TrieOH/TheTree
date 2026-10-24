@@ -34,9 +34,7 @@ func (o *Operations) sendConfirmationEmail(ctx context.Context, sig *models.Sign
 	token, err := crypto.SignHMACJWT(models.SignatureRevocationClaims{
 		SignatureID: sig.ID,
 		EditionID:   sig.EditionID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt: jwt.NewNumericDate(time.Now()),
-		},
+		IssuedAt:    jwt.NewNumericDate(time.Now()),
 	}, []byte(o.hmacSecret))
 	if err != nil {
 		return

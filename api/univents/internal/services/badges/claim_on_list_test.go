@@ -72,19 +72,17 @@ func TestListByUser_ClaimsGiftAndEmitsDeferredBadge(t *testing.T) {
 	mock.When(emissions.ListViewsByUser(mock.AnyContext(), mock.Any[uuid.UUID]())).
 		ThenReturn([]models.BadgeEmissionView{
 			{
-				BadgeEmission: models.BadgeEmission{
-					ID:             emissionID,
-					EditionID:      editionID,
-					UserID:         userID,
-					Origin:         models.BadgeEmissionOriginParticipant,
-					RegistrationID: &regID,
-					Status:         models.BadgeEmissionStatusActive,
-				},
-				EditionName:  "2026",
-				EndsAt:       time.Now().Add(24 * time.Hour),
-				EventName:    "SCTI",
-				TicketTypeID: &ticketTypeID,
-				TicketName:   new("Básico"),
+				ID:             emissionID,
+				EditionID:      editionID,
+				UserID:         userID,
+				Origin:         models.BadgeEmissionOriginParticipant,
+				RegistrationID: &regID,
+				Status:         models.BadgeEmissionStatusActive,
+				EditionName:    "2026",
+				EndsAt:         time.Now().Add(24 * time.Hour),
+				EventName:      "SCTI",
+				TicketTypeID:   &ticketTypeID,
+				TicketName:     new("Básico"),
 			},
 		}, nil)
 

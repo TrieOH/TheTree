@@ -1,6 +1,6 @@
 module sdk/identityx
 
-go 1.26.2
+go 1.27.3
 
 require (
 	github.com/MintzyG/fun v0.10.6
