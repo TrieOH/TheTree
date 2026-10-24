@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { For, Show } from "solid-js";
+import { For, Show, dynamicComponent } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface SectionTabItem<T extends string = string> {
@@ -29,15 +29,16 @@ export function SectionTabs<T extends string = string>(
       )}
       aria-label={props.ariaLabel}
     >
-      <For each={props.items}>
-        {({ id, label, icon: Icon, count, badge }) => {
-          const isActive = () => props.active === id;
-          const displayCount = () => count ?? badge;
+      <For each={props.items} keyed={(item) => item.id}>
+        {(item) => {
+          const Icon = dynamicComponent(() => item().icon);
+          const isActive = () => props.active === item().id;
+          const displayCount = () => item().count ?? item().badge;
 
           return (
             <button
               type="button"
-              onClick={() => props.onChange(id)}
+              onClick={() => props.onChange(item().id)}
               class={cn(
                 "group relative inline-flex shrink-0 items-center gap-2 border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors cursor-pointer",
                 isActive()
@@ -46,18 +47,18 @@ export function SectionTabs<T extends string = string>(
               )}
               aria-current={isActive() ? "page" : undefined}
             >
-              <Show when={Icon}>
-                {Icon!({
-                  class: cn(
+              <Show when={item().icon}>
+                <Icon
+                  class={cn(
                     "size-4 shrink-0 transition-colors",
                     isActive()
                       ? "text-primary"
                       : "text-muted-foreground group-hover:text-foreground",
-                  ),
-                })}
+                  )}
+                />
               </Show>
 
-              <span class="whitespace-nowrap">{label}</span>
+              <span class="whitespace-nowrap">{item().label}</span>
 
               <Show when={displayCount() !== undefined}>
                 <span
