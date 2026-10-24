@@ -6,15 +6,10 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 )
 
 func (o *Operations) UpsertProfile(ctx context.Context, payload models.UpsertProfileInput, projectID uuid.UUID) (*models.ActorProfile, error) {
-	ctx, span := telemetry.StartSpan(ctx, "UpsertProfile")
-	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

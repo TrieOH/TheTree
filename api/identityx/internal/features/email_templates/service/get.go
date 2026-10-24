@@ -5,8 +5,6 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 
 	"github.com/MintzyG/fun"
@@ -15,9 +13,6 @@ import (
 // Get returns the effective template for a kind: the project's override
 // when present, otherwise the baked-in default.
 func (o *Operations) Get(ctx context.Context, projectID uuid.UUID, kind models.EmailTemplateKind) (*models.EffectiveEmailTemplate, error) {
-	ctx, span := telemetry.StartSpan(ctx, "GetEmailTemplate")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return nil, err

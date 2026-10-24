@@ -16,9 +16,6 @@ import (
 // It always succeeds from the caller's perspective (anti-enumeration):
 // unknown emails and passwordless (OAuth-only) accounts are silent no-ops.
 func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswordInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "ForgotPassword")
-	defer span.End()
-
 	email := strings.TrimSpace(strings.ToLower(in.Email))
 	actor, err := o.Actors.GetByEmail(ctx, email, in.ProjectID)
 	if err != nil {
@@ -56,9 +53,6 @@ func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswor
 // verification, reset is never idempotent — a consumed token is dead, and
 // the user requests a new link if they need another reset.
 func (o *Operations) ResetPassword(ctx context.Context, in models.ResetPasswordInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "ResetPassword")
-	defer span.End()
-
 	actorID, err := o.ActionTokens.Redeem(ctx, models.PasswordResetActionTokenPurpose, in.Token)
 	if err != nil {
 		return err

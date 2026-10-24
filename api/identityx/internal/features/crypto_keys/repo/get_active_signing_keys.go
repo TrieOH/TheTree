@@ -6,15 +6,10 @@ import (
 	"lib/database"
 	"lib/xslices"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 )
 
 func (repo *Repo) GetActiveSigningKeys(ctx context.Context, projectID *uuid.UUID) ([]models.ActiveSigningKey, error) {
-	ctx, span := telemetry.StartSpan(ctx, "GetActiveSigningKeys")
-	defer span.End()
-
 	sqlcKeys, err := database.Queries(ctx, repo.q).GetActiveSigningKeys(ctx, projectID)
 	if err != nil {
 		return nil, repo.dbe(err)

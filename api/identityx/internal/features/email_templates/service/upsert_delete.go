@@ -6,8 +6,6 @@ import (
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 
-	"lib/telemetry"
-
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
@@ -16,9 +14,6 @@ import (
 // contract (renders, and {{.ActionURL}} appears in the body at least once)
 // before anything is written.
 func (o *Operations) Upsert(ctx context.Context, projectID uuid.UUID, kind models.EmailTemplateKind, subject, body string) (*models.EffectiveEmailTemplate, error) {
-	ctx, span := telemetry.StartSpan(ctx, "UpsertEmailTemplate")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -59,9 +54,6 @@ func (o *Operations) Upsert(ctx context.Context, projectID uuid.UUID, kind model
 // Deleting a kind that has no override is a no-op (it was already the
 // default).
 func (o *Operations) Delete(ctx context.Context, projectID uuid.UUID, kind models.EmailTemplateKind) error {
-	ctx, span := telemetry.StartSpan(ctx, "DeleteEmailTemplate")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return err

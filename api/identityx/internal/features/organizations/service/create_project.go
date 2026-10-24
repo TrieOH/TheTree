@@ -3,13 +3,9 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"lib/telemetry"
 )
 
 func (o *Operations) CreateProject(ctx context.Context, in models.CreateOrgProjectInput) (*models.Project, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CreateProject")
-	defer span.End()
 	org, err := o.Orgs.GetByID(ctx, in.OrganizationID)
 	if err != nil {
 		return nil, err

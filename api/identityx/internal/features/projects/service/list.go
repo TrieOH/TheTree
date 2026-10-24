@@ -3,14 +3,9 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"lib/telemetry"
 )
 
 func (o *Operations) ListProjects(ctx context.Context) ([]models.Project, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListProjects")
-	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

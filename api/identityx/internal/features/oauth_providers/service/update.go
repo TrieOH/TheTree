@@ -10,9 +10,6 @@ import (
 )
 
 func (o *Operations) Update(ctx context.Context, payload models.UpdateOAuthProviderInput) (*models.ProjectOAuthProviders, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Update")
-	defer span.End()
-
 	row, err := o.Providers.GetByID(ctx, payload.ID)
 	if err != nil {
 		return nil, err

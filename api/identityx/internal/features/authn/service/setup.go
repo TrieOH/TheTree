@@ -4,14 +4,10 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/crypto"
-	"lib/telemetry"
 	"strings"
 )
 
 func (o *Operations) Setup(ctx context.Context, in models.SetupInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "Setup")
-	defer span.End()
-
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	hashedPassword, err := crypto.Hash(in.Password, crypto.Strong)

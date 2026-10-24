@@ -3,14 +3,9 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-
-	"lib/telemetry"
 )
 
 func (o *Operations) UpsertSchema(ctx context.Context, payload models.UpsertProfileSchemaInput) (*models.ProjectProfileSchema, error) {
-	ctx, span := telemetry.StartSpan(ctx, "UpsertSchema")
-	defer span.End()
-
 	// Platform schema: a platform-scoped write, so it is gated on the
 	// caller's platform role rather than a project membership.
 	if payload.ProjectID == nil {

@@ -5,12 +5,9 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/database"
-	"lib/telemetry"
 )
 
 func (repo *Repo) AddMember(ctx context.Context, toCreate models.OrganizationMember) error {
-	ctx, span := telemetry.StartSpan(ctx, "AddMember")
-	defer span.End()
 	err := database.Queries(ctx, repo.q).AddOrganizationMember(ctx, sqlc.AddOrganizationMemberParams{
 		ActorID:        toCreate.ActorID,
 		OrganizationID: toCreate.OrganizationID,

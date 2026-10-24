@@ -4,7 +4,6 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/oauth"
-	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
@@ -18,9 +17,6 @@ var providerOrder = []string{"google", "github"}
 // logins with. Disabled providers are hidden so the frontend modal never
 // offers a login that would be rejected.
 func (o *Operations) ListEnabledProviders(ctx context.Context, projectID *uuid.UUID) ([]models.OAuthProvider, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListEnabledProviders")
-	defer span.End()
-
 	if projectID == nil {
 		var out []models.OAuthProvider
 		for _, name := range providerOrder {

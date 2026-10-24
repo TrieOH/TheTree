@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 
-	"lib/telemetry"
-
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
@@ -19,9 +17,6 @@ import (
 // starts flows whose caller agreed to them, so the consent screen precedes
 // the provider redirect (the callback itself has no UI to ask in).
 func (o *Operations) Connect(ctx context.Context, provider string, projectID *uuid.UUID, acceptedTos bool) (string, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Connect")
-	defer span.End()
-
 	p, ok := o.Meta[provider]
 	if !ok {
 		return "", fun.ErrBadRequest("unsupported provider: " + provider)

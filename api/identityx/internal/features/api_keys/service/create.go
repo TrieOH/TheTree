@@ -11,9 +11,6 @@ import (
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInput) (*models.APIKey, string, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	project, err := o.Projects.GetByID(ctx, *payload.ProjectID)
 	if err != nil {
 		telemetry.Log().Info("Create api key", zap.String("project_id", payload.ProjectID.String()))
@@ -29,9 +26,6 @@ func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInpu
 }
 
 func (o *Operations) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *api_keys.GeneratedAPIKey, error) {
-	ctx, span := telemetry.StartSpan(ctx, "createInternal")
-	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, nil, err

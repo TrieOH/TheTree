@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
@@ -11,8 +10,5 @@ import (
 // tokens module owns key policy: scope validation and the key read live
 // there, not here.
 func (o *Operations) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]any, error) {
-	ctx, span := telemetry.StartSpan(ctx, "JWKS")
-	defer span.End()
-
 	return o.Tokens.JWKS(ctx, projectID)
 }

@@ -12,9 +12,6 @@ import (
 )
 
 func (o *Operations) Login(ctx context.Context, in models.IDXLoginInput) (tokens *models.UserTokensOutput, err error) {
-	ctx, span := telemetry.StartSpan(ctx, "Login")
-	defer span.End()
-
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	actor, err := o.Actors.GetByEmail(ctx, in.Email, in.ProjectID)

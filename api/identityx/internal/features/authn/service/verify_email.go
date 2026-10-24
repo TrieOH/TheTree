@@ -21,9 +21,6 @@ import (
 // actor-state policy, so it lives here: the anti-replay table still blocks
 // replaying a token against an unverified account.
 func (o *Operations) VerifyEmail(ctx context.Context, in models.VerifyEmailInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "VerifyEmail")
-	defer span.End()
-
 	actorID, err := o.ActionTokens.Redeem(ctx, models.EmailVerifyActionTokenPurpose, in.Token)
 	if err != nil {
 		if !errors.Is(err, tokens.ErrActionTokenUsed) {
@@ -46,9 +43,6 @@ func (o *Operations) VerifyEmail(ctx context.Context, in models.VerifyEmailInput
 // succeeds from the caller's perspective (anti-enumeration): unknown
 // emails and already-verified accounts are silent no-ops.
 func (o *Operations) ResendVerification(ctx context.Context, in models.ResendVerificationInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "ResendVerification")
-	defer span.End()
-
 	email := strings.TrimSpace(strings.ToLower(in.Email))
 	actor, err := o.Actors.GetByEmail(ctx, email, in.ProjectID)
 	if err != nil {

@@ -3,14 +3,11 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) ListOrgProjectMembers(ctx context.Context, orgID, projectID uuid.UUID) ([]models.ProjectMember, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListOrgProjectMembers")
-	defer span.End()
 	err := o.Authz.CheckProject(ctx, projectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err

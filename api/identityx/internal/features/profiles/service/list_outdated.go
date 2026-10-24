@@ -4,8 +4,6 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 )
 
@@ -13,9 +11,6 @@ import (
 // migrate to the active schema version). A nil projectID means the platform
 // scope; the project variant requires a project admin.
 func (o *Operations) ListOutdatedProfiles(ctx context.Context, projectID *uuid.UUID) ([]models.ActorProfile, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListOutdatedProfiles")
-	defer span.End()
-
 	if projectID != nil {
 		err := o.Authz.CheckProject(ctx, *projectID, models.ProjectRoleAdmin)
 		if err != nil {

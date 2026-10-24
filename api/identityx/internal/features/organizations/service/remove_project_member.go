@@ -3,14 +3,11 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) RemoveProjectMember(ctx context.Context, payload models.RemoveOrgProjectMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "RemoveProjectMember")
-	defer span.End()
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return err

@@ -3,14 +3,11 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizationMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "AddMember")
-	defer span.End()
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return err

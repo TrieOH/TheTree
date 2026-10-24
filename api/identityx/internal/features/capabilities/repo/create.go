@@ -5,14 +5,9 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/database"
-
-	"lib/telemetry"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate models.Capability) (*models.Capability, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	capability, err := database.Queries(ctx, repo.q).CreateCapability(ctx, sqlc.CreateCapabilityParams{
 		ProjectID: toCreate.ProjectID,
 		Resource:  toCreate.Resource,

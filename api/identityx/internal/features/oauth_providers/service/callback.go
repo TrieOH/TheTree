@@ -18,9 +18,6 @@ import (
 // flow — state lifecycle, provider resolution, userinfo fetch, identity
 // linking — lives behind this interface.
 func (o *Operations) Callback(ctx context.Context, provider, code, state string) (*models.UserTokensOutput, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Callback")
-	defer span.End()
-
 	loginState, err := o.LoginStates.GetByState(ctx, state)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {

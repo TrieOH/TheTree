@@ -9,8 +9,6 @@ import (
 	"IdentityX/ports"
 	"lib/jsonschema"
 
-	"lib/telemetry"
-
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
@@ -23,9 +21,6 @@ var errNoActiveSchema = errors.New("no active profile schema")
 // loadActiveSchema returns the active schema for the scope, or
 // errNoActiveSchema when no schema exists or the existing one is inactive.
 func (o *Operations) loadActiveSchema(ctx context.Context, projectID *uuid.UUID) (*models.ProjectProfileSchema, error) {
-	ctx, span := telemetry.StartSpan(ctx, "loadActiveSchema")
-	defer span.End()
-
 	s, err := o.Schemas.Get(ctx, projectID)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {
@@ -78,9 +73,6 @@ func validateAndStamp(schema *models.ProjectProfileSchema, profile json.RawMessa
 // The write is skipped when the migration state would not change, so reads
 // stay stable.
 func (o *Operations) migrateOnDemand(ctx context.Context, profile *models.ActorProfile, projectID *uuid.UUID) (*models.ActorProfile, error) {
-	ctx, span := telemetry.StartSpan(ctx, "migrateOnDemand")
-	defer span.End()
-
 	schema, err := o.loadActiveSchema(ctx, projectID)
 	if err != nil {
 		if errors.Is(err, errNoActiveSchema) {

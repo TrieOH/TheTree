@@ -5,8 +5,6 @@ import (
 	"IdentityX/models"
 	"context"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 )
 
@@ -14,9 +12,6 @@ import (
 // override when present, otherwise the baked-in default — each tagged with
 // its source.
 func (o *Operations) List(ctx context.Context, projectID uuid.UUID) ([]models.EffectiveEmailTemplate, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListEmailTemplates")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return nil, err

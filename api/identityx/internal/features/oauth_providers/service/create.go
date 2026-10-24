@@ -10,9 +10,6 @@ import (
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateOAuthProviderInput) (*models.ProjectOAuthProviders, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	err := o.Authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err

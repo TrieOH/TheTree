@@ -5,15 +5,10 @@ import (
 	"context"
 	"time"
 
-	"lib/telemetry"
-
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateActorInput) (*models.Actor, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	err := o.Authz.CheckProject(ctx, *payload.ProjectID, models.ProjectRoleAdmin)
 	if err != nil {
 		return nil, err

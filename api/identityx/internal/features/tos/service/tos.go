@@ -11,8 +11,6 @@ import (
 
 	"IdentityX/models"
 
-	"lib/telemetry"
-
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
@@ -21,9 +19,6 @@ import (
 // document on signup and notice pages without authenticating. A project
 // without terms (v0) surfaces as not-found.
 func (o *Operations) Get(ctx context.Context, projectID uuid.UUID) (*models.TermsOfService, error) {
-	ctx, span := telemetry.StartSpan(ctx, "GetProjectTos")
-	defer span.End()
-
 	return o.Tos.GetCurrent(ctx, projectID)
 }
 
@@ -34,9 +29,6 @@ func (o *Operations) Get(ctx context.Context, projectID uuid.UUID) (*models.Term
 // continued use. Creating when terms already exist is a conflict — use
 // Update.
 func (o *Operations) Create(ctx context.Context, projectID uuid.UUID, content string) (*models.TermsOfService, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CreateProjectTos")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -76,9 +68,6 @@ func (o *Operations) Create(ctx context.Context, projectID uuid.UUID, content st
 // email carries the new content, the effective date, the continued-use
 // clause, and the account-termination path for those who disagree.
 func (o *Operations) Update(ctx context.Context, projectID uuid.UUID, content string) (*models.TermsOfService, error) {
-	ctx, span := telemetry.StartSpan(ctx, "UpdateProjectTos")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -106,9 +95,6 @@ func (o *Operations) Update(ctx context.Context, projectID uuid.UUID, content st
 // LGPD art. 8 §2 proof artifact. Accepting a version already accepted is
 // idempotent.
 func (o *Operations) Accept(ctx context.Context, projectID uuid.UUID) (*models.TosAcceptance, error) {
-	ctx, span := telemetry.StartSpan(ctx, "AcceptProjectTos")
-	defer span.End()
-
 	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
@@ -136,9 +122,6 @@ func (o *Operations) Accept(ctx context.Context, projectID uuid.UUID) (*models.T
 // to which version, when. This is the audit surface the burden of proof
 // in LGPD art. 8 §2 demands.
 func (o *Operations) ListAcceptances(ctx context.Context, projectID uuid.UUID) ([]models.TosAcceptanceWithActor, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ListTosAcceptances")
-	defer span.End()
-
 	err := o.authorizeAdmin(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -187,9 +170,6 @@ func (o *Operations) BindRegistration(ctx context.Context, actorID, projectID uu
 // project has no terms, before the effective date, or when the actor
 // already accepted the current version.
 func (o *Operations) StampUse(ctx context.Context, actorID, projectID uuid.UUID) error {
-	ctx, span := telemetry.StartSpan(ctx, "StampTosUse")
-	defer span.End()
-
 	tos, hasTos, err := o.CurrentTos(ctx, projectID)
 	if err != nil || !hasTos {
 		return err

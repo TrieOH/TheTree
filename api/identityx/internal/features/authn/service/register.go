@@ -13,9 +13,6 @@ import (
 )
 
 func (o *Operations) Register(ctx context.Context, in models.IDXRegisterInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "Register")
-	defer span.End()
-
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	hashedPassword, err := crypto.Hash(in.Password, crypto.Strong)

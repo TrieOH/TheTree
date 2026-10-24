@@ -21,9 +21,6 @@ import (
 // one module and the capability format (resource:action pairs on the
 // identity's subject) has a single home.
 func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.Identity, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Authenticate")
-	defer span.End()
-
 	key, err := api_keys.ParseAPIKey(rawKey)
 	if err != nil {
 		telemetry.Log().Warn("api key parse failed", zap.Error(err))

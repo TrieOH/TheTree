@@ -5,14 +5,9 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/database"
-
-	"lib/telemetry"
 )
 
 func (repo *Repo) Register(ctx context.Context, toRegister models.Actor) (*models.Actor, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Register")
-	defer span.End()
-
 	sqlcActor, err := database.Queries(ctx, repo.q).RegisterActor(ctx, sqlc.RegisterActorParams{
 		ProjectID:    toRegister.ProjectID,
 		AuthMethod:   string(toRegister.AuthMethod),

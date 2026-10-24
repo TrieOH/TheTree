@@ -3,15 +3,12 @@ package service
 import (
 	"IdentityX/models"
 	"context"
-	"lib/telemetry"
 	"time"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) CreateProjectActor(ctx context.Context, payload models.CreateActorInput) (*models.Actor, error) {
-	ctx, span := telemetry.StartSpan(ctx, "CreateProjectActor")
-	defer span.End()
 	err := o.Authz.CheckProject(ctx, *payload.ProjectID, models.ProjectRoleMember)
 	if err != nil {
 		return nil, err

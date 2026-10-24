@@ -8,15 +8,10 @@ import (
 	"lib/database"
 	"time"
 
-	"lib/telemetry"
-
 	"github.com/google/uuid"
 )
 
 func (repo *Repo) Create(ctx context.Context, projectID *uuid.UUID, pair *crypto.KeyPair, keyType string, expiresAt *time.Time) (*models.CryptoKey, error) {
-	ctx, span := telemetry.StartSpan(ctx, "Create")
-	defer span.End()
-
 	sqlcKeyPair, err := database.Queries(ctx, repo.q).CreateCryptoKey(ctx, sqlc.CreateCryptoKeyParams{
 		ProjectID:           projectID,
 		Type:                keyType,
