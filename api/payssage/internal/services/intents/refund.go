@@ -48,7 +48,7 @@ func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.In
 	if err != nil {
 		return nil, err
 	}
-	provider, ok := providers.PayssageProviders.Payments[providerEnum]
+	provider, ok := o.registry.Payments[providerEnum]
 	if !ok {
 		return nil, fun.Err("provider not implemented").BadRequest()
 	}

@@ -3,6 +3,7 @@ package intents
 import (
 	"payssage/internal/authz"
 
+	"payssage/internal/providers"
 	"payssage/ports"
 )
 
@@ -13,6 +14,7 @@ type Operations struct {
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
 	authz      *authz.Service
+	registry   providers.PaymentProviders
 }
 
 func NewOperations(
@@ -22,6 +24,7 @@ func NewOperations(
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
 	authz *authz.Service,
+	registry providers.PaymentProviders,
 ) *Operations {
 	return &Operations{
 		intents:    intents,
@@ -30,5 +33,6 @@ func NewOperations(
 		collectors: collectors,
 		sellers:    sellers,
 		authz:      authz,
+		registry:   registry,
 	}
 }

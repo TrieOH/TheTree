@@ -3,6 +3,7 @@ package webhooks
 import (
 	"payssage/internal/authz"
 
+	"payssage/internal/providers"
 	"payssage/ports"
 
 	"lib/database"
@@ -15,6 +16,7 @@ type Operations struct {
 	endpoints  ports.WebhookEndpointRepo
 	deliveries ports.WebhookDeliveryRepo
 	authz      *authz.Service
+	registry   providers.PaymentProviders
 	// tx opens the transactions multi-step writes run in; threaded
 	// from boot, no package-level runner.
 	tx database.TxRunner
@@ -27,6 +29,7 @@ func NewOperations(
 	deliveries ports.WebhookDeliveryRepo,
 	authz *authz.Service,
 	tx database.TxRunner,
+	registry providers.PaymentProviders,
 ) *Operations {
 	return &Operations{
 		jobs:       jobs,
@@ -35,5 +38,6 @@ func NewOperations(
 		deliveries: deliveries,
 		authz:      authz,
 		tx:         tx,
+		registry:   registry,
 	}
 }

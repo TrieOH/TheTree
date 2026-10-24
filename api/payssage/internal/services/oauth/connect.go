@@ -92,5 +92,5 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 
 	// The provider redirect URI is Payssage's own callback (config-owned,
 	// D7) — the provider builds the auth URL with it internally.
-	return providers.PayssageProviders.OAuth[provider].BuildAuthURL(stateToken), nil
+	return o.registry.OAuth[provider].BuildAuthURL(stateToken), nil
 }

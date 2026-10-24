@@ -54,7 +54,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 	if err != nil {
 		return nil, err
 	}
-	provider, ok := providers.PayssageProviders.Payments[providerEnum]
+	provider, ok := o.registry.Payments[providerEnum]
 	if !ok {
 		return nil, fun.ErrBadRequest("provider not implemented")
 	}
