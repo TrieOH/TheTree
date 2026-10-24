@@ -1,22 +1,18 @@
-# Issue tracker: Forgejo (self-hosted)
+# Issue tracker: GitHub
 
-Issues and PRDs for this repo live as Forgejo issues on the self-hosted instance at `https://git.trieoh.com` (org `TrieOH`, repo `TheTree`). The host is Gitea 1.22 (Forgejo-compatible API at `/api/v1`).
-
-## Access
-
-The API token lives at `~/.config/trieoh/forgejo.token` (chmod 600) — outside the repo, never commit it. Use it as `Authorization: token $(cat ~/.config/trieoh/forgejo.token)` on every request. There is no `gh`/`glab` CLI configured for this host; use `curl` against the Gitea REST API.
+Issues and PRDs for this repo live as GitHub issues on `TrieOH/TheTree` (https://github.com/TrieOH/TheTree). Use the `gh` CLI, already authenticated on dev machines.
 
 ## Conventions
 
-- **Create an issue**: `POST /api/v1/repos/TrieOH/TheTree/issues` with `{"title": ..., "body": ..., "labels": [<label-id>]}`.
-- **Read an issue**: `GET /api/v1/repos/TrieOH/TheTree/issues/<number>` — `?comments=true` for comments.
-- **List issues**: `GET /api/v1/repos/TrieOH/TheTree/issues?labels=<comma-separated-label-ids>`.
-- **Comment on an issue**: `POST /api/v1/repos/TrieOH/TheTree/issues/<number>/comments` with `{"body": ...}`.
-- **Apply / remove labels**: `PUT /api/v1/repos/TrieOH/TheTree/issues/<number>/labels` with `{"labels": [<label-ids>]}` (replaces the whole set); `DELETE /api/v1/repos/TrieOH/TheTree/issues/<number>/labels/<label-id>` to remove one.
-- **Close**: `PATCH /api/v1/repos/TrieOH/TheTree/issues/<number>` with `{"state": "closed"}` — post the closing explanation as a comment first.
-- **Labels**: `GET /api/v1/repos/TrieOH/TheTree/labels` to map names → ids.
+- **Create an issue**: `gh issue create --title ... --body ... --label <name>`.
+- **Read an issue**: `gh issue view <number>` — `--comments` for comments.
+- **List issues**: `gh issue list --label <name>` (repeat `--label` to AND them).
+- **Comment on an issue**: `gh issue comment <number> --body ...`.
+- **Apply / remove labels**: `gh issue edit <number> --add-label <name>` / `--remove-label <name>`.
+- **Close**: `gh issue close <number> --comment ...` — the comment carries the closing explanation.
+- **Labels**: `gh label list`.
 
-The API is Gitea-shaped, not GitHub-shaped: paths start `/api/v1`, auth is a plain bearer-style `token` header, and issues and PRs are numbered in one sequence.
+Issues and PRs share one number sequence.
 
 ## Pull requests as a triage surface
 
@@ -24,11 +20,11 @@ The API is Gitea-shaped, not GitHub-shaped: paths start `/api/v1`, auth is a pla
 
 ## When a skill says "publish to the issue tracker"
 
-Create a Forgejo issue via the API above.
+Create a GitHub issue with `gh issue create`.
 
 ## When a skill says "fetch the relevant ticket"
 
-`GET /api/v1/repos/TrieOH/TheTree/issues/<number>` (with `?comments=true`).
+`gh issue view <number> --comments`.
 
 ## Wayfinding operations
 
@@ -38,5 +34,5 @@ Used by `/wayfinder`.
 - **Child ticket**: an issue carrying `Part of #<map>` at the top of its description and labels `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`).
 - **Blocking**: text form only — a `Blocked by: #<n>, #<n>` line at the top of the description. A ticket is unblocked when every blocker is closed.
 - **Frontier query**: list the map's children, drop any with an open `Blocked by` line or an assignee; first in map order wins.
-- **Claim**: `PATCH` the issue with `{"assignees": ["<username>"]}`.
+- **Claim**: `gh issue edit <number> --add-assignee <username>`.
 - **Resolve**: post a comment with the answer, close the issue, then append a context pointer to the map's Decisions-so-far.

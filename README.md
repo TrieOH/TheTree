@@ -204,4 +204,4 @@ paths: full/express × service/front).
   [`CONTEXT.md`](CONTEXT.md) (domain glossary), [`docs/adr/`](docs/adr/)
   (architecture decisions), [`docs/agents/`](docs/agents/) (agent
   conventions), [`.agents/AGENTS.md`](.agents/AGENTS.md) (agent repo guide).
-- Human-facing docs live in [`TrieOH/docs`](https://git.trieoh.com/TrieOH/docs).
+- Human-facing docs live in [`TrieOH/docs`](https://github.com/TrieOH/docs).

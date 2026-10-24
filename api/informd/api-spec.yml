@@ -91,7 +91,7 @@ info:
     email: contact@trieoh.com
   license:
     name: TSAL
-    url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/informd/LICENSE
+    url: https://github.com/TrieOH/TheTree/blob/main/api/informd/LICENSE
 
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 
