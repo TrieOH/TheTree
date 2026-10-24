@@ -11,7 +11,7 @@ name: Deploy
 #
 # Contract (§3.8): build once → publish immutable artifact → capture digest /
 # Worker Version ID. NO :latest is ever pushed. release.json is printed to the
-# run log (Phase 3 turns it into deploy-repo ledger commits).
+# run log.
 
 on:
   push:
@@ -37,7 +37,6 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
       front-name: ${{ steps.tag.outputs.front_name }}
       sdk-name: ${{ steps.tag.outputs.sdk_name }}
-      activate: ${{ steps.tag.outputs.activate }}
     steps:
       - name: Parse tag
         id: tag
@@ -61,7 +60,6 @@ jobs:
 
           FRONT_NAME=""
           SDK_NAME=""
-          ACTIVATE=false
           case "$TYPE" in
             front)
               FRONT_NAME="${ARTIFACT%-ui}"
@@ -74,14 +72,6 @@ jobs:
               case "$ARTIFACT" in
                 identityx|informd|payssage|univents) ;;
                 *) echo "::error::unknown service '$ARTIFACT'"; exit 1 ;;
-              esac
-              # ledger activation only for real releases — sandbox tags must
-              # never touch the deploy repo (decided in shell, not expressions:
-              # this runner has been shown to mis-evaluate !contains()).
-              # Services on Cloudflare deploy from publish and skip the ledger.
-              case "$ARTIFACT:$VERSION" in
-                *sandbox*|identityx:*|payssage:*|informd:*|univents:*) ;;
-                *) ACTIVATE=true ;;
               esac
               ;;
             sdk)
@@ -97,8 +87,7 @@ jobs:
           echo "version=$VERSION"      >> "$GITHUB_OUTPUT"
           echo "front_name=$FRONT_NAME" >> "$GITHUB_OUTPUT"
           echo "sdk_name=$SDK_NAME"      >> "$GITHUB_OUTPUT"
-          echo "activate=$ACTIVATE"     >> "$GITHUB_OUTPUT"
-          echo "[tag] artifact=$ARTIFACT type=$TYPE lane=$LANE version=$VERSION activate=$ACTIVATE"
+          echo "[tag] artifact=$ARTIFACT type=$TYPE lane=$LANE version=$VERSION"
 
   checks:
     needs: parse
@@ -240,73 +229,9 @@ jobs:
           echo "▶ R6 integration tests"
           cd "api/$ARTIFACT" && gotestsum --format standard-verbose -- -count=1 ./...
 
-  # ── Ledger activation (§3.8): digest → deploy repo commit. Only for
-  #    services (fronts deploy via Cloudflare, SDKs via npm — compose only
-  #    runs backend images). Gated by parse's shell-computed 'activate' —
-  #    sandbox tags never touch the deploy repo.
-  activate:
-    needs: [parse, publish]
-    if: ${{ needs.parse.outputs.activate == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    env:
-      ARTIFACT: ${{ needs.parse.outputs.artifact }}
-      VERSION: ${{ needs.parse.outputs.version }}
-      DIGEST: ${{ needs.publish.outputs.digest }}
-    steps:
-      - name: Clone deploy repo (SSH, deploy key)
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
-        run: |
-          echo "▶ activate: clone deploy repo"
-          set -euo pipefail
-          install -m 600 /dev/null /tmp/deploy_repo_key
-          echo "$SSH_KEY" > /tmp/deploy_repo_key
-          trap 'rm -f /tmp/deploy_repo_key' EXIT
-          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key"
-          git clone --depth 1 git@ssh.trieoh.com:TrieOH/deploy.git deploy-repo
-          cd deploy-repo
-          git config user.name  "${{ vars.RELEASE_BOT_NAME }}"
-          git config user.email "${{ vars.RELEASE_BOT_EMAIL }}"
-
-      - name: Pin digest in compose.yml
-        run: |
-          echo "▶ activate: pin digest"
-          set -euo pipefail
-          cd deploy-repo
-          # normalize defensively: accept either bare digest or full ref from publish
-          DIGEST="${DIGEST##*@}"
-          # matches tag-form AND digest-form lines, replaces any old comment
-          sed -i -E "s|(image: ghcr\.io/trieoh/${ARTIFACT})[^[:space:]]*[[:space:]]*(#.*)?$|\1@${DIGEST} # ${VERSION}|" \
-            thetree/compose.yml
-          grep -n "image: ghcr.io/trieoh/${ARTIFACT}" thetree/compose.yml
-          # early-exit ONLY when unchanged; a diff is the normal path — don't let
-          # a bare 'A && B' list poison set -e (that killed run 715)
-          if git diff --exit-code --quiet; then
-            echo "compose.yml unchanged — digest already pinned"
-            exit 0
-          fi
-
-      - name: Commit & push ledger entry
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
-        run: |
-          set -euo pipefail
-          install -m 600 /dev/null /tmp/deploy_repo_key
-          echo "$SSH_KEY" > /tmp/deploy_repo_key
-          trap 'rm -f /tmp/deploy_repo_key' EXIT
-          cd deploy-repo
-          git add thetree/compose.yml
-          echo "▶ activate: commit & push"
-          git commit -m "release: ${ARTIFACT} ${VERSION}" -m "image: ghcr.io/trieoh/${ARTIFACT}@${DIGEST}"
-          GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i /tmp/deploy_repo_key" \
-            git push origin main
-          echo "[ledger] release: ${ARTIFACT} ${VERSION} → TrieOH/deploy main (rollout workflow picks it up)"
-
   publish:
     needs: [parse, checks]
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    outputs:
-      digest: ${{ steps.digest.outputs.digest }}
     permissions:
       contents: read
       packages: write
@@ -357,7 +282,7 @@ jobs:
           set -euo pipefail
           IMG="ghcr.io/trieoh/$ARTIFACT:$VERSION"
           # RepoDigests entries are full refs (registry/repo@sha256:…) — keep the
-          # bare digest only, that's the §3.8 contract (activate re-attaches the ref)
+          # bare digest only: the Cloudflare step pulls the image by it
           DIGEST="${{ steps.img.outputs.digest }}"
           DIGEST="${DIGEST##*@}"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
