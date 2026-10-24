@@ -140,7 +140,7 @@ info:
     email: contact@trieoh.com
   license:
     name: TSAL
-    url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/univents/LICENSE
+    url: https://github.com/TrieOH/TheTree/blob/main/api/univents/LICENSE
 
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 

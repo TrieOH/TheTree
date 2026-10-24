@@ -83,7 +83,7 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written digest ledger; server checks it out at `~/deploy/thetree`). This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
 
 - Prod stack (postgres, rustfs, identityx, univents, payssage, informd): `TrieOH/deploy` → `thetree/compose.yml`
-- Infra stacks (caddy, forgejo, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
+- Infra stacks (caddy, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
 
 ## Shared Go Library (`lib/go/`)
 
@@ -130,7 +130,7 @@ The whole Go workspace is on Go 1.27 (`go 1.27.x` in `go.work` and every `go.mod
 
 ### Issue tracker
 
-Issues live as Forgejo issues on the self-hosted instance at git.trieoh.com (repo TrieOH/TheTree); access via curl + token at `~/.config/trieoh/forgejo.token`. See `docs/agents/issue-tracker.md`.
+Issues live as GitHub issues on TrieOH/TheTree; access via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
