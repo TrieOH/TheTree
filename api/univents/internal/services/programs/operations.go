@@ -7,7 +7,7 @@ import (
 	"lib/database"
 	"lib/telemetry"
 	"univents/internal/authz"
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/ports"
 
 	"github.com/google/uuid"
@@ -22,7 +22,7 @@ type Notifier interface {
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes
-// on (contract in internal/services/notify).
+// on (contract in internal/notify).
 const channelUniventsChanges = notify.Channel
 
 type Operations struct {

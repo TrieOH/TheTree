@@ -9,7 +9,7 @@ import (
 	"lib/database"
 	"lib/telemetry"
 
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
 

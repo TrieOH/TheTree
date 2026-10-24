@@ -10,7 +10,7 @@ import (
 
 	"lib/database"
 	libjobs "lib/jobs"
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
 
@@ -44,7 +44,7 @@ type Jobs interface {
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes
-// on (contract in internal/services/notify): the WS hub routes
+// on (contract in internal/notify): the WS hub routes
 // kind="purchase" events (D9) and the SSE relay routes kind="stock" deltas
 // (D10), both subscribed in split 6.
 const channelUniventsChanges = notify.Channel

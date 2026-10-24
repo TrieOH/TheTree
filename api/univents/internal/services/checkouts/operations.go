@@ -12,7 +12,7 @@ import (
 	"lib/database"
 	libjobs "lib/jobs"
 	"univents/internal/authz"
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
 
@@ -77,7 +77,7 @@ type Jobs interface {
 }
 
 // channelUniventsChanges is the single NOTIFY channel the store publishes
-// on (contract in internal/services/notify).
+// on (contract in internal/notify).
 const channelUniventsChanges = notify.Channel
 
 type Operations struct {

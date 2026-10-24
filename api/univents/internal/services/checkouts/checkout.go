@@ -11,8 +11,8 @@ import (
 
 	"lib/telemetry"
 
+	"univents/internal/notify"
 	"univents/internal/services/checkouts/jobs"
-	"univents/internal/services/notify"
 	"univents/models"
 	"univents/ports"
 

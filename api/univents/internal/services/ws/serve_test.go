@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/internal/services/ws"
 	"univents/models"
 

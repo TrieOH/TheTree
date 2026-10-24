@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"lib/telemetry"
+	"univents/internal/notify"
 	"univents/internal/services/checkouts/jobs"
-	"univents/internal/services/notify"
 	"univents/models"
 
 	"github.com/google/uuid"

@@ -20,7 +20,7 @@ import (
 	"encoding/hex"
 	"time"
 
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/models"
 	"univents/ports"
 

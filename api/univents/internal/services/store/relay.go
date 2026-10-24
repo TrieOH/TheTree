@@ -8,7 +8,7 @@ import (
 
 	"lib/telemetry"
 
-	"univents/internal/services/notify"
+	"univents/internal/notify"
 	"univents/models"
 
 	"github.com/google/uuid"
