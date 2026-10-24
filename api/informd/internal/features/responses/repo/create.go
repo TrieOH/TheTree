@@ -6,12 +6,9 @@ import (
 
 	"Informd/models"
 	"lib/database"
-	"lib/telemetry"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate models.Response) (*models.Response, error) {
-	ctx, span := telemetry.StartSpan(ctx, "ResponseRepo.Create")
-	defer span.End()
 	row, err := database.Queries(ctx, repo.q).CreateResponse(ctx, sqlc.CreateResponseParams{
 		FormID:      toCreate.FormID,
 		InviteID:    toCreate.InviteID,

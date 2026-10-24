@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 
 	"Informd/models"
 	"lib/xslices"
@@ -12,9 +11,6 @@ import (
 )
 
 func (o *Operations) BulkEdit(ctx context.Context, formID uuid.UUID, payload []models.UpdateStepFieldInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "FieldService.BulkEdit")
-	defer span.End()
-
 	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err

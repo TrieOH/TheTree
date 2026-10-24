@@ -4,16 +4,12 @@ import (
 	"context"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func (o *Operations) Open(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
-	ctx, span := telemetry.StartSpan(ctx, "FormService.Open")
-	defer span.End()
-
 	form, err := o.Forms.GetByID(ctx, formID)
 	if err != nil {
 		return nil, err

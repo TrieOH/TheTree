@@ -5,15 +5,11 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveFormMemberInput) (err error) {
-	ctx, span := telemetry.StartSpan(ctx, "FormService.RemoveMember")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err

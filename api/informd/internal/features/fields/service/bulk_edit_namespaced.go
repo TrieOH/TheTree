@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 
 	"Informd/models"
 	"lib/xslices"
@@ -13,9 +12,6 @@ import (
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) BulkEditNamespaced(ctx context.Context, formID, _ uuid.UUID, payload []models.UpdateNamespacedStepFieldInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "FieldService.BulkEditNamespaced")
-	defer span.End()
-
 	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return err

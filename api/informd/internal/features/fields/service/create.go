@@ -2,15 +2,11 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 
 	"Informd/models"
 )
 
 func (o *Operations) Create(ctx context.Context, payload models.CreateStepFieldInput) (*models.Field, error) {
-	ctx, span := telemetry.StartSpan(ctx, "FieldService.Create")
-	defer span.End()
-
 	_, err := o.Authz.Form(ctx, payload.FormID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err

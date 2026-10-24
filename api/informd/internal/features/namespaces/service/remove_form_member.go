@@ -5,16 +5,12 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) RemoveFormMember(ctx context.Context, payload models.RemoveNamespaceFormMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.RemoveFormMember")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err

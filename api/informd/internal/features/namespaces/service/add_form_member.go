@@ -6,16 +6,12 @@ import (
 	"time"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) AddFormMember(ctx context.Context, payload models.AddNamespaceFormMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.AddFormMember")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err

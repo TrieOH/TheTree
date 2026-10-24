@@ -5,13 +5,9 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/telemetry"
 )
 
 func (o *Operations) ListForms(ctx context.Context) (forms []models.Form, err error) {
-	ctx, span := telemetry.StartSpan(ctx, "FormService.ListForms")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

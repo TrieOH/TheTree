@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"Informd/models"
-	"lib/telemetry"
 	"lib/xslices"
 
 	"github.com/MintzyG/fun"
@@ -12,9 +11,6 @@ import (
 )
 
 func (o *Operations) Submit(ctx context.Context, payload models.SubmitInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "ResponseService.Submit")
-	defer span.End()
-
 	form, err := o.Forms.GetByID(ctx, payload.FormID)
 	if err != nil {
 		return err

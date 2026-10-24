@@ -6,13 +6,9 @@ import (
 	"time"
 
 	"Informd/models"
-	"lib/telemetry"
 )
 
 func (o *Operations) Create(ctx context.Context, name string) (*models.Namespace, error) {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.Create")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

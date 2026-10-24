@@ -5,13 +5,9 @@ import (
 	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/telemetry"
 )
 
 func (o *Operations) ListNamespaces(ctx context.Context) (members []models.Namespace, err error) {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.GetMembers")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err

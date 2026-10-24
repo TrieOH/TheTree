@@ -4,16 +4,12 @@ import (
 	"context"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
 func (o *Operations) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.ListFormMembers")
-	defer span.End()
-
 	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleMember)
 	if err != nil {
 		return nil, err

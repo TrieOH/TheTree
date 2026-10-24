@@ -4,15 +4,11 @@ import (
 	"context"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/google/uuid"
 )
 
 func (o *Operations) CreateForm(ctx context.Context, title string, namespaceID uuid.UUID) (*models.Form, error) {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.CreateForm")
-	defer span.End()
-
 	namespace, err := o.Namespaces.GetByID(ctx, namespaceID)
 	if err != nil {
 		return nil, err

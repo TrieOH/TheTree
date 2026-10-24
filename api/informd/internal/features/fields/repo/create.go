@@ -6,12 +6,9 @@ import (
 
 	"Informd/models"
 	"lib/database"
-	"lib/telemetry"
 )
 
 func (repo *Repo) Create(ctx context.Context, toCreate models.Field) (*models.Field, error) {
-	ctx, span := telemetry.StartSpan(ctx, "FieldRepo.Create")
-	defer span.End()
 	sqlcField, err := database.Queries(ctx, repo.q).CreateField(ctx, sqlc.CreateFieldParams{
 		StepID:       toCreate.StepID,
 		Key:          toCreate.Key,

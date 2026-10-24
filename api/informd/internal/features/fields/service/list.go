@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 
 	"Informd/models"
 
@@ -10,9 +9,6 @@ import (
 )
 
 func (o *Operations) List(ctx context.Context, formID, stepID uuid.UUID) ([]models.Field, error) {
-	ctx, span := telemetry.StartSpan(ctx, "FieldService.List")
-	defer span.End()
-
 	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleMember)
 	if err != nil {
 		return nil, err

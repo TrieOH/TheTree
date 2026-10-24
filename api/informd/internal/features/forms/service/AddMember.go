@@ -6,15 +6,11 @@ import (
 	"time"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) AddMember(ctx context.Context, payload models.AddFormMemberInput) (err error) {
-	ctx, span := telemetry.StartSpan(ctx, "FormService.AddMember")
-	defer span.End()
-
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err

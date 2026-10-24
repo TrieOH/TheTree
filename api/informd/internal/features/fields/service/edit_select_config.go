@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"lib/telemetry"
 
 	"Informd/models"
 
@@ -10,9 +9,6 @@ import (
 )
 
 func (o *Operations) EditSelectConfig(ctx context.Context, formID uuid.UUID, payload models.FieldSelectConfig) (*models.FieldSelectConfig, error) {
-	ctx, span := telemetry.StartSpan(ctx, "FieldService.EditSelectConfig")
-	defer span.End()
-
 	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleAdmin)
 	if err != nil {
 		return nil, err

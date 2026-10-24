@@ -4,15 +4,11 @@ import (
 	"context"
 
 	"Informd/models"
-	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) error {
-	ctx, span := telemetry.StartSpan(ctx, "NamespaceService.RemoveMember")
-	defer span.End()
-
 	namespace, err := o.Namespaces.GetByID(ctx, payload.NamespaceID)
 	if err != nil {
 		return err
