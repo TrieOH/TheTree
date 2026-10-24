@@ -14,7 +14,7 @@ runs:
     - name: Install binary
       shell: bash
       run: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/${{ inputs.version }}/contrib/install.sh \
           | sh -s -- -b "$HOME/.local/bin" ${{ inputs.version }}
 
     - name: Add to PATH

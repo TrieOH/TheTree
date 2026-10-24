@@ -1,221 +1,186 @@
 set shell := ["bash", "-cu"]
 
+# Every recipe is `just <command> [target]`, e.g. `just test identityx`.
+
+services := "identityx informd payssage univents"
+
 default:
-    just --list
+    @just --list
 
-ps:
-    docker ps
+# ── Dev stack ─────────────────────────────────────────────────────────────
 
+# Start every database (migrated) and the whole compose stack.
 up:
-    just identityx-db-init
-    just payssage-db-init
-    just informd-db-init
-    just univents-db-init
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for svc in {{services}}; do just db "$svc"; done
     docker compose up --remove-orphans
 
 down:
     docker compose down
 
-# Run IdentityX: (default: compose container) | db-init | db-up | db-status | lint | test
-identityx +CMD="":
+ps:
+    docker ps
+
+# Run one backend in compose, with the backends it calls in the background.
+run SVC:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{CMD}}" in
-      "")
-            just identityx-db-init
-            docker compose up --build --remove-orphans identityx ;;
-      db-init)   just identityx-db-init ;;
-      db-up)     just identityx-goose up ;;
-      db-status) just identityx-goose status ;;
-      lint) golangci-lint run ./api/identityx/... ;;
-      test) cd api/identityx && just test ;;
-      *)    echo "unknown command: {{CMD}}" && exit 1 ;;
+    case "{{SVC}}" in
+      identityx) deps="" ;;
+      informd)   deps="identityx" ;;
+      payssage)  deps="identityx" ;;
+      univents)  deps="identityx payssage" ;;
+      *) echo "unknown service: {{SVC}} (use one of: {{services}})" >&2; exit 2 ;;
     esac
+    for svc in $deps {{SVC}}; do just db "$svc"; done
+    for svc in $deps; do docker compose up --build --remove-orphans --detach "$svc"; done
+    docker compose up --build --remove-orphans "{{SVC}}"
 
-# Start IdentityX's database and pooler, then migrate it.
-identityx-db-init:
-    docker compose up --detach --wait identityx-db identityx-pooler
-    just identityx-goose up
+# Start one backend's database (and IdentityX's pooler), then migrate it.
+db SVC:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{SVC}}" in
+      identityx) containers="identityx-db identityx-pooler" ;;
+      informd|payssage|univents) containers="{{SVC}}-db" ;;
+      *) echo "unknown service: {{SVC}} (use one of: {{services}})" >&2; exit 2 ;;
+    esac
+    docker compose up --detach --wait $containers
+    just migrate "{{SVC}}" up
 
 # Goose takes advisory locks, which need a session, not a transaction-mode
-# pooler, hence the direct (unpooled) endpoint. `IDX_DB_*` overrides let the
-# helper target an isolated test database; otherwise it uses
-# api/identityx/.env.
+# pooler, hence the direct (unpooled) endpoint. Credentials come from
+# api/<svc>/.env (<PREFIX>_POSTGRES_*). The host and port are, in order:
+# <PREFIX>_DB_HOST/PORT (point the helper at another database, e.g. an
+# isolated test one), <PREFIX>_POSTGRES_DIRECT_HOST/PORT, then the local
+# compose database.
 #
-# Migrate IdentityX outside the API process, over the direct endpoint
-identityx-goose +ACTION="up":
+# Migrate one backend outside the API process: up | status.
+migrate SVC ACTION="up":
     #!/usr/bin/env bash
     set -euo pipefail
-    set -a
-    source api/identityx/.env
-    set +a
-    db_host="${IDX_DB_HOST:-${IDX_POSTGRES_DIRECT_HOST:-localhost}}"
-    db_port="${IDX_DB_PORT:-${IDX_POSTGRES_DIRECT_PORT:-5432}}"
-    db_name="${IDX_DB_NAME:-$IDX_POSTGRES_DB}"
-    export PGPASSWORD="$IDX_POSTGRES_PASSWORD"
-    dsn="host=$db_host port=$db_port user=$IDX_POSTGRES_USER dbname=$db_name sslmode=$IDX_POSTGRES_SSLMODE channel_binding=$IDX_POSTGRES_CHANNEL_BINDING"
+    case "{{SVC}}" in
+      identityx) prefix=IDX;      local_port=5432 ;;
+      univents)  prefix=UNIVENTS; local_port=5433 ;;
+      payssage)  prefix=PAYSSAGE; local_port=5434 ;;
+      informd)   prefix=INFORMD;  local_port=5435 ;;
+      *) echo "unknown service: {{SVC}} (use one of: {{services}})" >&2; exit 2 ;;
+    esac
     case "{{ACTION}}" in
-      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/identityx/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      up|status) ;;
       *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
-
-# Run Univents: (default: compose container) | db-init | db-up | db-status | lint | test
-univents +CMD="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    case "{{CMD}}" in
-      "")   just identityx-db-init
-            just payssage-db-init
-            just univents-db-init
-            docker compose up --build --remove-orphans identityx -d
-            docker compose up --build --remove-orphans payssage -d
-            docker compose up --build --remove-orphans univents ;;
-      db-init)   just univents-db-init ;;
-      db-up)     just univents-goose up ;;
-      db-status) just univents-goose status ;;
-      lint) golangci-lint run ./api/univents/... ;;
-      test) cd api/univents && just test ;;
-      *)    echo "unknown command: {{CMD}}" && exit 1 ;;
-    esac
-
-# Start Univents' database, then migrate it.
-univents-db-init:
-    docker compose up --detach --wait univents-db
-    just univents-goose up
-
-# Migrate Univents outside the API process, over the direct endpoint (see
-# identityx-goose). `UNIVENTS_DB_*` overrides target another database;
-# otherwise it uses api/univents/.env against the local univents-db.
-univents-goose +ACTION="up":
-    #!/usr/bin/env bash
-    set -euo pipefail
     set -a
-    source api/univents/.env
+    source "api/{{SVC}}/.env"
     set +a
-    db_host="${UNIVENTS_DB_HOST:-localhost}"
-    db_port="${UNIVENTS_DB_PORT:-5433}"
-    db_name="${UNIVENTS_DB_NAME:-$UNIVENTS_POSTGRES_DB}"
-    export PGPASSWORD="$UNIVENTS_POSTGRES_PASSWORD"
-    dsn="host=$db_host port=$db_port user=$UNIVENTS_POSTGRES_USER dbname=$db_name sslmode=$UNIVENTS_POSTGRES_SSLMODE channel_binding=$UNIVENTS_POSTGRES_CHANNEL_BINDING"
-    case "{{ACTION}}" in
-      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/univents/db/migrations postgres "$dsn" "{{ACTION}}" ;;
-      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
-    esac
+    var() { local name="${prefix}_$1"; printf '%s' "${!name:-}"; }
+    db_host="$(var DB_HOST)"; db_host="${db_host:-$(var POSTGRES_DIRECT_HOST)}"; db_host="${db_host:-localhost}"
+    db_port="$(var DB_PORT)"; db_port="${db_port:-$(var POSTGRES_DIRECT_PORT)}"; db_port="${db_port:-$local_port}"
+    db_name="$(var DB_NAME)"; db_name="${db_name:-$(var POSTGRES_DB)}"
+    export PGPASSWORD="$(var POSTGRES_PASSWORD)"
+    dsn="host=$db_host port=$db_port user=$(var POSTGRES_USER) dbname=$db_name sslmode=$(var POSTGRES_SSLMODE) channel_binding=$(var POSTGRES_CHANNEL_BINDING)"
+    go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir "api/{{SVC}}/db/migrations" postgres "$dsn" "{{ACTION}}"
 
-# Run Payssage: (default: compose container) | db-init | db-up | db-status | lint | test
-payssage +CMD="":
+# ── Code generation ───────────────────────────────────────────────────────
+
+# Generated bindings import github.com/oapi-codegen/runtime, which is not kept
+# in go.mod (the code is not committed, so `go mod tidy` drops it) — pinned
+# here and in the Dockerfiles at generation time. The Docker build images get
+# the binaries from the go-tools image instead (see api/<svc>/Dockerfile).
+oapi-codegen-version := "v2.8.0"
+oapi-runtime-version := "v1.6.0"
+
+# Per backend: sqlc queries and oapi-codegen bindings (internal/openapi);
+# then the orval TS clients (lib/ts/<svc>/client — orval always regenerates
+# all four).
+#
+# Generate code for the given backends (default: all).
+gen +SERVICES=services:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{CMD}}" in
-      "")   just identityx-db-init
-            just payssage-db-init
-            docker compose up --build --remove-orphans identityx -d
-            docker compose up --build --remove-orphans payssage ;;
-      db-init)   just payssage-db-init ;;
-      db-up)     just payssage-goose up ;;
-      db-status) just payssage-goose status ;;
-      lint) golangci-lint run ./api/payssage/... ;;
-      test) cd api/payssage && just test ;;
-      *)    echo "unknown command: {{CMD}}" && exit 1 ;;
-    esac
+    for svc in {{SERVICES}}; do
+      case " {{services}} " in
+        *" $svc "*) ;;
+        *) echo "unknown service: $svc (use any of: {{services}})" >&2; exit 2 ;;
+      esac
+      echo "==> $svc"
+      (
+        cd "api/$svc"
+        sqlc generate
+        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
+          --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
+        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
+          --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+        go get github.com/oapi-codegen/runtime@{{oapi-runtime-version}}
+      )
+    done
+    pnpm orval
 
-# Start Payssage's database, then migrate it.
-payssage-db-init:
-    docker compose up --detach --wait payssage-db
-    just payssage-goose up
+# ── Checks ────────────────────────────────────────────────────────────────
 
-# Migrate Payssage outside the API process, over the direct endpoint (see
-# identityx-goose). `PAYSSAGE_DB_*` overrides target another database;
-# otherwise it uses api/payssage/.env against the local payssage-db.
-payssage-goose +ACTION="up":
+# Fast lane: -short skips the testcontainers tests, as CI and the
+# pre-commit hook do. Target: a backend, lib, sdk, or nothing for all.
+#
+# Go tests (fast lane).
+test TARGET="":
     #!/usr/bin/env bash
     set -euo pipefail
-    set -a
-    source api/payssage/.env
-    set +a
-    db_host="${PAYSSAGE_DB_HOST:-localhost}"
-    db_port="${PAYSSAGE_DB_PORT:-5434}"
-    db_name="${PAYSSAGE_DB_NAME:-$PAYSSAGE_POSTGRES_DB}"
-    export PGPASSWORD="$PAYSSAGE_POSTGRES_PASSWORD"
-    dsn="host=$db_host port=$db_port user=$PAYSSAGE_POSTGRES_USER dbname=$db_name sslmode=$PAYSSAGE_POSTGRES_SSLMODE channel_binding=$PAYSSAGE_POSTGRES_CHANNEL_BINDING"
-    case "{{ACTION}}" in
-      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/payssage/db/migrations postgres "$dsn" "{{ACTION}}" ;;
-      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
-    esac
+    pkgs="$(just _go-pkgs "{{TARGET}}")"
+    gotestsum --format testdox --format-hide-empty-pkg -- -short $pkgs
 
-# Run Informd: (default: compose container) | db-init | db-up | db-status | lint | test
-informd +CMD="":
+# Go tests including integration tests (needs Docker for testcontainers).
+test-all TARGET="":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{CMD}}" in
-      "")   just identityx-db-init
-            just informd-db-init
-            docker compose up --build --remove-orphans identityx -d
-            docker compose up --build --remove-orphans informd ;;
-      db-init)   just informd-db-init ;;
-      db-up)     just informd-goose up ;;
-      db-status) just informd-goose status ;;
-      lint) golangci-lint run ./api/informd/... ;;
-      test) cd api/informd && just test ;;
-      *)    echo "unknown command: {{CMD}}" && exit 1 ;;
-    esac
+    pkgs="$(just _go-pkgs "{{TARGET}}")"
+    gotestsum --format testdox --format-hide-empty-pkg -- -count=1 $pkgs
 
-# Start Informd's database, then migrate it.
-informd-db-init:
-    docker compose up --detach --wait informd-db
-    just informd-goose up
-
-# Migrate Informd outside the API process, over the direct endpoint (see
-# identityx-goose). `INFORMD_DB_*` overrides target another database;
-# otherwise it uses api/informd/.env against the local informd-db.
-informd-goose +ACTION="up":
+# golangci-lint. Target: a backend, lib, sdk, or nothing for all.
+lint TARGET="":
     #!/usr/bin/env bash
     set -euo pipefail
-    set -a
-    source api/informd/.env
-    set +a
-    db_host="${INFORMD_DB_HOST:-localhost}"
-    db_port="${INFORMD_DB_PORT:-5435}"
-    db_name="${INFORMD_DB_NAME:-$INFORMD_POSTGRES_DB}"
-    export PGPASSWORD="$INFORMD_POSTGRES_PASSWORD"
-    dsn="host=$db_host port=$db_port user=$INFORMD_POSTGRES_USER dbname=$db_name sslmode=$INFORMD_POSTGRES_SSLMODE channel_binding=$INFORMD_POSTGRES_CHANNEL_BINDING"
-    case "{{ACTION}}" in
-      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/informd/db/migrations postgres "$dsn" "{{ACTION}}" ;;
-      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
-    esac
+    pkgs="$(just _go-pkgs "{{TARGET}}")"
+    golangci-lint run $pkgs
 
-test +NAME="":
+# The Go package patterns for a target.
+[private]
+_go-pkgs TARGET="":
     #!/usr/bin/env bash
-    case "{{NAME}}" in
-      identityx) (cd api/identityx && just test) ;;
-      informd)   (cd api/informd && just test) ;;
-      payssage)  (cd api/payssage && just test) ;;
-      univents)  (cd api/univents && just test) ;;
-      lib)       gotestsum --format testdox --format-hide-empty-pkg ./lib/go/... ;;
-      sdk)       gotestsum --format testdox --format-hide-empty-pkg ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;
-      *)         gotestsum --format testdox --format-hide-empty-pkg ./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;
+    set -euo pipefail
+    case "{{TARGET}}" in
+      identityx|informd|payssage|univents) echo "./api/{{TARGET}}/..." ;;
+      lib) echo "./lib/go/..." ;;
+      sdk) echo "./sdk/go/IdentityX/... ./sdk/go/Payssage/..." ;;
+      "")  echo "./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/..." ;;
+      *)   echo "unknown target: {{TARGET}} (use one of: {{services}} lib sdk)" >&2; exit 2 ;;
     esac
 
-# Install the Go dev tools (golangci-lint, gotestsum, gitleaks) and trivy,
-# pinned to the same versions CI uses. go install puts binaries in
+# ── Tooling ───────────────────────────────────────────────────────────────
+
+trivy-version := "v0.74.0"
+
+# Pinned to the same versions CI uses. go install puts binaries in
 # $(go env GOPATH)/bin and trivy goes to ~/.local/bin — if `just test` /
 # `just lint` / the pre-commit gitleaks scan report "command not found", add
 # them to PATH:
 #
 #   export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"
+#
+# Install the dev tools: sqlc, golangci-lint, gotestsum, gitleaks, trivy.
 setup:
     #!/usr/bin/env bash
     set -euo pipefail
+    go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
     go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
     go install gotest.tools/gotestsum@v1.13.0
     go install github.com/zricethezav/gitleaks/v8@v8.30.1
-    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-        | sh -s -- -b "$HOME/.local/bin" v0.74.0
+    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/{{trivy-version}}/contrib/install.sh \
+        | sh -s -- -b "$HOME/.local/bin" {{trivy-version}}
     echo "installed into $(go env GOPATH)/bin and $HOME/.local/bin"
     echo 'add to PATH if needed:  export PATH="$(go env GOPATH)/bin:$HOME/.local/bin:$PATH"'
 
-# Update every Go module in the workspace to the latest dependency versions,
-# then sync go.work.sum.
+# Update every Go module in the workspace to the latest dependencies.
 goup:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -224,46 +189,5 @@ goup:
       echo "==> updating $dir"
       (cd "$dir" && go get -u ./... && go mod tidy)
     done
+    # sync go.work.sum
     go work sync
-
-generate +SERVICES="identityx informd payssage univents":
-    just generate-oapi {{SERVICES}}
-    just generate-orval
-
-# Generate framework-free TypeScript API clients (plain fetch functions +
-# spec types) into lib/ts/<svc>/client via orval (one entry per backend in
-# orval.config.ts).
-# Runs for all four services regardless of {{SERVICES}}.
-generate-orval:
-    pnpm orval
-
-# Regenerate OpenAPI handler bindings (internal/openapi) from each api-spec.yml.
-# Uses a pinned oapi-codegen version via `go run` — the Docker build images get
-# the binary from the go-tools image instead (see api/<svc>/Dockerfile).
-# Generated bindings import github.com/oapi-codegen/runtime, which is not kept
-# in go.mod (the code is not committed, so `go mod tidy` drops it) — pinned
-# here and in the Dockerfiles at generation time.
-oapi-codegen-version := "v2.8.0"
-oapi-runtime-version := "v1.6.0"
-generate-oapi +SERVICES="identityx informd payssage univents":
-    #!/usr/bin/env bash
-    for svc in {{SERVICES}}; do
-      (cd api/$svc && \
-        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
-          --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
-        go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{oapi-codegen-version}} \
-          --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
-        go get github.com/oapi-codegen/runtime@{{oapi-runtime-version}})
-    done
-
-lint +NAME="":
-    #!/usr/bin/env bash
-    case "{{NAME}}" in
-      identityx) golangci-lint run ./api/identityx/... ;;
-      informd)   golangci-lint run ./api/informd/...   ;;
-      payssage)  golangci-lint run ./api/payssage/...  ;;
-      univents)  golangci-lint run ./api/univents/...  ;;
-      lib)       golangci-lint run ./lib/go/...        ;;
-      sdk)       golangci-lint run ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;       
-      *)         golangci-lint run ./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ;;       
-    esac

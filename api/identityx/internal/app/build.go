@@ -23,7 +23,7 @@ import (
 // Build wires IdentityX on the modules main lists (postgres, email, jobs).
 // IdentityX issues the tokens, so it builds its own auth primitives rather
 // than listing the identityx module. The schema is never migrated here —
-// `just identityx-goose` owns it.
+// `just migrate identityx` owns it.
 func Build(cfg config.Config) backend.BuildFunc {
 	return func(ctx context.Context, d *backend.Deps, r chi.Router) error {
 		q := sqlc.New(d.DB)
