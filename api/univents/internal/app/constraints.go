@@ -2,7 +2,7 @@ package app
 
 import "lib/database"
 
-func constraintMessages() database.ConstraintRegistry {
+func ConstraintMessages() database.ConstraintRegistry {
 	return database.ConstraintRegistry{
 		// events
 		"chk_event_status_valid":                        "Event status must be one of: draft, active, discontinued.",

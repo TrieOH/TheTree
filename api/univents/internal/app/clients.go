@@ -7,15 +7,10 @@ import (
 	"lib/objectstorage"
 	"univents/internal/config"
 
-	idx "sdk/identityx"
 	payssage "sdk/payssage"
 
 	"github.com/google/uuid"
 )
-
-func SetupIdentityX(cfg config.Config) *idx.Client {
-	return idx.MustBootstrap(context.Background(), cfg.ToIdentityXConfig())
-}
 
 // SetupPayssage builds the service-to-service Payssage client. Calls are
 // authenticated with the platform API key, so wallets/sellers are owned by

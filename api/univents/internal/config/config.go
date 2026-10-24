@@ -5,9 +5,6 @@ import (
 	"lib/database"
 	"lib/email"
 	"lib/errx"
-	"lib/httpserver"
-
-	idx "sdk/identityx"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
@@ -60,22 +57,10 @@ type Config struct {
 	JobsURL string `env:"JOBS_URL"`
 }
 
-func (cfg Config) ToIdentityXConfig() idx.Config {
-	return libconfig.IdentityXConfig(cfg.IdentityX, cfg.DebugMode)
-}
-
 // ToDBConfig is the connection only: the schema is migrated outside the
 // API process (`just univents-goose`).
 func (cfg Config) ToDBConfig() database.Config {
 	return libconfig.DBConnectionConfig(cfg.Postgres)
-}
-
-func (cfg Config) ToRateLimit() httpserver.RateLimit {
-	return httpserver.RateLimit{
-		Disabled: cfg.DisableRateLimit,
-		RPS:      cfg.RateLimitRPS,
-		Burst:    cfg.RateLimitBurst,
-	}
 }
 
 func (cfg Config) ToEmailConfig() email.Config {
