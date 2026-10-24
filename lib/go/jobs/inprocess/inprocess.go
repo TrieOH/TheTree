@@ -63,7 +63,7 @@ type Runner struct {
 	tickers sync.WaitGroup
 }
 
-var _ jobs.Enqueuer = (*Runner)(nil)
+var _ jobs.DelayedEnqueuer = (*Runner)(nil)
 
 func New(registry *jobs.Registry, opts Options) *Runner {
 	opts = opts.withDefaults()
@@ -95,6 +95,28 @@ func (r *Runner) Enqueue(_ context.Context, job jobs.Job) error {
 	default:
 		return ErrQueueFull
 	}
+}
+
+// EnqueueAfter queues a job once delay has passed. The wait is a timer in
+// memory, lost if the process stops first, like any queued work here.
+func (r *Runner) EnqueueAfter(ctx context.Context, job jobs.Job, delay time.Duration) error {
+	if delay > jobs.MaxDelay {
+		return jobs.ErrDelayTooLong
+	}
+	if delay <= 0 {
+		return r.Enqueue(ctx, job)
+	}
+	_, err := jobs.Encode(job)
+	if err != nil {
+		return err
+	}
+	time.AfterFunc(delay, func() {
+		err := r.Enqueue(r.ctx, job)
+		if err != nil && !errors.Is(err, ErrStopped) {
+			telemetry.Log().Error("delayed job not enqueued", zap.String("kind", job.Kind()), zap.Error(err))
+		}
+	})
+	return nil
 }
 
 // Start launches the workers and one ticker per periodic job.

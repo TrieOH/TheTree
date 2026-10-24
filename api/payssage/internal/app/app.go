@@ -7,10 +7,8 @@ import (
 
 	"lib/database"
 	"lib/httpserver"
-	libriver "lib/river"
 	spec "payssage"
 	"payssage/internal/config"
-	webhooksjobs "payssage/internal/services/webhooks/jobs"
 	"payssage/internal/sqlc"
 
 	idx "sdk/identityx"
@@ -30,10 +28,13 @@ type Payssage struct {
 // Run boots Payssage through the Harness: the process sequence (FUN
 // runtime, tracer, serving, shutdown ordering) is httpserver.Boot's
 // implementation; everything Payssage varies on — its IdentityX client,
-// its Postgres adapter with the constraint messages, its webhook delivery
-// workers and the river UI — happens in the start hook. Storage never
-// crosses Boot's interface: the pool is created here and closed in the
-// returned shutdown.
+// its Postgres adapter with the constraint messages and the background-job
+// carrier — happens in the start hook. Storage never crosses Boot's
+// interface: the pool is created here and closed in the returned shutdown.
+//
+// Background jobs run in-process locally, or through an external queue and
+// scheduler when JOBS_URL is set (see initJobs). The schema is never
+// migrated here — `just payssage-goose` owns it.
 func Run() error {
 	cfg := config.LoadConfig()
 	app := &Payssage{cfg: cfg}
@@ -46,7 +47,7 @@ func Run() error {
 		app.idxClient = idxClient
 		app.httpClient = resty.New().SetTimeout(15 * time.Second)
 
-		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		pool, err := database.SetupDBWithoutMigrations(cfg.ToDBConfig(), constraintMessages())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -57,29 +58,21 @@ func Run() error {
 		repos := app.initRepos(sqlc.New(pool))
 		app.initProviders(repos)
 
-		riverClient, err := libriver.Start(ctx, pool, libriver.NewWorkers(
-			libriver.Register[webhooksjobs.DeliverWebhookArgs](webhooksjobs.NewDeliverWebhookWorker(
-				repos.WebhookDeliveries, repos.WebhookEvents, repos.WebhookEndpoints, app.httpClient,
-			)),
-		), nil, nil)
+		enqueuer, events, stopJobs, err := app.initJobs(repos)
 		if err != nil {
+			database.CloseDB(pool)
 			return nil, nil, err
 		}
 
-		riverUI, err := libriver.Dashboard(ctx, riverClient)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		ops := app.initOperations(riverClient, repos, tx)
+		ops := app.initOperations(enqueuer, repos, tx)
 		handlers := app.initHandlers(ops)
 		primitives := app.initMiddlewares()
 
-		mux := app.CreateRouter(primitives, handlers, riverUI)
+		mux := app.CreateRouter(primitives, handlers, events)
 		return mux, func(ctx context.Context) error {
-			libriver.LogStop(ctx, riverClient)
+			err := stopJobs(ctx)
 			database.CloseDB(pool)
-			return nil
+			return err
 		}, nil
 	}
 
@@ -90,5 +83,6 @@ func Run() error {
 		CorsAllowedOrigins: cfg.AllowedOrigins,
 		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          cfg.ToRateLimit(),
 	}, start)
 }

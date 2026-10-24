@@ -3,6 +3,7 @@ package ports
 import (
 	"context"
 	"payssage/models"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,4 +16,7 @@ type WebhookDeliveryRepo interface {
 	MarkDelivered(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error)
 	MarkFailed(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error)
 	IncrementAttempt(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error)
+	// ListUnsent returns pending deliveries never attempted and older than
+	// olderThan, oldest first, at most limit of them.
+	ListUnsent(ctx context.Context, olderThan time.Duration, limit int) ([]models.WebhookDelivery, error)
 }

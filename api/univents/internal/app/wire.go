@@ -2,20 +2,21 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"time"
+
 	libauthz "lib/authz"
 	"lib/database"
-	libriver "lib/river"
-	"net/http"
+	libjobs "lib/jobs"
+	"lib/jobs/httpjobs"
+	"lib/jobs/inprocess"
 	"univents/internal/authz"
 	"univents/internal/handlers"
+	"univents/internal/jobs"
 	"univents/internal/repos"
 	"univents/internal/services"
-	certsJobs "univents/internal/services/certifications/jobs"
-	checkoutsJobs "univents/internal/services/checkouts/jobs"
 	"univents/internal/sqlc"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
 )
 
 // ── Init methods ──────────────────────────────────────────────────────────
@@ -24,9 +25,9 @@ func (app *Univents) initRepos() *repos.Repos {
 	return repos.New(sqlc.New(app.db))
 }
 
-func (app *Univents) initOperations(r *repos.Repos, notifier *database.Notifier, riverClient *river.Client[pgx.Tx], tx database.TxRunner) *services.Operations {
+func (app *Univents) initOperations(r *repos.Repos, notifier *database.Notifier, enqueuer libjobs.DelayedEnqueuer, tx database.TxRunner) *services.Operations {
 	authzSvc := authz.New(r.Events)
-	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret, app.payssage, app.cfg.PayssageWalletID, notifier, riverClient, tx, app.cfg.PayssageWebhookSecret)
+	return services.NewOperations(r, authzSvc, app.objStorage, app.idxClient, app.emailClient, app.cfg.HmacSecret, app.payssage, app.cfg.PayssageWalletID, notifier, enqueuer, tx, app.cfg.PayssageWebhookSecret)
 }
 
 func (app *Univents) initHandlers(ops *services.Operations) *handlers.Server {
@@ -47,24 +48,45 @@ func (app *Univents) initMiddlewares() libauthz.Primitives {
 	}
 }
 
-func (app *Univents) initRiver(ctx context.Context, r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (*river.Client[pgx.Tx], http.Handler, error) {
-	libriver.Migrate(ctx, app.db)
+// jobsDrainTimeout bounds how long shutdown waits for queued jobs.
+const jobsDrainTimeout = 15 * time.Second
 
-	client, err := libriver.Start(ctx, app.db, libriver.NewWorkers(
-		libriver.Register(certsJobs.NewGrantCertsWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
-		libriver.Register(certsJobs.NewGrantCertsForOccurrenceWorker(r.Certs, r.Editions, r.Events, app.emailClient)),
-		libriver.Register(checkoutsJobs.NewExpirePurchaseWorker(r.Purchases, r.Registrations, r.Products, r.Programs, notifier, tx)),
-		libriver.Register(checkoutsJobs.NewSendGiftEmailWorker(r.Registrations, r.Editions, r.Events, r.TicketTypes, app.emailClient)),
-	), nil, nil)
-	// TODO: schedule GrantCertsForEdition on edition end and GrantCertsForOccurrence on occurrence end
-	if err != nil {
-		return nil, nil, err
+// initJobs builds the job registry, picks the carrier, and returns the
+// enqueuer the services use, the events endpoint to mount (nil when there
+// is none), and the carrier's shutdown.
+//
+//   - JOBS_URL unset: an in-process runner executes the jobs, holding
+//     delayed ones on timers. Queued work lives in memory only.
+//   - JOBS_URL set: jobs are POSTed there (a delay travels with them); the
+//     queue holds and delivers them to the events endpoint.
+func (app *Univents) initJobs(r *repos.Repos, notifier *database.Notifier, tx database.TxRunner) (libjobs.DelayedEnqueuer, http.Handler, func(context.Context) error, error) { //nolint:ireturn
+	registry := jobs.Registry(jobs.Deps{
+		Certs:            r.Certs,
+		Editions:         r.Editions,
+		Events:           r.Events,
+		Purchases:        r.Purchases,
+		Registrations:    r.Registrations,
+		ProductPurchases: r.Products,
+		Participations:   r.Programs,
+		TicketTypes:      r.TicketTypes,
+		Email:            app.emailClient,
+		Notifier:         notifier,
+		Tx:               tx,
+	})
+
+	if app.cfg.JobsURL != "" {
+		carrier, err := httpjobs.New(app.cfg.JobsURL)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("jobs carrier: %w", err)
+		}
+		return carrier, httpjobs.Handler(registry), func(context.Context) error { return nil }, nil
 	}
 
-	riverUI, err := libriver.Dashboard(ctx, client)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return client, riverUI, nil
+	runner := inprocess.New(registry, inprocess.Options{})
+	runner.Start()
+	return runner, nil, func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(ctx, jobsDrainTimeout)
+		defer cancel()
+		return runner.Stop(ctx)
+	}, nil
 }

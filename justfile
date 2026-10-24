@@ -8,6 +8,9 @@ ps:
 
 up:
     just identityx-db-init
+    just payssage-db-init
+    just informd-db-init
+    just univents-db-init
     docker compose up --remove-orphans
 
 down:
@@ -56,35 +59,129 @@ identityx-goose +ACTION="up":
       *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
+# Run Univents: (default: compose container) | db-init | db-up | db-status | lint | test
 univents +CMD="":
     #!/usr/bin/env bash
+    set -euo pipefail
     case "{{CMD}}" in
-      "")   docker compose up --build --remove-orphans identityx -d
+      "")   just identityx-db-init
+            just payssage-db-init
+            just univents-db-init
+            docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans payssage -d
             docker compose up --build --remove-orphans univents ;;
+      db-init)   just univents-db-init ;;
+      db-up)     just univents-goose up ;;
+      db-status) just univents-goose status ;;
       lint) golangci-lint run ./api/univents/... ;;
       test) cd api/univents && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
+# Start Univents' database, then migrate it.
+univents-db-init:
+    docker compose up --detach --wait univents-db
+    just univents-goose up
+
+# Migrate Univents outside the API process, over the direct endpoint (see
+# identityx-goose). `UNIVENTS_DB_*` overrides target another database;
+# otherwise it uses api/univents/.env against the local univents-db.
+univents-goose +ACTION="up":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -a
+    source api/univents/.env
+    set +a
+    db_host="${UNIVENTS_DB_HOST:-localhost}"
+    db_port="${UNIVENTS_DB_PORT:-5433}"
+    db_name="${UNIVENTS_DB_NAME:-$UNIVENTS_POSTGRES_DB}"
+    export PGPASSWORD="$UNIVENTS_POSTGRES_PASSWORD"
+    dsn="host=$db_host port=$db_port user=$UNIVENTS_POSTGRES_USER dbname=$db_name sslmode=$UNIVENTS_POSTGRES_SSLMODE channel_binding=$UNIVENTS_POSTGRES_CHANNEL_BINDING"
+    case "{{ACTION}}" in
+      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/univents/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
+    esac
+
+# Run Payssage: (default: compose container) | db-init | db-up | db-status | lint | test
 payssage +CMD="":
     #!/usr/bin/env bash
+    set -euo pipefail
     case "{{CMD}}" in
-      "")   docker compose up --build --remove-orphans identityx -d
+      "")   just identityx-db-init
+            just payssage-db-init
+            docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans payssage ;;
+      db-init)   just payssage-db-init ;;
+      db-up)     just payssage-goose up ;;
+      db-status) just payssage-goose status ;;
       lint) golangci-lint run ./api/payssage/... ;;
       test) cd api/payssage && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
     esac
 
+# Start Payssage's database, then migrate it.
+payssage-db-init:
+    docker compose up --detach --wait payssage-db
+    just payssage-goose up
+
+# Migrate Payssage outside the API process, over the direct endpoint (see
+# identityx-goose). `PAYSSAGE_DB_*` overrides target another database;
+# otherwise it uses api/payssage/.env against the local payssage-db.
+payssage-goose +ACTION="up":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -a
+    source api/payssage/.env
+    set +a
+    db_host="${PAYSSAGE_DB_HOST:-localhost}"
+    db_port="${PAYSSAGE_DB_PORT:-5434}"
+    db_name="${PAYSSAGE_DB_NAME:-$PAYSSAGE_POSTGRES_DB}"
+    export PGPASSWORD="$PAYSSAGE_POSTGRES_PASSWORD"
+    dsn="host=$db_host port=$db_port user=$PAYSSAGE_POSTGRES_USER dbname=$db_name sslmode=$PAYSSAGE_POSTGRES_SSLMODE channel_binding=$PAYSSAGE_POSTGRES_CHANNEL_BINDING"
+    case "{{ACTION}}" in
+      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/payssage/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
+    esac
+
+# Run Informd: (default: compose container) | db-init | db-up | db-status | lint | test
 informd +CMD="":
     #!/usr/bin/env bash
+    set -euo pipefail
     case "{{CMD}}" in
-      "")   docker compose up --build --remove-orphans identityx -d
+      "")   just identityx-db-init
+            just informd-db-init
+            docker compose up --build --remove-orphans identityx -d
             docker compose up --build --remove-orphans informd ;;
+      db-init)   just informd-db-init ;;
+      db-up)     just informd-goose up ;;
+      db-status) just informd-goose status ;;
       lint) golangci-lint run ./api/informd/... ;;
       test) cd api/informd && just test ;;
       *)    echo "unknown command: {{CMD}}" && exit 1 ;;
+    esac
+
+# Start Informd's database, then migrate it.
+informd-db-init:
+    docker compose up --detach --wait informd-db
+    just informd-goose up
+
+# Migrate Informd outside the API process, over the direct endpoint (see
+# identityx-goose). `INFORMD_DB_*` overrides target another database;
+# otherwise it uses api/informd/.env against the local informd-db.
+informd-goose +ACTION="up":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -a
+    source api/informd/.env
+    set +a
+    db_host="${INFORMD_DB_HOST:-localhost}"
+    db_port="${INFORMD_DB_PORT:-5435}"
+    db_name="${INFORMD_DB_NAME:-$INFORMD_POSTGRES_DB}"
+    export PGPASSWORD="$INFORMD_POSTGRES_PASSWORD"
+    dsn="host=$db_host port=$db_port user=$INFORMD_POSTGRES_USER dbname=$db_name sslmode=$INFORMD_POSTGRES_SSLMODE channel_binding=$INFORMD_POSTGRES_CHANNEL_BINDING"
+    case "{{ACTION}}" in
+      up|status) go run github.com/pressly/goose/v3/cmd/goose@v3.27.3 -dir api/informd/db/migrations postgres "$dsn" "{{ACTION}}" ;;
+      *) echo "unsupported goose action: {{ACTION}} (use up or status)" >&2; exit 2 ;;
     esac
 
 test +NAME="":

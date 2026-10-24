@@ -4,6 +4,7 @@ import (
 	libconfig "lib/config"
 	"lib/database"
 	"lib/errx"
+	"lib/httpserver"
 
 	idx "sdk/identityx"
 
@@ -19,15 +20,13 @@ type Config struct {
 
 	Postgres libconfig.Postgres `envPrefix:"PAYSSAGE_"`
 
-	// Migration
-	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./db/migrations"`
-
 	// Profiling
 	ProfilePort string `env:"PROFILE_PORT"`
 
-	// Simple auth (e.g. River UI dashboard)
-	SimpleAuthUser     string `env:"SIMPLE_AUTH_USER,required"`
-	SimpleAuthPassword string `env:"SIMPLE_AUTH_PASS,required"`
+	// Background jobs. Empty: run them in-process (local compose). Set: POST
+	// them to this queue producer, which delivers them back to /events; the
+	// deploy's scheduler fires the periodic ones there.
+	JobsURL string `env:"JOBS_URL"`
 }
 
 type MercadoPagoConfig struct {
@@ -44,8 +43,18 @@ func (cfg Config) ToIdentityXConfig() idx.Config {
 	return libconfig.IdentityXConfig(cfg.IdentityX, true)
 }
 
+// ToDBConfig is the connection only: the schema is migrated outside the
+// API process (`just payssage-goose`).
 func (cfg Config) ToDBConfig() database.Config {
-	return libconfig.DBConfig(cfg.Postgres, cfg.MigrationPath)
+	return libconfig.DBConnectionConfig(cfg.Postgres)
+}
+
+func (cfg Config) ToRateLimit() httpserver.RateLimit {
+	return httpserver.RateLimit{
+		Disabled: cfg.DisableRateLimit,
+		RPS:      cfg.RateLimitRPS,
+		Burst:    cfg.RateLimitBurst,
+	}
 }
 
 func LoadConfig() Config {

@@ -13,9 +13,9 @@ const INSTANCES = 3;
 // request never leaves Cloudflare: outboundByHost hands it to the queue.
 const JOBS_HOST = "jobs.internal";
 
-// The container's job events endpoint (lib/jobs/httpjobs.Path). Only this
-// Worker may reach it.
-const EVENTS_PATH = "/events";
+// The container's job endpoint (lib/jobs/httpjobs.Path). Only this Worker
+// may reach it.
+const EVENTS_PATH = "/_jobs";
 
 // Periodic jobs by cron, mirroring jobs.Periodic in internal/jobs/jobs.go.
 // Keep these crons and wrangler.jsonc's triggers in step with it.
@@ -79,7 +79,8 @@ async function deliver(env: Env, envelope: Envelope): Promise<boolean> {
 
 export default {
 	async fetch(request, env) {
-		if (new URL(request.url).pathname.startsWith(EVENTS_PATH)) {
+		const { pathname } = new URL(request.url);
+		if (pathname === EVENTS_PATH || pathname.startsWith(`${EVENTS_PATH}/`)) {
 			return new Response("Not Found", { status: 404 });
 		}
 		const container = await instance(env);

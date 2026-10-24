@@ -136,7 +136,7 @@ type harness struct {
 	productPurchases ports.ProductPurchaseRepo
 	participations   ports.ProgramParticipationRepo
 	badges           webhooks.Badges
-	river            webhooks.River
+	jobs             webhooks.Jobs
 	notifier         *recordingNotifier
 	ops              *webhooks.Operations
 }
@@ -150,12 +150,12 @@ func newHarness(t *testing.T) *harness {
 		productPurchases: mock.Mock[ports.ProductPurchaseRepo](),
 		participations:   mock.Mock[ports.ProgramParticipationRepo](),
 		badges:           mock.Mock[webhooks.Badges](),
-		river:            mock.Mock[webhooks.River](),
+		jobs:             mock.Mock[webhooks.Jobs](),
 		notifier:         &recordingNotifier{},
 	}
 	h.ops = webhooks.NewOperations(
 		h.purchases, h.registrations, h.productPurchases, h.participations,
-		h.badges, h.notifier, h.river, noopTxRunner{}, testSecret,
+		h.badges, h.notifier, h.jobs, noopTxRunner{}, testSecret,
 	)
 	h.ops.SetCardRaceWait(0)
 	return h
@@ -223,12 +223,9 @@ func TestReceive_ApproveHappyPath(t *testing.T) {
 	regID := uuid.New()
 	ppID := uuid.New()
 	p := purchase(purchaseID, intentID, models.PurchaseStatusPending)
-	jobID := int64(42)
-	p.RiverJobID = &jobID
 	items := []models.PurchaseItem{ticketItem(purchaseID, regID), productItem(purchaseID, ppID)}
 
 	mock.When(h.purchases.GetByIntentID(mock.AnyContext(), mock.Equal(intentID))).ThenReturn(p, nil)
-	mock.When(h.river.JobCancel(mock.AnyContext(), mock.Equal(jobID))).ThenReturn(nil, nil)
 	stubApprove(h, p, items)
 
 	err := h.ops.Receive(context.Background(), input(intentID, "payment.succeeded", []byte(`{}`)))
@@ -240,8 +237,6 @@ func TestReceive_ApproveHappyPath(t *testing.T) {
 	_, _ = mock.Verify(h.registrations, mock.Once()).UpdateStatus(mock.AnyContext(), mock.Equal(regID), mock.Equal(models.RegistrationStatusConfirmed), mock.Any[*string]())
 	_, _ = mock.Verify(h.badges, mock.Once()).EmitForConfirmedRegistration(mock.AnyContext(), mock.Equal(regID))
 	_, _ = mock.Verify(h.productPurchases, mock.Once()).UpdateProductPurchaseStatus(mock.AnyContext(), mock.Equal(ppID), mock.Equal(models.ProductPurchaseStatusConfirmed), mock.Any[*string]())
-	// Expiry job cancelled (best-effort).
-	_, _ = mock.Verify(h.river, mock.Once()).JobCancel(mock.AnyContext(), mock.Equal(jobID))
 	// Notified: stock deltas + purchase.confirmed.
 	notifies := h.notifier.decoded()
 	if len(notifies) != 2 {

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"lib/telemetry"
+	"strings"
 
 	idx "sdk/identityx"
 
@@ -45,7 +46,7 @@ func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 			WithContext(ctx).
 			SetHeader("X-API-KEY", rawKey).
 			SetResult(&envelope).
-			Get("http://identityx:8080/auth/introspect")
+			Get(strings.TrimSuffix(app.cfg.URL, "/") + "/auth/introspect")
 		if err != nil {
 			telemetry.Log().Error("error fetching identity", zap.Error(err))
 			return ctx, err

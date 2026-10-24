@@ -301,6 +301,45 @@ importers:
         specifier: 'catalog:'
         version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
 
+  api/informd/cloudflare:
+    dependencies:
+      '@cloudflare/containers':
+        specifier: 'catalog:'
+        version: 0.3.7
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
+
+  api/payssage/cloudflare:
+    dependencies:
+      '@cloudflare/containers':
+        specifier: 'catalog:'
+        version: 0.3.7
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
+
+  api/univents/cloudflare:
+    dependencies:
+      '@cloudflare/containers':
+        specifier: 'catalog:'
+        version: 0.3.7
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
+
   front/identityx:
     dependencies:
       '@base-ui/react':

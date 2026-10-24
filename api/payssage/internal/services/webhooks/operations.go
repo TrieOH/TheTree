@@ -6,13 +6,11 @@ import (
 	"payssage/ports"
 
 	"lib/database"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/riverqueue/river"
+	libjobs "lib/jobs"
 )
 
 type Operations struct {
-	river      *river.Client[pgx.Tx]
+	jobs       libjobs.Enqueuer
 	events     ports.WebhookEventRepo
 	endpoints  ports.WebhookEndpointRepo
 	deliveries ports.WebhookDeliveryRepo
@@ -23,7 +21,7 @@ type Operations struct {
 }
 
 func NewOperations(
-	river *river.Client[pgx.Tx],
+	jobs libjobs.Enqueuer,
 	events ports.WebhookEventRepo,
 	endpoints ports.WebhookEndpointRepo,
 	deliveries ports.WebhookDeliveryRepo,
@@ -31,7 +29,7 @@ func NewOperations(
 	tx database.TxRunner,
 ) *Operations {
 	return &Operations{
-		river:      river,
+		jobs:       jobs,
 		events:     events,
 		endpoints:  endpoints,
 		deliveries: deliveries,

@@ -26,7 +26,8 @@ type Informd struct {
 // everything Informd varies on — its IdentityX client, its Postgres adapter
 // with the constraint messages, repos, operations, routes — happens in the
 // start hook. Storage never crosses Boot's interface: the pool is created
-// here and closed in the returned shutdown.
+// here and closed in the returned shutdown. The schema is never migrated
+// here — `just informd-goose` owns it.
 func Run() error {
 	cfg := config.LoadConfig()
 	app := &Informd{cfg: cfg}
@@ -38,7 +39,7 @@ func Run() error {
 		}
 		app.idxClient = idxClient
 
-		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		pool, err := database.SetupDBWithoutMigrations(cfg.ToDBConfig(), constraintMessages())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -65,5 +66,6 @@ func Run() error {
 		CorsAllowedOrigins: cfg.AllowedOrigins,
 		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          cfg.ToRateLimit(),
 	}, start)
 }

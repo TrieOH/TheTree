@@ -49,3 +49,12 @@ SET status            = @status,
     updated_at        = NOW()
 WHERE id = @id
     RETURNING *;
+
+-- name: ListUnsentWebhookDeliveries :many
+SELECT *
+FROM webhook_deliveries
+WHERE status = 'pending'
+  AND attempts = 0
+  AND created_at < sqlc.arg(created_before)::timestamptz
+ORDER BY created_at
+LIMIT sqlc.arg(max_rows)::int;

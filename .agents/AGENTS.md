@@ -40,21 +40,22 @@ All services follow a consistent internal structure:
 - Organizations with role-based membership (member/admin/owner)
 - JWT issuance, JWKS endpoint, token introspection, refresh
 - Crypto key management, token blacklisting
-- Job queue: River; rate-limiting: chi/httprate
+- Background jobs: `lib/jobs` (in-process locally, Cloudflare Queue when deployed); rate-limiting: chi/httprate
+- Runs on Cloudflare Containers behind a Worker (`api/identityx/cloudflare`, ADR-0011)
 
 ### 2. Payssage — Payment Orchestration
 - Workspaces with API keys and webhooks
 - Payment intents (MercadoPago SDK integration)
 - OAuth marketplace connections
-- Authorization via SpiceDB
-- Job queue: Asynq + Redis; WebSocket support
+- Background jobs: `lib/jobs` — webhook delivery, redrive sweep, dead-letter give-up (ADR-0012)
+- Runs on Cloudflare Containers behind a Worker (`api/payssage/cloudflare`, ADR-0011)
 
 ### 3. Informd — Forms & Notifications
 - Multi-tenant namespace isolation
 - Form definitions with step-based workflows
 - API key management per namespace
-- Authorization via SpiceDB
-- Job queue: Asynq + Redis
+- No background jobs
+- Runs on Cloudflare Containers behind a Worker (`api/informd/cloudflare`, ADR-0011)
 
 ### 4. Univents — Event Management
 - Events → Editions → Activities hierarchy
@@ -63,7 +64,8 @@ All services follow a consistent internal structure:
 - Payment integration via Payssage SDK
 - Authorization via SpiceDB with granular permissions
 - File upload via RustFS (MinIO SDK)
-- Job queue: Asynq + Redis; WebSocket support
+- Background jobs: `lib/jobs` with delayed enqueue — purchase expiry, gift email, certificates (ADR-0013); WebSocket + SSE realtime (off on Cloudflare for now)
+- Runs on Cloudflare Containers behind a Worker (`api/univents/cloudflare`, ADR-0011)
 
 ## Front-End Apps (TypeScript + React 19)
 
@@ -93,7 +95,7 @@ Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written d
 - **validator** — Input validation
 - **utils** — General-purpose utilities
 - **xslices** — Generic slice utilities
-- **river** — River job queue integration
+- **jobs** — background-work seam: in-process or Cloudflare Queues (`lib/go/river` is no longer used by any backend)
 
 ## Key Technology Choices
 
@@ -105,7 +107,7 @@ Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written d
 - **Caddy** — reverse proxy with TLS, Cloudflare origin certs
 - **OpenTelemetry** — distributed tracing across all services
 - **Prometheus** — metrics scraped by VictoriaMetrics
-- **River / Asynq** — durable job queues (IdentityX uses River; rest use Asynq)
+- **lib/jobs** — background jobs on Cloudflare Queues when deployed, in-process locally (ADR-0011)
 - **`just`** — command runner
 
 ## Go 1.26 language features in use

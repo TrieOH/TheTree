@@ -13,8 +13,8 @@ import (
 	"univents/models"
 	"univents/ports"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -39,10 +39,8 @@ func (SendGiftEmailArgs) Kind() string { return "gifts.send_email" }
 // SendGiftEmailWorker sends the gifted-ticket email. Skips registrations
 // whose attendee already has an account (claim beat the job — they'll get
 // the badge email instead) or that are no longer confirmed. Send errors are
-// returned so River retries with backoff.
+// returned so the job carrier retries with backoff.
 type SendGiftEmailWorker struct {
-	river.WorkerDefaults[SendGiftEmailArgs]
-
 	registrations ports.RegistrationRepo
 	editions      ports.EditionRepo
 	events        ports.EventRepo
@@ -69,13 +67,18 @@ func NewSendGiftEmailWorker(
 // Work sends the email. Idempotent in effect: once the recipient claims
 // (attendee_user_id set), the registration no longer matches and a retry is
 // a no-op.
-func (w *SendGiftEmailWorker) Work(ctx context.Context, job *river.Job[SendGiftEmailArgs]) error {
+func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) error {
 	ctx, span := telemetry.StartSpan(ctx, "SendGiftEmailWorker.Work")
 	defer span.End()
 
-	reg, err := w.registrations.GetByID(ctx, job.Args.RegistrationID)
+	reg, err := w.registrations.GetByID(ctx, args.RegistrationID)
 	if err != nil {
-		return err // missing registration is genuinely broken — let River retry
+		if fun.Is(err, fun.CodeNotFound) {
+			// Enqueued inside the confirming tx, before commit: a rolled-back
+			// tx leaves a job for a registration that never existed.
+			return nil
+		}
+		return err // the database is unreachable — retry
 	}
 	if reg.AttendeeUserID != nil {
 		// Claimed before the job ran — they have an account now; the badge

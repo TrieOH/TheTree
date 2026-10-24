@@ -29,20 +29,20 @@ func TestEmitCertsForProgram_EnqueuesGrantJob(t *testing.T) {
 	mock.When(authzEvents.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(models.EventMemberRoleAdmin, nil)
 
-	river := &recordingRiver{}
-	ops := newOps(programs, editions, authzEvents, river)
+	enq := &recordingJobs{}
+	ops := newOps(programs, editions, authzEvents, enq)
 
 	err := ops.EmitCertsForProgram(ownerCtx(), programID)
 	if err != nil {
 		t.Fatalf("EmitCertsForProgram: %v", err)
 	}
 
-	if len(river.inserted) != 1 {
-		t.Fatalf("want 1 inserted job, got %d", len(river.inserted))
+	if len(enq.inserted) != 1 {
+		t.Fatalf("want 1 inserted job, got %d", len(enq.inserted))
 	}
-	args, ok := river.inserted[0].(jobs.GrantCertsForOccurrenceArgs)
+	args, ok := enq.inserted[0].(jobs.GrantCertsForOccurrenceArgs)
 	if !ok {
-		t.Fatalf("want GrantCertsForOccurrenceArgs, got %T", river.inserted[0])
+		t.Fatalf("want GrantCertsForOccurrenceArgs, got %T", enq.inserted[0])
 	}
 	if args.EditionID != editionID || args.ProgramID != programID {
 		t.Errorf("unexpected job args: %+v", args)
@@ -65,14 +65,14 @@ func TestEmitCertsForProgram_StaffIsForbidden(t *testing.T) {
 	mock.When(authzEvents.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 		ThenReturn(models.EventMemberRoleStaff, nil)
 
-	river := &recordingRiver{}
-	ops := newOps(programs, editions, authzEvents, river)
+	enq := &recordingJobs{}
+	ops := newOps(programs, editions, authzEvents, enq)
 
 	err := ops.EmitCertsForProgram(ownerCtx(), programID)
 	if err == nil {
 		t.Fatal("want forbidden error, got nil")
 	}
-	if len(river.inserted) != 0 {
+	if len(enq.inserted) != 0 {
 		t.Fatal("job must not be enqueued for a non-admin actor")
 	}
 }
@@ -84,14 +84,14 @@ func TestEmitCertsForProgram_UnknownProgram(t *testing.T) {
 	mock.When(programs.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
 		ThenReturn(nil, fun.ErrNotFound("program not found"))
 
-	river := &recordingRiver{}
-	ops := newOps(programs, mock.Mock[ports.EditionRepo](), mock.Mock[ports.EventRepo](), river)
+	enq := &recordingJobs{}
+	ops := newOps(programs, mock.Mock[ports.EditionRepo](), mock.Mock[ports.EventRepo](), enq)
 
 	err := ops.EmitCertsForProgram(ownerCtx(), uuid.New())
 	if err == nil {
 		t.Fatal("want not-found error, got nil")
 	}
-	if len(river.inserted) != 0 {
+	if len(enq.inserted) != 0 {
 		t.Fatal("job must not be enqueued for an unknown program")
 	}
 }

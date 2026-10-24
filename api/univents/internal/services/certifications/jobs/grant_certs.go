@@ -13,7 +13,6 @@ import (
 	"univents/ports"
 
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -38,7 +37,6 @@ type grantCertsDeps struct {
 }
 
 type GrantCertsWorker struct {
-	river.WorkerDefaults[GrantCertsForEditionArgs]
 	grantCertsDeps
 }
 
@@ -53,8 +51,8 @@ func NewGrantCertsWorker(
 	}}
 }
 
-func (w *GrantCertsWorker) Work(ctx context.Context, job *river.Job[GrantCertsForEditionArgs]) error {
-	errs := w.grantEditionAttendanceCerts(ctx, job.Args.EditionID)
+func (w *GrantCertsWorker) Work(ctx context.Context, args GrantCertsForEditionArgs) error {
+	errs := w.grantEditionAttendanceCerts(ctx, args.EditionID)
 	for _, e := range errs {
 		telemetry.Log().Warn("cert emission had errors",
 			zap.String("user_id", e.UserID.String()),
@@ -62,13 +60,12 @@ func (w *GrantCertsWorker) Work(ctx context.Context, job *river.Job[GrantCertsFo
 		)
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("cert emission for edition %s had %d errors", job.Args.EditionID, len(errs))
+		return fmt.Errorf("cert emission for edition %s had %d errors", args.EditionID, len(errs))
 	}
 	return nil
 }
 
 type GrantCertsForOccurrenceWorker struct {
-	river.WorkerDefaults[GrantCertsForOccurrenceArgs]
 	grantCertsDeps
 }
 
@@ -83,8 +80,8 @@ func NewGrantCertsForOccurrenceWorker(
 	}}
 }
 
-func (w *GrantCertsForOccurrenceWorker) Work(ctx context.Context, job *river.Job[GrantCertsForOccurrenceArgs]) error {
-	errs := w.grantProgramCerts(ctx, job.Args.EditionID, job.Args.ProgramID)
+func (w *GrantCertsForOccurrenceWorker) Work(ctx context.Context, args GrantCertsForOccurrenceArgs) error {
+	errs := w.grantProgramCerts(ctx, args.EditionID, args.ProgramID)
 	for _, e := range errs {
 		telemetry.Log().Warn("cert emission had errors",
 			zap.String("user_id", e.UserID.String()),
@@ -92,7 +89,7 @@ func (w *GrantCertsForOccurrenceWorker) Work(ctx context.Context, job *river.Job
 		)
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("cert emission for program %s had %d errors", job.Args.ProgramID, len(errs))
+		return fmt.Errorf("cert emission for program %s had %d errors", args.ProgramID, len(errs))
 	}
 	return nil
 }

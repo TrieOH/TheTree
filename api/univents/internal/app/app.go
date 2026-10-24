@@ -8,7 +8,6 @@ import (
 	"lib/email"
 	"lib/httpserver"
 	"lib/objectstorage"
-	libriver "lib/river"
 	spec "univents"
 	"univents/internal/config"
 
@@ -33,9 +32,10 @@ type Univents struct {
 // implementation; everything Univents varies on — its clients (IdentityX,
 // Payssage, object storage, email), the platform-wallet fail-fast check,
 // its Postgres adapter with the constraint messages, the store notifier,
-// river workers and jobs — happens in the start hook. Storage never
+// and the background-job carrier — happens in the start hook. Storage never
 // crosses Boot's interface: the pool is created here and closed in the
-// returned shutdown.
+// returned shutdown. The schema is never migrated here — `just
+// univents-goose` owns it.
 func Run() error {
 	cfg := config.Load()
 	app := &Univents{cfg: cfg}
@@ -63,7 +63,7 @@ func Run() error {
 			return nil, nil, err
 		}
 
-		pool, err := database.SetupDB(cfg.ToDBConfig(), constraintMessages())
+		pool, err := database.SetupDBWithoutMigrations(cfg.ToDBConfig(), constraintMessages())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -79,23 +79,21 @@ func Run() error {
 
 		repos := app.initRepos()
 
-		// River must exist before the operations: the webhook receiver
-		// cancels the expiry job on approve via the client (best-effort;
-		// split 7 checkout schedules the job).
-		riverClient, riverUI, err := app.initRiver(ctx, repos, notifier, tx)
+		enqueuer, events, stopJobs, err := app.initJobs(repos, notifier, tx)
 		if err != nil {
+			database.CloseDB(pool)
 			return nil, nil, err
 		}
 
-		ops := app.initOperations(repos, notifier, riverClient, tx)
+		ops := app.initOperations(repos, notifier, enqueuer, tx)
 		primitives := app.initMiddlewares()
 		handlers := app.initHandlers(ops)
 
-		mux := app.CreateRouter(primitives, handlers, riverUI)
+		mux := app.CreateRouter(primitives, handlers, events)
 		return mux, func(ctx context.Context) error {
-			libriver.LogStop(ctx, riverClient)
+			err := stopJobs(ctx)
 			database.CloseDB(pool)
-			return nil
+			return err
 		}, nil
 	}
 
@@ -106,5 +104,6 @@ func Run() error {
 		CorsAllowedOrigins: cfg.AllowedOrigins,
 		CorsAllowedHeaders: cfg.AllowedHeaders,
 		OpenAPISpec:        spec.OpenAPISpec,
+		RateLimit:          cfg.ToRateLimit(),
 	}, start)
 }

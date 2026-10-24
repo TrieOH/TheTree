@@ -39,8 +39,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /app/api/payssage/payssage .
 COPY --from=builder /healthcheck /usr/local/bin/healthcheck
-COPY --from=builder /app/api/payssage/db/migrations ./db/migrations
 USER nonroot:nonroot
 EXPOSE 8080
+ENV PORT=8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/healthcheck"]
 CMD ["./payssage"]
