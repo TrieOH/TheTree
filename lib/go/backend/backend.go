@@ -117,7 +117,13 @@ type Jobs interface {
 // IdentityX's own primitives for IdentityX itself. Pass the result to
 // httpserver.MountStrict.
 func (d *Deps) Chains(primitives authz.Primitives) (map[string][]func(http.Handler) http.Handler, error) {
-	resolver, err := authz.NewResolver(d.spec, primitives, authz.Options{})
+	return d.ChainsWith(primitives, authz.Options{})
+}
+
+// ChainsWith is Chains with resolver options. IdentityX passes its setup
+// guard here until the guard moves into its own code (ADR-0014).
+func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[string][]func(http.Handler) http.Handler, error) {
+	resolver, err := authz.NewResolver(d.spec, primitives, opts)
 	if err != nil {
 		return nil, fmt.Errorf("resolve auth chains: %w", err)
 	}
