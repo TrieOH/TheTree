@@ -7,6 +7,7 @@ import (
 	spec "IdentityX"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/handlers"
+	"IdentityX/internal/setup"
 	libauthz "lib/authz"
 
 	"github.com/go-chi/chi/v5"
@@ -24,19 +25,44 @@ func testScopeCheckers() map[string]libauthz.ScopeChecker {
 	return authz.New(nil, nil, nil).ScopeCheckers()
 }
 
+// completedSetup is a setup state that has already completed.
+func completedSetup() *setup.State {
+	st := setup.NewState(nil)
+	st.MarkComplete()
+	return st
+}
+
 // newTestRouter mounts the strict server with the real middleware stack
-// (validation + auth dispatch + fun-envelope error handlers) on a fresh
-// chi router plus harness routes.
-func newTestRouter(t *testing.T, h *handlers.Server, primitives libauthz.Primitives) *chi.Mux {
+// (validation + auth dispatch + setup guard + fun-envelope error handlers)
+// on a fresh chi router.
+func newTestRouter(t *testing.T, h *handlers.Server, primitives libauthz.Primitives, st *setup.State) *chi.Mux {
 	t.Helper()
-	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, libauthz.Options{
-		SetupGuard:     setupGuard(),
-		SkipSetupGuard: []string{"getSetup", "postSetup"},
-	})
+	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, chainOptions(st))
 	if err != nil {
 		t.Fatalf("resolve auth chains: %v", err)
 	}
 	r := chi.NewRouter()
 	mountStrict(r, h, resolver.Chains())
 	return r
+}
+
+// newTestRouterChains resolves the chains newTestRouter mounts, for tests
+// that build the router frame themselves.
+func newTestRouterChains(t *testing.T, primitives libauthz.Primitives, st *setup.State) map[string][]func(http.Handler) http.Handler {
+	t.Helper()
+	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, chainOptions(st))
+	if err != nil {
+		t.Fatalf("resolve auth chains: %v", err)
+	}
+	return resolver.Chains()
+}
+
+// testPrimitives are pass-through auth stubs with the real scope checkers.
+func testPrimitives() libauthz.Primitives {
+	return libauthz.Primitives{
+		JWT:    mwJWT,
+		APIKey: mwJWT,
+		Any:    mwAnyAuth,
+		Scopes: testScopeCheckers(),
+	}
 }

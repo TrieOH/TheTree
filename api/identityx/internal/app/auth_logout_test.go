@@ -13,7 +13,6 @@ import (
 	"IdentityX/internal/services"
 	"IdentityX/internal/services/authn"
 	"IdentityX/internal/services/tos"
-	"IdentityX/internal/setup"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -53,7 +52,8 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 		),
 		nopTxRunner{},
 	)
-	server := handlers.NewServer(&services.Operations{Authn: ops})
+	st := completedSetup()
+	server := handlers.NewServer(&services.Operations{Authn: ops}, st)
 	jwtStub := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := models.WithIdentity(r.Context(), &models.Identity{
@@ -63,13 +63,12 @@ func mountLogoutServer(t *testing.T, key models.CryptoKey, actor models.Actor, b
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	setup.MarkComplete()
 	return newTestRouter(t, server, libauthz.Primitives{
 		JWT:    jwtStub,
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,
 		Scopes: testScopeCheckers(),
-	})
+	}, st)
 }
 
 // stubBlacklist creates a fresh blacklist repo mock per test: appends are

@@ -7,12 +7,11 @@ import (
 	"github.com/MintzyG/fun"
 
 	"IdentityX/internal/openapi"
-	"IdentityX/internal/setup"
 	"IdentityX/models"
 )
 
 func (h *Handlers) PostSetup(ctx context.Context, req openapi.PostSetupRequestObject) (openapi.PostSetupResponseObject, error) {
-	done, err := setup.Check(ctx)
+	done, err := h.setup.Check(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +32,7 @@ func (h *Handlers) PostSetup(ctx context.Context, req openapi.PostSetupRequestOb
 	if err != nil {
 		return nil, err
 	}
-	setup.MarkComplete()
+	h.setup.MarkComplete()
 	return openapi.PostSetup201JSONResponse{
 		Code: 201, Data: tokens, Timestamp: time.Now(), Module: module,
 	}, nil
