@@ -46,17 +46,6 @@ func newTestRouter(t *testing.T, h *handlers.Server, primitives libauthz.Primiti
 	return r
 }
 
-// newTestRouterChains resolves the chains newTestRouter mounts, for tests
-// that build the router frame themselves.
-func newTestRouterChains(t *testing.T, primitives libauthz.Primitives, st *setup.State) map[string][]func(http.Handler) http.Handler {
-	t.Helper()
-	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, chainOptions(st))
-	if err != nil {
-		t.Fatalf("resolve auth chains: %v", err)
-	}
-	return resolver.Chains()
-}
-
 // testPrimitives are pass-through auth stubs with the real scope checkers.
 func testPrimitives() libauthz.Primitives {
 	return libauthz.Primitives{

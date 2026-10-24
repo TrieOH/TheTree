@@ -113,11 +113,9 @@ func view(
 	ticketName *string,
 ) models.BadgeEmissionView {
 	return models.BadgeEmissionView{
-		BadgeEmission: models.BadgeEmission{
-			ID: id, EditionID: editionID, UserID: userID,
-			Origin: origin, Status: models.BadgeEmissionStatusActive,
-			EmittedAt: time.Now(),
-		},
+		ID: id, EditionID: editionID, UserID: userID,
+		Origin: origin, Status: models.BadgeEmissionStatusActive,
+		EmittedAt:    time.Now(),
 		EditionName:  editionName,
 		EndsAt:       endsAt,
 		EventName:    eventName,

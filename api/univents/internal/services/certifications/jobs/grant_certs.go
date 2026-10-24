@@ -46,9 +46,9 @@ func NewGrantCertsWorker(
 	events ports.EventRepo,
 	email *email.Client,
 ) *GrantCertsWorker {
-	return &GrantCertsWorker{grantCertsDeps: grantCertsDeps{
+	return &GrantCertsWorker{
 		certs: certs, editions: editions, events: events, email: email,
-	}}
+	}
 }
 
 func (w *GrantCertsWorker) Work(ctx context.Context, args GrantCertsForEditionArgs) error {
@@ -75,9 +75,9 @@ func NewGrantCertsForOccurrenceWorker(
 	events ports.EventRepo,
 	email *email.Client,
 ) *GrantCertsForOccurrenceWorker {
-	return &GrantCertsForOccurrenceWorker{grantCertsDeps: grantCertsDeps{
+	return &GrantCertsForOccurrenceWorker{
 		certs: certs, editions: editions, events: events, email: email,
-	}}
+	}
 }
 
 func (w *GrantCertsForOccurrenceWorker) Work(ctx context.Context, args GrantCertsForOccurrenceArgs) error {

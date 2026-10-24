@@ -137,11 +137,9 @@ func (f *fixture) stubKeyNotFound() {
 func (f *fixture) signAccess(t *testing.T, withoutKid bool) string {
 	t.Helper()
 	claims := models.AccessClaims{
-		Sub: models.AccessSub{ID: f.actor.ID, ProjectID: f.actor.ProjectID, Email: f.actor.Email, Type: f.actor.Type},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(f.now.Add(testAccessTTL)),
-			Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(f.now),
-		},
+		Sub:       models.AccessSub{ID: f.actor.ID, ProjectID: f.actor.ProjectID, Email: f.actor.Email, Type: f.actor.Type},
+		ExpiresAt: jwt.NewNumericDate(f.now.Add(testAccessTTL)),
+		Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(f.now),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	if !withoutKid {
@@ -163,11 +161,9 @@ func (f *fixture) signAccess(t *testing.T, withoutKid bool) string {
 func (f *fixture) mintExpiredRefresh(t *testing.T) string {
 	t.Helper()
 	claims := models.RefreshClaims{
-		Sub: models.RefreshSub{ID: f.actor.ID, ProjectID: nil, AccessJTI: uuid.New()},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-			Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
-		},
+		Sub:       models.RefreshSub{ID: f.actor.ID, ProjectID: nil, AccessJTI: uuid.New()},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+		Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	token.Header["kid"] = f.key.ID

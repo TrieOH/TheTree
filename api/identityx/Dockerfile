@@ -1,10 +1,14 @@
-FROM ghcr.io/trieoh/go-tools:latest@sha256:efa2452249f75dc25d5228a499c11a0b6911ae4367850c8514f36e8f1dbbf351 AS tools
-FROM golang:1.26.4 AS builder
+# Versions come from tools.versions: GO_VERSION as a build arg (compose and
+# the deploy workflow pass it), the codegen tools by sourcing the file.
+ARG GO_VERSION
+FROM golang:${GO_VERSION:?build-through-just-or-pass-GO_VERSION-from-tools.versions} AS builder
+ARG TARGETARCH
 WORKDIR /app
-COPY --from=tools /go/bin/sqlc /go/bin/sqlc
-# go-tools does not ship oapi-codegen; pinned to the justfile's version.
+COPY tools.versions ./
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
-    GOBIN=/go/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
+    . ./tools.versions && \
+    curl -sSfL "https://downloads.sqlc.dev/sqlc_${SQLC_VERSION}_linux_${TARGETARCH}.tar.gz" | tar -xz -C /go/bin sqlc && \
+    GOBIN=/go/bin go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v${OAPI_CODEGEN_VERSION}"
 # --- Dependency layer ---
 COPY go.work go.work.sum ./
 COPY lib/go/go.mod lib/go/go.sum ./lib/go/
@@ -27,7 +31,7 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
     oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
     # generated bindings import oapi-codegen/runtime; not committed, so go mod tidy would drop it -- pin it at build time
-    go get github.com/oapi-codegen/runtime@v1.6.0
+    . /app/tools.versions && go get "github.com/oapi-codegen/runtime@v${OAPI_RUNTIME_VERSION}"
 WORKDIR /app/api/identityx
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \

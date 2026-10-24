@@ -330,12 +330,10 @@ func (m *Manager) newAccessToken(actor models.Actor, jti, kid uuid.UUID, expires
 			Type:       actor.Type,
 			VerifiedAt: actor.VerifiedAt,
 		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    m.cfg.Issuer,
-			ID:        jti.String(),
-			IssuedAt:  jwt.NewNumericDate(now),
-		},
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		Issuer:    m.cfg.Issuer,
+		ID:        jti.String(),
+		IssuedAt:  jwt.NewNumericDate(now),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
@@ -358,12 +356,10 @@ func (m *Manager) newRefreshToken(actor *models.Actor, jti, accessJTI, kid uuid.
 			ProjectID: actor.ProjectID,
 			AccessJTI: accessJTI,
 		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    m.cfg.Issuer,
-			ID:        jti.String(),
-			IssuedAt:  jwt.NewNumericDate(now),
-		},
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		Issuer:    m.cfg.Issuer,
+		ID:        jti.String(),
+		IssuedAt:  jwt.NewNumericDate(now),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)

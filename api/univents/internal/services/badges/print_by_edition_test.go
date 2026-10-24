@@ -33,12 +33,10 @@ func TestPrintByEdition_ActiveOnly(t *testing.T) {
 		ThenReturn([]models.BadgeEmissionView{
 			view(activeID, editionID, uuid.New(), models.BadgeEmissionOriginParticipant, "Ed", time.Now().Add(time.Hour), "Ev", nil, new("Vip")),
 			{
-				BadgeEmission: models.BadgeEmission{
-					ID: revokedID, EditionID: editionID, UserID: uuid.New(),
-					Origin: models.BadgeEmissionOriginParticipant,
-					Status: models.BadgeEmissionStatusRevoked, StatusReason: &reason,
-					EmittedAt: time.Now(),
-				},
+				ID: revokedID, EditionID: editionID, UserID: uuid.New(),
+				Origin: models.BadgeEmissionOriginParticipant,
+				Status: models.BadgeEmissionStatusRevoked, StatusReason: &reason,
+				EmittedAt:   time.Now(),
 				EditionName: "Ed", EndsAt: time.Now().Add(time.Hour), EventName: "Ev",
 			},
 		}, nil)

@@ -1,6 +1,6 @@
 module payssage
 
-go 1.26.2
+go 1.27.3
 
 require (
 	github.com/MintzyG/fun v0.10.6
@@ -9,9 +9,8 @@ require (
 	github.com/go-chi/chi/v5 v5.4.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.8.0
 	go.uber.org/zap v1.28.0
-	gopkg.in/yaml.v3 v3.0.1
 	resty.dev/v3 v3.0.0-rc.3
 )
 

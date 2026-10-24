@@ -32,6 +32,6 @@ func TestPoolCollectorNilPoolNoPanic(_ *testing.T) {
 		defer close(ch)
 		c.Collect(ch) // must not panic when no pool is registered
 	}()
-	for range ch { //nolint:revive // drain; expect zero metrics
+	for range ch {
 	}
 }

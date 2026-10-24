@@ -133,7 +133,7 @@ jobs:
           sqlc generate
           oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
           oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
-          go get github.com/oapi-codegen/runtime@v1.6.0
+          go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"
 
       # ── R1 compile ──────────────────────────────────────────────────────
       - name: R1 compile
@@ -250,6 +250,10 @@ jobs:
       #    Registry: GHCR (ghcr.io/trieoh/<artifact>), auth via the job's
       #    own GITHUB_TOKEN — no registry secret needed. Build runs through
       #    Blacksmith's cached builder — see docs.blacksmith.sh/blacksmith-caching/docker-builds
+      - name: Load tool versions
+        if: ${{ env.TYPE == 'service' }}
+        run: grep -E '^[A-Z0-9_]+=' tools.versions >> "$GITHUB_ENV"
+
       - name: Setup Docker Builder (Blacksmith)
         if: ${{ env.TYPE == 'service' }}
         uses: useblacksmith/setup-docker-builder@v2
@@ -271,6 +275,7 @@ jobs:
         with:
           context: .
           file: api/${{ env.ARTIFACT }}/Dockerfile
+          build-args: GO_VERSION=${{ env.GO_VERSION }}
           tags: ghcr.io/trieoh/${{ env.ARTIFACT }}:${{ env.VERSION }}
           push: true
 
