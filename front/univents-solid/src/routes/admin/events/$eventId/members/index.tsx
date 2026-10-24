@@ -11,6 +11,7 @@ import UsersIcon from "~icons/lucide/users";
 import {
   actorEmailsQueryOptions,
   allEventMembersQueryOptions,
+  prefetchEventMembers,
 } from "@/features/events/api/members";
 import {
   useAddEventMemberMutation,
@@ -25,11 +26,13 @@ import {
 } from "@/features/events/ui/ManageEventMemberDialog";
 import { RemoveEventMemberDialog } from "@/features/events/ui/RemoveEventMemberDialog";
 import { toast } from "@/shared/ui/toast";
+import { appQueryClient } from "@/shared/lib/query-client";
 
 const Users = UsersIcon as unknown as (props: { class?: string }) => JSX.Element;
 const UserPlus = UserPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/admin/events/$eventId/members/")({
+  loader: ({ params }) => prefetchEventMembers(appQueryClient, params.eventId),
   head: () => ({
     meta: [{ title: "Membros - Admin Univents" }],
   }),

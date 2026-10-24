@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -30,6 +31,7 @@ const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/products/$productId/variants/",
 )({
+  loader: ({ params }) => appQueryClient.prefetchQuery(productVariantsQueryOptions(params.productId)),
   head: () => ({
     meta: [{ title: "Variações do Produto - Admin Univents" }],
   }),

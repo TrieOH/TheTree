@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -29,6 +30,7 @@ const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) 
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/admin/events/$eventId/editions/")({
+  loader: ({ params }) => appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
   head: () => ({
     meta: [{ title: "Edições - Admin Univents" }],
   }),

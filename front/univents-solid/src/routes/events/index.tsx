@@ -10,11 +10,13 @@ import { EventCard } from "@/widgets/landing/ui/EventCard";
 import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import Logo from "@/shared/ui/Logo";
 import { Drawer } from "@/shared/ui/Drawer";
+import { appQueryClient } from "@/shared/lib/query-client";
 
 const Search = SearchIcon as unknown as () => JSX.Element;
 const Sliders = SlidersIcon as unknown as () => JSX.Element;
 
 export const Route = createFileRoute("/events/")({
+  loader: () => appQueryClient.prefetchQuery(allPublicEventsQueryOptions()),
   head: () => ({ meta: [{ title: "Eventos - Univents" }] }),
   component: EventsPage,
 });

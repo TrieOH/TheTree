@@ -16,7 +16,7 @@ export function Reveal(props: {
 }) {
   let element!: HTMLDivElement;
   let observer: IntersectionObserver | undefined;
-  let rafId: number | undefined;
+  let animation: ReturnType<typeof animate> | undefined;
 
   const offset = () =>
     props.direction === "left"
@@ -39,7 +39,7 @@ export function Reveal(props: {
         if (!entry?.isIntersecting) return;
         observer?.disconnect();
         observer = undefined;
-        animate(
+        animation = animate(
           element,
           { opacity: [0, 1], transform: [offset(), "translate(0, 0)"] },
           { delay: props.delay ?? 0, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
@@ -51,7 +51,7 @@ export function Reveal(props: {
   };
 
   onCleanup(() => {
-    if (rafId) cancelAnimationFrame(rafId);
+    animation?.stop();
     observer?.disconnect();
   });
 
@@ -61,7 +61,8 @@ export function Reveal(props: {
       ref={(value) => {
         element = value;
         if (!value || untrack(() => props.animate) === false) return;
-        rafId = requestAnimationFrame(reveal);
+        // Set the initial opacity before insertion, never after the first paint.
+        untrack(reveal);
       }}
     >
       {props.children}

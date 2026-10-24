@@ -9,9 +9,15 @@ import { Breadcrumb } from "@/shared/ui/Breadcrumb";
 import { MobileTopbar } from "@/widgets/sidebar/MobileTopbar";
 import { Sidebar } from "@/widgets/sidebar/Sidebar";
 import { SidebarProvider, useSidebar } from "@/widgets/sidebar/use-sidebar";
+import { allOwnEventsQueryOptions, allJoinedEventsQueryOptions } from "@/features/events/api";
+import { appQueryClient } from "@/shared/lib/query-client";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: requireAuth,
+  loader: () => Promise.all([
+    appQueryClient.prefetchQuery(allOwnEventsQueryOptions()),
+    appQueryClient.prefetchQuery(allJoinedEventsQueryOptions()),
+  ]),
   head: () => ({
     meta: [{ title: "Admin - Univents" }],
   }),

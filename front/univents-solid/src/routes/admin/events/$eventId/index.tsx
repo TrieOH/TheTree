@@ -52,8 +52,10 @@ import {
 import { createHotkeys } from "@/shared/lib/hotkeys";
 import { useUploadQueue } from "@/features/upload-queue";
 import { handleShare } from "@/shared/lib/share";
+import { appQueryClient } from "@/shared/lib/query-client";
 
 export const Route = createFileRoute("/admin/events/$eventId/")({
+  loader: ({ params }) => appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
   head: ({ params }) => ({
     meta: [{ title: `Evento ${params.eventId} - Admin - Univents` }],
   }),

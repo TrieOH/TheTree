@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -55,6 +56,13 @@ const QrCode = QrCodeIcon as unknown as (props: { class?: string }) => JSX.Eleme
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/",
 )({
+  loader: ({ params }) => Promise.all([
+    appQueryClient.prefetchQuery(badgeTemplatesQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(badgeEmissionsQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(badgePrintQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
+    appQueryClient.prefetchQuery(allTicketsQueryOptions(params.editionId)),
+  ]),
   head: () => ({
     meta: [{ title: "Crachás - Admin Univents" }],
   }),

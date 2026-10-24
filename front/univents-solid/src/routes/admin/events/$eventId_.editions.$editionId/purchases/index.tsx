@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -19,6 +20,7 @@ const ShoppingBag = ShoppingBagIcon as unknown as (props: { class?: string }) =>
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/purchases/",
 )({
+  loader: ({ params }) => appQueryClient.prefetchQuery(editionPurchasesQueryOptions(params.editionId)),
   head: () => ({
     meta: [{ title: "Compras - Admin Univents" }],
   }),

@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -40,6 +41,15 @@ import { EditionOverviewDialogs } from "@/features/editions/ui/EditionOverviewDi
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/",
 )({
+  loader: ({ params }) => Promise.all([
+    appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
+    appQueryClient.prefetchQuery(editionPurchasesQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(attendeeCountQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(allTicketsQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(productsByEditionQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(programsQueryOptions(params.editionId)),
+    appQueryClient.prefetchQuery(occurrencesQueryOptions(params.editionId)),
+  ]),
   head: () => ({
     meta: [{ title: "Edição - Admin - Univents" }],
   }),

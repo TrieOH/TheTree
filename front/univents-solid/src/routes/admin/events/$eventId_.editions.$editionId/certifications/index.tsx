@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { For, Show, createMemo, createSignal } from "solid-js";
@@ -31,6 +32,10 @@ const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/certifications/",
 )({
+  loader: ({ params }) => Promise.all([
+    appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
+    appQueryClient.prefetchQuery(allCertificationTemplatesQueryOptions(params.editionId)),
+  ]),
   head: () => ({
     meta: [{ title: "Certificados - Admin Univents" }],
   }),

@@ -7,6 +7,8 @@ import { Footer } from "@/widgets/landing/ui/Footer";
 import { ModeSelector } from "@/widgets/landing/ui/ModeSelector";
 import { OrganizerView } from "@/widgets/landing/ui/OrganizerView";
 import { ParticipantView } from "@/widgets/landing/ui/ParticipantView";
+import { allPublicEventsQueryOptions } from "@/features/events/api";
+import { appQueryClient } from "@/shared/lib/query-client";
 
 export type Mode = "guest" | "host";
 const searchSchema = z.object({
@@ -16,6 +18,10 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Univents" }] }),
   validateSearch: (search) => searchSchema.parse(search),
+  loaderDeps: ({ search }) => ({ mode: search.as }),
+  loader: ({ deps }) => deps.mode === "guest"
+    ? appQueryClient.prefetchQuery(allPublicEventsQueryOptions())
+    : undefined,
   component: HomePage,
 });
 
