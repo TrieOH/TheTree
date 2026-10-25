@@ -1,0 +1,59 @@
+package service
+
+import (
+	"IdentityX/models"
+	"context"
+
+	"github.com/MintzyG/fun"
+)
+
+func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizationMemberInput) error {
+	ident, err := models.RequireIdentity(ctx)
+	if err != nil {
+		return err
+	}
+
+	actor, err := o.Actors.GetByEmail(ctx, payload.ActorEmail, nil)
+	if err != nil {
+		return err
+	}
+
+	if ident.Sub.ID == actor.ID {
+		return fun.ErrBadRequest("users can't add themselves to organizations")
+	}
+
+	org, err := o.Orgs.GetByID(ctx, payload.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	if actor.ID == org.OwnerID {
+		return fun.ErrBadRequest("owners can't be added to organizations they own")
+	}
+
+	err = o.Authz.CheckOrg(ctx, payload.OrganizationID, models.OrganizationRoleAdmin)
+	if err != nil {
+		return err
+	}
+
+	_, err = o.Actors.GetByID(ctx, actor.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = o.Orgs.GetMember(ctx, actor.ID, org.ID)
+	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+		return err
+	}
+	if err == nil {
+		return fun.ErrBadRequest("user is already a member of the organization")
+	}
+
+	newMember := models.OrganizationMember{
+		ActorID:        actor.ID,
+		OrganizationID: payload.OrganizationID,
+		Role:           payload.Role,
+	}
+
+	return o.Orgs.AddMember(ctx, newMember)
+}

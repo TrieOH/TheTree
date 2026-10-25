@@ -6,7 +6,6 @@ import (
 
 	spec "IdentityX"
 	"IdentityX/internal/authz"
-	"IdentityX/internal/handlers"
 	"IdentityX/internal/setup"
 	libauthz "lib/authz"
 
@@ -35,7 +34,7 @@ func completedSetup() *setup.State {
 // newTestRouter mounts the strict server with the real middleware stack
 // (validation + auth dispatch + setup guard + fun-envelope error handlers)
 // on a fresh chi router.
-func newTestRouter(t *testing.T, h *handlers.Server, primitives libauthz.Primitives, st *setup.State) *chi.Mux {
+func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *setup.State) *chi.Mux {
 	t.Helper()
 	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, chainOptions(st))
 	if err != nil {

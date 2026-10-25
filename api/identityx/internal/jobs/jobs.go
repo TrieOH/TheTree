@@ -6,8 +6,9 @@ package jobs
 import (
 	"time"
 
+	"IdentityX/internal/features/actors"
+	"IdentityX/internal/features/email_templates"
 	"IdentityX/internal/keys"
-	"IdentityX/internal/repos"
 	"IdentityX/internal/sqlc"
 	"IdentityX/internal/tokens"
 	"lib/email"
@@ -28,8 +29,8 @@ func Registry(d Deps) *libjobs.Registry {
 	libjobs.Register(reg, NewCleanupBlacklistWorker(d.Queries).Work)
 	libjobs.Register(reg, NewCleanupActionTokensWorker(d.ActionTokens).Work)
 	libjobs.Register(reg, NewRotateKeysWorker(d.Keys).Work)
-	libjobs.Register(reg, NewSendAuthEmailWorker(d.Email, repos.NewEmailTemplates(d.Queries)).Work)
-	libjobs.Register(reg, NewSendTosUpdateWorker(d.Email, repos.NewActors(d.Queries), repos.NewEmailTemplates(d.Queries)).Work)
+	libjobs.Register(reg, NewSendAuthEmailWorker(d.Email, email_templates.NewRepo(d.Queries)).Work)
+	libjobs.Register(reg, NewSendTosUpdateWorker(d.Email, actors.NewRepo(d.Queries), email_templates.NewRepo(d.Queries)).Work)
 	return reg
 }
 

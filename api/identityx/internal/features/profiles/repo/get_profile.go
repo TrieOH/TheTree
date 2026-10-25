@@ -1,0 +1,17 @@
+package repo
+
+import (
+	"IdentityX/models"
+	"context"
+	"lib/database"
+
+	"github.com/google/uuid"
+)
+
+func (r *Repo) Get(ctx context.Context, actorID uuid.UUID) (*models.ActorProfile, error) {
+	result, err := database.Queries(ctx, r.q).GetActorProfile(ctx, actorID)
+	if err != nil {
+		return nil, r.dbe(err)
+	}
+	return new(mapActorProfile(result)), nil
+}

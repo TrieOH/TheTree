@@ -1,0 +1,87 @@
+package service
+
+import (
+	"IdentityX/models"
+	"context"
+	"lib/api_keys"
+	"lib/telemetry"
+
+	"github.com/MintzyG/fun"
+	"go.uber.org/zap"
+)
+
+func (o *Operations) Create(ctx context.Context, payload models.CreateAPIKeyInput) (*models.APIKey, string, error) {
+	project, err := o.Projects.GetByID(ctx, *payload.ProjectID)
+	if err != nil {
+		telemetry.Log().Info("Create api key", zap.String("project_id", payload.ProjectID.String()))
+		return nil, "", err
+	}
+
+	created, generated, err := o.createInternal(ctx, *project, payload)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return created, generated.Raw, nil
+}
+
+func (o *Operations) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *api_keys.GeneratedAPIKey, error) {
+	ident, err := models.RequireIdentity(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Every mint crosses the Access-check seam, self-bound or not: minting
+	// a key for a project demands the caller hold at least admin on it.
+	// CheckProject's org fallback already admits org owners with no
+	// project_members row, so no legitimate path is lost.
+	err = o.Authz.CheckProject(ctx, project.ID, models.ProjectRoleAdmin)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	actorID := ident.Sub.ID
+	if payload.SubjectID != nil {
+		actorID = *payload.SubjectID
+	}
+
+	if len(payload.Capabilities) > 0 {
+		valid, err := o.Capabilities.ValidateCapabilities(ctx, &project.ID, payload.Capabilities)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !valid {
+			return nil, nil, fun.ErrBadRequest("invalid capabilities")
+		}
+	}
+
+	var generated *api_keys.GeneratedAPIKey
+	generated, err = api_keys.GenerateAPIKey(project.BrandSlug, payload.Env, o.HmacSecret)
+	if err != nil {
+		return nil, nil, fun.ErrInternal(err.Error())
+	}
+
+	apiKey := models.APIKey{
+		SubjectID:     actorID,
+		Name:          payload.Name,
+		DisplayPrefix: generated.DisplayPrefix,
+		KeyHash:       generated.Hash,
+		ExpiresAt:     payload.ExpiresAt,
+		CreatedBy:     ident.Sub.ID,
+	}
+
+	var created *models.APIKey
+	created, err = o.APIKeys.Create(ctx, apiKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(payload.Capabilities) > 0 {
+		err = o.Capabilities.AssignToAPIKey(ctx, created.ID, payload.Capabilities, ident.Sub.ID)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return created, generated, nil
+}

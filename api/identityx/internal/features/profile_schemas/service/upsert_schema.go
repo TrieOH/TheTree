@@ -1,0 +1,33 @@
+package service
+
+import (
+	"IdentityX/models"
+	"context"
+)
+
+func (o *Operations) UpsertSchema(ctx context.Context, payload models.UpsertProfileSchemaInput) (*models.ProjectProfileSchema, error) {
+	// Platform schema: a platform-scoped write, so it is gated on the
+	// caller's platform role rather than a project membership.
+	if payload.ProjectID == nil {
+		err := o.Authz.CheckPlatform(ctx, models.PlatformRoleAdmin)
+		if err != nil {
+			return nil, err
+		}
+		return o.Schemas.Upsert(ctx, models.ProjectProfileSchema{
+			ProjectID: nil,
+			Schema:    payload.Schema,
+			Active:    payload.Active,
+		})
+	}
+
+	err := o.Authz.CheckProject(ctx, *payload.ProjectID, models.ProjectRoleAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.Schemas.Upsert(ctx, models.ProjectProfileSchema{
+		ProjectID: payload.ProjectID,
+		Schema:    payload.Schema,
+		Active:    payload.Active,
+	})
+}
