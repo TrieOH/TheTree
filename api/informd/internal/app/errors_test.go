@@ -18,7 +18,7 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 		if strings.HasPrefix(name, "uniq_") || strings.HasSuffix(name, "_key") {
 			class, want = database.ErrUniqueViolation, http.StatusConflict
 		}
-		got := m.Status(&database.Violation{Named: named, Class: class})
+		got := m.Status(&database.ViolationError{Named: named, Class: class})
 		if got != want {
 			t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
 		}
