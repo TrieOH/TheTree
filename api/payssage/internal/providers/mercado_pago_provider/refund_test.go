@@ -3,13 +3,14 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
+	"payssage/errs"
 	"payssage/internal/config"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"resty.dev/v3"
 )
@@ -91,7 +92,7 @@ func TestRefund_NoTransactionIDConflicts(t *testing.T) {
 	// shape for an intent that never reached the provider.
 	intent.ProviderData = json.RawMessage(`{}`)
 	err := p.Refund(context.Background(), intent)
-	if !fun.Is(err, fun.CodeConflict) {
+	if !errors.Is(err, errs.ErrNoTransactionToRefund) {
 		t.Fatalf("expected conflict for missing transaction id, got %v", err)
 	}
 }
@@ -111,7 +112,7 @@ func TestRefund_RevokedSellerConflicts(t *testing.T) {
 	}
 
 	err := p.Refund(context.Background(), refundTestIntent(walletID))
-	if !fun.Is(err, fun.CodeConflict) {
+	if !errors.As(err, new(*errs.SellerRevokedError)) {
 		t.Fatalf("expected conflict for revoked seller, got %v", err)
 	}
 }

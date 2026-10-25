@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
+	"payssage/errs"
 	"payssage/models"
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -30,7 +30,7 @@ func (o *Operations) UnbindCollector(ctx context.Context, walletID uuid.UUID) er
 			return err
 		}
 	} else if wallet.OwnerID != ident.Sub.ID {
-		return fun.ErrForbidden("insufficient permissions")
+		return errs.ErrNotResourceOwner
 	}
 
 	return o.Wallets.UnbindCollector(ctx, walletID)

@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
+	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +26,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 	}
 
 	if seller.WalletID != wallet.ID {
-		return nil, fun.ErrBadRequest("seller does not belong to wallet")
+		return nil, errs.ErrSellerNotInWallet
 	}
 
 	var collectorID *uuid.UUID
@@ -35,7 +36,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 			return nil, err
 		}
 		if collector.Provider != seller.Provider {
-			return nil, fun.ErrInternal("seller and collector providers do not match")
+			return nil, errors.New("seller and collector providers do not match")
 		}
 		collectorID = &collector.ID
 	}
@@ -46,7 +47,7 @@ func (o *Operations) Checkout(ctx context.Context, payload models.CreateIntentIn
 	}
 	provider, ok := o.Registry.Payments[providerEnum]
 	if !ok {
-		return nil, fun.ErrBadRequest("provider not implemented")
+		return nil, errs.ErrProviderNotImplemented
 	}
 
 	id, err := uuid.NewV7()

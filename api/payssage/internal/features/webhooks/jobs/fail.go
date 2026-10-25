@@ -2,12 +2,13 @@ package jobs
 
 import (
 	"context"
+	"errors"
 
+	"lib/database"
 	"lib/telemetry"
 	"payssage/models"
 	"payssage/ports"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -34,7 +35,7 @@ func NewFailWebhookDeliveryWorker(deliveries ports.WebhookDeliveryRepo) *FailWeb
 func (w *FailWebhookDeliveryWorker) Work(ctx context.Context, args FailWebhookDeliveryArgs) error {
 	delivery, err := w.deliveries.GetByID(ctx, args.DeliveryID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil
 		}
 		return err

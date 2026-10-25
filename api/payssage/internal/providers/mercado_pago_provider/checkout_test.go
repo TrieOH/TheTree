@@ -10,12 +10,13 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"lib/database"
+	"payssage/errs"
 	"payssage/internal/config"
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
 	"payssage/ports"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"resty.dev/v3"
 )
@@ -60,7 +61,7 @@ type fakeSellers struct {
 
 func (f *fakeSellers) GetByID(_ context.Context, _ uuid.UUID) (*models.Seller, error) {
 	if f.seller == nil {
-		return nil, fun.Errf("seller not found").NotFound()
+		return nil, &database.NotFoundError{Named: errs.ErrSellerNotFound}
 	}
 	return f.seller, nil
 }
@@ -73,7 +74,7 @@ type fakeWallets struct {
 
 func (f *fakeWallets) GetByID(_ context.Context, _ uuid.UUID) (*models.Wallet, error) {
 	if f.wallet == nil {
-		return nil, fun.Errf("wallet not found").NotFound()
+		return nil, &database.NotFoundError{Named: errs.ErrWalletNotFound}
 	}
 	return f.wallet, nil
 }

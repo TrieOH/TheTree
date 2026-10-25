@@ -4,6 +4,8 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"fmt"
+	"payssage/errs"
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
 	"strconv"
@@ -11,7 +13,6 @@ import (
 
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -24,18 +25,18 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 
 	seller, err := p.sellers.GetByID(ctx, intent.SellerID)
 	if err != nil {
-		return fun.Errf("resolve seller: %v", err).NotFound()
+		return fmt.Errorf("resolve seller: %w", err)
 	}
 	if seller.RevokedAt != nil {
-		return fun.Errf("seller %s has revoked provider access", seller.ID).Forbidden()
+		return &errs.SellerRevokedError{SellerID: seller.ID, Op: "checkout"}
 	}
 	if seller.Provider != "mercadopago" {
-		return fun.Errf("seller %s is not a mercadopago seller (got %q)", seller.ID, seller.Provider).Conflict()
+		return &errs.SellerProviderMismatchError{SellerID: seller.ID, Provider: seller.Provider}
 	}
 
 	wallet, err := p.wallets.GetByID(ctx, intent.WalletID)
 	if err != nil {
-		return fun.Errf("resolve wallet: %v", err).Internal()
+		return fmt.Errorf("resolve wallet: %w", err)
 	}
 
 	// The wallet's fee (bps) is the platform's marketplace fee — the
@@ -50,10 +51,10 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	var creds models.MercadoPagoCredentials
 	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
-		return fun.Errf("unmarshal seller credentials: %v", err).Internal()
+		return fmt.Errorf("unmarshal seller credentials: %w", err)
 	}
 	if creds.AccessToken == "" {
-		return fun.Errf("seller %s missing mercadopago access token", seller.ID).Internal()
+		return fmt.Errorf("seller %s missing mercadopago access token", seller.ID)
 	}
 
 	// TODO: check token expiry / refresh via creds.RefreshToken before use
@@ -95,7 +96,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	// TODO: fix the idemp key not being actual idemp
 	idempotencyKey, err := uuid.NewV7()
 	if err != nil {
-		return fun.Errf("generate idempotency key: %v", err).Internal()
+		return fmt.Errorf("generate idempotency key: %w", err)
 	}
 
 	var mpResp mpPaymentResponse
@@ -110,7 +111,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		SetResultError(&mpErr).
 		Post("https://api.mercadopago.com/v1/payments")
 	if err != nil {
-		return fun.Errf("mercadopago create payment request: %v", err).BadGateway()
+		return fmt.Errorf("%w: mercadopago create payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
 	telemetry.Log().Info("MP Create Payment Request Raw Body", zap.String("body", resp.String()))
@@ -135,7 +136,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 
 	providerDataBytes, err := json.Marshal(providerData)
 	if err != nil {
-		return fun.Errf("marshal provider data: %v", err).Internal()
+		return fmt.Errorf("marshal provider data: %w", err)
 	}
 	intent.ProviderData = providerDataBytes
 	intent.Status = p.NormalizeStatus(mpResp.Status)

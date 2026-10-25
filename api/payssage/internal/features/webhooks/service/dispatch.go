@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	"lib/database"
 	"lib/telemetry"
 	"payssage/internal/features/webhooks/jobs"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -27,7 +29,7 @@ import (
 func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.WebhookEvent) error {
 	endpoints, err := o.Endpoints.ListByWallet(ctx, event.WalletID)
 	if err != nil {
-		return fun.Errf("list webhook endpoints: %v", err).Internal()
+		return fmt.Errorf("list webhook endpoints: %w", err)
 	}
 	if len(endpoints) == 0 {
 		return nil
@@ -38,7 +40,7 @@ func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.Webho
 		for _, endpoint := range endpoints {
 			v7, err := uuid.NewV7()
 			if err != nil {
-				return fun.ErrInternal(err.Error())
+				return fmt.Errorf("new delivery id: %w", err)
 			}
 
 			delivery, err := o.Deliveries.Create(ctx, models.WebhookDelivery{
@@ -48,13 +50,13 @@ func (o *Operations) dispatchDeliveries(ctx context.Context, event *models.Webho
 				Status:     models.WebhookDeliveryStatusPending,
 			})
 			if err != nil {
-				if fun.Is(err, fun.CodeConflict) {
+				if errors.Is(err, database.ErrUniqueViolation) {
 					// uniq_webhook_deliveries_event_endpoint — this event
 					// was already dispatched to this endpoint. Not an
 					// error, just skip enqueueing a duplicate job.
 					continue
 				}
-				return fun.Errf("create webhook delivery: %v", err).Internal()
+				return fmt.Errorf("create webhook delivery: %w", err)
 			}
 			created = append(created, delivery.ID)
 		}

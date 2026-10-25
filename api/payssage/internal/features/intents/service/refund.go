@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -32,7 +32,7 @@ func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.In
 		return intent, nil
 	}
 	if intent.Status != models.IntentStatusSucceeded {
-		return nil, fun.Errf("intent cannot be refunded from status %q", intent.Status).BadRequest()
+		return nil, &errs.IntentStatusError{Action: "refunded", Status: string(intent.Status)}
 	}
 
 	providerEnum, err := providers.FromString(intent.Provider)
@@ -41,7 +41,7 @@ func (o *Operations) Refund(ctx context.Context, intentID uuid.UUID) (*models.In
 	}
 	provider, ok := o.Registry.Payments[providerEnum]
 	if !ok {
-		return nil, fun.Err("provider not implemented").BadRequest()
+		return nil, errs.ErrProviderNotImplemented
 	}
 
 	err = provider.Refund(ctx, intent)

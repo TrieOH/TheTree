@@ -1,9 +1,8 @@
 package providers
 
 import (
+	"payssage/errs"
 	"payssage/ports"
-
-	"github.com/MintzyG/fun"
 )
 
 type AvailableProviders string
@@ -21,7 +20,7 @@ func FromString(s string) (AvailableProviders, error) {
 	case "mercadopago":
 		return MercadoPagoProvider, nil
 	default:
-		return "", fun.Errf("unsupported provider %s", s).BadRequest()
+		return "", &errs.UnsupportedProviderError{Provider: s}
 	}
 }
 

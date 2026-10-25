@@ -6,8 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"payssage/errs"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
@@ -15,13 +14,13 @@ import (
 func (h *Handlers) Checkout(ctx context.Context, req openapi.CheckoutRequestObject) (openapi.CheckoutResponseObject, error) {
 	checkoutData, err := json.Marshal(req.Body.CheckoutProviderData)
 	if err != nil {
-		return nil, fun.ErrBadRequest("invalid checkout_provider_data")
+		return nil, errs.ErrInvalidCheckoutProviderData
 	}
 	var metadata json.RawMessage
 	if req.Body.Metadata != nil {
 		metadata, err = json.Marshal(req.Body.Metadata)
 		if err != nil {
-			return nil, fun.ErrBadRequest("invalid metadata")
+			return nil, errs.ErrInvalidMetadata
 		}
 	}
 	intent, err := h.ops.Checkout(ctx, models.CreateIntentInput{

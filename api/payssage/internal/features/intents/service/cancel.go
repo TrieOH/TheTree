@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -30,7 +30,7 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 	}
 
 	if !cancellableStatuses[intent.Status] {
-		return nil, fun.Errf("intent cannot be cancelled from status %q", intent.Status).BadRequest()
+		return nil, &errs.IntentStatusError{Action: "cancelled", Status: string(intent.Status)}
 	}
 
 	providerEnum, err := providers.FromString(intent.Provider)
@@ -39,7 +39,7 @@ func (o *Operations) Cancel(ctx context.Context, intentID uuid.UUID) (*models.In
 	}
 	provider, ok := o.Registry.Payments[providerEnum]
 	if !ok {
-		return nil, fun.Err("provider not implemented").BadRequest()
+		return nil, errs.ErrProviderNotImplemented
 	}
 
 	err = provider.CancelPendingPayment(ctx, intent)

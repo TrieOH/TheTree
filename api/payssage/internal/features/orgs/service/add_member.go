@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
+	"lib/database"
+	"payssage/errs"
 	"payssage/models"
 	idx "sdk/identityx"
-
-	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizationMemberInput) error {
@@ -20,7 +21,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizati
 	}
 
 	if ident.Sub.ID == actor.ID {
-		return fun.ErrBadRequest("users can't add themselves to organizations")
+		return errs.ErrAddSelfToOrg
 	}
 
 	org, err := o.Orgs.GetByID(ctx, payload.OrganizationID)
@@ -29,7 +30,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizati
 	}
 
 	if actor.ID == org.OwnerID {
-		return fun.ErrBadRequest("owners can't be added to organizations they own")
+		return errs.ErrAddOwnerToOrg
 	}
 
 	_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
@@ -38,11 +39,11 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddOrganizati
 	}
 
 	_, err = o.Orgs.GetMember(ctx, actor.ID, org.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("user is already a member of the organization")
+		return errs.ErrAlreadyOrgMember
 	}
 
 	newMember := models.OrganizationMember{

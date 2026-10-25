@@ -10,22 +10,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/MintzyG/fun"
+	"payssage/errs"
 )
 
 func (p *Provider) VerifySignature(_ context.Context, r *http.Request, _ []byte) error {
-	req := fun.From(r)
-	signatureHeader, err := req.Header("x-signature").StringRequired()
-	if err != nil {
-		return err
+	signatureHeader := r.Header.Get("x-signature")
+	if signatureHeader == "" {
+		return &errs.MissingParamError{In: "header", Name: "x-signature"}
 	}
-	requestID, err := req.Header("x-request-id").StringRequired()
-	if err != nil {
-		return err
+	requestID := r.Header.Get("x-request-id")
+	if requestID == "" {
+		return &errs.MissingParamError{In: "header", Name: "x-request-id"}
 	}
-	dataID, err := req.Query("data.id").StringRequired()
-	if err != nil {
-		return err
+	dataID := r.URL.Query().Get("data.id")
+	if dataID == "" {
+		return &errs.MissingParamError{In: "query", Name: "data.id"}
 	}
 
 	// MercadoPago's x-signature header is a comma-separated list of
@@ -51,7 +50,7 @@ func (p *Provider) VerifySignature(_ context.Context, r *http.Request, _ []byte)
 		}
 	}
 	if signatureTimestamp == "" || providedSignature == "" {
-		return fun.Err("mercadopago webhook: missing ts or v1 in x-signature header").Unauthorized()
+		return errs.ErrWebhookSignatureMissing
 	}
 
 	// The manifest is the exact string MercadoPago signs on their end —
@@ -64,7 +63,7 @@ func (p *Provider) VerifySignature(_ context.Context, r *http.Request, _ []byte)
 	computedSignature := hex.EncodeToString(mac.Sum(nil))
 
 	if !hmac.Equal([]byte(computedSignature), []byte(providedSignature)) {
-		return fun.Err("mercadopago webhook: signature mismatch").Unauthorized()
+		return errs.ErrWebhookSignatureMismatch
 	}
 	return nil
 }

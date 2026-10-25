@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"payssage/errs"
 	"payssage/models"
 	idx "sdk/identityx"
-
-	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error {
@@ -22,7 +21,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 			return err
 		}
 		if collector.Provider != input.Provider {
-			return fun.ErrBadRequest("provider mismatch")
+			return errs.ErrProviderMismatch
 		}
 		if collector.OrganizationID != nil {
 			var org *models.Organization
@@ -35,7 +34,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 				return err
 			}
 		} else if collector.OwnerID != ident.Sub.ID {
-			return fun.ErrForbidden("insufficient permissions")
+			return errs.ErrNotResourceOwner
 		}
 		return o.Collectors.Revoke(ctx, input.ID)
 
@@ -46,7 +45,7 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 			return err
 		}
 		if seller.Provider != input.Provider {
-			return fun.ErrBadRequest("provider mismatch")
+			return errs.ErrProviderMismatch
 		}
 		var wallet *models.Wallet
 		wallet, err = o.Wallets.GetByID(ctx, seller.WalletID)
@@ -64,11 +63,11 @@ func (o *Operations) Revoke(ctx context.Context, input models.RevokeInput) error
 				return err
 			}
 		} else if wallet.OwnerID != ident.Sub.ID {
-			return fun.ErrForbidden("insufficient permissions")
+			return errs.ErrNotResourceOwner
 		}
 		return o.Sellers.Revoke(ctx, input.ID)
 
 	default:
-		return fun.ErrBadRequest("invalid flow")
+		return errs.ErrInvalidFlow
 	}
 }

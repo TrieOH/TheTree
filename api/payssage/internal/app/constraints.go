@@ -2,44 +2,48 @@ package app
 
 import (
 	"lib/database"
+	"payssage/errs"
 )
 
-func ConstraintMessages() database.ConstraintRegistry {
-	return database.ConstraintRegistry{
+// Constraints maps every named constraint in the schema to the named error
+// repos surface on violation (ADR-0016); the postgres module takes it at
+// boot, and boot fails when the schema has a constraint missing here.
+func Constraints() database.ConstraintErrors {
+	return database.ConstraintErrors{
 		// intents
-		"chk_intents_amount_cents":  "amount must be greater than zero",
-		"chk_intents_status":        "invalid intent status",
-		"chk_intents_status_detail": "invalid intent status detail",
+		"chk_intents_amount_cents":  errs.ErrInvalidAmount,
+		"chk_intents_status":        errs.ErrInvalidIntentStatus,
+		"chk_intents_status_detail": errs.ErrInvalidIntentStatusDetail,
 
 		// oauth_states
-		"chk_oauth_states_flow": "invalid oauth flow type",
+		"chk_oauth_states_flow": errs.ErrInvalidOAuthFlowType,
 
 		// org_members
-		"chk_org_members_role": "invalid organization member role",
+		"chk_org_members_role": errs.ErrInvalidOrgRole,
 
 		// wallets
-		"chk_wallets_fee_bps":        "fee (bps) must be non-negative",
-		"uniq_wallets_org_name":      "a wallet with this name already exists in this organization",
-		"uniq_wallets_personal_name": "a wallet with this name already exists",
+		"chk_wallets_fee_bps":        errs.ErrNegativeFee,
+		"uniq_wallets_org_name":      errs.ErrOrgWalletNameTaken,
+		"uniq_wallets_personal_name": errs.ErrPersonalWalletTaken,
 
 		// webhook_deliveries
-		"chk_webhook_deliveries_status":          "invalid webhook delivery status",
-		"uniq_webhook_deliveries_event_endpoint": "a delivery for this event and endpoint already exists",
+		"chk_webhook_deliveries_status":          errs.ErrInvalidDeliveryStatus,
+		"uniq_webhook_deliveries_event_endpoint": errs.ErrDeliveryExists,
 
-		// webhook_events.sql
-		"uniq_webhook_events_external_id_type": "a webhook event for this external id and type already exists for this provider",
+		// webhook_events
+		"uniq_webhook_events_external_id_type": errs.ErrWebhookEventExists,
 
 		// organizations
-		"uniq_organizations_slug": "an organization with this slug already exists",
+		"uniq_organizations_slug": errs.ErrOrgSlugTaken,
 
 		// provider_credentials
-		"uniq_provider_credentials_active": "credentials for this provider are already connected to this wallet",
+		"uniq_provider_credentials_active": errs.ErrCredentialsConnected,
 
 		// collectors
-		"uniq_collectors_org_active":      "this collector is already connected to this organization",
-		"uniq_collectors_personal_active": "this collector is already connected to your account",
+		"uniq_collectors_org_active":      errs.ErrOrgCollectorConnected,
+		"uniq_collectors_personal_active": errs.ErrPersonalCollectorConnected,
 
 		// sellers
-		"uniq_sellers_active": "this seller is already connected to this wallet",
+		"uniq_sellers_active": errs.ErrSellerConnected,
 	}
 }

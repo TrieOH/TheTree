@@ -2,6 +2,7 @@ package repo
 
 import (
 	"lib/database"
+	"payssage/errs"
 	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
@@ -9,7 +10,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.ErrorHandler
+	dbe database.NamedErrorHandler
 }
 
 var _ ports.WebhookEventRepo = (*Repo)(nil)
@@ -17,7 +18,7 @@ var _ ports.WebhookEventRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("webhook_event"),
+		dbe: database.NewNamedErrorHandler(errs.ErrWebhookEventNotFound),
 	}
 }
 

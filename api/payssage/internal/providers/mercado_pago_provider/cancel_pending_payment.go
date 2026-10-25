@@ -3,10 +3,11 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"lib/telemetry"
+	"payssage/errs"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -14,27 +15,27 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 	var providerData models.MercadoPagoIntentData
 	err := json.Unmarshal(intent.ProviderData, &providerData)
 	if err != nil {
-		return fun.Errf("error mapping mercadopago provider data: %v", err).Internal()
+		return fmt.Errorf("error mapping mercadopago provider data: %w", err)
 	}
 	if providerData.TransactionID == "" {
-		return fun.Err("intent has no mercadopago transaction to cancel").Conflict()
+		return errs.ErrNoTransactionToCancel
 	}
 
 	seller, err := p.sellers.GetByID(ctx, intent.SellerID)
 	if err != nil {
-		return fun.Errf("resolve seller: %v", err).NotFound()
+		return fmt.Errorf("resolve seller: %w", err)
 	}
 	if seller.RevokedAt != nil {
-		return fun.Errf("seller %s has revoked mercadopago access; cannot cancel — payment may still be live at mercadopago and requires manual review", seller.ID).Conflict()
+		return &errs.SellerRevokedError{SellerID: seller.ID, Op: "cancel"}
 	}
 
 	var creds models.MercadoPagoCredentials
 	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
-		return fun.Errf("error mapping seller credentials: %v", err).Internal()
+		return fmt.Errorf("error mapping seller credentials: %w", err)
 	}
 	if creds.AccessToken == "" {
-		return fun.Errf("seller %s missing mercadopago access token", seller.ID).Internal()
+		return fmt.Errorf("seller %s missing mercadopago access token", seller.ID)
 	}
 
 	body := map[string]any{"status": "cancelled"}
@@ -53,7 +54,7 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 		SetResultError(&mpErr).
 		Put("https://api.mercadopago.com/v1/payments/" + providerData.TransactionID)
 	if err != nil {
-		return fun.Errf("mercadopago cancel payment request: %v", err).BadGateway()
+		return fmt.Errorf("%w: mercadopago cancel payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
 	telemetry.Log().Info("MP Cancel Payment Response",
@@ -70,7 +71,7 @@ func (p *Provider) CancelPendingPayment(ctx context.Context, intent *models.Inte
 
 	providerDataBytes, err := json.Marshal(&providerData)
 	if err != nil {
-		return fun.Errf("marshal provider data: %v", err).Internal()
+		return fmt.Errorf("marshal provider data: %w", err)
 	}
 	intent.ProviderData = providerDataBytes
 	intent.Status = p.NormalizeStatus(mpResp.Status)
