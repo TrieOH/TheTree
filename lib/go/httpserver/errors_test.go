@@ -24,6 +24,10 @@ var (
 	errTermsMissing = errors.New("you must accept the terms of service to register")
 )
 
+type upstreamError struct{ status int }
+
+func (e *upstreamError) Error() string { return fmt.Sprintf("upstream said %d", e.status) }
+
 type outOfStockError struct{ items int }
 
 func (e *outOfStockError) Error() string { return fmt.Sprintf("%d items are out of stock", e.items) }
@@ -46,6 +50,12 @@ func TestErrorMapResolve(t *testing.T) {
 		Is(errBadCreds, http.StatusUnauthorized),
 		Is(errTermsMissing, http.StatusBadRequest).Validation(),
 		As[*outOfStockError](http.StatusConflict),
+		AsStatus(func(e *upstreamError) int {
+			if e.status >= 500 {
+				return http.StatusBadGateway
+			}
+			return http.StatusBadRequest
+		}),
 	}, sharedErrors...)
 
 	cases := []struct {
@@ -71,6 +81,7 @@ func TestErrorMapResolve(t *testing.T) {
 			&database.Violation{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, fun.CodeValidation, errTermsMissing.Error()},
 		{"batch lists its items",
 			&database.BatchError{Items: []database.BatchItemError{{ID: "f1", Err: errAddSelf}}}, 400, fun.CodeValidation, "f1: " + errAddSelf.Error()},
+		{"status from the error's data", &upstreamError{status: 503}, 502, fun.CodeBadGateway, "upstream said 503"},
 		{"unmapped is a generic 500", errors.New("pq: connection reset"), 500, fun.CodeInternal, "internal error"},
 	}
 	for _, tc := range cases {

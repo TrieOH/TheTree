@@ -27,33 +27,40 @@ type ErrorMap []ErrorMapping
 
 // ErrorMapping maps one named error, or one error type, to a status.
 type ErrorMapping struct {
-	match  func(error) bool
-	status int
-	code   fun.ErrorCode
+	// status reports the status a link maps to, and whether it matched.
+	status     func(link error) (int, bool)
+	validation bool
 }
 
 // Is maps the sentinel target to status.
 func Is(target error, status int) ErrorMapping {
-	return ErrorMapping{
-		match:  func(link error) bool { return sameError(link, target) },
-		status: status,
-		code:   codeFor(status),
-	}
+	return ErrorMapping{status: func(link error) (int, bool) {
+		return status, sameError(link, target)
+	}}
 }
 
 // As maps every error of type T to status.
 func As[T error](status int) ErrorMapping {
-	return ErrorMapping{
-		match:  func(link error) bool { _, ok := link.(T); return ok },
-		status: status,
-		code:   codeFor(status),
-	}
+	return AsStatus(func(T) int { return status })
+}
+
+// AsStatus maps every error of type T to the status statusOf picks from
+// it, for errors whose status depends on their data (an upstream
+// provider's status code, say). The decision still lives in the map.
+func AsStatus[T error](statusOf func(T) int) ErrorMapping {
+	return ErrorMapping{status: func(link error) (int, bool) {
+		t, ok := link.(T)
+		if !ok {
+			return 0, false
+		}
+		return statusOf(t), true
+	}}
 }
 
 // Validation marks a 400 as a validation failure on the wire
 // (VALIDATION_ERROR instead of BAD_REQUEST).
 func (m ErrorMapping) Validation() ErrorMapping {
-	m.code = fun.CodeValidation
+	m.validation = true
 	return m
 }
 
@@ -124,9 +131,15 @@ func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
 		link := queue[0]
 		queue = queue[1:]
 		for _, mapping := range m {
-			if mapping.match(link) {
-				return mapping.status, mapping.code, link.Error()
+			status, ok := mapping.status(link)
+			if !ok {
+				continue
 			}
+			code := codeFor(status)
+			if mapping.validation && status == http.StatusBadRequest {
+				code = fun.CodeValidation
+			}
+			return status, code, link.Error()
 		}
 		switch u := link.(type) {
 		case interface{ Unwrap() error }:
@@ -165,6 +178,8 @@ func codeFor(status int) fun.ErrorCode {
 		return fun.CodeUnprocessableEntity
 	case http.StatusTooManyRequests:
 		return fun.CodeTooManyRequests
+	case http.StatusBadGateway:
+		return fun.CodeBadGateway
 	case http.StatusServiceUnavailable:
 		return fun.CodeServiceUnavailable
 	}
