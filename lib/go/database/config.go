@@ -53,18 +53,18 @@ func (c Config) port() string {
 // service database, run migrations, and validate that every constraint
 // carries a registered message. It returns errors instead of exiting so the
 // caller's boot path owns process failure.
-func SetupDB(cfg Config, messages ConstraintRegistry) (*pgxpool.Pool, error) {
-	return setupDB(cfg, messages, true)
+func SetupDB(cfg Config, constraints Constraints) (*pgxpool.Pool, error) {
+	return setupDB(cfg, constraints, true)
 }
 
 // SetupDBWithoutMigrations connects to the service database and validates its
 // constraints without changing its schema. Use this when schema migrations
 // are owned by a separate deployment or developer command.
-func SetupDBWithoutMigrations(cfg Config, messages ConstraintRegistry) (*pgxpool.Pool, error) {
-	return setupDB(cfg, messages, false)
+func SetupDBWithoutMigrations(cfg Config, constraints Constraints) (*pgxpool.Pool, error) {
+	return setupDB(cfg, constraints, false)
 }
 
-func setupDB(cfg Config, messages ConstraintRegistry, runMigrations bool) (*pgxpool.Pool, error) {
+func setupDB(cfg Config, constraints Constraints, runMigrations bool) (*pgxpool.Pool, error) {
 	db, err := WaitForDB(30*time.Second, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
@@ -76,7 +76,7 @@ func setupDB(cfg Config, messages ConstraintRegistry, runMigrations bool) (*pgxp
 			return nil, fmt.Errorf("migrate: %w", err)
 		}
 	}
-	constraintRegistry = messages
+	constraintRegistry = constraints.constraintErrors()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	validateConstraints(ctx, db)

@@ -12,13 +12,14 @@ import (
 )
 
 // Module connects to the database described by cfg and fills Deps.DB and
-// Deps.Tx. messages maps the schema's constraint names to client-facing
-// messages; boot fails when the schema has a constraint with no message.
-func Module(cfg libconfig.Postgres, messages database.ConstraintRegistry) backend.Module {
+// Deps.Tx. constraints maps the schema's constraint names to what a
+// violation surfaces as (messages, or named errors per ADR-0016); boot fails
+// when the schema has a constraint with no entry.
+func Module(cfg libconfig.Postgres, constraints database.Constraints) backend.Module {
 	return backend.Module{
 		Name: "postgres",
 		Open: func(_ context.Context, d *backend.Deps) (backend.Close, error) {
-			pool, err := database.SetupDBWithoutMigrations(libconfig.DBConnectionConfig(cfg), messages)
+			pool, err := database.SetupDBWithoutMigrations(libconfig.DBConnectionConfig(cfg), constraints)
 			if err != nil {
 				return nil, err
 			}

@@ -90,15 +90,37 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	return nil
 }
 
+// Constraints maps the schema's constraint and unique-index names to what a
+// violation surfaces as. A Backend passes one of the two forms below.
+type Constraints interface {
+	constraintErrors() map[string]error
+}
+
+// ConstraintRegistry maps constraints to client-facing messages, for the
+// string-resource ErrorHandler. Backends still on root fun use it.
 type ConstraintRegistry map[string]string
 
-// constraintRegistry maps constraint/index names to the client-facing
-// messages repos surface on violation. SetupDB — the one owner of DB boot —
-// receives it as an argument and stores it here for the error mapper, so
-// there is no init-order contract with callers: the registry travels as
-// data into the one function that owns DB setup, and boot fails loudly
-// when a constraint has no message (see validateConstraints).
-var constraintRegistry ConstraintRegistry
+func (r ConstraintRegistry) constraintErrors() map[string]error {
+	out := make(map[string]error, len(r))
+	for name, msg := range r {
+		out[name] = errors.New(msg)
+	}
+	return out
+}
+
+// ConstraintErrors maps constraints to the Backend's named errors, for the
+// NamedErrorHandler (ADR-0016).
+type ConstraintErrors map[string]error
+
+func (r ConstraintErrors) constraintErrors() map[string]error { return r }
+
+// constraintRegistry maps constraint/index names to what repos surface on
+// violation. SetupDB — the one owner of DB boot — receives it as an
+// argument and stores it here for the error handlers, so there is no
+// init-order contract with callers: the registry travels as data into the
+// one function that owns DB setup, and boot fails loudly when a constraint
+// has no entry (see validateConstraints).
+var constraintRegistry map[string]error
 
 func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
 	rows, err := db.Query(ctx, `

@@ -43,6 +43,9 @@ type App struct {
 	Server  Server
 	Modules []Module
 	Build   BuildFunc
+	// Errors maps the Backend's named errors to HTTP (ADR-0016). Nil while
+	// the Backend still returns root-fun errors.
+	Errors httpserver.ErrorMap
 }
 
 // Server is the process-level HTTP settings.
@@ -135,6 +138,9 @@ func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[
 func Run(app App) error {
 	if app.Build == nil {
 		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
+	}
+	if app.Errors != nil {
+		httpserver.UseErrorMap(app.Errors)
 	}
 	return httpserver.Boot(httpserver.Config{
 		AppName:            app.Name,
