@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"Informd/errs"
 	"Informd/internal/sqlc"
 	"Informd/models"
 	"Informd/ports"
@@ -9,7 +10,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.ErrorHandler
+	dbe database.NamedErrorHandler
 }
 
 var _ ports.NamespaceRepo = (*Repo)(nil)
@@ -17,7 +18,7 @@ var _ ports.NamespaceRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("namespace"),
+		dbe: database.NewNamedErrorHandler(errs.ErrNamespaceNotFound),
 	}
 }
 

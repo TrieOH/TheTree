@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	idx "sdk/identityx"
 
+	"Informd/errs"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
+	"lib/database"
 )
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
@@ -17,7 +18,7 @@ func (o *Operations) RemoveFormMember(ctx context.Context, payload models.Remove
 	}
 
 	if ident.Sub.ID == payload.UserID {
-		return fun.ErrBadRequest("users can't remove themselves from forms")
+		return errs.ErrRemoveSelfFromForm
 	}
 
 	namespace, err := o.Namespaces.GetByID(ctx, payload.NamespaceID)
@@ -26,7 +27,7 @@ func (o *Operations) RemoveFormMember(ctx context.Context, payload models.Remove
 	}
 
 	if payload.UserID == namespace.OwnerID {
-		return fun.ErrBadRequest("cannot remove owner of the namespace from form")
+		return errs.ErrRemoveNamespaceOwnerFromForm
 	}
 
 	_, err = o.Authz.Namespace(ctx, namespace.ID, models.NamespaceMemberRoleAdmin)
@@ -35,11 +36,11 @@ func (o *Operations) RemoveFormMember(ctx context.Context, payload models.Remove
 	}
 
 	_, err = o.Namespaces.GetMember(ctx, payload.UserID, namespace.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("cannot remove namespace member from form")
+		return errs.ErrRemoveNamespaceMemberFromForm
 	}
 
 	form, err := o.Forms.GetByID(ctx, payload.FormID)
@@ -48,11 +49,11 @@ func (o *Operations) RemoveFormMember(ctx context.Context, payload models.Remove
 	}
 
 	_, err = o.Forms.GetMember(ctx, payload.UserID, form.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
-		return fun.ErrBadRequest("user is not a member of the form")
+		return errs.ErrNotFormMember
 	}
 
 	return o.Forms.RemoveMember(ctx, payload.UserID, payload.FormID)

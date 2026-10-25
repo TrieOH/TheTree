@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
+	"Informd/errs"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +16,7 @@ func (o *Operations) Archive(ctx context.Context, formID uuid.UUID) (*models.For
 	}
 
 	if form.Status != models.FormStatusClosed {
-		return nil, fun.ErrBadRequest("cannot archive a form not on closed")
+		return nil, errs.ErrArchiveNotClosed
 	}
 
 	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)

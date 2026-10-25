@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	idx "sdk/identityx"
 	"time"
 
+	"Informd/errs"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
+	"lib/database"
 )
 
 func (o *Operations) AddMember(ctx context.Context, payload models.AddNamespaceMemberInput) error {
@@ -17,7 +18,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddNamespaceM
 	}
 
 	if ident.Sub.ID == payload.UserID {
-		return fun.ErrBadRequest("users can't add themselves to namespaces")
+		return errs.ErrAddSelfToNamespace
 	}
 
 	namespace, err := o.Namespaces.GetByID(ctx, payload.NamespaceID)
@@ -26,7 +27,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddNamespaceM
 	}
 
 	if payload.UserID == namespace.OwnerID {
-		return fun.ErrBadRequest("owners can't be added to namespaces they own")
+		return errs.ErrAddOwnerToNamespace
 	}
 
 	_, err = o.Authz.Namespace(ctx, payload.NamespaceID, models.NamespaceMemberRoleAdmin)
@@ -35,11 +36,11 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddNamespaceM
 	}
 
 	_, err = o.Namespaces.GetMember(ctx, payload.UserID, namespace.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("user is already a member of the namespace")
+		return errs.ErrAlreadyNamespaceMember
 	}
 
 	newMember := models.NamespaceMember{

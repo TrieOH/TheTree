@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
+	"Informd/errs"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +17,7 @@ func (o *Operations) ReDraftForm(ctx context.Context, namespaceID, formID uuid.U
 	}
 
 	if form.Status != models.FormStatusOpen {
-		return nil, fun.ErrBadRequest("cannot redraft a form not on open")
+		return nil, errs.ErrRedraftNotOpen
 	}
 
 	count, err := o.Forms.ResponsesCount(ctx, formID)
@@ -26,7 +26,7 @@ func (o *Operations) ReDraftForm(ctx context.Context, namespaceID, formID uuid.U
 	}
 
 	if count != 0 {
-		return nil, fun.ErrBadRequest("cannot redraft a form with responses")
+		return nil, errs.ErrRedraftWithResponses
 	}
 
 	_, err = o.Authz.Namespace(ctx, namespaceID, models.NamespaceMemberRoleAdmin)

@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
+	"Informd/errs"
 	"Informd/models"
 	"lib/xslices"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -19,7 +19,7 @@ func (o *Operations) BulkEditNamespaced(ctx context.Context, formID, _ uuid.UUID
 
 	for _, p := range payload {
 		if p.FormID != formID {
-			return fun.ErrBadRequest("all steps must belong to the same form")
+			return errs.ErrStepsAcrossForms
 		}
 	}
 

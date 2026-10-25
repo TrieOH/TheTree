@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
+	"Informd/errs"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +16,7 @@ func (o *Operations) GetAnswerable(ctx context.Context, formID uuid.UUID) (*mode
 	}
 
 	if form.Status != models.FormStatusOpen {
-		return nil, fun.ErrForbidden("form is not open for answers")
+		return nil, errs.ErrFormNotAnswerable
 	}
 
 	steps, err := o.Steps.List(ctx, formID)

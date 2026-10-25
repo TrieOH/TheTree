@@ -1,13 +1,14 @@
 package authz
 
 import (
-	"Informd/ports"
 	"context"
+	"errors"
 
+	"Informd/ports"
 	libauthz "lib/authz"
+	"lib/database"
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -48,31 +49,31 @@ func (s *Service) checkForm(ctx context.Context, actorID, formID uuid.UUID, minR
 	}
 
 	formRole, err := s.forms.GetRole(ctx, actorID, formID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
-	if err == nil && libauthz.Min(formRole, minRole) == nil {
+	if err == nil && libauthz.AtLeast(formRole, minRole) == nil {
 		return nil
 	}
 
 	if form.NamespaceID == nil {
 		if err != nil {
-			return libauthz.ForbiddenIfNotFound(err)
+			return libauthz.DenyIfNotFound(err)
 		}
-		return libauthz.Min(formRole, minRole)
+		return libauthz.AtLeast(formRole, minRole)
 	}
 
 	namespaceRole, err := s.namespaces.GetRole(ctx, actorID, *form.NamespaceID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(namespaceRole, minRole)
+	return libauthz.AtLeast(namespaceRole, minRole)
 }
 
 func (s *Service) checkNamespace(ctx context.Context, actorID, namespaceID uuid.UUID, minRole libauthz.Role) error {
 	role, err := s.namespaces.GetRole(ctx, actorID, namespaceID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(role, minRole)
+	return libauthz.AtLeast(role, minRole)
 }
