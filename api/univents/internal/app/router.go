@@ -4,8 +4,7 @@ import (
 	"net/http"
 
 	"lib/httpserver"
-	"univents/internal/handlers"
-	"univents/internal/handlers/webhooks"
+	"univents/internal/features/webhooks"
 	"univents/internal/openapi"
 
 	"github.com/go-chi/chi/v5"
@@ -16,7 +15,7 @@ import (
 // one-time query token is the auth), and SSE must stream without the
 // fun/validate envelope machinery buffering the body. Both are documented in
 // the spec's description block, not as spec ops.
-func mountRaw(r chi.Router, h *handlers.Server) {
+func mountRaw(r chi.Router, h *server) {
 	r.Get("/editions/{edition_id}/store/stream", h.ServeStoreStream)
 	r.Handle("/ws", http.HandlerFunc(h.ServeWS))
 }
