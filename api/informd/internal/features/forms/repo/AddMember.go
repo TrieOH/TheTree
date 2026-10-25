@@ -1,0 +1,23 @@
+package repo
+
+import (
+	"Informd/internal/sqlc"
+	"context"
+
+	"Informd/models"
+	"lib/database"
+)
+
+func (repo *Repo) AddMember(ctx context.Context, toCreate models.FormMember) error {
+	err := database.Queries(ctx, repo.q).AddFormMember(ctx, sqlc.AddFormMemberParams{
+		UserID:  toCreate.UserID,
+		FormID:  toCreate.FormID,
+		Role:    string(toCreate.Role),
+		AddedAt: toCreate.AddedAt,
+		AddedBy: toCreate.AddedBy,
+	})
+	if err != nil {
+		return repo.dbe(err)
+	}
+	return nil
+}

@@ -1,0 +1,23 @@
+package repo
+
+import (
+	"Informd/internal/sqlc"
+	"context"
+
+	"Informd/models"
+	"lib/database"
+)
+
+func (repo *Repo) AddMember(ctx context.Context, toCreate models.NamespaceMember) error {
+	err := database.Queries(ctx, repo.q).AddNamespaceMember(ctx, sqlc.AddNamespaceMemberParams{
+		UserID:      toCreate.UserID,
+		NamespaceID: toCreate.NamespaceID,
+		Role:        string(toCreate.Role),
+		AddedAt:     toCreate.AddedAt,
+		AddedBy:     toCreate.AddedBy,
+	})
+	if err != nil {
+		return repo.dbe(err)
+	}
+	return nil
+}
