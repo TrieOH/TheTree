@@ -1,0 +1,45 @@
+package service
+
+import (
+	"context"
+	"payssage/models"
+	idx "sdk/identityx"
+
+	"github.com/google/uuid"
+)
+
+func (o *Operations) Create(ctx context.Context, payload models.CreateWalletInput) (*models.Wallet, error) {
+	ident, err := idx.RequireIdentity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var org *models.Organization
+	if payload.OrganizationID != nil {
+		org, err = o.Orgs.GetByID(ctx, *payload.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+		_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	ownerID := ident.Sub.ID
+	var orgID *uuid.UUID
+	if org != nil {
+		ownerID = org.OwnerID
+		orgID = &org.ID
+	}
+
+	wallet := models.Wallet{
+		OwnerID:        ownerID,
+		OrganizationID: orgID,
+		Name:           payload.Name,
+		Sandbox:        false,
+		FeeBps:         0,
+	}
+
+	return o.Wallets.Create(ctx, wallet)
+}

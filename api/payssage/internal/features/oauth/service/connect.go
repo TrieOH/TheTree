@@ -1,0 +1,92 @@
+package service
+
+import (
+	"context"
+	"payssage/internal/providers"
+	"payssage/models"
+	idx "sdk/identityx"
+	"time"
+
+	"github.com/MintzyG/fun"
+	"github.com/google/uuid"
+)
+
+func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (string, error) {
+	ident, err := idx.RequireIdentity(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var walletID *uuid.UUID
+	var organizationID *uuid.UUID
+
+	switch payload.Flow {
+	case models.OAuthFlowSeller:
+		var wallet *models.Wallet
+		wallet, err = o.Wallets.GetByID(ctx, *payload.WalletID)
+		if err != nil {
+			return "", err
+		}
+		var org *models.Organization
+		if wallet.OrganizationID != nil {
+			org, err = o.Orgs.GetByID(ctx, *wallet.OrganizationID)
+			if err != nil {
+				return "", err
+			}
+		}
+		if org != nil {
+			_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
+		} else {
+			_, err = o.Authz.Wallet(ctx, wallet.ID, models.OrganizationRoleMember)
+		}
+		if err != nil {
+			return "", err
+		}
+		walletID = &wallet.ID
+
+	case models.OAuthFlowCollector:
+		if payload.OrganizationID != nil {
+			var org *models.Organization
+			org, err = o.Orgs.GetByID(ctx, *payload.OrganizationID)
+			if err != nil {
+				return "", err
+			}
+			_, err = o.Authz.Org(ctx, org.ID, models.OrganizationRoleAdmin)
+			if err != nil {
+				return "", err
+			}
+			organizationID = payload.OrganizationID
+		}
+
+	default:
+		return "", fun.ErrBadRequest("invalid flow")
+	}
+
+	provider, err := providers.FromString(payload.Provider)
+	if err != nil {
+		return "", err
+	}
+
+	stateToken, err := generateState()
+	if err != nil {
+		return "", err
+	}
+
+	_, err = o.OAuth.Create(ctx, models.OAuthState{
+		State:            stateToken,
+		WalletID:         walletID,
+		OrganizationID:   organizationID,
+		OwnerID:          ident.Sub.ID,
+		Provider:         provider.String(),
+		Flow:             payload.Flow,
+		FinalRedirectURL: payload.FinalRedirectURL,
+		ExpiresAt:        time.Now().Add(5 * time.Minute),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// The provider redirect URI is Payssage's own callback (config-owned,
+	// D7) — the provider builds the auth URL with it internally.
+	return o.Registry.OAuth[provider].BuildAuthURL(stateToken), nil
+}
