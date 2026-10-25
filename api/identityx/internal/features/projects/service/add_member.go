@@ -1,10 +1,11 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
-
-	"github.com/MintzyG/fun"
+	"errors"
+	"lib/database"
 )
 
 func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMemberInput) error {
@@ -19,7 +20,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMem
 	}
 
 	if ident.Sub.ID == actor.ID {
-		return fun.ErrBadRequest("users can't add themselves to projects")
+		return errs.ErrAddSelfToProject
 	}
 
 	project, err := o.Projects.GetByID(ctx, payload.ProjectID)
@@ -28,7 +29,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMem
 	}
 
 	if actor.ID == project.OwnerID {
-		return fun.ErrBadRequest("owners can't be added to projects they own")
+		return errs.ErrAddOwnerToProject
 	}
 
 	err = o.Authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleAdmin)
@@ -42,11 +43,11 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddProjectMem
 	}
 
 	_, err = o.Projects.GetMember(ctx, actor.ID, project.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("user is already a member of the project")
+		return errs.ErrAlreadyProjectMember
 	}
 
 	newMember, err := models.NewProjectMember(payload.ProjectID, actor.ID, payload.Role)

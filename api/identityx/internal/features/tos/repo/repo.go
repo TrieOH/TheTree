@@ -3,6 +3,7 @@
 package repo
 
 import (
+	"IdentityX/errs"
 	"context"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.ErrorHandler
+	dbe database.NamedErrorHandler
 }
 
 var _ ports.TosRepo = (*Repo)(nil)
@@ -24,7 +25,7 @@ var _ ports.TosRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("terms_of_service"),
+		dbe: database.NewNamedErrorHandler(errs.ErrTosNotFound),
 	}
 }
 

@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"IdentityX/errs"
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -9,7 +10,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.ErrorHandler
+	dbe database.NamedErrorHandler
 }
 
 var _ ports.BlacklistRepo = (*Repo)(nil)
@@ -17,7 +18,7 @@ var _ ports.BlacklistRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("blacklist entry"),
+		dbe: database.NewNamedErrorHandler(errs.ErrBlacklistEntryNotFound),
 	}
 }
 

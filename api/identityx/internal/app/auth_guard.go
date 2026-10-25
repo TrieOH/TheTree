@@ -1,12 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 
+	"IdentityX/errs"
 	"IdentityX/internal/setup"
 	libauthz "lib/authz"
-
-	"github.com/MintzyG/fun"
+	"lib/httpserver"
 )
 
 // chainOptions puts the setup guard in front of every operation except the
@@ -26,11 +27,11 @@ func setupGuard(st *setup.State) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			done, err := st.Check(r.Context())
 			if err != nil {
-				fun.ServiceUnavailable("could not check setup state").Send(w)
+				httpserver.WriteError(w, r, fmt.Errorf("%w: %w", errs.ErrSetupCheckFailed, err))
 				return
 			}
 			if !done {
-				fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)
+				httpserver.WriteError(w, r, errs.ErrSetupRequired)
 				return
 			}
 			next.ServeHTTP(w, r)

@@ -2,15 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -129,7 +131,7 @@ func TestVerifyEmailRejectsUsedTokenOnUnverifiedAccount(t *testing.T) {
 
 	ops := emailOps(t, actors, mgr)
 	err := ops.VerifyEmail(context.Background(), models.VerifyEmailInput{Token: token})
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenUsed) {
 		t.Fatalf("want bad request for replayed token, got %v", err)
 	}
 }
@@ -144,7 +146,7 @@ func TestVerifyEmailRejectsWrongPurpose(t *testing.T) {
 
 	ops := emailOps(t, mock.Mock[ports.ActorRepo](), mgr)
 	err := ops.VerifyEmail(context.Background(), models.VerifyEmailInput{Token: token})
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenInvalid) {
 		t.Fatalf("want bad request for reset token on verify, got %v", err)
 	}
 }
@@ -156,7 +158,7 @@ func TestVerifyEmailRejectsGarbageToken(t *testing.T) {
 
 	ops := emailOps(t, mock.Mock[ports.ActorRepo](), mgr)
 	err := ops.VerifyEmail(context.Background(), models.VerifyEmailInput{Token: "not-a-jwt"})
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenInvalid) {
 		t.Fatalf("want bad request for garbage token, got %v", err)
 	}
 }
@@ -211,7 +213,7 @@ func TestResetPasswordRejectsUsedToken(t *testing.T) {
 
 	ops := emailOps(t, mock.Mock[ports.ActorRepo](), mgr)
 	err := ops.ResetPassword(context.Background(), models.ResetPasswordInput{Token: token, NewPassword: "NewPassword123!"})
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenUsed) {
 		t.Fatalf("want bad request for used reset token, got %v", err)
 	}
 }
@@ -232,7 +234,7 @@ func TestResetPasswordRejectsExpiredToken(t *testing.T) {
 
 	ops := emailOps(t, mock.Mock[ports.ActorRepo](), mgr)
 	err := ops.ResetPassword(context.Background(), models.ResetPasswordInput{Token: token, NewPassword: "NewPassword123!"})
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenExpired) {
 		t.Fatalf("want bad request for expired reset token, got %v", err)
 	}
 }
@@ -244,7 +246,7 @@ func TestResendVerificationSilentNoOps(t *testing.T) {
 	// unknown email → 200, nothing dispatched
 	actors := mock.Mock[ports.ActorRepo]()
 	_ = mock.When(actors.GetByEmail(mock.AnyContext(), mock.Equal(email), mock.Any[*uuid.UUID]())).
-		ThenReturn(nil, fun.ErrNotFound("not found"))
+		ThenReturn(nil, database.ErrNotFound)
 	repo := mock.Mock[ports.ActionTokenRepo]()
 	ops := emailOps(t, actors, actionMgr(repo))
 	err := ops.ResendVerification(context.Background(), models.ResendVerificationInput{Email: email})

@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
+	"lib/database"
 	"lib/jsonschema"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -23,7 +24,7 @@ var errNoActiveSchema = errors.New("no active profile schema")
 func (o *Operations) loadActiveSchema(ctx context.Context, projectID *uuid.UUID) (*models.ProjectProfileSchema, error) {
 	s, err := o.Schemas.Get(ctx, projectID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil, errNoActiveSchema
 		}
 		return nil, err
@@ -43,7 +44,7 @@ func requireActorInProject(ctx context.Context, actors ports.ActorRepo, actorID,
 		return err
 	}
 	if actor.ProjectID == nil || *actor.ProjectID != projectID {
-		return fun.ErrForbidden("insufficient permissions")
+		return errs.ErrActorOutsideProject
 	}
 	return nil
 }
@@ -57,7 +58,7 @@ func validateAndStamp(schema *models.ProjectProfileSchema, profile json.RawMessa
 	}
 	err := jsonschema.Validate(schema.Schema, profile)
 	if err != nil {
-		return 0, fun.ErrValidation(err.Error())
+		return 0, &errs.ProfileSchemaViolationError{Err: err}
 	}
 	return schema.Version, nil
 }

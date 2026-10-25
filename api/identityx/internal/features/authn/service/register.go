@@ -3,12 +3,12 @@ package service
 import (
 	"context"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/crypto"
 	"lib/telemetry"
 	"strings"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +39,7 @@ func (o *Operations) Register(ctx context.Context, in models.IDXRegisterInput) e
 			return err
 		}
 		if hasTos && !in.AcceptedTos {
-			return fun.ErrValidation("you must accept the terms of service to register")
+			return errs.ErrTermsNotAccepted
 		}
 	}
 

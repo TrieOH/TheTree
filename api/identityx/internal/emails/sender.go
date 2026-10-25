@@ -10,7 +10,6 @@ import (
 
 	"lib/jobs"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -58,7 +57,7 @@ func (s *Sender) send(
 	project *models.Project,
 ) error {
 	if actor.Email == nil {
-		return fun.ErrInternal(fmt.Sprintf("cannot send %s email for actor %s: no email address", kind, actor.ID))
+		return fmt.Errorf("cannot send %s email for actor %s: no email address", kind, actor.ID)
 	}
 
 	baseDomain, projectName, err := s.resolveBase(ctx, kind, project)
@@ -100,10 +99,10 @@ func (s *Sender) resolveBase(_ context.Context, kind models.EmailTemplateKind, p
 		return s.appURL, s.appName, nil
 	}
 	if project.Domain == nil {
-		return "", "", fun.ErrInternal(fmt.Sprintf(
+		return "", "", fmt.Errorf(
 			"cannot send %s email for project %s: no domain configured",
 			kind, project.ID,
-		))
+		)
 	}
 	domain := *project.Domain
 	if !strings.Contains(domain, "://") {

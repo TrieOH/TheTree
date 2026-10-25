@@ -3,13 +3,16 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
+	libauthz "lib/authz"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -207,7 +210,7 @@ func TestGetProfileSkipsMigrationWithoutSchema(t *testing.T) {
 	mock.When(profiles.Get(mock.AnyContext(), mock.Equal(actorID))).ThenReturn(profile, nil)
 
 	schemas := mock.Mock[ports.ProfileSchemaRepo]()
-	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).ThenReturn(nil, fun.ErrNotFound("project_profile_schema not found"))
+	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).ThenReturn(nil, database.ErrNotFound)
 
 	actors := mock.Mock[ports.ActorRepo]()
 	mockProjectActor(actors, actorID, projectID)
@@ -354,7 +357,7 @@ func TestGetProfileAllowsSelfReadWithoutMembership(t *testing.T) {
 	// no schema configured: nothing to migrate
 	schemas := mock.Mock[ports.ProfileSchemaRepo]()
 	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).
-		ThenReturn(nil, fun.ErrNotFound("project_profile_schema not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	got, err := testOps(profiles, schemas, actors, projects).
 		GetProfile(testIdentityFor(actorID), actorID, projectID)
@@ -391,7 +394,7 @@ func TestGetProfileAllowsProjectUserReadingOtherProjectUsers(t *testing.T) {
 	// no schema configured: nothing to migrate
 	schemas := mock.Mock[ports.ProfileSchemaRepo]()
 	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).
-		ThenReturn(nil, fun.ErrNotFound("project_profile_schema not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	got, err := testOps(profiles, schemas, actors, projects).
 		GetProfile(testIdentityScopedTo(requesterID, projectID), targetID, projectID)
@@ -426,7 +429,7 @@ func TestGetProfileAllowsAnonymousPublicRead(t *testing.T) {
 	// no schema configured: nothing to migrate
 	schemas := mock.Mock[ports.ProfileSchemaRepo]()
 	mock.When(schemas.Get(mock.AnyContext(), mock.Equal(&projectID))).
-		ThenReturn(nil, fun.ErrNotFound("project_profile_schema not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	got, err := testOps(profiles, schemas, actors, projects).
 		GetProfile(context.Background(), targetID, projectID)
@@ -456,7 +459,7 @@ func TestGetProfileDeniesActorFromAnotherProject(t *testing.T) {
 
 	_, err := testOps(mock.Mock[ports.ProfileRepo](), mock.Mock[ports.ProfileSchemaRepo](), actors, projects).
 		GetProfile(testIdentity(), actorID, projectID)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrActorOutsideProject) {
 		t.Fatalf("want forbidden for cross-project actor, got %v", err)
 	}
 }
@@ -475,7 +478,7 @@ func TestGetProfileDeniesPlatformActorThroughProjectRoute(t *testing.T) {
 
 	_, err := testOps(mock.Mock[ports.ProfileRepo](), mock.Mock[ports.ProfileSchemaRepo](), actors, projects).
 		GetProfile(testIdentity(), actorID, projectID)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrActorOutsideProject) {
 		t.Fatalf("want forbidden for platform actor via project route, got %v", err)
 	}
 }
@@ -498,7 +501,7 @@ func TestUpsertProfileDeniesCrossProjectActor(t *testing.T) {
 			ActorID: actorID,
 			Profile: json.RawMessage(`{"full_name":"Jane"}`),
 		}, projectID)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrActorOutsideProject) {
 		t.Fatalf("want forbidden for cross-project actor, got %v", err)
 	}
 }
@@ -520,7 +523,7 @@ func TestUpsertProfileDeniesMemberUpdatingOthers(t *testing.T) {
 			ActorID: actorID,
 			Profile: json.RawMessage(`{"full_name":"Jane"}`),
 		}, projectID)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("want forbidden for member updating another member's profile, got %v", err)
 	}
 }
@@ -620,7 +623,7 @@ func TestListOutdatedProjectProfilesRequiresAdmin(t *testing.T) {
 
 	_, err := testOps(mock.Mock[ports.ProfileRepo](), mock.Mock[ports.ProfileSchemaRepo](), mock.Mock[ports.ActorRepo](), projects).
 		ListOutdatedProfiles(testIdentity(), &projectID)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("want forbidden for member, got %v", err)
 	}
 }

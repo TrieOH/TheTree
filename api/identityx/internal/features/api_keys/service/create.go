@@ -1,12 +1,13 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
+	"fmt"
 	"lib/api_keys"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -51,14 +52,14 @@ func (o *Operations) createInternal(ctx context.Context, project models.Project,
 			return nil, nil, err
 		}
 		if !valid {
-			return nil, nil, fun.ErrBadRequest("invalid capabilities")
+			return nil, nil, errs.ErrInvalidCapabilities
 		}
 	}
 
 	var generated *api_keys.GeneratedAPIKey
 	generated, err = api_keys.GenerateAPIKey(project.BrandSlug, payload.Env, o.HmacSecret)
 	if err != nil {
-		return nil, nil, fun.ErrInternal(err.Error())
+		return nil, nil, fmt.Errorf("generate api key: %w", err)
 	}
 
 	apiKey := models.APIKey{

@@ -18,10 +18,11 @@ func main() {
 		Spec:   spec.OpenAPISpec,
 		Server: backend.ServerFrom(cfg.Server, cfg.CORS, cfg.ProfilePort),
 		Modules: []backend.Module{
-			postgres.Module(cfg.Postgres, app.ConstraintMessages()),
+			postgres.Module(cfg.Postgres, app.Constraints()),
 			email.Module(cfg.ToEmailConfig()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build: app.Build(cfg),
+		Build:  app.Build(cfg),
+		Errors: app.Errors(),
 	}), "identityx exited with error")
 }

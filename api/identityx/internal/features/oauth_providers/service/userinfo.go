@@ -5,14 +5,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/oauth"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -160,7 +160,7 @@ func (o *Operations) registerNewIdentity(
 func (o *Operations) fetchUserInfo(ctx context.Context, provider string, creds oauth.Credentials, code string) (*oauth.UserInfo, *oauth2.Token, error) {
 	p, ok := o.Meta[provider]
 	if !ok {
-		return nil, nil, fun.ErrBadRequest("unsupported provider: " + provider)
+		return nil, nil, &errs.UnsupportedProviderError{Provider: provider}
 	}
 
 	cfg := p.Config(creds)
@@ -168,10 +168,10 @@ func (o *Operations) fetchUserInfo(ctx context.Context, provider string, creds o
 	providerToken, err := cfg.Exchange(exchangeCtx, code)
 	if err != nil {
 		telemetry.Log().Error("oauth code exchange failed", zap.Error(err))
-		return nil, nil, fun.ErrUnauthorized("failed to exchange code")
+		return nil, nil, errs.ErrOAuthCodeExchange
 	}
 	if providerToken == nil {
-		return nil, nil, fun.ErrUnauthorized("empty token from provider")
+		return nil, nil, errs.ErrOAuthEmptyToken
 	}
 
 	resp, err := o.Client.R().SetContext(ctx).
@@ -181,7 +181,7 @@ func (o *Operations) fetchUserInfo(ctx context.Context, provider string, creds o
 		return nil, nil, err
 	}
 	if resp.IsStatusFailure() {
-		return nil, nil, fun.ErrUnauthorized("userinfo request failed")
+		return nil, nil, errs.ErrOAuthUserinfo
 	}
 
 	var info oauth.UserInfo
@@ -191,18 +191,18 @@ func (o *Operations) fetchUserInfo(ctx context.Context, provider string, creds o
 	}
 
 	if info.SubString() == "" {
-		return nil, nil, fun.ErrUnauthorized("incomplete userinfo from provider")
+		return nil, nil, errs.ErrOAuthIncompleteUserinfo
 	}
 
 	if info.Email == "" && provider == "github" {
 		info.Email, err = o.fetchGitHubEmail(ctx, providerToken.AccessToken)
 		if err != nil {
-			return nil, nil, fun.ErrUnauthorized("could not fetch github email")
+			return nil, nil, err
 		}
 	}
 
 	if info.Email == "" {
-		return nil, nil, fun.ErrUnauthorized("incomplete userinfo from provider")
+		return nil, nil, errs.ErrOAuthIncompleteUserinfo
 	}
 
 	return &info, providerToken, nil
@@ -217,20 +217,20 @@ func (o *Operations) fetchGitHubEmail(ctx context.Context, accessToken string) (
 		SetHeader("Accept", "application/vnd.github+json").
 		Get("https://api.github.com/user/emails")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: %w", errs.ErrOAuthGitHubEmail, err)
 	}
 	if resp.IsStatusFailure() {
-		return "", fun.ErrUnauthorized("could not fetch github email")
+		return "", errs.ErrOAuthGitHubEmail
 	}
 	var emails []oauth.GitHubEmail
 	err = json.Unmarshal(resp.Bytes(), &emails)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: %w", errs.ErrOAuthGitHubEmail, err)
 	}
 	for _, e := range emails {
 		if e.Primary && e.Verified {
 			return e.Email, nil
 		}
 	}
-	return "", errors.New("no verified primary email found")
+	return "", fmt.Errorf("%w: no verified primary email found", errs.ErrOAuthGitHubEmail)
 }

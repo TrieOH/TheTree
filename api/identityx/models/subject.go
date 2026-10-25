@@ -3,9 +3,11 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
-	"github.com/MintzyG/fun"
+	"IdentityX/errs"
+
 	"github.com/google/uuid"
 )
 
@@ -54,11 +56,11 @@ func WithIdentity(ctx context.Context, identity *Identity) context.Context {
 func RequireIdentity(ctx context.Context) (*Identity, error) {
 	val := ctx.Value(identityContextKey)
 	if val == nil {
-		return nil, fun.ErrUnauthorized("identity not found in context")
+		return nil, errs.ErrNoIdentity
 	}
 	id, ok := val.(*Identity)
 	if !ok {
-		return nil, fun.Errf("invalid identity type, was: %T", val).Internal()
+		return nil, fmt.Errorf("invalid identity type, was: %T", val)
 	}
 	return id, nil
 }

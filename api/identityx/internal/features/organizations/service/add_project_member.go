@@ -1,10 +1,11 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
-
-	"github.com/MintzyG/fun"
+	"errors"
+	"lib/database"
 )
 
 func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrgProjectMemberInput) error {
@@ -19,7 +20,7 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 	}
 
 	if ident.Sub.ID == actor.ID {
-		return fun.ErrBadRequest("users can't add themselves to projects")
+		return errs.ErrAddSelfToProject
 	}
 
 	org, err := o.Orgs.GetByID(ctx, payload.OrganizationID)
@@ -28,7 +29,7 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 	}
 
 	if actor.ID == org.OwnerID {
-		return fun.ErrBadRequest("owner of the organization is already a member of the project")
+		return errs.ErrOrgOwnerAlreadyInProject
 	}
 
 	err = o.Authz.CheckOrg(ctx, org.ID, models.OrganizationRoleAdmin)
@@ -37,11 +38,11 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 	}
 
 	_, err = o.Orgs.GetMember(ctx, actor.ID, org.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("organization member is already a member of the project")
+		return errs.ErrOrgMemberAlreadyInProject
 	}
 
 	project, err := o.Projects.GetByID(ctx, payload.ProjectID)
@@ -50,11 +51,11 @@ func (o *Operations) AddProjectMember(ctx context.Context, payload models.AddOrg
 	}
 
 	_, err = o.Projects.GetMember(ctx, actor.ID, project.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("user is already a member of the project")
+		return errs.ErrAlreadyProjectMember
 	}
 
 	newMember, err := models.NewProjectMember(payload.ProjectID, actor.ID, payload.Role)

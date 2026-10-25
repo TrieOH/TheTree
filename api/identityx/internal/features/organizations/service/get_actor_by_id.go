@@ -1,10 +1,10 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -20,7 +20,7 @@ func (o *Operations) GetActorByID(ctx context.Context, id, projectID uuid.UUID) 
 	}
 
 	if actor.ProjectID != nil && *actor.ProjectID != projectID {
-		return nil, fun.ErrForbidden("insufficient permissions")
+		return nil, errs.ErrActorOutsideProject
 	}
 
 	return actor, nil

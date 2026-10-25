@@ -2,17 +2,20 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
+	libauthz "lib/authz"
 	"lib/crypto"
+	"lib/database"
 	"lib/oauth"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 	"resty.dev/v3"
@@ -129,7 +132,7 @@ func TestCreateRequiresAdmin(t *testing.T) {
 		ProjectID: projectID, Provider: models.GoogleIdentityProvider,
 		ClientID: "client-id", ClientSecret: "super-secret",
 	})
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("want forbidden for member, got %v", err)
 	}
 	_, _ = mock.Verify(o.providers, mock.Times(0)).Create(mock.AnyContext(), mock.Any[models.ProjectOAuthProviders]())
@@ -143,7 +146,7 @@ func TestCreateUnknownProjectIsForbidden(t *testing.T) {
 		ProjectID: projectID, Provider: models.GoogleIdentityProvider,
 		ClientID: "client-id", ClientSecret: "super-secret",
 	})
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("want forbidden for non-member, got %v", err)
 	}
 }
@@ -216,7 +219,7 @@ func TestUpdateRequiresAdmin(t *testing.T) {
 
 	clientID := "x"
 	_, err := o.ops.Update(ctxWithMember(), models.UpdateOAuthProviderInput{ID: id, ClientID: &clientID})
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("want forbidden for member, got %v", err)
 	}
 }
@@ -269,7 +272,7 @@ func TestDeleteRequiresAdmin(t *testing.T) {
 	mock.When(o.providers.GetByID(mock.AnyContext(), mock.Equal(id))).ThenReturn(&row, nil)
 
 	err := o.ops.Delete(ctxWithMember(), id)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("want forbidden for member, got %v", err)
 	}
 	_ = mock.Verify(o.providers, mock.Times(0)).Delete(mock.AnyContext(), mock.Equal(id))
@@ -301,10 +304,10 @@ func TestListEnabledProvidersUnknownProject(t *testing.T) {
 	projectID := uuid.New()
 	o := newTestOps(t, models.ProjectRoleMember)
 	mock.When(o.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
-		ThenReturn(nil, fun.ErrNotFound("project not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := o.ops.ListEnabledProviders(ctxWithMember(), &projectID)
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		t.Fatalf("want not found, got %v", err)
 	}
 }
@@ -360,7 +363,7 @@ func TestResolveLoginProviderPlatformNotConfigured(t *testing.T) {
 	o := newTestOps(t, models.ProjectRoleMember)
 
 	_, err := o.ops.resolveLoginProvider(context.Background(), "google", nil)
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.As(err, new(*errs.ProviderNotConfiguredError)) {
 		t.Fatalf("want bad request for missing env credentials, got %v", err)
 	}
 }
@@ -414,10 +417,10 @@ func TestResolveLoginProviderMissingRow(t *testing.T) {
 	projectID := uuid.New()
 	o := newTestOps(t, models.ProjectRoleMember)
 	mock.When(o.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
-		ThenReturn(nil, fun.ErrNotFound("not configured"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := o.ops.resolveLoginProvider(context.Background(), "google", &projectID)
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		t.Fatalf("want not found for missing row, got %v", err)
 	}
 }

@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"IdentityX/models"
-
-	"github.com/MintzyG/fun"
 )
 
 // TosNotifier enqueues the ToS-change notification job: one job per
@@ -28,10 +26,10 @@ func NewTosNotifier(enqueuer Enqueuer) *TosNotifier {
 // the link-less email would still mislead, so fail loudly instead.
 func (n *TosNotifier) NotifyUpdate(ctx context.Context, project *models.Project, tos *models.TermsOfService) error {
 	if project.Domain == nil {
-		return fun.ErrInternal(fmt.Sprintf(
+		return fmt.Errorf(
 			"cannot enqueue ToS notification for project %s: no domain configured",
 			project.ID,
-		))
+		)
 	}
 	domain := *project.Domain
 	if !strings.Contains(domain, "://") {

@@ -1,10 +1,11 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
-
-	"github.com/MintzyG/fun"
+	"errors"
+	"lib/database"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveProjectMemberInput) error {
@@ -19,7 +20,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveProj
 	}
 
 	if ident.Sub.ID == actor.ID {
-		return fun.ErrBadRequest("Cannot remove yourself from the project")
+		return errs.ErrRemoveSelfFromProject
 	}
 
 	project, err := o.Projects.GetByID(ctx, payload.ProjectID)
@@ -27,7 +28,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveProj
 		return err
 	}
 	if actor.ID == project.OwnerID {
-		return fun.ErrBadRequest("cannot remove the owner of the project")
+		return errs.ErrRemoveProjectOwner
 	}
 
 	err = o.Authz.CheckProject(ctx, payload.ProjectID, models.ProjectRoleAdmin)
@@ -36,11 +37,11 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveProj
 	}
 
 	_, err = o.Projects.GetMember(ctx, actor.ID, project.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
-		return fun.ErrBadRequest("user is not a member of the project")
+		return errs.ErrNotProjectMember
 	}
 
 	return o.Projects.RemoveMember(ctx, actor.ID, payload.ProjectID)
