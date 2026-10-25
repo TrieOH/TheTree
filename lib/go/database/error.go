@@ -35,6 +35,27 @@ func (e *ConstraintError) Error() string {
 
 func (e *ConstraintError) Unwrap() []error { return []error{e.Class, e.Err} }
 
+// NotFoundError is a missing row: it reads as the resource's not-found
+// error and matches both it and ErrNotFound (errors.Is).
+type NotFoundError struct{ Named error }
+
+func (e *NotFoundError) Error() string { return e.Named.Error() }
+
+func (e *NotFoundError) Unwrap() []error { return []error{e.Named, ErrNotFound} }
+
+// Violation is a registered constraint's violation: it reads as the named
+// error and matches both it and its class (errors.Is), keeping the driver
+// error for logs.
+type Violation struct {
+	Named error
+	Class error
+	Err   *pgconn.PgError
+}
+
+func (e *Violation) Error() string { return e.Named.Error() }
+
+func (e *Violation) Unwrap() []error { return []error{e.Named, e.Class, e.Err} }
+
 // NamedErrorHandler turns a driver error into the Backend's named errors
 // (ADR-0016). Repos hold one per resource and return repo.dbe(err).
 type NamedErrorHandler func(err error, notFound ...error) error
@@ -43,8 +64,8 @@ type NamedErrorHandler func(err error, notFound ...error) error
 // resource's named not-found error; a call can override it (a lookup of a
 // different resource through the same repo).
 //
-//   - pgx.ErrNoRows: the not-found error, joined with ErrNotFound.
-//   - A registered constraint: its named error, joined with its class.
+//   - pgx.ErrNoRows: a NotFoundError (the not-found error and ErrNotFound).
+//   - A registered constraint: a Violation (its named error and class).
 //   - An unregistered constraint: a ConstraintError of its class.
 //   - Anything else: returned as is (an internal error).
 func NewNamedErrorHandler(notFound error) NamedErrorHandler {
@@ -57,7 +78,7 @@ func NewNamedErrorHandler(notFound error) NamedErrorHandler {
 			if len(override) > 0 {
 				nf = override[0]
 			}
-			return fmt.Errorf("%w: %w", nf, ErrNotFound)
+			return &NotFoundError{Named: nf}
 		}
 		pgErr, ok := errors.AsType[*pgconn.PgError](err)
 		if !ok {
@@ -69,7 +90,7 @@ func NewNamedErrorHandler(notFound error) NamedErrorHandler {
 		case class == nil:
 			return err
 		case registered:
-			return fmt.Errorf("%w: %w", named, class)
+			return &Violation{Named: named, Class: class, Err: pgErr}
 		default:
 			return &ConstraintError{Class: class, Constraint: pgErr.ConstraintName, Err: pgErr}
 		}
@@ -140,6 +161,53 @@ func NewErrorHandler(resource string) ErrorHandler {
 	}
 }
 
+// BatchError is a batch with failed items, each named by its id.
+type BatchError struct{ Items []BatchItemError }
+
+// BatchItemError is one failed item of a batch.
+type BatchItemError struct {
+	ID  string
+	Err error
+}
+
+func (e *BatchError) Error() string {
+	msgs := make([]string, len(e.Items))
+	for i, item := range e.Items {
+		msgs[i] = item.ID + ": " + item.Err.Error()
+	}
+	return strings.Join(msgs, "; ")
+}
+
+func (e *BatchError) Unwrap() []error {
+	errs := make([]error, len(e.Items))
+	for i, item := range e.Items {
+		errs[i] = item.Err
+	}
+	return errs
+}
+
+// NamedBatchExec runs a batch and collects every failed item, mapped by
+// dbe, into one BatchError (nil when all items succeed).
+func NamedBatchExec(br interface {
+	Exec(func(int, error))
+	Close() error
+}, dbe NamedErrorHandler, getID func(int) string) error {
+	defer func() {
+		_ = br.Close()
+	}()
+	var items []BatchItemError
+	br.Exec(func(i int, err error) {
+		if err != nil {
+			items = append(items, BatchItemError{ID: getID(i), Err: dbe(err)})
+		}
+	})
+	if len(items) == 0 {
+		return nil
+	}
+	return &BatchError{Items: items}
+}
+
+// BatchExec is NamedBatchExec for Backends still on root-fun errors.
 func BatchExec(br interface {
 	Exec(func(int, error))
 	Close() error

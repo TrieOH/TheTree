@@ -63,6 +63,7 @@ var sharedErrors = ErrorMap{
 	Is(database.ErrUniqueViolation, http.StatusConflict),
 	Is(database.ErrForeignKeyViolation, http.StatusBadRequest),
 	Is(database.ErrCheckViolation, http.StatusBadRequest).Validation(),
+	As[*database.BatchError](http.StatusBadRequest).Validation(),
 }
 
 var (

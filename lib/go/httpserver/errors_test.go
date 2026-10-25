@@ -65,6 +65,12 @@ func TestErrorMapResolve(t *testing.T) {
 		{"class alone", fmt.Errorf("get: %w", database.ErrNotFound), 404, fun.CodeNotFound, database.ErrNotFound.Error()},
 		{"unregistered constraint maps by class, hides the constraint",
 			&database.ConstraintError{Class: database.ErrUniqueViolation, Constraint: "uniq_secret"}, 409, fun.CodeConflict, database.ErrUniqueViolation.Error()},
+		{"missing row reads as the resource's error",
+			&database.NotFoundError{Named: errors.New("form not found")}, 404, fun.CodeNotFound, "form not found"},
+		{"registered violation maps by its named error",
+			&database.Violation{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, fun.CodeValidation, errTermsMissing.Error()},
+		{"batch lists its items",
+			&database.BatchError{Items: []database.BatchItemError{{ID: "f1", Err: errAddSelf}}}, 400, fun.CodeValidation, "f1: " + errAddSelf.Error()},
 		{"unmapped is a generic 500", errors.New("pq: connection reset"), 500, fun.CodeInternal, "internal error"},
 	}
 	for _, tc := range cases {
