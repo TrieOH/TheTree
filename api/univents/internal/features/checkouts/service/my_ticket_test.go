@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"net/http"
 	checkouts "univents/internal/features/checkouts/service"
 	"univents/models"
 
@@ -159,7 +159,7 @@ func TestMyTicket_UnknownEditionNotFound(t *testing.T) {
 	r, ops, _, _ := newOps(t, nil)
 	_ = r
 	_, err := ops.MyTicket(context.Background(), uuid.New(), uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("err = %v, want NOT_FOUND", err)
 	}
 }

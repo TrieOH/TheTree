@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"univents/errs"
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
@@ -10,7 +11,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.ErrorHandler
+	dbe database.NamedErrorHandler
 }
 
 var _ ports.WsTokenRepo = (*Repo)(nil)
@@ -18,7 +19,7 @@ var _ ports.WsTokenRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("ws_token"),
+		dbe: database.NewNamedErrorHandler(errs.ErrWSTokenNotFound),
 	}
 }
 

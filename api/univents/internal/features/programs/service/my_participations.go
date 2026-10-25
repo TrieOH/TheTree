@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"lib/database"
 	"univents/models"
 )
 
@@ -22,7 +23,7 @@ func (o *Operations) MyParticipations(ctx context.Context, editionID, userID uui
 
 	reg, err := o.Registrations.GetActiveByEditionAndAttendee(ctx, editionID, userID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			// no ticket → no sign-ups is a normal state, not an error
 			return nil, nil
 		}

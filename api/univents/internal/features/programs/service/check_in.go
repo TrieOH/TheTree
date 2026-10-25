@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"lib/database"
+	"univents/errs"
 	"univents/models"
 )
 
@@ -40,18 +42,18 @@ func (o *Operations) CheckIn(ctx context.Context, occurrenceID, attendeeID, acto
 		return nil, err
 	}
 	if program.Kind != models.ProgramKindCheckpoint {
-		return nil, fun.Err("check-in is only for checkpoint occurrences").BadRequest()
+		return nil, errs.ErrCheckInNotCheckpoint
 	}
 
 	reg, err := o.Registrations.GetActiveByEditionAndAttendee(ctx, occ.EditionID, attendeeID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.ErrForbidden("a confirmed ticket is required to pass this checkpoint")
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, errs.ErrTicketRequiredForCheckpoint
 		}
 		return nil, err
 	}
 	if reg.Status != models.RegistrationStatusConfirmed {
-		return nil, fun.ErrForbidden("a confirmed ticket is required to pass this checkpoint")
+		return nil, errs.ErrTicketRequiredForCheckpoint
 	}
 	err = o.checkProgramAccess(ctx, occ, program, reg, attendeeID)
 	if err != nil {

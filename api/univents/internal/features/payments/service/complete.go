@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +35,7 @@ func (o *Operations) Complete(ctx context.Context, eventID, sellerID uuid.UUID, 
 		}
 	}
 	if !belongs {
-		return nil, fun.ErrBadRequest("seller does not belong to the platform payssage wallet")
+		return nil, errs.ErrSellerNotInPlatformWallet
 	}
 
 	return o.Events.SetPaymentsConfig(ctx, event.ID, &sellerID, &publicKey)

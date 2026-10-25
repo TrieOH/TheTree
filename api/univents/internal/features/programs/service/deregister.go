@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"lib/database"
+	"univents/errs"
 	"univents/models"
 )
 
@@ -22,16 +24,16 @@ func (o *Operations) Deregister(ctx context.Context, occurrenceID, userID uuid.U
 
 	reg, err := o.Registrations.GetActiveByEditionAndAttendee(ctx, occ.EditionID, userID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.ErrNotFound("you are not registered for this activity")
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, errs.ErrNotRegistered
 		}
 		return nil, err
 	}
 
 	part, err := o.Participations.GetActiveByOccurrenceAndRegistration(ctx, occurrenceID, reg.ID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.ErrNotFound("you are not registered for this activity")
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, errs.ErrNotRegistered
 		}
 		return nil, err
 	}
@@ -41,7 +43,7 @@ func (o *Operations) Deregister(ctx context.Context, occurrenceID, userID uuid.U
 		return nil, err
 	}
 	if updated == nil {
-		return nil, fun.ErrConflict("registration is locked: attendance has been marked")
+		return nil, errs.ErrRegistrationLocked
 	}
 
 	o.notifyStock(ctx, occ.EditionID, occurrenceID)

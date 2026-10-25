@@ -3,16 +3,15 @@ package service
 import (
 	"context"
 	"lib/crypto"
+	"univents/errs"
 	"univents/models"
-
-	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) DenyRequest(ctx context.Context, token string, reason *string) error {
 	var claims models.SignatureRequestClaims
 	_, err := crypto.ParseHMACJWT(token, &claims, []byte(o.HmacSecret))
 	if err != nil {
-		return fun.ErrForbidden("invalid or expired token")
+		return errs.ErrInvalidSignatureToken
 	}
 
 	request, err := o.Requests.GetRequestByID(ctx, claims.RequestID)
@@ -20,10 +19,10 @@ func (o *Operations) DenyRequest(ctx context.Context, token string, reason *stri
 		return err
 	}
 	if request.Status != models.SignatureRequestStatusPending {
-		return fun.ErrConflict("signature request is no longer pending")
+		return errs.ErrSignatureRequestNotPending
 	}
 	if request.EditionID != claims.EditionID {
-		return fun.ErrForbidden("token does not match request edition")
+		return errs.ErrTokenRequestEditionMismatch
 	}
 
 	return o.Requests.CancelRequest(ctx, request.ID, reason)

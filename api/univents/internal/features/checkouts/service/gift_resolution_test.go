@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"net/http"
 	checkouts "univents/internal/features/checkouts/service"
 	"univents/internal/testrepos"
 	"univents/models"
@@ -102,7 +102,7 @@ func TestCheckout_GiftIdEmailMismatch400(t *testing.T) {
 	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID, pixInput(
 		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &wrongID, Email: "friend@example.com", Name: "John Doe"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST (user_id does not match the email)", err)
 	}
 }
@@ -119,7 +119,7 @@ func TestCheckout_GiftIdWithoutAccountEmail400(t *testing.T) {
 	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID, pixInput(
 		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: new(uuid.New()), Email: "nobody@example.com", Name: "John Doe"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST (email has no account)", err)
 	}
 }
@@ -136,7 +136,7 @@ func TestCheckout_GiftTwoEmailOnlySameAddress400(t *testing.T) {
 		ticketLine(fx.ticketID, &checkouts.Attendee{Email: "friend@example.com", Name: "John Doe"}),
 		ticketLine(fx.ticketID, &checkouts.Attendee{Email: "friend@example.com", Name: "John Doe"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST (one ticket per person)", err)
 	}
 }
@@ -156,7 +156,7 @@ func TestCheckout_GiftResolvedAndExplicitSamePerson400(t *testing.T) {
 		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &recipientID, Email: "friend@example.com", Name: "John Doe"}),
 		ticketLine(fx.ticketID, &checkouts.Attendee{Email: "friend@example.com", Name: "John Doe"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST (resolved to the same person)", err)
 	}
 }
@@ -187,7 +187,7 @@ func TestCheckout_GiftEmailOnlyHolderBlocks409(t *testing.T) {
 	_, err = ops.Checkout(context.Background(), fx.editionID, otherBuyerID, pixInput(
 		ticketLine(fx.ticketID, &checkouts.Attendee{Email: "friend@example.com", Name: "John Doe"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("second gift: err = %v, want CONFLICT (one ticket per person)", err)
 	}
 }

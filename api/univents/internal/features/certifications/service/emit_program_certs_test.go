@@ -3,10 +3,10 @@ package service_test
 import (
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
+	"lib/database"
 	"univents/internal/features/certifications/jobs"
 	"univents/models"
 	"univents/ports"
@@ -82,7 +82,7 @@ func TestEmitCertsForProgram_UnknownProgram(t *testing.T) {
 
 	programs := mock.Mock[ports.ProgramRepo]()
 	mock.When(programs.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
-		ThenReturn(nil, fun.ErrNotFound("program not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	enq := &recordingJobs{}
 	ops := newOps(programs, mock.Mock[ports.EditionRepo](), mock.Mock[ports.EventRepo](), enq)

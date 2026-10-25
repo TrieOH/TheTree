@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
 	"lib/database"
 	"lib/testdb"
+	"net/http"
 
 	"univents/internal/authz"
 	checkouts "univents/internal/features/checkouts/service"
@@ -198,7 +198,7 @@ func TestGet_NonOwnerIsNotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("Get: expected error for non-owner, got nil")
 	}
-	if !fun.Is(err, fun.CodeNotFound) {
+	if statusOf(err) != http.StatusNotFound {
 		t.Fatalf("Get: error = %v, want NOT_FOUND", err)
 	}
 }
@@ -206,7 +206,7 @@ func TestGet_NonOwnerIsNotFound(t *testing.T) {
 func TestGet_UnknownPurchaseIsNotFound(t *testing.T) {
 	_, _, ops := newResumeOps(t, &intentStub{fn: alwaysSucceed})
 	_, err := ops.Get(context.Background(), uuid.New(), uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("Get: err = %v, want NOT_FOUND", err)
 	}
 }

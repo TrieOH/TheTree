@@ -6,30 +6,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"os"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
 	"lib/database"
+	"net/http"
 
 	webhooks "univents/internal/features/webhooks/service"
 	"univents/models"
 	"univents/ports"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 const testSecret = "webhook-test-secret" //nolint:gosec // test-only shared secret, not a credential
 
@@ -216,7 +206,7 @@ func TestReceive_RejectsBadSignature(t *testing.T) {
 		RawBody:   []byte(`{"intent_id":"` + intentID.String() + `"}`),
 		Signature: "deadbeef",
 	})
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("want bad request, got %v", err)
 	}
 	// No correlation attempt happens before verification.
@@ -294,7 +284,7 @@ func TestReceive_CardRaceResolvesOnRequery(t *testing.T) {
 		ThenAnswer(func(_ []any) []any {
 			calls++
 			if calls == 1 {
-				return []any{nil, fun.ErrNotFound("purchase not found")}
+				return []any{nil, database.ErrNotFound}
 			}
 			return []any{p, nil}
 		})
@@ -313,10 +303,10 @@ func TestReceive_CardRaceStillMissingReturnsNon2xx(t *testing.T) {
 	intentID := uuid.New()
 
 	mock.When(h.purchases.GetByIntentID(mock.AnyContext(), mock.Equal(intentID))).
-		ThenReturn(nil, fun.ErrNotFound("purchase not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	err := h.ops.Receive(context.Background(), input(intentID, "payment.succeeded", []byte(`{}`)))
-	if err == nil || !fun.Is(err, fun.CodeInternal) {
+	if err == nil || statusOf(err) != http.StatusInternalServerError {
 		t.Fatalf("want internal (non-2xx → payssage retries), got %v", err)
 	}
 	_, _ = mock.Verify(h.purchases, mock.Times(2)).GetByIntentID(mock.AnyContext(), mock.Equal(intentID))

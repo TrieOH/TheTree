@@ -6,8 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"univents/errs"
 	"univents/internal/openapi"
 	"univents/models"
 )
@@ -15,7 +14,7 @@ import (
 func (h *Handlers) PatchProductVariant(ctx context.Context, req openapi.PatchProductVariantRequestObject) (openapi.PatchProductVariantResponseObject, error) {
 	gallery, err := json.Marshal(req.Body.GalleryUrls)
 	if err != nil {
-		return nil, fun.ErrBadRequest("invalid gallery_urls")
+		return nil, errs.ErrInvalidGalleryURLs
 	}
 	variant, err := h.ops.PatchVariant(ctx, models.PatchProductVariantInput{
 		VariantID:   req.VariantId,

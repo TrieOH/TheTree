@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -15,7 +15,7 @@ func (o *Operations) Discontinue(ctx context.Context, eventID uuid.UUID) error {
 	}
 
 	if event.Status != models.EventStatusActive {
-		return fun.ErrBadRequest("cannot discontinue non active event")
+		return errs.ErrEventNotActive
 	}
 
 	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)

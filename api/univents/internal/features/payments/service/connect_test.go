@@ -2,30 +2,20 @@ package service_test
 
 import (
 	"context"
-	"os"
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
 	idx "sdk/identityx"
 	payssage "sdk/payssage"
 
+	"net/http"
 	"univents/internal/authz"
 	payments "univents/internal/features/payments/service"
 	"univents/models"
 	"univents/ports"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 func adminCtx() context.Context {
 	return idx.WithIdentity(context.Background(), &idx.Identity{Sub: idx.Subject{ID: uuid.New()}})
@@ -101,7 +91,7 @@ func TestConnect_ForbiddenForNonAdmin(t *testing.T) {
 		ThenReturn(models.EventMemberRoleStaff, nil)
 
 	_, err := newOps(repo, pc).Connect(adminCtx(), eventID, "mercado_pago")
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 	_, _ = mock.Verify(pc, mock.Never()).ConnectProvider(mock.AnyContext(), mock.Any[string](), mock.Any[payssage.ConnectProviderRequest]())
@@ -158,7 +148,7 @@ func TestComplete_RejectsSellerNotInWallet(t *testing.T) {
 		ThenReturn([]payssage.Seller{{ID: uuid.New(), Provider: "mercado_pago"}}, nil)
 
 	_, err := newOps(repo, pc).Complete(adminCtx(), eventID, foreignSeller, "k")
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("want bad request, got %v", err)
 	}
 	_, _ = mock.Verify(repo, mock.Never()).SetPaymentsConfig(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[*uuid.UUID](), mock.Any[*string]())

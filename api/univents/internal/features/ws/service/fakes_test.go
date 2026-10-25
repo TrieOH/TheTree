@@ -2,28 +2,19 @@ package service_test
 
 import (
 	"context"
-	"os"
+	"errors"
 	"sync"
 	"testing"
 	"time"
 
+	"lib/database"
 	ws "univents/internal/features/ws/service"
 	"univents/models"
 
 	payssage "sdk/payssage"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 // ── fakes ────────────────────────────────────────────────────────────────
 
@@ -100,40 +91,40 @@ func (f *fakePurchaseRepo) get(id uuid.UUID) *models.Purchase {
 }
 
 func (f *fakePurchaseRepo) CreatePurchase(context.Context, *models.Purchase) (*models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) CreatePurchaseItem(context.Context, *models.PurchaseItem) (*models.PurchaseItem, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) GetByID(_ context.Context, id uuid.UUID) (*models.Purchase, error) {
 	p := f.get(id)
 	if p == nil {
-		return nil, fun.ErrNotFound("purchase not found")
+		return nil, database.ErrNotFound
 	}
 	return p, nil
 }
 func (f *fakePurchaseRepo) ListByEdition(context.Context, uuid.UUID) ([]models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) GetByIDForOwner(_ context.Context, id, purchaserID uuid.UUID) (*models.Purchase, error) {
 	p := f.get(id)
 	if p == nil || p.PurchaserID != purchaserID {
-		return nil, fun.ErrNotFound("purchase not found")
+		return nil, database.ErrNotFound
 	}
 	return p, nil
 }
 func (f *fakePurchaseRepo) GetByIntentID(context.Context, uuid.UUID) (*models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) ListByPurchaser(context.Context, uuid.UUID) ([]models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) UpdateStatus(_ context.Context, id uuid.UUID, status models.PurchaseStatus, reason *string) (*models.Purchase, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	p, ok := f.purchases[id]
 	if !ok {
-		return nil, fun.ErrNotFound("purchase not found")
+		return nil, database.ErrNotFound
 	}
 	p.Status = status
 	p.StatusReason = reason
@@ -141,13 +132,13 @@ func (f *fakePurchaseRepo) UpdateStatus(_ context.Context, id uuid.UUID, status 
 	return &cp, nil
 }
 func (f *fakePurchaseRepo) UpdateStatusIf(context.Context, uuid.UUID, models.PurchaseStatus, models.PurchaseStatus, *string) (*models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) UpdateRiverJobID(context.Context, uuid.UUID, int64) (*models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) AttachIntent(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, *string, *string) (*models.Purchase, error) {
-	return nil, fun.ErrInternal("unused fake")
+	return nil, errUnusedFake
 }
 func (f *fakePurchaseRepo) ListItemsByPurchase(_ context.Context, purchaseID uuid.UUID) ([]models.PurchaseItem, error) {
 	f.mu.Lock()
@@ -242,3 +233,5 @@ func seedPending(purchases *fakePurchaseRepo) *models.Purchase {
 	purchases.seed(p, items)
 	return p
 }
+
+var errUnusedFake = errors.New("unused fake")

@@ -8,29 +8,19 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"lib/database"
 	store "univents/internal/features/store/service"
 	"univents/internal/notify"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/google/uuid"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 // ── fakes ────────────────────────────────────────────────────────────────
 
@@ -55,7 +45,7 @@ type fakeEditions struct{ editionID uuid.UUID }
 
 func (f *fakeEditions) GetByID(_ context.Context, id uuid.UUID) (*models.Edition, error) {
 	if id != f.editionID {
-		return nil, fun.ErrNotFound("edition not found")
+		return nil, database.ErrNotFound
 	}
 	return &models.Edition{ID: id}, nil
 }

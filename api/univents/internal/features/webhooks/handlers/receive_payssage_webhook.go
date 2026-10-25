@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"univents/errs"
 	"univents/internal/features/webhooks/service"
 
 	"univents/internal/openapi"
@@ -19,7 +18,7 @@ import (
 func (h *Handlers) ReceivePayssageWebhook(ctx context.Context, req openapi.ReceivePayssageWebhookRequestObject) (openapi.ReceivePayssageWebhookResponseObject, error) {
 	raw := RawRequestFrom(ctx)
 	if raw == nil || req.Body == nil {
-		return nil, fun.ErrBadRequest("invalid request")
+		return nil, errs.ErrInvalidRequest
 	}
 	err := h.ops.Receive(ctx, service.ReceiveInput{
 		IntentID:     req.Body.IntentId,

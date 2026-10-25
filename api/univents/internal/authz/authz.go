@@ -35,7 +35,7 @@ func (s *Service) Event(ctx context.Context, eventID uuid.UUID, minRole libauthz
 func (s *Service) EventFor(ctx context.Context, actorID, eventID uuid.UUID, minRole libauthz.Role) error {
 	role, err := s.events.GetRole(ctx, actorID, eventID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(role, minRole)
+	return libauthz.AtLeast(role, minRole)
 }

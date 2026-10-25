@@ -6,8 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"univents/errs"
 	"univents/internal/openapi"
 	"univents/models"
 )
@@ -15,7 +14,7 @@ import (
 func (h *Handlers) CreateBadgeTemplate(ctx context.Context, req openapi.CreateBadgeTemplateRequestObject) (openapi.CreateBadgeTemplateResponseObject, error) {
 	design, err := json.Marshal(req.Body.DesignData)
 	if err != nil {
-		return nil, fun.ErrBadRequest("invalid design_data")
+		return nil, errs.ErrInvalidDesignData
 	}
 	template, err := h.ops.CreateTemplate(ctx, models.CreateBadgeTemplateInput{
 		EditionID:    req.EditionId,

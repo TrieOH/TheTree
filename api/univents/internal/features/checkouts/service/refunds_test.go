@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
 	"lib/database"
 	"lib/testdb"
+	"net/http"
 
 	"univents/internal/authz"
 	checkouts "univents/internal/features/checkouts/service"
@@ -105,7 +105,7 @@ func TestRefundPurchase_Guards(t *testing.T) {
 		intentID := uuid.New()
 		purchase, _ := seedPurchase(t, r, fx.editionID, uuid.New(), models.PurchaseStatusRefunded, &intentID)
 		_, err := ops.RefundPurchase(context.Background(), fx.ownerID, purchase.ID)
-		if !fun.Is(err, fun.CodeConflict) {
+		if statusOf(err) != http.StatusConflict {
 			t.Fatalf("expected conflict for refunded purchase, got %v", err)
 		}
 	})
@@ -114,7 +114,7 @@ func TestRefundPurchase_Guards(t *testing.T) {
 		intentID := uuid.New()
 		purchase, _ := seedPurchase(t, r, fx.editionID, uuid.New(), models.PurchaseStatusPending, &intentID)
 		_, err := ops.RefundPurchase(context.Background(), fx.ownerID, purchase.ID)
-		if !fun.Is(err, fun.CodeConflict) {
+		if statusOf(err) != http.StatusConflict {
 			t.Fatalf("expected conflict for pending purchase, got %v", err)
 		}
 	})

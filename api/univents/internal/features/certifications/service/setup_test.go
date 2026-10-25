@@ -2,10 +2,7 @@ package service_test
 
 import (
 	"context"
-	"os"
-	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
 	libjobs "lib/jobs"
@@ -14,15 +11,6 @@ import (
 	certifications "univents/internal/features/certifications/service"
 	"univents/ports"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 // ownerCtx returns a context with an authenticated identity for feature tests
 // that pass through RequireIdentity.

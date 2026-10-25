@@ -3,16 +3,15 @@ package service
 import (
 	"context"
 	"lib/crypto"
+	"univents/errs"
 	"univents/models"
-
-	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) FulfillRequest(ctx context.Context, token string, imageURL string) (*models.Signature, error) {
 	var claims models.SignatureRequestClaims
 	_, err := crypto.ParseHMACJWT(token, &claims, []byte(o.HmacSecret))
 	if err != nil {
-		return nil, fun.ErrForbidden("invalid or expired token")
+		return nil, errs.ErrInvalidSignatureToken
 	}
 
 	request, err := o.Requests.GetRequestByID(ctx, claims.RequestID)
@@ -20,10 +19,10 @@ func (o *Operations) FulfillRequest(ctx context.Context, token string, imageURL 
 		return nil, err
 	}
 	if request.Status != models.SignatureRequestStatusPending {
-		return nil, fun.ErrConflict("signature request is no longer pending")
+		return nil, errs.ErrSignatureRequestNotPending
 	}
 	if request.EditionID != claims.EditionID {
-		return nil, fun.ErrForbidden("token does not match request edition")
+		return nil, errs.ErrTokenRequestEditionMismatch
 	}
 
 	sig, err := o.Signatures.Create(ctx, &models.Signature{

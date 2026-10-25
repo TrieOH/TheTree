@@ -2,7 +2,6 @@ package repo_test
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -11,18 +10,8 @@ import (
 	"univents/internal/testrepos"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 // seedPurchase inserts the minimum purchase graph (edition → purchase) so a
 // ws_token row has a valid FK target.
