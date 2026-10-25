@@ -136,6 +136,9 @@ func errorStatus(err error) int {
 // Status is the status err is answered with under m (shared entries
 // included); a Backend's tests use it to check its map covers its errors.
 func (m ErrorMap) Status(err error) int {
+	if _, ok := errors.AsType[*fun.AppError](err); ok {
+		return fun.Error(err).Code // a lib error still on root fun
+	}
 	status, _, _ := append(append(ErrorMap{}, m...), sharedErrors...).resolve(err)
 	return status
 }
