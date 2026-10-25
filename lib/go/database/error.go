@@ -18,6 +18,7 @@ var (
 	ErrUniqueViolation     = errors.New("conflicts with an existing record")
 	ErrForeignKeyViolation = errors.New("references a record that does not exist")
 	ErrCheckViolation      = errors.New("invalid value")
+	ErrExclusionViolation  = errors.New("conflicts with an existing record")
 )
 
 // ConstraintError is a violation of a constraint the registry has no named
@@ -43,18 +44,18 @@ func (e *NotFoundError) Error() string { return e.Named.Error() }
 
 func (e *NotFoundError) Unwrap() []error { return []error{e.Named, ErrNotFound} }
 
-// Violation is a registered constraint's violation: it reads as the named
+// ViolationError is a registered constraint's violation: it reads as the named
 // error and matches both it and its class (errors.Is), keeping the driver
 // error for logs.
-type Violation struct {
+type ViolationError struct {
 	Named error
 	Class error
 	Err   *pgconn.PgError
 }
 
-func (e *Violation) Error() string { return e.Named.Error() }
+func (e *ViolationError) Error() string { return e.Named.Error() }
 
-func (e *Violation) Unwrap() []error { return []error{e.Named, e.Class, e.Err} }
+func (e *ViolationError) Unwrap() []error { return []error{e.Named, e.Class, e.Err} }
 
 // NamedErrorHandler turns a driver error into the Backend's named errors
 // (ADR-0016). Repos hold one per resource and return repo.dbe(err).
@@ -65,7 +66,7 @@ type NamedErrorHandler func(err error, notFound ...error) error
 // different resource through the same repo).
 //
 //   - pgx.ErrNoRows: a NotFoundError (the not-found error and ErrNotFound).
-//   - A registered constraint: a Violation (its named error and class).
+//   - A registered constraint: a ViolationError (its named error and class).
 //   - An unregistered constraint: a ConstraintError of its class.
 //   - Anything else: returned as is (an internal error).
 func NewNamedErrorHandler(notFound error) NamedErrorHandler {
@@ -90,7 +91,7 @@ func NewNamedErrorHandler(notFound error) NamedErrorHandler {
 		case class == nil:
 			return err
 		case registered:
-			return &Violation{Named: named, Class: class, Err: pgErr}
+			return &ViolationError{Named: named, Class: class, Err: pgErr}
 		default:
 			return &ConstraintError{Class: class, Constraint: pgErr.ConstraintName, Err: pgErr}
 		}
@@ -105,6 +106,8 @@ func constraintClass(code string) error {
 		return ErrForeignKeyViolation
 	case "23514":
 		return ErrCheckViolation
+	case "23P01":
+		return ErrExclusionViolation
 	}
 	return nil
 }

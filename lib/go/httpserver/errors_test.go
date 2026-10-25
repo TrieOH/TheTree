@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"lib/database"
+	"lib/fielderr"
 
 	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel"
@@ -78,7 +79,7 @@ func TestErrorMapResolve(t *testing.T) {
 		{"missing row reads as the resource's error",
 			&database.NotFoundError{Named: errors.New("form not found")}, 404, fun.CodeNotFound, "form not found"},
 		{"registered violation maps by its named error",
-			&database.Violation{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, fun.CodeValidation, errTermsMissing.Error()},
+			&database.ViolationError{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, fun.CodeValidation, errTermsMissing.Error()},
 		{"batch lists its items",
 			&database.BatchError{Items: []database.BatchItemError{{ID: "f1", Err: errAddSelf}}}, 400, fun.CodeValidation, "f1: " + errAddSelf.Error()},
 		{"status from the error's data", &upstreamError{status: 503}, 502, fun.CodeBadGateway, "upstream said 503"},
@@ -146,5 +147,33 @@ func TestTraceMiddlewareLeavesClientErrorsUnset(t *testing.T) {
 	}
 	if len(spans[0].Events()) == 0 {
 		t.Fatal("the error was not recorded on the span")
+	}
+}
+
+// TestWriteErrorListsFields — a fielderr.Error answers as its named error
+// and lists its fields in the envelope.
+func TestWriteErrorListsFields(t *testing.T) {
+	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/checkout", nil)
+	WriteError(rec, req, fmt.Errorf("checkout: %w", fielderr.On(errAddSelf, "items[0].attendee", "required")))
+
+	var body struct {
+		Error struct {
+			Message string `json:"message"`
+			Fields  []struct {
+				Field   string `json:"field"`
+				Message string `json:"message"`
+			} `json:"fields"`
+		} `json:"error"`
+	}
+	err := json.Unmarshal(rec.Body.Bytes(), &body)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if rec.Code != http.StatusBadRequest || body.Error.Message != errAddSelf.Error() ||
+		len(body.Error.Fields) != 1 || body.Error.Fields[0].Field != "items[0].attendee" {
+		t.Fatalf("unexpected response %d: %s", rec.Code, rec.Body.String())
 	}
 }

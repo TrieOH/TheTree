@@ -8,6 +8,7 @@ import (
 
 	"lib/authz"
 	"lib/database"
+	"lib/fielderr"
 	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
@@ -49,7 +50,8 @@ func As[T error](status int) ErrorMapping {
 // provider's status code, say). The decision still lives in the map.
 func AsStatus[T error](statusOf func(T) int) ErrorMapping {
 	return ErrorMapping{status: func(link error) (int, bool) {
-		t, ok := link.(T)
+		// One link of the chain, not the chain: resolve walks it.
+		t, ok := link.(T) //nolint:errorlint // matching a single link on purpose
 		if !ok {
 			return 0, false
 		}
@@ -70,6 +72,7 @@ var sharedErrors = ErrorMap{
 	Is(database.ErrUniqueViolation, http.StatusConflict),
 	Is(database.ErrForeignKeyViolation, http.StatusBadRequest),
 	Is(database.ErrCheckViolation, http.StatusBadRequest).Validation(),
+	Is(database.ErrExclusionViolation, http.StatusConflict),
 	As[*database.BatchError](http.StatusBadRequest).Validation(),
 }
 
@@ -92,8 +95,21 @@ func UseErrorMap(m ErrorMap) {
 		if code == fun.CodeInternal {
 			telemetry.Log().Error("unmapped error", zap.Int("status", status), zap.Error(err))
 		}
-		return &fun.AppError{Code: code, Message: msg, Err: err}
+		return &fun.AppError{Code: code, Message: msg, Fields: fieldsOf(err), Err: err}
 	})
+}
+
+// fieldsOf lists the request fields a fielderr.Error in err's chain names.
+func fieldsOf(err error) []fun.FieldError {
+	fe, ok := errors.AsType[*fielderr.Error](err)
+	if !ok {
+		return nil
+	}
+	out := make([]fun.FieldError, len(fe.Fields))
+	for i, f := range fe.Fields {
+		out[i] = fun.FieldError{Field: f.Field, Message: f.Message}
+	}
+	return out
 }
 
 // WriteError writes err as an error response, through the Backend's map.
@@ -141,7 +157,7 @@ func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
 			}
 			return status, code, link.Error()
 		}
-		switch u := link.(type) {
+		switch u := link.(type) { //nolint:errorlint // walking the chain by hand
 		case interface{ Unwrap() error }:
 			if next := u.Unwrap(); next != nil {
 				queue = append(queue, next)
@@ -157,7 +173,7 @@ func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
 // comparable (== on those panics).
 func sameError(link, target error) bool {
 	t := reflect.TypeOf(link)
-	return t != nil && t.Comparable() && link == target
+	return t != nil && t.Comparable() && link == target //nolint:errorlint // identity of one link
 }
 
 func codeFor(status int) fun.ErrorCode {
