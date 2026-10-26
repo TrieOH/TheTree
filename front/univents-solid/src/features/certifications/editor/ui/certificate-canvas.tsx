@@ -3,13 +3,11 @@ import type { JSX } from "@solidjs/web";
 import {
   For,
   Show,
-  createEffect,
   createMemo,
   createSignal,
+  onCleanup,
 } from "solid-js";
-import MaximizeIcon from "~icons/lucide/maximize";
-import MinusIcon from "~icons/lucide/minus";
-import PlusIcon from "~icons/lucide/plus";
+import { CanvasControls } from "@trieoh/ui-solid";
 import {
   EditorElementFrame,
   EditableText,
@@ -26,10 +24,6 @@ import { useElementSize } from "../hooks/use-element-size";
 import { certificateEditorActions, certificateEditorStore } from "../store";
 import { HashElementView } from "./elements/hash-element-view";
 import { SignatureElementView } from "./elements/signature-element-view";
-
-const Maximize = MaximizeIcon as unknown as (props: { class?: string }) => JSX.Element;
-const Minus = MinusIcon as unknown as (props: { class?: string }) => JSX.Element;
-const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const CERTIFICATE_CANVAS_DOM_ID = "certificate-canvas-root";
 
@@ -184,6 +178,7 @@ export function CertificateCanvas(): JSX.Element {
   const [panning, setPanning] = createSignal(false);
   let panStart: { pointerX: number; pointerY: number; x: number; y: number } | null = null;
   let lastFitScale = 1;
+  let wheelCleanup: (() => void) | undefined;
 
   const fitScale = createMemo(() => {
     const vp = viewport();
@@ -192,9 +187,8 @@ export function CertificateCanvas(): JSX.Element {
       return lastFitScale;
     }
 
-    const padding = 96;
-    const availableWidth = Math.max(120, vp.width - padding);
-    const availableHeight = Math.max(120, vp.height - padding);
+    const availableWidth = Math.max(120, vp.width - 24);
+    const availableHeight = Math.max(120, vp.height - 24);
     const nextScale = Math.min(
       availableWidth / c.width,
       availableHeight / c.height,
@@ -209,31 +203,13 @@ export function CertificateCanvas(): JSX.Element {
 
   const scale = () => fitScale() * zoom();
 
-  let stageEl: HTMLDivElement | undefined;
-
-  createEffect(
-    () => stageEl,
-    (stage) => {
-      if (!stage) return;
-
-      const handleWheel = (event: WheelEvent) => {
-        event.preventDefault();
-        const factor = event.deltaY < 0 ? 1.1 : 0.9;
-        setZoom((value) =>
-          Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value * factor)),
-        );
-      };
-
-      stage.addEventListener("wheel", handleWheel, { passive: false });
-      return () => {
-        stage.removeEventListener("wheel", handleWheel);
-      };
-    },
-  );
+  onCleanup(() => {
+    wheelCleanup?.();
+  });
 
   function startPan(event: PointerEvent) {
     const target = event.target as HTMLElement;
-    if (target.closest("[data-editor-element], [data-canvas-controls]")) {
+    if (target.closest("[data-editor-element], [data-canvas-controls], button, input")) {
       return;
     }
 
@@ -260,11 +236,25 @@ export function CertificateCanvas(): JSX.Element {
   return (
     <div
       ref={(el) => {
-        stageEl = el;
         stageRef(el);
+        wheelCleanup?.();
+        if (!el) return;
+
+        const handleWheel = (event: WheelEvent) => {
+          event.preventDefault();
+          const factor = event.deltaY < 0 ? 1.1 : 0.9;
+          setZoom((value) =>
+            Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number((value * factor).toFixed(3)))),
+          );
+        };
+
+        el.addEventListener("wheel", handleWheel, { passive: false });
+        wheelCleanup = () => {
+          el.removeEventListener("wheel", handleWheel);
+        };
       }}
       class={
-        "relative flex min-h-0 min-w-0 flex-1 touch-none items-center justify-center overflow-hidden p-12 " +
+        "relative flex min-h-0 min-w-0 flex-1 touch-none items-center justify-center overflow-hidden p-8 sm:p-12 " +
         (panning() ? "cursor-grabbing" : "cursor-grab")
       }
       style={CHECKERBOARD_STYLE}
@@ -279,45 +269,26 @@ export function CertificateCanvas(): JSX.Element {
       onPointerUp={finishPan}
       onPointerCancel={finishPan}
     >
-      <div
-        data-canvas-controls="true"
-        class="absolute bottom-4 left-4 z-20 flex items-center gap-1 rounded-lg border border-border bg-popover/90 p-1 shadow-md backdrop-blur-xs"
-      >
-        <button
-          type="button"
-          aria-label="Diminuir zoom"
-          class="rounded p-1.5 hover:bg-muted"
-          onClick={() => setZoom((value) => Math.max(MIN_ZOOM, value - 0.1))}
-        >
-          <Minus class="size-4" />
-        </button>
-        <span class="min-w-12 text-center text-xs font-medium">
-          {Math.round(scale() * 100)}%
-        </span>
-        <button
-          type="button"
-          aria-label="Aumentar zoom"
-          class="rounded p-1.5 hover:bg-muted"
-          onClick={() => setZoom((value) => Math.min(MAX_ZOOM, value + 0.1))}
-        >
-          <Plus class="size-4" />
-        </button>
-        <div class="mx-1 h-4 w-px bg-border" />
-        <button
-          type="button"
-          aria-label="Ajustar zoom na tela"
-          class="rounded p-1.5 hover:bg-muted"
-          onClick={() => {
-            setZoom(1);
-            setPan({ x: 0, y: 0 });
-          }}
-        >
-          <Maximize class="size-4" />
-        </button>
-      </div>
+      <CanvasControls
+        scale={scale()}
+        onZoomIn={() =>
+          setZoom((value) =>
+            Math.min(MAX_ZOOM, Number((value * 1.1).toFixed(3))),
+          )
+        }
+        onZoomOut={() =>
+          setZoom((value) =>
+            Math.max(MIN_ZOOM, Number((value * 0.9).toFixed(3))),
+          )
+        }
+        onReset={() => {
+          setZoom(1);
+          setPan({ x: 0, y: 0 });
+        }}
+      />
 
       <div
-        class="relative shrink-0 shadow-2xl ring-1 ring-black/5"
+        class="relative shrink-0 shadow-2xl ring-1 ring-black/5 m-auto"
         style={{
           width: `${canvas().width * scale()}px`,
           height: `${canvas().height * scale()}px`,

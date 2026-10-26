@@ -1,4 +1,3 @@
-import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { For, Show, createEffect, createSignal } from "solid-js";
 import ArrowDownIcon from "~icons/lucide/arrow-down";
@@ -200,7 +199,7 @@ export function CertificateToolsSidebar(): JSX.Element {
   }
 
   return (
-    <aside class="flex w-64 shrink-0 flex-col gap-6 overflow-x-hidden overflow-y-auto border-r border-border bg-card p-4 text-card-foreground">
+    <aside class="flex w-72 shrink-0 flex-col gap-6 overflow-x-hidden overflow-y-auto border-r border-border bg-card p-4 text-card-foreground">
       {/* Informações */}
       <section class="space-y-3">
         <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -237,55 +236,57 @@ export function CertificateToolsSidebar(): JSX.Element {
         </div>
         <div class="space-y-1.5">
           <span class="text-xs text-muted-foreground">Descrição</span>
-          <input
+          <textarea
             value={description()}
             maxlength={500}
-            class="h-9 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            rows={3}
+            class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             onInput={(event) =>
               certificateEditorActions.setDescription(
                 event.currentTarget.value,
               )
             }
-            placeholder="Opcional"
+            placeholder="Descrição ou observações internas..."
           />
         </div>
       </section>
 
-      {/* Adicionar */}
+      <div class="border-t border-border" />
+
+      {/* Adicionar elemento */}
       <section class="space-y-2.5">
         <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Adicionar
+          Adicionar elemento
         </h2>
         <div class="grid grid-cols-2 gap-2">
           <Button
             type="button"
             variant="outline"
-            class="h-16 flex-col gap-1 cursor-pointer"
+            class="flex h-16 flex-col items-center justify-center gap-1.5 p-2 text-xs cursor-pointer"
             onClick={() =>
               certificateEditorActions.addElement(createTextElement(canvas()))
             }
           >
-            <Type class="size-4" />
-            <span class="text-xs">Texto</span>
+            <Type class="size-4 shrink-0" />
+            <span>Texto</span>
           </Button>
+
           <Button
             type="button"
             variant="outline"
-            class="h-16 flex-col gap-1 cursor-pointer"
             disabled={readingImage()}
+            class="flex h-16 flex-col items-center justify-center gap-1.5 p-2 text-xs cursor-pointer"
             onClick={() => imageInputRef?.click()}
           >
-            <ImagePlus class="size-4" />
-            <span class="text-xs">
-              {readingImage() ? "Carregando…" : "Imagem"}
-            </span>
+            <Image class="size-4 shrink-0" />
+            <span>{readingImage() ? "Carregando…" : "Imagem"}</span>
           </Button>
           <input
             ref={(el) => (imageInputRef = el)}
             type="file"
             accept={CERTIFICATE_IMAGE_ACCEPT}
             class="hidden"
-            onChange={(event) => void addImage(event)}
+            onChange={addImage}
           />
         </div>
         <Show when={imageError()}>
@@ -293,91 +294,72 @@ export function CertificateToolsSidebar(): JSX.Element {
             {imageError()}
           </p>
         </Show>
-      </section>
 
-      {/* Assinaturas */}
-      <section class="space-y-2.5">
-        <div class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          <PenTool class="size-3.5" />
-          <span>Assinaturas</span>
-        </div>
-        <Show
-          when={signatures().length > 0}
-          fallback={
-            <p class="rounded-md border border-dashed border-border p-2.5 text-center text-xs text-muted-foreground">
-              Nenhuma assinatura disponível
-            </p>
-          }
-        >
-          <div class="grid grid-cols-2 gap-2">
-            <For each={signatures()}>
-              {(signature) => (
-                <button
-                  type="button"
-                  onClick={() =>
-                    certificateEditorActions.addElement(
-                      createSignatureElement(signature, canvas()),
-                    )
-                  }
-                  class="overflow-hidden rounded-md border border-border bg-popover text-left transition-colors hover:border-ring hover:bg-muted cursor-pointer"
-                  title={`Adicionar assinatura de ${signature.name}`}
-                >
-                  <span class="flex h-16 items-center justify-center bg-white p-2">
-                    <img
-                      src={resolveStorageUrl(signature.url)}
-                      alt=""
-                      class="max-h-full max-w-full object-contain"
-                    />
-                  </span>
-                  <span class="block truncate border-t border-border px-2 py-1.5 text-xs">
-                    {signature.name}
-                  </span>
-                </button>
-              )}
-            </For>
+        <Show when={signatures().length > 0}>
+          <div class="space-y-1.5 pt-1">
+            <span class="text-xs text-muted-foreground">
+              Adicionar assinatura
+            </span>
+            <ToolbarCombobox
+              options={signatures().map((s) => ({
+                value: s.id,
+                label: s.name,
+              }))}
+              placeholder="Escolha uma assinatura…"
+              class="w-full"
+              onChange={(signatureId) => {
+                const sig = signatures().find((s) => s.id === signatureId);
+                if (sig) {
+                  certificateEditorActions.addElement(
+                    createSignatureElement(sig, canvas()),
+                  );
+                }
+              }}
+            />
           </div>
         </Show>
       </section>
 
       <div class="border-t border-border" />
 
-      {/* Fundo */}
+      {/* Fundo do certificado */}
       <section class="space-y-2.5">
         <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Fundo
+          Fundo do certificado
         </h2>
-        <div class="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            class="min-w-0 flex-1 cursor-pointer"
-            disabled={readingBackground()}
-            onClick={() => backgroundInputRef?.click()}
-          >
+        <Button
+          type="button"
+          variant="outline"
+          disabled={readingBackground()}
+          class="flex h-9 w-full items-center justify-center gap-2 text-xs cursor-pointer"
+          onClick={() => backgroundInputRef?.click()}
+        >
+          <ImagePlus class="size-3.5 shrink-0" />
+          <span>
             {readingBackground()
               ? "Carregando…"
               : backgroundUrl()
-                ? "Trocar imagem"
-                : "Adicionar imagem"}
-          </Button>
-          <Show when={backgroundUrl()}>
-            <Button
-              type="button"
-              variant="ghost"
-              class="cursor-pointer"
-              onClick={() => certificateEditorActions.setBackgroundUrl(null)}
-            >
-              Remover
-            </Button>
-          </Show>
-        </div>
+                ? "Trocar imagem de fundo"
+                : "Carregar imagem de fundo"}
+          </span>
+        </Button>
         <input
           ref={(el) => (backgroundInputRef = el)}
           type="file"
           accept={CERTIFICATE_IMAGE_ACCEPT}
           class="hidden"
-          onChange={(event) => void setBackground(event)}
+          onChange={setBackground}
         />
+        <Show when={backgroundUrl()}>
+          <Button
+            type="button"
+            variant="ghost"
+            class="h-8 w-full text-xs text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+            onClick={() => certificateEditorActions.setBackgroundUrl(null)}
+          >
+            Remover imagem de fundo
+          </Button>
+        </Show>
         <Show when={backgroundSize()}>
           {(size) => (
             <Button
