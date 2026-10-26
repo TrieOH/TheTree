@@ -70,8 +70,19 @@ function ProfileBadgePage(): JSX.Element {
     editionLocationQueryOptions(editionId(), events()),
   );
 
+  // The badge prints the holder's name and the edition's location, which come
+  // from other requests: hold the spinner until they settle instead of painting
+  // the badge and filling those fields in a moment later.
+  const detailsReady = createMemo(
+    () =>
+      !profileQuery().isLoading &&
+      !eventsQuery().isLoading &&
+      !editionQuery().isLoading,
+    { name: "ProfileBadgePage.detailsReady" },
+  );
+
   const isLoading = createMemo(() => {
-    if (badge()) return false;
+    if (badge()) return !detailsReady();
     if (profileQuery().isLoading) return true;
     if (actorProfileId() && badgesQuery().isLoading) return true;
     if (!profileRecord() && profileQuery().fetchStatus === "fetching") return true;
@@ -101,18 +112,18 @@ function ProfileBadgePage(): JSX.Element {
     <Show
       when={!isLoading()}
       fallback={
-        <main class="grid min-h-dvh place-items-center bg-background p-6">
+        <div class="grid min-h-dvh place-items-center bg-background p-6">
           <div class="flex flex-col items-center gap-2 text-muted-foreground">
             <Loader2 class="size-6 animate-spin text-primary" />
             <p class="text-sm">Carregando crachá…</p>
           </div>
-        </main>
+        </div>
       }
     >
       <Show
         when={!isError()}
         fallback={
-          <main class="grid min-h-dvh place-items-center bg-background p-6 text-center">
+          <div class="grid min-h-dvh place-items-center bg-background p-6 text-center">
             <div>
               <p class="font-medium text-foreground">
                 Não foi possível carregar este crachá.
@@ -127,13 +138,13 @@ function ProfileBadgePage(): JSX.Element {
                 Voltar ao perfil
               </Link>
             </div>
-          </main>
+          </div>
         }
       >
         <Show
           when={badge()}
           fallback={
-            <main class="grid min-h-dvh place-items-center bg-background p-6 text-center">
+            <div class="grid min-h-dvh place-items-center bg-background p-6 text-center">
               <div>
                 <p class="font-medium text-foreground">Crachá não encontrado.</p>
                 <Link
@@ -146,11 +157,11 @@ function ProfileBadgePage(): JSX.Element {
                   Voltar ao perfil
                 </Link>
               </div>
-            </main>
+            </div>
           }
         >
           {(currentBadge) => (
-            <main class="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background">
+            <div class="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background">
               <Link
                 to="/profile/$actorId"
                 params={{ actorId: params().actorId }}
@@ -178,7 +189,7 @@ function ProfileBadgePage(): JSX.Element {
                   location={editionQuery().data?.location_name ?? ""}
                 />
               </div>
-            </main>
+            </div>
           )}
         </Show>
       </Show>

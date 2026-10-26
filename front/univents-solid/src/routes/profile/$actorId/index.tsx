@@ -4,6 +4,7 @@ import { createMemo } from "solid-js";
 import { setOwnProfilePath } from "@/features/profile/lib/own-profile-path";
 import { ProfileView } from "@/features/profile/ui/ProfileView";
 import {
+  cacheProfile,
   loadProfile as fetchProfile,
   prefetchProfileTab,
 } from "@/features/profile/api";
@@ -13,6 +14,7 @@ import {
 } from "@/features/profile/model/profile-tabs";
 import { Schema, createSchema } from "@/shared/lib/effect-schema";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { boundLoader } from "@/shared/lib/route-data";
 
 const profileActorSearchSchema = createSchema(
   Schema.Struct({
@@ -29,11 +31,14 @@ export const Route = createFileRoute("/profile/$actorId/")({
   loader: ({ deps, params, context }) => {
     const auth = context.session?.service;
     if (!auth) return;
-    return prefetchProfileTab(appQueryClient, {
-      auth,
-      identifier: params.actorId,
-      tab: deps.tab,
-    });
+    return boundLoader(
+      prefetchProfileTab(appQueryClient, {
+        auth,
+        identifier: params.actorId,
+        viewerId: auth.profile()?.id,
+        tab: deps.tab,
+      }),
+    );
   },
   head: ({ match, params }) => ({
     meta: [
@@ -60,6 +65,11 @@ function RouteComponent() {
     const response = await fetchProfile(identifier, auth);
 
     if (!response.success) return response;
+
+    // Seed the actor-id and handle keys too: the redirect below changes the
+    // identifier, and without this the new key starts empty and the page goes
+    // content -> skeleton -> content on every canonicalization.
+    cacheProfile(appQueryClient, response, identifier);
 
     const handle = response.data?.handle;
 

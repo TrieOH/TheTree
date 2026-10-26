@@ -155,9 +155,9 @@ export function ProfileEditor(props: {
       <Show
         when={!error()}
         fallback={
-          <main class="mx-auto max-w-3xl px-4 py-16 text-center text-muted-foreground">
+          <div class="mx-auto max-w-3xl px-4 py-16 text-center text-muted-foreground">
             {error()}
-          </main>
+          </div>
         }
       >
         <form onSubmit={submit} class="min-h-dvh bg-background pb-28">

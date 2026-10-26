@@ -1,17 +1,14 @@
-import { Show, For, createEffect, createMemo, createSignal } from "solid-js";
+import { Match, Show, Switch, createMemo } from "solid-js";
 import { useQuery } from "@trieoh/front-core-solid";
 import { userBadgesQueryOptions } from "@/features/badges/api";
-import type { BadgeProfileGroups } from "@/features/badges/model";
 import { allProfileBadges } from "@/features/badges/model/profile-badges";
 import { ProfileBadges } from "@/features/badges/ui/ProfileBadges";
 import { myCertificationsQueryOptions } from "@/features/certifications/api";
 import type { CertificationI } from "@/features/certifications/model";
 import { UserCertificationsSection } from "@/features/certifications/ui/UserCertificationsSection";
-import { allPublicEventsQueryOptions } from "@/features/events/api";
-import type { EventI } from "@/features/events/model";
-import { getPublicEditionsFn } from "@/features/editions/api";
+import { badgeEditionLocationsQueryOptions } from "@/features/editions/api";
 import { PurchasesContent } from "@/features/purchases/ui/PurchasesContent";
-import { ProfileCollectionItem } from "./ProfileCollectionItem";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 import { ProfileCard } from "./ProfileCard";
 import { ProfileEmptyState } from "./ProfileEmptyState";
 import { PROFILE_TAB_LABELS, type ProfileTab } from "../model/profile-tabs";
@@ -23,147 +20,105 @@ export function ProfileTabContent(props: {
   participantName: string;
   ownProfile: boolean;
 }) {
-  const badgesQuery = useQuery(() => ({
-    ...userBadgesQueryOptions(props.actorId),
-    enabled: props.tab === "badges" && Boolean(props.actorId),
-  }));
-
-  const certsQuery = useQuery(() => ({
-    ...myCertificationsQueryOptions(),
-    enabled: props.tab === "certificates" && props.ownProfile,
-  }));
-
-  const data = createMemo(() => {
-    if (props.tab === "badges") return badgesQuery().data;
-    if (props.tab === "certificates") return certsQuery().data;
-    return undefined;
-  });
-
-  const isLoading = createMemo(() => {
-    if (props.tab === "badges") return badgesQuery().isLoading;
-    if (props.tab === "certificates") return certsQuery().isLoading;
-    return false;
-  });
-
-  const eventsQuery = useQuery(() => ({
-    ...allPublicEventsQueryOptions(),
-    enabled: props.tab === "badges",
-  }));
-
-  const [editionLocations, setEditionLocations] = createSignal<
-    Map<string, string>
-  >(new Map());
-
-  createEffect(
-    () => [props.tab, eventsQuery().data] as const,
-    ([tab, evData]) => {
-      if (tab !== "badges") return;
-      const events = (evData ?? []) as EventI[];
-      if (events.length === 0) return;
-      void (async () => {
-        const map = new Map<string, string>();
-        await Promise.all(
-          events.map(async (ev) => {
-            try {
-              const editions = await getPublicEditionsFn(ev.id);
-              for (const ed of editions) {
-                map.set(ed.id, ed.location_name ?? "");
-              }
-            } catch {
-              // ignore
-            }
-          }),
-        );
-        setEditionLocations(new Map(map));
-      })();
-    },
-  );
-
   return (
-    <Show
-      when={props.tab === "purchases"}
-      fallback={
-        <Show
-          when={!isLoading()}
-          fallback={<CollectionSkeleton tab={props.tab} />}
-        >
-          <Show
-            when={props.tab === "certificates"}
-            fallback={
-              <Show when={data()}>
-                <Show
-                  when={props.tab === "badges"}
-                  fallback={
-                    <div class="mx-auto mt-5 max-w-7xl px-4">
-                      <ProfileCard title={PROFILE_TAB_LABELS[props.tab]}>
-                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          <For each={collectItems(data())}>
-                            {(item) => (
-                              <ProfileCollectionItem
-                                tab={props.tab}
-                                item={item}
-                              />
-                            )}
-                          </For>
-                        </div>
-                      </ProfileCard>
-                    </div>
-                  }
-                >
-                  <div class="mx-auto mt-5 max-w-7xl px-4">
-                    <ProfileBadges
-                      badges={allProfileBadges(data() as BadgeProfileGroups)}
-                      profileIdentifier={props.publicIdentifier}
-                      participantName={props.participantName}
-                      editionLocations={editionLocations()}
-                    />
-                  </div>
-                </Show>
-              </Show>
-            }
-          >
-            <div class="mx-auto mt-5 max-w-7xl px-4">
-              <Show
-                when={props.ownProfile}
-                fallback={
-                  <ProfileEmptyState message="Os certificados deste usuário são visíveis apenas para ele." />
-                }
-              >
-                <UserCertificationsSection
-                  certifications={(certsQuery().data ?? []) as CertificationI[]}
-                  participantName={props.participantName}
-                />
-              </Show>
-            </div>
-          </Show>
-        </Show>
-      }
-    >
-      <div class="mx-auto mt-5 max-w-7xl px-4">
-        <PurchasesContent />
-      </div>
-    </Show>
+    <div class="mx-auto mt-5 max-w-7xl px-4">
+      <Switch>
+        <Match when={props.tab === "badges"}>
+          <BadgesTab
+            actorId={props.actorId}
+            publicIdentifier={props.publicIdentifier}
+            participantName={props.participantName}
+          />
+        </Match>
+        <Match when={props.tab === "certificates"}>
+          <CertificatesTab
+            ownProfile={props.ownProfile}
+            participantName={props.participantName}
+          />
+        </Match>
+        <Match when={props.tab === "purchases"}>
+          <PurchasesContent />
+        </Match>
+      </Switch>
+    </div>
   );
 }
 
-function collectItems(data: unknown): unknown[] {
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === "object") {
-    return Object.values(data as Record<string, unknown>).flatMap(collectItems);
-  }
-  return [];
+function BadgesTab(props: {
+  actorId: string;
+  publicIdentifier: string;
+  participantName: string;
+}) {
+  const badgesQuery = useQuery(() => userBadgesQueryOptions(props.actorId));
+  // Badges print their edition's location. It arrives from a second request;
+  // rendering them before it lands would swap the text in after first paint, so
+  // the tab waits for it to settle. A failed lookup just leaves it blank.
+  const locationsQuery = useQuery(() => badgeEditionLocationsQueryOptions(props.actorId));
+  const locations = createMemo(
+    () => new Map(Object.entries(locationsQuery().data ?? {})),
+  );
+
+  return (
+    <QueryBoundary
+      query={badgesQuery}
+      what="os crachás"
+      skeleton={<CollectionSkeleton tab="badges" />}
+    >
+      {(badges) => (
+        <Show
+          when={!locationsQuery().isLoading}
+          fallback={<CollectionSkeleton tab="badges" />}
+        >
+          <ProfileBadges
+            badges={allProfileBadges(badges())}
+            profileIdentifier={props.publicIdentifier}
+            participantName={props.participantName}
+            editionLocations={locations()}
+          />
+        </Show>
+      )}
+    </QueryBoundary>
+  );
+}
+
+function CertificatesTab(props: { ownProfile: boolean; participantName: string }) {
+  // Certificates are private: only the owner's session can list them.
+  const certsQuery = useQuery(() => ({
+    ...myCertificationsQueryOptions(),
+    enabled: props.ownProfile,
+  }));
+
+  return (
+    <Switch>
+      <Match when={!props.ownProfile}>
+        <ProfileEmptyState message="Os certificados deste usuário são visíveis apenas para ele." />
+      </Match>
+      <Match when={props.ownProfile}>
+        <QueryBoundary
+          query={certsQuery}
+          what="seus certificados"
+          skeleton={<CollectionSkeleton tab="certificates" />}
+        >
+          {(certifications) => (
+            <UserCertificationsSection
+              certifications={certifications() as CertificationI[]}
+              participantName={props.participantName}
+            />
+          )}
+        </QueryBoundary>
+      </Match>
+    </Switch>
+  );
 }
 
 function CollectionSkeleton(props: { tab: ProfileTab }) {
   return (
-    <div class="mx-auto mt-5 max-w-7xl px-4">
-      <ProfileCard title={PROFILE_TAB_LABELS[props.tab]}>
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="h-44 rounded-md bg-muted animate-pulse" />
-          <div class="h-44 rounded-md bg-muted animate-pulse" />
-          <div class="h-44 rounded-md bg-muted animate-pulse" />
-        </div>
-      </ProfileCard>
-    </div>
+    <ProfileCard title={PROFILE_TAB_LABELS[props.tab]}>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="h-44 rounded-md bg-muted animate-pulse" />
+        <div class="h-44 rounded-md bg-muted animate-pulse" />
+        <div class="h-44 rounded-md bg-muted animate-pulse" />
+      </div>
+    </ProfileCard>
   );
 }

@@ -9,26 +9,32 @@ import type {
   TicketType,
   MyTicket,
 } from "@trieoh/univents-api/schemas";
-import {
-  For,
-  Loading,
-  Show,
-  createMemo,
-  createSignal,
-  untrack,
-} from "solid-js";
+import { For, Show, createMemo, createSignal, untrack } from "solid-js";
 import type { EventI } from "@/features/events/model";
 import { storePageQueryOptions } from "@/features/products/api";
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { EventCart } from "@/features/products/ui/EventCart";
 import { ProductCard } from "@/features/products/ui/ProductCard";
 import { TicketCard } from "@/features/tickets/ui/TicketCard";
+import { appQueryClient } from "@/shared/lib/query-client";
+import { warmQuery } from "@/shared/lib/route-data";
+import { PageNotice } from "@/shared/ui/PageNotice";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 export const Route = createFileRoute("/events/$slug/store")({
   validateSearch: (search: Record<string, unknown>) => ({
     tab:
       search.tab === "products" ? ("products" as const) : ("tickets" as const),
   }),
+  loader: ({ params, context }) =>
+    warmQuery(
+      appQueryClient,
+      storePageQueryOptions(
+        params.slug,
+        context.session?.isAuthenticated === true,
+        appQueryClient,
+      ),
+    ),
   head: ({ params }) => ({
     meta: [{ title: `Loja ${params.slug} - Univents` }],
   }),
@@ -45,38 +51,66 @@ function StorePage() {
     isAuthenticated(),
     queryClient,
   ));
-  const data = createMemo(() => dataQuery().data);
-
   return (
-    <Loading fallback={<main class="min-h-screen animate-pulse bg-muted" />}>
-      <Show
-        when={dataQuery().isSuccess && data()}
-        fallback={<main class="p-12 text-center">Evento não encontrado.</main>}
-      >
-        {(loaded) => (
-          <Show
-            when={loaded().edition}
-            fallback={
-              <main class="mx-auto max-w-3xl px-4 py-16 text-center">
-                A loja não está disponível no momento.
-              </main>
-            }
-          >
-            {(edition) => (
-              <StoreContent
-                event={loaded().event}
-                edition={edition()}
-                tickets={loaded().tickets ?? []}
-                products={loaded().products ?? []}
-                initialStock={loaded().stock ?? []}
-                heldTicket={loaded().heldTicket ?? null}
-                initialTab={search().tab}
-              />
-            )}
-          </Show>
-        )}
-      </Show>
-    </Loading>
+    <QueryBoundary
+      query={dataQuery}
+      what="a loja do evento"
+      skeleton={<StoreSkeleton />}
+      notFound={<PageNotice title="Evento não encontrado" />}
+    >
+      {(data) => (
+        // Keyed, so another event on the same route rebuilds the page instead
+        // of leaving the previous event's snapshot on screen.
+        <Show
+          when={data()}
+          keyed
+          fallback={<PageNotice title="Evento não encontrado" />}
+        >
+          {(loaded) => (
+            <Show
+              when={loaded.edition}
+              keyed
+              fallback={
+                <PageNotice title="A loja não está disponível no momento." />
+              }
+            >
+              {(edition) => (
+                <StoreContent
+                  event={loaded.event}
+                  edition={edition}
+                  tickets={loaded.tickets ?? []}
+                  products={loaded.products ?? []}
+                  initialStock={loaded.stock ?? []}
+                  heldTicket={loaded.heldTicket ?? null}
+                  initialTab={search().tab}
+                />
+              )}
+            </Show>
+          )}
+        </Show>
+      )}
+    </QueryBoundary>
+  );
+}
+
+/** The store's header, tab bar and card row, at the loaded page's sizes. */
+function StoreSkeleton() {
+  return (
+    <div class="min-h-screen px-4 pb-24 pt-4 md:pt-6">
+      <div class="mx-auto max-w-6xl">
+        <div class="mx-auto max-w-3xl space-y-3 pt-9 text-center">
+          <div class="mx-auto h-4 w-32 animate-pulse rounded bg-muted" />
+          <div class="mx-auto h-10 w-3/4 animate-pulse rounded bg-muted" />
+          <div class="mx-auto h-5 w-2/3 animate-pulse rounded bg-muted" />
+        </div>
+        <div class="mt-10 h-12 border-b border-border/60" />
+        <div class="mt-8 flex flex-wrap justify-center gap-6 sm:justify-start">
+          <For each={[1, 2, 3]}>
+            {() => <div class="h-72 w-64 animate-pulse rounded-2xl bg-muted" />}
+          </For>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -101,7 +135,7 @@ function StoreContent(props: {
     () => new Map(stock().map((item) => [item.id, item.stock])),
   );
   return (
-    <main class="min-h-screen bg-background px-4 pb-24 pt-4 md:pt-6">
+    <div class="min-h-screen bg-background px-4 pb-24 pt-4 md:pt-6">
       <div class="mx-auto max-w-6xl">
         <header class="mx-auto max-w-3xl">
           <Link
@@ -173,6 +207,6 @@ function StoreContent(props: {
         editionId={props.edition.id}
         eventSlug={props.event.slug}
       />
-    </main>
+    </div>
   );
 }

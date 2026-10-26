@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { ownProfileQueryOptions, cacheProfile } from "@/features/profile/api";
+import type { ActorProfile } from "@/features/profile/model/profile-data";
 import { PROFILE_TABS } from "@/features/profile/model/profile-tabs";
 import { Schema, createSchema } from "@/shared/lib/effect-schema";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { peekQuery } from "@/shared/lib/route-data";
 
 const profileSearchSchema = createSchema(
   Schema.Struct({
@@ -22,7 +24,11 @@ export const Route = createFileRoute('/profile/')({
     const actorId = sessionAuth?.profile()?.id;
 
     if (actorId && sessionAuth) {
-      const profile = await appQueryClient.fetchQuery(
+      // The handle only makes the URL prettier: the profile page resolves an
+      // actor id too and canonicalizes the URL itself, so a slow profile
+      // service must not hold up (or fail) this redirect.
+      const profile = await peekQuery<ActorProfile | null>(
+        appQueryClient,
         ownProfileQueryOptions(actorId, sessionAuth),
       );
       const profileId = profile?.handle ?? actorId;

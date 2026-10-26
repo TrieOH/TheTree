@@ -1,7 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createMemo, type Accessor } from "solid-js";
 import { useQuery } from "@trieoh/front-core-solid";
-import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import {
   type LoadProfile,
   profileKeys,
@@ -18,6 +17,8 @@ import { ProfileHeader } from "./ProfileHeader";
 import { ProfileSkeleton } from "./ProfileSkeleton";
 import { ProfileTabContent } from "./ProfileTabContent";
 import type { ProfileTab } from "../model/profile-tabs";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
+import { classifyError } from "@/shared/lib/service-error";
 
 export interface ProfileViewProps {
   actorId: string;
@@ -70,49 +71,24 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
   const participantName = createMemo(
     () => profile().legalName || profile().preferredName || "",
   );
-  const queryError = createMemo(
-    () =>
-      query().error as
-        | (Error & {
-            code?: number;
-            envelope?: { code?: number; message?: string };
-          })
-        | null,
-  );
-  const errorCode = createMemo(
-    () => queryError()?.envelope?.code ?? queryError()?.code,
-  );
-  const isProfileNotFound = createMemo(
-    () => query().isError && errorCode() === 404,
-  );
-  const errorMessage = createMemo(() => {
-    if (isProfileNotFound() && own()) {
-      return "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil.";
-    }
-    if (isProfileNotFound()) {
-      return "Não encontramos este perfil.";
-    }
-    return "Não foi possível carregar este perfil. Verifique sua conexão e tente novamente.";
-  });
+  // A 404 is a definitive answer with its own wording; anything else gets the
+  // panel's reason for the failure (offline, timeout, service down…).
+  const errorMessage = (error: unknown) => {
+    if (classifyError(error).kind !== "not-found") return undefined;
+    return own()
+      ? "Não encontramos os dados do seu usuário. Você ainda pode editar ou configurar o perfil."
+      : "Não encontramos este perfil.";
+  };
 
   return (
-    <Show
-      when={!query().isPending}
-      fallback={<ProfileSkeleton ownProfile={own()} />}
+    <QueryBoundary
+      query={query}
+      what="este perfil"
+      skeleton={<ProfileSkeleton ownProfile={own()} />}
+      errorMessage={errorMessage}
+      class="mx-auto my-8 max-w-xl"
     >
-      <Show
-        when={!query().isError}
-        fallback={
-          <main class="min-h-dvh bg-background">
-            <div class="mx-auto max-w-7xl px-4 py-8">
-              <EventQueryError
-                message={errorMessage()}
-                onRetry={() => void query().refetch()}
-              />
-            </div>
-          </main>
-        }
-      >
+      {() => (
         <Show
           when={data()}
           fallback={
@@ -121,7 +97,7 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
             </div>
           }
         >
-          <main class="min-h-dvh bg-background pb-28">
+          <div class="min-h-dvh bg-background pb-28">
             <ProfileHeader
               profile={profile()}
               name={profileDisplayName(profile())}
@@ -145,9 +121,9 @@ export function ProfileView(props: ProfileViewProps): JSX.Element {
             >
               <ProfileAboutSection profile={profile()} ownProfile={own()} />
             </Show>
-          </main>
+          </div>
         </Show>
-      </Show>
-    </Show>
+      )}
+    </QueryBoundary>
   );
 }

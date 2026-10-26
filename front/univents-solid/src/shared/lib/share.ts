@@ -19,16 +19,3 @@ export async function handleShare(title: string, url?: string) {
     toast.error("Erro ao compartilhar");
   }
 }
-
-/**
- * Extracts initials from a name (up to 2 characters).
- * Ex: "React Conference" → "RC"
- */
-export function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}

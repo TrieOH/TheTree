@@ -16,7 +16,7 @@ export function LegalPage(props: {
   question: string;
 }) {
   return (
-    <main class="min-h-screen bg-background pb-28">
+    <div class="min-h-screen bg-background pb-28">
       <section class="border-b border-border/40 bg-card/30">
         <div class="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
           <Reveal direction="left">
@@ -72,6 +72,6 @@ export function LegalPage(props: {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

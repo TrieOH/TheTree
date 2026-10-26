@@ -25,6 +25,7 @@ const setupSearchSchema = createSchema(
 export const Route = createFileRoute("/profile/setup")({
   beforeLoad: requireAuth,
   validateSearch: setupSearchSchema,
+  staticData: { ownsMain: true },
   component: ProfileSetup,
 });
 

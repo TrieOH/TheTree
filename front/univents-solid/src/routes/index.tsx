@@ -9,6 +9,7 @@ import { OrganizerView } from "@/widgets/landing/ui/OrganizerView";
 import { ParticipantView } from "@/widgets/landing/ui/ParticipantView";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { warmQuery } from "@/shared/lib/route-data";
 
 export type Mode = "guest" | "host";
 const searchSchema = createSchema(
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/")({
   loaderDeps: ({ search }) => ({ mode: search.as }),
   loader: ({ deps }) =>
     deps.mode === "guest"
-      ? appQueryClient.prefetchQuery(allPublicEventsQueryOptions())
+      ? warmQuery(appQueryClient, allPublicEventsQueryOptions())
       : Promise.resolve(),
   component: HomePage,
 });
@@ -74,7 +75,7 @@ function HomePage() {
             <ModeSelector current={mode()} onChange={setMode} />
           </div>
         </div>
-        <main class="pb-24 md:pb-32">
+        <div class="pb-24 md:pb-32">
           <div
             ref={(element) => {
               content = element;
@@ -82,7 +83,7 @@ function HomePage() {
           >
             {mode() === "guest" ? <ParticipantView /> : <OrganizerView />}
           </div>
-        </main>
+        </div>
       </div>
       <Footer />
     </div>

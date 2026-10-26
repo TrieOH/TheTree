@@ -1,10 +1,11 @@
 import { useNavigate } from "@tanstack/solid-router";
-import { For, Loading, Show, createMemo } from "solid-js";
+import { For, Show } from "solid-js";
 import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { FAQSection, type FAQItem } from "./FAQSection";
 import { EventCard } from "./EventCard";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 import { Reveal } from "@/shared/ui/Reveal";
 
 const features = [
@@ -93,7 +94,6 @@ export function ParticipantView() {
     void navigate({ to: isAuthenticated() ? "/events" : "/auth" } as never);
 
   const eventsQuery = useQuery(allPublicEventsQueryOptions());
-  const events = createMemo(() => eventsQuery().data ?? []);
 
   return (
     <Reveal>
@@ -125,8 +125,10 @@ export function ParticipantView() {
               começar sem ruído.
             </p>
           </div>
-          <Loading
-            fallback={
+          <QueryBoundary
+            query={eventsQuery}
+            what="os eventos em destaque"
+            skeleton={
               <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <For each={[1, 2, 3, 4]}>
                   {() => (
@@ -136,23 +138,25 @@ export function ParticipantView() {
               </div>
             }
           >
-            <Show
-              when={events().length > 0}
-              fallback={
-                <div class="rounded-2xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
-                  Assim que novos eventos forem publicados, eles aparecem aqui.
+            {(events) => (
+              <Show
+                when={events().length > 0}
+                fallback={
+                  <div class="rounded-2xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
+                    Assim que novos eventos forem publicados, eles aparecem aqui.
+                  </div>
+                }
+              >
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <For each={events().slice(0, 4)}>
+                    {(event, index) => (
+                      <EventCard event={event} index={index()} />
+                    )}
+                  </For>
                 </div>
-              }
-            >
-              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <For each={events().slice(0, 4)}>
-                  {(event, index) => (
-                    <EventCard event={event} index={index()} />
-                  )}
-                </For>
-              </div>
-            </Show>
-          </Loading>
+              </Show>
+            )}
+          </QueryBoundary>
         </section>
         <section class="space-y-8 md:space-y-12">
           <div class="space-y-2 text-center">
