@@ -6,7 +6,7 @@ import type { MultiStepStepperProps } from "./types";
 
 /** Compact progress with optional navigation to previously completed steps. */
 export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
-  const total = () => props.steps.length;
+  const total = () => props.steps?.length ?? 0;
   const current = () => Math.max(0, Math.min(props.currentStep, total() - 1));
   const vertical = () => props.orientation === "vertical";
   const automatic = () => !props.orientation || props.orientation === "auto";
@@ -25,145 +25,123 @@ export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
           aria-valuemin={1}
           aria-valuemax={total()}
           aria-valuenow={current() + 1}
-          aria-valuetext={`Etapa ${current() + 1} de ${total()}: ${props.steps[current()]?.title ?? ""}`}
+          aria-valuetext={`Etapa ${current() + 1} de ${total()}: ${props.steps?.[current()]?.title ?? ""}`}
         />
         <div class={cn("hidden", automatic() && "@max-[28rem]/stepper:block")}>
           <div class="flex min-w-0 items-center justify-between gap-3 text-xs">
             <span class="truncate font-medium text-foreground">
-              {props.steps[current()]?.title}
+              {props.steps?.[current()]?.title}
             </span>
             <span class="shrink-0 tabular-nums text-muted-foreground">
               {current() + 1} de {total()}
             </span>
           </div>
           <ol class="mt-1 flex gap-1.5" aria-label="Progresso das etapas">
-            <For each={props.steps}>
-              {(step, index) => (
-                <li class="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    disabled={!props.onStepClick || index() >= current()}
-                    onClick={() => {
-                      if (index() < current()) props.onStepClick?.(index());
-                    }}
-                    aria-label={`${index() + 1}. ${step.title}. ${index() < current() ? "Concluída" : index() === current() ? "Etapa atual" : "Pendente"}`}
-                    aria-current={index() === current() ? "step" : undefined}
-                    class="flex min-h-10 w-full items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
-                  >
-                    <span
-                      aria-hidden="true"
-                      class={cn(
-                        "h-1 w-full rounded-full",
-                        index() <= current() ? "bg-accent" : "bg-border",
-                      )}
-                    />
-                  </button>
+            <For each={props.steps ?? []}>
+              {(_, i) => (
+                <li class="h-1 flex-1 rounded-full overflow-hidden bg-muted">
+                  <div
+                    class={cn(
+                      "h-full transition-all",
+                      i() <= current() ? "bg-primary" : "bg-transparent",
+                    )}
+                  />
                 </li>
               )}
             </For>
           </ol>
-          <Show
-            when={props.showDescriptions && props.steps[current()]?.description}
-          >
-            <p class="text-xs leading-5 text-muted-foreground">
-              {props.steps[current()]?.description}
-            </p>
-          </Show>
         </div>
-        <ol class={cn(
-          "m-0 list-none p-0",
-          vertical() ? "grid gap-0" : "flex items-center gap-3",
-          automatic() && "@max-[28rem]/stepper:hidden",
-        )}>
-          <For each={props.steps}>
-            {(step, index) => {
-              const completed = () => index() < current();
-              const active = () => index() === current();
-              const clickable = () => !!props.onStepClick && completed();
-              const status = () =>
-                completed()
-                  ? "Concluída"
-                  : active()
-                    ? "Etapa atual"
-                    : "Pendente";
+
+        <ol
+          class={cn(
+            vertical() ? "grid gap-3" : "flex items-center gap-3",
+            automatic() && "@max-[28rem]/stepper:hidden",
+          )}
+        >
+          <For each={props.steps ?? []}>
+            {(step, i) => {
+              const isDone = () => i() < current();
+              const isCurrent = () => i() === current();
+              const isInteractive = () =>
+                typeof props.onStepClick === "function" && isDone();
 
               return (
-                <li class={cn(
-                  "min-w-0",
-                  vertical()
-                    ? "relative block pb-4 last:pb-0"
-                    : "flex flex-1 items-center gap-3 last:max-w-[45%] last:flex-[0_1_auto]",
-                )}>
+                <li
+                  class={cn(
+                    "flex flex-1 items-center gap-3",
+                    vertical() && "w-full",
+                  )}
+                >
                   <button
                     type="button"
-                    disabled={!clickable()}
-                    onClick={() => {
-                      if (clickable()) props.onStepClick?.(index());
-                    }}
-                    aria-current={active() ? "step" : undefined}
-                    aria-label={`${index() + 1}. ${step.title}. ${status()}`}
+                    disabled={!isInteractive()}
+                    onClick={() => props.onStepClick?.(i())}
                     class={cn(
-                      "group flex min-h-10 w-auto min-w-0 items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                      clickable() ? "cursor-pointer" : "cursor-default",
+                      "group flex items-center gap-3 text-left transition-colors",
+                      isInteractive() && "cursor-pointer",
                     )}
                   >
                     <span
-                      aria-hidden="true"
                       class={cn(
-                        "flex size-6 shrink-0 items-center justify-center border text-xs font-semibold tabular-nums transition-colors motion-reduce:transition-none",
+                        "flex size-7 shrink-0 items-center justify-center text-xs font-semibold border transition-all",
                         shapeClass(props.shape ?? "pill"),
-                        completed()
-                          ? "border-accent/30 bg-accent/15 text-foreground group-hover:border-accent"
-                          : active()
-                            ? "border-accent bg-accent text-accent-foreground"
-                            : "border-border bg-muted text-muted-foreground",
+                        isCurrent() &&
+                          "border-primary bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20",
+                        isDone() &&
+                          "border-primary/40 bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
+                        !isCurrent() &&
+                          !isDone() &&
+                          "border-border bg-muted/40 text-muted-foreground",
                       )}
                     >
-                      <Show when={completed()} fallback={index() + 1}>
+                      <Show when={isDone()} fallback={i() + 1}>
                         <svg
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          stroke-width="2"
+                          stroke-width="2.5"
                           class="size-3.5"
+                          aria-hidden="true"
                         >
                           <path
-                            d="m5 12 4 4L19 6"
+                            d="M20 6 9 17l-5-5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
                           />
                         </svg>
                       </Show>
                     </span>
-                    <span class="min-w-0">
+
+                    <span class="flex min-w-0 flex-col">
                       <span
                         class={cn(
-                          "block truncate text-xs leading-5",
-                          active()
-                            ? "font-semibold text-foreground"
-                            : completed()
-                              ? "font-medium text-foreground"
-                              : "font-medium text-muted-foreground",
+                          "truncate text-xs font-medium",
+                          isCurrent() && "text-foreground font-semibold",
+                          isDone() &&
+                            "text-muted-foreground group-hover:text-foreground",
+                          !isCurrent() &&
+                            !isDone() &&
+                            "text-muted-foreground/80",
                         )}
                       >
                         {step.title}
                       </span>
                       <Show when={props.showDescriptions && step.description}>
-                        <span class="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground">
-                          {step.description}
-                        </span>
+                        {(desc) => (
+                          <span class="truncate text-[11px] text-muted-foreground/70">
+                            {desc()}
+                          </span>
+                        )}
                       </Show>
                     </span>
                   </button>
-                  <Show when={index() < total() - 1}>
-                    <span
+
+                  <Show when={!vertical() && i() < total() - 1}>
+                    <div
                       aria-hidden="true"
                       class={cn(
-                        "pointer-events-none",
-                        vertical()
-                          ? "absolute top-9 bottom-1 left-[calc(0.75rem-0.5px)] h-auto w-px min-w-0"
-                          : "h-px min-w-4 flex-1",
-                        completed() ? "bg-accent/60" : "bg-border",
+                        "h-px flex-1 transition-colors",
+                        isDone() ? "bg-primary/50" : "bg-border/60",
                       )}
                     />
                   </Show>

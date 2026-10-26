@@ -53,6 +53,7 @@ export {
   type MultiStepItem,
   type MultiStepRenderContext,
   type MultiStepStepperProps,
+  type MultiStepStepperStep,
   type MultiStepSummaryConfig,
   type MultiStepSummaryItem,
   type TextMultiStepField,
@@ -100,9 +101,8 @@ export { Card, type CardProps } from "./card";
 export { Link, type LinkProps } from "./link";
 export { SearchInput, type SearchInputProps } from "./search-input";
 export { CodeBlock, type CodeBlockProps } from "./code-block";
-export { shapes, type Shape } from "./lib/shape";
+export { shapes, shapeClass, type Shape } from "./lib/shape";
 export { Badge, type BadgeProps } from "./badge";
 export { Avatar, type AvatarProps } from "./avatar";
-
-export { Spinner, type SpinnerProps } from "./spinner";
 export { Loading, type LoadingProps } from "./loading";
+export { Spinner, type SpinnerProps } from "./spinner";

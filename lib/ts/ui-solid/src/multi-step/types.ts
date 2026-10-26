@@ -128,14 +128,20 @@ export interface MultiStepItem<T = Record<string, unknown>> {
   render?: (context: MultiStepRenderContext<T>) => JSX.Element;
 }
 
-export interface MultiStepStepperProps<T = Record<string, unknown>> {
+export interface MultiStepStepperStep {
+  id?: string;
+  title: string;
+  description?: string;
+}
+
+export interface MultiStepStepperProps {
   /** Auto uses a compact progress indicator when the container is narrow. */
   orientation?: "auto" | "horizontal" | "vertical";
   showDescriptions?: boolean;
   /** Shape of the numbered markers. */
   shape?: Shape;
   ariaLabel?: string;
-  steps: MultiStepItem<T>[];
+  steps: readonly MultiStepStepperStep[];
   currentStep: number;
   onStepClick?: (stepIndex: number) => void;
   class?: string;
@@ -164,12 +170,6 @@ export interface MultiStepDialogProps<T = Record<string, unknown>> {
   fixedHeight?: boolean;
   class?: string;
   contentClass?: string;
-  /**
-   * Optional custom children. If omitted, `step.fields` and `step.summary` are rendered automatically.
-   */
+  footer?: JSX.Element | ((context: MultiStepRenderContext<T>) => JSX.Element);
   children?: (context: MultiStepRenderContext<T>) => JSX.Element;
-  /**
-   * Optional custom footer. If omitted, standard Back / Continue buttons are rendered.
-   */
-  footer?: (context: MultiStepRenderContext<T>) => JSX.Element;
 }

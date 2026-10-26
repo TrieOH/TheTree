@@ -62,7 +62,7 @@ catalog:
   # === Validation & Effects ===
   zod: ^4.6.6
   react-hook-form: ^7.78.0
-  effect: 4.0.0-rc.115
+  effect: ^4.0.6
 
   # === Build / Tooling ===
   typescript: ^7.0.2
