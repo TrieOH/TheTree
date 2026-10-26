@@ -33,14 +33,15 @@ describe("ServiceStatusBanner", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("appears for the service that is struggling, and only that one", () => {
+  it("appears for the service that is struggling, with an accurate title", () => {
     render(() => <ServiceStatusBanner />);
     serviceHealth.failure("identityx", outage);
     serviceHealth.failure("identityx", outage);
     flush();
 
-    expect(screen.getByText(/serviço de conta instável/i)).toBeInTheDocument();
-    expect(screen.queryByText(/instabilidade na conexão/i)).not.toBeInTheDocument();
+    const indicator = screen.getByRole("status");
+    expect(indicator).toBeInTheDocument();
+    expect(indicator).toHaveAttribute("title", expect.stringMatching(/sessão desconectada/i));
   });
 
   it("goes away on its own once the service answers again", () => {
@@ -55,13 +56,13 @@ describe("ServiceStatusBanner", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("'Tentar agora' lets requests through an open circuit", () => {
+  it("clicking the indicator lets requests through an open circuit", () => {
     render(() => <ServiceStatusBanner />);
     for (let i = 0; i < 3; i++) serviceHealth.failure("api", outage);
     flush();
     expect(serviceHealth.isOpen("api")).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Tentar agora" }));
+    fireEvent.click(screen.getByRole("status"));
     expect(serviceHealth.isOpen("api")).toBe(false);
   });
 

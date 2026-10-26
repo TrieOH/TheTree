@@ -1,17 +1,17 @@
-import { For, Show, createMemo } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Show, createMemo } from "solid-js";
+import WifiOffIcon from "~icons/lucide/wifi-off";
 import { refetchFailedQueries } from "@/shared/lib/query-client";
 import type { ServiceName } from "@/shared/lib/service-error";
 import { degradedServices, serviceHealth } from "@/shared/lib/service-health";
 import { useServiceHealth } from "@/shared/lib/use-service-health";
 
-const NOTICES: Record<ServiceName, string> = {
-  api: "Instabilidade na conexão",
-  identityx: "Serviço de conta instável",
-};
+const WifiOff = WifiOffIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 /**
- * Discreet indicator that warns the user when a service is struggling without
- * getting in the way or shifting layout. Disappears once the service recovers.
+ * Minimal, non-intrusive connection indicator.
+ * Appears only when services fail, without pulse animations or noisy text.
+ * Clicking attempts to reconnect.
  */
 export function ServiceStatusBanner() {
   const health = useServiceHealth();
@@ -28,28 +28,24 @@ export function ServiceStatusBanner() {
     void refetchFailedQueries();
   };
 
+  const title = () =>
+    services().includes("identityx")
+      ? "Sessão desconectada · Clique para reconectar"
+      : "Sem conexão · Clique para reconectar";
+
   return (
     <Show when={services().length > 0}>
       <div class="pointer-events-none fixed top-4 right-4 z-50 flex justify-end print:hidden">
-        <div
+        <button
+          type="button"
           role="status"
-          aria-live="polite"
-          class="pointer-events-auto flex items-center gap-2 rounded-full border border-border/80 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md transition-all"
+          aria-label={title()}
+          title={title()}
+          onClick={retry}
+          class="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-border/80 bg-background/90 text-amber-600 shadow-xs backdrop-blur-sm transition-colors hover:bg-muted hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 cursor-pointer"
         >
-          <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
-          <div class="flex items-center gap-1.5">
-            <For each={services()}>
-              {(service) => <span class="font-medium text-foreground">{NOTICES[service]}</span>}
-            </For>
-          </div>
-          <button
-            type="button"
-            onClick={retry}
-            class="ml-1 rounded-full px-2 py-0.5 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
-          >
-            Tentar agora
-          </button>
-        </div>
+          <WifiOff class="size-3.5" />
+        </button>
       </div>
     </Show>
   );
