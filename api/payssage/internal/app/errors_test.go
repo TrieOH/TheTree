@@ -20,9 +20,12 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 		if strings.HasPrefix(name, "uniq_") {
 			class, want = database.ErrUniqueViolation, http.StatusConflict
 		}
-		got := m.Status(&database.ViolationError{Named: named, Class: class})
-		if got != want {
-			t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+		// The bare error catches a missing map line (a 500); the violation
+		// checks it still wins over its class.
+		for _, err := range []error{named, &database.ViolationError{Named: named, Class: class}} {
+			if got := m.Status(err); got != want {
+				t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+			}
 		}
 	}
 }

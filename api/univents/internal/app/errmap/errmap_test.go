@@ -22,9 +22,12 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 		case strings.HasPrefix(name, "excl_"):
 			class, want = database.ErrExclusionViolation, http.StatusConflict
 		}
-		got := m.Status(&database.ViolationError{Named: named, Class: class})
-		if got != want {
-			t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+		// The bare error catches a missing map line (a 500); the violation
+		// checks it still wins over its class.
+		for _, err := range []error{named, &database.ViolationError{Named: named, Class: class}} {
+			if got := m.Status(err); got != want {
+				t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+			}
 		}
 	}
 }

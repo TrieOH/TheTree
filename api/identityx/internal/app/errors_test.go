@@ -16,14 +16,16 @@ import (
 func TestConstraintErrorsAreMapped(t *testing.T) {
 	m := Errors()
 	for name, named := range Constraints() {
-		var class error = database.ErrCheckViolation
-		want := http.StatusBadRequest
+		class, want := database.ErrCheckViolation, http.StatusBadRequest
 		if len(name) >= 5 && name[:5] == "uniq_" {
 			class, want = database.ErrUniqueViolation, http.StatusConflict
 		}
-		got := m.Status(fmt.Errorf("%w: %w", named, class))
-		if got != want {
-			t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+		// The bare error catches a missing map line (a 500); the violation
+		// checks it still wins over its class.
+		for _, err := range []error{named, &database.ViolationError{Named: named, Class: class}} {
+			if got := m.Status(err); got != want {
+				t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+			}
 		}
 	}
 }
