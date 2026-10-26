@@ -106,3 +106,10 @@ export { Badge, type BadgeProps } from "./badge";
 export { Avatar, type AvatarProps } from "./avatar";
 export { Loading, type LoadingProps } from "./loading";
 export { Spinner, type SpinnerProps } from "./spinner";
+export { DesktopOnly, type DesktopOnlyProps } from "./desktop-only";
+export { CanvasControls, type CanvasControlsProps } from "./canvas-controls";
+export { WaveText, type WaveTextProps } from "./wave-text";
+export {
+  WaveSpinnerLoading,
+  type WaveSpinnerLoadingProps,
+} from "./wave-spinner-loading";

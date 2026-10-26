@@ -12,6 +12,7 @@ export interface ComboboxOption {
 
 export interface ComboboxProps {
   shape?: Shape;
+  size?: "default" | "sm";
   id?: string;
   "aria-describedby"?: string;
   "aria-label"?: string;
@@ -19,8 +20,11 @@ export interface ComboboxProps {
   options: readonly ComboboxOption[];
   placeholder: string;
   searchPlaceholder?: string;
+  searchable?: boolean;
   emptyMessage?: string;
   disabled?: boolean;
+  icon?: JSX.Element;
+  iconOnly?: boolean;
   class?: string;
   className?: string;
   triggerClass?: string;
@@ -40,11 +44,17 @@ export function Combobox(props: ComboboxProps): JSX.Element {
   let dropdownRef: HTMLDivElement | undefined;
   let inputRef: HTMLInputElement | undefined;
 
+  const isSm = () => props.size === "sm";
+
   const updatePosition = () => {
     if (!containerRef) return;
     const rect = containerRef.getBoundingClientRect();
     const margin = 8;
-    const width = Math.min(rect.width, window.innerWidth - margin * 2);
+    const minMenuWidth = props.iconOnly ? 190 : isSm() ? 150 : 0;
+    const width = Math.max(
+      minMenuWidth,
+      Math.min(rect.width, window.innerWidth - margin * 2),
+    );
     const height = Math.min(
       dropdownRef?.getBoundingClientRect().height || 280,
       window.innerHeight - margin * 2,
@@ -139,10 +149,18 @@ export function Combobox(props: ComboboxProps): JSX.Element {
     return list;
   });
 
-  const rootClass = () => props.class ?? props.className ?? "w-full";
+  const rootClass = () =>
+    props.class ?? props.className ?? (isSm() ? "min-w-0 shrink-0" : "w-full");
   const triggerCls = () =>
-    props.triggerClass ?? props.triggerClassName ?? "h-10";
+    props.triggerClass ??
+    props.triggerClassName ??
+    (isSm()
+      ? props.iconOnly
+        ? "size-7 justify-center p-0"
+        : "h-7 justify-between gap-1.5 px-2 text-xs"
+      : "h-10 justify-between gap-2 px-3 text-sm");
   const dropdownCls = () => props.dropdownClass ?? props.dropdownClassName;
+  const showSearch = () => props.searchable ?? (props.options.length > 5);
 
   return (
     <div
@@ -154,36 +172,54 @@ export function Combobox(props: ComboboxProps): JSX.Element {
         disabled={props.disabled}
         id={props.id}
         aria-describedby={props["aria-describedby"]}
-        aria-label={props["aria-label"]}
+        aria-label={
+          props["aria-label"] ??
+          (props.iconOnly ? props.placeholder : undefined)
+        }
+        title={props.iconOnly ? props.placeholder : undefined}
         aria-haspopup="listbox"
         aria-expanded={open() ? "true" : "false"}
         onClick={() => setOpen((v) => !v)}
         class={cn(
-          "flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+          "flex items-center rounded-md border border-border bg-background text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
           shapeClass(props.shape),
           triggerCls(),
         )}
       >
-        <span
-          class={cn(
-            "truncate",
-            selected() ? "text-foreground" : "text-muted-foreground",
-          )}
+        <Show
+          when={!props.iconOnly}
+          fallback={
+            props.icon ?? (
+              <span class="text-xs font-medium">{props.placeholder}</span>
+            )
+          }
         >
-          {selected()?.label ?? props.placeholder}
-        </span>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-3.5 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        >
-          <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
-        </svg>
+          <span class="flex min-w-0 items-center gap-1.5 truncate">
+            <Show when={props.icon}>
+              <span class="shrink-0">{props.icon}</span>
+            </Show>
+            <span
+              class={cn(
+                "truncate",
+                selected() ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {selected()?.label ?? props.placeholder}
+            </span>
+          </span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          >
+            <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
+          </svg>
+        </Show>
       </button>
 
       <Show when={open()}>
@@ -203,49 +239,51 @@ export function Combobox(props: ComboboxProps): JSX.Element {
               dropdownCls(),
             )}
           >
-            <div class="flex items-center gap-2 border-b border-border px-3 py-2">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="size-3.5 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                ref={(el) => (inputRef = el)}
-                value={query()}
-                placeholder={props.searchPlaceholder ?? "Buscar…"}
-                onInput={(event) => setQuery(event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setOpen(false);
-                  } else if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setHighlightedIndex((idx) =>
-                      Math.min(idx + 1, Math.max(visible().length - 1, 0)),
-                    );
-                  } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setHighlightedIndex((idx) => Math.max(idx - 1, 0));
-                  } else if (event.key === "Enter") {
-                    event.preventDefault();
-                    const item = visible()[highlightedIndex()];
-                    if (item && !item.disabled) {
-                      props.onChange(item.value);
+            <Show when={showSearch()}>
+              <div class="flex items-center gap-2 border-b border-border px-3 py-2">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="size-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  ref={(el) => (inputRef = el)}
+                  value={query()}
+                  placeholder={props.searchPlaceholder ?? "Buscar…"}
+                  onInput={(event) => setQuery(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
                       setOpen(false);
-                      setQuery("");
+                    } else if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      setHighlightedIndex((idx) =>
+                        Math.min(idx + 1, Math.max(visible().length - 1, 0)),
+                      );
+                    } else if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      setHighlightedIndex((idx) => Math.max(idx - 1, 0));
+                    } else if (event.key === "Enter") {
+                      event.preventDefault();
+                      const item = visible()[highlightedIndex()];
+                      if (item && !item.disabled) {
+                        props.onChange(item.value);
+                        setOpen(false);
+                        setQuery("");
+                      }
                     }
-                  }
-                }}
-                class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
-            </div>
+                  }}
+                  class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </Show>
             <ul class="max-h-56 overflow-y-auto p-1" role="listbox">
               <Show
                 when={visible().length > 0}
@@ -272,7 +310,8 @@ export function Combobox(props: ComboboxProps): JSX.Element {
                           setQuery("");
                         }}
                         class={cn(
-                          "flex w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors cursor-pointer disabled:pointer-events-none disabled:opacity-50",
+                          "flex w-full items-center justify-between gap-2 rounded-sm text-left transition-colors cursor-pointer disabled:pointer-events-none disabled:opacity-50",
+                          isSm() ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm",
                           option.value === props.value
                             ? "bg-accent text-accent-foreground"
                             : idx() === highlightedIndex()
