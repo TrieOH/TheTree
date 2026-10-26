@@ -514,8 +514,8 @@ func (o *Operations) materialize(ctx context.Context, purchase *models.Purchase,
 }
 
 // activeRegistrationFor returns the attendee's active registration in the
-// edition, or nil when they hold none. The repo surfaces an absent row as
-// NOT_FOUND; here, "no ticket" is a normal state — the one-ticket check
+// edition, or nil when they hold none. The repo returns an absent row as
+// database.ErrNotFound; here, "no ticket" is a normal state — the one-ticket check
 // and the my-ticket read both fall back to it.
 func (o *Operations) activeRegistrationFor(ctx context.Context, editionID, attendeeID uuid.UUID) (*models.Registration, error) {
 	reg, err := o.Registrations.GetActiveByEditionAndAttendee(ctx, editionID, attendeeID)

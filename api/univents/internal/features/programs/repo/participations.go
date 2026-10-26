@@ -71,7 +71,8 @@ func (repo *Repo) GetParticipationByID(ctx context.Context, id uuid.UUID) (*mode
 }
 
 // GetActiveByOccurrenceAndRegistration returns the registration's live
-// participation in an occurrence, or NOT_FOUND when there is none.
+// participation in an occurrence, or database.ErrNotFound when there is
+// none.
 func (repo *Repo) GetActiveByOccurrenceAndRegistration(ctx context.Context, occurrenceID, registrationID uuid.UUID) (*models.ProgramParticipation, error) {
 	result, err := database.Queries(ctx, repo.q).GetActiveProgramParticipationByOccurrenceAndRegistration(ctx, sqlc.GetActiveProgramParticipationByOccurrenceAndRegistrationParams{
 		OccurrenceID:   occurrenceID,

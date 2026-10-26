@@ -30,7 +30,8 @@ type RegistrationRepo interface {
 
 	// ClaimByAttendeeEmail ties an email-only gifted registration to the
 	// recipient's IdentityX account (gift claim, fired lazily from the
-	// my-ticket read). NOT_FOUND when the email holds no active gift.
+	// my-ticket read). database.ErrNotFound when the email holds no active
+	// gift.
 	ClaimByAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string, userID uuid.UUID) (*models.Registration, error)
 
 	// ClaimAllByAttendeeEmail ties every active email-only gift for the

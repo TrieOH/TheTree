@@ -14,8 +14,8 @@ import (
 // NULL) to the recipient's IdentityX account — the gift claim, fired lazily
 // from the my-ticket read when the caller holds no ticket under their own id
 // but their account email matches a gifted one. Only active rows are
-// claimed; an absent match surfaces as NOT_FOUND (the shared ErrorHandler
-// maps ErrNoRows), which the service treats as "no gift to claim".
+// claimed; an absent match is ErrRegistrationNotFound
+// (database.ErrNotFound), which the service treats as "no gift to claim".
 func (repo *Repo) ClaimByAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string, userID uuid.UUID) (*models.Registration, error) {
 	row, err := database.Queries(ctx, repo.q).ClaimRegistrationByEmail(ctx, sqlc.ClaimRegistrationByEmailParams{
 		EditionID:      editionID,

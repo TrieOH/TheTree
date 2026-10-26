@@ -223,7 +223,7 @@ func TestRegister_StaffOnlyNonStaff403(t *testing.T) {
 
 	edition := &models.Edition{ID: occ.EditionID, EventID: uuid.New()}
 	mock.When(h.editions.GetByID(mock.AnyContext(), mock.Equal(occ.EditionID))).ThenReturn(edition, nil)
-	// Not a member → authz maps NOT_FOUND to Forbidden.
+	// Not a member → DenyIfNotFound turns database.ErrNotFound into a 403.
 	mock.When(h.events.GetRole(mock.AnyContext(), mock.Equal(*reg.AttendeeUserID), mock.Equal(edition.EventID))).ThenReturn(models.EventMemberRole(""), notFound())
 
 	_, err := h.ops.Register(context.Background(), occ.ID, *reg.AttendeeUserID)
