@@ -11,6 +11,7 @@ package identityx
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -22,12 +23,19 @@ import (
 
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	fm "github.com/MintzyG/fun/middlewares"
 )
 
 // introspectTimeout bounds one API-key introspection call.
 const introspectTimeout = 15 * time.Second
+
+// The auth hooks' rejections. fun's auth middleware answers any hook error
+// with a 401 carrying its message, so these never reach the error map.
+var (
+	ErrEmailNotVerified   = errors.New("verified email required")
+	ErrAPIKeysNotAccepted = errors.New("this service does not accept api keys")
+	ErrInvalidAPIKey      = errors.New("invalid api key")
+)
 
 // Option tunes the module per Backend.
 type Option func(*options)
@@ -45,14 +53,14 @@ func Debug(on bool) Option {
 }
 
 // RequireVerifiedEmail rejects JWT-authenticated callers whose email is not
-// verified (403). Public routes are unaffected.
+// verified (401, ErrEmailNotVerified). Public routes are unaffected.
 func RequireVerifiedEmail(on bool) Option {
 	return func(o *options) { o.requireVerifiedEmail = on }
 }
 
 // AcceptAPIKeys authenticates X-API-KEY callers by introspecting the key
 // against IdentityX (at the configured IDENTITY_X_URL). Without it, an API
-// key is refused with 403: the Backend has no public API.
+// key is refused (401, ErrAPIKeysNotAccepted): the Backend has no public API.
 func AcceptAPIKeys() Option {
 	return func(o *options) { o.acceptAPIKeys = true }
 }
@@ -103,7 +111,7 @@ func primitives(client *idx.Client, baseURL string, o options) authz.Primitives 
 func jwtHook(requireVerified bool) fm.JWTHook[*idx.AccessClaims] {
 	return func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
 		if requireVerified && claims.Sub.VerifiedAt == nil {
-			return ctx, fun.ErrForbidden("verified email required")
+			return ctx, ErrEmailNotVerified
 		}
 		return idx.WithIdentity(ctx, &idx.Identity{
 			Sub:  idx.SubjectFromAccessSub(claims.Sub),
@@ -117,7 +125,7 @@ func jwtHook(requireVerified bool) fm.JWTHook[*idx.AccessClaims] {
 func apiKeyHook(baseURL string, o options) fm.APIKeyHook {
 	if !o.acceptAPIKeys {
 		return func(ctx context.Context, _ string) (context.Context, error) {
-			return ctx, fun.ErrForbidden("this service does not accept api keys")
+			return ctx, ErrAPIKeysNotAccepted
 		}
 	}
 	introspectURL := strings.TrimSuffix(baseURL, "/") + "/auth/introspect"
@@ -131,8 +139,8 @@ func apiKeyHook(baseURL string, o options) fm.APIKeyHook {
 }
 
 // introspect asks IdentityX who owns rawKey. IdentityX answers with the fun
-// envelope; the identity is under data. A non-2xx answer is an invalid key
-// (403); a transport failure is returned as is.
+// envelope; the identity is under data. A non-2xx answer is
+// ErrInvalidAPIKey; a transport failure is returned as is.
 func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*idx.Identity, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -145,7 +153,7 @@ func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode/100 != 2 {
-		return nil, fun.ErrForbidden("invalid api key")
+		return nil, ErrInvalidAPIKey
 	}
 	var envelope struct {
 		Data idx.Identity `json:"data"`

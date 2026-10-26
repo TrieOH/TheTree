@@ -11,6 +11,9 @@ import (
 
 	"lib/database"
 	"lib/fielderr"
+	"lib/validator"
+
+	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel"
@@ -82,6 +85,9 @@ func TestErrorMapResolve(t *testing.T) {
 			&database.ViolationError{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, fun.CodeValidation, errTermsMissing.Error()},
 		{"batch lists its items",
 			&database.BatchError{Items: []database.BatchItemError{{ID: "f1", Err: errAddSelf}}}, 400, fun.CodeValidation, "f1: " + errAddSelf.Error()},
+		{"validation lists its fields in the message",
+			&validator.Error{Fields: []fielderr.Field{{Field: "name", Message: "this field is required"}}}, 400, fun.CodeValidation, "invalid request body: name: this field is required"},
+		{"no identity is a 401", fmt.Errorf("handler: %w", idx.ErrNoIdentity), 401, fun.CodeUnauthorized, idx.ErrNoIdentity.Error()},
 		{"status from the error's data", &upstreamError{status: 503}, 502, fun.CodeBadGateway, "upstream said 503"},
 		{"unmapped is a generic 500", errors.New("pq: connection reset"), 500, fun.CodeInternal, "internal error"},
 	}

@@ -18,7 +18,6 @@ import (
 	"lib/validator"
 
 	"github.com/MintzyG/fun"
-	"github.com/MintzyG/fun/bind"
 	fh "github.com/MintzyG/fun/handlers"
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
@@ -95,8 +94,7 @@ func SetupFUN(appName string) {
 		DefaultModule:        appName,
 	})
 
-	v := validator.SetupValidator()
-	bind.SetValidator(v)
+	validator.SetupValidator()
 	fun.SetPathParamFunc(chi.URLParam)
 
 	err := fun.AddInterceptor(&simpleLogger{})

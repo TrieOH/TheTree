@@ -10,6 +10,9 @@ import (
 	"lib/database"
 	"lib/fielderr"
 	"lib/telemetry"
+	"lib/validator"
+
+	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
@@ -22,7 +25,8 @@ import (
 // link's own message, never the %w context around it. An error nothing
 // matches is a generic 500 whose cause goes to the logs, not the body.
 //
-// The shared errors (lib/database, lib/authz) are mapped after the
+// The shared errors (lib/database, lib/authz, lib/validator and the
+// IdentityX SDK) are mapped after the
 // Backend's entries, so a Backend only lists its own errors.
 type ErrorMap []ErrorMapping
 
@@ -77,6 +81,8 @@ var sharedErrors = ErrorMap{
 	Is(database.ErrCheckViolation, http.StatusBadRequest).Validation(),
 	Is(database.ErrExclusionViolation, http.StatusConflict),
 	As[*database.BatchError](http.StatusBadRequest).Validation(),
+	As[*validator.Error](http.StatusBadRequest).Validation(),
+	Is(idx.ErrNoIdentity, http.StatusUnauthorized),
 }
 
 var (
@@ -102,15 +108,16 @@ func UseErrorMap(m ErrorMap) {
 	})
 }
 
-// fieldsOf lists the request fields a fielderr.Error in err's chain names.
+// fieldsOf lists the request fields a fielderr.Lister in err's chain names.
 func fieldsOf(err error) []fun.FieldError {
-	fe, ok := errors.AsType[*fielderr.Error](err)
+	l, ok := errors.AsType[fielderr.Lister](err)
 	if !ok {
 		return nil
 	}
-	out := make([]fun.FieldError, len(fe.Fields))
-	for i, f := range fe.Fields {
-		out[i] = fun.FieldError{Field: f.Field, Message: f.Message}
+	fields := l.FieldList()
+	out := make([]fun.FieldError, len(fields))
+	for i, f := range fields {
+		out[i] = fun.FieldError{Field: f.Field, Message: f.Message, Value: f.Value}
 	}
 	return out
 }
@@ -120,12 +127,8 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	fun.Error(err).SendWithCtx(r.Context(), w)
 }
 
-// errorStatus is the status err is answered with: the root-fun error's own
-// status while a Backend still returns those, else the map's.
+// errorStatus is the status err is answered with under the installed map.
 func errorStatus(err error) int {
-	if _, ok := errors.AsType[*fun.AppError](err); ok {
-		return fun.Error(err).Code
-	}
 	errorMapMu.RLock()
 	m := errorMap
 	errorMapMu.RUnlock()
@@ -139,9 +142,6 @@ func errorStatus(err error) int {
 // Status is the status err is answered with under m (shared entries
 // included); a Backend's tests use it to check its map covers its errors.
 func (m ErrorMap) Status(err error) int {
-	if _, ok := errors.AsType[*fun.AppError](err); ok {
-		return fun.Error(err).Code // a lib error still on root fun
-	}
 	status, _, _ := append(append(ErrorMap{}, m...), sharedErrors...).resolve(err)
 	return status
 }
