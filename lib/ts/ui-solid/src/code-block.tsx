@@ -1,5 +1,6 @@
 import { shapeClass, type Shape } from "./lib/shape";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import CopyIcon from "~icons/lucide/copy";
 import { Button } from "./button";
 import { toast } from "./toast";
 import { cn } from "./lib/cn";
@@ -11,6 +12,8 @@ export interface CodeBlockProps {
   showLineNumbers?: boolean;
   /** Format JS/TS examples. Invalid or unsupported source is displayed unchanged. */
   format?: boolean;
+  /** Maximum line length before wrapping in prettier formatting. Defaults to 60. */
+  printWidth?: number;
   class?: string;
 }
 
@@ -21,7 +24,11 @@ let formatter:
     }>
   | undefined;
 
-async function formatCode(code: string, filename: string) {
+async function formatCode(
+  code: string,
+  filename: string,
+  printWidth = 60,
+) {
   if (!/\.[cm]?[jt]sx?$/i.test(filename)) return code;
   formatter ??= Promise.all([
     import("prettier/standalone"),
@@ -41,7 +48,7 @@ async function formatCode(code: string, filename: string) {
     parser: "typescript",
     plugins,
     filepath: filename,
-    printWidth: 80,
+    printWidth,
     tabWidth: 2,
   });
 }
@@ -95,11 +102,20 @@ export function CodeBlock(props: CodeBlockProps) {
   }>();
   const filename = () => props.filename || "example.tsx";
   createEffect(
-    () => [props.code, filename(), props.format !== false] as const,
-    ([source, file, shouldFormat]) => {
-      if (!shouldFormat) return;
+    () =>
+      [
+        props.code,
+        filename(),
+        props.format !== false,
+        props.printWidth ?? 60,
+      ] as const,
+    ([source, file, shouldFormat, width]) => {
+      if (!shouldFormat) {
+        setFormatted(undefined);
+        return;
+      }
       let cancelled = false;
-      void formatCode(source, file)
+      void formatCode(source, file, width)
         .then((code) => {
           if (!cancelled) setFormatted({ source, filename: file, code });
         })
@@ -152,17 +168,7 @@ export function CodeBlock(props: CodeBlockProps) {
           title="Copiar código"
           class="size-8 shrink-0"
         >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            class="size-4"
-          >
-            <rect x="8" y="8" width="12" height="12" rx="2" />
-            <path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" />
-          </svg>
+          <CopyIcon class="size-4" />
         </Button>
       </figcaption>
       <pre
@@ -179,19 +185,18 @@ export function CodeBlock(props: CodeBlockProps) {
                     aria-hidden="true"
                     class="sticky left-0 shrink-0 select-none border-r border-border/50 bg-code-background px-3 text-right text-[11px] text-muted-foreground"
                     style={{
-                      width: `${Math.max(2, String(lines().length).length) + 3}ch`,
+                      width: `${Math.max(2, String(lines().length).length) * 8 + 24}px`,
                     }}
                   >
                     {line().number}
                   </span>
                 </Show>
-                <span class="block flex-1 whitespace-pre px-4">
+                <span class="flex-1 px-4 whitespace-pre">
                   <For each={line().tokens} keyed={(token) => token.id}>
                     {(token) => (
                       <span class={token().class}>{token().value}</span>
                     )}
                   </For>
-                  {line().tokens.length === 0 ? "\n" : ""}
                 </span>
               </span>
             )}
