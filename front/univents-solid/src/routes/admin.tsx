@@ -70,7 +70,7 @@ function AdminShell(): JSX.Element {
 
         <div
           class={cn(
-            "flex min-h-dvh min-w-0 max-w-full flex-col transition-[padding] duration-300 ease-in-out",
+            "flex min-h-dvh min-w-0 max-w-full flex-col transition-[padding] duration-200 ease-in-out motion-reduce:transition-none",
             collapsed() ? "lg:pl-16" : "lg:pl-64",
           )}
         >
