@@ -10,7 +10,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.NamedErrorHandler
+	dbe database.ErrorHandler
 }
 
 var _ ports.NamespaceRepo = (*Repo)(nil)
@@ -18,7 +18,7 @@ var _ ports.NamespaceRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewNamedErrorHandler(errs.ErrNamespaceNotFound),
+		dbe: database.NewErrorHandler(errs.ErrNamespaceNotFound),
 	}
 }
 

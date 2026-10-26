@@ -11,7 +11,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.NamedErrorHandler
+	dbe database.ErrorHandler
 }
 
 var _ ports.BadgeTemplateRepo = (*Repo)(nil)
@@ -20,7 +20,7 @@ var _ ports.BadgeEmissionRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewNamedErrorHandler(errs.ErrBadgeTemplateNotFound),
+		dbe: database.NewErrorHandler(errs.ErrBadgeTemplateNotFound),
 	}
 }
 

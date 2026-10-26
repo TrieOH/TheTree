@@ -10,7 +10,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.NamedErrorHandler
+	dbe database.ErrorHandler
 }
 
 var _ ports.OAuthStateRepo = (*Repo)(nil)
@@ -18,7 +18,7 @@ var _ ports.OAuthStateRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewNamedErrorHandler(errs.ErrOAuthStateNotFound),
+		dbe: database.NewErrorHandler(errs.ErrOAuthStateNotFound),
 	}
 }
 

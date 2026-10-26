@@ -90,29 +90,9 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	return nil
 }
 
-// Constraints maps the schema's constraint and unique-index names to what a
-// violation surfaces as. A Backend passes one of the two forms below.
-type Constraints interface {
-	constraintErrors() map[string]error
-}
-
-// ConstraintRegistry maps constraints to client-facing messages, for the
-// string-resource ErrorHandler. Backends still on root fun use it.
-type ConstraintRegistry map[string]string
-
-func (r ConstraintRegistry) constraintErrors() map[string]error {
-	out := make(map[string]error, len(r))
-	for name, msg := range r {
-		out[name] = errors.New(msg)
-	}
-	return out
-}
-
-// ConstraintErrors maps constraints to the Backend's named errors, for the
-// NamedErrorHandler (ADR-0016).
+// ConstraintErrors maps the schema's constraint and unique-index names to
+// the Backend's named error for a violation (ADR-0016).
 type ConstraintErrors map[string]error
-
-func (r ConstraintErrors) constraintErrors() map[string]error { return r }
 
 // constraintRegistry maps constraint/index names to what repos surface on
 // violation. SetupDB — the one owner of DB boot — receives it as an

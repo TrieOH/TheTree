@@ -1,6 +1,6 @@
 // Package postgres is the kit module for a Backend's own Postgres database:
-// the pool, the tx runner, and the constraint messages repos surface on
-// violation. It never migrates: `just <svc>-goose` owns the schema.
+// the pool, the tx runner, and the named errors repos surface on a
+// constraint violation. It never migrates: `just <svc>-goose` owns the schema.
 package postgres
 
 import (
@@ -12,10 +12,10 @@ import (
 )
 
 // Module connects to the database described by cfg and fills Deps.DB and
-// Deps.Tx. constraints maps the schema's constraint names to what a
-// violation surfaces as (messages, or named errors per ADR-0016); boot fails
-// when the schema has a constraint with no entry.
-func Module(cfg libconfig.Postgres, constraints database.Constraints) backend.Module {
+// Deps.Tx. constraints maps the schema's constraint names to the named error a
+// violation surfaces as (ADR-0016); boot fails when the schema has a
+// constraint with no entry.
+func Module(cfg libconfig.Postgres, constraints database.ConstraintErrors) backend.Module {
 	return backend.Module{
 		Name: "postgres",
 		Open: func(_ context.Context, d *backend.Deps) (backend.Close, error) {

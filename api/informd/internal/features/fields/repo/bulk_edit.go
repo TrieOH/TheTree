@@ -11,7 +11,7 @@ import (
 
 func (repo *Repo) BulkEdit(ctx context.Context, fields []models.Field) error {
 	params := xslices.MapSlice(fields, ToBulkEditFieldsParams)
-	return database.NamedBatchExec(
+	return database.BatchExec(
 		database.Queries(ctx, repo.q).BulkEditFields(ctx, params),
 		repo.dbe,
 		func(i int) string { return params[i].ID.String() },

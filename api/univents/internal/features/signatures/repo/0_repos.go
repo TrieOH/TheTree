@@ -11,7 +11,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.NamedErrorHandler
+	dbe database.ErrorHandler
 }
 
 var (
@@ -22,7 +22,7 @@ var (
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewNamedErrorHandler(errs.ErrSignatureNotFound),
+		dbe: database.NewErrorHandler(errs.ErrSignatureNotFound),
 	}
 }
 

@@ -2,15 +2,13 @@ package database
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
-	"github.com/MintzyG/fun"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// The database errors every Backend shares (ADR-0016). A NamedErrorHandler
+// The database errors every Backend shares (ADR-0016). An ErrorHandler
 // joins them under the Backend's named errors, so callers can match either
 // the specific error or its class.
 var (
@@ -57,11 +55,11 @@ func (e *ViolationError) Error() string { return e.Named.Error() }
 
 func (e *ViolationError) Unwrap() []error { return []error{e.Named, e.Class, e.Err} }
 
-// NamedErrorHandler turns a driver error into the Backend's named errors
+// ErrorHandler turns a driver error into the Backend's named errors
 // (ADR-0016). Repos hold one per resource and return repo.dbe(err).
-type NamedErrorHandler func(err error, notFound ...error) error
+type ErrorHandler func(err error, notFound ...error) error
 
-// NewNamedErrorHandler builds the handler for one resource. notFound is the
+// NewErrorHandler builds the handler for one resource. notFound is the
 // resource's named not-found error; a call can override it (a lookup of a
 // different resource through the same repo).
 //
@@ -69,7 +67,7 @@ type NamedErrorHandler func(err error, notFound ...error) error
 //   - A registered constraint: a ViolationError (its named error and class).
 //   - An unregistered constraint: a ConstraintError of its class.
 //   - Anything else: returned as is (an internal error).
-func NewNamedErrorHandler(notFound error) NamedErrorHandler {
+func NewErrorHandler(notFound error) ErrorHandler {
 	return func(err error, override ...error) error {
 		if err == nil {
 			return nil
@@ -112,58 +110,6 @@ func constraintClass(code string) error {
 	return nil
 }
 
-// ErrorHandler is the root-fun form of the handler, for Backends that have
-// not moved to named errors yet (ADR-0016).
-type ErrorHandler func(error, ...string) error
-
-func NewErrorHandler(resource string) ErrorHandler {
-	return func(err error, override ...string) error {
-		res := resource
-		if len(override) > 0 {
-			res = override[0]
-		}
-		if err == nil {
-			return nil
-		}
-
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fun.ErrNotFound(res + " not found")
-		}
-
-		var pgErr *pgconn.PgError
-		if !errors.As(err, &pgErr) {
-			return fun.ErrInternal(err.Error())
-		}
-
-		constraintMessage, hasCustom := "", false
-		if named, ok := constraintRegistry[pgErr.ConstraintName]; ok {
-			constraintMessage, hasCustom = named.Error(), true
-		}
-		switch pgErr.Code {
-		case "23505":
-			msg := res + ": " + pgErr.Error()
-			if hasCustom {
-				msg = constraintMessage
-			}
-			return fun.ErrConflict(msg)
-		case "23503":
-			msg := res + ": " + pgErr.Error()
-			if hasCustom {
-				msg = constraintMessage
-			}
-			return fun.ErrBadRequest(msg)
-		case "23514":
-			msg := res + ": Validation failed"
-			if hasCustom {
-				msg = constraintMessage
-			}
-			return fun.ErrValidation(msg)
-		default:
-			return fun.ErrInternal(pgErr.Error())
-		}
-	}
-}
-
 // BatchError is a batch with failed items, each named by its id.
 type BatchError struct{ Items []BatchItemError }
 
@@ -189,12 +135,12 @@ func (e *BatchError) Unwrap() []error {
 	return errs
 }
 
-// NamedBatchExec runs a batch and collects every failed item, mapped by
+// BatchExec runs a batch and collects every failed item, mapped by
 // dbe, into one BatchError (nil when all items succeed).
-func NamedBatchExec(br interface {
+func BatchExec(br interface {
 	Exec(func(int, error))
 	Close() error
-}, dbe NamedErrorHandler, getID func(int) string) error {
+}, dbe ErrorHandler, getID func(int) string) error {
 	defer func() {
 		_ = br.Close()
 	}()
@@ -208,24 +154,4 @@ func NamedBatchExec(br interface {
 		return nil
 	}
 	return &BatchError{Items: items}
-}
-
-// BatchExec is NamedBatchExec for Backends still on root-fun errors.
-func BatchExec(br interface {
-	Exec(func(int, error))
-	Close() error
-}, dbe ErrorHandler, getID func(int) string) error {
-	defer func() {
-		_ = br.Close()
-	}()
-	var msgs []string
-	br.Exec(func(i int, err error) {
-		if err != nil {
-			msgs = append(msgs, fmt.Sprintf("%s: %s", getID(i), dbe(err).Error()))
-		}
-	})
-	if len(msgs) == 0 {
-		return nil
-	}
-	return fun.ErrValidation(strings.Join(msgs, "; "))
 }

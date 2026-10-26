@@ -11,7 +11,7 @@ import (
 
 type Repo struct {
 	q   *sqlc.Queries
-	dbe database.NamedErrorHandler
+	dbe database.ErrorHandler
 }
 
 var _ ports.EditionRepo = (*Repo)(nil)
@@ -19,7 +19,7 @@ var _ ports.EditionRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewNamedErrorHandler(errs.ErrEditionNotFound),
+		dbe: database.NewErrorHandler(errs.ErrEditionNotFound),
 	}
 }
 
