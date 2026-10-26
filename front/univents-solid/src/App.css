@@ -3,6 +3,19 @@
 @source "../node_modules/@trieoh/ui-solid/src";
 
 @layer base {
+  /*
+   * The page background lives on the root, not on each route's container, so
+   * the gap between two pages (or a pending screen) is the same color instead
+   * of the browser's default canvas.
+   */
+  html {
+    background-color: var(--background);
+  }
+
+  body {
+    color: var(--foreground);
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
@@ -23,6 +36,30 @@
   font-style: normal;
   font-weight: 300 700;
   font-display: swap;
+}
+
+/*
+ * Skeletons fade in after a beat: an answer that lands from cache or a fast API
+ * replaces the (still transparent) placeholder without it ever being seen.
+ * The box is laid out from the first frame, so nothing shifts either way.
+ */
+@keyframes skeleton-delay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.skeleton-delay {
+  animation: skeleton-delay 150ms ease-out 120ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-delay {
+    animation: none;
+  }
 }
 
 svg.ts-chart:focus,

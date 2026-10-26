@@ -19,6 +19,8 @@ import { untrack } from "solid-js";
 import { bffTransport } from "@/features/auths/api/bff-client";
 import { ThemeProvider } from "@/shared/lib/theme";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { withApiResilience } from "@/shared/lib/resilient-transport";
+import { NotFoundPage, RouteError } from "@/widgets/ui/RouteStatus";
 import "./App.css";
 import { Loading } from "@trieoh/ui-solid";
 
@@ -31,7 +33,7 @@ initBrowserTracing(
 );
 
 // Public traffic goes straight to the API; anything authenticated goes through
-// the BFF.
+// the BFF (whose transport carries its own resilience wrapper).
 
 const { publicFetcher } = createAppFetchers({
   apiURL: import.meta.env.VITE_API_URL ?? "http://localhost:8081",
@@ -45,7 +47,7 @@ const { authFetcher } = createBffProxyFetchers(bffTransport, {
 configureApiClient({
   baseURL: "",
   transport: createOrvalTransport(authFetcher),
-  publicTransport: createOrvalTransport(publicFetcher),
+  publicTransport: withApiResilience(createOrvalTransport(publicFetcher), "api"),
 });
 
 const authAdapter = createBffAuthAdapter(bffTransport, {
@@ -61,6 +63,14 @@ import WaveSpinnerLoading from "./shared/ui/loader/WaveSpinnerLoading";
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
+  scrollRestoration: true,
+  // Loaders are bounded (see shared/lib/route-data), so the pending screen is
+  // for slow route chunks only. Show it late and keep it long enough to read,
+  // otherwise it flashes in and out between two pages.
+  defaultPendingMs: 500,
+  defaultPendingMinMs: 300,
+  defaultErrorComponent: RouteError,
+  defaultNotFoundComponent: NotFoundPage,
   context: {
     session: undefined as RouterSession | undefined,
   },
