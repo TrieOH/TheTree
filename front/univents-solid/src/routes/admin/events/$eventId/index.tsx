@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery, type QueryClient } from "@trieoh/front-core-solid";
 import type { EditionPurchase } from "@trieoh/univents-api/schemas";
-import { createMemo, createSignal } from "solid-js";
+import { createMemo, createSignal, Show } from "solid-js";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { eventKeys } from "@/features/events/api/query-keys";
 import {
@@ -72,6 +72,7 @@ function AdminEventOverviewRoute(): JSX.Element {
     useQuery(() => allJoinedEventsQueryOptions()),
   );
   const editionsQuery = useQuery(() => allAdminEditionsQueryOptions(eventId()));
+  const pageQuery = combineQueries(eventsQuery, editionsQuery);
 
   const [publishConfirmOpen, setPublishConfirmOpen] = createSignal(false);
   const [discontinueConfirmOpen, setDiscontinueConfirmOpen] =
@@ -100,12 +101,12 @@ function AdminEventOverviewRoute(): JSX.Element {
       const results = await Promise.all(
         current.map((edition) =>
           Promise.all([
-            client.fetchQuery(editionPurchasesQueryOptions(edition.id)),
-            client.fetchQuery(attendeeCountQueryOptions(edition.id)),
-            client.fetchQuery(allTicketsQueryOptions(edition.id)),
-            client.fetchQuery(productsQueryOptions(edition.id)),
-            client.fetchQuery(programsQueryOptions(edition.id)),
-            client.fetchQuery(occurrencesQueryOptions(edition.id)),
+            client.fetchQuery({ ...editionPurchasesQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...attendeeCountQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...allTicketsQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...productsQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...programsQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...occurrencesQueryOptions(edition.id), staleTime: 0 }),
           ]),
         ),
       );
@@ -293,69 +294,86 @@ function AdminEventOverviewRoute(): JSX.Element {
   );
 
   return (
-    <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <EventOverviewHeader event={event()} />
+    <QueryBoundary
+      query={pageQuery}
+      what="o evento"
+      skeleton={
+        <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
+          <div class="h-28 animate-pulse rounded-xl bg-muted" />
+          <div class="h-80 animate-pulse rounded-xl bg-muted" />
+          <GridSkeleton minItemWidth="16rem" itemClass="h-28" />
+        </div>
+      }
+    >
+      {() => (
+        <Show
+          when={event()}
+          fallback={
+            <div class="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
+              Evento não encontrado.
+            </div>
+          }
+        >
+          {(ev) => (
+            <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
+              <EventOverviewHeader event={ev()} />
 
-      <EventQuickActions actions={actions()} />
+              <EventQuickActions actions={actions()} />
 
-      <QueryBoundary
-        query={metricsQuery}
-        what="as métricas do evento"
-        skeleton={<div class="h-80 animate-pulse rounded-xl bg-muted" />}
-      >
-        {(metrics) => <EventOverviewDashboard metrics={metrics()} />}
-      </QueryBoundary>
+              <QueryBoundary
+                query={metricsQuery}
+                what="as métricas do evento"
+                skeleton={<div class="h-80 animate-pulse rounded-xl bg-muted" />}
+              >
+                {(metrics) => <EventOverviewDashboard metrics={metrics()} />}
+              </QueryBoundary>
 
-      <QueryBoundary
-        query={editionsQuery}
-        what="as edições"
-        skeleton={<GridSkeleton minItemWidth="16rem" itemClass="h-28" />}
-      >
-        {(loadedEditions) => (
-          <EventEditionsList eventId={eventId()} editions={loadedEditions()} />
-        )}
-      </QueryBoundary>
+              <EventEditionsList eventId={eventId()} editions={editions()} />
 
-      <EventPaymentPanel
-        connected={Boolean(event()?.payssage_seller_id)}
-        disabled={!event() || isConnectingSeller() || isDisconnectingSeller()}
-        onConnect={handleConnectSeller}
-        onDisconnect={() => setDisconnectSellerConfirmOpen(true)}
-      />
+              <EventPaymentPanel
+                connected={Boolean(ev().payssage_seller_id)}
+                disabled={!ev() || isConnectingSeller() || isDisconnectingSeller()}
+                onConnect={handleConnectSeller}
+                onDisconnect={() => setDisconnectSellerConfirmOpen(true)}
+              />
 
-      <EventOverviewChecklist
-        editionCount={editionsQuery().data?.length ?? 0}
-        hasLogo={Boolean(event()?.logo_url)}
-        hasBanner={Boolean(event()?.banner_url)}
-        hasDescription={Boolean(event()?.description)}
-        paymentConnected={Boolean(event()?.payssage_seller_id)}
-        logoUploading={isImageUploading("logo_url")}
-        bannerUploading={isImageUploading("banner_url")}
-        onAddLogo={() => document.getElementById("event-logo-upload")?.click()}
-        onAddBanner={() =>
-          document.getElementById("event-banner-upload")?.click()
-        }
-        onEdit={() => setEditEventOpen(true)}
-      />
+              <EventOverviewChecklist
+                editionCount={editions().length}
+                hasLogo={Boolean(ev().logo_url)}
+                hasBanner={Boolean(ev().banner_url)}
+                hasDescription={Boolean(ev().description)}
+                paymentConnected={Boolean(ev().payssage_seller_id)}
+                logoUploading={isImageUploading("logo_url")}
+                bannerUploading={isImageUploading("banner_url")}
+                onAddLogo={() => document.getElementById("event-logo-upload")?.click()}
+                onAddBanner={() =>
+                  document.getElementById("event-banner-upload")?.click()
+                }
+                onEdit={() => setEditEventOpen(true)}
+              />
 
-      <EventOverviewDialogs
-        event={event()}
-        editOpen={editEventOpen()}
-        publishOpen={publishConfirmOpen()}
-        discontinueOpen={discontinueConfirmOpen()}
-        disconnectOpen={disconnectSellerConfirmOpen()}
-        publishing={isPublishing()}
-        discontinuing={isDiscontinuing()}
-        disconnecting={isDisconnectingSeller()}
-        onEditOpenChange={setEditEventOpen}
-        onPublishOpenChange={setPublishConfirmOpen}
-        onDiscontinueOpenChange={setDiscontinueConfirmOpen}
-        onDisconnectOpenChange={setDisconnectSellerConfirmOpen}
-        onEdit={handleEditEvent}
-        onPublish={handlePublish}
-        onDiscontinue={handleDiscontinue}
-        onDisconnect={handleDisconnectSeller}
-      />
-    </div>
+              <EventOverviewDialogs
+                event={ev()}
+                editOpen={editEventOpen()}
+                publishOpen={publishConfirmOpen()}
+                discontinueOpen={discontinueConfirmOpen()}
+                disconnectOpen={disconnectSellerConfirmOpen()}
+                publishing={isPublishing()}
+                discontinuing={isDiscontinuing()}
+                disconnecting={isDisconnectingSeller()}
+                onEditOpenChange={setEditEventOpen}
+                onPublishOpenChange={setPublishConfirmOpen}
+                onDiscontinueOpenChange={setDiscontinueConfirmOpen}
+                onDisconnectOpenChange={setDisconnectSellerConfirmOpen}
+                onEdit={handleEditEvent}
+                onPublish={handlePublish}
+                onDiscontinue={handleDiscontinue}
+                onDisconnect={handleDisconnectSeller}
+              />
+            </div>
+          )}
+        </Show>
+      )}
+    </QueryBoundary>
   );
 }
