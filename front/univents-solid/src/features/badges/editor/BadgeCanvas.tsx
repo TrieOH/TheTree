@@ -3,7 +3,6 @@ import type { JSX } from "@solidjs/web";
 import {
   For,
   Show,
-  createEffect,
   createMemo,
   createSignal,
   onCleanup,
@@ -14,6 +13,7 @@ import {
   EditorElementFrame,
   QrRenderer,
   StaticText,
+  useElementSize,
   type ElementBounds,
   type TextElementAdapter,
 } from "@/features/editor";
@@ -33,11 +33,9 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
 
 export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
-  let containerRef: HTMLDivElement | undefined;
-  let ro: ResizeObserver | undefined;
+  const { ref: containerRef, size: viewport } = useElementSize<HTMLDivElement>();
   let wheelCleanup: (() => void) | undefined;
   const [zoom, setZoom] = createSignal(1);
-  const [fitScale, setFitScale] = createSignal(1);
   const [pan, setPan] = createSignal({ x: 0, y: 0 });
   const [panning, setPanning] = createSignal(false);
   let panStart: { pointerX: number; pointerY: number; x: number; y: number } | null = null;
@@ -45,33 +43,27 @@ export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
 
   const elementIds = createMemo(() => props.design.elements.map((e) => e.id));
 
-  const updateFitScale = () => {
-    if (!containerRef) return;
-    const { clientWidth, clientHeight } = containerRef;
-    if (clientWidth <= 0 || clientHeight <= 0) return;
+  let lastFitScale = 1;
+  const fitScale = createMemo(() => {
+    const vp = viewport();
+    const w = props.design.canvas.width;
+    const h = props.design.canvas.height;
+    if (vp.width <= 0 || vp.height <= 0 || w <= 0 || h <= 0) {
+      return lastFitScale;
+    }
     const padding = 64;
-    const availW = Math.max(100, clientWidth - padding);
-    const availH = Math.max(100, clientHeight - padding);
-    const scaleW = availW / props.design.canvas.width;
-    const scaleH = availH / props.design.canvas.height;
+    const availW = Math.max(100, vp.width - padding);
+    const availH = Math.max(100, vp.height - padding);
+    const scaleW = availW / w;
+    const scaleH = availH / h;
     const nextScale = Math.min(1.5, Math.max(0.2, Math.min(scaleW, scaleH)));
     if (Number.isFinite(nextScale) && nextScale > 0) {
-      setFitScale(nextScale);
+      lastFitScale = nextScale;
     }
-  };
-
-  createEffect(
-    () => ({
-      width: props.design.canvas.width,
-      height: props.design.canvas.height,
-    }),
-    () => {
-      updateFitScale();
-    },
-  );
+    return lastFitScale;
+  });
 
   onCleanup(() => {
-    ro?.disconnect();
     wheelCleanup?.();
   });
 
@@ -105,21 +97,26 @@ export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
   return (
     <div
       ref={(el) => {
-        containerRef = el;
+        containerRef(el);
         wheelCleanup?.();
         if (!el) return;
-        updateFitScale();
-        ro?.disconnect();
-        ro = new ResizeObserver(() => updateFitScale());
-        ro.observe(el);
 
         const handleWheel = (event: WheelEvent) => {
           event.preventDefault();
-          const factor = event.deltaY < 0 ? 1.1 : 0.9;
-          setZoom((value) =>
-            Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number((value * factor).toFixed(3)))),
-          );
+          const delta =
+            event.deltaMode === 1
+              ? event.deltaY * 20
+              : event.deltaMode === 2
+                ? event.deltaY * 100
+                : event.deltaY;
+          const factor = Math.exp(-delta * 0.0015);
+          const clampedFactor = Math.min(1.2, Math.max(0.8, factor));
+          setZoom((value) => {
+            const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value * clampedFactor));
+            return Number(next.toFixed(3));
+          });
         };
+
         el.addEventListener("wheel", handleWheel, { passive: false });
         wheelCleanup = () => {
           el.removeEventListener("wheel", handleWheel);
@@ -160,7 +157,7 @@ export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
       />
 
       <div
-        class="relative shrink-0 shadow-2xl transition-all duration-150 m-auto"
+        class="relative shrink-0 shadow-2xl m-auto"
         style={{
           width: `${props.design.canvas.width * effectiveScale()}px`,
           height: `${props.design.canvas.height * effectiveScale()}px`,

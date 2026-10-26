@@ -242,10 +242,18 @@ export function CertificateCanvas(): JSX.Element {
 
         const handleWheel = (event: WheelEvent) => {
           event.preventDefault();
-          const factor = event.deltaY < 0 ? 1.1 : 0.9;
-          setZoom((value) =>
-            Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number((value * factor).toFixed(3)))),
-          );
+          const delta =
+            event.deltaMode === 1
+              ? event.deltaY * 20
+              : event.deltaMode === 2
+                ? event.deltaY * 100
+                : event.deltaY;
+          const factor = Math.exp(-delta * 0.0015);
+          const clampedFactor = Math.min(1.2, Math.max(0.8, factor));
+          setZoom((value) => {
+            const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value * clampedFactor));
+            return Number(next.toFixed(3));
+          });
         };
 
         el.addEventListener("wheel", handleWheel, { passive: false });
