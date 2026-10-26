@@ -5,8 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"IdentityX/errs"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
@@ -14,7 +13,7 @@ import (
 func (h *Handlers) PostLogout(ctx context.Context, req openapi.PostLogoutRequestObject) (openapi.PostLogoutResponseObject, error) {
 	accessToken, found := strings.CutPrefix(req.Params.Authorization, "Bearer ")
 	if !found {
-		return nil, fun.ErrUnauthorized("invalid access token")
+		return nil, errs.ErrInvalidAccessToken
 	}
 	err := h.ops.Logout(ctx, models.LogoutInput{
 		AccessToken:  accessToken,

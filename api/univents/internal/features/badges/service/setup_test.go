@@ -2,11 +2,9 @@ package service_test
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
@@ -18,15 +16,6 @@ import (
 	"univents/models"
 	"univents/ports"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	os.Exit(m.Run())
-}
 
 // newOps builds a badges Operations with mocked ports. The caller wires the
 // behaviors it cares about; un-mocked methods return zero values. email may be

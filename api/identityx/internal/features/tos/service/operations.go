@@ -7,11 +7,11 @@ import (
 	"context"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -49,7 +49,7 @@ func (o *Operations) requireActorInProject(ctx context.Context, actorID, project
 		return err
 	}
 	if actor.ProjectID == nil || *actor.ProjectID != projectID {
-		return fun.ErrForbidden("actor does not belong to this project")
+		return errs.ErrActorNotInProject
 	}
 	return nil
 }

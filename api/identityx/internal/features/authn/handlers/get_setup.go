@@ -3,8 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/MintzyG/fun"
-
+	"IdentityX/errs"
 	"IdentityX/internal/openapi"
 )
 
@@ -14,7 +13,7 @@ func (h *Handlers) GetSetup(ctx context.Context, _ openapi.GetSetupRequestObject
 		return nil, err
 	}
 	if done {
-		return nil, fun.Err("setup already complete").Conflict()
+		return nil, errs.ErrSetupComplete
 	}
 	return openapi.GetSetup204Response{}, nil
 }

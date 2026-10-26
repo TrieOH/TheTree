@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"IdentityX/internal/emails"
 	"IdentityX/models"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -63,7 +64,7 @@ func (o *Operations) Delete(ctx context.Context, projectID uuid.UUID, kind model
 	}
 
 	err = o.Templates.Delete(ctx, projectID, kind)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	return nil

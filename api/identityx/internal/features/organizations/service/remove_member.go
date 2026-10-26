@@ -1,10 +1,11 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
-
-	"github.com/MintzyG/fun"
+	"errors"
+	"lib/database"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrganizationMemberInput) error {
@@ -19,7 +20,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrga
 	}
 
 	if ident.Sub.ID == actor.ID {
-		return fun.ErrBadRequest("Cannot remove yourself from the organization")
+		return errs.ErrRemoveSelfFromOrg
 	}
 
 	org, err := o.Orgs.GetByID(ctx, payload.OrganizationID)
@@ -27,7 +28,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrga
 		return err
 	}
 	if actor.ID == org.OwnerID {
-		return fun.ErrBadRequest("cannot remove the owner of the organization")
+		return errs.ErrRemoveOrgOwner
 	}
 
 	err = o.Authz.CheckOrg(ctx, payload.OrganizationID, models.OrganizationRoleAdmin)
@@ -36,11 +37,11 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveOrga
 	}
 
 	_, err = o.Orgs.GetMember(ctx, actor.ID, org.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
-		return fun.ErrBadRequest("user is not a member of the organization")
+		return errs.ErrNotOrgMember
 	}
 
 	return o.Orgs.RemoveMember(ctx, actor.ID, payload.OrganizationID)

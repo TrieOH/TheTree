@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	idx "sdk/identityx"
 	"time"
 
+	"Informd/errs"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
+	"lib/database"
 )
 
 func (o *Operations) AddMember(ctx context.Context, payload models.AddFormMemberInput) (err error) {
@@ -17,7 +18,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddFormMember
 	}
 
 	if ident.Sub.ID == payload.UserID {
-		return fun.ErrBadRequest("users can't add themselves to forms")
+		return errs.ErrAddSelfToForm
 	}
 
 	var form *models.Form
@@ -27,7 +28,7 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddFormMember
 	}
 
 	if payload.UserID == form.OwnerID {
-		return fun.ErrBadRequest("owner of the form is already a member of the form")
+		return errs.ErrFormOwnerAlreadyMember
 	}
 	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
@@ -35,11 +36,11 @@ func (o *Operations) AddMember(ctx context.Context, payload models.AddFormMember
 	}
 
 	_, err = o.Forms.GetMember(ctx, payload.UserID, form.ID)
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("user is already a member of the form")
+		return errs.ErrAlreadyFormMember
 	}
 
 	newMember := models.FormMember{

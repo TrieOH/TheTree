@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"IdentityX/errs"
 	"context"
 
 	"IdentityX/internal/sqlc"
@@ -21,7 +22,7 @@ var _ ports.EmailTemplateRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("email_template"),
+		dbe: database.NewErrorHandler(errs.ErrEmailTemplateNotFound),
 	}
 }
 

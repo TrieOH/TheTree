@@ -3,15 +3,17 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/api_keys"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -141,7 +143,7 @@ func TestAuthenticateHmacMismatchRejected(t *testing.T) {
 		ThenReturn(&models.APIKey{ID: uuid.New(), SubjectID: actor.ID, DisplayPrefix: parsed.DisplayPrefix, KeyHash: other.Hash}, nil)
 
 	_, err = o.ops.Authenticate(context.Background(), raw)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrInvalidAPIKey) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 }
@@ -155,7 +157,7 @@ func TestAuthenticateExpiredKeyRejected(t *testing.T) {
 	mock.When(o.actors.GetByID(mock.AnyContext(), mock.Equal(actor.ID))).ThenReturn(&actor, nil)
 
 	_, err := o.ops.Authenticate(context.Background(), raw)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrAPIKeyExpired) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 }
@@ -164,10 +166,10 @@ func TestAuthenticateUnknownPrefixRejected(t *testing.T) {
 	secret := []byte("test-hmac-secret")
 	o := newAuthTestOps(t, secret)
 	mock.When(o.apiKeys.GetByPrefix(mock.AnyContext(), mock.Any[string]())).
-		ThenReturn(nil, fun.ErrNotFound("no key"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := o.ops.Authenticate(context.Background(), "idk-anything")
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrInvalidAPIKey) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 }
@@ -176,7 +178,7 @@ func TestAuthenticateInvalidRawKeyRejected(t *testing.T) {
 	o := newAuthTestOps(t, []byte("test-hmac-secret"))
 
 	_, err := o.ops.Authenticate(context.Background(), "not-a-key")
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrInvalidAPIKey) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 }
@@ -187,10 +189,10 @@ func TestAuthenticateUnknownActorRejected(t *testing.T) {
 	o := newAuthTestOps(t, secret)
 	mock.When(o.apiKeys.GetByPrefix(mock.AnyContext(), mock.Equal(apiKey.DisplayPrefix))).ThenReturn(&apiKey, nil)
 	mock.When(o.actors.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
-		ThenReturn(nil, fun.ErrNotFound("actor gone"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := o.ops.Authenticate(context.Background(), raw)
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.Is(err, errs.ErrInvalidAPIKey) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 }
@@ -202,10 +204,12 @@ func TestAuthenticateCapabilityErrorSurfacesRaw(t *testing.T) {
 	mock.When(o.apiKeys.GetByPrefix(mock.AnyContext(), mock.Equal(apiKey.DisplayPrefix))).ThenReturn(&apiKey, nil)
 	mock.When(o.actors.GetByID(mock.AnyContext(), mock.Equal(actor.ID))).ThenReturn(&actor, nil)
 	mock.When(o.caps.ListByAPIKeyPrefix(mock.AnyContext(), mock.Equal(apiKey.DisplayPrefix))).
-		ThenReturn(nil, fun.ErrInternal("db down"))
+		ThenReturn(nil, errDBDown)
 
 	_, err := o.ops.Authenticate(context.Background(), raw)
-	if !fun.Is(err, fun.CodeInternal) {
+	if !errors.Is(err, errDBDown) {
 		t.Fatalf("want internal, got %v", err)
 	}
 }
+
+var errDBDown = errors.New("db down")

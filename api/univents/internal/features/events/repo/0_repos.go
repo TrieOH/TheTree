@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"univents/errs"
 	"univents/internal/sqlc"
 	"univents/models"
 
@@ -18,7 +19,7 @@ var _ ports.EventRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("event"),
+		dbe: database.NewErrorHandler(errs.ErrEventNotFound),
 	}
 }
 

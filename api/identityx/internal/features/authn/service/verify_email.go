@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"IdentityX/internal/tokens"
+	"IdentityX/errs"
 	"IdentityX/models"
+	"lib/database"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -23,7 +23,7 @@ import (
 func (o *Operations) VerifyEmail(ctx context.Context, in models.VerifyEmailInput) error {
 	actorID, err := o.ActionTokens.Redeem(ctx, models.EmailVerifyActionTokenPurpose, in.Token)
 	if err != nil {
-		if !errors.Is(err, tokens.ErrActionTokenUsed) {
+		if !errors.Is(err, errs.ErrActionTokenUsed) {
 			return err
 		}
 		actor, aerr := o.Actors.GetByID(ctx, actorID)
@@ -46,7 +46,7 @@ func (o *Operations) ResendVerification(ctx context.Context, in models.ResendVer
 	email := strings.TrimSpace(strings.ToLower(in.Email))
 	actor, err := o.Actors.GetByEmail(ctx, email, in.ProjectID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil
 		}
 		return err

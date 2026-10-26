@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -45,10 +45,10 @@ func validateTemplateScope(input models.CreateBadgeTemplateInput) error {
 		return nil
 	}
 	if *input.Origin != models.BadgeTemplateOriginStaff {
-		return fun.ErrBadRequest("origin must be null or \"staff\"")
+		return errs.ErrInvalidBadgeOrigin
 	}
 	if input.TicketTypeID != nil {
-		return fun.ErrBadRequest("a staff badge template cannot target a ticket type")
+		return errs.ErrStaffTemplateWithTicketType
 	}
 	return nil
 }

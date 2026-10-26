@@ -9,7 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"lib/database"
+	"lib/fielderr"
 	"lib/telemetry"
+	"univents/errs"
 
 	"univents/internal/features/checkouts/jobs"
 	"univents/internal/notify"
@@ -18,7 +21,6 @@ import (
 
 	payssage "sdk/payssage"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -120,7 +122,7 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 		return nil, err
 	}
 	if edition.IsDraft {
-		return nil, fun.ErrBadRequest("edition is not published")
+		return nil, errs.ErrEditionNotPublished
 	}
 	event, err := o.Events.GetByID(ctx, edition.EventID)
 	if err != nil {
@@ -163,7 +165,7 @@ func (o *Operations) Checkout(ctx context.Context, editionID, purchaserID uuid.U
 	}
 	if event.PayssageSellerID == nil || event.PayssagePublicKey == nil {
 		o.revert(ctx, res.purchase, res.items)
-		return nil, fun.ErrBadRequest("event has no payment config")
+		return nil, errs.ErrNoPaymentConfig
 	}
 	err = o.validatePayment(in)
 	if err != nil {
@@ -348,9 +350,7 @@ func (o *Operations) lockAndPrice(ctx context.Context, editionID uuid.UUID, line
 			out = append(out, pricedLine{Line: line, UnitPrice: price, Base: occ.MaxCapacity, Name: prog.Name})
 
 		default:
-			return nil, fun.Err("invalid item_type").WithFields(&fun.FieldError{
-				Field: "items[].item_type", Message: string(line.ItemType),
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrInvalidItemType, "items[].item_type", string(line.ItemType))
 		}
 	}
 	return out, nil
@@ -485,7 +485,7 @@ func (o *Operations) materialize(ctx context.Context, purchase *models.Purchase,
 			if firstTicketRegID == nil {
 				// Unreachable — validateLines enforces ≥1 ticket whenever a
 				// program line is present (D4b).
-				return nil, fun.ErrBadRequest("program items require a ticket item")
+				return nil, errs.ErrProgramNeedsTicket
 			}
 			part, err := o.Participations.CreateParticipation(ctx, &models.ProgramParticipation{
 				EditionID:      purchase.EditionID,
@@ -514,13 +514,13 @@ func (o *Operations) materialize(ctx context.Context, purchase *models.Purchase,
 }
 
 // activeRegistrationFor returns the attendee's active registration in the
-// edition, or nil when they hold none. The repo surfaces an absent row as
-// NOT_FOUND; here, "no ticket" is a normal state — the one-ticket check
+// edition, or nil when they hold none. The repo returns an absent row as
+// database.ErrNotFound; here, "no ticket" is a normal state — the one-ticket check
 // and the my-ticket read both fall back to it.
 func (o *Operations) activeRegistrationFor(ctx context.Context, editionID, attendeeID uuid.UUID) (*models.Registration, error) {
 	reg, err := o.Registrations.GetActiveByEditionAndAttendee(ctx, editionID, attendeeID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			//nolint:nilnil // holds no ticket is a normal state, not an error
 			return nil, nil
 		}
@@ -559,7 +559,7 @@ func (o *Operations) checkOneTicketPerPerson(ctx context.Context, editionID uuid
 		// row = holds no ticket, a normal state.
 		existing, err := o.Registrations.GetActiveByEditionAndAttendeeEmail(ctx, editionID, pl.Line.Attendee.Email)
 		if err != nil {
-			if fun.Is(err, fun.CodeNotFound) {
+			if errors.Is(err, database.ErrNotFound) {
 				continue
 			}
 			return err
@@ -574,9 +574,7 @@ func (o *Operations) checkOneTicketPerPerson(ctx context.Context, editionID uuid
 // oneTicketPerPersonError is the clean 409 for a cart/DB violation of the
 // one-ticket-per-person rule.
 func oneTicketPerPersonError(field, message string) error {
-	return fun.Err("this person already has a ticket for this edition").WithFields(&fun.FieldError{
-		Field: field, Message: message,
-	}).Conflict()
+	return fielderr.On(errs.ErrPersonHasTicket, field, message)
 }
 
 // giftEmailDelay holds the gift email back long enough for the confirming
@@ -609,7 +607,7 @@ func (o *Operations) enqueueGiftEmail(ctx context.Context, reg *models.Registrat
 func (o *Operations) enqueueExpiry(ctx context.Context, purchaseID uuid.UUID, expiresAt time.Time) error {
 	err := o.Jobs.EnqueueAfter(ctx, jobs.ExpirePurchaseArgs{PurchaseID: purchaseID}, time.Until(expiresAt))
 	if err != nil {
-		return fun.Errf("checkout: enqueue expiry: %v", err).Internal()
+		return fmt.Errorf("checkout: enqueue expiry: %w", err)
 	}
 	return nil
 }
@@ -710,25 +708,17 @@ func (o *Operations) validatePayment(in CheckoutInput) error {
 		return nil
 	case paymentCreditCard, paymentDebitCard:
 		if in.CardToken == nil || *in.CardToken == "" {
-			return fun.Err("card_token is required for card payments").WithFields(&fun.FieldError{
-				Field: "card_token", Message: "required",
-			}).BadRequest()
+			return fielderr.On(errs.ErrCardTokenRequired, "card_token", "required")
 		}
 		if in.PaymentMethodID == nil || *in.PaymentMethodID == "" {
-			return fun.Err("payment_method_id is required for card payments").WithFields(&fun.FieldError{
-				Field: "payment_method_id", Message: "required",
-			}).BadRequest()
+			return fielderr.On(errs.ErrPaymentMethodIDRequired, "payment_method_id", "required")
 		}
 		if in.Installments != nil && *in.Installments < 1 {
-			return fun.Err("installments must be at least 1").WithFields(&fun.FieldError{
-				Field: "installments", Message: "min=1",
-			}).BadRequest()
+			return fielderr.On(errs.ErrInstallmentsBelowOne, "installments", "min=1")
 		}
 		return nil
 	default:
-		return fun.Err("invalid payment_method").WithFields(&fun.FieldError{
-			Field: "payment_method", Message: "one of pix, credit_card, debit_card",
-		}).BadRequest()
+		return fielderr.On(errs.ErrInvalidPaymentMethod, "payment_method", "one of pix, credit_card, debit_card")
 	}
 }
 
@@ -740,9 +730,7 @@ func (o *Operations) validatePayment(in CheckoutInput) error {
 // registration).
 func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error) {
 	if len(items) == 0 {
-		return nil, fun.Err("checkout requires at least one item").WithFields(&fun.FieldError{
-			Field: "items", Message: "min=1",
-		}).BadRequest()
+		return nil, fielderr.On(errs.ErrNoItems, "items", "min=1")
 	}
 
 	seenProduct := make(map[uuid.UUID]bool, len(items))
@@ -753,21 +741,15 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 	for i, line := range items {
 		field := fmt.Sprintf("items[%d]", i)
 		if line.Quantity < 1 {
-			return nil, fun.Err("item quantity must be at least 1").WithFields(&fun.FieldError{
-				Field: field + ".quantity", Message: "min=1",
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrQuantityBelowOne, field+".quantity", "min=1")
 		}
 		switch line.ItemType {
 		case models.PurchaseItemTypeTicket:
 			if line.Quantity != 1 {
-				return nil, fun.Err("ticket lines are one per person (quantity must be 1)").WithFields(&fun.FieldError{
-					Field: field + ".quantity", Message: "tickets are one per person — send one line per attendee",
-				}).BadRequest()
+				return nil, fielderr.On(errs.ErrTicketQuantity, field+".quantity", "tickets are one per person — send one line per attendee")
 			}
 			if line.Attendee == nil {
-				return nil, fun.Err("ticket lines require an attendee").WithFields(&fun.FieldError{
-					Field: field + ".attendee", Message: "required",
-				}).BadRequest()
+				return nil, fielderr.On(errs.ErrTicketNeedsAttendee, field+".attendee", "required")
 			}
 			// One ticket per person per edition — two lines for the same
 			// attendee (e.g. two tickets for yourself, or two gifts to the
@@ -780,42 +762,30 @@ func (o *Operations) validateLines(items []CheckoutLine) ([]CheckoutLine, error)
 				attendeeKey = "u:" + line.Attendee.UserID.String()
 			}
 			if seenAttendee[attendeeKey] {
-				return nil, fun.Err("only one ticket per person").WithFields(&fun.FieldError{
-					Field: field + ".attendee", Message: "this person already has a ticket in the cart",
-				}).BadRequest()
+				return nil, fielderr.On(errs.ErrOneTicketPerPerson, field+".attendee", "this person already has a ticket in the cart")
 			}
 			seenAttendee[attendeeKey] = true
 			hasTicket = true
 		case models.PurchaseItemTypeProduct:
 			if seenProduct[line.ItemID] {
-				return nil, fun.Err("duplicate product line").WithFields(&fun.FieldError{
-					Field: field, Message: "this product is already in the cart",
-				}).BadRequest()
+				return nil, fielderr.On(errs.ErrDuplicateProductLine, field, "this product is already in the cart")
 			}
 			seenProduct[line.ItemID] = true
 		case models.PurchaseItemTypeProgramOccurrence:
 			if line.Quantity != 1 {
-				return nil, fun.Err("program lines are one session per purchase (quantity must be 1)").WithFields(&fun.FieldError{
-					Field: field + ".quantity", Message: "program lines are quantity 1",
-				}).BadRequest()
+				return nil, fielderr.On(errs.ErrProgramQuantity, field+".quantity", "program lines are quantity 1")
 			}
 			if seenProgram[line.ItemID] {
-				return nil, fun.Err("duplicate program line").WithFields(&fun.FieldError{
-					Field: field, Message: "this program occurrence is already in the cart",
-				}).BadRequest()
+				return nil, fielderr.On(errs.ErrDuplicateProgramLine, field, "this program occurrence is already in the cart")
 			}
 			seenProgram[line.ItemID] = true
 		default:
-			return nil, fun.Err("invalid item_type").WithFields(&fun.FieldError{
-				Field: field + ".item_type", Message: "one of ticket, product, program_occurrence",
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrInvalidItemType, field+".item_type", "one of ticket, product, program_occurrence")
 		}
 	}
 
 	if len(seenProgram) > 0 && !hasTicket {
-		return nil, fun.Err("program items require a ticket item in the same cart").WithFields(&fun.FieldError{
-			Field: "items", Message: "a participation attaches to a ticket's registration",
-		}).BadRequest()
+		return nil, fielderr.On(errs.ErrProgramNeedsTicketInCart, "items", "a participation attaches to a ticket's registration")
 	}
 	return items, nil
 }
@@ -848,9 +818,7 @@ func (o *Operations) resolveAttendees(ctx context.Context, lines []CheckoutLine)
 
 		email := strings.TrimSpace(strings.ToLower(line.Attendee.Email))
 		if email == "" {
-			return nil, fun.Err("ticket lines require an attendee email").WithFields(&fun.FieldError{
-				Field: fmt.Sprintf("items[%d].attendee.email", i), Message: "required",
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrTicketNeedsAttendeeEmail, fmt.Sprintf("items[%d].attendee.email", i), "required")
 		}
 		line.Attendee.Email = email
 
@@ -866,17 +834,13 @@ func (o *Operations) resolveAttendees(ctx context.Context, lines []CheckoutLine)
 		case errors.Is(err, ports.ErrActorNotFound) && line.Attendee.UserID != nil:
 			// A user_id was claimed for an email with no account — the pair
 			// cannot both be true.
-			return nil, fun.Err("attendee email does not match an account").WithFields(&fun.FieldError{
-				Field: fmt.Sprintf("items[%d].attendee.email", i), Message: email,
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrAttendeeEmailUnknown, fmt.Sprintf("items[%d].attendee.email", i), email)
 		case errors.Is(err, ports.ErrActorNotFound):
 			// No account yet — email-only gift; keep the nil user id.
 		case line.Attendee.UserID == nil:
 			line.Attendee.UserID = &actor.ID
 		case actor.ID != *line.Attendee.UserID:
-			return nil, fun.Err("attendee user_id does not match the email").WithFields(&fun.FieldError{
-				Field: fmt.Sprintf("items[%d].attendee.user_id", i), Message: line.Attendee.UserID.String(),
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrAttendeeUserMismatch, fmt.Sprintf("items[%d].attendee.user_id", i), line.Attendee.UserID.String())
 		}
 
 		// Post-resolution dedup: two lines that resolve to the same person
@@ -887,9 +851,7 @@ func (o *Operations) resolveAttendees(ctx context.Context, lines []CheckoutLine)
 			key = "u:" + line.Attendee.UserID.String()
 		}
 		if seen[key] {
-			return nil, fun.Err("only one ticket per person").WithFields(&fun.FieldError{
-				Field: fmt.Sprintf("items[%d].attendee", i), Message: "this person already has a ticket in the cart",
-			}).BadRequest()
+			return nil, fielderr.On(errs.ErrOneTicketPerPerson, fmt.Sprintf("items[%d].attendee", i), "this person already has a ticket in the cart")
 		}
 		seen[key] = true
 	}
@@ -979,9 +941,9 @@ func pixQR(providerData json.RawMessage) (qr, qrBase64 *string) {
 	return qr, qrBase64
 }
 
-// mapPayssageError converts a provider/API failure into a fun AppError the
-// buyer can act on: 4xx (rejected card, invalid token...) → BAD_REQUEST with
-// the provider's message; anything else stays an internal error. Without
+// mapPayssageError converts a provider/API failure into an error the buyer
+// can act on: 4xx (rejected card, invalid token...) → a PaymentRejectedError
+// with the provider's message; anything else stays an internal error. Without
 // this the strict server would turn every payssage failure into a 500.
 func mapPayssageError(err error) error {
 	var apiErr *payssage.APIError
@@ -989,9 +951,9 @@ func mapPayssageError(err error) error {
 		return err
 	}
 	if apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 {
-		return fun.ErrBadRequest("payment failed: " + apiErr.Message)
+		return &errs.PaymentRejectedError{Message: apiErr.Message}
 	}
-	return fun.ErrInternal("payment provider error: " + apiErr.Message)
+	return fmt.Errorf("payment provider error: %w", err)
 }
 
 // ── Errors ─────────────────────────────────────────────────────────────────
@@ -999,27 +961,23 @@ func mapPayssageError(err error) error {
 // outOfStockError is the 409 listing the items that cannot be fully
 // satisfied (availability semantics from split 3).
 func outOfStockError(itemIDs []uuid.UUID) error {
-	fields := make([]any, 0, len(itemIDs))
+	fields := make([]fielderr.Field, 0, len(itemIDs))
 	for _, id := range itemIDs {
-		fields = append(fields, fun.FieldError{Field: "items", Message: "not enough stock for item " + id.String()})
+		fields = append(fields, fielderr.Field{Field: "items", Message: "not enough stock for item " + id.String()})
 	}
-	return fun.Err("some items are no longer available").WithFields(fields...).Conflict()
+	return fielderr.Wrap(errs.ErrItemsUnavailable, fields...)
 }
 
 func itemNotInEditionError(line CheckoutLine) error {
-	return fun.Err("item does not belong to this edition").WithFields(&fun.FieldError{
-		Field: fmt.Sprintf("items[].%s", line.ItemType), Message: line.ItemID.String(),
-	}).BadRequest()
+	return fielderr.On(errs.ErrItemNotInEdition, fmt.Sprintf("items[].%s", line.ItemType), line.ItemID.String())
 }
 
 // mapItemLoadError turns a not-found from the FOR UPDATE reads into the 400
 // item-list contract (unknown item ids are validation, not 404 — the cart
 // the buyer submitted is wrong, the endpoint exists).
 func (o *Operations) mapItemLoadError(err error, line CheckoutLine) error {
-	if fun.Is(err, fun.CodeNotFound) {
-		return fun.Err("unknown item").WithFields(&fun.FieldError{
-			Field: fmt.Sprintf("items[].%s", line.ItemType), Message: line.ItemID.String(),
-		}).BadRequest()
+	if errors.Is(err, database.ErrNotFound) {
+		return fielderr.On(errs.ErrUnknownItem, fmt.Sprintf("items[].%s", line.ItemType), line.ItemID.String())
 	}
 	return err
 }

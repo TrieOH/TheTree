@@ -17,9 +17,10 @@ func main() {
 		Spec:   spec.OpenAPISpec,
 		Server: backend.ServerFrom(cfg.Server, cfg.CORS, cfg.ProfilePort),
 		Modules: []backend.Module{
-			postgres.Module(cfg.Postgres, app.ConstraintMessages()),
+			postgres.Module(cfg.Postgres, app.Constraints()),
 			identityx.Module(cfg.IdentityX, identityx.Debug(true)),
 		},
-		Build: app.Build,
+		Build:  app.Build,
+		Errors: app.Errors(),
 	}), "informd exited with error")
 }

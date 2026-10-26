@@ -4,17 +4,17 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/MintzyG/fun"
 	"golang.org/x/crypto/argon2"
 )
 
 var (
-	ErrInvalidHash         = fun.ErrInternal("argon2: invalid hash format")
-	ErrIncompatibleVersion = fun.ErrInternal("argon2: incompatible version")
-	ErrMismatch            = fun.ErrBadRequest("argon2: password does not match hash")
+	ErrInvalidHash         = errors.New("argon2: invalid hash format")
+	ErrIncompatibleVersion = errors.New("argon2: incompatible version")
+	ErrMismatch            = errors.New("argon2: password does not match hash")
 )
 
 type Params struct {
@@ -47,7 +47,7 @@ func Hash(password string, p Params) (string, error) {
 	salt := make([]byte, p.SaltLength)
 	_, err := rand.Read(salt)
 	if err != nil {
-		return "", fun.ErrInternal("argon2: failed to generate salt: " + err.Error())
+		return "", fmt.Errorf("argon2: generate salt: %w", err)
 	}
 
 	hash := argon2.IDKey(

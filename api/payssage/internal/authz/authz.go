@@ -2,12 +2,13 @@ package authz
 
 import (
 	"context"
+	"errors"
 
 	libauthz "lib/authz"
+	"lib/database"
 	"payssage/ports"
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -44,9 +45,9 @@ func (s *Service) Wallet(ctx context.Context, walletID uuid.UUID, minRole libaut
 func (s *Service) checkOrg(ctx context.Context, actorID, orgID uuid.UUID, minRole libauthz.Role) error {
 	role, err := s.orgs.GetRole(ctx, actorID, orgID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(role, minRole)
+	return libauthz.AtLeast(role, minRole)
 }
 
 func (s *Service) checkWallet(ctx context.Context, actorID, walletID uuid.UUID, minRole libauthz.Role) error {
@@ -56,23 +57,23 @@ func (s *Service) checkWallet(ctx context.Context, actorID, walletID uuid.UUID, 
 	}
 
 	role, err := s.wallets.GetRole(ctx, actorID, walletID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
-	if err == nil && libauthz.Min(role, minRole) == nil {
+	if err == nil && libauthz.AtLeast(role, minRole) == nil {
 		return nil
 	}
 
 	if wallet.OrganizationID == nil {
 		if err != nil {
-			return libauthz.ForbiddenIfNotFound(err)
+			return libauthz.DenyIfNotFound(err)
 		}
-		return libauthz.Min(role, minRole)
+		return libauthz.AtLeast(role, minRole)
 	}
 
 	orgRole, err := s.orgs.GetRole(ctx, actorID, *wallet.OrganizationID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(orgRole, minRole)
+	return libauthz.AtLeast(orgRole, minRole)
 }

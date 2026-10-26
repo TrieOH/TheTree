@@ -2,13 +2,15 @@ package authz
 
 import (
 	"context"
+	"errors"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
+	"lib/database"
 
 	libauthz "lib/authz"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -47,7 +49,7 @@ func (s *Service) requirePlatformClient(ctx context.Context) error {
 		return err
 	}
 	if ident.Sub.ProjectID != nil {
-		return fun.ErrUnauthorized("platform-level authentication required")
+		return errs.ErrPlatformOnly
 	}
 	return nil
 }
@@ -87,21 +89,21 @@ func (s *Service) CheckProject(ctx context.Context, projectID uuid.UUID, minRole
 
 	role, err := s.projects.GetRole(ctx, userID, projectID)
 	if err == nil {
-		return libauthz.Min(role, minRole)
+		return libauthz.AtLeast(role, minRole)
 	}
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 
 	if project.OrganizationID != nil {
 		orgRole, oerr := s.orgs.GetRole(ctx, userID, *project.OrganizationID)
 		if oerr != nil {
-			return libauthz.ForbiddenIfNotFound(oerr)
+			return libauthz.DenyIfNotFound(oerr)
 		}
-		return libauthz.Min(models.ProjectRole(orgRole), minRole)
+		return libauthz.AtLeast(models.ProjectRole(orgRole), minRole)
 	}
 
-	return libauthz.ForbiddenIfNotFound(err)
+	return libauthz.DenyIfNotFound(err)
 }
 
 // CheckOrg gates an organization-scoped operation; the caller is resolved
@@ -114,9 +116,9 @@ func (s *Service) CheckOrg(ctx context.Context, orgID uuid.UUID, minRole models.
 
 	role, err := s.orgs.GetRole(ctx, userID, orgID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(role, minRole)
+	return libauthz.AtLeast(role, minRole)
 }
 
 // CheckPlatform gates a platform-scoped operation: the caller (resolved
@@ -130,7 +132,7 @@ func (s *Service) CheckPlatform(ctx context.Context, minRole models.PlatformRole
 
 	role, err := s.platformRoles.GetRole(ctx, userID)
 	if err != nil {
-		return libauthz.ForbiddenIfNotFound(err)
+		return libauthz.DenyIfNotFound(err)
 	}
-	return libauthz.Min(role, minRole)
+	return libauthz.AtLeast(role, minRole)
 }

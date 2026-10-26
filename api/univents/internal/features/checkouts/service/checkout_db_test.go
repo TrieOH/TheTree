@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
 	"lib/database"
 	"lib/testdb"
+	"net/http"
 
 	"univents/internal/authz"
 	checkouts "univents/internal/features/checkouts/service"
@@ -431,7 +431,7 @@ func TestCheckout_OutOfStock409(t *testing.T) {
 
 	_, err := ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(productLine(fx.variantID, 6))) // stock = 5
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("err = %v, want CONFLICT", err)
 	}
 }
@@ -445,7 +445,7 @@ func TestCheckout_UnknownItem400(t *testing.T) {
 	fs.actors.seed("buyer@example.com", buyerID)
 	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID,
 		pixInput(ticketLine(uuid.New(), selfAttendee(buyerID))))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -460,7 +460,7 @@ func TestCheckout_ItemNotInEdition400(t *testing.T) {
 
 	_, err := ops.Checkout(context.Background(), fx.editionID, buyerID,
 		pixInput(ticketLine(other.ticketID, selfAttendee(buyerID))))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -472,7 +472,7 @@ func TestCheckout_MissingPaymentConfig400(t *testing.T) {
 	fx := seedStoreOpts(t, r, storeOpts{paymentConfig: false, published: true})
 	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
 		pixInput(productLine(fx.variantID, 1)))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -483,7 +483,7 @@ func TestCheckout_DraftEdition400(t *testing.T) {
 	fx := seedStoreOpts(t, r, storeOpts{paymentConfig: true, published: false})
 	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
 		pixInput(productLine(fx.variantID, 1)))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -498,14 +498,14 @@ func TestCheckout_TicketValidation400(t *testing.T) {
 	badQty := ticketLine(fx.ticketID, selfAttendee(uuid.New()))
 	badQty.Quantity = 2
 	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(), pixInput(badQty))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("qty=2: err = %v, want BAD_REQUEST", err)
 	}
 
 	// missing attendee.
 	noAttendee := ticketLine(fx.ticketID, nil)
 	_, err = ops.Checkout(context.Background(), fx.editionID, uuid.New(), pixInput(noAttendee))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("no attendee: err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -516,7 +516,7 @@ func TestCheckout_ProgramWithoutTicket400(t *testing.T) {
 	fx := seedStore(t, r)
 	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
 		pixInput(programLine(fx.occurrenceID)))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -527,7 +527,7 @@ func TestCheckout_DuplicateProduct400(t *testing.T) {
 	fx := seedStore(t, r)
 	_, err := ops.Checkout(context.Background(), fx.editionID, uuid.New(),
 		pixInput(productLine(fx.variantID, 1), productLine(fx.variantID, 1)))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST", err)
 	}
 }
@@ -550,7 +550,7 @@ func TestCheckout_SecondPending409(t *testing.T) {
 
 	_, err = ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(productLine(fx.variantID, 1)))
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("second checkout: err = %v, want CONFLICT", err)
 	}
 }
@@ -574,11 +574,11 @@ func TestCheckout_IntentFailureReverts(t *testing.T) {
 
 	_, err := ops.Checkout(context.Background(), fx.editionID, purchaserID,
 		pixInput(ticketLine(fx.ticketID, selfAttendee(purchaserID))))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST (payment failed)", err)
 	}
-	if !fun.Is(err, fun.CodeBadRequest) {
-		t.Fatalf("err code = %v, want BAD_REQUEST", fun.Is(err, fun.CodeBadRequest))
+	if statusOf(err) != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", statusOf(err))
 	}
 
 	// The reservation is gone — the buyer can retry immediately. Find the
@@ -637,7 +637,7 @@ func TestCheckout_TwoTicketsForSelf400(t *testing.T) {
 		ticketLine(fx.ticketID, selfAttendee(buyerID)),
 		ticketLine(fx.ticketID, selfAttendee(buyerID)),
 	))
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("err = %v, want BAD_REQUEST (one ticket per person)", err)
 	}
 
@@ -680,7 +680,7 @@ func TestCheckout_AlreadyHoldsTicket409(t *testing.T) {
 	// Buying a paid ticket for themselves → 409 (they already hold one).
 	_, err = ops.Checkout(context.Background(), fx.editionID, buyerID,
 		pixInput(ticketLine(fx.ticketID, selfAttendee(buyerID))))
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("self re-buy: err = %v, want CONFLICT", err)
 	}
 
@@ -690,7 +690,7 @@ func TestCheckout_AlreadyHoldsTicket409(t *testing.T) {
 	_, err = ops.Checkout(context.Background(), fx.editionID, gifterID, pixInput(
 		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &buyerID, Email: "buyer@example.com", Name: "Jane Doe"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("gift to holder: err = %v, want CONFLICT", err)
 	}
 }
@@ -720,7 +720,7 @@ func TestCheckout_PendingReservationBlocks409(t *testing.T) {
 	_, err = ops.Checkout(context.Background(), fx.editionID, gifterID, pixInput(
 		ticketLine(fx.ticketID, &checkouts.Attendee{UserID: &holderID, Email: "holder@example.com", Name: "Holder"}),
 	))
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("gift to pending holder: err = %v, want CONFLICT", err)
 	}
 }
@@ -817,7 +817,7 @@ func TestCheckout_Concurrency_LastUnit(t *testing.T) {
 		switch {
 		case err == nil:
 			successes++
-		case fun.Is(err, fun.CodeConflict):
+		case statusOf(err) == http.StatusConflict:
 			conflicts++
 		default:
 			t.Fatalf("unexpected error: %v", err)

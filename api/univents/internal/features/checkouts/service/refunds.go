@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -104,12 +104,12 @@ func (o *Operations) RefundPurchase(ctx context.Context, actorID, purchaseID uui
 	case models.PurchaseStatusApproved:
 		// ok
 	case models.PurchaseStatusRefunded:
-		return nil, fun.Err("purchase already refunded").Conflict()
+		return nil, errs.ErrAlreadyRefunded
 	default:
-		return nil, fun.Errf("purchase cannot be refunded from status %q", purchase.Status).Conflict()
+		return nil, &errs.PurchaseStatusError{Status: string(purchase.Status)}
 	}
 	if purchase.PayssageIntentID == nil {
-		return nil, fun.Err("purchase has no payment intent (free order) and cannot be refunded").BadRequest()
+		return nil, errs.ErrFreeOrderRefund
 	}
 
 	_, err = o.Payssage.RefundIntent(ctx, *purchase.PayssageIntentID)

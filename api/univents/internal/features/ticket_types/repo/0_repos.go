@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"univents/errs"
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
@@ -18,7 +19,7 @@ var _ ports.TicketTypeRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("ticket_type"),
+		dbe: database.NewErrorHandler(errs.ErrTicketTypeNotFound),
 	}
 }
 

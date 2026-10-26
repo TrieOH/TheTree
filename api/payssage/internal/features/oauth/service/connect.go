@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 	idx "sdk/identityx"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -59,7 +59,7 @@ func (o *Operations) Connect(ctx context.Context, payload models.ConnectInput) (
 		}
 
 	default:
-		return "", fun.ErrBadRequest("invalid flow")
+		return "", errs.ErrInvalidFlow
 	}
 
 	provider, err := providers.FromString(payload.Provider)

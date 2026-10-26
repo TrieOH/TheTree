@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"lib/database"
+	"univents/errs"
 	"univents/models"
 )
 
@@ -39,9 +41,9 @@ func (o *Operations) Register(ctx context.Context, occurrenceID, userID uuid.UUI
 
 		existing, err := o.Participations.GetActiveByOccurrenceAndRegistration(ctx, occurrenceID, reg.ID)
 		if existing != nil {
-			return fun.ErrConflict("you are already registered for this activity")
+			return errs.ErrAlreadyRegistered
 		}
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return err
 		}
 
@@ -50,7 +52,7 @@ func (o *Operations) Register(ctx context.Context, occurrenceID, userID uuid.UUI
 			return err
 		}
 		if occ.MaxCapacity != nil && count >= int64(*occ.MaxCapacity) {
-			return fun.ErrConflict("this activity occurrence is full")
+			return errs.ErrOccurrenceFull
 		}
 
 		part, err = o.Participations.CreateParticipation(ctx, &models.ProgramParticipation{

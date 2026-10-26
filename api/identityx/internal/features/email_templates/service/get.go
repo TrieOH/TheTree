@@ -4,10 +4,10 @@ import (
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 	"context"
+	"errors"
+	"lib/database"
 
 	"github.com/google/uuid"
-
-	"github.com/MintzyG/fun"
 )
 
 // Get returns the effective template for a kind: the project's override
@@ -22,7 +22,7 @@ func (o *Operations) Get(ctx context.Context, projectID uuid.UUID, kind models.E
 	}
 
 	override, err := o.Templates.GetByProjectAndKind(ctx, projectID, kind)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 	if err == nil {

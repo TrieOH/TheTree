@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"univents/errs"
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
@@ -21,7 +22,7 @@ var (
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("signature"),
+		dbe: database.NewErrorHandler(errs.ErrSignatureNotFound),
 	}
 }
 

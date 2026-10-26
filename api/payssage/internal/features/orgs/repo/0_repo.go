@@ -2,6 +2,7 @@ package repo
 
 import (
 	"lib/database"
+	"payssage/errs"
 	"payssage/internal/sqlc"
 	"payssage/models"
 	"payssage/ports"
@@ -17,7 +18,7 @@ var _ ports.OrganizationRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("organization"),
+		dbe: database.NewErrorHandler(errs.ErrOrganizationNotFound),
 	}
 }
 

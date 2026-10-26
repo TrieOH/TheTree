@@ -2,15 +2,18 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
 	"IdentityX/models"
 	"IdentityX/ports"
+	libauthz "lib/authz"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -74,7 +77,7 @@ func TestCreateIntroducesV1AndNotifies(t *testing.T) {
 
 	// v0: the project has no terms yet.
 	_ = mock.When(tosRepo.GetCurrent(mock.AnyContext(), mock.Equal(projectID))).
-		ThenReturn(nil, fun.ErrNotFound("terms_of_service not found"))
+		ThenReturn(nil, database.ErrNotFound)
 	var created *models.TermsOfService
 	_ = mock.When(tosRepo.Create(mock.AnyContext(), mock.Any[models.TermsOfService]())).
 		ThenAnswer(func(args []any) []any {
@@ -113,7 +116,7 @@ func TestCreateRejectsWhenTermsAlreadyExist(t *testing.T) {
 		ThenReturn(&models.TermsOfService{ID: uuid.New(), ProjectID: projectID, Version: 1}, nil)
 
 	_, err := ops.Create(adminCtx(), projectID, "new content")
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || !errors.Is(err, errs.ErrTosExists) {
 		t.Fatalf("creating over existing terms must conflict, got %v", err)
 	}
 	_ = mock.Verify(notifier, mock.Times(0)).NotifyUpdate(mock.AnyContext(), mock.Any[*models.Project](), mock.Any[*models.TermsOfService]())
@@ -125,10 +128,10 @@ func TestCreateRejectsEmptyContent(t *testing.T) {
 	ops, tosRepo, _ := stubProjectAdmin(projectID)
 
 	_ = mock.When(tosRepo.GetCurrent(mock.AnyContext(), mock.Equal(projectID))).
-		ThenReturn(nil, fun.ErrNotFound("terms_of_service not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := ops.Create(adminCtx(), projectID, "")
-	if err == nil || !fun.Is(err, fun.CodeValidation) {
+	if err == nil || !errors.Is(err, errs.ErrTosEmpty) {
 		t.Fatalf("empty content must be rejected, got %v", err)
 	}
 }
@@ -168,7 +171,7 @@ func TestCurrentTosNilWhenAbsent(t *testing.T) {
 	ops, tosRepo, _ := stubProjectAdmin(projectID)
 
 	_ = mock.When(tosRepo.GetCurrent(mock.AnyContext(), mock.Equal(projectID))).
-		ThenReturn(nil, fun.ErrNotFound("terms_of_service not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	tos, hasTos, err := ops.CurrentTos(context.Background(), projectID)
 	if err != nil || hasTos || tos != nil {
@@ -246,7 +249,7 @@ func TestAcceptRejectsActorOutsideProject(t *testing.T) {
 	})
 
 	_, err := ops.Accept(userCtx(actorID), projectID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || !errors.Is(err, errs.ErrActorNotInProject) {
 		t.Fatalf("actor outside the project must be rejected, got %v", err)
 	}
 }
@@ -268,7 +271,7 @@ func TestUpdateRequiresAdmin(t *testing.T) {
 	})
 
 	_, err := ops.Update(userCtx(uuid.New()), projectID, "content")
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("non-admin update must be forbidden, got %v", err)
 	}
 }
@@ -283,7 +286,7 @@ func stubStampOps(t *testing.T, projectID uuid.UUID, current *models.TermsOfServ
 			ThenReturn(current, nil)
 	} else {
 		_ = mock.When(tosRepo.GetCurrent(mock.AnyContext(), mock.Equal(projectID))).
-			ThenReturn(nil, fun.ErrNotFound("terms_of_service not found"))
+			ThenReturn(nil, database.ErrNotFound)
 	}
 	return New(Deps{
 		Tos:      tosRepo,

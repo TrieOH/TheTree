@@ -5,10 +5,10 @@ import (
 	"errors"
 	"strings"
 
+	"lib/database"
 	"univents/models"
 	"univents/ports"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -85,7 +85,7 @@ func (o *Operations) claimGiftByAccountEmail(ctx context.Context, editionID, use
 
 	claimed, err := o.Registrations.ClaimByAttendeeEmail(ctx, editionID, email, userID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			//nolint:nilnil // no active gift for this email — a normal state
 			return nil, nil
 		}

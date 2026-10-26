@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
+	"Informd/errs"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +16,7 @@ func (o *Operations) Close(ctx context.Context, formID uuid.UUID) (*models.Form,
 	}
 
 	if form.Status != models.FormStatusOpen {
-		return nil, fun.ErrBadRequest("cannot close a form not on open")
+		return nil, errs.ErrCloseNotOpen
 	}
 
 	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)

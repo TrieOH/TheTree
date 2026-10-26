@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
+	"Informd/errs"
 	"Informd/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +17,7 @@ func (o *Operations) OpenForm(ctx context.Context, namespaceID, formID uuid.UUID
 	}
 
 	if form.Status != models.FormStatusDraft {
-		return nil, fun.ErrBadRequest("cannot open a form not on draft")
+		return nil, errs.ErrOpenNotDraft
 	}
 
 	_, err = o.Authz.Namespace(ctx, namespaceID, models.NamespaceMemberRoleAdmin)

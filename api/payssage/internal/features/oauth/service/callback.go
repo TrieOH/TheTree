@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"payssage/errs"
 	"payssage/internal/providers"
 	"payssage/models"
 	"strconv"
-
-	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) Callback(ctx context.Context, providerStr, code, stateStr string) (string, error) {
@@ -17,7 +16,7 @@ func (o *Operations) Callback(ctx context.Context, providerStr, code, stateStr s
 		return "", err
 	}
 	if state.Provider != providerStr {
-		return "", fun.ErrBadRequest("invalid provider")
+		return "", errs.ErrInvalidProvider
 	}
 
 	provider, err := providers.FromString(providerStr)
@@ -47,7 +46,7 @@ func (o *Operations) Callback(ctx context.Context, providerStr, code, stateStr s
 		credentialID = collector.ID.String()
 	case models.OAuthFlowSeller:
 		if state.WalletID == nil {
-			return "", fun.ErrBadRequest("wallet_id is required for seller flow")
+			return "", errs.ErrSellerFlowNeedsWallet
 		}
 		seller, err := o.Sellers.Create(ctx, models.Seller{
 			WalletID:       *state.WalletID,
@@ -60,7 +59,7 @@ func (o *Operations) Callback(ctx context.Context, providerStr, code, stateStr s
 		}
 		credentialID = seller.ID.String()
 	default:
-		return "", fun.ErrBadRequest("invalid flow")
+		return "", errs.ErrInvalidFlow
 	}
 
 	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectURL, credentialID, credentialData.PublicKey), nil

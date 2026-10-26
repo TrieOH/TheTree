@@ -6,14 +6,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"lib/database"
 	"payssage/ports"
 	"time"
 
 	"lib/telemetry"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"resty.dev/v3"
@@ -89,7 +90,7 @@ func buildEnvelope(event *models.WebhookEvent) ([]byte, error) {
 func (w *DeliverWebhookWorker) Work(ctx context.Context, args DeliverWebhookArgs) error {
 	delivery, err := w.deliveries.GetByID(ctx, args.DeliveryID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			telemetry.Log().Error("webhook delivery: delivery not found", zap.String("delivery_id", args.DeliveryID.String()), zap.Error(err))
 			return nil
 		}
@@ -104,7 +105,7 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, args DeliverWebhookArgs
 
 	event, err := w.events.GetByID(ctx, delivery.EventID)
 	if err != nil {
-		if !fun.Is(err, fun.CodeNotFound) {
+		if !errors.Is(err, database.ErrNotFound) {
 			return err // the database is unreachable — retry
 		}
 		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("event not found: %v", err))
@@ -113,7 +114,7 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, args DeliverWebhookArgs
 
 	endpoint, err := w.endpoints.GetByID(ctx, delivery.EndpointID)
 	if err != nil {
-		if !fun.Is(err, fun.CodeNotFound) {
+		if !errors.Is(err, database.ErrNotFound) {
 			return err // the database is unreachable — retry
 		}
 		w.giveUp(ctx, delivery, 0, "", fmt.Sprintf("endpoint not found: %v", err))

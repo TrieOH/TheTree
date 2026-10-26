@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	idx "sdk/identityx"
 	"time"
 
+	"Informd/errs"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
+	"lib/database"
 )
 
 // TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
@@ -18,7 +19,7 @@ func (o *Operations) AddFormMember(ctx context.Context, payload models.AddNamesp
 	}
 
 	if ident.Sub.ID == payload.UserID {
-		return fun.ErrBadRequest("users can't add themselves to forms")
+		return errs.ErrAddSelfToForm
 	}
 
 	namespace, err := o.Namespaces.GetByID(ctx, payload.NamespaceID)
@@ -27,7 +28,7 @@ func (o *Operations) AddFormMember(ctx context.Context, payload models.AddNamesp
 	}
 
 	if payload.UserID == namespace.OwnerID {
-		return fun.ErrBadRequest("owner of the namespace is already a member of the form")
+		return errs.ErrNamespaceOwnerAlreadyInForm
 	}
 
 	_, err = o.Authz.Namespace(ctx, namespace.ID, models.NamespaceMemberRoleAdmin)
@@ -36,11 +37,11 @@ func (o *Operations) AddFormMember(ctx context.Context, payload models.AddNamesp
 	}
 
 	_, err = o.Namespaces.GetMember(ctx, payload.UserID, namespace.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("namespace member is already a member of the form")
+		return errs.ErrNamespaceMemberAlreadyInForm
 	}
 
 	form, err := o.Forms.GetByID(ctx, payload.FormID)
@@ -49,11 +50,11 @@ func (o *Operations) AddFormMember(ctx context.Context, payload models.AddNamesp
 	}
 
 	_, err = o.Forms.GetMember(ctx, payload.UserID, form.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err == nil {
-		return fun.ErrBadRequest("user is already a member of the form")
+		return errs.ErrAlreadyFormMember
 	}
 
 	newMember := models.FormMember{

@@ -2,11 +2,10 @@ package identityx
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/MintzyG/fun"
 )
 
 func TestIntrospectReturnsTheIdentity(t *testing.T) {
@@ -42,15 +41,15 @@ func TestIntrospectRejectsAnInvalidKey(t *testing.T) {
 
 	hook := apiKeyHook(srv.URL, options{acceptAPIKeys: true, httpClient: srv.Client()})
 	_, err := hook(context.Background(), "bad")
-	if !fun.Is(err, fun.CodeForbidden) {
-		t.Fatalf("err = %v, want forbidden", err)
+	if !errors.Is(err, ErrInvalidAPIKey) {
+		t.Fatalf("err = %v, want ErrInvalidAPIKey", err)
 	}
 }
 
 func TestAPIKeysRefusedByDefault(t *testing.T) {
 	hook := apiKeyHook("http://unused.invalid", options{})
 	_, err := hook(context.Background(), "any")
-	if !fun.Is(err, fun.CodeForbidden) {
-		t.Fatalf("err = %v, want forbidden", err)
+	if !errors.Is(err, ErrAPIKeysNotAccepted) {
+		t.Fatalf("err = %v, want ErrAPIKeysNotAccepted", err)
 	}
 }

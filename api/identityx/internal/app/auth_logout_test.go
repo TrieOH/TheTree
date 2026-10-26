@@ -15,9 +15,9 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	libauthz "lib/authz"
+	"lib/database"
 	"lib/validator"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/matchers"
 	"github.com/ovechkin-dm/mockio/mock"
@@ -76,7 +76,7 @@ func stubBlacklist() (ports.BlacklistRepo, matchers.ArgumentCaptor[models.Blackl
 	captor := mock.Captor[models.BlacklistEntry]()
 	mock.When(bl.Append(mock.AnyContext(), captor.Capture())).ThenReturn(nil)
 	mock.When(bl.GetByTargetAndType(mock.AnyContext(), mock.Any[string](), mock.Any[models.BlacklistEntryType]())).
-		ThenReturn(nil, fun.ErrNotFound("not blacklisted"))
+		ThenReturn(nil, database.ErrNotFound)
 	return bl, captor
 }
 

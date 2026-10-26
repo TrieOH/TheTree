@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"net/http"
 	"univents/models"
 )
 
@@ -103,7 +103,7 @@ func TestAttendeeCount_UnknownEditionNotFound(t *testing.T) {
 	seedStore(t, r)
 
 	_, err := ops.AttendeeCount(context.Background(), uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("err = %v, want NOT_FOUND", err)
 	}
 }

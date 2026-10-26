@@ -6,15 +6,26 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/MintzyG/fun"
+	"lib/fielderr"
+
 	"github.com/go-playground/validator/v10"
 )
 
+// Error is a request that failed validation. It reads as every failed
+// field, so clients that only show the message still learn which field
+// failed and why, and lists the fields for the response (fielderr.Lister).
+// lib/httpserver maps it to a 400 VALIDATION_ERROR for every Backend.
+type Error struct{ Fields []fielderr.Field }
+
+func (e *Error) Error() string { return validationMessage(e.Fields) }
+
+// FieldList implements fielderr.Lister.
+func (e *Error) FieldList() []fielderr.Field { return e.Fields }
+
 // Validate runs the shared validator against v — typically a strict-server
 // request body (or the whole RequestObject, since the validator dives into
-// nested structs). It returns a *fun.AppError with CodeValidation and
-// per-field errors, so handlers can return it directly and the harness
-// writes the fun error envelope.
+// nested structs). It returns an *Error listing every failed field, so
+// handlers can return it directly.
 //
 //	body, _ := ...
 //	if err := validator.Validate(request.Body); err != nil {
@@ -27,11 +38,7 @@ func Validate(v any) error {
 	}
 	err := vd.Struct(v)
 	if err != nil {
-		if ve, ok := errors.AsType[validator.ValidationErrors](err); ok {
-			fields := validationErrsToFields(ve)
-			return fun.Err(validationMessage(fields)).WithFields(fields...).Validation()
-		}
-		return fun.Err("invalid request body: " + err.Error()).Validation()
+		return &Error{Fields: validationErrsToFields(err)}
 	}
 	return nil
 }
@@ -39,14 +46,10 @@ func Validate(v any) error {
 // validationMessage builds the top-level envelope message from the
 // per-field errors, so clients that only surface `message` still learn
 // which field failed and why.
-func validationMessage(fields []any) string {
-	var parts []string
+func validationMessage(fields []fielderr.Field) string {
+	parts := make([]string, 0, len(fields))
 	for _, f := range fields {
-		fe, ok := f.(*fun.FieldError)
-		if !ok || fe == nil {
-			continue
-		}
-		parts = append(parts, fe.Field+": "+fe.Message)
+		parts = append(parts, f.Field+": "+f.Message)
 	}
 	if len(parts) == 0 {
 		return "invalid request body"
@@ -54,15 +57,15 @@ func validationMessage(fields []any) string {
 	return "invalid request body: " + strings.Join(parts, "; ")
 }
 
-// validationErrsToFields converts validator.ValidationErrors into
-// []any of *fun.FieldError, with password masking and passwd expansion.
-func validationErrsToFields(err error) []any {
+// validationErrsToFields converts validator.ValidationErrors into fields,
+// with password masking and passwd expansion.
+func validationErrsToFields(err error) []fielderr.Field {
 	ve, ok := errors.AsType[validator.ValidationErrors](err)
 	if !ok {
-		return []any{&fun.FieldError{Field: "body", Message: err.Error()}}
+		return []fielderr.Field{{Field: "body", Message: err.Error()}}
 	}
 
-	out := make([]any, 0, len(ve))
+	out := make([]fielderr.Field, 0, len(ve))
 	for _, fe := range ve {
 		if fe.Tag() == "passwd" {
 			out = append(out, passwdFieldErrors(fe)...)
@@ -74,7 +77,7 @@ func validationErrsToFields(err error) []any {
 			value = fe.Value()
 		}
 
-		out = append(out, &fun.FieldError{
+		out = append(out, fielderr.Field{
 			Field:   fe.Field(),
 			Message: tagMessage(fe),
 			Value:   value,
@@ -94,12 +97,12 @@ func isPasswordField(name string) bool {
 	return false
 }
 
-// passwdFieldErrors expands a failed passwd tag into one FieldError per
+// passwdFieldErrors expands a failed passwd tag into one field per
 // missing requirement, without echoing the password value.
-func passwdFieldErrors(fe validator.FieldError) []any {
+func passwdFieldErrors(fe validator.FieldError) []fielderr.Field {
 	password, ok := fe.Value().(string)
 	if !ok {
-		return []any{&fun.FieldError{Field: fe.Field(), Message: "must be a valid string"}}
+		return []fielderr.Field{{Field: fe.Field(), Message: "must be a valid string"}}
 	}
 
 	var hasUpper, hasNumber, hasSymbol bool
@@ -114,18 +117,18 @@ func passwdFieldErrors(fe validator.FieldError) []any {
 		}
 	}
 
-	var out []any
+	var out []fielderr.Field
 	if len(password) < 8 {
-		out = append(out, &fun.FieldError{Field: fe.Field(), Message: "must be at least 8 characters long"})
+		out = append(out, fielderr.Field{Field: fe.Field(), Message: "must be at least 8 characters long"})
 	}
 	if !hasUpper {
-		out = append(out, &fun.FieldError{Field: fe.Field(), Message: "must contain at least one uppercase letter"})
+		out = append(out, fielderr.Field{Field: fe.Field(), Message: "must contain at least one uppercase letter"})
 	}
 	if !hasNumber {
-		out = append(out, &fun.FieldError{Field: fe.Field(), Message: "must contain at least one number"})
+		out = append(out, fielderr.Field{Field: fe.Field(), Message: "must contain at least one number"})
 	}
 	if !hasSymbol {
-		out = append(out, &fun.FieldError{Field: fe.Field(), Message: "must contain at least one symbol or punctuation"})
+		out = append(out, fielderr.Field{Field: fe.Field(), Message: "must contain at least one symbol or punctuation"})
 	}
 	return out
 }

@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
+	"net/http"
 	"univents/models"
 )
 
@@ -71,7 +71,7 @@ func TestCheckIn_NonCheckpoint400(t *testing.T) {
 	mock.When(h.programs.GetByID(mock.AnyContext(), mock.Equal(occ.ProgramID))).ThenReturn(prog, nil)
 
 	_, err := h.ops.CheckIn(context.Background(), occ.ID, uuid.New(), staffID)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("want 400, got %v", err)
 	}
 }
@@ -89,7 +89,7 @@ func TestCheckIn_NonStaff403(t *testing.T) {
 	mock.When(h.programs.GetByID(mock.AnyContext(), mock.Equal(occ.ProgramID))).ThenReturn(prog, nil)
 
 	_, err := h.ops.CheckIn(context.Background(), occ.ID, uuid.New(), userID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -107,7 +107,7 @@ func TestCheckIn_NoTicket403(t *testing.T) {
 	mock.When(h.registrations.GetActiveByEditionAndAttendee(mock.AnyContext(), mock.Equal(occ.EditionID), mock.Equal(attendeeID))).ThenReturn(nil, notFound())
 
 	_, err := h.ops.CheckIn(context.Background(), occ.ID, attendeeID, staffID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -125,7 +125,7 @@ func TestCheckIn_PendingTicket403(t *testing.T) {
 	mock.When(h.registrations.GetActiveByEditionAndAttendee(mock.AnyContext(), mock.Equal(occ.EditionID), mock.Equal(*reg.AttendeeUserID))).ThenReturn(reg, nil)
 
 	_, err := h.ops.CheckIn(context.Background(), occ.ID, *reg.AttendeeUserID, staffID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -144,7 +144,7 @@ func TestCheckIn_LowAccessLevel403(t *testing.T) {
 	mock.When(h.ticketTypes.GetByID(mock.AnyContext(), mock.Equal(reg.TicketTypeID))).ThenReturn(&models.TicketType{ID: reg.TicketTypeID, AccessLevel: 1}, nil)
 
 	_, err := h.ops.CheckIn(context.Background(), occ.ID, *reg.AttendeeUserID, staffID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -164,7 +164,7 @@ func TestCheckIn_StaffOnlyNonStaff403(t *testing.T) {
 	mock.When(h.events.GetRole(mock.AnyContext(), mock.Equal(*reg.AttendeeUserID), mock.Equal(edition.EventID))).ThenReturn(models.EventMemberRole(""), notFound())
 
 	_, err := h.ops.CheckIn(context.Background(), occ.ID, *reg.AttendeeUserID, staffID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -176,7 +176,7 @@ func TestCheckIn_UnknownOccurrence404(t *testing.T) {
 	mock.When(h.occurrences.GetOccurrenceByID(mock.AnyContext(), mock.Equal(occID))).ThenReturn(nil, notFound())
 
 	_, err := h.ops.CheckIn(context.Background(), occID, uuid.New(), uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("want 404, got %v", err)
 	}
 }

@@ -43,6 +43,9 @@ type App struct {
 	Server  Server
 	Modules []Module
 	Build   BuildFunc
+	// Errors maps the Backend's named errors to HTTP (ADR-0016). Nil while
+	// the Backend still returns root-fun errors.
+	Errors httpserver.ErrorMap
 }
 
 // Server is the process-level HTTP settings.
@@ -122,8 +125,13 @@ func (d *Deps) Chains(primitives authz.Primitives) (map[string][]func(http.Handl
 }
 
 // ChainsWith is Chains with resolver options. IdentityX passes its setup
-// guard here until the guard moves into its own code (ADR-0014).
+// guard here until the guard moves into its own code (ADR-0014). Scope
+// rejections are written through the Backend's error map unless opts says
+// otherwise.
 func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[string][]func(http.Handler) http.Handler, error) {
+	if opts.WriteError == nil {
+		opts.WriteError = httpserver.WriteError
+	}
 	resolver, err := authz.NewResolver(d.spec, primitives, opts)
 	if err != nil {
 		return nil, fmt.Errorf("resolve auth chains: %w", err)
@@ -135,6 +143,9 @@ func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[
 func Run(app App) error {
 	if app.Build == nil {
 		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
+	}
+	if app.Errors != nil {
+		httpserver.UseErrorMap(app.Errors)
 	}
 	return httpserver.Boot(httpserver.Config{
 		AppName:            app.Name,

@@ -7,25 +7,24 @@ import (
 	"os"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"payssage/errs"
 	"payssage/internal/openapi"
 	"payssage/models"
 )
 
 func (h *Handlers) HardCreateIntent(ctx context.Context, req openapi.HardCreateIntentRequestObject) (openapi.HardCreateIntentResponseObject, error) {
 	if os.Getenv("TEST_MODE") != "true" {
-		return nil, fun.Err("test mode only").ServiceUnavailable()
+		return nil, errs.ErrTestModeOnly
 	}
 	providerData, err := json.Marshal(req.Body.ProviderData)
 	if err != nil {
-		return nil, fun.ErrBadRequest("invalid provider_data")
+		return nil, errs.ErrInvalidProviderData
 	}
 	var metadata json.RawMessage
 	if req.Body.Metadata != nil {
 		metadata, err = json.Marshal(req.Body.Metadata)
 		if err != nil {
-			return nil, fun.ErrBadRequest("invalid metadata")
+			return nil, errs.ErrInvalidMetadata
 		}
 	}
 	sandbox := false

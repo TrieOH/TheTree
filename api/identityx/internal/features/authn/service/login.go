@@ -1,13 +1,15 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
+	"errors"
 	"lib/crypto"
+	"lib/database"
 	"lib/telemetry"
 	"strings"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -15,18 +17,18 @@ func (o *Operations) Login(ctx context.Context, in models.IDXLoginInput) (tokens
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	actor, err := o.Actors.GetByEmail(ctx, in.Email, in.ProjectID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrUnauthorized("invalid email or password")
+	if errors.Is(err, database.ErrNotFound) {
+		return nil, errs.ErrInvalidCredentials
 	}
 	if err != nil {
 		return nil, err
 	}
 	if actor.PasswordHash == nil {
-		return nil, fun.ErrUnauthorized("invalid email or password")
+		return nil, errs.ErrInvalidCredentials
 	}
 	err = crypto.Verify(in.Password, *actor.PasswordHash)
 	if err != nil {
-		return nil, fun.ErrUnauthorized("invalid email or password")
+		return nil, errs.ErrInvalidCredentials
 	}
 	err = o.Actors.UpdateLastLoginAt(ctx, actor.ID)
 	if err != nil {

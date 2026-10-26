@@ -1,12 +1,12 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"context"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -31,5 +31,5 @@ func validKind(kind models.EmailTemplateKind) bool {
 }
 
 func invalidKindErr() error {
-	return fun.ErrValidation("email template kind must be one of: verify, reset, tos")
+	return errs.ErrInvalidTemplateKind
 }

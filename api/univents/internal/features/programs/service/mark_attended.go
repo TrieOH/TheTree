@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"univents/errs"
 	"univents/models"
 )
 
@@ -35,7 +35,7 @@ func (o *Operations) MarkAttended(ctx context.Context, participationID, actorID 
 		return nil, err
 	}
 	if updated == nil {
-		return nil, fun.ErrConflict("cannot mark attendance: participation was cancelled")
+		return nil, errs.ErrParticipationCancelled
 	}
 	return updated, nil
 }

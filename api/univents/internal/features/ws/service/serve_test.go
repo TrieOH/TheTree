@@ -14,7 +14,6 @@ import (
 	"univents/internal/notify"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 )
@@ -46,7 +45,7 @@ func TestIssueTokenNonOwnerNotFound(t *testing.T) {
 	p := seedPending(purchases)
 
 	_, _, err := ops.IssueToken(context.Background(), p.ID, uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("non-owner issue err = %v, want NOT_FOUND (no existence leak)", err)
 	}
 }
@@ -54,7 +53,7 @@ func TestIssueTokenNonOwnerNotFound(t *testing.T) {
 func TestIssueTokenMissingPurchaseNotFound(t *testing.T) {
 	ops, _, _, _ := newOps(t) //nolint:dogsled // only the operations are needed
 	_, _, err := ops.IssueToken(context.Background(), uuid.New(), uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("missing purchase err = %v, want NOT_FOUND", err)
 	}
 }

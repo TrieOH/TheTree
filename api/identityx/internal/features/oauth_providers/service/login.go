@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/crypto"
 	"lib/oauth"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -33,7 +33,7 @@ func (o *Operations) resolveLoginProvider(ctx context.Context, provider string, 
 	if projectID == nil {
 		creds, ok := oauth.EnvCredentials(provider)
 		if !ok {
-			return LoginProvider{}, fun.ErrBadRequest("provider not configured: " + provider)
+			return LoginProvider{}, &errs.ProviderNotConfiguredError{Provider: provider}
 		}
 		return LoginProvider{Provider: models.OAuthProvider(provider), Creds: creds}, nil
 	}

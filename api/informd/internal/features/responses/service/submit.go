@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 
+	"Informd/errs"
 	"Informd/models"
+	"lib/database"
 	"lib/xslices"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -17,17 +19,17 @@ func (o *Operations) Submit(ctx context.Context, payload models.SubmitInput) err
 	}
 
 	if form.Status != models.FormStatusOpen {
-		return fun.ErrBadRequest("form is not open for responses")
+		return errs.ErrFormNotOpenForResponses
 	}
 
 	var responderID *uuid.UUID
 	return o.Tx.WithinTx(ctx, func(ctx context.Context) error {
 		if payload.Email != nil {
 			responder, err := o.Responders.GetByEmail(ctx, *payload.Email)
-			if err != nil && !fun.Is(err, fun.CodeNotFound) {
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
 				return err
 			}
-			if fun.Is(err, fun.CodeNotFound) {
+			if errors.Is(err, database.ErrNotFound) {
 				responder, err = o.Responders.Create(ctx, models.Responder{
 					Email: *payload.Email,
 				})

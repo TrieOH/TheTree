@@ -8,6 +8,7 @@ import (
 	"IdentityX/internal/authz"
 	"IdentityX/internal/setup"
 	libauthz "lib/authz"
+	"lib/httpserver"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -40,6 +41,9 @@ func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *
 	if err != nil {
 		t.Fatalf("resolve auth chains: %v", err)
 	}
+	// Boot installs the error map before serving; the router under test
+	// answers errors through the same table.
+	httpserver.UseErrorMap(Errors())
 	r := chi.NewRouter()
 	mountStrict(r, h, resolver.Chains())
 	return r

@@ -2,13 +2,12 @@ package authz
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/MintzyG/fun"
 )
 
 var invocations []string
@@ -152,10 +151,19 @@ func scopeNamed() ScopeChecker {
 	}
 }
 
-// rejectingScope rejects every call with a Forbidden error, so the
-// middleware path (write the error, stop the chain) can be pinned.
+// rejectingScope rejects every call, so the middleware path (write the
+// error, stop the chain) can be pinned.
 func rejectingScope(context.Context) error {
-	return fun.ErrForbidden("platform-level authentication required")
+	return ErrInsufficientRole
+}
+
+// writeForbidden stands in for lib/httpserver's writer.
+func writeForbidden(w http.ResponseWriter, _ *http.Request, err error) {
+	if errors.Is(err, ErrInsufficientRole) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func mustResolver(t *testing.T, spec string, primitives Primitives, opts Options) *Resolver {
@@ -261,7 +269,7 @@ func TestResolverScopeRunsAfterAuthn(t *testing.T) {
 	r := mustResolver(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
-	}, Options{})
+	}, Options{WriteError: writeForbidden})
 
 	if got := run(r.Chains()["GetScoped"]); len(got) != 2 || got[0] != "JWT" || got[1] != "scope" {
 		t.Fatalf("scoped op must run authn then scope, ran %v", got)
@@ -276,7 +284,7 @@ func TestResolverScopeAfterSetupGuard(t *testing.T) {
 	r := mustResolver(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
-	}, Options{SetupGuard: named("setupGuard")})
+	}, Options{SetupGuard: named("setupGuard"), WriteError: writeForbidden})
 
 	got := run(r.Chains()["GetScoped"])
 	want := []string{"setupGuard", "JWT", "scope"}
@@ -294,7 +302,7 @@ func TestResolverScopeRejectionShortCircuits(t *testing.T) {
 	r := mustResolver(t, specWithScope, Primitives{
 		JWT:    named("JWT"),
 		Scopes: map[string]ScopeChecker{"platform-only": rejectingScope},
-	}, Options{})
+	}, Options{WriteError: writeForbidden})
 
 	invocations = nil
 	rec := httptest.NewRecorder()
@@ -349,5 +357,15 @@ func TestResolverNilScopeCheckerFails(t *testing.T) {
 	}, Options{})
 	if err == nil || !strings.Contains(err.Error(), "no scope checker registered") {
 		t.Fatalf("want error for a registered-but-nil scope checker, got %v", err)
+	}
+}
+
+func TestResolverScopeWithoutWriterFails(t *testing.T) {
+	_, err := NewResolver([]byte(specWithScope), Primitives{
+		JWT:    named("JWT"),
+		Scopes: map[string]ScopeChecker{"platform-only": scopeNamed()},
+	}, Options{})
+	if err == nil || !strings.Contains(err.Error(), "needs Options.WriteError") {
+		t.Fatalf("want error for x-scope with no error writer, got %v", err)
 	}
 }

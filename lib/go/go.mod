@@ -4,7 +4,6 @@ go 1.27.3
 
 require (
 	github.com/MintzyG/fun v0.10.6
-	github.com/MintzyG/fun/bind v0.1.1
 	github.com/MintzyG/fun/middlewares v0.1.3
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.35

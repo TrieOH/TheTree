@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
+	"lib/database"
+	"univents/errs"
 	"univents/models"
 )
 
@@ -22,13 +24,13 @@ import (
 func (o *Operations) checkEligible(ctx context.Context, occ *models.ProgramOccurrence, userID uuid.UUID) (*models.Registration, *models.Program, error) {
 	reg, err := o.Registrations.GetActiveByEditionAndAttendee(ctx, occ.EditionID, userID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, nil, fun.ErrForbidden("a confirmed ticket is required to register for activities")
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, nil, errs.ErrTicketRequiredForActivity
 		}
 		return nil, nil, err
 	}
 	if reg.Status != models.RegistrationStatusConfirmed {
-		return nil, nil, fun.ErrForbidden("a confirmed ticket is required to register for activities")
+		return nil, nil, errs.ErrTicketRequiredForActivity
 	}
 
 	program, err := o.Programs.GetByID(ctx, occ.ProgramID)
@@ -67,7 +69,7 @@ func (o *Operations) checkProgramAccess(ctx context.Context, occ *models.Program
 			return err
 		}
 		if ticket.AccessLevel < *program.MinAccessLevel {
-			return fun.ErrForbidden("your ticket level does not grant access to this " + string(program.Kind))
+			return &errs.AccessLevelError{Kind: string(program.Kind)}
 		}
 	}
 

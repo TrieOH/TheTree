@@ -6,14 +6,16 @@ package emails
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"strings"
 
 	"IdentityX/assets"
+	"IdentityX/errs"
 	"IdentityX/models"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -104,7 +106,7 @@ func ResolveTemplate(ctx context.Context, store TemplateStore, projectID *uuid.U
 				Source:  SourceOverride,
 			}, nil
 		}
-		if !fun.Is(err, fun.CodeNotFound) {
+		if !errors.Is(err, database.ErrNotFound) {
 			return Template{}, err
 		}
 	}
@@ -152,13 +154,11 @@ const actionURLVariable = "{{.ActionURL}}"
 // project. ToS-change emails carry no action token, so they are exempt.
 func Validate(t Template) error {
 	if t.Kind != models.TosEmailTemplateKind && !strings.Contains(t.Body, actionURLVariable) {
-		return fun.ErrValidation(
-			"email template body must include the {{.ActionURL}} variable at least once",
-		)
+		return errs.ErrTemplateMissingActionURL
 	}
 	_, _, err := Render(t, sentinelData())
 	if err != nil {
-		return fun.ErrValidation("email template does not render: " + err.Error())
+		return &errs.TemplateRenderError{Err: err}
 	}
 	return nil
 }

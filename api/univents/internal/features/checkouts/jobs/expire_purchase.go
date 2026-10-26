@@ -5,6 +5,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"lib/database"
 	"lib/telemetry"
@@ -13,7 +14,6 @@ import (
 	"univents/models"
 	"univents/ports"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -73,7 +73,7 @@ func NewExpirePurchaseWorker(
 func (w *ExpirePurchaseWorker) Work(ctx context.Context, args ExpirePurchaseArgs) error {
 	purchase, err := w.purchases.GetByID(ctx, args.PurchaseID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			// The job is enqueued inside the checkout tx, before commit; a
 			// rolled-back checkout leaves a job for a purchase that never
 			// existed. Nothing to expire.

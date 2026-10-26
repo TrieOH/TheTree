@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 
-	"github.com/MintzyG/fun"
+	"IdentityX/errs"
+	"lib/database"
+
 	"github.com/google/uuid"
 )
 
@@ -19,7 +22,7 @@ import (
 func (o *Operations) Connect(ctx context.Context, provider string, projectID *uuid.UUID, acceptedTos bool) (string, error) {
 	p, ok := o.Meta[provider]
 	if !ok {
-		return "", fun.ErrBadRequest("unsupported provider: " + provider)
+		return "", &errs.UnsupportedProviderError{Provider: provider}
 	}
 
 	if projectID != nil {
@@ -34,14 +37,14 @@ func (o *Operations) Connect(ctx context.Context, provider string, projectID *uu
 			return "", err
 		}
 		if hasTos && !acceptedTos {
-			return "", fun.ErrValidation("you must accept the terms of service to register")
+			return "", errs.ErrTermsNotAccepted
 		}
 	}
 
 	resolved, err := o.resolveLoginProvider(ctx, provider, projectID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return "", fun.ErrBadRequest("provider not configured for this project: " + provider)
+		if errors.Is(err, database.ErrNotFound) {
+			return "", &errs.ProviderNotConfiguredError{Provider: provider, ForProject: true}
 		}
 		return "", err
 	}

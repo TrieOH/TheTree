@@ -6,8 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"Informd/errs"
 	"Informd/internal/openapi"
 	"Informd/models"
 )
@@ -15,7 +14,7 @@ import (
 func (h *Handlers) EditSelectConfig(ctx context.Context, req openapi.EditSelectConfigRequestObject) (openapi.EditSelectConfigResponseObject, error) {
 	options, err := json.Marshal(req.Body.Options)
 	if err != nil {
-		return nil, fun.ErrBadRequest("invalid options")
+		return nil, errs.ErrInvalidSelectOptions
 	}
 	config, err := h.ops.EditSelectConfig(ctx, req.FormId, models.FieldSelectConfig{
 		FieldID:   req.FieldId,

@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
+	"payssage/errs"
 	"payssage/models"
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -29,7 +29,7 @@ func (o *Operations) GetByID(ctx context.Context, id uuid.UUID) (*models.Collect
 	}
 
 	if collector.OwnerID != ident.Sub.ID {
-		return nil, fun.ErrForbidden("insufficient permissions")
+		return nil, errs.ErrNotResourceOwner
 	}
 
 	return collector, nil

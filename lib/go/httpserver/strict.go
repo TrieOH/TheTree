@@ -69,9 +69,11 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 
 // TraceMiddleware returns a strict middleware that runs each operation
 // inside one span named after its operationID, recording a returned error
-// on it. It is the outermost strict middleware, so validation and auth
-// show up inside the span. Repos need no spans of their own: the pgx
-// tracer already records every query (lib/database).
+// on it. Only an error answered with a 5xx marks the span as failed: a 4xx
+// is the caller's mistake, not the service's (ADR-0016). It is the
+// outermost strict middleware, so validation and auth show up inside the
+// span. Repos need no spans of their own: the pgx tracer already records
+// every query (lib/database).
 func TraceMiddleware() StrictMiddlewareFunc {
 	return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
 		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
@@ -80,7 +82,9 @@ func TraceMiddleware() StrictMiddlewareFunc {
 			resp, err := f(ctx, w, r.WithContext(ctx), request)
 			if err != nil {
 				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
+				if errorStatus(err) >= http.StatusInternalServerError {
+					span.SetStatus(codes.Error, err.Error())
+				}
 			}
 			return resp, err
 		}

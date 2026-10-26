@@ -7,26 +7,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 
 	"lib/database"
+	"net/http"
 
 	"univents/internal/authz"
 	programs "univents/internal/features/programs/service"
 	"univents/models"
 	"univents/ports"
 )
-
-func TestMain(m *testing.M) {
-	fun.SetConfig(fun.Config{
-		DefaultModule:        "test",
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-	})
-	m.Run()
-}
 
 // noopTxRunner runs fn directly — the repo fakes ignore the tx context, so
 // the tx is simulated. The DB-backed test exercises the real pgx runner.
@@ -79,7 +70,7 @@ func (n *recordingNotifier) stockPayloads() []decodedNotify {
 }
 
 func notFound() error {
-	return fun.Err("not found").NotFound()
+	return database.ErrNotFound
 }
 
 type harness struct {
@@ -188,7 +179,7 @@ func TestRegister_NoTicket403(t *testing.T) {
 	mock.When(h.registrations.GetActiveByEditionAndAttendee(mock.AnyContext(), mock.Equal(occ.EditionID), mock.Equal(userID))).ThenReturn(nil, notFound())
 
 	_, err := h.ops.Register(context.Background(), occ.ID, userID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -203,7 +194,7 @@ func TestRegister_PendingTicket403(t *testing.T) {
 	mock.When(h.registrations.GetActiveByEditionAndAttendee(mock.AnyContext(), mock.Equal(occ.EditionID), mock.Equal(*reg.AttendeeUserID))).ThenReturn(reg, nil)
 
 	_, err := h.ops.Register(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -218,7 +209,7 @@ func TestRegister_LowAccessLevel403(t *testing.T) {
 	mock.When(h.ticketTypes.GetByID(mock.AnyContext(), mock.Equal(reg.TicketTypeID))).ThenReturn(&models.TicketType{ID: reg.TicketTypeID, AccessLevel: 1}, nil)
 
 	_, err := h.ops.Register(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -232,11 +223,11 @@ func TestRegister_StaffOnlyNonStaff403(t *testing.T) {
 
 	edition := &models.Edition{ID: occ.EditionID, EventID: uuid.New()}
 	mock.When(h.editions.GetByID(mock.AnyContext(), mock.Equal(occ.EditionID))).ThenReturn(edition, nil)
-	// Not a member → authz maps NOT_FOUND to Forbidden.
+	// Not a member → DenyIfNotFound turns database.ErrNotFound into a 403.
 	mock.When(h.events.GetRole(mock.AnyContext(), mock.Equal(*reg.AttendeeUserID), mock.Equal(edition.EventID))).ThenReturn(models.EventMemberRole(""), notFound())
 
 	_, err := h.ops.Register(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -273,7 +264,7 @@ func TestRegister_AlreadyRegistered409(t *testing.T) {
 	mock.When(h.participations.GetActiveByOccurrenceAndRegistration(mock.AnyContext(), mock.Equal(occ.ID), mock.Equal(reg.ID))).ThenReturn(&models.ProgramParticipation{ID: uuid.New()}, nil)
 
 	_, err := h.ops.Register(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("want 409, got %v", err)
 	}
 }
@@ -290,7 +281,7 @@ func TestRegister_Full409(t *testing.T) {
 	mock.When(h.participations.CountActiveByOccurrence(mock.AnyContext(), mock.Equal(occ.ID))).ThenReturn(int64(2), nil)
 
 	_, err := h.ops.Register(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("want 409, got %v", err)
 	}
 }
@@ -302,7 +293,7 @@ func TestRegister_UnknownOccurrence404(t *testing.T) {
 	mock.When(h.occurrences.GetOccurrenceByID(mock.AnyContext(), mock.Equal(occID))).ThenReturn(nil, notFound())
 
 	_, err := h.ops.Register(context.Background(), occID, uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("want 404, got %v", err)
 	}
 }
@@ -342,7 +333,7 @@ func TestDeregister_NotRegistered404(t *testing.T) {
 	mock.When(h.participations.GetActiveByOccurrenceAndRegistration(mock.AnyContext(), mock.Equal(occ.ID), mock.Equal(reg.ID))).ThenReturn(nil, notFound())
 
 	_, err := h.ops.Deregister(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("want 404, got %v", err)
 	}
 }
@@ -360,7 +351,7 @@ func TestDeregister_LockedWhenAttended409(t *testing.T) {
 	mock.When(h.participations.UpdateParticipationStatusIfRegistered(mock.AnyContext(), mock.Equal(part.ID), mock.Equal(models.ProgramParticipationStatusCancelled))).ThenReturn(nil, nil)
 
 	_, err := h.ops.Deregister(context.Background(), occ.ID, *reg.AttendeeUserID)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("want 409, got %v", err)
 	}
 }
@@ -398,7 +389,7 @@ func TestMarkAttended_NonStaff403(t *testing.T) {
 	mock.When(h.events.GetRole(mock.AnyContext(), mock.Equal(userID), mock.Equal(edition.EventID))).ThenReturn(models.EventMemberRole(""), notFound())
 
 	_, err := h.ops.MarkAttended(context.Background(), part.ID, userID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }
@@ -414,7 +405,7 @@ func TestMarkAttended_Cancelled409(t *testing.T) {
 	mock.When(h.events.GetRole(mock.AnyContext(), mock.Equal(staffID), mock.Equal(edition.EventID))).ThenReturn(models.EventMemberRoleStaff, nil)
 
 	_, err := h.ops.MarkAttended(context.Background(), part.ID, staffID)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("want 409, got %v", err)
 	}
 }
@@ -426,7 +417,7 @@ func TestMarkAttended_Unknown404(t *testing.T) {
 	mock.When(h.participations.GetParticipationByID(mock.AnyContext(), mock.Equal(partID))).ThenReturn(nil, notFound())
 
 	_, err := h.ops.MarkAttended(context.Background(), partID, uuid.New())
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || statusOf(err) != http.StatusNotFound {
 		t.Fatalf("want 404, got %v", err)
 	}
 }
@@ -499,7 +490,7 @@ func TestParticipants_NonStaff403(t *testing.T) {
 	mock.When(h.events.GetRole(mock.AnyContext(), mock.Equal(userID), mock.Equal(edition.EventID))).ThenReturn(models.EventMemberRole(""), notFound())
 
 	_, err := h.ops.Participants(context.Background(), occ.ID, userID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("want 403, got %v", err)
 	}
 }

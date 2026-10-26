@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 
+	"Informd/errs"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
+	"lib/database"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) error {
@@ -20,11 +21,11 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveName
 	}
 
 	_, err = o.Namespaces.GetMember(ctx, payload.UserID, namespace.ID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
-		return fun.ErrBadRequest("user is not a member of the namespace")
+		return errs.ErrNotNamespaceMember
 	}
 
 	return o.Namespaces.RemoveMember(ctx, payload.UserID, payload.NamespaceID)

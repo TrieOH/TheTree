@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
 	tos "IdentityX/internal/features/tos/service"
@@ -17,9 +19,9 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 	"lib/oauth"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
@@ -332,10 +334,10 @@ func TestConnectProviderNotConfigured(t *testing.T) {
 	mock.When(r.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
 		ThenReturn(&models.Project{ID: projectID}, nil)
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
-		ThenReturn(nil, fun.ErrNotFound("not configured"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := ops.Connect(context.Background(), "google", &projectID, true)
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.As(err, new(*errs.ProviderNotConfiguredError)) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
@@ -345,10 +347,10 @@ func TestConnectUnknownProject(t *testing.T) {
 	projectID := uuid.New()
 	ops, r := newOAuthOps(t)
 	mock.When(r.projects.GetByID(mock.AnyContext(), mock.Equal(projectID))).
-		ThenReturn(nil, fun.ErrNotFound("project not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := ops.Connect(context.Background(), "google", &projectID, true)
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		t.Fatalf("want not found, got %v", err)
 	}
 }
@@ -358,7 +360,7 @@ func TestConnectUnsupportedProvider(t *testing.T) {
 	ops, _ := newOAuthOps(t)
 
 	_, err := ops.Connect(context.Background(), "x", nil, false)
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.As(err, new(*errs.UnsupportedProviderError)) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
@@ -375,7 +377,7 @@ func TestCallbackSignupNewIdentity(t *testing.T) {
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
-		ThenReturn(nil, fun.ErrNotFound("no identity"))
+		ThenReturn(nil, database.ErrNotFound)
 	captor := mock.Captor[models.Actor]()
 	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
 		ThenAnswer(func(args []any) []any {
@@ -420,7 +422,7 @@ func TestCallbackProjectSignupScopesActorToProject(t *testing.T) {
 			ClientID: "proj-client-id", EncryptedClientSecret: encryptedProjectSecret(t), Enabled: true,
 		}, nil)
 	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
-		ThenReturn(nil, fun.ErrNotFound("no identity"))
+		ThenReturn(nil, database.ErrNotFound)
 	captor := mock.Captor[models.Actor]()
 	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
 		ThenAnswer(func(args []any) []any {
@@ -484,10 +486,10 @@ func TestCallbackInvalidState(t *testing.T) {
 	testEnv(t)
 	ops, r := newOAuthOps(t)
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Any[string]())).
-		ThenReturn(nil, fun.ErrNotFound("no state"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := ops.Callback(context.Background(), "google", "code", "nope")
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.Is(err, errs.ErrOAuthStateNotFound) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
@@ -503,7 +505,7 @@ func TestCallbackProviderMismatch(t *testing.T) {
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 
 	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.Is(err, errs.ErrOAuthStateMismatch) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
@@ -519,7 +521,7 @@ func TestCallbackExpiredState(t *testing.T) {
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 
 	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.Is(err, errs.ErrOAuthStateExpired) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 }
@@ -532,10 +534,10 @@ func TestCallbackProviderRowDeletedMidFlight(t *testing.T) {
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
-		ThenReturn(nil, fun.ErrNotFound("deleted"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
-	if !fun.Is(err, fun.CodeBadRequest) {
+	if !errors.As(err, new(*errs.ProviderRemovedError)) {
 		t.Fatalf("want bad request, got %v", err)
 	}
 	if !strings.Contains(err.Error(), "contact the project") {
@@ -557,10 +559,10 @@ func TestCallbackDisabledBlocksNewSignup(t *testing.T) {
 	mock.When(r.providers.GetByProjectAndProvider(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.GoogleIdentityProvider))).
 		ThenReturn(&row, nil)
 	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
-		ThenReturn(nil, fun.ErrNotFound("no identity"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := ops.Callback(context.Background(), "google", "code", "state-token")
-	if !fun.Is(err, fun.CodeForbidden) {
+	if !errors.As(err, new(*errs.ProviderDisabledError)) {
 		t.Fatalf("want forbidden, got %v", err)
 	}
 	_, _ = mock.Verify(r.actors, mock.Times(0)).Register(mock.AnyContext(), mock.Any[models.Actor]())
@@ -624,7 +626,7 @@ func TestCallbackProjectLoginCreatesProjectActorWhenPlatformIdentityExists(t *te
 	// The platform-scoped identity exists in the DB, but the project-scoped
 	// lookup must not see it.
 	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
-		ThenReturn(nil, fun.ErrNotFound("no identity in this scope"))
+		ThenReturn(nil, database.ErrNotFound)
 	captor := mock.Captor[models.Actor]()
 	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
 		ThenAnswer(func(args []any) []any {
@@ -668,7 +670,7 @@ func TestCallbackPlatformLoginCreatesPlatformActorWhenProjectIdentityExists(t *t
 	mock.When(r.states.GetByState(mock.AnyContext(), mock.Equal(state.State))).ThenReturn(&state, nil)
 	mock.When(r.states.DeleteState(mock.AnyContext(), mock.Any[uuid.UUID]())).ThenReturn(nil)
 	mock.When(r.external.GetByProviderAndSubject(mock.AnyContext(), mock.Equal("google"), mock.Equal("subject-1"), mock.Equal(state.ProjectID))).
-		ThenReturn(nil, fun.ErrNotFound("no identity in this scope"))
+		ThenReturn(nil, database.ErrNotFound)
 	captor := mock.Captor[models.Actor]()
 	mock.When(r.actors.Register(mock.AnyContext(), captor.Capture())).
 		ThenAnswer(func(args []any) []any {

@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"IdentityX/errs"
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -17,7 +18,7 @@ var _ ports.ProjectRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("project"),
+		dbe: database.NewErrorHandler(errs.ErrProjectNotFound),
 	}
 }
 

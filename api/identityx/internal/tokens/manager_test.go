@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
@@ -72,7 +73,7 @@ func newFixture(t *testing.T) *fixture {
 	mock.When(keys.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
 		ThenAnswer(func(_ []any) []any {
 			if f.keyNotFound {
-				return []any{nil, fun.ErrNotFound("key gone")}
+				return []any{nil, database.ErrNotFound}
 			}
 			return []any{&f.resolvedKey, nil}
 		})
@@ -95,7 +96,7 @@ func newFixture(t *testing.T) *fixture {
 			if f.revoked[target] {
 				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeToken}, nil}
 			}
-			return []any{nil, fun.ErrNotFound("not blacklisted")}
+			return []any{nil, database.ErrNotFound}
 		})
 
 	actors := mock.Mock[ports.ActorRepo]()
@@ -237,7 +238,7 @@ func TestVerifyRejectsBlacklistedToken(t *testing.T) {
 	f.revoked[openAccess(t, out.AccessToken).ID] = true
 
 	err := f.mgr.Verify(context.Background(), out.AccessToken, &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrTokenRevoked) {
 		t.Fatalf("want unauthorized for a revoked token, got %v", err)
 	}
 }
@@ -248,7 +249,7 @@ func TestVerifyRejectsBadSignature(t *testing.T) {
 	tampered := out.AccessToken[:len(out.AccessToken)-2] + "xx"
 
 	err := f.mgr.Verify(context.Background(), tampered, &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrInvalidToken) {
 		t.Fatalf("want unauthorized for a tampered token, got %v", err)
 	}
 }
@@ -257,7 +258,7 @@ func TestVerifyMissingKid(t *testing.T) {
 	f := newFixture(t)
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, true), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrMissingKID) {
 		t.Fatalf("want unauthorized for a kid-less token, got %v", err)
 	}
 }
@@ -269,7 +270,7 @@ func TestVerifyRejectsRevokedSigningKey(t *testing.T) {
 	f.stubKey(&revoked)
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrSigningKeyRevoked) {
 		t.Fatalf("want unauthorized for a revoked signing key, got %v", err)
 	}
 }
@@ -281,7 +282,7 @@ func TestVerifyRejectsRetiredSigningKey(t *testing.T) {
 	f.stubKey(&retired)
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrSigningKeyRetired) {
 		t.Fatalf("want unauthorized for a retired signing key, got %v", err)
 	}
 }
@@ -303,7 +304,7 @@ func TestVerifyOutdatedKey(t *testing.T) {
 	f.stubKeyNotFound()
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrOutdatedToken) {
 		t.Fatalf("want unauthorized for an outdated key, got %v", err)
 	}
 }
@@ -380,7 +381,7 @@ func TestRotateRejectsBlacklistedRefresh(t *testing.T) {
 	f.revoked[openRefresh(t, old.RefreshToken).ID] = true
 
 	_, err := f.mgr.Rotate(context.Background(), old.RefreshToken)
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrTokenRevoked) {
 		t.Fatalf("want unauthorized for a revoked refresh token, got %v", err)
 	}
 }
@@ -398,7 +399,7 @@ func TestRotateRejectsExpiredRefresh(t *testing.T) {
 	f := newFixture(t)
 
 	_, err := f.mgr.Rotate(context.Background(), f.mintExpiredRefresh(t))
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrInvalidToken) {
 		t.Fatalf("want unauthorized for an expired refresh token, got %v", err)
 	}
 }
@@ -478,7 +479,7 @@ func TestRevokeRejectsInvalidAccess(t *testing.T) {
 	f := newFixture(t)
 
 	err := f.mgr.Revoke(context.Background(), "garbage", "x")
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrInvalidAccessToken) {
 		t.Fatalf("want unauthorized for an invalid access token, got %v", err)
 	}
 	if len(f.appended) != 0 {

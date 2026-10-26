@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -15,7 +15,7 @@ func (o *Operations) Publish(ctx context.Context, eventID uuid.UUID) error {
 	}
 
 	if event.Status != models.EventStatusDraft {
-		return fun.ErrBadRequest("cannot publish non draft event")
+		return errs.ErrEventNotDraft
 	}
 
 	_, err = o.Authz.Event(ctx, event.ID, models.EventMemberRoleAdmin)

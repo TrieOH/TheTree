@@ -7,11 +7,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -41,8 +43,8 @@ func (o *Operations) Create(ctx context.Context, projectID uuid.UUID, content st
 	_, err = o.Tos.GetCurrent(ctx, projectID)
 	switch {
 	case err == nil:
-		return nil, fun.ErrConflict("project already has terms of service; update them instead")
-	case !fun.Is(err, fun.CodeNotFound):
+		return nil, errs.ErrTosExists
+	case !errors.Is(err, database.ErrNotFound):
 		return nil, err
 	}
 
@@ -135,7 +137,7 @@ func (o *Operations) ListAcceptances(ctx context.Context, projectID uuid.UUID) (
 func (o *Operations) CurrentTos(ctx context.Context, projectID uuid.UUID) (tos *models.TermsOfService, hasTos bool, err error) {
 	tos, err = o.Tos.GetCurrent(ctx, projectID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -209,7 +211,7 @@ func (o *Operations) notifyUsers(ctx context.Context, projectID uuid.UUID, tos *
 
 func validContent(content string) error {
 	if len(content) == 0 {
-		return fun.ErrValidation("terms of service content must not be empty")
+		return errs.ErrTosEmpty
 	}
 	return nil
 }

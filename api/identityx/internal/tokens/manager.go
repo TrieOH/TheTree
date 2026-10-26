@@ -8,14 +8,16 @@ package tokens
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -81,7 +83,7 @@ func (m *Manager) Verify(ctx context.Context, tokenStr string, claims jwt.Claims
 
 	_, err = crypto.VerifyToken(tokenStr, key.PublicKey, claims)
 	if err != nil {
-		return fun.ErrUnauthorized("invalid token")
+		return errs.ErrInvalidToken
 	}
 
 	return m.ensureNotBlacklisted(ctx, tokenJTI(claims))
@@ -180,7 +182,7 @@ func (m *Manager) Revoke(ctx context.Context, accessToken, refreshToken string) 
 	accessClaims := &models.AccessClaims{}
 	token, err := crypto.OpenUnverified(accessToken, accessClaims)
 	if err != nil {
-		return fun.ErrUnauthorized("invalid access token")
+		return errs.ErrInvalidAccessToken
 	}
 	key, err := m.keyForToken(ctx, token)
 	if err != nil {
@@ -267,15 +269,15 @@ func (m *Manager) tokenEntry(claims any, target, reason string) models.Blacklist
 func (m *Manager) keyForToken(ctx context.Context, token *jwt.Token) (*models.CryptoKey, error) {
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return nil, fun.ErrUnauthorized("missing kid")
+		return nil, errs.ErrMissingKID
 	}
 	keyID, err := uuid.Parse(kid)
 	if err != nil {
-		return nil, fun.ErrUnauthorized("invalid kid")
+		return nil, errs.ErrInvalidKID
 	}
 	key, err := m.cryptoKeys.GetByID(ctx, keyID)
-	if fun.Is(err, fun.CodeNotFound) {
-		return nil, fun.ErrUnauthorized("outdated token")
+	if errors.Is(err, database.ErrNotFound) {
+		return nil, errs.ErrOutdatedToken
 	}
 	if err != nil {
 		return nil, err
@@ -286,9 +288,9 @@ func (m *Manager) keyForToken(ctx context.Context, token *jwt.Token) (*models.Cr
 	// them are in flight until the grace period ends.
 	switch key.Status {
 	case "revoked":
-		return nil, fun.ErrUnauthorized("token signing key revoked")
+		return nil, errs.ErrSigningKeyRevoked
 	case "retired":
-		return nil, fun.ErrUnauthorized("token signing key retired")
+		return nil, errs.ErrSigningKeyRetired
 	}
 	return key, nil
 }
@@ -298,9 +300,9 @@ func (m *Manager) keyForToken(ctx context.Context, token *jwt.Token) (*models.Cr
 func (m *Manager) ensureNotBlacklisted(ctx context.Context, jti string) error {
 	_, err := m.blacklist.GetByTargetAndType(ctx, jti, models.BlacklistEntryTypeToken)
 	if err == nil {
-		return fun.ErrUnauthorized("token has been revoked")
+		return errs.ErrTokenRevoked
 	}
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	return nil

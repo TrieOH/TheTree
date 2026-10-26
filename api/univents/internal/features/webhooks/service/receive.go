@@ -5,12 +5,15 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"time"
 
+	"lib/database"
 	"lib/telemetry"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -37,7 +40,7 @@ func (o *Operations) Receive(ctx context.Context, input ReceiveInput) error {
 	if !o.validSignature(input) {
 		telemetry.Log().Warn("webhook: invalid signature",
 			zap.String("intent_id", input.IntentID.String()))
-		return fun.ErrBadRequest("invalid webhook signature")
+		return errs.ErrInvalidPayssageWebhookSignature
 	}
 
 	purchase, err := o.findPurchase(ctx, input.IntentID)
@@ -91,7 +94,7 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 	if err == nil {
 		return purchase, nil
 	}
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 
@@ -99,16 +102,16 @@ func (o *Operations) findPurchase(ctx context.Context, intentID uuid.UUID) (*mod
 		zap.String("intent_id", intentID.String()))
 	select {
 	case <-ctx.Done():
-		return nil, fun.ErrInternal("webhook processing cancelled")
+		return nil, fmt.Errorf("webhook processing cancelled: %w", ctx.Err())
 	case <-time.After(o.cardRaceWait):
 	}
 
 	purchase, err = o.Purchases.GetByIntentID(ctx, intentID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			telemetry.Log().Error("webhook: intent never correlated to a purchase (unknown intent or broken checkout)",
 				zap.String("intent_id", intentID.String()))
-			return nil, fun.Errf("purchase not found for intent %s", intentID).Internal()
+			return nil, fmt.Errorf("purchase not found for intent %s", intentID)
 		}
 		return nil, err
 	}

@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +25,7 @@ func (o *Operations) CancelRequest(ctx context.Context, requestID uuid.UUID, rea
 	}
 
 	if request.Status != models.SignatureRequestStatusPending {
-		return fun.ErrConflict("signature request is no longer pending")
+		return errs.ErrSignatureRequestNotPending
 	}
 
 	return o.Requests.CancelRequest(ctx, requestID, reason)

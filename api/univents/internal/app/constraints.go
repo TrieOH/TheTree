@@ -1,75 +1,81 @@
 package app
 
-import "lib/database"
+import (
+	"lib/database"
+	"univents/errs"
+)
 
-func ConstraintMessages() database.ConstraintRegistry {
-	return database.ConstraintRegistry{
+// Constraints maps every named constraint in the schema to the named error
+// repos surface on violation (ADR-0016); the postgres module takes it at
+// boot, and boot fails when the schema has a constraint missing here.
+func Constraints() database.ConstraintErrors {
+	return database.ConstraintErrors{
 		// events
-		"chk_event_status_valid":                        "Event status must be one of: draft, active, discontinued.",
-		"chk_event_payments_public_key_requires_seller": "An event's Payssage public key requires a connected seller.",
+		"chk_event_status_valid":                        errs.ErrInvalidEventStatus,
+		"chk_event_payments_public_key_requires_seller": errs.ErrPublicKeyNeedsSeller,
 
 		// event_members
-		"chk_event_members_role_valid": "Member role must be one of: owner, admin, staff.",
+		"chk_event_members_role_valid": errs.ErrInvalidEventMemberRole,
 
 		// editions
-		"chk_editions_dates_valid":               "Edition end date must be after the start date.",
-		"chk_editions_registration_before_start": "Registration opening date must be before or equal to the edition start date.",
-		"excl_editions_no_overlap":               "This edition's dates overlap with another edition of the same event.",
+		"chk_editions_dates_valid":               errs.ErrEditionDates,
+		"chk_editions_registration_before_start": errs.ErrRegistrationAfterStart,
+		"excl_editions_no_overlap":               errs.ErrEditionOverlap,
 
 		// registrations
-		"chk_registrations_status_valid":                 "Registration status must be one of: pending, confirmed, cancelled, expired.",
-		"uniq_registrations_active_per_edition_attendee": "This person already has a ticket for this edition.",
-		"uniq_registrations_active_email_per_edition":    "This person already has a ticket for this edition.",
+		"chk_registrations_status_valid":                 errs.ErrInvalidRegistrationStatus,
+		"uniq_registrations_active_per_edition_attendee": errs.ErrTicketHeld,
+		"uniq_registrations_active_email_per_edition":    errs.ErrTicketHeld,
 
 		// products
-		"uniq_products_edition_vendor_code":         "A product with this vendor code already exists in this edition.",
-		"uniq_product_variants_edition_vendor_code": "A product variant with this vendor code already exists in this edition.",
+		"uniq_products_edition_vendor_code":         errs.ErrProductCodeTaken,
+		"uniq_product_variants_edition_vendor_code": errs.ErrVariantCodeTaken,
 
 		// product_purchases
-		"chk_product_purchases_status_valid": "Product purchase status must be one of: pending, confirmed, cancelled, expired.",
+		"chk_product_purchases_status_valid": errs.ErrInvalidProductPurchaseStatus,
 
 		// programs
-		"chk_programs_kind_valid": "Program kind must be one of: activity, checkpoint.",
+		"chk_programs_kind_valid": errs.ErrInvalidProgramKind,
 
 		// program_occurrences
-		"chk_program_occurrences_dates_valid": "Program occurrence end time must be after the start time.",
+		"chk_program_occurrences_dates_valid": errs.ErrOccurrenceDates,
 
 		// program_participations
-		"chk_program_participations_status_valid":                    "Participation status must be one of: registered, attended, no_show, cancelled.",
-		"uniq_program_participations_active_per_occurrence_attendee": "This person is already registered for this activity occurrence.",
+		"chk_program_participations_status_valid":                    errs.ErrInvalidParticipationStatus,
+		"uniq_program_participations_active_per_occurrence_attendee": errs.ErrOccurrenceRegistrationTaken,
 
 		// signature_requests
-		"chk_signature_requests_status_valid":     "Signature request status must be one of: pending, completed, expired, cancelled.",
-		"uniq_signature_requests_idempotency_key": "This idempotency key has already been used.",
+		"chk_signature_requests_status_valid":     errs.ErrInvalidSignatureRequestStatus,
+		"uniq_signature_requests_idempotency_key": errs.ErrIdempotencyKeyUsed,
 
 		// signatures
-		"chk_signatures_status_valid":    "Signature status must be valid.",
-		"chk_signatures_ready_has_image": "A ready signature must have an image URL.",
+		"chk_signatures_status_valid":    errs.ErrInvalidSignatureStatus,
+		"chk_signatures_ready_has_image": errs.ErrReadySignatureNeedsImage,
 
 		// certification_templates
-		"chk_certification_templates_kind_valid": "Certification template kind must be one of: edition_attendance, program_attendance.",
+		"chk_certification_templates_kind_valid": errs.ErrInvalidCertificationKind,
 
 		// badge_emissions
-		"chk_badge_emissions_origin_valid":         "Badge emission origin must be one of: participant, staff.",
-		"chk_badge_emissions_status_valid":         "Badge emission status must be one of: active, revoked.",
-		"uniq_badge_emissions_edition_user_origin": "This person already has a badge for this edition and origin.",
+		"chk_badge_emissions_origin_valid":         errs.ErrInvalidBadgeEmissionOrigin,
+		"chk_badge_emissions_status_valid":         errs.ErrInvalidBadgeEmissionStatus,
+		"uniq_badge_emissions_edition_user_origin": errs.ErrBadgeEmitted,
 
 		// badge_templates
-		"chk_badge_template_scope_valid":   "Badge template scope must be the edition default (null) or staff (staff, without a ticket type).",
-		"idx_one_badge_template_per_scope": "This edition already has a template for this scope (default, ticket type, or staff).",
+		"chk_badge_template_scope_valid":   errs.ErrInvalidBadgeTemplateScope,
+		"idx_one_badge_template_per_scope": errs.ErrBadgeTemplateScopeTaken,
 
 		// purchases (store)
-		"chk_purchases_status_valid":                   "Purchase status must be one of: pending, approved, expired, cancelled, failed, rejected, refunded.",
-		"uniq_purchases_pending_per_purchaser_edition": "This person already has a pending purchase for this edition.",
+		"chk_purchases_status_valid":                   errs.ErrInvalidPurchaseStatus,
+		"uniq_purchases_pending_per_purchaser_edition": errs.ErrPendingPurchaseExists,
 
 		// purchase_items
-		"chk_purchase_items_type_valid":        "Purchase item type must be one of: ticket, product, program_occurrence.",
-		"chk_purchase_items_quantity_positive": "Purchase item quantity must be greater than zero.",
-		"uniq_purchase_items_ticket_unit":      "This ticket is already in this purchase for this person.",
-		"uniq_purchase_items_product_line":     "This product is already in this purchase.",
-		"uniq_purchase_items_program_line":     "This program occurrence is already in this purchase.",
+		"chk_purchase_items_type_valid":        errs.ErrInvalidPurchaseItemType,
+		"chk_purchase_items_quantity_positive": errs.ErrPurchaseItemQuantity,
+		"uniq_purchase_items_ticket_unit":      errs.ErrTicketUnitInPurchase,
+		"uniq_purchase_items_product_line":     errs.ErrProductLineInPurchase,
+		"uniq_purchase_items_program_line":     errs.ErrProgramLineInPurchase,
 
 		// ws_tokens
-		"uniq_ws_tokens_token_hash": "This webhook token has already been issued.",
+		"uniq_ws_tokens_token_hash": errs.ErrWSTokenIssued,
 	}
 }

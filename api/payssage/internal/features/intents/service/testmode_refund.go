@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"payssage/errs"
 	"payssage/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -23,7 +24,7 @@ func (o *Operations) TestmodeRefund(ctx context.Context, intentID uuid.UUID) (*m
 		return intent, nil // idempotent
 	}
 	if intent.Status != models.IntentStatusSucceeded {
-		return nil, fun.Errf("intent cannot be refunded from status %q", intent.Status).BadRequest()
+		return nil, &errs.IntentStatusError{Action: "refunded", Status: string(intent.Status)}
 	}
 
 	var pd models.MercadoPagoIntentData
@@ -35,7 +36,7 @@ func (o *Operations) TestmodeRefund(ctx context.Context, intentID uuid.UUID) (*m
 	pd.RefundAmountCents = &intent.AmountCents
 	raw, err := json.Marshal(&pd)
 	if err != nil {
-		return nil, fun.Errf("marshal provider data: %v", err).Internal()
+		return nil, fmt.Errorf("marshal provider data: %w", err)
 	}
 	intent.ProviderData = raw
 	intent.Status = models.IntentStatusRefunded

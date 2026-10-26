@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"Informd/errs"
 	"Informd/internal/sqlc"
 	"Informd/models"
 	"Informd/ports"
@@ -17,7 +18,7 @@ var _ ports.FieldsRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("field"),
+		dbe: database.NewErrorHandler(errs.ErrFieldNotFound),
 	}
 }
 

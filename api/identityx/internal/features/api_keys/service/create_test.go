@@ -2,13 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
+	libauthz "lib/authz"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -36,9 +38,9 @@ func newTestOps(t *testing.T, project *models.Project, role models.ProjectRole) 
 		ThenReturn(project, nil)
 	if role == "" {
 		mock.When(o.projects.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
-			ThenReturn(models.ProjectRole(""), fun.Err("project member not found").NotFound())
+			ThenReturn(models.ProjectRole(""), database.ErrNotFound)
 		mock.When(o.orgs.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
-			ThenReturn(models.OrganizationRole(""), fun.Err("org member not found").NotFound())
+			ThenReturn(models.OrganizationRole(""), database.ErrNotFound)
 	} else {
 		mock.When(o.projects.GetRole(mock.AnyContext(), mock.Any[uuid.UUID](), mock.Any[uuid.UUID]())).
 			ThenReturn(role, nil)
@@ -99,7 +101,7 @@ func TestCreateAPIKeySelfBoundMintRequiresAdmin(t *testing.T) {
 	o := newTestOps(t, project, "")
 
 	_, _, err := o.ops.Create(ctxAs(uuid.New()), baseInput(project.ID))
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("expected forbidden for non-member self-bound mint, got %v", err)
 	}
 }
@@ -131,7 +133,7 @@ func TestCreateAPIKeyImpersonationMemberForbidden(t *testing.T) {
 	subject := uuid.New()
 
 	_, _, err := o.ops.Create(ctxAs(uuid.New()), withSubject(baseInput(project.ID), subject))
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || !errors.Is(err, libauthz.ErrInsufficientRole) {
 		t.Fatalf("expected forbidden for member impersonation mint, got %v", err)
 	}
 }

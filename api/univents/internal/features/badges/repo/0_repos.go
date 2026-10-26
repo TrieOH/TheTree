@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"univents/errs"
 	"univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
@@ -19,7 +20,7 @@ var _ ports.BadgeEmissionRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("badge_template"),
+		dbe: database.NewErrorHandler(errs.ErrBadgeTemplateNotFound),
 	}
 }
 

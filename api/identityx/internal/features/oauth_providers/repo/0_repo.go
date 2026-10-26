@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"IdentityX/errs"
 	"IdentityX/internal/sqlc"
 	"IdentityX/models"
 	"IdentityX/ports"
@@ -18,7 +19,7 @@ var _ ports.OAuthLoginStatesRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("project oauth provider"),
+		dbe: database.NewErrorHandler(errs.ErrOAuthProviderNotFound),
 	}
 }
 

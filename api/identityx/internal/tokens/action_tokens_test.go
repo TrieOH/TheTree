@@ -3,14 +3,16 @@ package tokens
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -126,7 +128,7 @@ func TestMintTTLPerPurpose(t *testing.T) {
 func TestMintUnknownPurposeFails(t *testing.T) {
 	f := newActionFixture(t)
 	_, _, err := f.mgr.Mint(context.Background(), models.ActionTokenPurpose("bogus"), uuid.New(), nil)
-	if err == nil || !fun.Is(err, fun.CodeInternal) {
+	if err == nil || !strings.Contains(err.Error(), "unknown action token purpose") {
 		t.Fatalf("unknown purpose must fail internal, got %v", err)
 	}
 }
@@ -153,22 +155,16 @@ func TestRedeemWrongPurpose(t *testing.T) {
 	token, _ := minted(t, f, models.PasswordResetActionTokenPurpose, actorID, nil)
 
 	_, err := f.mgr.Redeem(context.Background(), models.EmailVerifyActionTokenPurpose, token)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenInvalid) {
 		t.Fatalf("wrong purpose must be bad request, got %v", err)
-	}
-	if !errors.Is(err, ErrActionTokenInvalid) {
-		t.Fatalf("want ErrActionTokenInvalid, got %v", err)
 	}
 }
 
 func TestRedeemGarbageToken(t *testing.T) {
 	f := newActionFixture(t)
 	_, err := f.mgr.Redeem(context.Background(), models.EmailVerifyActionTokenPurpose, "not-a-jwt")
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenInvalid) {
 		t.Fatalf("garbage token must be bad request, got %v", err)
-	}
-	if !errors.Is(err, ErrActionTokenInvalid) {
-		t.Fatalf("want ErrActionTokenInvalid, got %v", err)
 	}
 }
 
@@ -178,14 +174,11 @@ func TestRedeemUnknownRecord(t *testing.T) {
 	token, _ := minted(t, f, models.EmailVerifyActionTokenPurpose, actorID, nil)
 
 	_ = mock.When(f.repo.GetByJTI(mock.AnyContext(), mock.Any[uuid.UUID]())).
-		ThenReturn(nil, fun.ErrNotFound("no record"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	_, err := f.mgr.Redeem(context.Background(), models.EmailVerifyActionTokenPurpose, token)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenInvalid) {
 		t.Fatalf("unknown record must be bad request, got %v", err)
-	}
-	if !errors.Is(err, ErrActionTokenInvalid) {
-		t.Fatalf("want ErrActionTokenInvalid, got %v", err)
 	}
 }
 
@@ -200,11 +193,8 @@ func TestRedeemUsed(t *testing.T) {
 	_ = mock.When(f.repo.GetByJTI(mock.AnyContext(), mock.Equal(rec.JTI))).ThenReturn(&used, nil)
 
 	got, err := f.mgr.Redeem(context.Background(), models.EmailVerifyActionTokenPurpose, token)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenUsed) {
 		t.Fatalf("used token must be bad request, got %v", err)
-	}
-	if !errors.Is(err, ErrActionTokenUsed) {
-		t.Fatalf("want ErrActionTokenUsed, got %v", err)
 	}
 	if got != actorID {
 		t.Fatalf("used error must still carry the actor id, got %q", got)
@@ -224,11 +214,8 @@ func TestRedeemExpired(t *testing.T) {
 	_ = mock.When(f.repo.GetByJTI(mock.AnyContext(), mock.Equal(rec.JTI))).ThenReturn(&expired, nil)
 
 	got, err := f.mgr.Redeem(context.Background(), models.EmailVerifyActionTokenPurpose, token)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenExpired) {
 		t.Fatalf("expired token must be bad request, got %v", err)
-	}
-	if !errors.Is(err, ErrActionTokenExpired) {
-		t.Fatalf("want ErrActionTokenExpired, got %v", err)
 	}
 	if got != actorID {
 		t.Fatalf("expired error must still carry the actor id, got %q", got)
@@ -243,14 +230,11 @@ func TestRedeemConcurrentConsume(t *testing.T) {
 
 	_ = mock.When(f.repo.GetByJTI(mock.AnyContext(), mock.Equal(rec.JTI))).ThenReturn(&rec, nil)
 	_ = mock.When(f.repo.Consume(mock.AnyContext(), mock.Equal(rec.JTI))).
-		ThenReturn(nil, fun.ErrNotFound("consumed concurrently"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	got, err := f.mgr.Redeem(context.Background(), models.EmailVerifyActionTokenPurpose, token)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || !errors.Is(err, errs.ErrActionTokenUsed) {
 		t.Fatalf("concurrent consume must be bad request, got %v", err)
-	}
-	if !errors.Is(err, ErrActionTokenUsed) {
-		t.Fatalf("want ErrActionTokenUsed, got %v", err)
 	}
 	if got != actorID {
 		t.Fatalf("concurrent consume must still carry the actor id, got %q", got)

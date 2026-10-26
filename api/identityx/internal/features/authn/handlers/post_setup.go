@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"IdentityX/errs"
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 )
@@ -16,7 +15,7 @@ func (h *Handlers) PostSetup(ctx context.Context, req openapi.PostSetupRequestOb
 		return nil, err
 	}
 	if done {
-		return nil, fun.Err("setup already complete").Conflict()
+		return nil, errs.ErrSetupComplete
 	}
 	err = h.ops.Setup(ctx, models.SetupInput{
 		Email:    req.Body.Email,

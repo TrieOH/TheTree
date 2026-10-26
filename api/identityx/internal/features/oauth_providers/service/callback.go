@@ -2,13 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/crypto"
+	"lib/database"
 	"lib/telemetry"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -20,8 +22,8 @@ import (
 func (o *Operations) Callback(ctx context.Context, provider, code, state string) (*models.UserTokensOutput, error) {
 	loginState, err := o.LoginStates.GetByState(ctx, state)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.ErrBadRequest("invalid or expired OAuth state; start a new login")
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, errs.ErrOAuthStateNotFound
 		}
 		return nil, err
 	}
@@ -32,18 +34,16 @@ func (o *Operations) Callback(ctx context.Context, provider, code, state string)
 		telemetry.Log().Warn("failed to delete oauth login state", zap.String("state_id", loginState.ID.String()))
 	}
 	if string(loginState.Provider) != provider {
-		return nil, fun.ErrBadRequest("invalid OAuth state")
+		return nil, errs.ErrOAuthStateMismatch
 	}
 	if time.Now().After(loginState.ExpiresAt) {
-		return nil, fun.ErrBadRequest("OAuth state expired; start a new login")
+		return nil, errs.ErrOAuthStateExpired
 	}
 
 	resolved, err := o.resolveLoginProvider(ctx, string(loginState.Provider), loginState.ProjectID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.ErrBadRequest(
-				"this project has disabled " + string(loginState.Provider) + " login; contact the project to enable it",
-			)
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, &errs.ProviderRemovedError{Provider: string(loginState.Provider)}
 		}
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (o *Operations) Callback(ctx context.Context, provider, code, state string)
 	}
 
 	identity, err := o.External.GetByProviderAndSubject(ctx, provider, info.SubString(), loginState.ProjectID)
-	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 
@@ -82,9 +82,7 @@ func (o *Operations) Callback(ctx context.Context, provider, code, state string)
 		// A disabled provider allows existing identities to log back in,
 		// but never new sign-ups.
 		if resolved.Disabled {
-			return nil, fun.ErrForbidden(
-				"this project has disabled " + provider + " login; contact the project to enable it",
-			)
+			return nil, &errs.ProviderDisabledError{Provider: provider}
 		}
 		actor, err = o.registerNewIdentity(ctx, provider, info, encryptedAccess, encryptedRefresh, tokenExpiresAt, loginState.ProjectID)
 	}

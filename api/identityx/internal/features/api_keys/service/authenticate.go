@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"lib/api_keys"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -24,29 +24,29 @@ func (o *Operations) Authenticate(ctx context.Context, rawKey string) (*models.I
 	key, err := api_keys.ParseAPIKey(rawKey)
 	if err != nil {
 		telemetry.Log().Warn("api key parse failed", zap.Error(err))
-		return nil, fun.ErrForbidden("invalid api key")
+		return nil, errs.ErrInvalidAPIKey
 	}
 
 	apiKey, err := o.APIKeys.GetByPrefix(ctx, key.DisplayPrefix)
 	if err != nil {
 		telemetry.Log().Warn("api key lookup failed", zap.String("prefix", key.DisplayPrefix), zap.Error(err))
-		return nil, fun.ErrForbidden("invalid api key")
+		return nil, errs.ErrInvalidAPIKey
 	}
 
 	if !api_keys.VerifyAPIKey(rawKey, apiKey.KeyHash, o.HmacSecret) {
 		telemetry.Log().Warn("api key hmac mismatch", zap.String("prefix", key.DisplayPrefix))
-		return nil, fun.ErrForbidden("invalid api key")
+		return nil, errs.ErrInvalidAPIKey
 	}
 
 	if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
 		telemetry.Log().Warn("api key expired", zap.String("prefix", key.DisplayPrefix), zap.Time("expires_at", *apiKey.ExpiresAt))
-		return nil, fun.ErrForbidden("api key expired")
+		return nil, errs.ErrAPIKeyExpired
 	}
 
 	actor, err := o.Actors.GetByID(ctx, apiKey.SubjectID)
 	if err != nil {
 		telemetry.Log().Warn("actor lookup failed", zap.String("prefix", key.DisplayPrefix), zap.String("subject_id", apiKey.SubjectID.String()), zap.Error(err))
-		return nil, fun.ErrForbidden("invalid api key")
+		return nil, errs.ErrInvalidAPIKey
 	}
 
 	caps, err := o.Capabilities.ListByAPIKeyPrefix(ctx, key.DisplayPrefix)

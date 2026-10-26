@@ -20,13 +20,14 @@ type ProgramParticipationRepo interface {
 	UpdateParticipationStatus(ctx context.Context, id uuid.UUID, status models.ProgramParticipationStatus) (*models.ProgramParticipation, error)
 
 	// GetParticipationByID returns one participation by id (staff marking
-	// resolves the edition for the role check). NOT_FOUND when unknown.
+	// resolves the edition for the role check). database.ErrNotFound when
+	// unknown.
 	GetParticipationByID(ctx context.Context, id uuid.UUID) (*models.ProgramParticipation, error)
 
 	// GetActiveByOccurrenceAndRegistration returns the registration's live
 	// participation in an occurrence (register pre-check → 409 already
-	// registered; de-register lookup → 404 not registered). NOT_FOUND when
-	// there is none.
+	// registered; de-register lookup → 404 not registered). database.ErrNotFound
+	// when there is none.
 	GetActiveByOccurrenceAndRegistration(ctx context.Context, occurrenceID, registrationID uuid.UUID) (*models.ProgramParticipation, error)
 
 	// CountActiveByOccurrence is the occupancy count (capacity check inside

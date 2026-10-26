@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"lib/telemetry"
+	"univents/errs"
 	"univents/models"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ func (o *Operations) Publish(ctx context.Context, editionID uuid.UUID) error {
 	}
 
 	if !edition.IsDraft {
-		return fun.ErrBadRequest("edition is already published")
+		return errs.ErrEditionAlreadyPublished
 	}
 
 	event, err := o.Events.GetByID(ctx, edition.EventID)

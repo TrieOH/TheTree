@@ -3,10 +3,12 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"lib/database"
 	"net/http"
+	"payssage/errs"
 	"payssage/models"
-
-	"github.com/MintzyG/fun"
 )
 
 func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (*models.WebhookParseResult, error) {
@@ -19,38 +21,38 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	}
 	err := json.Unmarshal(rawBody, &envelope)
 	if err != nil {
-		return nil, fun.Errf("mercadopago webhook: decode envelope: %v", err).BadRequest()
+		return nil, fmt.Errorf("%w: decode envelope: %w", errs.ErrWebhookPayloadInvalid, err)
 	}
 
 	// Only "payment" events are handled today. Other MP topics
 	// (merchant_order, chargebacks, etc.) are acknowledged but ignored.
 	if envelope.Type != "payment" {
-		return nil, fun.Errf("mercadopago webhook: unhandled event type %q", envelope.Type).NotFound()
+		return nil, &errs.UnhandledWebhookEventError{Type: envelope.Type}
 	}
 	if envelope.Data.ID == "" {
-		return nil, fun.Err("mercadopago webhook: missing data.id").BadRequest()
+		return nil, errs.ErrWebhookMissingDataID
 	}
 
 	intent, err := p.intents.GetByProviderTransactionID(ctx, "mercadopago", envelope.Data.ID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return nil, fun.Errf("mercadopago webhook: no intent found for payment %s", envelope.Data.ID).NotFound()
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, &errs.WebhookIntentNotFoundError{PaymentID: envelope.Data.ID}
 		}
-		return nil, fun.Errf("resolve intent for payment %s: %v", envelope.Data.ID, err).Internal()
+		return nil, fmt.Errorf("resolve intent for payment %s: %w", envelope.Data.ID, err)
 	}
 
 	seller, err := p.sellers.GetByID(ctx, intent.SellerID)
 	if err != nil {
-		return nil, fun.Errf("resolve seller: %v", err).NotFound()
+		return nil, fmt.Errorf("resolve seller: %w", err)
 	}
 
 	var creds models.MercadoPagoCredentials
 	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
-		return nil, fun.Errf("unmarshal seller credentials: %v", err).Internal()
+		return nil, fmt.Errorf("unmarshal seller credentials: %w", err)
 	}
 	if creds.AccessToken == "" {
-		return nil, fun.Errf("seller %s has no mercadopago access token; cannot resolve webhook for intent %s", seller.ID, intent.ID).Conflict()
+		return nil, &errs.WebhookSellerTokenMissingError{SellerID: seller.ID, IntentID: intent.ID}
 	}
 
 	var mpResp mpPaymentResponse
@@ -63,7 +65,7 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 		SetResultError(&mpErr).
 		Get("https://api.mercadopago.com/v1/payments/" + envelope.Data.ID)
 	if err != nil {
-		return nil, fun.Errf("mercadopago fetch payment request: %v", err).BadGateway()
+		return nil, fmt.Errorf("%w: mercadopago fetch payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 	if resp.IsStatusFailure() {
 		return nil, mapMPError(resp.StatusCode(), resp.ResultError())
@@ -79,13 +81,13 @@ func (p *Provider) Parse(ctx context.Context, _ *http.Request, rawBody []byte) (
 	applySettlement(&providerData, &mpResp)
 	providerDataBytes, err := json.Marshal(&providerData)
 	if err != nil {
-		return nil, fun.Errf("marshal provider data: %v", err).Internal()
+		return nil, fmt.Errorf("marshal provider data: %w", err)
 	}
 	intent.ProviderData = providerDataBytes
 
 	updatedIntent, err := p.intents.Update(ctx, *intent)
 	if err != nil {
-		return nil, fun.Errf("persist updated intent: %v", err).Internal()
+		return nil, fmt.Errorf("persist updated intent: %w", err)
 	}
 
 	return &models.WebhookParseResult{

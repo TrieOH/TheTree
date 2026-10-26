@@ -15,14 +15,15 @@ package keys
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -96,7 +97,7 @@ func (m *Manager) Ensure(ctx context.Context, scope *uuid.UUID) error {
 	for _, t := range keyTypes {
 		active, err := m.keys.GetActive(ctx, t, scope)
 		if err != nil {
-			if !fun.Is(err, fun.CodeNotFound) {
+			if !errors.Is(err, database.ErrNotFound) {
 				return err
 			}
 			err = m.create(ctx, scope, t, now)

@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/internal/emails"
 	tos "IdentityX/internal/features/tos/service"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -70,7 +72,7 @@ func TestRegisterRejectsMissingTosAcceptance(t *testing.T) {
 		Password:  "S3curePassw0rd!",
 		ProjectID: &projectID,
 	})
-	if err == nil || !fun.Is(err, fun.CodeValidation) {
+	if err == nil || !errors.Is(err, errs.ErrTermsNotAccepted) {
 		t.Fatalf("registration into a project with terms without accepted_tos must fail, got %v", err)
 	}
 }
@@ -113,7 +115,7 @@ func TestRegisterSkipsTosGateForProjectWithoutTerms(t *testing.T) {
 
 	// v0: GetCurrent answers not-found; CurrentTos maps it to nil.
 	_ = mock.When(tosRepo.GetCurrent(mock.AnyContext(), mock.Equal(projectID))).
-		ThenReturn(nil, fun.ErrNotFound("terms_of_service not found"))
+		ThenReturn(nil, database.ErrNotFound)
 
 	err := ops.Register(context.Background(), models.IDXRegisterInput{
 		Email:     "user@acme.com.br",

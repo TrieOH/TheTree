@@ -2,10 +2,12 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"lib/database"
 	"lib/email"
 	"lib/telemetry"
 
@@ -13,7 +15,6 @@ import (
 	"univents/models"
 	"univents/ports"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -70,7 +71,7 @@ func NewSendGiftEmailWorker(
 func (w *SendGiftEmailWorker) Work(ctx context.Context, args SendGiftEmailArgs) error {
 	reg, err := w.registrations.GetByID(ctx, args.RegistrationID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			// Enqueued inside the confirming tx, before commit: a rolled-back
 			// tx leaves a job for a registration that never existed.
 			return nil

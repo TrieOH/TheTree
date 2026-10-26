@@ -6,11 +6,12 @@ import (
 	"errors"
 	"testing"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	libauthz "lib/authz"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -41,7 +42,7 @@ func (f *fakeProjects) Create(_ context.Context, _ models.Project) (*models.Proj
 func (f *fakeProjects) GetByID(_ context.Context, id uuid.UUID) (*models.Project, error) {
 	p, ok := f.projects[id]
 	if !ok {
-		return nil, fun.Err("project not found").NotFound()
+		return nil, database.ErrNotFound
 	}
 	return p, nil
 }
@@ -69,7 +70,7 @@ func (f *fakeProjects) GetMember(_ context.Context, _, _ uuid.UUID) (*models.Pro
 func (f *fakeProjects) GetRole(_ context.Context, actorID, projectID uuid.UUID) (models.ProjectRole, error) {
 	r, ok := f.roles[[2]uuid.UUID{actorID, projectID}]
 	if !ok {
-		return "", fun.Err("project member not found").NotFound()
+		return "", database.ErrNotFound
 	}
 	return r, nil
 }
@@ -112,7 +113,7 @@ func (f *fakeOrgs) GetMember(_ context.Context, _, _ uuid.UUID) (*models.Organiz
 func (f *fakeOrgs) GetRole(_ context.Context, actorID, orgID uuid.UUID) (models.OrganizationRole, error) {
 	r, ok := f.roles[[2]uuid.UUID{actorID, orgID}]
 	if !ok {
-		return "", fun.Err("org member not found").NotFound()
+		return "", database.ErrNotFound
 	}
 	return r, nil
 }
@@ -139,7 +140,7 @@ func (f *fakePlatformRoles) Give(_ context.Context, _ uuid.UUID, _ models.Platfo
 func (f *fakePlatformRoles) GetRole(_ context.Context, actorID uuid.UUID) (models.PlatformRole, error) {
 	r, ok := f.roles[actorID]
 	if !ok {
-		return "", fun.Err("platform role not found").NotFound()
+		return "", database.ErrNotFound
 	}
 	return r, nil
 }
@@ -167,7 +168,7 @@ func ctxAs(actorID uuid.UUID) context.Context {
 }
 
 func forbidden(err error) bool {
-	return err != nil && fun.Is(err, fun.CodeForbidden)
+	return errors.Is(err, libauthz.ErrInsufficientRole)
 }
 
 // ── CheckProject: direct project membership ──────────────────────────────
@@ -275,7 +276,7 @@ func TestCheckProjectNonMemberOrglessProjectForbidden(t *testing.T) {
 func TestCheckProjectUnknownProjectNotFound(t *testing.T) {
 	s := newService(newFakeProjects(), newFakeOrgs(), newFakePlatformRoles())
 	err := s.CheckProject(ctxAs(user1), proj1, models.ProjectRoleMember)
-	if err == nil || !fun.Is(err, fun.CodeNotFound) {
+	if err == nil || !errors.Is(err, database.ErrNotFound) {
 		t.Fatalf("expected NotFound, got %v", err)
 	}
 }
@@ -362,11 +363,11 @@ func TestRequirePlatformClient(t *testing.T) {
 		t.Fatalf("platform-level identity must pass the scope, got %v", err)
 	}
 	err = checker(ctxScoped(uuid.New(), uuid.New()))
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrPlatformOnly) {
 		t.Fatalf("project-scoped identity must be rejected with 401, got %v", err)
 	}
 	err = checker(context.Background())
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrNoIdentity) {
 		t.Fatalf("unauthenticated context must be rejected with 401, got %v", err)
 	}
 }

@@ -1,11 +1,10 @@
 package service
 
 import (
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
 	"time"
-
-	"github.com/MintzyG/fun"
 )
 
 func (o *Operations) CreateProjectActor(ctx context.Context, payload models.CreateActorInput) (*models.Actor, error) {
@@ -15,7 +14,7 @@ func (o *Operations) CreateProjectActor(ctx context.Context, payload models.Crea
 	}
 
 	if payload.Type != models.HumanActorType && payload.AuthMethod == models.PasswordAuthMethod {
-		return nil, fun.ErrBadRequest("only human actors can authenticate via password")
+		return nil, errs.ErrPasswordOnlyForHumans
 	}
 
 	actor := models.Actor{

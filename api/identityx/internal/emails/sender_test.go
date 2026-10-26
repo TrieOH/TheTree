@@ -2,6 +2,7 @@ package emails
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 
 	"lib/jobs"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 
 	"github.com/ovechkin-dm/mockio/mock"
@@ -96,7 +96,7 @@ func TestSenderSendResetRequiresDomain(t *testing.T) {
 
 	sender, _ := stubSender(t, mock.Mock[ports.ActionTokenRepo]())
 	err := sender.SendReset(context.Background(), actor, project)
-	if err == nil || !fun.Is(err, fun.CodeInternal) {
+	if err == nil || !strings.Contains(err.Error(), "no domain configured") {
 		t.Fatalf("project without domain must fail, got %v", err)
 	}
 }

@@ -14,8 +14,8 @@ import (
 // active (pending or confirmed) registration in an edition — the
 // one-ticket-per-person check for gifted tickets to recipients without an
 // IdentityX account (attendee_user_id NULL, checkout). An absent
-// registration surfaces as NOT_FOUND (the shared ErrorHandler maps
-// ErrNoRows); the service layer interprets "not found" as "holds no
+// registration is ErrRegistrationNotFound (database.ErrNotFound); the
+// service layer interprets "not found" as "holds no
 // ticket", which is a normal state there, not an error here.
 func (repo *Repo) GetActiveByEditionAndAttendeeEmail(ctx context.Context, editionID uuid.UUID, attendeeEmail string) (*models.Registration, error) {
 	row, err := database.Queries(ctx, repo.q).GetActiveByEditionAndAttendeeEmail(ctx, sqlc.GetActiveByEditionAndAttendeeEmailParams{

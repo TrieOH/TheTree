@@ -2,13 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"IdentityX/errs"
 	"IdentityX/internal/authz"
 	"IdentityX/models"
 	"IdentityX/ports"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -44,7 +46,7 @@ func TestUpsertRejectsTemplateWithoutActionURL(t *testing.T) {
 		"Verify your email",
 		"<p>Please verify your account by clicking the link in your email client.</p>",
 	)
-	if err == nil || !fun.Is(err, fun.CodeValidation) {
+	if err == nil || !errors.Is(err, errs.ErrTemplateMissingActionURL) {
 		t.Fatalf("template without {{.ActionURL}} must be rejected, got %v", err)
 	}
 }
@@ -93,7 +95,7 @@ func TestGetFallsBackToDefault(t *testing.T) {
 	projectID := uuid.New()
 	templates := mock.Mock[ports.EmailTemplateRepo]()
 	_ = mock.When(templates.GetByProjectAndKind(mock.AnyContext(), mock.Equal(projectID), mock.Equal(models.ResetEmailTemplateKind))).
-		ThenReturn(nil, fun.ErrNotFound("not found"))
+		ThenReturn(nil, database.ErrNotFound)
 	ops := stubAdminOps(t, templates)
 
 	out, err := ops.Get(adminCtx(), projectID, models.ResetEmailTemplateKind)

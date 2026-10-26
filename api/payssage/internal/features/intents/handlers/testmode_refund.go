@@ -5,8 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/MintzyG/fun"
-
+	"payssage/errs"
 	"payssage/internal/openapi"
 )
 
@@ -15,7 +14,7 @@ import (
 // hardCreateIntent.
 func (h *Handlers) TestmodeRefundIntent(ctx context.Context, req openapi.TestmodeRefundIntentRequestObject) (openapi.TestmodeRefundIntentResponseObject, error) {
 	if os.Getenv("TEST_MODE") != "true" {
-		return nil, fun.Err("test mode only").ServiceUnavailable()
+		return nil, errs.ErrTestModeOnly
 	}
 	intent, err := h.ops.TestmodeRefund(ctx, req.IntentId)
 	if err != nil {

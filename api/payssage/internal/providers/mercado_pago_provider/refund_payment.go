@@ -3,12 +3,13 @@ package mercado_pago_provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"lib/telemetry"
 	"math"
+	"payssage/errs"
 	"payssage/models"
 	"strconv"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -22,27 +23,27 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	var providerData models.MercadoPagoIntentData
 	err := json.Unmarshal(intent.ProviderData, &providerData)
 	if err != nil {
-		return fun.Errf("error mapping mercadopago provider data: %v", err).Internal()
+		return fmt.Errorf("error mapping mercadopago provider data: %w", err)
 	}
 	if providerData.TransactionID == "" {
-		return fun.Err("intent has no mercadopago transaction to refund").Conflict()
+		return errs.ErrNoTransactionToRefund
 	}
 
 	seller, err := p.sellers.GetByID(ctx, intent.SellerID)
 	if err != nil {
-		return fun.Errf("resolve seller: %v", err).NotFound()
+		return fmt.Errorf("resolve seller: %w", err)
 	}
 	if seller.RevokedAt != nil {
-		return fun.Errf("seller %s has revoked mercadopago access; cannot refund — payment may require manual handling at mercadopago", seller.ID).Conflict()
+		return &errs.SellerRevokedError{SellerID: seller.ID, Op: "refund"}
 	}
 
 	var creds models.MercadoPagoCredentials
 	err = json.Unmarshal(seller.Credentials, &creds)
 	if err != nil {
-		return fun.Errf("error mapping seller credentials: %v", err).Internal()
+		return fmt.Errorf("error mapping seller credentials: %w", err)
 	}
 	if creds.AccessToken == "" {
-		return fun.Errf("seller %s missing mercadopago access token", seller.ID).Internal()
+		return fmt.Errorf("seller %s missing mercadopago access token", seller.ID)
 	}
 
 	// MP requires X-Idempotency-Key on refunds (4292 otherwise); a fresh key
@@ -51,7 +52,7 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 	// duplicate refund a no-op rather than a double charge.
 	idempotencyKey, err := uuid.NewV7()
 	if err != nil {
-		return fun.Errf("generate idempotency key: %v", err).Internal()
+		return fmt.Errorf("generate idempotency key: %w", err)
 	}
 
 	var mpResp struct {
@@ -71,7 +72,7 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 		SetResultError(&mpErr).
 		Post("https://api.mercadopago.com/v1/payments/" + providerData.TransactionID + "/refunds")
 	if err != nil {
-		return fun.Errf("mercadopago refund payment request: %v", err).BadGateway()
+		return fmt.Errorf("%w: mercadopago refund payment request: %w", errs.ErrProviderRequestFailed, err)
 	}
 
 	telemetry.Log().Info("MP Refund Payment Response",
@@ -102,7 +103,7 @@ func (p *Provider) Refund(ctx context.Context, intent *models.Intent) error {
 
 	providerDataBytes, err := json.Marshal(&providerData)
 	if err != nil {
-		return fun.Errf("marshal provider data: %v", err).Internal()
+		return fmt.Errorf("marshal provider data: %w", err)
 	}
 	intent.ProviderData = providerDataBytes
 	// Intent status intentionally untouched — the webhook confirms (D3/D-2).

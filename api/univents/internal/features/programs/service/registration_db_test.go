@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lib/database"
 	"lib/testdb"
+	"net/http"
 
 	"univents/internal/authz"
 	programs "univents/internal/features/programs/service"
@@ -344,20 +344,20 @@ func TestCheckpointCheckIn_Gates(t *testing.T) {
 
 	// Non-staff actor → 403.
 	_, err := ops.CheckIn(context.Background(), fx.checkpointOccurrenceID, fx.attendeeA, fx.attendeeB)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("check-in as non-staff: want 403, got %v", err)
 	}
 
 	// Attendee without a ticket → 403 (cannot pass).
 	_, err = ops.CheckIn(context.Background(), fx.checkpointOccurrenceID, uuid.New(), fx.staffID)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("check-in without ticket: want 403, got %v", err)
 	}
 
 	// Activity occurrence → 400 (activities keep mark-attended).
 	actFx := seedActivity(t, r)
 	_, err = ops.CheckIn(context.Background(), actFx.occurrenceID, fx.attendeeA, actFx.staffID)
-	if err == nil || !fun.Is(err, fun.CodeBadRequest) {
+	if err == nil || statusOf(err) != http.StatusBadRequest {
 		t.Fatalf("check-in on activity: want 400, got %v", err)
 	}
 }
@@ -376,7 +376,7 @@ func mustRegister(t *testing.T, ops *programs.Operations, occurrenceID, attendee
 func wantRegisterConflict(t *testing.T, ops *programs.Operations, occurrenceID, attendee uuid.UUID) {
 	t.Helper()
 	_, err := ops.Register(context.Background(), occurrenceID, attendee)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("register: want 409, got %v", err)
 	}
 }
@@ -392,7 +392,7 @@ func mustDeregister(t *testing.T, ops *programs.Operations, occurrenceID, attend
 func wantDeregisterConflict(t *testing.T, ops *programs.Operations, occurrenceID, attendee uuid.UUID) {
 	t.Helper()
 	_, err := ops.Deregister(context.Background(), occurrenceID, attendee)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("deregister: want 409, got %v", err)
 	}
 }
@@ -400,7 +400,7 @@ func wantDeregisterConflict(t *testing.T, ops *programs.Operations, occurrenceID
 func wantMarkAttendedConflict(t *testing.T, ops *programs.Operations, partID, actorID uuid.UUID) {
 	t.Helper()
 	_, err := ops.MarkAttended(context.Background(), partID, actorID)
-	if err == nil || !fun.Is(err, fun.CodeConflict) {
+	if err == nil || statusOf(err) != http.StatusConflict {
 		t.Fatalf("mark attended: want 409, got %v", err)
 	}
 }
@@ -492,7 +492,7 @@ func TestActivityRegistration_MarkAttendedAuthz(t *testing.T) {
 
 	// Non-member → 403.
 	_, err := ops.MarkAttended(context.Background(), part.ID, fx.attendeeB)
-	if err == nil || !fun.Is(err, fun.CodeForbidden) {
+	if err == nil || statusOf(err) != http.StatusForbidden {
 		t.Fatalf("mark as non-staff: want 403, got %v", err)
 	}
 

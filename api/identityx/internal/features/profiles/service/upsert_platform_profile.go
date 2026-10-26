@@ -3,10 +3,9 @@ package service
 import (
 	"errors"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"context"
-
-	"github.com/MintzyG/fun"
 )
 
 // UpsertPlatformProfile upserts a platform-scoped actor's profile (project_id is NULL).
@@ -18,7 +17,7 @@ func (o *Operations) UpsertPlatformProfile(ctx context.Context, payload models.U
 	}
 
 	if ident.Sub.ID != payload.ActorID {
-		return nil, fun.ErrForbidden("insufficient permissions")
+		return nil, errs.ErrNotProfileOwner
 	}
 
 	schema, err := o.loadActiveSchema(ctx, nil)

@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"IdentityX/models"
 	"lib/crypto"
+	"lib/database"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -19,7 +20,7 @@ func (o *Operations) ForgotPassword(ctx context.Context, in models.ForgotPasswor
 	email := strings.TrimSpace(strings.ToLower(in.Email))
 	actor, err := o.Actors.GetByEmail(ctx, email, in.ProjectID)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil
 		}
 		return err

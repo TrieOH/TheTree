@@ -3,9 +3,9 @@ package repo
 import (
 	"context"
 	"lib/database"
+	"univents/errs"
 	"univents/internal/sqlc"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -18,7 +18,7 @@ func (repo *Repo) CancelRequest(ctx context.Context, id uuid.UUID, reason *strin
 		return repo.dbe(err)
 	}
 	if rows == 0 {
-		return fun.ErrNotFound("signature request not found or already handled")
+		return &database.NotFoundError{Named: errs.ErrSignatureRequestHandled}
 	}
 	return nil
 }

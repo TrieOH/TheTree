@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	idx "sdk/identityx"
 
+	"Informd/errs"
 	"Informd/models"
-
-	"github.com/MintzyG/fun"
+	"lib/database"
 )
 
 func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveFormMemberInput) (err error) {
@@ -16,7 +17,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveForm
 	}
 
 	if ident.Sub.ID == payload.UserID {
-		return fun.ErrBadRequest("users can't remove themselves from forms")
+		return errs.ErrRemoveSelfFromForm
 	}
 
 	var form *models.Form
@@ -26,7 +27,7 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveForm
 	}
 
 	if payload.UserID == form.OwnerID {
-		return fun.ErrBadRequest("cannot remove owner of the form")
+		return errs.ErrRemoveFormOwner
 	}
 	_, err = o.Authz.Form(ctx, form.ID, models.FormMemberRoleAdmin)
 	if err != nil {
@@ -34,11 +35,11 @@ func (o *Operations) RemoveMember(ctx context.Context, payload models.RemoveForm
 	}
 
 	_, err = o.Forms.GetMember(ctx, payload.UserID, form.ID)
-	if !fun.Is(err, fun.CodeNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		return err
 	}
 	if err != nil {
-		return fun.ErrBadRequest("user is not a member of the form")
+		return errs.ErrNotFormMember
 	}
 
 	return o.Forms.RemoveMember(ctx, payload.UserID, payload.FormID)

@@ -3,7 +3,6 @@ module IdentityX
 go 1.27.3
 
 require (
-	github.com/MintzyG/fun v0.10.6
 	github.com/MintzyG/fun/middlewares v0.1.3
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/go-chi/chi/v5 v5.4.0
@@ -19,6 +18,7 @@ require (
 )
 
 require (
+	github.com/MintzyG/fun v0.10.6 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

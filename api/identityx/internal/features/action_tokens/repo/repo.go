@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"IdentityX/errs"
 	"context"
 
 	"IdentityX/internal/sqlc"
@@ -21,7 +22,7 @@ var _ ports.ActionTokenRepo = (*Repo)(nil)
 func New(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
-		dbe: database.NewErrorHandler("action_token"),
+		dbe: database.NewErrorHandler(errs.ErrActionTokenNotFound),
 	}
 }
 
