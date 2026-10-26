@@ -1,4 +1,5 @@
 import type { JSX } from "@solidjs/web";
+import { useRouter } from "@tanstack/solid-router";
 import { Match, Switch, createMemo, type Accessor } from "solid-js";
 import { classifyError } from "@/shared/lib/service-error";
 import { serviceHealth } from "@/shared/lib/service-health";
@@ -27,6 +28,14 @@ export interface QueryBoundaryProps<T> {
   class?: string;
 }
 
+function tryGetRouter() {
+  try {
+    return useRouter({ warn: false });
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Renders one query's four states without ever blanking or remounting content:
  *
@@ -43,6 +52,7 @@ export interface QueryBoundaryProps<T> {
  * suspends, so a `<Loading>` around it never shows its fallback.
  */
 export function QueryBoundary<T>(props: QueryBoundaryProps<T>) {
+  const router = tryGetRouter();
   const hasData = createMemo(() => props.query().data !== undefined, {
     name: "QueryBoundary.hasData",
   });
@@ -62,8 +72,10 @@ export function QueryBoundary<T>(props: QueryBoundaryProps<T>) {
 
   const retry = () => {
     // An explicit retry shouldn't wait out a circuit's cool-down.
-    serviceHealth.halfOpenAll();
+    // Also notifies query-client to refetch any other failed queries on the page.
+    serviceHealth.requestRetry();
     void props.query().refetch();
+    if (router) void router.invalidate();
   };
 
   return (

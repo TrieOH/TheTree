@@ -55,6 +55,8 @@ export function createServiceHealth(now: () => number = Date.now) {
   let snapshot = initial();
   const listeners = new Set<() => void>();
   const probeListeners = new Set<(service: ServiceName) => void>();
+  const recoverListeners = new Set<(service: ServiceName) => void>();
+  const retryListeners = new Set<() => void>();
   const probeTimers = new Map<ServiceName, ReturnType<typeof setTimeout>>();
 
   const publish = (next: ServiceHealthSnapshot) => {
@@ -85,6 +87,18 @@ export function createServiceHealth(now: () => number = Date.now) {
     );
   };
 
+  const halfOpenAll = () => {
+    const next = { ...snapshot };
+    let changed = false;
+    for (const service of SERVICES) {
+      if (next[service].openUntil === 0) continue;
+      clearProbe(service);
+      next[service] = { ...next[service], openUntil: 0 };
+      changed = true;
+    }
+    if (changed) publish(next);
+  };
+
   return {
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -99,6 +113,18 @@ export function createServiceHealth(now: () => number = Date.now) {
       return () => probeListeners.delete(listener);
     },
 
+    /** Called when a previously struggling or failing service answers successfully again. */
+    onRecover(listener: (service: ServiceName) => void) {
+      recoverListeners.add(listener);
+      return () => recoverListeners.delete(listener);
+    },
+
+    /** Called when user explicitly requests a retry across components. */
+    onRequestRetry(listener: () => void) {
+      retryListeners.add(listener);
+      return () => retryListeners.delete(listener);
+    },
+
     isOpen(service: ServiceName) {
       return snapshot[service].openUntil > now();
     },
@@ -111,8 +137,12 @@ export function createServiceHealth(now: () => number = Date.now) {
     success(service: ServiceName) {
       clearProbe(service);
       const current = snapshot[service];
+      const hadFailed = current.failures > 0 || current.openUntil > 0;
       if (current.failures === 0 && current.openUntil === 0) return;
       patch(service, { failures: 0, openUntil: 0 });
+      if (hadFailed) {
+        recoverListeners.forEach((listener) => listener(service));
+      }
     },
 
     /** Only transient failures count: a 404 or 422 says nothing about health. */
@@ -133,16 +163,15 @@ export function createServiceHealth(now: () => number = Date.now) {
      * instead of making them wait out the cool-down. A failure re-opens the
      * circuit, so this can't turn into a request storm.
      */
-    halfOpenAll() {
-      const next = { ...snapshot };
-      let changed = false;
-      for (const service of SERVICES) {
-        if (next[service].openUntil === 0) continue;
-        clearProbe(service);
-        next[service] = { ...next[service], openUntil: 0 };
-        changed = true;
-      }
-      if (changed) publish(next);
+    halfOpenAll,
+
+    /**
+     * Halfs-open all circuits and notifies listeners (such as QueryClient)
+     * to refetch all active failed queries.
+     */
+    requestRetry() {
+      halfOpenAll();
+      retryListeners.forEach((listener) => listener());
     },
 
     reset() {

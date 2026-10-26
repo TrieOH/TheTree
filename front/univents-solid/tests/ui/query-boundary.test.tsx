@@ -11,15 +11,19 @@ import {
   type QueryLike,
 } from "@/shared/ui/QueryBoundary";
 
+const invalidate = vi.fn();
+
 vi.mock("@tanstack/solid-router", () => ({
   Link: (props: { to: string; children?: JSX.Element }) => (
     <a href={props.to}>{props.children}</a>
   ),
+  useRouter: () => ({ invalidate }),
 }));
 
 afterEach(() => {
   cleanup();
   serviceHealth.reset();
+  invalidate.mockClear();
 });
 
 const failure = (code: number, error_id?: string) =>
@@ -76,6 +80,7 @@ describe("QueryBoundary", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(refetch).toHaveBeenCalledTimes(1);
+    expect(invalidate).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the error panel up while a retry runs instead of flashing the skeleton", () => {
@@ -140,6 +145,29 @@ describe("QueryBoundary", () => {
       cleanup();
     }, { scenario: "query-boundary-states" });
     expectNoDiagnostics(artifact);
+  });
+});
+
+describe("serviceHealth.onRecover", () => {
+  it("fires onRecover when a service that had failures succeeds", () => {
+    const onRecover = vi.fn();
+    serviceHealth.onRecover(onRecover);
+
+    // Initial success with 0 failures does not fire recovery
+    serviceHealth.success("api");
+    expect(onRecover).not.toHaveBeenCalled();
+
+    // Now record a failure
+    serviceHealth.failure("api", {
+      kind: "unavailable",
+      transient: true,
+      message: "outage",
+    });
+
+    // When the service answers again, onRecover fires
+    serviceHealth.success("api");
+    expect(onRecover).toHaveBeenCalledWith("api");
+    expect(onRecover).toHaveBeenCalledTimes(1);
   });
 });
 

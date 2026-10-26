@@ -41,8 +41,9 @@ export function createAppQueryClient() {
 export const appQueryClient = createAppQueryClient();
 
 /**
- * When a service's circuit cools down, retry the queries on screen that failed
- * because of it, so a page that was showing "couldn't load" heals by itself.
+ * When a service recovers or its circuit cools down, retry the queries on
+ * screen that failed because of it, so a page that was showing "couldn't load"
+ * heals by itself without requiring user intervention.
  */
 export function refetchFailedQueries(client: QueryClient = appQueryClient) {
   return client.refetchQueries({
@@ -52,3 +53,5 @@ export function refetchFailedQueries(client: QueryClient = appQueryClient) {
 }
 
 serviceHealth.onProbe(() => void refetchFailedQueries());
+serviceHealth.onRecover(() => void refetchFailedQueries());
+serviceHealth.onRequestRetry(() => void refetchFailedQueries());
