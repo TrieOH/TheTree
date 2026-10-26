@@ -7,7 +7,12 @@ import {
 } from "@trieoh/ui-solid";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { toast } from "@/shared/ui/toast";
-import type { EditionI } from "../model";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  editionStep1Schema,
+  editionStep2Schema,
+  type EditionI,
+} from "../model";
 
 export interface ManageEditionValues {
   name: string;
@@ -207,24 +212,16 @@ export function ManageEditionDialog(props: ManageEditionDialogProps): JSX.Elemen
 
   const validateStep = (stepIndex: number): boolean => {
     const v = values();
-    const stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
+    let stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
 
     if (stepIndex === 0) {
-      if (v.name.trim().length < 2) {
-        stepErrors.name = "Informe ao menos 2 caracteres.";
-      }
-      if (v.slug.trim().length < 2) {
-        stepErrors.slug = "Informe ao menos 2 caracteres.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        editionStep1Schema.safeParse(v),
+      );
     } else if (stepIndex === 1) {
-      if (!v.starts_at) {
-        stepErrors.starts_at = "Informe a data de início.";
-      }
-      if (!v.ends_at) {
-        stepErrors.ends_at = "Informe a data de término.";
-      } else if (v.starts_at && new Date(v.ends_at).getTime() <= new Date(v.starts_at).getTime()) {
-        stepErrors.ends_at = "O término deve ser posterior ao início.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        editionStep2Schema.safeParse(v),
+      );
     }
 
     setErrors((prev) => ({ ...prev, ...stepErrors }));

@@ -1,36 +1,47 @@
-import z from "zod";
+import {
+  Schema,
+  createSchema,
+  minLength,
+  type Infer,
+} from "@/shared/lib/effect-schema";
 
-export const signatureTokenSearchSchema = z.object({
-  token: z.string().default("").catch(""),
-});
+export const signatureTokenSearchSchema = createSchema(
+  Schema.Struct({
+    token: Schema.optional(Schema.String),
+  }),
+);
 
-export type SignatureTokenSearchI = z.infer<typeof signatureTokenSearchSchema>;
+export type SignatureTokenSearchI = { token: string };
 
-export const signatureRequestTokenClaimsSchema = z.object({
-  request_id: z.string().min(1),
-  edition_id: z.string().min(1),
-  exp: z.number().optional(),
-  iat: z.number().optional(),
-});
+export const signatureRequestTokenClaimsSchema = createSchema(
+  Schema.Struct({
+    request_id: Schema.String.pipe(minLength(1)),
+    edition_id: Schema.String.pipe(minLength(1)),
+    exp: Schema.optional(Schema.Number),
+    iat: Schema.optional(Schema.Number),
+  }),
+);
 
-export type SignatureRequestTokenClaims = z.infer<
+export type SignatureRequestTokenClaims = Infer<
   typeof signatureRequestTokenClaimsSchema
 >;
 
-export const signatureRevocationTokenClaimsSchema = z.object({
-  signature_id: z.string().min(1),
-  edition_id: z.string().min(1),
-  exp: z.number().optional(),
-  iat: z.number().optional(),
-});
+export const signatureRevocationTokenClaimsSchema = createSchema(
+  Schema.Struct({
+    signature_id: Schema.String.pipe(minLength(1)),
+    edition_id: Schema.String.pipe(minLength(1)),
+    exp: Schema.optional(Schema.Number),
+    iat: Schema.optional(Schema.Number),
+  }),
+);
 
-export type SignatureRevocationTokenClaims = z.infer<
+export type SignatureRevocationTokenClaims = Infer<
   typeof signatureRevocationTokenClaimsSchema
 >;
 
 export function parseJwtPayload<T>(
   token: string,
-  schema?: z.ZodType<T>,
+  schema?: { safeParse(input: unknown): { success: boolean; data?: unknown } },
 ): T | null {
   if (!token || typeof token !== "string") return null;
   try {
@@ -47,7 +58,7 @@ export function parseJwtPayload<T>(
     const parsed = JSON.parse(jsonPayload);
     if (schema) {
       const parsedWithSchema = schema.safeParse(parsed);
-      return parsedWithSchema.success ? parsedWithSchema.data : null;
+      return parsedWithSchema.success ? (parsedWithSchema.data as T) : null;
     }
     return parsed as T;
   } catch {

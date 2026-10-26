@@ -5,7 +5,6 @@ import {
   useAuth,
 } from "@trieoh/identityx-sdk-ts-solid";
 import { createEffect, createMemo, createSignal } from "solid-js";
-import z from "zod";
 
 import { AuthActionPage } from "@/features/auths/ui/AuthActionPage";
 import {
@@ -15,12 +14,23 @@ import {
   storeAuthReturnTo,
 } from "@/features/auths/lib/auth-path";
 import { toast } from "@/shared/ui/toast";
+import { Schema, createSchema } from "@/shared/lib/effect-schema";
+
+const verifySearchSchema = createSchema(
+  Schema.Struct({
+    token: Schema.optional(Schema.String),
+    returnTo: Schema.optional(Schema.String),
+  }),
+);
 
 export const Route = createFileRoute("/auth_/verify")({
-  validateSearch: z.object({
-    token: z.string().catch(""),
-    returnTo: z.string().optional(),
-  }),
+  validateSearch: (search) => {
+    const parsed = verifySearchSchema.parse(search);
+    return {
+      token: parsed.token ?? "",
+      returnTo: parsed.returnTo,
+    };
+  },
   component: VerifyEmailPage,
 });
 
@@ -31,12 +41,14 @@ function VerifyEmailPage() {
   const [showHeader, setShowHeader] = createSignal(true);
   const destination = () =>
     safeInternalReturnTo(search().returnTo, readAuthReturnTo(localStorage));
+
   createEffect(
     () => search().returnTo,
     (returnTo) => {
       if (returnTo) storeAuthReturnTo(localStorage, returnTo);
     },
   );
+
   const handleSuccess = async () => {
     const refreshed = await auth.refresh();
     if (refreshed.success) {

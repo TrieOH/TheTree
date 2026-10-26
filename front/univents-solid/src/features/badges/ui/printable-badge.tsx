@@ -10,7 +10,10 @@ export function PrintableBadge(props: {
   location: string;
 }): JSX.Element {
   const parsed = createMemo(() => badgeDesignSchema.safeParse(props.badge.design_data));
-  const design = () => (parsed().success ? parsed().data : null);
+  const design = () => {
+    const res = parsed();
+    return res.success ? res.data : null;
+  };
   const widthMm = () => (design() ? design()!.canvas.width / (96 / 25.4) : 85);
   const heightMm = () => (design() ? design()!.canvas.height / (96 / 25.4) : 54);
 

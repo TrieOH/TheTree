@@ -73,6 +73,11 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
     programs().find((p) => p.id === programId()),
   );
 
+  const selectedProgramList = createMemo(() => {
+    const current = program();
+    return current ? [current] : [];
+  });
+
   const occurrences = createMemo(() =>
     allOccurrences().filter((occ) => occ.program_id === programId()),
   );
@@ -322,7 +327,7 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
       <ManageOccurrenceDialog
         open={dialogOpen()}
         onOpenChange={setDialogOpen}
-        programs={program() ? [program()!] : []}
+        programs={selectedProgramList()}
         initialProgramId={programId()}
         occurrence={selectedOccurrence()}
         onSave={handleSaveOccurrence}

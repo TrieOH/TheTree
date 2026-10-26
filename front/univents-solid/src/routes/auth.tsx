@@ -4,38 +4,41 @@ import {
   readAuthReturnTo,
   storeAuthReturnTo,
 } from "@/features/auths/lib/auth-path";
-import z from "zod";
+import { Schema, createSchema } from "@/shared/lib/effect-schema";
 import Logo from "@/shared/ui/Logo";
 import { toast } from "@/shared/ui/toast";
 import { useSessionActions } from "@/features/auths/hooks/use-session-actions";
 import { requireGuest } from "@/features/auths/lib/route-guard";
 
-const authSearchSchema = z.object({
-  redirect: z.string().optional().catch(""),
-});
+const authSearchSchema = createSchema(
+  Schema.Struct({
+    redirect: Schema.optional(Schema.String),
+  }),
+);
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Entrar - Univents" }] }),
-  validateSearch: (search) => authSearchSchema.parse(search),
-  beforeLoad: requireGuest,
+  validateSearch: authSearchSchema,
+  beforeLoad: ({ context, location, search }) => {
+    storeAuthReturnTo(localStorage, search.redirect || location.href);
+    requireGuest({ context, location });
+  },
   component: AuthPage,
 });
 
 function AuthPage() {
-  const search = Route.useSearch();
   const { auth } = useAuth();
   const { completeLogin } = useSessionActions();
 
-  const handleLoginSuccess = async (message?: string) => {
-    const redirectTo = search().redirect;
-    const destination =
-      redirectTo || readAuthReturnTo(localStorage) || "/profile";
-    if (redirectTo) storeAuthReturnTo(localStorage, redirectTo);
+  const handleLoginSuccess = async () => {
+    const defaultDestination = "/profile";
+    const destination = readAuthReturnTo(localStorage) || defaultDestination;
+
+    await completeLogin(destination);
+
     if (
-      await completeLogin(
-        destination,
-        message || "Login realizado com sucesso!",
-      )
+      destination === defaultDestination ||
+      destination.startsWith("/profile")
     ) {
       if (!auth.profile()?.verified_at) {
         toast({

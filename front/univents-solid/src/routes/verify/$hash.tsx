@@ -230,6 +230,11 @@ function VerifyCertificationPage(): JSX.Element {
     return "Este documento não possui uma emissão válida.";
   });
 
+  const issuedAtFormatted = createMemo(() => {
+    const c = cert();
+    return c ? formatCertifiedAt(c.issued_at) : null;
+  });
+
   return (
     <main class="min-h-screen bg-background pb-24 text-foreground">
       <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
@@ -326,7 +331,7 @@ function VerifyCertificationPage(): JSX.Element {
                   <DetailItem label="Atividade" value={programName()} />
                   <DetailItem
                     label="Emitido em"
-                    value={cert() ? formatCertifiedAt(cert()!.issued_at) : null}
+                    value={issuedAtFormatted()}
                   />
                   <DetailItem
                     label="Carga horária"

@@ -186,7 +186,7 @@ function CanvasElementItem(props: {
                       }
                       style={
                         el().type === "qr"
-                          ? (el() as Extract<BadgeElement, { type: "qr" }>).style
+                          ? ((el() as Extract<BadgeElement, { type: "qr" }>).style ?? "square")
                           : "square"
                       }
                     />

@@ -6,7 +6,12 @@ import {
 } from "@trieoh/ui-solid";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { toast } from "@/shared/ui/toast";
-import type { EventI } from "../model";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  eventStep1Schema,
+  eventStep2Schema,
+  type EventI,
+} from "../model";
 
 export interface ManageEventValues {
   full_name: string;
@@ -171,19 +176,16 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
 
   const validateStep = (stepIndex: number): boolean => {
     const v = values();
-    const stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
+    let stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
 
     if (stepIndex === 0) {
-      if (v.full_name.trim().length < 2) {
-        stepErrors.full_name = "Informe ao menos 2 caracteres.";
-      }
-      if (v.slug.trim().length < 2) {
-        stepErrors.slug = "Informe ao menos 2 caracteres.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        eventStep1Schema.safeParse(v),
+      );
     } else if (stepIndex === 1) {
-      if (v.contact_email && !v.contact_email.includes("@")) {
-        stepErrors.contact_email = "E-mail inválido.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        eventStep2Schema.safeParse(v),
+      );
     }
 
     setErrors((prev) => ({ ...prev, ...stepErrors }));

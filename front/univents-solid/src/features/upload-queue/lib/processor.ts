@@ -235,8 +235,13 @@ class UploadQueueProcessor {
       if (!claimedAssociationTask) return;
       current = claimedAssociationTask;
 
+      const url = current.uploadedUrl;
+      if (!url) {
+        return;
+      }
+
       yield* Effect.tryPromise({
-        try: () => handler(current, current.uploadedUrl!),
+        try: () => handler(current, url),
         catch: (err) => err,
       });
       yield* Effect.tryPromise({

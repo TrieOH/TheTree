@@ -1,15 +1,49 @@
-import z from "zod";
+import {
+  Schema,
+  createSchema,
+  minLength,
+  min,
+  max,
+  refine,
+  type Infer,
+} from "@/shared/lib/effect-schema";
 
-export const signatureCreateSchema = z.object({
-  signatory_name: z.string().trim().min(2, "Nome é obrigatório"),
-  signatory_title: z.string().trim().optional(),
-  signatory_email: z.string().email("E-mail inválido").optional().or(z.literal("")),
-  signatory_user_id: z.string().uuid("ID de usuário inválido").optional().or(z.literal("")),
-  image_url: z.string().trim().min(1, "Imagem da assinatura é obrigatória"),
-});
+export const signatureStep1Schema = createSchema(
+  Schema.Struct({
+    signatory_name: Schema.Trim.pipe(
+      minLength(2, { message: "O nome do signatário deve ter pelo menos 2 caracteres." }),
+    ),
+    signatory_email: Schema.optional(
+      Schema.Unknown.pipe(
+        refine(
+          (val) => {
+            const str = String(val ?? "").trim();
+            if (str.length === 0) return true;
+            return str.includes("@") && str.includes(".");
+          },
+          { message: "Informe um e-mail válido." },
+        ),
+      ),
+    ),
+  }),
+);
 
-export type SignatureCreateInputI = z.input<typeof signatureCreateSchema>;
-export type SignatureCreateOutputI = z.output<typeof signatureCreateSchema>;
+export const signatureCreateSchema = createSchema(
+  Schema.Struct({
+    signatory_name: Schema.Trim.pipe(
+      minLength(2, { message: "O nome do signatário deve ter pelo menos 2 caracteres." }),
+    ),
+    signatory_title: Schema.optional(Schema.NullOr(Schema.String)),
+    signatory_email: Schema.optional(Schema.NullOr(Schema.String)),
+    signatory_user_id: Schema.optional(Schema.NullOr(Schema.String)),
+    image_url: Schema.Trim.pipe(
+      minLength(1, { message: "A URL da imagem de assinatura é obrigatória." }),
+    ),
+  }),
+);
+
+export type SignatureCreateInputI = Infer<typeof signatureCreateSchema>;
+export type SignatureCreateOutputI = Infer<typeof signatureCreateSchema>;
 
 export interface SignatureI {
   id: string;
@@ -56,22 +90,53 @@ export interface SignatureRequestCreateI {
   expires_in_days?: number;
 }
 
-export const signatureRequestCreateSchema = z.object({
-  signatory_name: z.string().trim().min(2, "Informe o nome do signatário"),
-  signatory_title: z.string().trim().optional(),
-  signatory_email: z.string().email("Informe um e-mail válido"),
-  signatory_user_id: z.string().uuid("UUID inválido").optional().or(z.literal("")),
-  expires_in_days: z.coerce
-    .number()
-    .int("Informe um número inteiro")
-    .min(1, "O prazo mínimo é de 1 dia")
-    .max(365, "O prazo máximo é de 365 dias"),
-});
+export const signatureRequestStep1Schema = createSchema(
+  Schema.Struct({
+    signatory_name: Schema.Trim.pipe(
+      minLength(2, { message: "O nome do signatário deve ter pelo menos 2 caracteres." }),
+    ),
+    signatory_email: Schema.Unknown.pipe(
+      refine(
+        (val) => {
+          const str = String(val ?? "").trim();
+          return Boolean(str) && str.includes("@") && str.includes(".");
+        },
+        { message: "Informe um e-mail válido para envio do convite." },
+      ),
+    ),
+    expires_in_days: Schema.Unknown.pipe(
+      refine(
+        (val) => {
+          const days = Number(val);
+          return !isNaN(days) && Number.isInteger(days) && days >= 1 && days <= 365;
+        },
+        { message: "A validade deve ser um número inteiro entre 1 e 365 dias." },
+      ),
+    ),
+  }),
+);
 
-export type SignatureRequestCreateInputI = z.input<
+export const signatureRequestCreateSchema = createSchema(
+  Schema.Struct({
+    signatory_name: Schema.Trim.pipe(
+      minLength(2, { message: "O nome do signatário deve ter pelo menos 2 caracteres." }),
+    ),
+    signatory_title: Schema.optional(Schema.String),
+    signatory_email: Schema.Trim.pipe(
+      minLength(3, { message: "Informe um e-mail válido para envio do convite." }),
+    ),
+    signatory_user_id: Schema.optional(Schema.String),
+    expires_in_days: Schema.Number.pipe(
+      min(1, { message: "A validade deve ser de pelo menos 1 dia." }),
+      max(365, { message: "A validade máxima é de 365 dias." }),
+    ),
+  }),
+);
+
+export type SignatureRequestCreateInputI = Infer<
   typeof signatureRequestCreateSchema
 >;
-export type SignatureRequestCreateOutputI = z.output<
+export type SignatureRequestCreateOutputI = Infer<
   typeof signatureRequestCreateSchema
 >;
 

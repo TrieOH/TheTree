@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { animate } from "motion/mini";
 import { createEffect } from "solid-js";
-import z from "zod";
+import { Schema, createSchema } from "@/shared/lib/effect-schema";
 import Logo from "@/shared/ui/Logo";
 import { Footer } from "@/widgets/landing/ui/Footer";
 import { ModeSelector } from "@/widgets/landing/ui/ModeSelector";
@@ -11,17 +11,23 @@ import { allPublicEventsQueryOptions } from "@/features/events/api";
 import { appQueryClient } from "@/shared/lib/query-client";
 
 export type Mode = "guest" | "host";
-const searchSchema = z.object({
-  as: z.enum(["guest", "host"]).optional().default("guest"),
-});
+const searchSchema = createSchema(
+  Schema.Struct({
+    as: Schema.optional(Schema.Literals(["guest", "host"])),
+  }),
+);
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Univents" }] }),
-  validateSearch: (search) => searchSchema.parse(search),
+  validateSearch: (search) => {
+    const parsed = searchSchema.parse(search);
+    return { as: (parsed.as ?? "guest") as Mode };
+  },
   loaderDeps: ({ search }) => ({ mode: search.as }),
-  loader: ({ deps }) => deps.mode === "guest"
-    ? appQueryClient.prefetchQuery(allPublicEventsQueryOptions())
-    : undefined,
+  loader: ({ deps }) =>
+    deps.mode === "guest"
+      ? appQueryClient.prefetchQuery(allPublicEventsQueryOptions())
+      : Promise.resolve(),
   component: HomePage,
 });
 
@@ -33,9 +39,10 @@ function HomePage() {
 
   createEffect(
     () => mode(),
-    (_mode, previousMode) => {
+    () => {
       if (
-        previousMode !== undefined && content &&
+        content &&
+        typeof window !== "undefined" &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ) {
         animate(

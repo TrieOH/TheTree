@@ -10,6 +10,11 @@ import ShieldCheckIcon from "~icons/lucide/shield-check";
 import UserCogIcon from "~icons/lucide/user-cog";
 import UsersIcon from "~icons/lucide/users";
 import { toast } from "@/shared/ui/toast";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  eventMemberStep1Schema,
+  eventMemberStep2Schema,
+} from "../model";
 import type { EventMemberRole } from "../model/member";
 
 const ShieldCheck = ShieldCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -109,17 +114,16 @@ export function ManageEventMemberDialog(props: ManageEventMemberDialogProps): JS
 
   const validateStep = (stepIndex: number): boolean => {
     const v = rawValues;
-    const stepErrors: Partial<Record<keyof ManageEventMemberValues, string>> = {};
+    let stepErrors: Partial<Record<keyof ManageEventMemberValues, string>> = {};
 
     if (stepIndex === 0) {
-      const cleanEmail = v.email.trim().toLowerCase();
-      if (!cleanEmail || !cleanEmail.includes("@")) {
-        stepErrors.email = "Informe um e-mail válido.";
-      }
+      stepErrors = getFieldErrors<ManageEventMemberValues>(
+        eventMemberStep1Schema.safeParse(v),
+      );
     } else if (stepIndex === 1) {
-      if (!v.role) {
-        stepErrors.role = "Selecione uma função para o membro.";
-      }
+      stepErrors = getFieldErrors<ManageEventMemberValues>(
+        eventMemberStep2Schema.safeParse(v),
+      );
     }
 
     setErrors((prev) => ({ ...prev, ...stepErrors }));

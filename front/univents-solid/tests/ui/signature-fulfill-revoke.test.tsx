@@ -63,7 +63,7 @@ describe("Signatures Fulfill & Revoke Views", () => {
     cleanup();
   });
 
-  describe("parseJwtPayload with Zod validation", () => {
+  describe("parseJwtPayload with Schema validation", () => {
     it("safely decodes and validates a valid JWT payload for requests", () => {
       const payloadObj = {
         request_id: "req-123",

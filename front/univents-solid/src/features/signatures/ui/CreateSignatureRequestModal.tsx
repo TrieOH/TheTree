@@ -1,21 +1,17 @@
 import type { JSX } from "@solidjs/web";
 import { createSignal, untrack } from "solid-js";
-import CalendarIcon from "~icons/lucide/calendar";
-import MailIcon from "~icons/lucide/mail";
 import SendIcon from "~icons/lucide/send";
-import ShieldCheckIcon from "~icons/lucide/shield-check";
 
 import {
   MultiStepDialog,
   type MultiStepItem,
 } from "@trieoh/ui-solid";
 import { toast } from "@/shared/ui/toast";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
 import { useCreateSignatureRequestMutation } from "../api/mutations";
+import { signatureRequestStep1Schema } from "../model";
 
-const Calendar = CalendarIcon as unknown as (props: { class?: string }) => JSX.Element;
-const Mail = MailIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Send = SendIcon as unknown as (props: { class?: string }) => JSX.Element;
-const ShieldCheck = ShieldCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface CreateSignatureRequestModalProps {
   open: boolean;
@@ -83,27 +79,12 @@ export function CreateSignatureRequestModal(
 
   const validateStep = (stepIndex: number): boolean => {
     const current = currentValues;
-    const nextErrors: Partial<Record<keyof CreateSignatureRequestValues, string>> =
-      {};
+    let nextErrors: Partial<Record<keyof CreateSignatureRequestValues, string>> = {};
 
     if (stepIndex === 0) {
-      const name = current.signatory_name.trim();
-      if (name.length < 2) {
-        nextErrors.signatory_name =
-          "O nome do signatário deve ter pelo menos 2 caracteres.";
-      }
-
-      const email = current.signatory_email.trim();
-      if (!email || !email.includes("@") || !email.includes(".")) {
-        nextErrors.signatory_email =
-          "Informe um e-mail válido para envio do convite.";
-      }
-
-      const days = Number(current.expires_in_days);
-      if (isNaN(days) || !Number.isInteger(days) || days < 1 || days > 365) {
-        nextErrors.expires_in_days =
-          "A validade deve ser um número inteiro entre 1 e 365 dias.";
-      }
+      nextErrors = getFieldErrors<CreateSignatureRequestValues>(
+        signatureRequestStep1Schema.safeParse(current),
+      );
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -133,15 +114,13 @@ export function CreateSignatureRequestModal(
         },
       });
 
-      toast.success("Convite de assinatura enviado com sucesso!");
+      toast.success("Convite enviado com sucesso!");
       resetForm();
       props.onOpenChange(false);
       props.onSuccess?.();
       return true;
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Erro ao enviar convite.";
-      toast.error(msg);
+    } catch {
+      toast.error("Não foi possível enviar o convite de assinatura.");
       return false;
     } finally {
       setIsSubmitting(false);
@@ -152,105 +131,84 @@ export function CreateSignatureRequestModal(
     {
       id: "destinatario",
       title: "Destinatário",
-      description: "Identificação da autoridade que receberá o convite e prazo",
+      description: "Dados do signatário e prazo para resposta",
       fields: [
         {
           name: "signatory_name",
           label: "Nome do signatário",
           required: true,
-          placeholder: "Ex.: Prof. Dr. Carlos Eduardo",
-          hint: "Nome completo da autoridade signatária.",
+          placeholder: "Ex: Profa. Dra. Helena Silveira",
+          hint: "Nome da autoridade convidada a assinar os documentos.",
         },
         {
           name: "signatory_email",
           label: "E-mail para envio",
           kind: "email",
           required: true,
-          placeholder: "carlos.eduardo@universidade.edu.br",
-          hint: "O link com token seguro de assinatura será enviado para esta caixa postal.",
+          placeholder: "helena.silveira@universidade.edu",
+          hint: "O link com token exclusivo e temporário será encaminhado para este endereço.",
         },
         {
           name: "signatory_title",
           label: "Cargo / Função",
-          layout: "half",
-          placeholder: "Ex.: Reitor, Coordenador Científico",
-          hint: "Cargo oficial no evento (opcional).",
+          required: false,
+          placeholder: "Ex: Pró-Reitora de Pós-Graduação",
+          hint: "Cargo ou titulação exibida no certificado abaixo da assinatura.",
         },
         {
           name: "expires_in_days",
           label: "Validade do link (dias)",
           kind: "number",
-          step: "1",
+          required: true,
           min: "1",
           max: "365",
-          layout: "half",
-          required: true,
+          step: "1",
           placeholder: "7",
-          hint: "Prazo para expiração do link.",
+          hint: "Tempo em dias corridos até o link de assinatura expirar (1 a 365 dias).",
         },
       ],
     },
     {
       id: "resumo",
       title: "Resumo",
-      description: "Revise os dados antes de disparar o convite por e-mail",
+      description: "Revise os dados antes de disparar o convite",
       summary: {
         title: "Dados do convite",
         badge: () => "Pronto para enviar",
         items: [
           {
-            label: "Nome do signatário",
-            value: () => values().signatory_name || "Não informado",
+            label: "Signatário convidado",
+            value: () => values().signatory_name,
           },
           {
             label: "E-mail de destino",
-            value: () => values().signatory_email || "Não informado",
+            value: () => values().signatory_email,
           },
           {
             label: "Cargo / Função",
             value: () => values().signatory_title || "Não informado",
           },
           {
-            label: "Validade do link",
-            value: () => `${values().expires_in_days || 7} dias`,
+            label: "Prazo de expiração",
+            value: () => `${values().expires_in_days} dias`,
           },
         ],
         extra: () => (
-          <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-5 shadow-xs">
-            <div class="flex items-center justify-between pb-3 border-b border-border/60">
-              <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Mail class="size-3.5" />
-                Prévia da Notificação
-              </span>
-              <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                <ShieldCheck class="size-3.5" />
-                Link Autenticado
-              </span>
-            </div>
-
-            <div class="mt-4 space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4 text-xs">
-              <div class="flex items-center justify-between border-b border-border/40 pb-2 text-muted-foreground">
-                <span>Para: <strong class="text-foreground font-medium">{values().signatory_email || "email@instituicao.org"}</strong></span>
-                <span class="inline-flex items-center gap-1 font-mono text-[11px]">
-                  <Calendar class="size-3" />
-                  Expira em {values().expires_in_days || 7}d
-                </span>
+          <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 shadow-xs">
+            <div class="flex items-start gap-3">
+              <div class="rounded-lg p-2.5 bg-primary/10 text-primary shrink-0 mt-0.5">
+                <Send class="size-4" />
               </div>
-
-              <div>
-                <p class="font-semibold text-foreground text-sm">
-                  Convite para Assinatura de Certificados Digitais
+              <div class="space-y-1 min-w-0">
+                <h4 class="text-sm font-semibold text-foreground">
+                  Como funciona o convite externo?
+                </h4>
+                <p class="text-xs text-muted-foreground leading-relaxed">
+                  Um link criptografado com token único será gerado e enviado ao
+                  e-mail informado. O convidado poderá desenhar ou subir sua
+                  assinatura sem necessidade de login. Assim que concluído, a
+                  assinatura ficará disponível automaticamente para a edição.
                 </p>
-                <p class="mt-1 text-muted-foreground leading-relaxed">
-                  Olá, <strong>{values().signatory_name || "Signatário(a)"}</strong>. Você foi convidado(a) para assinar digitalmente os certificados oficiais desta edição.
-                </p>
-              </div>
-
-              <div class="pt-2">
-                <div class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs">
-                  <Send class="size-3.5" />
-                  <span>Acessar e Assinar Documentos</span>
-                </div>
               </div>
             </div>
           </div>
@@ -260,11 +218,11 @@ export function CreateSignatureRequestModal(
   ];
 
   return (
-    <MultiStepDialog
+    <MultiStepDialog<CreateSignatureRequestValues>
       open={props.open}
       onOpenChange={handleOpenChange}
       title="Enviar convite de assinatura"
-      description="O signatário receberá um link seguro por e-mail para assinar digitalmente."
+      description="Gere um convite seguro com token para que uma autoridade envie sua assinatura digital."
       steps={steps}
       currentStep={currentStep()}
       onStepChange={setCurrentStep}
@@ -278,5 +236,3 @@ export function CreateSignatureRequestModal(
     />
   );
 }
-
-export { CreateSignatureRequestModal as ManageSignatureRequestDialog };
