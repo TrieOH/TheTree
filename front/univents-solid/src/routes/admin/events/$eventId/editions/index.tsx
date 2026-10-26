@@ -25,12 +25,14 @@ import {
   ManageEditionDialog,
   type ManageEditionValues,
 } from "@/features/editions/ui/ManageEditionDialog";
+import { warmQuery } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/admin/events/$eventId/editions/")({
-  loader: ({ params }) => appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
+  loader: ({ params }) => warmQuery(appQueryClient, allAdminEditionsQueryOptions(params.eventId)),
   head: () => ({
     meta: [{ title: "Edições - Admin Univents" }],
   }),
@@ -124,9 +126,10 @@ function AdminEventEditionsRoute(): JSX.Element {
 
   return (
     <div class="space-y-6">
-      <Show
-        when={!editionsQuery().isLoading}
-        fallback={
+      <QueryBoundary
+        query={editionsQuery}
+        what="as edições"
+        skeleton={
           <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             <For each={[1, 2, 3, 4]}>
               {() => <div class="h-24 animate-pulse rounded-xl bg-muted" />}
@@ -134,17 +137,19 @@ function AdminEventEditionsRoute(): JSX.Element {
           </div>
         }
       >
-        <AdminEventEditionsContent
-          editions={editions()}
-          eventId={eventId()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onCreate={() => setCreating(true)}
-          onEdit={setEditing}
-        />
-      </Show>
+        {() => (
+          <AdminEventEditionsContent
+            editions={editions()}
+            eventId={eventId()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onCreate={() => setCreating(true)}
+            onEdit={setEditing}
+          />
+        )}
+      </QueryBoundary>
 
       <Show
         when={editing()}

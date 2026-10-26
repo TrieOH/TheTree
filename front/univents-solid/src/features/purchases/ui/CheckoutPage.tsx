@@ -4,7 +4,6 @@ import {
   createMemo,
   createSignal,
   For,
-  Loading,
   Show,
   type Component,
   untrack,
@@ -183,7 +182,7 @@ export default function CheckoutPage(props: { purchase: Purchase }) {
   );
 
   return (
-    <main class="min-h-screen min-w-0 overflow-x-hidden bg-background px-2 py-6 text-foreground sm:px-8 sm:py-14 min-[360px]:px-4 pb-28!">
+    <div class="min-h-screen min-w-0 overflow-x-hidden bg-background px-2 py-6 text-foreground sm:px-8 sm:py-14 min-[360px]:px-4 pb-28!">
       <div class="relative mx-auto grid min-w-0 w-full max-w-4xl overflow-visible rounded-xl border border-dashed border-border bg-card shadow-xl md:grid-cols-[360px_1fr]">
         {/* Order Summary                */}
         <section class="flex min-w-0 flex-col overflow-hidden rounded-t-[calc(0.75rem-2px)] bg-muted p-4 sm:p-8 min-[360px]:p-6 md:rounded-l-[calc(0.75rem-2px)] md:rounded-tr-none md:rounded-br-none">
@@ -192,13 +191,6 @@ export default function CheckoutPage(props: { purchase: Purchase }) {
           </p>
 
           <div class="mt-6 space-y-4">
-            <Loading
-              fallback={
-                <div class="flex min-h-20 items-center justify-center text-sm text-muted-foreground">
-                  Carregando itens...
-                </div>
-              }
-            >
               <For each={props.purchase.items}>
                 {(item) => {
                   const itemKey =
@@ -267,15 +259,28 @@ export default function CheckoutPage(props: { purchase: Purchase }) {
                       </div>
 
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-semibold">
-                          {itemData()?.name ??
-                            "Item não identificado"}
-                        </p>
+                        {/* The names come from a second request; until it
+                            settles, hold the space instead of showing a
+                            placeholder label that then gets replaced. */}
+                        <Show
+                          when={itemData() || !catalogQuery().isPending}
+                          fallback={
+                            <div class="space-y-1.5" aria-hidden="true">
+                              <div class="h-4 w-32 animate-pulse rounded bg-background/70" />
+                              <div class="h-3 w-20 animate-pulse rounded bg-background/70" />
+                            </div>
+                          }
+                        >
+                          <p class="truncate text-sm font-semibold">
+                            {itemData()?.name ??
+                              "Item não identificado"}
+                          </p>
 
-                        <p class="text-xs text-muted-foreground">
-                          {itemData()?.description ??
-                            `${item.quantity}x unidade`}
-                        </p>
+                          <p class="text-xs text-muted-foreground">
+                            {itemData()?.description ??
+                              `${item.quantity}x unidade`}
+                          </p>
+                        </Show>
                       </div>
 
                       <span class="shrink-0 text-xs font-semibold tabular-nums min-[360px]:text-sm">
@@ -289,7 +294,6 @@ export default function CheckoutPage(props: { purchase: Purchase }) {
                   );
                 }}
               </For>
-            </Loading>
           </div>
 
           <div class="mt-6 space-y-2 border-t border-border pt-5 text-sm">
@@ -501,6 +505,6 @@ export default function CheckoutPage(props: { purchase: Purchase }) {
           </Show>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

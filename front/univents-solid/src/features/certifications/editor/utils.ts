@@ -15,14 +15,6 @@ export function createCertificateElementId(prefix: string): string {
   return `${prefix}_${random}`;
 }
 
-export function clampCertificateValue(
-  value: number,
-  min: number,
-  max: number,
-): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 export function readCertificateFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -43,8 +35,6 @@ export function loadCertificateImageDimensions(
     image.src = resolveStorageUrl(src);
   });
 }
-
-export const loadImageDimensions = loadCertificateImageDimensions;
 
 export function scaleCertificateElements(
   elements: CertificationTemplateElement[],

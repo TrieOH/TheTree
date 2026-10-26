@@ -25,6 +25,9 @@ import {
 } from "@/features/certifications/ui/CertificationSectionTabs";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
 import { toast } from "@/shared/ui/toast";
+import { warmQueries } from "@/shared/lib/route-data";
+import { GridSkeleton } from "@/shared/ui/GridSkeleton";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const Award = AwardIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -32,9 +35,9 @@ const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/certifications/",
 )({
-  loader: ({ params }) => Promise.all([
-    appQueryClient.prefetchQuery(allAdminEditionsQueryOptions(params.eventId)),
-    appQueryClient.prefetchQuery(allCertificationTemplatesQueryOptions(params.editionId)),
+  loader: ({ params }) => warmQueries(appQueryClient, [
+    allAdminEditionsQueryOptions(params.eventId),
+    allCertificationTemplatesQueryOptions(params.editionId),
   ]),
   head: () => ({
     meta: [{ title: "Certificados - Admin Univents" }],
@@ -131,80 +134,88 @@ function AdminEditionCertificationsRoute(): JSX.Element {
 
       {/* Content: Templates */}
       <Show when={activeSection() === "templates"}>
-        <PaginatedContainer<CertificationTemplateI>
-          items={filteredTemplates()}
-          layout="grid"
-          minItemWidth="16rem"
-          maxRows={(columns) => (columns === 1 ? 8 : 4)}
-          gap="2"
-          sort={sort()}
-          onSortChange={setSort}
-          sortFields={[
-            {
-              key: "name",
-              label: "Nome",
-              ascLabel: "A → Z",
-              descLabel: "Z → A",
-            },
-            {
-              key: "created_at",
-              label: "Data de criação",
-              ascLabel: "Mais antigos primeiro",
-              descLabel: "Mais recentes primeiro",
-              comparator: (a, b) =>
-                new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-            },
-          ]}
-          filterValue={filter()}
-          onFilterChange={setFilter}
-          filterPlaceholder="Buscar por nome do template..."
-          itemLabel="templates"
-          emptyState={
-            <EmptyState
-              class="border-0 bg-transparent px-0 py-4 shadow-none"
-              icon={<Award class="size-6 text-foreground/70" />}
-              eyebrow="Certificações"
-              title="Nenhum template cadastrado"
-              description={
-                filter()
-                  ? "Nenhum template corresponde à busca informada."
-                  : "Crie o primeiro template para começar a emitir certificados nesta edição."
+        <QueryBoundary
+          query={templatesQuery}
+          what="os modelos de certificado"
+          skeleton={<GridSkeleton />}
+        >
+          {() => (
+            <PaginatedContainer<CertificationTemplateI>
+              items={filteredTemplates()}
+              layout="grid"
+              minItemWidth="16rem"
+              maxRows={(columns) => (columns === 1 ? 8 : 4)}
+              gap="2"
+              sort={sort()}
+              onSortChange={setSort}
+              sortFields={[
+                {
+                  key: "name",
+                  label: "Nome",
+                  ascLabel: "A → Z",
+                  descLabel: "Z → A",
+                },
+                {
+                  key: "created_at",
+                  label: "Data de criação",
+                  ascLabel: "Mais antigos primeiro",
+                  descLabel: "Mais recentes primeiro",
+                  comparator: (a, b) =>
+                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+                },
+              ]}
+              filterValue={filter()}
+              onFilterChange={setFilter}
+              filterPlaceholder="Buscar por nome do template..."
+              itemLabel="templates"
+              emptyState={
+                <EmptyState
+                  class="border-0 bg-transparent px-0 py-4 shadow-none"
+                  icon={<Award class="size-6 text-foreground/70" />}
+                  eyebrow="Certificações"
+                  title="Nenhum template cadastrado"
+                  description={
+                    filter()
+                      ? "Nenhum template corresponde à busca informada."
+                      : "Crie o primeiro template para começar a emitir certificados nesta edição."
+                  }
+                  action={
+                    <Button
+                      variant="outline"
+                      class="gap-2 rounded-sm py-4 cursor-pointer"
+                      onClick={() => handleOpenEditor()}
+                    >
+                      <Plus class="size-4" />
+                      Novo template
+                    </Button>
+                  }
+                />
               }
-              action={
-                <Button
-                  variant="outline"
-                  class="gap-2 rounded-sm py-4 cursor-pointer"
-                  onClick={() => handleOpenEditor()}
-                >
-                  <Plus class="size-4" />
-                  Novo template
-                </Button>
-              }
-            />
-          }
-          renderItems={(slice, options) => (
-            <>
-              <AdminCreateCertificationCard
-                index={0}
-                animate={options.animate}
-                onCreate={() => handleOpenEditor()}
-              />
-              <For each={slice}>
-                {(template, index) => (
-                  <AdminCertificationTemplateCard
-                    template={template}
-                    index={index() + 1}
+              renderItems={(slice, options) => (
+                <>
+                  <AdminCreateCertificationCard
+                    index={0}
                     animate={options.animate}
-                    onEdit={() => handleOpenEditor(template.id)}
-                    onView={() => setViewingTemplate(template)}
-                    onDuplicate={() => handleOpenEditor(template.id, true)}
-                    onDelete={() => void handleDeleteTemplate(template)}
+                    onCreate={() => handleOpenEditor()}
                   />
-                )}
-              </For>
-            </>
+                  <For each={slice}>
+                    {(template, index) => (
+                      <AdminCertificationTemplateCard
+                        template={template}
+                        index={index() + 1}
+                        animate={options.animate}
+                        onEdit={() => handleOpenEditor(template.id)}
+                        onView={() => setViewingTemplate(template)}
+                        onDuplicate={() => handleOpenEditor(template.id, true)}
+                        onDelete={() => void handleDeleteTemplate(template)}
+                      />
+                    )}
+                  </For>
+                </>
+              )}
+            />
           )}
-        />
+        </QueryBoundary>
       </Show>
 
       {/* Content: Certificates */}

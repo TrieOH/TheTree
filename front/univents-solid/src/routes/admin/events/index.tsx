@@ -19,6 +19,7 @@ import {
   type ManageEventValues,
 } from "@/features/events/ui/ManageEventDialog";
 import { AdminCreateEventCard } from "@/features/events/ui/AdminCreateEventCard";
+import { QueryBoundary, combineQueries } from "@/shared/ui/QueryBoundary";
 
 const Calendar = CalendarIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -44,13 +45,15 @@ function AdminEventsPage(): JSX.Element {
   const [creating, setCreating] = createSignal(false);
   const createMutation = useCreateEventMutation();
   const patchMutation = usePatchEventMutation();
-  const ownedQuery = useQuery(allOwnEventsQueryOptions());
-  const joinedQuery = useQuery(allJoinedEventsQueryOptions());
+  const eventsQuery = combineQueries(
+    useQuery(allOwnEventsQueryOptions()),
+    useQuery(allJoinedEventsQueryOptions()),
+  );
 
   const events = createMemo(() => {
-    const owned = ownedQuery().data;
-    const joined = joinedQuery().data;
-    if (!owned || !joined) return [];
+    const lists = eventsQuery().data;
+    if (!lists) return [];
+    const [owned, joined] = lists;
 
     const seen = new Set<string>();
     return [...owned, ...joined].filter((event) => {
@@ -85,9 +88,10 @@ function AdminEventsPage(): JSX.Element {
   };
 
   return (
-    <Show
-      when={ownedQuery().isSuccess && joinedQuery().isSuccess}
-      fallback={
+    <QueryBoundary
+      query={eventsQuery}
+      what="seus eventos"
+      skeleton={
         <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-6">
           <For each={[1, 2, 3, 4]}>
             {() => <div class="h-40 animate-pulse rounded-lg bg-muted" />}
@@ -95,34 +99,38 @@ function AdminEventsPage(): JSX.Element {
         </div>
       }
     >
-      <AdminEventsContent
-        events={events()}
-        filter={filter()}
-        onFilterChange={setFilter}
-        sort={sort()}
-        onSortChange={setSort}
-        onEdit={setEditing}
-        onCreate={() => setCreating(true)}
-      />
-
-      <Show when={editing()} keyed fallback={
-        <ManageEventDialog
-          open={creating()}
-          event={null}
-          onOpenChange={(open) => !open && setCreating(false)}
-          onSubmit={saveEvent}
-        />
-      }>
-        {(current) => (
-          <ManageEventDialog
-            open
-            event={current}
-            onOpenChange={(open) => !open && setEditing(null)}
-            onSubmit={saveEvent}
+      {() => (
+        <>
+          <AdminEventsContent
+            events={events()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onEdit={setEditing}
+            onCreate={() => setCreating(true)}
           />
-        )}
-      </Show>
-    </Show>
+
+          <Show when={editing()} keyed fallback={
+            <ManageEventDialog
+              open={creating()}
+              event={null}
+              onOpenChange={(open) => !open && setCreating(false)}
+              onSubmit={saveEvent}
+            />
+          }>
+            {(current) => (
+              <ManageEventDialog
+                open
+                event={current}
+                onOpenChange={(open) => !open && setEditing(null)}
+                onSubmit={saveEvent}
+              />
+            )}
+          </Show>
+        </>
+      )}
+    </QueryBoundary>
   );
 }
 

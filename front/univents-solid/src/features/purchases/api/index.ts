@@ -1,7 +1,6 @@
 import type { QueryClient } from "@tanstack/query-core";
 import { orvalData } from "@trieoh/api-client";
 import {
-  createEditionCheckout,
   getCheckout,
   getWsToken,
   listEditionPurchases,
@@ -14,14 +13,13 @@ import type { EditionI } from "@/features/editions/model";
 import { myTicketQueryOptions } from "@/features/tickets/api";
 import type {
   Checkout,
-  CheckoutResult,
-  CreateCheckoutRequest,
   EditionPurchase,
   MyPurchases,
   Purchase,
   WsToken,
   MyTicket,
 } from "@trieoh/univents-api/schemas";
+import { degradeTo } from "@/shared/lib/degrade";
 import { resolvePurchaseCatalog } from "./purchase-catalog";
 import { purchaseKeys } from "./query-keys";
 
@@ -49,17 +47,19 @@ export type CheckoutPageData = {
 
 export const checkoutPageQueryOptions = (slug: string) => ({
   queryKey: purchaseKeys.page(slug, true),
-  queryFn: async (): Promise<CheckoutPageData | null> => {
-    const event = await publicEventBySlugQueryOptions(slug).queryFn();
+  queryFn: async ({ client }: { client: QueryClient }): Promise<CheckoutPageData | null> => {
+    const event = await client.fetchQuery(publicEventBySlugQueryOptions(slug));
     if (!event) return null;
-    const editions = await allPublicEditionsQueryOptions(event.id).queryFn();
+    const editions = await client.fetchQuery(allPublicEditionsQueryOptions(event.id));
     const now = Date.now();
     const sorted = [...editions].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const edition = sorted.find((item) => new Date(item.starts_at).getTime() <= now && new Date(item.ends_at).getTime() >= now)
       ?? sorted.find((item) => new Date(item.starts_at).getTime() > now)
       ?? sorted.at(-1);
     if (!edition) return null;
-    const heldTicket = await myTicketQueryOptions(edition.id).queryFn();
+    // Only drives a "you already hold a ticket" warning, and goes through the
+    // session: it must not stop the checkout from opening.
+    const heldTicket = await degradeTo(client.fetchQuery(myTicketQueryOptions(edition.id)), null);
     return { event, edition, heldTicket };
   },
 });
@@ -76,9 +76,6 @@ export const purchaseCatalogQueryOptions = (purchase: Purchase) => ({
       })),
     ),
 });
-
-export const createCheckout = (editionId: string, data: CreateCheckoutRequest) =>
-  createEditionCheckout(editionId, data).then(orvalData<CheckoutResult>);
 
 export const purchaseWsToken = (purchaseId: string) =>
   getWsToken({ purchase_id: purchaseId }).then(orvalData<WsToken>);

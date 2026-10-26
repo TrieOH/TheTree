@@ -1,8 +1,9 @@
-import { For, Loading, Show, createMemo } from "solid-js";
+import { For, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import type { Purchase } from "@trieoh/univents-api/schemas";
 import { Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 import { myPurchasesQueryOptions } from "../api";
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
 
@@ -23,39 +24,38 @@ const status: Record<string, [string, string]> = {
 
 export function PurchasesContent() {
   const purchasesQuery = useQuery(myPurchasesQueryOptions());
-  const data = createMemo(() => purchasesQuery().data);
 
   return (
-    <Loading
-      fallback={
+    <QueryBoundary
+      query={purchasesQuery}
+      what="suas compras"
+      skeleton={
         <div class="grid gap-3">
           <div class="h-17 animate-pulse rounded-md bg-muted" />
           <div class="h-17 animate-pulse rounded-md bg-muted" />
         </div>
       }
     >
-      <Show when={data()}>
-        {(loaded) => (
-          <Show
-            when={loaded().purchases.length}
-            fallback={
-              <div class="rounded-md border border-dashed border-border p-10 text-center">
-                <h2 class="font-semibold">Você ainda não possui compras</h2>
-                <p class="mt-2 text-sm text-muted-foreground">
-                  Ingressos, produtos e atividades aparecerão aqui.
-                </p>
-              </div>
-            }
-          >
-            <div class="grid gap-3 sm:grid-cols-2">
-              <For each={loaded().purchases}>
-                {(purchase) => <OrderCard purchase={purchase} />}
-              </For>
+      {(loaded) => (
+        <Show
+          when={loaded().purchases.length}
+          fallback={
+            <div class="rounded-md border border-dashed border-border p-10 text-center">
+              <h2 class="font-semibold">Você ainda não possui compras</h2>
+              <p class="mt-2 text-sm text-muted-foreground">
+                Ingressos, produtos e atividades aparecerão aqui.
+              </p>
             </div>
-          </Show>
-        )}
-      </Show>
-    </Loading>
+          }
+        >
+          <div class="grid gap-3 sm:grid-cols-2">
+            <For each={loaded().purchases}>
+              {(purchase) => <OrderCard purchase={purchase} />}
+            </For>
+          </div>
+        </Show>
+      )}
+    </QueryBoundary>
   );
 }
 

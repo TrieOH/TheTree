@@ -36,6 +36,8 @@ import { MiniCalendar } from "./MiniCalendar";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
 import { YearView } from "./YearView";
+import { EditorSkeleton } from "@/shared/ui/EditorSkeleton";
+import { QueryBoundary, combineQueries } from "@/shared/ui/QueryBoundary";
 
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const ChevronLeft = ChevronLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -51,7 +53,26 @@ export interface CalendarEditorProps {
   initialProgramId?: string;
 }
 
+/** The calendar mounts once its programs and sessions are in, instead of drawing empty and filling in. */
 export function CalendarEditor(props: CalendarEditorProps): JSX.Element {
+  const scheduleQuery = combineQueries(
+    useQuery(() => programsQueryOptions(props.editionId)),
+    useQuery(() => occurrencesQueryOptions(props.editionId)),
+  );
+
+  return (
+    <QueryBoundary
+      query={scheduleQuery}
+      what="a programação"
+      skeleton={<EditorSkeleton />}
+      class="mx-auto my-24 max-w-xl"
+    >
+      {() => <CalendarWorkspace {...props} />}
+    </QueryBoundary>
+  );
+}
+
+function CalendarWorkspace(props: CalendarEditorProps): JSX.Element {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = createSignal<Date>(startOfDay(new Date()));

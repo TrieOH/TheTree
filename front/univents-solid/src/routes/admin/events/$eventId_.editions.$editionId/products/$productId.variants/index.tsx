@@ -23,6 +23,8 @@ import { ManageVariantDialog } from "@/features/products/ui/ManageVariantDialog"
 import { VariantGalleryDialog } from "@/features/products/ui/VariantGalleryDialog";
 import { toast } from "@/shared/ui/toast";
 import { AlertModal } from "@/widgets/ui/AlertModal";
+import { warmQuery } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Layers = LayersIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -31,7 +33,7 @@ const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/products/$productId/variants/",
 )({
-  loader: ({ params }) => appQueryClient.prefetchQuery(productVariantsQueryOptions(params.productId)),
+  loader: ({ params }) => warmQuery(appQueryClient, productVariantsQueryOptions(params.productId)),
   head: () => ({
     meta: [{ title: "Variações do Produto - Admin Univents" }],
   }),
@@ -144,9 +146,10 @@ function AdminProductVariantsRoute(): JSX.Element {
         </div>
       </div>
 
-      <Show
-        when={!variantsQuery().isLoading}
-        fallback={
+      <QueryBoundary
+        query={variantsQuery}
+        what="as variações"
+        skeleton={
           <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             <For each={[1, 2, 3, 4]}>
               {() => <div class="h-44 animate-pulse rounded-xl bg-muted" />}
@@ -154,18 +157,20 @@ function AdminProductVariantsRoute(): JSX.Element {
           </div>
         }
       >
-        <AdminProductVariantsContent
-          variants={variants()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onCreate={() => setCreating(true)}
-          onEdit={setEditing}
-          onDelete={setDeleting}
-          onManageGallery={setGalleryVariant}
-        />
-      </Show>
+        {() => (
+          <AdminProductVariantsContent
+            variants={variants()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onCreate={() => setCreating(true)}
+            onEdit={setEditing}
+            onDelete={setDeleting}
+            onManageGallery={setGalleryVariant}
+          />
+        )}
+      </QueryBoundary>
 
       {/* Modal de Criação / Edição */}
       <Show

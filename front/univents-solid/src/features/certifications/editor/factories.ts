@@ -122,28 +122,3 @@ export function createSignatureElement(
     height,
   };
 }
-
-export const createCertificateTextElement = createTextElement;
-export const createCertificateImageElement = (params: {
-  canvas: CertificateCanvasSize;
-  src: string;
-  intrinsicWidth?: number;
-  intrinsicHeight?: number;
-}) =>
-  createImageElement(
-    params.src,
-    params.canvas,
-    params.intrinsicWidth && params.intrinsicHeight
-      ? { width: params.intrinsicWidth, height: params.intrinsicHeight }
-      : undefined,
-  );
-export const createCertificateSignatureElement = (params: {
-  canvas: CertificateCanvasSize;
-  signatureId: string;
-  src: string;
-  name: string;
-}) =>
-  createSignatureElement(
-    { id: params.signatureId, url: params.src, name: params.name },
-    params.canvas,
-  );

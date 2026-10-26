@@ -21,16 +21,6 @@ import { scaleCertificateElements } from "./utils";
 export type CertificateTextSelectionStyles = TextSelectionStyles;
 export type CertificateRichTextController = RichTextController;
 
-export interface CertificateEditorState {
-  draft: CertificationTemplateCreateI;
-  canvas: CanvasSize;
-  availableSignatures: CertificateSignatory[];
-  selectedElementId: string | null;
-  editingElementId: string | null;
-  richTextController: CertificateRichTextController | null;
-  textSelectionStyles: CertificateTextSelectionStyles | null;
-}
-
 const [draft, setDraft] = createSignal<CertificationTemplateCreateI>(
   JSON.parse(JSON.stringify(DEFAULT_CERTIFICATE_DRAFT)),
 );

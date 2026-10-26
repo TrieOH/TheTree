@@ -27,12 +27,14 @@ import {
 import { RemoveEventMemberDialog } from "@/features/events/ui/RemoveEventMemberDialog";
 import { toast } from "@/shared/ui/toast";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { boundLoader } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const Users = UsersIcon as unknown as (props: { class?: string }) => JSX.Element;
 const UserPlus = UserPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/admin/events/$eventId/members/")({
-  loader: ({ params }) => prefetchEventMembers(appQueryClient, params.eventId),
+  loader: ({ params }) => boundLoader(prefetchEventMembers(appQueryClient, params.eventId)),
   head: () => ({
     meta: [{ title: "Membros - Admin Univents" }],
   }),
@@ -114,26 +116,27 @@ function AdminEventMembersRoute(): JSX.Element {
 
   return (
     <div class="space-y-6">
-      <Show
-        when={!membersQuery().isLoading}
-        fallback={
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-2">
-            <For each={[1, 2, 3, 4]}>
-              {() => <div class="h-16 animate-pulse rounded-xl bg-muted" />}
-            </For>
-          </div>
-        }
+      <QueryBoundary
+        query={membersQuery}
+        what="os membros"
+        skeleton={<MembersSkeleton />}
       >
-        <AdminEventMembersContent
-          members={members()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onAdd={() => setAddModalOpen(true)}
-          onRemove={setMemberToRemove}
-        />
-      </Show>
+        {() => (
+          // Emails and avatars come from a second request; show the list once
+          // it settles instead of filling them into rows that already painted.
+          <Show when={!actorEmailsQuery().isLoading} fallback={<MembersSkeleton />}>
+            <AdminEventMembersContent
+              members={members()}
+              filter={filter()}
+              onFilterChange={setFilter}
+              sort={sort()}
+              onSortChange={setSort}
+              onAdd={() => setAddModalOpen(true)}
+              onRemove={setMemberToRemove}
+            />
+          </Show>
+        )}
+      </QueryBoundary>
 
       <ManageEventMemberDialog
         open={addModalOpen()}
@@ -149,6 +152,16 @@ function AdminEventMembersRoute(): JSX.Element {
         member={memberToRemove()}
         onRemove={handleRemoveMember}
       />
+    </div>
+  );
+}
+
+function MembersSkeleton(): JSX.Element {
+  return (
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-2">
+      <For each={[1, 2, 3, 4]}>
+        {() => <div class="h-16 animate-pulse rounded-xl bg-muted" />}
+      </For>
     </div>
   );
 }

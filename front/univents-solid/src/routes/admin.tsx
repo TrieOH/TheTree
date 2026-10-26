@@ -11,12 +11,13 @@ import { Sidebar } from "@/widgets/sidebar/Sidebar";
 import { SidebarProvider, useSidebar } from "@/widgets/sidebar/use-sidebar";
 import { allOwnEventsQueryOptions, allJoinedEventsQueryOptions } from "@/features/events/api";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { warmQueries } from "@/shared/lib/route-data";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: requireAuth,
-  loader: () => Promise.all([
-    appQueryClient.prefetchQuery(allOwnEventsQueryOptions()),
-    appQueryClient.prefetchQuery(allJoinedEventsQueryOptions()),
+  loader: () => warmQueries(appQueryClient, [
+    allOwnEventsQueryOptions(),
+    allJoinedEventsQueryOptions(),
   ]),
   head: () => ({
     meta: [{ title: "Admin - Univents" }],
@@ -82,9 +83,9 @@ function AdminShell(): JSX.Element {
             <Breadcrumb />
           </div>
 
-          <main class="flex-1 min-w-0 max-w-full px-4 sm:px-6 py-6 pb-28">
+          <div class="flex-1 min-w-0 max-w-full px-4 sm:px-6 py-6 pb-28">
             <Outlet />
-          </main>
+          </div>
         </div>
       </div>
     </Show>

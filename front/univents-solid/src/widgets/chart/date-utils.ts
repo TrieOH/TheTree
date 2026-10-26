@@ -4,29 +4,6 @@ export function startOfDay(date: Date): Date {
   return d;
 }
 
-export function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-/** Formats a Date as 'YYYY-MM-DD' for use as an <input type="date"> value. */
-export function toDateInputValue(date: Date | null): string {
-  if (!date) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-/** Parses an <input type="date"> value ('YYYY-MM-DD') as a local Date. */
-export function fromDateInputValue(value: string): Date | null {
-  if (!value) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
-}
-
 export function isSameDay(a: Date | null, b: Date | null): boolean {
   if (!a || !b) return false;
   return (

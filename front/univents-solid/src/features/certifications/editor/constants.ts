@@ -1,4 +1,4 @@
-import type { CertificateCanvasSize, CertificateElementType } from "./types";
+import type { CertificateCanvasSize } from "./types";
 
 export const DEFAULT_CERTIFICATE_CANVAS: CertificateCanvasSize = {
   width: 1123,
@@ -41,8 +41,6 @@ export const CERTIFICATE_CANVAS_PRESETS: CertificateCanvasPreset[] = [
 
 export const MIN_CERTIFICATE_CANVAS_SIZE = { width: 320, height: 320 };
 export const MAX_CERTIFICATE_CANVAS_SIZE = { width: 6000, height: 6000 };
-export const CERTIFICATE_CANVAS_MAX_WIDTH = 980;
-export const CERTIFICATE_CANVAS_MAX_HEIGHT = 640;
 
 export const DEFAULT_CERTIFICATE_DRAFT = {
   kind: "edition_attendance" as const,
@@ -53,16 +51,6 @@ export const DEFAULT_CERTIFICATE_DRAFT = {
     background: null,
     elements: [],
   },
-};
-
-export const CERTIFICATE_ELEMENT_OVERFLOW: Record<
-  CertificateElementType,
-  number
-> = {
-  text: 0,
-  hash: 0,
-  image: 0.5,
-  signature: 0.5,
 };
 
 export const CERTIFICATE_VARIABLES = [
@@ -149,16 +137,6 @@ export const CERTIFICATE_FONT_FAMILIES = [
 export const DEFAULT_CERTIFICATE_FONT = CERTIFICATE_FONT_FAMILIES[0].value;
 export const DEFAULT_CERTIFICATE_TEXT_COLOR = "#000000";
 export const DEFAULT_CERTIFICATE_SUBTLE_COLOR = "#4B5563";
-export const DEFAULT_CERTIFICATE_TEXT_SIZE = 24;
-export const DEFAULT_CERTIFICATE_LINE_HEIGHT = 1.25;
-
-export const CERTIFICATE_LINE_HEIGHTS = [
-  { value: 1, label: "Simples" },
-  { value: 1.15, label: "1,15" },
-  { value: 1.25, label: "1,25" },
-  { value: 1.5, label: "1,5" },
-  { value: 2, label: "Duplo" },
-] as const;
 
 export const MIN_CERTIFICATE_ELEMENT_SIZE = { width: 24, height: 24 };
 

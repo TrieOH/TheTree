@@ -215,7 +215,7 @@ export function OccurrenceAttendanceModal(
   return (
     <Show when={props.open && occId()}>
       <Portal>
-        <main class="fixed inset-0 z-100 h-dvh w-screen bg-background text-foreground overflow-hidden flex flex-col">
+        <div class="fixed inset-0 z-100 h-dvh w-screen bg-background text-foreground overflow-hidden flex flex-col">
           {/* Main Layout: Desktop 2-column, Mobile 1-column */}
           <div class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
             {/* Sidebar (Desktop left / Mobile top) */}
@@ -488,7 +488,7 @@ export function OccurrenceAttendanceModal(
               </div>
             </section>
           </div>
-        </main>
+        </div>
       </Portal>
     </Show>
   );

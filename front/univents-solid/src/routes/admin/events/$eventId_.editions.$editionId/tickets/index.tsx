@@ -19,6 +19,8 @@ import { AdminCreateTicketCard } from "@/features/tickets/ui/AdminCreateTicketCa
 import { AdminTicketCard } from "@/features/tickets/ui/AdminTicketCard";
 import { ManageTicketDialog } from "@/features/tickets/ui/ManageTicketDialog";
 import { toast } from "@/shared/ui/toast";
+import { warmQuery } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const Ticket = TicketIcon as unknown as (props: { class?: string }) => JSX.Element;
 const TicketPlus = TicketPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -26,7 +28,7 @@ const TicketPlus = TicketPlusIcon as unknown as (props: { class?: string }) => J
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/tickets/",
 )({
-  loader: ({ params }) => appQueryClient.prefetchQuery(allTicketsQueryOptions(params.editionId)),
+  loader: ({ params }) => warmQuery(appQueryClient, allTicketsQueryOptions(params.editionId)),
   head: () => ({
     meta: [{ title: "Tickets - Admin Univents" }],
   }),
@@ -92,9 +94,10 @@ function AdminEditionTicketsRoute(): JSX.Element {
 
   return (
     <div class="mx-auto max-w-7xl space-y-6">
-      <Show
-        when={!ticketsQuery().isLoading}
-        fallback={
+      <QueryBoundary
+        query={ticketsQuery}
+        what="os ingressos"
+        skeleton={
           <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             <For each={[1, 2, 3, 4]}>
               {() => <div class="h-24 animate-pulse rounded-xl bg-muted" />}
@@ -102,16 +105,18 @@ function AdminEditionTicketsRoute(): JSX.Element {
           </div>
         }
       >
-        <AdminEditionTicketsContent
-          tickets={tickets()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onCreate={() => setCreating(true)}
-          onEdit={setEditing}
-        />
-      </Show>
+        {() => (
+          <AdminEditionTicketsContent
+            tickets={tickets()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onCreate={() => setCreating(true)}
+            onEdit={setEditing}
+          />
+        )}
+      </QueryBoundary>
 
       <Show
         when={editing()}

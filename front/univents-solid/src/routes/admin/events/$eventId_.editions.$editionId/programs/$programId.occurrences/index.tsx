@@ -29,6 +29,9 @@ import { AdminCreateOccurrenceCard } from "@/features/programs/ui/AdminCreateOcc
 import { OccurrenceAdminCard } from "@/features/programs/ui/OccurrenceAdminCard";
 import { OccurrenceAttendanceModal } from "@/features/programs/ui/OccurrenceAttendanceModal";
 import { OccurrenceDrawModal } from "@/features/programs/ui/OccurrenceDrawModal";
+import { warmQueries } from "@/shared/lib/route-data";
+import { GridSkeleton } from "@/shared/ui/GridSkeleton";
+import { QueryBoundary, combineQueries } from "@/shared/ui/QueryBoundary";
 import { toast } from "@/shared/ui/toast";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
@@ -39,9 +42,9 @@ const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/",
 )({
-  loader: ({ params }) => Promise.all([
-    appQueryClient.prefetchQuery(programsQueryOptions(params.editionId)),
-    appQueryClient.prefetchQuery(occurrencesQueryOptions(params.editionId)),
+  loader: ({ params }) => warmQueries(appQueryClient, [
+    programsQueryOptions(params.editionId),
+    occurrencesQueryOptions(params.editionId),
   ]),
   head: () => ({
     meta: [{ title: "Ocorrências da Atividade - Univents Admin" }],
@@ -60,6 +63,7 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
   // Queries
   const programsQuery = useQuery(() => programsQueryOptions(editionId()));
   const occurrencesQuery = useQuery(() => occurrencesQueryOptions(editionId()));
+  const scheduleQuery = combineQueries(programsQuery, occurrencesQuery);
 
   // Mutations
   const createMutation = useCreateOccurrenceMutation(editionId);
@@ -250,78 +254,86 @@ function AdminProgramOccurrencesRoute(): JSX.Element {
             Ocorrências
           </h1>
           <p class="text-xs sm:text-sm text-muted-foreground">
-            {program()?.name ?? "Programa"} · Horários e sessões cadastradas
+            {program()?.name ?? (scheduleQuery().data ? "Programa" : "…")} · Horários e sessões cadastradas
           </p>
         </div>
       </div>
 
-      <PaginatedContainer<OccurrenceI>
-        items={filteredOccurrences()}
-        layout="grid"
-        minItemWidth="16rem"
-        maxRows={(columns) => (columns === 1 ? 8 : 4)}
-        gap="2"
-        sort={sort()}
-        onSortChange={setSort}
-        sortFields={[
-          {
-            key: "starts_at",
-            label: "Horário de início",
-            ascLabel: "Mais cedo primeiro",
-            descLabel: "Mais tarde primeiro",
-          },
-        ]}
-        filterValue={filter()}
-        onFilterChange={setFilter}
-        filterPlaceholder="Buscar por data ou horário..."
-        filterFields={["starts_at", "ends_at"]}
-        headerActions={
-          <Show when={occurrenceDates().length > 1}>
-            <Combobox
-              value={selectedDate() ?? "all"}
-              options={dateOptions()}
-              placeholder="Todos os dias"
-              searchPlaceholder="Buscar dia..."
-              onChange={(val) => setSelectedDate(val === "all" ? null : val)}
-              class="w-48 sm:w-56"
-              triggerClass="h-9 text-xs"
-            />
-          </Show>
-        }
-        itemLabel="ocorrências"
-        emptyState={
-          <EmptyState
-            icon={<CalendarDays class="size-6 text-foreground/70" />}
-            eyebrow="Ocorrências"
-            title="Nenhuma ocorrência encontrada"
-            description="Cadastre a primeira ocorrência desta atividade para permitir inscrições, presença e sorteio."
-            class="border-0 bg-transparent px-0 py-4 shadow-none"
-          />
-        }
-        renderItems={(slice, options) => (
-          <>
-            <AdminCreateOccurrenceCard
-              index={0}
-              animate={options.animate}
-              onCreate={handleNewOccurrence}
-            />
-            <For each={slice}>
-              {(occurrence, index) => (
-                <OccurrenceAdminCard
-                  occurrence={occurrence}
-                  index={index() + 1}
-                  animate={options.animate}
-                  programKind={program()?.kind}
-                  onAttendance={handleOpenAttendance}
-                  onDraw={program()?.kind === "activity" ? handleOpenDraw : undefined}
-                  onEdit={handleEdit}
-                  onDelete={(occ) => setOccurrenceToDelete(occ)}
+      <QueryBoundary
+        query={scheduleQuery}
+        what="as sessões"
+        skeleton={<GridSkeleton />}
+      >
+        {() => (
+          <PaginatedContainer<OccurrenceI>
+            items={filteredOccurrences()}
+            layout="grid"
+            minItemWidth="16rem"
+            maxRows={(columns) => (columns === 1 ? 8 : 4)}
+            gap="2"
+            sort={sort()}
+            onSortChange={setSort}
+            sortFields={[
+              {
+                key: "starts_at",
+                label: "Horário de início",
+                ascLabel: "Mais cedo primeiro",
+                descLabel: "Mais tarde primeiro",
+              },
+            ]}
+            filterValue={filter()}
+            onFilterChange={setFilter}
+            filterPlaceholder="Buscar por data ou horário..."
+            filterFields={["starts_at", "ends_at"]}
+            headerActions={
+              <Show when={occurrenceDates().length > 1}>
+                <Combobox
+                  value={selectedDate() ?? "all"}
+                  options={dateOptions()}
+                  placeholder="Todos os dias"
+                  searchPlaceholder="Buscar dia..."
+                  onChange={(val) => setSelectedDate(val === "all" ? null : val)}
+                  class="w-48 sm:w-56"
+                  triggerClass="h-9 text-xs"
                 />
-              )}
-            </For>
-          </>
+              </Show>
+            }
+            itemLabel="ocorrências"
+            emptyState={
+              <EmptyState
+                icon={<CalendarDays class="size-6 text-foreground/70" />}
+                eyebrow="Ocorrências"
+                title="Nenhuma ocorrência encontrada"
+                description="Cadastre a primeira ocorrência desta atividade para permitir inscrições, presença e sorteio."
+                class="border-0 bg-transparent px-0 py-4 shadow-none"
+              />
+            }
+            renderItems={(slice, options) => (
+              <>
+                <AdminCreateOccurrenceCard
+                  index={0}
+                  animate={options.animate}
+                  onCreate={handleNewOccurrence}
+                />
+                <For each={slice}>
+                  {(occurrence, index) => (
+                    <OccurrenceAdminCard
+                      occurrence={occurrence}
+                      index={index() + 1}
+                      animate={options.animate}
+                      programKind={program()?.kind}
+                      onAttendance={handleOpenAttendance}
+                      onDraw={program()?.kind === "activity" ? handleOpenDraw : undefined}
+                      onEdit={handleEdit}
+                      onDelete={(occ) => setOccurrenceToDelete(occ)}
+                    />
+                  )}
+                </For>
+              </>
+            )}
+          />
         )}
-      />
+      </QueryBoundary>
 
       {/* Create / Edit Occurrence Dialog */}
       <ManageOccurrenceDialog

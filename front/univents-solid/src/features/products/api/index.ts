@@ -22,6 +22,7 @@ import type {
   MyTicket,
 } from "@trieoh/univents-api/schemas";
 import { productKeys } from "./query-keys";
+import { degradeTo } from "@/shared/lib/degrade";
 import type { QueryClient } from "@tanstack/query-core";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
@@ -76,9 +77,9 @@ export const storePageQueryOptions = (
 ) => ({
   queryKey: productKeys.storePage(slug, authenticated),
   queryFn: async (): Promise<StorePageData | null> => {
-    const event = await publicEventBySlugQueryOptions(slug).queryFn();
+    const event = await client.fetchQuery(publicEventBySlugQueryOptions(slug));
     if (!event) return null;
-    const editions = await allPublicEditionsQueryOptions(event.id).queryFn();
+    const editions = await client.fetchQuery(allPublicEditionsQueryOptions(event.id));
     const edition =
       editions.find((item) => new Date(item.ends_at).getTime() >= Date.now()) ??
       editions.at(-1);
@@ -88,7 +89,7 @@ export const storePageQueryOptions = (
       client.fetchQuery(productsQueryOptions(edition.id)),
       client.fetchQuery(storeStockQueryOptions(edition.id)),
       authenticated
-        ? client.fetchQuery(myTicketQueryOptions(edition.id))
+        ? degradeTo(client.fetchQuery(myTicketQueryOptions(edition.id)), null)
         : null,
     ]);
     const productItems = await Promise.all(

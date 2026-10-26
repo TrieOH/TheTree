@@ -52,6 +52,8 @@ import { toast } from "@/shared/ui/toast";
 
 import { BadgeCanvas } from "./BadgeCanvas";
 import { uploadBadgeAssets } from "./upload-assets";
+import { EditorSkeleton } from "@/shared/ui/EditorSkeleton";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const ArrowDown = ArrowDownIcon as unknown as (props: { class?: string }) => JSX.Element;
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -151,7 +153,32 @@ const devSignalOptions = <T,>(options: {
   ownedWrite?: boolean;
 }): DevSignalOptions<T> => options as unknown as DevSignalOptions<T>;
 
+/**
+ * Editing an existing template waits for it before mounting the workspace.
+ * Mounting first would paint the default design and then swap in the real one
+ * (and overwrite anything the user had already started to change).
+ */
 export function BadgeEditor(props: BadgeEditorProps): JSX.Element {
+  const templateQuery = useQuery(() => ({
+    ...badgeTemplateQueryOptions(props.templateId ?? ""),
+    enabled: Boolean(props.templateId),
+  }));
+
+  return (
+    <Show when={props.templateId} fallback={<BadgeEditorWorkspace {...props} />}>
+      <QueryBoundary
+        query={templateQuery}
+        what="o modelo de crachá"
+        skeleton={<EditorSkeleton />}
+        class="mx-auto my-24 max-w-xl"
+      >
+        {() => <BadgeEditorWorkspace {...props} />}
+      </QueryBoundary>
+    </Show>
+  );
+}
+
+function BadgeEditorWorkspace(props: BadgeEditorProps): JSX.Element {
   const navigate = useNavigate();
   const createMutation = useCreateBadgeTemplateMutation();
   const updateMutation = useUpdateBadgeTemplateMutation();

@@ -5,7 +5,6 @@ import {
   createProgramOccurrence,
   deleteOccurrence,
   deleteProgram,
-  deregisterOccurrence,
   getOccurrence,
   listEditionOccurrences,
   listEditionPrograms,
@@ -14,7 +13,6 @@ import {
   markParticipationAttended,
   patchOccurrence,
   patchProgram,
-  registerOccurrence,
 } from "@trieoh/univents-api";
 import type {
   CreateProgramOccurrenceRequest,
@@ -29,6 +27,7 @@ import type {
   ProgramParticipation,
 } from "@trieoh/univents-api/schemas";
 import { programKeys } from "./query-keys";
+import { degradeTo } from "@/shared/lib/degrade";
 import type { QueryClient } from "@tanstack/query-core";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
@@ -61,16 +60,16 @@ export const programPageQueryOptions = (
 ) => ({
   queryKey: programKeys.page(slug, authenticated),
   queryFn: async (): Promise<ProgramPageData | null> => {
-    const event = await publicEventBySlugQueryOptions(slug).queryFn();
+    const event = await client.fetchQuery(publicEventBySlugQueryOptions(slug));
     if (!event) return null;
-    const editions = await allPublicEditionsQueryOptions(event.id).queryFn();
+    const editions = await client.fetchQuery(allPublicEditionsQueryOptions(event.id));
     const edition = editions.find((item) => new Date(item.ends_at).getTime() >= Date.now()) ?? editions.at(-1);
     if (!edition) return { event, edition: null, programs: [], occurrences: [], heldTicket: null, participations: [], authenticated };
     const [programs, occurrences, heldTicket, participations] = await Promise.all([
       client.fetchQuery(programsQueryOptions(edition.id)),
       client.fetchQuery(occurrencesQueryOptions(edition.id)),
-      authenticated ? client.fetchQuery(myTicketQueryOptions(edition.id)) : null,
-      authenticated ? client.fetchQuery(myParticipationsQueryOptions(edition.id)) : [],
+      authenticated ? degradeTo(client.fetchQuery(myTicketQueryOptions(edition.id)), null) : null,
+      authenticated ? degradeTo(client.fetchQuery(myParticipationsQueryOptions(edition.id)), []) : [],
     ]);
     return { event, edition, programs, occurrences, heldTicket, participations, authenticated };
   },
@@ -151,12 +150,6 @@ export const patchOccurrenceFn = (
 
 export const deleteOccurrenceFn = (occurrenceId: string) =>
   deleteOccurrence(occurrenceId).then(orvalData<OccurrenceI>);
-
-export const registerOccurrenceFn = (occurrenceId: string) =>
-  registerOccurrence(occurrenceId).then(orvalData<ProgramParticipation>);
-
-export const deregisterOccurrenceFn = (occurrenceId: string) =>
-  deregisterOccurrence(occurrenceId).then(orvalData<ProgramParticipation>);
 
 export const listOccurrenceParticipantsFn = (occurrenceId: string) =>
   listOccurrenceParticipants(occurrenceId).then(
