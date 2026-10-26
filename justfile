@@ -156,6 +156,73 @@ _go-pkgs TARGET="":
       *)   echo "unknown target: {{TARGET}} (use one of: {{services}} lib sdk)" >&2; exit 2 ;;
     esac
 
+# ── End-to-end tests (Robot Framework, e2e/) ──────────────────────────────
+
+# Start the isolated e2e stack (compose project thetree-e2e): IdentityX on
+# :18080, mailpit on :18025, the IdentityX front on :13001. Fresh tmpfs
+# database and throwaway secrets every time; never touches the dev stack.
+e2e-up:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p e2e/results e2e/.run
+    export E2E_POSTGRES_PASSWORD="$(openssl rand -hex 16)"
+    export E2E_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+    export E2E_HMAC_SECRET="$(openssl rand -hex 32)"
+    compose="docker compose -f e2e/compose.yml"
+    $compose up --detach --wait identityx-db mailpit
+    dsn="host=localhost port=15432 user=identityx dbname=identityx sslmode=disable"
+    PGPASSWORD="$E2E_POSTGRES_PASSWORD" go run github.com/pressly/goose/v3/cmd/goose@v$GOOSE_VERSION \
+        -dir api/identityx/db/migrations postgres "$dsn" up
+    $compose up --build --detach --wait identityx
+    # The front runs on the host (vite + workerd), pointed at the e2e API.
+    # CLOUDFLARE_INCLUDE_PROCESS_ENV hands these vars to the worker too.
+    VITE_API_URL=http://localhost:18080 \
+    VITE_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com \
+    VITE_PUBLIC_POSTHOG_KEY=phc_e2e \
+    AUTH_SESSION_PASSWORD="$(openssl rand -hex 32)" \
+    CLOUDFLARE_INCLUDE_PROCESS_ENV=true \
+    setsid nohup pnpm -F identityx exec vite dev --port 13001 --strictPort \
+        >e2e/results/identityx-front.log 2>&1 &
+    echo $! >e2e/.run/identityx-front.pid
+    for _ in $(seq 1 60); do
+      curl -sf -o /dev/null http://localhost:13001/auth && { echo "e2e stack up"; exit 0; }
+      sleep 1
+    done
+    echo "IdentityX front did not come up — see e2e/results/identityx-front.log" >&2
+    exit 1
+
+# Stop the e2e stack and drop its data.
+e2e-down:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    if [ -f e2e/.run/identityx-front.pid ]; then
+      # setsid made the front its own process group: take vite and workerd down together.
+      kill -- -"$(cat e2e/.run/identityx-front.pid)" 2>/dev/null
+      rm -f e2e/.run/identityx-front.pid
+    fi
+    E2E_POSTGRES_PASSWORD=x E2E_ENCRYPTION_KEY=x E2E_HMAC_SECRET=x \
+        docker compose -f e2e/compose.yml down --volumes --remove-orphans
+
+# Run Robot suites against a running e2e stack (`just e2e-up` first).
+# SUITE is a path under e2e/suites (identityx, identityx/api, ...); extra
+# args go to robot, e.g. `just e2e-run identityx --include api`.
+e2e-run SUITE="identityx" *ARGS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd e2e
+    uv sync --quiet
+    [ -f .venv/.rfbrowser-ready ] || { uv run rfbrowser init chromium && touch .venv/.rfbrowser-ready; }
+    uv run robot --outputdir results {{ARGS}} "suites/{{SUITE}}"
+
+# Up → run → down in one go: the whole e2e lane.
+e2e SUITE="identityx" *ARGS:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    just e2e-up || { just e2e-down; exit 1; }
+    just e2e-run "{{SUITE}}" {{ARGS}}; status=$?
+    just e2e-down
+    exit $status
+
 # ── Tooling ───────────────────────────────────────────────────────────────
 
 # Pinned in tools.versions, the same versions CI uses. go install puts binaries in
