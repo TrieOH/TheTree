@@ -28,6 +28,14 @@ export interface IdentityXBffConfig {
   };
   apiBaseURL: string;
   /**
+   * How long the server waits for an upstream before giving up on a read, in
+   * ms (default {@link DEFAULT_READ_TIMEOUT_MS}). Only idempotent reads are
+   * cut short: a refresh or a write that is aborted may already have taken
+   * effect upstream (the refresh token is single-use), so those run to
+   * completion. Pass `0` to disable.
+   */
+  readTimeoutMs?: number;
+  /**
    * Resolved per operation, never cached: each request must get its own
    * session, otherwise tokens leak across callers.
    */
@@ -55,6 +63,18 @@ interface ApiEnvelope<T> {
   };
   trace?: string[];
 }
+
+/**
+ * Generous on purpose: the browser gives up on a read after a few seconds on
+ * its own, so this only exists to stop a hung upstream from pinning the server
+ * request (and its isolate) open indefinitely.
+ */
+export const DEFAULT_READ_TIMEOUT_MS = 20_000;
+
+const isSafeMethod = (method: string) => method === "GET" || method === "HEAD";
+
+const isTimeout = (error: unknown) =>
+  error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
 
 function joinURL(base: string, path: string): string {
   return `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
@@ -135,11 +155,13 @@ const refreshes = new Map<string, Promise<TokenResolution>>();
  */
 export function createIdentityXBff(config: IdentityXBffConfig) {
   const session = () => config.session();
+  const readTimeoutMs = config.readTimeoutMs ?? DEFAULT_READ_TIMEOUT_MS;
 
   const observedFetch = async (
     operation: string,
     url: string,
     init?: RequestInit,
+    { timeout = false }: { timeout?: boolean } = {},
   ): Promise<Response> => {
     const started = performance.now();
     const method = (init?.method ?? "GET").toUpperCase();
@@ -154,7 +176,11 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
         headers.set("traceparent", traceparent);
       }
 
-      const response = await fetch(url, { ...init, headers });
+      const response = await fetch(url, {
+        ...init,
+        headers,
+        ...(timeout && readTimeoutMs > 0 ? { signal: AbortSignal.timeout(readTimeoutMs) } : {}),
+      });
       const failureEnvelope = response.ok
         ? undefined
         : await readEnvelope(response.clone());
@@ -321,7 +347,12 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
 
   return {
     async isSetupDone(): Promise<ServerAuthResult> {
-      const response = await observedFetch("isSetupDone", joinURL(config.identityX.baseURL, "/auth/setup"));
+      const response = await observedFetch(
+        "isSetupDone",
+        joinURL(config.identityX.baseURL, "/auth/setup"),
+        undefined,
+        { timeout: true },
+      );
       return normalize(response, await readEnvelope(response));
     },
 
@@ -333,6 +364,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
           "introspectApiKey",
           joinURL(config.identityX.baseURL, "/auth/introspect"),
           { headers: { "X-API-KEY": apiKey } },
+          { timeout: true },
         );
         return normalize(
           response,
@@ -351,6 +383,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
             Authorization: `Bearer ${resolution.tokens.access_token}`,
           },
         },
+        { timeout: true },
       );
       return normalize(
         response,
@@ -393,7 +426,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
       const response = await observedFetch("loginWithProvider", joinURL(
         config.identityX.baseURL,
         `/auth/${provider}/connect${projectQuery()}`,
-      ));
+      ), undefined, { timeout: true });
       return normalize(response, await readEnvelope<{ url: string }>(response));
     },
 
@@ -503,21 +536,32 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
       const operation = input.target === "identityx"
         ? "identityXRequest"
         : "apiRequest";
+      const safe = isSafeMethod(method);
       const send = () =>
         observedFetch(operation, joinURL(targetBaseURL, input.path), {
           method,
           headers,
           body: input.body === undefined ? undefined : JSON.stringify(input.body),
-        });
+        }, { timeout: safe });
 
-      let response = await send();
-      if (response.status === 401 && resolution.success) {
-        const refreshed = await refreshTokens();
-        if (!refreshed.success) return refreshed.error;
-        headers.set("Authorization", `Bearer ${refreshed.tokens.access_token}`);
-        response = await send();
+      try {
+        let response = await send();
+        if (response.status === 401 && resolution.success) {
+          const refreshed = await refreshTokens();
+          if (!refreshed.success) return refreshed.error;
+          headers.set("Authorization", `Bearer ${refreshed.tokens.access_token}`);
+          response = await send();
+        }
+        return normalize(response, await readEnvelope<T>(response));
+      } catch (error) {
+        // A read that could not be completed is reported as an upstream
+        // failure the client knows how to show, rather than a server error.
+        // Writes still throw: whether they landed is not ours to guess.
+        if (!safe) throw error;
+        return isTimeout(error)
+          ? { success: false, code: 504, error_id: "UPSTREAM_TIMEOUT", message: "Upstream service timed out" }
+          : { success: false, code: 503, error_id: "UPSTREAM_UNAVAILABLE", message: "Upstream service unavailable" };
       }
-      return normalize(response, await readEnvelope<T>(response));
     },
   };
 }
