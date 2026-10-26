@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/MintzyG/fun"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,6 +48,10 @@ type Options struct {
 	// to gate everything until /auth/setup has run.
 	SetupGuard     func(http.Handler) http.Handler
 	SkipSetupGuard []string
+	// WriteError writes a scope checker's rejection. It is required when
+	// the spec has an x-scope; lib/backend passes lib/httpserver's writer,
+	// which authz cannot import (lib/httpserver maps authz's errors).
+	WriteError func(http.ResponseWriter, *http.Request, error)
 }
 
 // ResolvedOperation is one spec operation with its effective security.
@@ -190,16 +193,16 @@ func scopeOf(s *string) string {
 	return *s
 }
 
-// scopeMiddleware wraps a scope checker into an HTTP middleware that sends
+// scopeMiddleware wraps a scope checker into an HTTP middleware that writes
 // the checker's error on rejection and otherwise continues the chain. It is
 // the only place a scope predicate meets HTTP; the predicate itself stays
 // context-only and testable.
-func scopeMiddleware(checker ScopeChecker) func(http.Handler) http.Handler {
+func scopeMiddleware(checker ScopeChecker, writeError func(http.ResponseWriter, *http.Request, error)) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := checker(r.Context())
 			if err != nil {
-				fun.Error(err).Send(w)
+				writeError(w, r, err)
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -221,7 +224,8 @@ type Resolver struct {
 // nil one), when a single security block lists multiple schemes (AND
 // semantics — the resolver composes OR across blocks; write the spec's
 // alternatives as separate blocks), when an operation declares an x-scope
-// with no registered checker in primitives.Scopes, when an operation
+// with no registered checker in primitives.Scopes or no Options.WriteError,
+// when an operation
 // declares an x-scope but no security schemes (a scope reads the identity
 // authn wrote — it implies authentication), when the spec is not valid YAML,
 // or when a named operation in SkipSetupGuard does not exist in the spec —
@@ -247,6 +251,9 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 			if primitives.Scopes == nil || primitives.Scopes[op.Scope] == nil {
 				return nil, fmt.Errorf("authz resolver: %s %s: no scope checker registered for x-scope %q", op.Method, op.OperationID, op.Scope)
 			}
+			if opts.WriteError == nil {
+				return nil, fmt.Errorf("authz resolver: %s %s: x-scope %q needs Options.WriteError", op.Method, op.OperationID, op.Scope)
+			}
 		}
 	}
 
@@ -271,7 +278,7 @@ func NewResolver(spec []byte, primitives Primitives, opts Options) (*Resolver, e
 		if op.Scope != "" {
 			// A scope reads the identity authn wrote, so it runs after the
 			// authn primitive; the setup guard stays outermost.
-			chain = append(chain, scopeMiddleware(primitives.Scopes[op.Scope]))
+			chain = append(chain, scopeMiddleware(primitives.Scopes[op.Scope], opts.WriteError))
 		}
 		if opts.SetupGuard != nil && !skipSetup[op.OperationID] {
 			chain = append([]func(http.Handler) http.Handler{opts.SetupGuard}, chain...)

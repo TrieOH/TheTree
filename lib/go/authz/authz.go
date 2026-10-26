@@ -4,8 +4,6 @@ import (
 	"errors"
 
 	"lib/database"
-
-	"github.com/MintzyG/fun"
 )
 
 // Role is implemented by every member-role enum in the services.
@@ -32,27 +30,6 @@ func AtLeast(role, minRole Role) error {
 func DenyIfNotFound(err error) error {
 	if errors.Is(err, database.ErrNotFound) {
 		return ErrInsufficientRole
-	}
-	return err
-}
-
-// Min is AtLeast for Backends still on root-fun errors.
-func Min(role, minRole Role) error {
-	if role.Rank() < minRole.Rank() {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-	return nil
-}
-
-// ForbiddenIfNotFound is DenyIfNotFound for Backends still on root-fun
-// errors: it maps CodeNotFound to Forbidden and passes everything else
-// through.
-func ForbiddenIfNotFound(err error) error {
-	if err == nil {
-		return nil
-	}
-	if fun.Is(err, fun.CodeNotFound) {
-		return fun.ErrForbidden("insufficient permissions")
 	}
 	return err
 }

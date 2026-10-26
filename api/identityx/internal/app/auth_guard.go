@@ -18,6 +18,7 @@ func chainOptions(st *setup.State) libauthz.Options {
 	return libauthz.Options{
 		SetupGuard:     setupGuard(st),
 		SkipSetupGuard: []string{"getSetup", "postSetup"},
+		WriteError:     httpserver.WriteError,
 	}
 }
 
