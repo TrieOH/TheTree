@@ -1,148 +1,145 @@
-type Values = Record<string, string | boolean>;
+import type { Values } from "../catalog";
 
-/** Runnable Solid examples; values use JS literals so edited text stays valid JSX. */
 export function usage(name: string, v: Values): string {
-  const q = (key: string) => JSON.stringify(v[key]);
-  const prop = (key: string) => `${key}={${q(key)}}`;
-  const state = (initial: string, variable = "value") =>
-    `const [${variable}, set${variable[0].toUpperCase() + variable.slice(1)}] = createSignal(${initial});`;
   let imports = name;
   let setup = "";
   let jsx = "";
+  const prop = (key: string, customName?: string) => {
+    const val = v[key];
+    const attr = customName ?? key;
+    if (val === undefined || val === "") return "";
+    if (typeof val === "boolean") return val ? attr : "";
+    return `${attr}="${val}"`;
+  };
+  const q = (key: string) => JSON.stringify(v[key]);
+  const state = (initial: string, varName = "value") =>
+    `const [${varName}, set${varName[0].toUpperCase()}${varName.slice(1)}] = createSignal(${initial});\\n\\n`;
   switch (name) {
     case "Sidebar":
-      setup = `${state(q("collapsed"), "collapsed")}\n${state(q("activeId"), "activeId")}`;
-      jsx = `<div class="h-120">\n  <Sidebar\n    title={${q("title")}} subtitle={${q("subtitle")}}\n    collapsed={collapsed()} onCollapsedChange={setCollapsed}\n    activeId={activeId()} onSelect={item => setActiveId(item.id)}\n    sections={[{ title: "Workspace", items: [\n      { id: "overview", label: "Visão geral" },\n      { id: "events", label: "Eventos", badge: 8 },\n      { id: "members", label: "Membros", badge: 24 },\n    ] }]}\n  />\n</div>`;
+      jsx = `<Sidebar currentId="overview" sections={[{ title: "Menu", items: [{ id: "overview", label: "Visão Geral" }] }]} />`;
       break;
     case "Breadcrumb":
-      jsx = `<Breadcrumb ariaLabel={${q("ariaLabel")}} items={[\n  { path: "/admin", label: "Admin" },\n  { path: "/admin/events", label: "Eventos" },\n  { path: "/admin/events/editions", label: ${q("currentLabel")} },\n]} />`;
+      jsx = `<Breadcrumb items={[{ label: "Início", href: "#/" }, { label: "Componentes" }, { label: "Breadcrumb", current: true }]} />`;
       break;
     case "Loading":
-      jsx = `<Loading label={${q("label")}} showLabel={${q("showLabel")}} size={${q("size")}} tone={${q("tone")}} layout={${q("layout")}} />`;
+      jsx = `<Loading ${prop("size")} ${prop("tone")} ${prop("layout")} ${prop("showLabel")} label={${q("label")}} />`;
       break;
     case "Avatar":
-      jsx = `<Avatar initials={${q("initials")}} name={${q("name")}} src={${q("src")}} size={${q("size")}} />`;
+      jsx = `<Avatar name={${q("name")}} initials={${q("initials")}} src={${q("src")}} ${prop("size")} />`;
       break;
     case "Badge":
-      jsx = `<Badge variant={${q("variant")}}>{${q("children")}}</Badge>`;
+      jsx = `<Badge ${prop("variant")}>${v.content}</Badge>`;
       break;
     case "Checkbox":
-      setup = state(q("checked"), "checked");
-      jsx = `<Checkbox label={${q("label")}} description={${q("description")}} disabled={${q("disabled")}} checked={checked()} onChange={setChecked} />`;
+      setup = state(String(v.checked), "checked");
+      jsx = `<Checkbox checked={checked()} onChange={setChecked} label={${q("label")}} description={${q("description")}} ${prop("indeterminate")} />`;
       break;
     case "SearchInput":
-      setup = state(q("value"));
-      jsx = `<SearchInput aria-label="Buscar projetos" placeholder={${q("placeholder")}} value={value()} onInput={event => setValue(event.currentTarget.value)} />`;
+      setup = state(q("value") ?? '""');
+      jsx = `<SearchInput value={value()} onInput={e => setValue(e.currentTarget.value)} ${prop("placeholder")} ${prop("loading")} />`;
       break;
     case "Card":
-      jsx = `<Card class="p-5">{${q("children")}}</Card>`;
+      jsx = `<Card ${prop("variant")}>\\n  <h3 class="text-base font-semibold">${v.title}</h3>\\n  <p class="text-sm text-muted-foreground">${v.content}</p>\\n</Card>`;
       break;
     case "Link":
       jsx = `<Link href="#/">{${q("children")}}</Link>`;
       break;
     case "CodeBlock":
       imports += ", Toaster";
-      jsx = `<Toaster position="bottom-right" />\n<CodeBlock code={${q("code")}} />`;
+      jsx = `<Toaster position="bottom-right" />\\n<CodeBlock code={${q("code")}} />`;
       break;
     case "Button":
-      jsx = `<Button ${prop("variant")} ${prop("size")} ${prop("disabled")}\n  aria-label={${q("children")}}\n  onClick={() => console.log("Ação executada")}\n>\n  ${v.size === "icon" ? '<span aria-hidden="true">↗</span>' : `{${q("children")}}`}\n</Button>`;
+      jsx = `<Button ${prop("variant")} ${prop("size")} ${prop("disabled")}\\n  aria-label={${q("children")}}\\n  onClick={() => console.log("Ação executada")}\\n>\\n  ${v.size === "icon" ? '<IconArrowUpRight class="size-4" />' : `{${q("children")}}`}\\n</Button>`;
       break;
     case "Input":
     case "Textarea":
       setup = state(q("value") ?? '""');
-      jsx = `<${name} aria-label="${name === "Input" ? "E-mail" : "Descrição"}"\n  ${prop("placeholder")} ${prop("disabled")}\n  value={value()} onInput={event => setValue(event.currentTarget.value)}\n/>`;
+      jsx = `<${name} aria-label="${name === "Input" ? "E-mail" : "Descrição"}"\\n  ${prop("placeholder")} ${prop("disabled")}\\n  value={value()} onInput={event => setValue(event.currentTarget.value)}\\n/>`;
       break;
     case "Label":
       imports += ", Input";
-      jsx = `<Label for={${q("for")}}>{${q("children")}}</Label>\n<Input id={${q("for")}} />`;
+      jsx = `<Label for={${q("for")}}>{${q("children")}}</Label>\\n<Input id={${q("for")}} />`;
       break;
     case "Field":
       imports += ", Input";
-      jsx = `<Field ${prop("label")} ${prop("hint")} ${prop("error")}>\n  {ids => <Input id={ids.id} aria-describedby={ids.describedBy} />}\n</Field>`;
+      jsx = `<Field label={${q("label")}} description={${q("description")}} error={${q("error")}} for="field-demo">\\n  <Input id="field-demo" placeholder="Digite aqui..." />\\n</Field>`;
       break;
     case "Combobox":
       setup = state(q("value"));
-      jsx = `<Combobox\n  options={[\n    { value: "sp", label: "São Paulo" },\n    { value: "rj", label: "Rio de Janeiro" },\n    { value: "bh", label: "Belo Horizonte" },\n  ]}\n  ${prop("placeholder")} value={value()} onChange={setValue}\n/>`;
+      jsx = `<Combobox value={value()} onChange={setValue} options={[{ value: "1", label: "Opção 1" }, { value: "2", label: "Opção 2" }]} ${prop("placeholder")} />`;
       break;
     case "SectionTabs":
-      setup = state(q("active"), "active");
-      jsx = `<SectionTabs\n  items={[{ id: "overview", label: "Visão geral" }, { id: "activity", label: "Atividade", count: ${Number(v.count)} }, { id: "settings", label: "Ajustes", badge: ${q("badge")} }]}\n  active={active()} onChange={setActive}\n/>`;
+      setup = state(q("value"));
+      jsx = `<SectionTabs value={value()} onChange={setValue} items={[{ id: "tab1", label: "Geral" }, { id: "tab2", label: "Segurança" }]} />`;
       break;
     case "Accordion":
-      jsx = `<Accordion ${prop("multiple")} items={[\n  { value: "start", title: ${q("title")}, content: "Escolha um componente e explore suas propriedades." },\n  { value: "more", title: "Posso personalizar?", content: "Sim. Ajuste as propriedades." },\n]} />`;
+      jsx = `<Accordion items={[{ id: "1", title: "Primeiro item", content: "Conteúdo do item." }, { id: "2", title: "Segundo item", content: "Outro conteúdo." }]} />`;
       break;
     case "Dialog":
     case "AlertModal":
     case "Drawer":
-      imports += ", Button";
-      setup = state("false", "open");
-      jsx = `<Button onClick={() => setOpen(true)}>Abrir ${name}</Button>\n<${name} open={open()} ${prop("title")}\n  ${name === "Drawer" ? "onClose={() => setOpen(false)}" : "onOpenChange={setOpen}"}${name === "Dialog" ? ` ${prop("size")}` : ""}${name === "AlertModal" ? `\n  ${prop("variant")} description={${q("description")}}\n  onConfirm={() => { setOpen(false); }}` : ""}\n${name === "AlertModal" ? "/>" : ">\n  <p>Conteúdo do painel.</p>\n</" + name + ">"}`;
-      break;
     case "MultiStepDialog":
-      imports += ", Button, type MultiStepItem";
-      setup = `const [open, setOpen] = createSignal(false);
-const [values, setValues] = createSignal({ name: "", description: "" });
-const steps: MultiStepItem<{ name: string; description: string }>[] = [
-  { id: "details", title: "Detalhes", fields: [
-    { name: "name", label: "Nome" },
-    { name: "description", label: "Descrição" },
-  ] },
-  { id: "review", title: "Revisão", summary: {
-    title: "Revise os dados",
-    items: [
-      { label: "Nome", value: () => values().name },
-      { label: "Descrição", value: () => values().description },
-    ],
-  } },
-];`;
-      jsx = `<Button onClick={() => setOpen(true)}>Abrir formulário</Button>
-<MultiStepDialog title={${q("title")}} open={open()} onOpenChange={setOpen}
-  steps={steps} values={values()}
-  onChange={(key, value) => setValues(previous => ({ ...previous, [key]: String(value) }))}
-  onSubmit={() => { console.log(values()); return true; }}
-/>`;
+      setup = state("false", "open");
+      imports += ", Button";
+      jsx = `<Button onClick={() => setOpen(true)}>Abrir ${name}</Button>\\n\\n<${name} open={open()} onOpenChange={setOpen} title={${q("title")}}>\\n  <p>Conteúdo do painel.</p>\\n</${name}>`;
       break;
     case "Tooltip":
       imports += ", Button";
-      jsx = `<Tooltip ${prop("label")}><Button variant="outline">Ajuda</Button></Tooltip>`;
+      jsx = `<Tooltip content={${q("content")}}>\\n  <Button variant="outline">Passe o mouse</Button>\\n</Tooltip>`;
       break;
     case "Toaster":
-      imports += ", toast, Button";
-      jsx = `<Toaster position={${q("position")}} />\n<Button onClick={() => toast.${v.type}(${q("message")}, { description: ${q("description")}, duration: ${Number(v.duration)}, position: ${q("position")}, dismissible: ${q("dismissible")} })}>Mostrar notificação</Button>`;
+      imports = "toast, Button";
+      jsx = `<Button onClick={() => toast.success("Ação realizada com sucesso!")}>Disparar Toast</Button>`;
       break;
     case "EmptyState":
-      if (v.showAction) imports += ", Button";
-      jsx = `<EmptyState eyebrow={${q("eyebrow")}} ${v.showAction ? `action={<Button onClick={() => console.log("Ação executada")}>{${q("actionLabel")}}</Button>}` : ""} ${prop("title")} ${prop("description")} />`;
+      jsx = `<EmptyState title={${q("title")}} description={${q("description")}} />`;
       break;
     case "Skeleton":
-      jsx = `<div class="flex items-center gap-3">\n  <Skeleton class="size-11${v.rounded ? " rounded-full" : ""}" />\n  <div class="flex-1 space-y-2">\n    <Skeleton class="h-3 w-3/4" />\n    <Skeleton class="h-3 w-1/2" />\n  </div>\n</div>`;
+      jsx = `<Skeleton ${prop("width")} ${prop("height")} />`;
       break;
     case "CardSkeleton":
-      jsx = `<CardSkeleton class="w-full${v.compact ? " [&>div:first-child]:h-12" : ""}" />`;
+      jsx = `<CardSkeleton lines={${Number(v.lines)}} hasImage={${Boolean(v.hasImage)}} />`;
       break;
     case "MultiStepStepper":
-      setup = state(String(Number(v.currentStep)), "currentStep");
-      jsx = `<MultiStepStepper\n  steps={[\n    { id: "details", title: "Detalhes", description: "Nome e informações do projeto." },\n    { id: "access", title: "Acesso", description: "Defina quem pode participar." },\n    { id: "review", title: "Revisão", description: "Confira os dados antes de criar." },\n  ]}\n  currentStep={currentStep()} ${v.interactive ? "onStepClick={setCurrentStep}" : ""}\n/>`;
+      setup = state(q("currentStep"), "currentStep");
+      jsx = `<MultiStepStepper steps={[{ id: "1", title: "Conta", description: "Dados de acesso" }, { id: "2", title: "Perfil", description: "Informações públicas" }]} currentStep={currentStep()} onStepClick={setCurrentStep} />`;
       break;
     case "MultiStepFields":
-      setup = 'const [values, setValues] = createSignal({ name: "" });';
-      jsx = `<MultiStepFields\n  fields={[{ name: "name", label: ${q("label")}, disabled: ${q("disabled")}, required: ${q("required")}, kind: ${q("kind")}, placeholder: ${q("placeholder")}, hint: ${q("hint")}, layout: ${q("layout")} }]}\n  values={values()}\n  onChange={(key, value) => setValues(previous => ({ ...previous, [key]: value }))}\n/>`;
+      imports += ", createSignal";
+      setup = `const [data, setData] = createSignal({ name: "", bio: "" });\\n\\n`;
+      jsx = `<MultiStepFields values={data()} onChange={(key, val) => setData(prev => ({ ...prev, [key]: val }))} fields={[{ kind: "text", name: "name", label: "Nome" }, { kind: "textarea", name: "bio", label: "Biografia" }]} />`;
       break;
     case "MultiStepSummaryCard":
-      jsx = `<MultiStepSummaryCard summary={{\n  title: ${q("title")}, badge: ${q("badge")}, items: [{ label: "Projeto", value: ${q("value")}, mono: ${q("mono")}, fullWidth: ${q("fullWidth")} }],\n}} />`;
+      jsx = `<MultiStepSummaryCard summary={{\\n  title: ${q("title")}, badge: ${q("badge")}, items: [{ label: "Projeto", value: ${q("value")}, mono: ${q("mono")}, fullWidth: ${q("fullWidth")} }],\\n}} />`;
       break;
     case "PaginatedContainer":
       setup = state(q("filterValue"), "search");
       imports += ", EmptyState";
-      jsx = `<PaginatedContainer\n  items={[{ name: "Website" }, { name: "Aplicativo" }, { name: "Design system" }]}\n  pageSize={${Number(v.pageSize)}} layout={${q("layout")}} gap={${q("gap")}} filterPlaceholder={${q("filterPlaceholder")}} itemLabel={${q("itemLabel")}} minItemWidth={${q("minItemWidth")}}\n  filterValue={search()} onFilterChange={setSearch}\n  emptyState={<EmptyState title="Nenhum projeto encontrado" description="Tente outro termo de busca." />}\n  sortFields={[{ key: "name", label: "Nome" }]}\n  renderItems={items => <For each={items}>{item => <div>{item.name}</div>}</For>}\n/>`;
+      jsx = `<PaginatedContainer\\n  items={[{ name: "Website" }, { name: "Aplicativo" }, { name: "Design system" }]}\\n  pageSize={${Number(v.pageSize)}} layout={${q("layout")}} gap={${q("gap")}} filterPlaceholder={${q("filterPlaceholder")}} itemLabel={${q("itemLabel")}} minItemWidth={${q("minItemWidth")}}\\n  filterValue={search()} onFilterChange={setSearch}\\n  emptyState={<EmptyState title="Nenhum projeto encontrado" description="Tente outro termo de busca." />}\\n  sortFields={[{ key: "name", label: "Nome" }]}\\n  renderItems={items => <For each={items}>{item => <div>{item.name}</div>}</For>}\\n/>`;
       break;
     case "OverlayScrollbar":
       jsx = v.enabled
         ? "<OverlayScrollbar />"
-        : "<Show when={enabled()}>\n  <OverlayScrollbar />\n</Show>";
+        : "<Show when={enabled()}>\\n  <OverlayScrollbar />\\n</Show>";
       jsx +=
-        '\n<main>\n  <For each={Array.from({ length: 30 }, (_, i) => i + 1)}>\n    {n => <p class="p-8">Conteúdo {n}</p>}\n  </For>\n</main>';
+        '\\n<main>\\n  <For each={Array.from({ length: 30 }, (_, i) => i + 1)}>\\n    {n => <p class="p-8">Conteúdo {n}</p>}\\n  </For>\\n</main>';
       if (!v.enabled) setup = state("false", "enabled");
+      break;
+    case "Spinner":
+      jsx = `<Spinner size={${q("size")}} activeColor="var(--primary)" trackColor="var(--accent)" />`;
+      break;
+    case "DesktopOnly":
+      jsx = `<DesktopOnly\\n  threshold={${Number(v.threshold) || 1200}}\\n  title={${q("title")}}\\n  description={${q("description")}}\\n  actionLabel={${q("actionLabel")}}\\n>\\n  <div class="p-6 border border-border rounded-xl bg-card text-center">\\n    <p class="text-sm font-medium">Conteúdo visível apenas em telas desktop.</p>\\n  </div>\\n</DesktopOnly>`;
+      break;
+    case "CanvasControls":
+      setup = state("1", "scale");
+      jsx = `<div class="relative h-44 w-full rounded-xl border border-border bg-muted/20 flex items-center justify-center overflow-hidden">\\n  <div style={{ transform: \`scale(\${scale()})\` }} class="px-4 py-2 bg-card border border-border rounded-lg shadow-sm text-xs font-medium">\\n    Elemento no Canvas\\n  </div>\\n  <CanvasControls\\n    scale={scale()}\\n    onZoomIn={() => setScale(s => Math.min(s + 0.1, 2))}\\n    onZoomOut={() => setScale(s => Math.max(s - 0.1, 0.2))}\\n    onReset={() => setScale(1)}\\n  />\\n</div>`;
+      break;
+    case "WaveText":
+      jsx = `<WaveText\\n  text={${q("text")}}\\n  duration={${Number(v.duration) || 1400}}\\n  delay={${Number(v.delay) || 500}}\\n  lift={${Number(v.lift) || 12}}\\n  waveWidth={${Number(v.waveWidth) || 20}}\\n/>`;
+      break;
+    case "WaveSpinnerLoading":
+      jsx = `<WaveSpinnerLoading\\n  text={${q("text")}}\\n  spinnerSize={${q("spinnerSize")}}\\n/>`;
       break;
     default:
       throw new Error(`Missing example for ${name}`);
@@ -201,6 +198,11 @@ const steps: MultiStepItem<{ name: string; description: string }>[] = [
     ],
     Tooltip: ["placement", "align"],
     MultiStepStepper: ["orientation", "showDescriptions", "ariaLabel"],
+    DesktopOnly: ["threshold", "title", "description", "actionLabel"],
+    CanvasControls: ["scale"],
+    WaveText: ["text", "duration", "delay", "lift", "waveWidth"],
+    WaveSpinnerLoading: ["text", "spinnerSize"],
+    Spinner: ["size"],
   };
   if (
     [
@@ -226,34 +228,18 @@ const steps: MultiStepItem<{ name: string; description: string }>[] = [
             ) && v[key] === ""
           ),
       )
-      .map((key) =>
-        ["rows", "minlength", "maxlength"].includes(key)
-          ? `${key}={${Number(v[key])}}`
-          : prop(key),
-      )
+      .map((key) => prop(key))
+      .filter(Boolean)
       .join(" ");
-    jsx =
-      name === "Skeleton"
-        ? jsx.replaceAll("<Skeleton", `<Skeleton ${attributes}`)
-        : jsx.replace(`<${name}`, `<${name} ${attributes}`);
+    if (attributes) {
+      const isSelfClosing = jsx.includes("/>");
+      const insertAt = isSelfClosing ? jsx.indexOf("/>") : jsx.indexOf(">");
+      jsx = `${jsx.slice(0, insertAt)} ${attributes}${jsx.slice(insertAt)}`;
+    }
   }
-  if (v.class) {
-    const rootClass = new RegExp(`(<${name}\\b[^>]*?)class="([^"]*)"`);
-    jsx = rootClass.test(jsx)
-      ? jsx.replace(
-          rootClass,
-          (_, prefix: string, value: string) =>
-            `${prefix}class={${JSON.stringify(`${value} ${v.class}`)}}`,
-        )
-      : jsx.replace(`<${name}`, `<${name} class={${q("class")}}`);
-  }
-  const solidImports = [
-    setup ? "createSignal" : "",
-    name === "PaginatedContainer" || name === "OverlayScrollbar" ? "For" : "",
-    name === "OverlayScrollbar" && !v.enabled ? "Show" : "",
-  ].filter(Boolean);
-  return `${solidImports.length ? `import { ${solidImports.join(", ")} } from "solid-js";\n` : ""}import { ${imports} } from "@trieoh/ui-solid";\n\nexport function Example() {\n${setup ? `  ${setup}\n\n` : ""}  return (\n    <>\n${jsx
-    .split("\n")
-    .map((line) => `      ${line}`)
-    .join("\n")}\n    </>\n  );\n}`;
+  const cleanSetup = setup ? `${setup.trim()}\\n\\n` : "";
+  const code = `import { ${imports} } from "@trieoh/ui-solid";\\n\\n${cleanSetup}${jsx}`;
+  return code.replace(/\\n/g, "\n");
 }
+
+export const getComponentUsage = usage;

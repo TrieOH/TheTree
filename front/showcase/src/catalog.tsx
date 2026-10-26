@@ -40,6 +40,11 @@ import {
   type ButtonSize,
   type DialogSize,
   type AlertModalVariant,
+  Spinner,
+  WaveText,
+  WaveSpinnerLoading,
+  DesktopOnly,
+  CanvasControls,
 } from "@trieoh/ui-solid";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconHome from "~icons/lucide/house";
@@ -151,6 +156,77 @@ export function createCatalog(options: {
           layout={v.layout as "inline" | "stacked"}
           class={String(v.class)}
         />
+      ),
+    },
+    {
+      name: "Spinner",
+      group: "Feedback",
+      description: "Indicador circular com rastro de carregamento.",
+      defaults: {
+        size: "3rem",
+      },
+      controls: [
+        select("size", "Tamanho", ["1.5rem", "2rem", "3rem", "4rem", "5rem", "6rem"]),
+      ],
+      render: (v) => (
+        <div class="flex items-center justify-center p-6">
+          <Spinner
+            size={String(v.size)}
+            activeColor="var(--primary)"
+            trackColor="var(--accent)"
+          />
+        </div>
+      ),
+    },
+    {
+      name: "WaveText",
+      group: "Feedback",
+      description: "Texto ondulado caractere por caractere via requestAnimationFrame.",
+      defaults: {
+        text: "Processando...",
+        duration: "1400",
+        delay: "500",
+        lift: "12",
+        waveWidth: "20",
+      },
+      controls: [
+        text("text", "Texto"),
+        text("duration", "Duração (ms)"),
+        text("delay", "Intervalo (ms)"),
+        text("lift", "Elevação (px)"),
+        text("waveWidth", "Largura da onda (%)"),
+      ],
+      render: (v) => (
+        <div class="flex items-center justify-center p-6">
+          <WaveText
+            text={String(v.text)}
+            duration={Number(v.duration) || 1400}
+            delay={Number(v.delay) || 500}
+            lift={Number(v.lift) || 12}
+            waveWidth={Number(v.waveWidth) || 20}
+          />
+        </div>
+      ),
+    },
+    {
+      name: "WaveSpinnerLoading",
+      group: "Feedback",
+      description: "Carregamento composto por Spinner e texto com ondulação senoidal.",
+      defaults: {
+        text: "Processando pagamento...",
+        spinnerSize: "5rem",
+      },
+      controls: [
+        text("text", "Texto"),
+        select("spinnerSize", "Tamanho do Spinner", ["3rem", "4rem", "5rem", "6rem"]),
+      ],
+      render: (v) => (
+        <div class="flex w-full items-center justify-center p-6">
+          <WaveSpinnerLoading
+            text={String(v.text)}
+            spinnerSize={String(v.spinnerSize)}
+          />
+        </div>
       ),
     },
 
@@ -391,6 +467,36 @@ export function createCatalog(options: {
           )}
         </Button>
       ),
+    },
+    {
+      name: "CanvasControls",
+      group: "Ações",
+      description: "Barra flutuante de zoom (+, -, %) e ajuste para editores de canvas.",
+      defaults: {
+        scale: "1",
+      },
+      controls: [
+        text("scale", "Escala"),
+      ],
+      render: (v, update) => {
+        const scaleVal = () => Number(v.scale) || 1;
+        return (
+          <div class="relative h-44 w-full rounded-xl border border-border bg-muted/20 flex items-center justify-center overflow-hidden">
+            <div
+              style={{ transform: `scale(${scaleVal()})` }}
+              class="px-4 py-2 bg-card border border-border rounded-lg shadow-sm text-xs font-medium transition-transform"
+            >
+              Elemento no Canvas ({Math.round(scaleVal() * 100)}%)
+            </div>
+            <CanvasControls
+              scale={scaleVal()}
+              onZoomIn={() => update("scale", String(Math.min(scaleVal() + 0.1, 2).toFixed(1)))}
+              onZoomOut={() => update("scale", String(Math.max(scaleVal() - 0.1, 0.2).toFixed(1)))}
+              onReset={() => update("scale", "1")}
+            />
+          </div>
+        );
+      },
     },
     {
       name: "Input",
@@ -1232,6 +1338,40 @@ export function createCatalog(options: {
           <p class="scrollbar-preview-caption">
             Role dentro da prévia para testar a barra.
           </p>
+        </div>
+      ),
+    },
+    {
+      name: "DesktopOnly",
+      group: "Layout",
+      description: "Guarda responsiva que orienta o usuário a abrir no computador em resoluções menores.",
+      defaults: {
+        threshold: "1200",
+        title: "Disponível apenas no computador",
+        description: "Esta ferramenta foi projetada para telas a partir de 1200px de largura.",
+        actionLabel: "Voltar à página anterior",
+      },
+      controls: [
+        text("threshold", "Largura mínima (px)"),
+        text("title", "Título"),
+        text("description", "Descrição"),
+        text("actionLabel", "Texto da ação"),
+      ],
+      render: (v) => (
+        <div class="w-full">
+          <DesktopOnly
+            threshold={Number(v.threshold) || 1200}
+            title={String(v.title)}
+            description={String(v.description)}
+            actionLabel={String(v.actionLabel)}
+            onAction={() => toast.info("Ação de voltar acionada!")}
+          >
+            <div class="p-6 border border-border rounded-xl bg-card text-center">
+              <span class="text-sm font-medium text-foreground">
+                Sua tela atende aos requisitos de desktop! Redimensione a janela abaixo de {String(v.threshold)}px para ver a tela de aviso.
+              </span>
+            </div>
+          </DesktopOnly>
         </div>
       ),
     },
