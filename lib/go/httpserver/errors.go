@@ -68,6 +68,9 @@ func (m ErrorMapping) Validation() ErrorMapping {
 
 var sharedErrors = ErrorMap{
 	Is(authz.ErrInsufficientRole, http.StatusForbidden),
+	// A missing row is a 404 that reads as the resource's own error, even
+	// when the Backend's map has no line for it.
+	As[*database.NotFoundError](http.StatusNotFound),
 	Is(database.ErrNotFound, http.StatusNotFound),
 	Is(database.ErrUniqueViolation, http.StatusConflict),
 	Is(database.ErrForeignKeyViolation, http.StatusBadRequest),
@@ -162,7 +165,8 @@ func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
 		}
 		switch u := link.(type) { //nolint:errorlint // walking the chain by hand
 		case interface{ Unwrap() error }:
-			if next := u.Unwrap(); next != nil {
+			next := u.Unwrap()
+			if next != nil {
 				queue = append(queue, next)
 			}
 		case interface{ Unwrap() []error }:

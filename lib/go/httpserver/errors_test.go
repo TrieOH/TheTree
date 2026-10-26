@@ -101,7 +101,7 @@ func TestWriteErrorKeepsEnvelope(t *testing.T) {
 	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/projects/x/members", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/projects/x/members", nil)
 	WriteError(rec, req, fmt.Errorf("add member: %w", errAddSelf))
 
 	if rec.Code != http.StatusBadRequest {
@@ -135,7 +135,7 @@ func TestTraceMiddlewareLeavesClientErrorsUnset(t *testing.T) {
 	handler := TraceMiddleware()(func(context.Context, http.ResponseWriter, *http.Request, any) (any, error) {
 		return nil, errAddSelf
 	}, "AddProjectMember")
-	req := httptest.NewRequest(http.MethodPost, "/projects/x/members", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/projects/x/members", nil)
 	_, _ = handler(req.Context(), httptest.NewRecorder(), req, nil)
 
 	spans := rec.Ended()
@@ -156,7 +156,7 @@ func TestWriteErrorListsFields(t *testing.T) {
 	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/checkout", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/checkout", nil)
 	WriteError(rec, req, fmt.Errorf("checkout: %w", fielderr.On(errAddSelf, "items[0].attendee", "required")))
 
 	var body struct {
