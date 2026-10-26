@@ -47,8 +47,11 @@ export function useSessionActions() {
 
       clearAuthReturnTo(localStorage);
       updateAuthState(false);
-      queryClient.clear();
       await navigate({ to: destination, replace: true });
+      // Only once the previous page is gone: clearing first would make the
+      // queries it still has mounted refetch without a session, and the page
+      // being left would flash its error states.
+      queryClient.clear();
       toast.success("Sessão encerrada");
 
       return true;

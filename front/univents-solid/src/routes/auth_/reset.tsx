@@ -22,6 +22,7 @@ export const Route = createFileRoute("/auth_/reset")({
     const parsed = resetSearchSchema.parse(search);
     return { token: parsed.token ?? "" };
   },
+  staticData: { ownsMain: true },
   component: ResetPasswordPage,
 });
 

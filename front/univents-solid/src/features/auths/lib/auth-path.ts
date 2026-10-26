@@ -55,15 +55,6 @@ export function isAuthOnlyPath(pathname: string) {
   );
 }
 
-export function requiresVerifiedEmail(pathname: string) {
-  if (pathname === "/auth/verify") return false;
-  return (
-    isAuthOnlyPath(pathname) ||
-    /^\/events\/[^/]+(?:\/|$)/.test(pathname) ||
-    pathname.startsWith("/profile/")
-  );
-}
-
 export function safeInternalReturnTo(
   ...candidates: (string | null | undefined)[]
 ) {
@@ -71,16 +62,5 @@ export function safeInternalReturnTo(
     candidates.find(
       (candidate) => candidate?.startsWith("/") && !candidate.startsWith("//"),
     ) ?? "/profile"
-  );
-}
-
-export function verificationReturnTo(
-  pathname: string,
-  href: string,
-  setupReturnTo?: string,
-) {
-  return safeInternalReturnTo(
-    pathname === "/profile/setup" ? setupReturnTo : undefined,
-    href,
   );
 }

@@ -31,6 +31,7 @@ export const Route = createFileRoute("/auth_/verify")({
       returnTo: parsed.returnTo,
     };
   },
+  staticData: { ownsMain: true },
   component: VerifyEmailPage,
 });
 

@@ -23,6 +23,7 @@ export const Route = createFileRoute("/auth")({
     storeAuthReturnTo(localStorage, search.redirect || location.href);
     requireGuest({ context, location });
   },
+  staticData: { ownsMain: true },
   component: AuthPage,
 });
 
