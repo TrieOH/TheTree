@@ -57,12 +57,17 @@ export function Sidebar<T extends SidebarItem>(
     <aside
       aria-label={props.ariaLabel ?? "Menu lateral"}
       class={cn(
-        "flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-border/40 bg-muted/40 text-foreground",
+        "flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-border/40 bg-muted/40 text-foreground transition-[width] duration-200 ease-in-out motion-reduce:transition-none",
         props.collapsed ? "w-16" : "w-64",
         props.class,
       )}
     >
-      <header class={cn("flex shrink-0 items-center gap-2 px-3", props.collapsed ? "h-14 justify-center" : "h-16")}>
+      <header
+        class={cn(
+          "flex h-16 shrink-0 items-center gap-2 px-3 border-b border-border/40",
+          props.collapsed && "justify-center",
+        )}
+      >
         <Show when={!props.collapsed}>
           <div class="flex min-w-0 flex-1 items-center gap-2.5">
             {props.brand}
