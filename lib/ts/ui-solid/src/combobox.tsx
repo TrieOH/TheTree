@@ -1,6 +1,9 @@
 import { shapeClass, type Shape } from "./lib/shape";
 import { Portal, type JSX } from "@solidjs/web";
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import ChevronsUpDownIcon from "~icons/lucide/chevrons-up-down";
+import SearchIcon from "~icons/lucide/search";
+import CheckIcon from "~icons/lucide/check";
 import { cn } from "./lib/cn";
 
 export interface ComboboxOption {
@@ -207,18 +210,7 @@ export function Combobox(props: ComboboxProps): JSX.Element {
               {selected()?.label ?? props.placeholder}
             </span>
           </span>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-3.5 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          >
-            <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
-          </svg>
+          <ChevronsUpDownIcon class="size-3.5 shrink-0 text-muted-foreground" />
         </Show>
       </button>
 
@@ -241,19 +233,7 @@ export function Combobox(props: ComboboxProps): JSX.Element {
           >
             <Show when={showSearch()}>
               <div class="flex items-center gap-2 border-b border-border px-3 py-2">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="size-3.5 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
+                <SearchIcon class="size-3.5 shrink-0 text-muted-foreground" />
                 <input
                   ref={(el) => (inputRef = el)}
                   value={query()}
@@ -335,18 +315,7 @@ export function Combobox(props: ComboboxProps): JSX.Element {
                           </Show>
                         </span>
                         <Show when={option.value === props.value}>
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="size-3.5 shrink-0"
-                            aria-hidden="true"
-                          >
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
+                          <CheckIcon class="size-3.5 shrink-0" />
                         </Show>
                       </button>
                     </li>

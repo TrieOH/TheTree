@@ -1,5 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createSignal, onCleanup } from "solid-js";
+import MonitorIcon from "~icons/lucide/monitor";
+import ArrowLeftIcon from "~icons/lucide/arrow-left";
 import { Button } from "./button";
 
 export interface DesktopOnlyProps {
@@ -70,20 +72,7 @@ export function DesktopOnly(props: DesktopOnlyProps): JSX.Element {
           <div class="flex w-full max-w-md flex-col items-center text-center">
             {/* Monitor icon */}
             <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40 text-muted-foreground">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="size-6"
-                aria-hidden="true"
-              >
-                <rect width="20" height="14" x="2" y="3" rx="2" />
-                <line x1="8" x2="16" y1="21" y2="21" />
-                <line x1="12" x2="12" y1="17" y2="21" />
-              </svg>
+              <MonitorIcon class="size-6" />
             </div>
 
             {/* Title */}
@@ -112,19 +101,7 @@ export function DesktopOnly(props: DesktopOnlyProps): JSX.Element {
                 onClick={handleAction}
                 class="gap-2 text-xs font-medium cursor-pointer"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="size-3.5"
-                  aria-hidden="true"
-                >
-                  <path d="m12 19-7-7 7-7" />
-                  <path d="M19 12H5" />
-                </svg>
+                <ArrowLeftIcon class="size-3.5" />
                 {props.actionLabel ?? "Voltar à página anterior"}
               </Button>
             </div>

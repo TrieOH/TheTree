@@ -1,4 +1,7 @@
 import type { JSX } from "@solidjs/web";
+import MinusIcon from "~icons/lucide/minus";
+import PlusIcon from "~icons/lucide/plus";
+import Maximize2Icon from "~icons/lucide/maximize-2";
 
 export interface CanvasControlsProps {
   scale: number;
@@ -20,18 +23,7 @@ export function CanvasControls(props: CanvasControlsProps): JSX.Element {
         aria-label="Diminuir zoom"
         onClick={() => props.onZoomOut()}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-3.5"
-          aria-hidden="true"
-        >
-          <path d="M5 12h14" />
-        </svg>
+        <MinusIcon class="size-3.5" />
       </button>
 
       <span class="w-12 text-center text-xs font-medium tabular-nums text-muted-foreground">
@@ -44,19 +36,7 @@ export function CanvasControls(props: CanvasControlsProps): JSX.Element {
         aria-label="Aumentar zoom"
         onClick={() => props.onZoomIn()}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-3.5"
-          aria-hidden="true"
-        >
-          <path d="M5 12h14" />
-          <path d="M12 5v14" />
-        </svg>
+        <PlusIcon class="size-3.5" />
       </button>
 
       <div class="mx-0.5 h-4 w-px bg-border" />
@@ -67,21 +47,7 @@ export function CanvasControls(props: CanvasControlsProps): JSX.Element {
         aria-label="Ajustar à tela"
         onClick={() => props.onReset()}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-3.5"
-          aria-hidden="true"
-        >
-          <polyline points="15 3 21 3 21 9" />
-          <polyline points="9 21 3 21 3 15" />
-          <line x1="21" x2="14" y1="3" y2="10" />
-          <line x1="3" x2="10" y1="21" y2="14" />
-        </svg>
+        <Maximize2Icon class="size-3.5" />
       </button>
     </div>
   );
