@@ -126,7 +126,7 @@ export function Sidebar<T extends SidebarItem>(
       <Show when={props.action}>
         <div
           class={cn(
-            "shrink-0 px-2 pb-3",
+            "shrink-0 px-2 py-3",
             props.collapsed && "flex justify-center",
           )}
         >
