@@ -24,11 +24,7 @@ let formatter:
     }>
   | undefined;
 
-async function formatCode(
-  code: string,
-  filename: string,
-  printWidth = 60,
-) {
+async function formatCode(code: string, filename: string, printWidth = 60) {
   if (!/\.[cm]?[jt]sx?$/i.test(filename)) return code;
   formatter ??= Promise.all([
     import("prettier/standalone"),
@@ -56,15 +52,18 @@ async function formatCode(
 function tokenClass(value: string) {
   if (value.startsWith("//") || value.startsWith("/*"))
     return "text-muted-foreground italic";
-  if (/^["'`]/.test(value)) return "trieoh-code-string";
+  if (/^["'`]/.test(value))
+    return "text-[color:var(--code-string,var(--foreground))]";
   if (
     /^(import|from|export|default|function|return|const|let|var|async|await|if|else|true|false|null|undefined|type|interface|extends|new|throw|try|catch|class|as|typeof)$/.test(
       value,
     )
   )
-    return "trieoh-code-keyword";
-  if (/^[A-Z]/.test(value)) return "trieoh-code-component";
-  if (/^\d/.test(value)) return "trieoh-code-number";
+    return "text-[color:var(--code-keyword,var(--foreground))]";
+  if (/^[A-Z]/.test(value))
+    return "text-[color:var(--code-component,var(--foreground))]";
+  if (/^\d/.test(value))
+    return "text-[color:var(--code-number,var(--foreground))]";
   return "";
 }
 
@@ -151,7 +150,7 @@ export function CodeBlock(props: CodeBlockProps) {
   return (
     <figure
       class={cn(
-        "m-0 w-full min-w-0 overflow-hidden rounded-lg border border-border bg-code-background text-foreground",
+        "m-0 w-full min-w-0 overflow-hidden rounded-lg border border-border bg-[var(--code-background,var(--muted))] text-foreground",
         shapeClass(props.shape, "surface"),
         props.class,
       )}
@@ -183,7 +182,7 @@ export function CodeBlock(props: CodeBlockProps) {
                 <Show when={props.showLineNumbers !== false}>
                   <span
                     aria-hidden="true"
-                    class="sticky left-0 shrink-0 select-none border-r border-border/50 bg-code-background px-3 text-right text-[11px] text-muted-foreground"
+                    class="sticky left-0 shrink-0 select-none border-r border-border/50 bg-[var(--code-background,var(--muted))] px-3 text-right text-[11px] text-muted-foreground"
                     style={{
                       width: `${Math.max(2, String(lines().length).length) * 8 + 24}px`,
                     }}

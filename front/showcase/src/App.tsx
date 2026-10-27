@@ -378,17 +378,20 @@ export default function App() {
                     format={false}
                     code={'pnpm add "@trieoh/ui-solid@workspace:*"'}
                   />
-                  <p>Importe o tema na folha de estilos principal.</p>
+                  <p>
+                    Importe a integração com o Tailwind na folha de estilos
+                    principal.
+                  </p>
                   <CodeBlock
-                    filename="app.css"
+                    filename="src/App.css"
                     format={false}
                     code={
-                      '@import "tailwindcss";\n@import "@trieoh/ui-solid/theme.css";\n@source "../../../../lib/ts/ui-solid/src";'
+                      '@import "tailwindcss";\n@import "@trieoh/ui-solid/tailwind.css";'
                     }
                   />
                   <p>
-                    O caminho de <code>@source</code> deve apontar para a
-                    biblioteca a partir do seu CSS.
+                    Para usar o tema padrão, importe também{" "}
+                    <code>@trieoh/ui-solid/theme.css</code>.
                   </p>
                 </section>
                 <section class="usage-section">

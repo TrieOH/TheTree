@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "@trieoh/ui-solid/theme.css";
-@source "../../../../lib/ts/ui-solid/src";
+@import "@trieoh/ui-solid/tailwind.css";
 
 @layer base {
   button:not(:disabled),

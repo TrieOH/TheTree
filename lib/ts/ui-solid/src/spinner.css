@@ -1,21 +1,3 @@
-.trieoh-spinner {
-  width: var(--size);
-}
-
-.trieoh-spinner-active {
-  stroke: var(--active);
-  stroke-linecap: round;
-  stroke-dashoffset: 360;
-  animation: trieoh-spinner-active var(--duration) ease-in-out infinite;
-}
-
-.trieoh-spinner-track {
-  stroke: var(--track);
-  stroke-linecap: round;
-  stroke-dashoffset: 360;
-  animation: trieoh-spinner-track var(--duration) ease-in-out infinite;
-}
-
 @keyframes trieoh-spinner-active {
   0% {
     stroke-dasharray: 0 0 0 360 0 360;
@@ -85,19 +67,5 @@
   }
   100% {
     stroke-dasharray: 0 380 320 40 320 40;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .trieoh-spinner-active,
-  .trieoh-spinner-track {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
-  .trieoh-spinner-active {
-    stroke-dasharray: 90 270;
-  }
-  .trieoh-spinner-track {
-    stroke-dasharray: 360;
   }
 }
