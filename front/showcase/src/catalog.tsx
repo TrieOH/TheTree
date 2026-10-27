@@ -45,12 +45,15 @@ import {
   WaveSpinnerLoading,
   DesktopOnly,
   CanvasControls,
+  CatalogNav,
 } from "@trieoh/ui-solid";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconHome from "~icons/lucide/house";
 import IconCalendar from "~icons/lucide/calendar-days";
 import IconUsers from "~icons/lucide/users";
 import IconPlus from "~icons/lucide/plus";
+import IconMenu from "~icons/lucide/menu";
+import { DeviceFrame } from "./components/DeviceFrame";
 
 export type Values = Record<string, string | boolean>;
 type Control = { key: string; label: string; options?: readonly string[] };
@@ -1078,24 +1081,44 @@ export function createCatalog(options: {
       name: "Sidebar",
       group: "Navegação",
       description: "Painel lateral compacto, com seleção discreta, seções e modo recolhido.",
-      defaults: { title: "Workspace", subtitle: "Conta pessoal", collapsed: false, activeId: "overview" },
+      defaults: {
+        title: "Workspace",
+        subtitle: "Conta pessoal",
+        collapsed: false,
+        activeId: "overview",
+        device: "desktop",
+        zoom: "1",
+      },
       controls: [
+        select("device", "Tela", ["desktop", "mobile"]),
         text("title", "Título"),
         text("subtitle", "Subtítulo"),
         text("collapsed", "Recolhido"),
         select("activeId", "Página ativa", ["overview", "events", "members"]),
       ],
-      render: (v, update) => (
-        <div class="flex h-120 w-full min-w-0 overflow-hidden rounded-2xl border border-border bg-background">
+      render: (v, update) => {
+        const [menuOpen, setMenuOpen] = createSignal(false);
+        const mobile = () => v.device === "mobile";
+        const titles: Record<string, string> = {
+          overview: "Visão geral",
+          events: "Eventos",
+          members: "Membros",
+        };
+        const panel = () => (
           <Sidebar
             class={String(v.class)}
             brand={<IconHome class="size-5" />}
             title={String(v.title)}
             subtitle={String(v.subtitle)}
-            collapsed={!!v.collapsed}
-            onCollapsedChange={(value) => update("collapsed", value)}
+            collapsed={mobile() ? false : !!v.collapsed}
+            onCollapsedChange={(value) =>
+              mobile() ? setMenuOpen(false) : update("collapsed", value)
+            }
             activeId={String(v.activeId)}
-            onSelect={(item) => update("activeId", item.id)}
+            onSelect={(item) => {
+              update("activeId", item.id);
+              setMenuOpen(false);
+            }}
             sections={[{
               title: "Workspace",
               items: [
@@ -1107,27 +1130,75 @@ export function createCatalog(options: {
             action={
               <Button
                 variant="outline"
-                class={cn("rounded-full shadow-none", v.collapsed ? "size-11 p-0" : "w-full justify-start gap-3")}
+                class={cn("rounded-full shadow-none", !mobile() && v.collapsed ? "size-11 p-0" : "w-full justify-start gap-3")}
                 aria-label="Novo projeto"
                 onClick={() => toast.info("Criar novo projeto")}
               >
                 <IconPlus class="size-5 shrink-0" />
-                <Show when={!v.collapsed}>Novo projeto</Show>
+                <Show when={mobile() || !v.collapsed}>Novo projeto</Show>
               </Button>
             }
-            footer={<p class={cn("text-xs text-muted-foreground", v.collapsed ? "text-center" : "px-3")}>{v.collapsed ? "P" : "Plano pessoal"}</p>}
+            footer={<p class={cn("text-xs text-muted-foreground", !mobile() && v.collapsed ? "text-center" : "px-3")}>{!mobile() && v.collapsed ? "P" : "Plano pessoal"}</p>}
           />
+        );
+        const content = () => (
           <div class="min-w-0 flex-1 p-6">
             <p class="text-xs text-muted-foreground">Seu espaço de trabalho</p>
-            <h3 class="mt-2 text-lg font-semibold tracking-tight">{{ overview: "Visão geral", events: "Eventos", members: "Membros" }[String(v.activeId)]}</h3>
+            <h3 class="mt-2 text-lg font-semibold tracking-tight">{titles[String(v.activeId)]}</h3>
             <div class="mt-6 space-y-3" aria-hidden="true">
               <div class="h-24 rounded-2xl border border-border/60 bg-muted/30" />
               <div class="h-3 w-3/4 rounded-full bg-muted" />
               <div class="h-3 w-1/2 rounded-full bg-muted" />
             </div>
           </div>
-        </div>
-      ),
+        );
+        return (
+          <DeviceFrame
+            width={mobile() ? 390 : 1920}
+            height={mobile() ? 844 : 1080}
+            zoom={Number(v.zoom) || 1}
+            onZoomChange={(zoom) => update("zoom", String(zoom))}
+            fixedWidth={options.isDetail() ? undefined : 560}
+            controls={options.isDetail()}
+          >
+            <Show
+              when={mobile()}
+              fallback={
+                <div class="flex h-full w-full">
+                  {panel()}
+                  {content()}
+                </div>
+              }
+            >
+              <div class="relative flex h-full w-full flex-col">
+                <header class="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Abrir menu"
+                    onClick={() => setMenuOpen(true)}
+                  >
+                    <IconMenu class="size-5" />
+                  </Button>
+                  <span class="text-sm font-semibold">{String(v.title)}</span>
+                </header>
+                {content()}
+                <Show when={menuOpen()}>
+                  <div class="absolute inset-0 z-10 flex">
+                    <div class="h-full">{panel()}</div>
+                    <button
+                      type="button"
+                      aria-label="Fechar menu"
+                      class="flex-1 cursor-pointer bg-foreground/40"
+                      onClick={() => setMenuOpen(false)}
+                    />
+                  </div>
+                </Show>
+              </div>
+            </Show>
+          </DeviceFrame>
+        );
+      },
     },
     {
       name: "Breadcrumb",
@@ -1347,33 +1418,97 @@ export function createCatalog(options: {
       description: "Guarda responsiva que orienta o usuário a abrir no computador em resoluções menores.",
       defaults: {
         threshold: "1200",
+        viewport: "1440",
         title: "Disponível apenas no computador",
         description: "Esta ferramenta foi projetada para telas a partir de 1200px de largura.",
         actionLabel: "Voltar à página anterior",
       },
       controls: [
+        text("viewport", "Largura simulada (px)"),
         text("threshold", "Largura mínima (px)"),
         text("title", "Título"),
         text("description", "Descrição"),
         text("actionLabel", "Texto da ação"),
       ],
-      render: (v) => (
-        <div class="w-full">
-          <DesktopOnly
-            threshold={Number(v.threshold) || 1200}
-            title={String(v.title)}
-            description={String(v.description)}
-            actionLabel={String(v.actionLabel)}
-            onAction={() => toast.info("Ação de voltar acionada!")}
-          >
-            <div class="p-6 border border-border rounded-xl bg-card text-center">
-              <span class="text-sm font-medium text-foreground">
-                Sua tela atende aos requisitos de desktop! Redimensione a janela abaixo de {String(v.threshold)}px para ver a tela de aviso.
-              </span>
+      render: (v, update) => {
+        const viewport = () => Number(v.viewport) || 1440;
+        const threshold = () => Number(v.threshold) || 1200;
+        const resize = (width: number) =>
+          update("viewport", String(Math.min(1920, Math.max(320, width))));
+        return (
+          <div data-wide class="relative flex h-72 w-full min-w-[420px] items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/20 pb-14">
+            <div
+              class="h-full min-w-60 overflow-hidden rounded-lg border border-border bg-background"
+              style={{ width: `${Math.max((viewport() / 1920) * 100, 12)}%` }}
+            >
+              <DesktopOnly
+                width={viewport()}
+                threshold={threshold()}
+                title={String(v.title)}
+                description={String(v.description)}
+                actionLabel={String(v.actionLabel)}
+                class="min-h-0 h-full px-4 py-4"
+                onAction={() => toast.info("Ação de voltar acionada!")}
+              >
+                <div class="flex h-full items-center justify-center p-6 text-center">
+                  <span class="text-sm font-medium text-foreground">
+                    Tela de {viewport()}px: atende ao mínimo de {threshold()}px. Diminua a largura para ver o aviso.
+                  </span>
+                </div>
+              </DesktopOnly>
             </div>
-          </DesktopOnly>
-        </div>
-      ),
+            <span class="pointer-events-none absolute left-3 top-2 rounded bg-card/90 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              {viewport()}px
+            </span>
+            <CanvasControls
+              scale={viewport() / threshold()}
+              onZoomIn={() => resize(viewport() + 120)}
+              onZoomOut={() => resize(viewport() - 120)}
+              onReset={() => resize(1440)}
+            />
+          </div>
+        );
+      },
+    },
+    {
+      name: "CatalogNav",
+      group: "Navegação",
+      description: "Navegação lateral de catálogo ou documentação, com topbar para telas pequenas e bordas que se dissolvem.",
+      defaults: { mode: "sidebar", fade: true, activeId: "Button" },
+      controls: [
+        select("mode", "Modo", ["sidebar", "topbar"]),
+        text("fade", "Bordas suaves"),
+      ],
+      render: (v, update) => {
+        const sections = ["Ações", "Formulários", "Navegação", "Overlays"].map((title) => ({
+          id: title,
+          title,
+          href: "#/components/CatalogNav",
+          items: ["Primeiro", "Segundo", "Terceiro", "Quarto", "Quinto", "Sexto"].map((label) => ({
+            id: `${title}-${label}`,
+            label: `${title} · ${label}`,
+            href: "#/components/CatalogNav",
+          })),
+        }));
+        return (
+          <div
+            class={cn(
+              "relative h-80 overflow-hidden rounded-xl border border-border bg-background",
+              v.mode === "topbar" ? "w-80" : "w-64 p-2",
+            )}
+          >
+            <CatalogNav
+              mode={v.mode === "topbar" ? "topbar" : "sidebar"}
+              fade={!!v.fade}
+              sections={sections}
+              top={{ id: "all", label: "Todos os componentes", href: "#/components/CatalogNav" }}
+              activeId={String(v.activeId)}
+              listClass="max-h-72"
+              onNavigate={(item) => update("activeId", item.id)}
+            />
+          </div>
+        );
+      },
     },
   ];
   const shapeDefaults: Record<string, Shape> = {

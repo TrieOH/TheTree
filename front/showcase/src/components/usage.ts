@@ -18,6 +18,9 @@ export function usage(name: string, v: Values): string {
     case "Sidebar":
       jsx = `<Sidebar currentId="overview" sections={[{ title: "Menu", items: [{ id: "overview", label: "Visão Geral" }] }]} />`;
       break;
+    case "CatalogNav":
+      jsx = `<CatalogNav\\n  activeId="button"\\n  top={{ id: "all", label: "Todos os componentes", href: "#/" }}\\n  sections={[{ id: "actions", title: "Ações", href: "#/group/acoes", items: [{ id: "button", label: "Button", href: "#/components/Button" }] }]}\\n/>`;
+      break;
     case "Breadcrumb":
       jsx = `<Breadcrumb items={[{ label: "Início", href: "#/" }, { label: "Componentes" }, { label: "Breadcrumb", current: true }]} />`;
       break;
@@ -198,6 +201,7 @@ export function usage(name: string, v: Values): string {
     ],
     Tooltip: ["placement", "align"],
     MultiStepStepper: ["orientation", "showDescriptions", "ariaLabel"],
+    CatalogNav: ["mode"],
     DesktopOnly: ["threshold", "title", "description", "actionLabel"],
     CanvasControls: ["scale"],
     WaveText: ["text", "duration", "delay", "lift", "waveWidth"],
