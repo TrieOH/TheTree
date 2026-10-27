@@ -207,6 +207,7 @@ function Topbar(props: CatalogNavProps): JSX.Element {
   return (
     <div class={cn("relative", props.topbarClass)}>
       <Show
+        keyed
         when={props.renderTrigger}
         fallback={
           <div class="flex h-12 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur-sm">
@@ -228,7 +229,7 @@ function Topbar(props: CatalogNavProps): JSX.Element {
         }
       >
         {(renderTrigger) =>
-          renderTrigger()({
+          renderTrigger({
             open,
             toggle: () => setOpen(!open()),
             close: () => setOpen(false),

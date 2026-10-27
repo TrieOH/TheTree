@@ -1,21 +1,23 @@
 import { Show, type Component } from "solid-js";
-import { Checkbox, Combobox, Field, Input, Textarea } from "@trieoh/ui-solid";
+import { Combobox, Field, Input, Switch, Textarea } from "@trieoh/ui-solid";
 
 interface KnobSwitchProps {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-  description?: string;
+  disabled?: boolean;
 }
 
 export const KnobSwitch: Component<KnobSwitchProps> = (props) => (
-  <Checkbox
-    label={props.label}
-    description={props.description}
-    checked={props.checked}
-    onChange={props.onChange}
-    class="py-3 border-b border-border/50 last:border-b-0"
-  />
+  <div class="property-row">
+    <span class="property-label">{props.label}</span>
+    <Switch
+      aria-label={props.label}
+      checked={props.checked}
+      disabled={props.disabled}
+      onChange={props.onChange}
+    />
+  </div>
 );
 
 interface KnobSelectProps<T extends string> {
@@ -27,23 +29,20 @@ interface KnobSelectProps<T extends string> {
 
 export function KnobSelect<T extends string>(props: KnobSelectProps<T>) {
   return (
-    <div class="py-3 border-b border-border/50 last:border-b-0">
-      <Field label={props.label}>
-        {(ids) => (
-          <Combobox
-            id={ids.id}
-            aria-describedby={ids.describedBy}
-            aria-label={props.label}
-            placeholder={props.label}
-            value={props.value}
-            options={props.options.map((value) => ({
-              value,
-              label: value || "(vazio)",
-            }))}
-            onChange={(value) => props.onChange(value as T)}
-          />
-        )}
-      </Field>
+    <div class="property-row">
+      <span class="property-label">{props.label}</span>
+      <Combobox
+        class="property-combobox"
+        size="sm"
+        aria-label={props.label}
+        placeholder={props.label}
+        value={props.value}
+        options={props.options.map((value) => ({
+          value,
+          label: value || "(vazio)",
+        }))}
+        onChange={(value) => props.onChange(value as T)}
+      />
     </div>
   );
 }
@@ -57,7 +56,13 @@ interface KnobTextProps {
 }
 
 export const KnobText: Component<KnobTextProps> = (props) => (
-  <div class="py-3 border-b border-border/50 last:border-b-0">
+  <div
+    class={
+      props.multiline
+        ? "property-text property-text-multiline"
+        : "property-text"
+    }
+  >
     <Field label={props.label}>
       {(ids) => (
         <Show

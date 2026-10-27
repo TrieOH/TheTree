@@ -121,3 +121,5 @@ export {
   WaveSpinnerLoading,
   type WaveSpinnerLoadingProps,
 } from "./wave-spinner-loading";
+
+export { Switch, type SwitchProps } from "./switch";

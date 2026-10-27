@@ -17,6 +17,8 @@ import {
   Toaster,
   toast,
 } from "@trieoh/ui-solid";
+import IconArrowLeft from "~icons/lucide/arrow-left";
+import IconArrowRight from "~icons/lucide/arrow-right";
 import IconRotateCcw from "~icons/lucide/rotate-ccw";
 import IconSun from "~icons/lucide/sun";
 import IconMenu from "~icons/lucide/menu";
@@ -25,6 +27,7 @@ import IconMoon from "~icons/lucide/moon";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import { createCatalog, type Values } from "./catalog";
 import { ScrollbarExample } from "./showcases/ScrollbarExample";
+import apiReference from "virtual:api-reference";
 import { usage } from "./components/usage";
 import { FitPreview } from "./components/FitPreview";
 import { KnobSelect, KnobSwitch, KnobText } from "./components/KnobControl";
@@ -102,6 +105,13 @@ export default function App() {
         })),
     }));
   const active = () => entries.find((entry) => entry.name === selected())!;
+  const orderedEntries = groups.flatMap((title) =>
+    entries.filter((entry) => entry.group === title),
+  );
+  const activeIndex = () =>
+    orderedEntries.findIndex((entry) => entry.name === selected());
+  const previous = () => orderedEntries[activeIndex() - 1];
+  const next = () => orderedEntries[activeIndex() + 1];
   const filtered = () =>
     entries.filter(
       (entry) =>
@@ -269,101 +279,209 @@ export default function App() {
           }
         >
           <main class="component-page">
-            <Link class="back-link" href="#/">
-              ← Todos os componentes
-            </Link>
             <header class="component-page-header">
-              <span>{active().group}</span>
+              <div class="component-meta">
+                <span class="component-category">{active().group}</span>
+                <span class="component-framework">Solid</span>
+              </div>
               <h1>{active().name}</h1>
               <p>{active().description}</p>
             </header>
             <div class="playground-layout">
               <div class="component-documentation">
                 <section class="example-section">
-                  <h2>Exemplo</h2>
+                  <div class="preview-toolbar">
+                    <h2>Prévia</h2>
+                  </div>
                   <div class="detail-preview">
                     {active().render(values[selected()], (key, value) =>
                       update(selected(), key, value),
                     )}
                   </div>
                 </section>
-                <section class="usage-section">
-                  <h2>Como usar</h2>
-                  <p>
-                    Importe do pacote compartilhado. O exemplo acompanha os
-                    valores definidos em propriedades.
-                  </p>
-                  <CodeBlock code={usage(active().name, values[selected()])} />
-                </section>
-              </div>
-              <aside class="inspector" aria-label="Inspetor de componentes">
-                <div class="inspector-heading">
-                  <span class="eyebrow">Propriedades</span>
-                  <Tooltip align="end" label="Restaurar valores padrão">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      class="size-7 text-muted-foreground"
-                      aria-label="Restaurar valores padrão"
-                      disabled={Object.keys(active().defaults).every(
-                        (key) =>
-                          values[selected()][key] === active().defaults[key],
-                      )}
-                      onClick={() => {
-                        setValues((draft) => {
-                          Object.assign(draft[selected()], active().defaults);
-                        });
-                        toast.success("Propriedades restauradas");
-                      }}
-                    >
-                      <IconRotateCcw class="size-3.5" />
-                    </Button>
-                  </Tooltip>
-                </div>
-                <div class="inspector-section">
-                  <For each={active().controls}>
-                    {(control) => (
-                      <Show
-                        when={
-                          typeof values[selected()][control.key] === "boolean"
-                        }
-                        fallback={
-                          <Show
-                            when={control.options}
-                            fallback={
-                              <KnobText
-                                multiline={control.key === "code"}
+                <section class="inspector" aria-label="Inspetor de componentes">
+                  <div class="inspector-heading">
+                    <span class="eyebrow">Propriedades</span>
+                    <Tooltip align="end" label="Restaurar valores padrão">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 text-muted-foreground"
+                        aria-label="Restaurar valores padrão"
+                        disabled={Object.keys(active().defaults).every(
+                          (key) =>
+                            values[selected()][key] === active().defaults[key],
+                        )}
+                        onClick={() => {
+                          setValues((draft) => {
+                            Object.assign(draft[selected()], active().defaults);
+                          });
+                          toast.success("Propriedades restauradas");
+                        }}
+                      >
+                        <IconRotateCcw class="size-3.5" />
+                      </Button>
+                    </Tooltip>
+                  </div>
+
+                  <div class="inspector-section">
+                    <For each={active().controls}>
+                      {(control) => (
+                        <Show
+                          when={
+                            typeof values[selected()][control.key] === "boolean"
+                          }
+                          fallback={
+                            <Show
+                              when={control.options}
+                              fallback={
+                                <KnobText
+                                  multiline={control.key === "code"}
+                                  label={control.label}
+                                  value={String(
+                                    values[selected()][control.key],
+                                  )}
+                                  onChange={(value) =>
+                                    update(selected(), control.key, value)
+                                  }
+                                />
+                              }
+                            >
+                              <KnobSelect
                                 label={control.label}
                                 value={String(values[selected()][control.key])}
+                                options={control.options!}
                                 onChange={(value) =>
                                   update(selected(), control.key, value)
                                 }
                               />
-                            }
-                          >
-                            <KnobSelect
-                              label={control.label}
-                              value={String(values[selected()][control.key])}
-                              options={control.options!}
-                              onChange={(value) =>
-                                update(selected(), control.key, value)
-                              }
-                            />
-                          </Show>
-                        }
-                      >
-                        <KnobSwitch
-                          label={control.label}
-                          checked={!!values[selected()][control.key]}
-                          onChange={(value) =>
-                            update(selected(), control.key, value)
+                            </Show>
                           }
-                        />
-                      </Show>
+                        >
+                          <KnobSwitch
+                            label={control.label}
+                            checked={!!values[selected()][control.key]}
+                            onChange={(value) =>
+                              update(selected(), control.key, value)
+                            }
+                          />
+                        </Show>
+                      )}
+                    </For>
+                  </div>
+                </section>
+                <section class="documentation-section">
+                  <h2>Instalação</h2>
+                  <p>Adicione ao aplicativo no monorepo.</p>
+                  <CodeBlock
+                    filename="Terminal"
+                    format={false}
+                    code={'pnpm add "@trieoh/ui-solid@workspace:*"'}
+                  />
+                  <p>Importe o tema na folha de estilos principal.</p>
+                  <CodeBlock
+                    filename="app.css"
+                    format={false}
+                    code={
+                      '@import "tailwindcss";\n@import "@trieoh/ui-solid/theme.css";\n@source "../../../../lib/ts/ui-solid/src";'
+                    }
+                  />
+                  <p>
+                    O caminho de <code>@source</code> deve apontar para a
+                    biblioteca a partir do seu CSS.
+                  </p>
+                </section>
+                <section class="usage-section">
+                  <div class="usage-heading">
+                    <h2>Código</h2>
+                    <span class="code-language">TSX</span>
+                  </div>
+                  <CodeBlock code={usage(active().name, values[selected()])} />
+                </section>
+                <section class="documentation-section api-reference">
+                  <h2>API Reference</h2>
+                  <h3>{active().name}</h3>
+                  <p>{active().description}</p>
+                  <Show
+                    when={apiReference[active().name]?.length}
+                    fallback={<p>Este componente não recebe propriedades.</p>}
+                  >
+                    <div
+                      class="api-table-scroll"
+                      tabindex={0}
+                      role="region"
+                      aria-label={`API de ${active().name}`}
+                    >
+                      <table class="api-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Propriedade</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Padrão</th>
+                            <th scope="col">Obrigatória</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <For each={apiReference[active().name]}>
+                            {(property) => (
+                              <tr>
+                                <td>
+                                  <code>{property.name}</code>
+                                  <Show when={property.description}>
+                                    <p>{property.description}</p>
+                                  </Show>
+                                </td>
+                                <td>
+                                  <code>{property.type}</code>
+                                </td>
+                                <td>
+                                  <Show
+                                    when={property.defaultValue}
+                                    fallback="—"
+                                  >
+                                    {(value) => <code>{value()}</code>}
+                                  </Show>
+                                </td>
+                                <td>{property.required ? "Sim" : "Não"}</td>
+                              </tr>
+                            )}
+                          </For>
+                        </tbody>
+                      </table>
+                    </div>
+                  </Show>
+                </section>
+                <nav
+                  class="component-pagination"
+                  aria-label="Navegação entre componentes"
+                >
+                  <Show when={previous()}>
+                    {(entry) => (
+                      <Link href={`#/components/${entry().name}`}>
+                        <IconArrowLeft />
+                        <span>
+                          <small>Anterior</small>
+                          <strong>{entry().name}</strong>
+                        </span>
+                      </Link>
                     )}
-                  </For>
-                </div>
-              </aside>
+                  </Show>
+                  <Show when={next()}>
+                    {(entry) => (
+                      <Link
+                        class="pagination-next"
+                        href={`#/components/${entry().name}`}
+                      >
+                        <span>
+                          <small>Próximo</small>
+                          <strong>{entry().name}</strong>
+                        </span>
+                        <IconArrowRight />
+                      </Link>
+                    )}
+                  </Show>
+                </nav>
+              </div>
             </div>
           </main>
         </Show>

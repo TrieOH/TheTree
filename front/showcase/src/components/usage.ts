@@ -33,6 +33,10 @@ export function usage(name: string, v: Values): string {
     case "Badge":
       jsx = `<Badge ${prop("variant")}>${v.content}</Badge>`;
       break;
+    case "Switch":
+      setup = state(String(v.checked), "checked");
+      jsx = `<Switch aria-label="Receber notificações" checked={checked()} onChange={setChecked} ${prop("disabled")} />`;
+      break;
     case "Checkbox":
       setup = state(String(v.checked), "checked");
       jsx = `<Checkbox checked={checked()} onChange={setChecked} label={${q("label")}} description={${q("description")}} ${prop("indeterminate")} />`;

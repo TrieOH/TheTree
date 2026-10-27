@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   Checkbox,
+  Switch,
   Link,
   SearchInput,
   CodeBlock,
@@ -278,6 +279,23 @@ export function createCatalog(options: {
         >
           {String(v.children)}
         </Badge>
+      ),
+    },
+
+    {
+      name: "Switch",
+      group: "Formulários",
+      description: "Alterna entre ligado e desligado.",
+      defaults: { checked: true, disabled: false },
+      controls: [text("checked", "Ligado"), text("disabled", "Desabilitado")],
+      render: (v, update) => (
+        <Switch
+          class={String(v.class)}
+          aria-label="Receber notificações"
+          checked={!!v.checked}
+          disabled={!!v.disabled}
+          onChange={(checked) => update("checked", checked)}
+        />
       ),
     },
 
@@ -1544,26 +1562,8 @@ export function createCatalog(options: {
       entry.controls.push(select("shape", "Shape", shapes));
     }
   }
-  const idComponents = new Set([
-    "Button",
-    "Input",
-    "Textarea",
-    "Checkbox",
-    "Combobox",
-    "Field",
-    "SearchInput",
-  ]);
   for (const entry of entries) {
-    if (idComponents.has(entry.name)) {
-      entry.defaults.id = `${entry.name.toLowerCase()}-preview`;
-      entry.controls.push(text("id", "ID do elemento"));
-    }
-  }
-  for (const entry of entries) {
-    if (entry.name !== "Toaster" && entry.name !== "OverlayScrollbar") {
-      entry.defaults.class = "";
-      entry.controls.push(text("class", "Classes CSS"));
-    }
+    entry.defaults.class = "";
   }
   return {
     entries,
