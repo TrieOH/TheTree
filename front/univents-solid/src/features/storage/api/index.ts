@@ -5,6 +5,7 @@ import type {
   StorageUploadResponse,
 } from "../model";
 
+const UPLOAD_WEBP_QUALITY = 0.88;
 const MODERATION_MAX_EDGE = 448;
 const MODERATION_WEBP_QUALITY = 0.82;
 const IMAGE_PREPROCESS_TIMEOUT_MS = 30_000;
@@ -21,7 +22,11 @@ export class StorageImageError extends Error {
   }
 }
 
-async function resizeImage(file: File, maxEdge: number): Promise<File> {
+async function resizeImage(
+  file: File,
+  maxEdge: number,
+  quality = UPLOAD_WEBP_QUALITY,
+): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
   if (typeof createImageBitmap !== "function") return file;
@@ -59,11 +64,13 @@ async function resizeImage(file: File, maxEdge: number): Promise<File> {
       canvas.toBlob(
         (nextBlob) => resolve(nextBlob),
         "image/webp",
-        MODERATION_WEBP_QUALITY,
+        quality,
       );
     });
 
-    if (!blob || blob.size >= file.size) return file;
+    if (!blob) return file;
+    // Only skip if not resized down and converted webp is not smaller than original
+    if (scale === 1 && blob.size >= file.size) return file;
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
     return new File([blob], `${baseName}.webp`, {
@@ -91,9 +98,13 @@ export async function preprocessImageUpload(
     }
 
     const uploadFile = maxUploadEdge
-      ? await resizeImage(file, maxUploadEdge)
+      ? await resizeImage(file, maxUploadEdge, UPLOAD_WEBP_QUALITY)
       : file;
-    const moderationFile = await resizeImage(uploadFile, MODERATION_MAX_EDGE);
+    const moderationFile = await resizeImage(
+      uploadFile,
+      MODERATION_MAX_EDGE,
+      MODERATION_WEBP_QUALITY,
+    );
     const formData = new FormData();
     formData.append("file", uploadFile);
     if (moderationFile !== uploadFile) {
