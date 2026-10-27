@@ -28,12 +28,12 @@ async function formatCode(code: string, filename: string, printWidth = 60) {
   if (!/\.[cm]?[jt]sx?$/i.test(filename)) return code;
   formatter ??= Promise.all([
     import("prettier/standalone"),
-    import("prettier/plugins/typescript"),
+    import("prettier/plugins/babel"),
     import("prettier/plugins/estree"),
   ])
-    .then(([prettier, typescript, estree]) => ({
+    .then(([prettier, babel, estree]) => ({
       prettier,
-      plugins: [typescript.default, estree.default],
+      plugins: [babel.default, estree.default],
     }))
     .catch((error) => {
       formatter = undefined;
@@ -41,7 +41,7 @@ async function formatCode(code: string, filename: string, printWidth = 60) {
     });
   const { prettier, plugins } = await formatter;
   return prettier.format(code, {
-    parser: "typescript",
+    parser: "babel-ts",
     plugins,
     filepath: filename,
     printWidth,
