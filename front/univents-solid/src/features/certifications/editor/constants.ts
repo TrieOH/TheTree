@@ -125,7 +125,7 @@ export const CERTIFICATE_VARIABLES = [
 export type CertificateVariableKey =
   (typeof CERTIFICATE_VARIABLES)[number]["key"];
 
-export const CERTIFICATE_FONT_FAMILIES = [
+const CERTIFICATE_FONT_FAMILIES = [
   { label: "Arial", value: "Arial, Helvetica, sans-serif" },
   { label: "Inter", value: "Inter, ui-sans-serif, system-ui, sans-serif" },
   { label: "Georgia", value: "Georgia, 'Times New Roman', serif" },
@@ -136,7 +136,6 @@ export const CERTIFICATE_FONT_FAMILIES = [
 
 export const DEFAULT_CERTIFICATE_FONT = CERTIFICATE_FONT_FAMILIES[0].value;
 export const DEFAULT_CERTIFICATE_TEXT_COLOR = "#000000";
-export const DEFAULT_CERTIFICATE_SUBTLE_COLOR = "#4B5563";
 
 export const MIN_CERTIFICATE_ELEMENT_SIZE = { width: 24, height: 24 };
 
