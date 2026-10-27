@@ -3,6 +3,14 @@
  */
 export { cn } from "./lib/cn";
 export { Sidebar, type SidebarProps, type SidebarItem, type SidebarSection, type SidebarItemRenderProps } from "./sidebar";
+export {
+  CatalogNav,
+  type CatalogNavItem,
+  type CatalogNavMode,
+  type CatalogNavProps,
+  type CatalogNavSection,
+  type CatalogNavTriggerApi,
+} from "./catalog-nav";
 export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./breadcrumb";
 export {
   Button,

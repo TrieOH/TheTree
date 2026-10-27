@@ -3,6 +3,7 @@ import { Show, createSignal, onCleanup } from "solid-js";
 import MonitorIcon from "~icons/lucide/monitor";
 import ArrowLeftIcon from "~icons/lucide/arrow-left";
 import { Button } from "./button";
+import { cn } from "./lib/cn";
 
 export interface DesktopOnlyProps {
   children?: JSX.Element;
@@ -10,6 +11,13 @@ export interface DesktopOnlyProps {
    * Width threshold in pixels. Defaults to 1200.
    */
   threshold?: number;
+  /**
+   * The width to test against, in pixels. Defaults to the window's width; set
+   * it to preview the notice inside a simulated viewport.
+   */
+  width?: number;
+  /** Classes for the notice (it fills the screen height by default). */
+  class?: string;
   /**
    * Custom title for the mobile/tablet blocking notice.
    */
@@ -36,19 +44,14 @@ export interface DesktopOnlyProps {
  */
 export function DesktopOnly(props: DesktopOnlyProps): JSX.Element {
   const thresholdPx = () => props.threshold ?? 1200;
-  const [currentWidth, setCurrentWidth] = createSignal(
+  const [windowWidth, setWindowWidth] = createSignal(
     typeof window !== "undefined" ? window.innerWidth : 1200,
   );
-  const [isDesktop, setIsDesktop] = createSignal(
-    typeof window !== "undefined" ? window.innerWidth >= thresholdPx() : true,
-  );
+  const currentWidth = () => props.width ?? windowWidth();
+  const isDesktop = () => currentWidth() >= thresholdPx();
 
   if (typeof window !== "undefined") {
-    const updateMatch = () => {
-      const w = window.innerWidth;
-      setCurrentWidth(w);
-      setIsDesktop(w >= thresholdPx());
-    };
+    const updateMatch = () => setWindowWidth(window.innerWidth);
 
     window.addEventListener("resize", updateMatch, { passive: true });
     onCleanup(() => {
@@ -68,7 +71,12 @@ export function DesktopOnly(props: DesktopOnlyProps): JSX.Element {
     <Show
       when={isDesktop()}
       fallback={
-        <div class="flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12 select-none">
+        <div
+          class={cn(
+            "flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12 select-none",
+            props.class,
+          )}
+        >
           <div class="flex w-full max-w-md flex-col items-center text-center">
             {/* Monitor icon */}
             <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40 text-muted-foreground">
