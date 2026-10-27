@@ -923,6 +923,43 @@ importers:
         specifier: 'catalog:'
         version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
 
+  front/trieoh:
+    dependencies:
+      '@solidjs/web':
+        specifier: catalog:solid
+        version: 2.0.0-rc.17(solid-js@2.0.0-rc.17)
+      '@trieoh/ui-solid':
+        specifier: workspace:*
+        version: link:../../lib/ts/ui-solid
+      solid-js:
+        specifier: catalog:solid
+        version: 2.0.0-rc.17
+    devDependencies:
+      '@iconify-json/lucide':
+        specifier: 'catalog:'
+        version: 1.2.130
+      '@solidjs/vite-plugin':
+        specifier: 'catalog:'
+        version: 3.0.0-next.51(@solidjs/web@2.0.0-rc.17(solid-js@2.0.0-rc.17))(@testing-library/jest-dom@6.10.0(@testing-library/dom@10.4.2))(solid-js@2.0.0-rc.17)(supports-color@10.2.2)(vite@8.2.4(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.4(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.79.0
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      unplugin-icons:
+        specifier: 'catalog:'
+        version: 22.5.0(supports-color@10.2.2)
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.4(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
+
   front/trieoh-components:
     dependencies:
       '@solidjs/web':
