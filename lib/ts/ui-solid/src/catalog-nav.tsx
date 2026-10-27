@@ -43,6 +43,11 @@ export interface CatalogNavProps {
   /** Soften the top and bottom edges of the list while it can scroll. Default true. */
   fade?: boolean;
   ariaLabel?: string;
+  /**
+   * A faint vertical line along the list's edge. It is as tall as the list and
+   * fades out with it, rather than running the full height of the page.
+   */
+  divider?: boolean;
   /** Classes for the sidebar. */
   class?: string;
   /** Classes for the topbar. */
@@ -53,7 +58,7 @@ export interface CatalogNavProps {
    * a fixed layer; place it with `panelClass`.
    */
   renderTrigger?: (api: CatalogNavTriggerApi) => JSX.Element;
-  /** Classes for the topbar's menu panel. */
+  /** Classes for the topbar's menu panel (which fills the height below its top edge). */
   panelClass?: string;
   /** Classes for the scrolling list, e.g. to cap its height. */
   listClass?: string;
@@ -237,12 +242,18 @@ function Topbar(props: CatalogNavProps): JSX.Element {
           class={cn(
             "z-40 border-b border-border bg-background px-2 shadow-lg",
             props.renderTrigger
-              ? "fixed inset-x-0 top-14"
+              ? "fixed inset-x-0 top-14 bottom-0 overflow-hidden"
               : "absolute inset-x-0 top-full",
             props.panelClass,
           )}
         >
-          <FadeScroll fade={fade()} class={cn("max-h-[min(70dvh,28rem)]", props.listClass)}>
+          <FadeScroll
+            fade={fade()}
+            class={cn(
+              props.renderTrigger ? "h-full" : "max-h-[min(70dvh,28rem)]",
+              props.listClass,
+            )}
+          >
             <NavLinks
               sections={props.sections}
               top={props.top}
@@ -261,10 +272,17 @@ function Topbar(props: CatalogNavProps): JSX.Element {
 
 function SidebarNav(props: CatalogNavProps): JSX.Element {
   return (
-    <nav aria-label={props.ariaLabel ?? "Navegação"} class={cn("min-w-0", props.class)}>
+    <nav
+      aria-label={props.ariaLabel ?? "Navegação"}
+      class={cn("min-w-0", props.class)}
+    >
       <FadeScroll
         fade={props.fade ?? true}
-        class={cn("max-h-[calc(100dvh-8rem)]", props.listClass)}
+        class={cn(
+          "max-h-[calc(100dvh-8rem)]",
+          props.divider && "border-r border-border/50",
+          props.listClass,
+        )}
       >
         <NavLinks
           sections={props.sections}

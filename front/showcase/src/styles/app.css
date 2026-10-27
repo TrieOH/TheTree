@@ -231,6 +231,9 @@ body {
   inset: 0;
 }
 .fit-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -246,6 +249,8 @@ body {
   width: 100%;
   border-top: 1px solid var(--border);
   padding: 12px 16px;
+  height: 84px;
+  overflow: hidden;
 }
 .component-caption strong {
   font-size: 12px;
@@ -300,6 +305,7 @@ body {
   color: var(--muted-foreground);
 }
 .component-page {
+  width: 100%;
   max-width: 1200px;
   margin: auto;
   padding: 32px 36px 64px;
@@ -353,6 +359,9 @@ body {
   align-items: center;
   justify-content: center;
   padding: 40px;
+}
+.detail-preview:has([data-wide]) {
+  padding: 16px;
 }
 .detail-preview > * {
   max-width: 100%;
@@ -526,6 +535,7 @@ body {
   }
   .component-caption {
     border-top: 0;
+    height: auto;
     padding: 14px 4px;
   }
   .component-caption strong {

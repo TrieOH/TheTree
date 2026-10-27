@@ -120,7 +120,7 @@ export default function App() {
             <CatalogNav
               mode="topbar"
               topbarClass="lg:hidden"
-              panelClass="top-[60px] max-h-[calc(100dvh-60px)]"
+              panelClass="top-[60px]"
               top={navTop}
               activeId={detail() ? selected() : group()}
               sections={navSections()}
@@ -182,7 +182,8 @@ export default function App() {
       <div class="studio-body">
         <CatalogNav
           mode="sidebar"
-          class="sticky top-[68px] hidden px-4 pt-8 pb-6 pl-10 lg:block"
+          divider
+          class="sticky top-17 hidden pt-8 pb-6 pl-10 lg:block"
           top={navTop}
           activeId={detail() ? selected() : group()}
           sections={navSections()}

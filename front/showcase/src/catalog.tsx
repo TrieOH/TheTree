@@ -799,37 +799,37 @@ export function createCatalog(options: {
           text("description", "Descrição"),
           ...(name === "Dialog"
             ? [
-                text("closable", "Botão de fechar"),
-                text("preventClose", "Impedir fechamento externo"),
-              ]
+              text("closable", "Botão de fechar"),
+              text("preventClose", "Impedir fechamento externo"),
+            ]
             : []),
           ...(name === "AlertModal"
             ? [
-                text("loading", "Carregando"),
-                text("confirmLabel", "Texto de confirmação"),
-                text("cancelLabel", "Texto de cancelar"),
-              ]
+              text("loading", "Carregando"),
+              text("confirmLabel", "Texto de confirmação"),
+              text("cancelLabel", "Texto de cancelar"),
+            ]
             : []),
           ...(name === "MultiStepDialog"
             ? [
-                text("loading", "Carregando"),
-                text("fixedHeight", "Altura fixa"),
-                text("nextLabel", "Texto de avançar"),
-                text("submitLabel", "Texto de concluir"),
-              ]
+              text("loading", "Carregando"),
+              text("fixedHeight", "Altura fixa"),
+              text("nextLabel", "Texto de avançar"),
+              text("submitLabel", "Texto de concluir"),
+            ]
             : []),
           ...(name === "Dialog" || name === "MultiStepDialog"
             ? [select("size", "Tamanho", ["sm", "md", "lg", "xl", "full"])]
             : []),
           ...(name === "AlertModal"
             ? [
-                select("variant", "Variante", [
-                  "default",
-                  "info",
-                  "warning",
-                  "destructive",
-                ]),
-              ]
+              select("variant", "Variante", [
+                "default",
+                "info",
+                "warning",
+                "destructive",
+              ]),
+            ]
             : []),
         ],
         render: (v: Values) => (
@@ -1086,11 +1086,10 @@ export function createCatalog(options: {
         subtitle: "Conta pessoal",
         collapsed: false,
         activeId: "overview",
-        device: "desktop",
-        zoom: "1",
+        mobile: false,
       },
       controls: [
-        select("device", "Tela", ["desktop", "mobile"]),
+        text("mobile", "Forçar mobile"),
         text("title", "Título"),
         text("subtitle", "Subtítulo"),
         text("collapsed", "Recolhido"),
@@ -1098,7 +1097,7 @@ export function createCatalog(options: {
       ],
       render: (v, update) => {
         const [menuOpen, setMenuOpen] = createSignal(false);
-        const mobile = () => v.device === "mobile";
+        const mobile = () => !!v.mobile;
         const titles: Record<string, string> = {
           overview: "Visão geral",
           events: "Eventos",
@@ -1106,7 +1105,7 @@ export function createCatalog(options: {
         };
         const panel = () => (
           <Sidebar
-            class={String(v.class)}
+            class={cn("bg-card", String(v.class))}
             brand={<IconHome class="size-5" />}
             title={String(v.title)}
             subtitle={String(v.subtitle)}
@@ -1154,12 +1153,9 @@ export function createCatalog(options: {
         );
         return (
           <DeviceFrame
-            width={mobile() ? 390 : 1920}
-            height={mobile() ? 844 : 1080}
-            zoom={Number(v.zoom) || 1}
-            onZoomChange={(zoom) => update("zoom", String(zoom))}
+            width={mobile() ? 390 : 1024}
+            height={mobile() ? 844 : 640}
             fixedWidth={options.isDetail() ? undefined : 560}
-            controls={options.isDetail()}
           >
             <Show
               when={mobile()}
@@ -1170,30 +1166,38 @@ export function createCatalog(options: {
                 </div>
               }
             >
-              <div class="relative flex h-full w-full flex-col">
-                <header class="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
+              <div class="relative flex h-full w-full flex-col overflow-hidden">
+                <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-card/95 px-3 shadow-sm shadow-black/5">
+                  <button
+                    type="button"
                     aria-label="Abrir menu"
                     onClick={() => setMenuOpen(true)}
+                    class="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60"
                   >
                     <IconMenu class="size-5" />
-                  </Button>
-                  <span class="text-sm font-semibold">{String(v.title)}</span>
+                  </button>
+                  <span class="truncate text-sm font-semibold">{String(v.title)}</span>
                 </header>
                 {content()}
-                <Show when={menuOpen()}>
-                  <div class="absolute inset-0 z-10 flex">
-                    <div class="h-full">{panel()}</div>
-                    <button
-                      type="button"
-                      aria-label="Fechar menu"
-                      class="flex-1 cursor-pointer bg-foreground/40"
-                      onClick={() => setMenuOpen(false)}
-                    />
-                  </div>
-                </Show>
+                <button
+                  type="button"
+                  aria-label="Fechar menu"
+                  tabindex={menuOpen() ? 0 : -1}
+                  onClick={() => setMenuOpen(false)}
+                  class={cn(
+                    "absolute inset-0 z-10 bg-black/25 transition-opacity duration-200",
+                    menuOpen() ? "opacity-100" : "pointer-events-none invisible opacity-0",
+                  )}
+                />
+                <div
+                  inert={!menuOpen()}
+                  class={cn(
+                    "absolute inset-y-0 left-0 z-20 h-full transition-transform duration-200 motion-reduce:transition-none",
+                    menuOpen() ? "translate-x-0" : "-translate-x-full",
+                  )}
+                >
+                  {panel()}
+                </div>
               </div>
             </Show>
           </DeviceFrame>
@@ -1436,9 +1440,9 @@ export function createCatalog(options: {
         const resize = (width: number) =>
           update("viewport", String(Math.min(1920, Math.max(320, width))));
         return (
-          <div data-wide class="relative flex h-72 w-full min-w-[420px] items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/20 pb-14">
+          <div data-wide class="relative flex h-112 w-full min-w-105 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/20 px-4 pt-8 pb-16">
             <div
-              class="h-full min-w-60 overflow-hidden rounded-lg border border-border bg-background"
+              class="h-full min-w-60 overflow-hidden rounded-lg border border-border bg-background shadow-sm"
               style={{ width: `${Math.max((viewport() / 1920) * 100, 12)}%` }}
             >
               <DesktopOnly
@@ -1447,7 +1451,7 @@ export function createCatalog(options: {
                 title={String(v.title)}
                 description={String(v.description)}
                 actionLabel={String(v.actionLabel)}
-                class="min-h-0 h-full px-4 py-4"
+                class="min-h-0 h-full px-4 py-3"
                 onAction={() => toast.info("Ação de voltar acionada!")}
               >
                 <div class="flex h-full items-center justify-center p-6 text-center">

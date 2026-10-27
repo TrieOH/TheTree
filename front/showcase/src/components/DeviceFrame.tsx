@@ -14,8 +14,9 @@ const STEP = 0.1;
 export function DeviceFrame(props: {
   width: number;
   height: number;
-  zoom: number;
-  onZoomChange: (zoom: number) => void;
+  /** Zoom relative to the fit; 1 by default. Pass with `onZoomChange` to show the zoom controls. */
+  zoom?: number;
+  onZoomChange?: (zoom: number) => void;
   /** Pin the container's width instead of measuring it (used in catalog cards). */
   fixedWidth?: number;
   /** The frame never gets taller than this once scaled, so a phone stays a phone. */
@@ -44,11 +45,12 @@ export function DeviceFrame(props: {
   const fit = () =>
     available() > 0
       ? Math.min(
-          available() / props.width,
-          (props.maxHeight ?? 640) / props.height,
-        )
+        available() / props.width,
+        (props.maxHeight ?? 640) / props.height,
+      )
       : 0;
-  const scale = () => fit() * props.zoom;
+  const zoom = () => props.zoom ?? 1;
+  const scale = () => fit() * zoom();
   const clamp = (value: number) =>
     Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value)) * 100) / 100;
 
@@ -62,9 +64,9 @@ export function DeviceFrame(props: {
         height: `${props.height * fit()}px`,
       }}
     >
-      <div class="absolute inset-0 overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div class="absolute inset-0 flex overflow-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
         <div
-          class="mx-auto"
+          class="m-auto shrink-0"
           style={{
             width: `${props.width * scale()}px`,
             height: `${props.height * scale()}px`,
@@ -82,15 +84,15 @@ export function DeviceFrame(props: {
           </div>
         </div>
       </div>
-      <Show when={props.controls ?? true}>
+      <Show when={props.onZoomChange && (props.controls ?? true)}>
         <CanvasControls
-          scale={props.zoom}
-          onZoomIn={() => props.onZoomChange(clamp(props.zoom + STEP))}
-          onZoomOut={() => props.onZoomChange(clamp(props.zoom - STEP))}
-          onReset={() => props.onZoomChange(1)}
+          scale={zoom()}
+          onZoomIn={() => props.onZoomChange?.(clamp(zoom() + STEP))}
+          onZoomOut={() => props.onZoomChange?.(clamp(zoom() - STEP))}
+          onReset={() => props.onZoomChange?.(1)}
         />
       </Show>
-      <span class="pointer-events-none absolute left-3 top-2 rounded bg-card/90 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+      <span class="pointer-events-none absolute right-3 top-2 rounded bg-card/90 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
         {props.width}×{props.height}
       </span>
     </div>
