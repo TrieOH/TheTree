@@ -66,7 +66,7 @@ const Save = SaveIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Trash2 = Trash2Icon as unknown as (props: { class?: string }) => JSX.Element;
 const TypeLucide = TypeIcon as unknown as (props: { class?: string }) => JSX.Element;
 
-export const VARIABLES: readonly [
+const VARIABLES: readonly [
   variable: string,
   label: string,
   description: string,

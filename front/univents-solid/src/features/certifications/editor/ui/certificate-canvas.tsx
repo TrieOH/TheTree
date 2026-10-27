@@ -25,7 +25,7 @@ import { certificateEditorActions, certificateEditorStore } from "../store";
 import { HashElementView } from "./elements/hash-element-view";
 import { SignatureElementView } from "./elements/signature-element-view";
 
-export const CERTIFICATE_CANVAS_DOM_ID = "certificate-canvas-root";
+const CERTIFICATE_CANVAS_DOM_ID = "certificate-canvas-root";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;

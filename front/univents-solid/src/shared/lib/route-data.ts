@@ -5,7 +5,7 @@ import type { QueryClient } from "@trieoh/front-core-solid";
  * enough that a healthy API answers inside it (so the page paints with content
  * and no skeleton flash), short enough that a slow one never holds navigation.
  */
-export const LOADER_WAIT_MS = 250;
+const LOADER_WAIT_MS = 250;
 
 type Options = Parameters<QueryClient["prefetchQuery"]>[0];
 

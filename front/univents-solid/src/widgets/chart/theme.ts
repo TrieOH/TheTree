@@ -5,7 +5,7 @@ import type { SeriesMeta } from "./types";
  * Chosen for contrast against a white/slate-950 surface and to stay distinct
  * from the default Tailwind indigo/blue that shows up in every dashboard.
  */
-export const CHART_PALETTE = [
+const CHART_PALETTE = [
   "#6C5CE7", // signal violet
   "#FF6B4A", // coral
   "#14B8A6", // teal
@@ -14,7 +14,7 @@ export const CHART_PALETTE = [
   "#EC4899", // pink
 ] as const;
 
-export function colorForIndex(index: number): string {
+function colorForIndex(index: number): string {
   return CHART_PALETTE[index % CHART_PALETTE.length];
 }
 

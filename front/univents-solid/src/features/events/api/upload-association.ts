@@ -12,7 +12,7 @@ import { eventKeys } from "./query-keys";
 
 type ImageField = "logo_url" | "banner_url";
 
-export function patchData(
+function patchData(
   event: EventI,
   field: ImageField,
   url: string | null,

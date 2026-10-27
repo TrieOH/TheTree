@@ -2,8 +2,8 @@ import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import { cn } from "@trieoh/ui-solid";
 
-export const SIGNATURE_CANVAS_WIDTH = 1200;
-export const SIGNATURE_CANVAS_HEIGHT = 420;
+const SIGNATURE_CANVAS_WIDTH = 1200;
+const SIGNATURE_CANVAS_HEIGHT = 420;
 
 export interface SignatureCanvasRef {
   canvas: () => HTMLCanvasElement | undefined;
@@ -121,7 +121,7 @@ export function SignatureCanvas(props: SignatureCanvasProps): JSX.Element {
   return (
     <div
       class={cn(
-        "relative w-full aspect-[1200/420] overflow-hidden select-none bg-white",
+        "relative w-full aspect-1200/420 overflow-hidden select-none bg-white",
         props.class,
       )}
     >

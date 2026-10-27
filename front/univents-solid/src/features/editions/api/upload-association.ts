@@ -16,7 +16,7 @@ import { editionKeys } from "./query-keys";
 
 type ImageField = "logo_url" | "banner_url";
 
-export function patchEditionData(
+function patchEditionData(
   edition: EditionI,
   field: ImageField,
   url: string | null,

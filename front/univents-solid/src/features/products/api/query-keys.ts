@@ -1,4 +1,4 @@
-export const storeStockQueryKey = (editionId: string) =>
+const storeStockQueryKey = (editionId: string) =>
   ["store", "stock", editionId] as const;
 
 export const productKeys = {

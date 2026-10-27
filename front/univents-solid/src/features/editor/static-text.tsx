@@ -8,7 +8,7 @@ export interface StaticTextProps {
   showVariables?: boolean;
 }
 
-export const FALLBACK_LABELS: Record<string, string> = {
+const FALLBACK_LABELS: Record<string, string> = {
   event_name: "Nome do Evento",
   edition_name: "Nome da Edição",
   ticket_name: "Nome do Ingresso",
@@ -48,90 +48,66 @@ function resolveValue(key: string, values?: Record<string, string>): string | un
   return undefined;
 }
 
-function replaceVariables(
-  text: string,
-  values?: Record<string, string>,
-  showVariables?: boolean,
-): string {
-  if (!values && !showVariables) return text;
-  return text.replace(/\{\{([^}]+)\}\}/g, (match, rawKey: string) => {
-    const key = rawKey.trim();
-    const val = resolveValue(key, values);
-    if (val !== undefined && val !== "") {
-      return val;
-    }
-    if (showVariables) {
-      return FALLBACK_LABELS[key] ?? `{{${key}}}`;
-    }
-    return val !== undefined ? val : match;
-  });
-}
+function renderRun(
+  run: RichRun,
+  getValues: () => Record<string, string> | undefined,
+  getShowVariables: () => boolean,
+): JSX.Element {
+  const isVariable = run.text.startsWith("{{") && run.text.endsWith("}}");
+  const text = () => {
+    if (!isVariable) return run.text;
+    const key = run.text.slice(2, -2).trim();
+    const resolved = resolveValue(key, getValues());
+    return resolved ?? (getShowVariables() ? (FALLBACK_LABELS[key] ?? run.text) : "");
+  };
 
-function findNearestRun(
-  paragraphs: readonly RichParagraph[],
-  paragraph: RichParagraph,
-): RichRun | undefined {
-  const index = paragraphs.indexOf(paragraph);
-  const before = paragraphs
-    .slice(0, index)
-    .reverse()
-    .flatMap((p) => [...p.runs].reverse());
-  const after = paragraphs.slice(index + 1).flatMap((p) => p.runs);
-  return [...before, ...after][0];
+  const style: JSX.CSSProperties = {
+    color: run.color,
+    "font-size": `${run.fontSize}px`,
+    "font-family": run.fontFamily,
+    "font-weight": run.bold ? 700 : 400,
+    "font-style": run.italic ? "italic" : "normal",
+    "text-decoration": run.underline ? "underline" : "none",
+  };
+
+  return (
+    <span
+      class={isVariable ? "rounded bg-primary/10 px-0.5 text-primary" : undefined}
+      style={style}
+    >
+      {text() || "\u200b"}
+    </span>
+  );
 }
 
 export function StaticText(props: StaticTextProps): JSX.Element {
+  const values = () => props.values;
   const showVariables = () => props.showVariables ?? true;
 
   return (
-    <div class="h-full w-full select-none overflow-hidden">
-      <For each={props.paragraphs}>
-        {(paragraph) => {
-          const fallbackRun = () =>
-            paragraph.runs[0] ?? findNearestRun(props.paragraphs, paragraph);
-
-          return (
-            <p
-              style={{
-                "text-align": paragraph.align ?? "left",
-                "line-height": paragraph.lineHeight ? `${paragraph.lineHeight}` : "1.25",
-                "font-size": `${fallbackRun()?.fontSize ?? 14}px`,
-                "font-family": fallbackRun()?.fontFamily ?? "sans-serif",
-                "font-weight": fallbackRun()?.bold ? "bold" : "normal",
-                "font-style": fallbackRun()?.italic ? "italic" : "normal",
-                "text-decoration": fallbackRun()?.underline ? "underline" : "none",
-                color: fallbackRun()?.color ?? "#000000",
-              }}
+    <div class="pointer-events-none w-full select-none">
+      <For
+        each={props.paragraphs.length > 0 ? props.paragraphs : [{ align: "left" as const, lineHeight: 1.25, runs: [] }]}
+      >
+        {(paragraph) => (
+          <p
+            style={{
+              "text-align": paragraph.align,
+              "line-height": paragraph.lineHeight,
+              margin: 0,
+              "min-height": "1.25em",
+            }}
+          >
+            <Show
+              when={paragraph.runs.length > 0}
+              fallback={<span style={{ "font-size": "16px" }}>{"\u200b"}</span>}
             >
-              <Show
-                when={paragraph.runs.length > 0}
-                fallback={<span>&nbsp;</span>}
-              >
-                <For each={paragraph.runs}>
-                  {(run) => {
-                    const text = () =>
-                      replaceVariables(run.text, props.values, showVariables());
-
-                    return (
-                      <span
-                        style={{
-                          "font-size": `${run.fontSize}px`,
-                          "font-family": run.fontFamily,
-                          "font-weight": run.bold ? "bold" : "normal",
-                          "font-style": run.italic ? "italic" : "normal",
-                          "text-decoration": run.underline ? "underline" : "none",
-                          color: run.color,
-                        }}
-                      >
-                        {text()}
-                      </span>
-                    );
-                  }}
-                </For>
-              </Show>
-            </p>
-          );
-        }}
+              <For each={paragraph.runs}>
+                {(run) => renderRun(run, values, showVariables)}
+              </For>
+            </Show>
+          </p>
+        )}
       </For>
     </div>
   );

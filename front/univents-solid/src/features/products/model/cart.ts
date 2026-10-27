@@ -11,7 +11,7 @@ export type CartItem = {
 };
 
 export type Carts = Record<string, CartItem[]>;
-export const CART_STORAGE_KEY = "univents-cart";
+const CART_STORAGE_KEY = "univents-cart";
 
 const isValidCartItem = (item: unknown): item is CartItem =>
   typeof item === "object" &&

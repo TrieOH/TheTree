@@ -3,7 +3,7 @@ import type { UploadTask } from "../model/types";
 /**
  * Resolves the corresponding file input ID for an upload task, if any.
  */
-export function getAssociatedFileInputId(task: UploadTask): string | null {
+function getAssociatedFileInputId(task: UploadTask): string | null {
   const handlerKey = task.association?.handlerKey;
   const field = task.association?.input?.field;
 

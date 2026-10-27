@@ -27,15 +27,6 @@ type FailedApiResponse = {
   message?: string;
 };
 
-export function uploadAssociationErrorFromResponse(
-  response: FailedApiResponse,
-  fallbackMessage: string,
-) {
-  return new UploadAssociationError(response.message || fallbackMessage, {
-    code: response.error_id ?? "ASSOCIATION_FAILED",
-    status: response.code,
-  });
-}
 
 export function classifyUploadError(error: unknown): UploadTaskError {
   const occurredAt = Date.now();

@@ -1,4 +1,4 @@
-export const AUTH_RETURN_TO_STORAGE_KEY = "univents:auth-return-to";
+const AUTH_RETURN_TO_STORAGE_KEY = "univents:auth-return-to";
 const AUTH_RETURN_TO_TTL_MS = 10 * 60 * 1000;
 
 type ReturnToStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;

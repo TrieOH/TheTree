@@ -20,7 +20,7 @@ import {
  * reach a context. `useServiceHealth` bridges it into a signal.
  */
 
-export const DEGRADED_AFTER = 2;
+const DEGRADED_AFTER = 2;
 export const OPEN_AFTER = 3;
 export const COOL_DOWN_MS = 15_000;
 

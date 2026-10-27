@@ -4,7 +4,7 @@ import type { CalendarDragData } from "../model";
 let currentDragData: CalendarDragData | null = null;
 let ignoreNextClick = false;
 
-export const [isCalendarDragging, setIsCalendarDragging] = createSignal(false);
+const [isCalendarDragging, setIsCalendarDragging] = createSignal(false);
 
 export function startCalendarDrag(
   e: DragEvent,
