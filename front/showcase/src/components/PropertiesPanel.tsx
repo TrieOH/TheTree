@@ -44,24 +44,24 @@ export function PropertiesPanel(props: {
 
       <Show when={fields().length > 0}>
         <div class="grid grid-cols-1 items-start gap-x-6 gap-y-5 p-5 min-[761px]:grid-cols-2">
-          <For each={fields()}>
+          <For each={fields()} keyed={(control) => control.key}>
             {(control) => (
               <Show
-                when={control.options}
+                when={control().options}
                 fallback={
                   <KnobText
-                    multiline={control.key === "code"}
-                    label={control.label}
-                    value={String(props.values[control.key])}
-                    onChange={(value) => props.onUpdate(control.key, value)}
+                    multiline={control().key === "code"}
+                    label={control().label}
+                    value={String(props.values[control().key])}
+                    onChange={(value) => props.onUpdate(control().key, value)}
                   />
                 }
               >
                 <KnobSelect
-                  label={control.label}
-                  value={String(props.values[control.key])}
-                  options={control.options!}
-                  onChange={(value) => props.onUpdate(control.key, value)}
+                  label={control().label}
+                  value={String(props.values[control().key])}
+                  options={control().options!}
+                  onChange={(value) => props.onUpdate(control().key, value)}
                 />
               </Show>
             )}
@@ -78,12 +78,12 @@ export function PropertiesPanel(props: {
         >
           <legend class="sr-only">Estados</legend>
           <div class="divide-y divide-border/60">
-            <For each={switches()}>
+            <For each={switches()} keyed={(control) => control.key}>
               {(control) => (
                 <KnobSwitch
-                  label={control.label}
-                  checked={!!props.values[control.key]}
-                  onChange={(value) => props.onUpdate(control.key, value)}
+                  label={control().label}
+                  checked={!!props.values[control().key]}
+                  onChange={(value) => props.onUpdate(control().key, value)}
                 />
               )}
             </For>

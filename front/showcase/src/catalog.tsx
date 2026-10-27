@@ -871,7 +871,6 @@ export function createCatalog(options: {
                   Este é o conteúdo do seu dialog.
                 </p>
                 <Button
-                  id={String(v.id) || undefined}
                   class="mt-5"
                   onClick={() => setOpened("")}
                 >
@@ -1036,7 +1035,7 @@ export function createCatalog(options: {
       controls: [
         text("title", "Título"),
         text("description", "Descrição"),
-        text("text-[13px] font-semibold", "Texto superior"),
+        text("eyebrow", "Texto superior"),
         text("showAction", "Mostrar ação"),
         text("actionLabel", "Texto da ação"),
       ],
