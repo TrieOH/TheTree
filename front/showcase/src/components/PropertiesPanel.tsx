@@ -10,12 +10,21 @@ export function PropertiesPanel(props: {
   onUpdate: (key: string, value: string | boolean) => void;
   onReset: () => void;
 }) {
+  const fields = () =>
+    props.entry.controls.filter(
+      (control) => typeof props.entry.defaults[control.key] !== "boolean",
+    );
+  const switches = () =>
+    props.entry.controls.filter(
+      (control) => typeof props.entry.defaults[control.key] === "boolean",
+    );
+
   return (
     <section
-      class="mt-6 min-w-0 rounded-lg border border-border bg-card px-4 pb-1.5"
+      class="mt-6 min-w-0 rounded-lg border border-border bg-card"
       aria-label="Inspetor de componentes"
     >
-      <div class="flex min-h-13.5 items-center justify-between gap-3">
+      <div class="flex min-h-13.5 items-center justify-between gap-3 border-b border-border px-5">
         <span class="text-[13px] font-semibold">Propriedades</span>
         <Tooltip align="end" label="Restaurar valores padrão">
           <Button
@@ -33,41 +42,54 @@ export function PropertiesPanel(props: {
         </Tooltip>
       </div>
 
-      <div class="grid grid-cols-1 items-start gap-x-8 border-t border-border pt-1.5 min-[761px]:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
-        <For each={props.entry.controls}>
-          {(control) => (
-            <Show
-              when={typeof props.values[control.key] === "boolean"}
-              fallback={
-                <Show
-                  when={control.options}
-                  fallback={
-                    <KnobText
-                      multiline={control.key === "code"}
-                      label={control.label}
-                      value={String(props.values[control.key])}
-                      onChange={(value) => props.onUpdate(control.key, value)}
-                    />
-                  }
-                >
-                  <KnobSelect
+      <Show when={fields().length > 0}>
+        <div class="grid grid-cols-1 items-start gap-x-6 gap-y-5 p-5 min-[761px]:grid-cols-2">
+          <For each={fields()}>
+            {(control) => (
+              <Show
+                when={control.options}
+                fallback={
+                  <KnobText
+                    multiline={control.key === "code"}
                     label={control.label}
                     value={String(props.values[control.key])}
-                    options={control.options!}
                     onChange={(value) => props.onUpdate(control.key, value)}
                   />
-                </Show>
-              }
-            >
-              <KnobSwitch
-                label={control.label}
-                checked={!!props.values[control.key]}
-                onChange={(value) => props.onUpdate(control.key, value)}
-              />
-            </Show>
-          )}
-        </For>
-      </div>
+                }
+              >
+                <KnobSelect
+                  label={control.label}
+                  value={String(props.values[control.key])}
+                  options={control.options!}
+                  onChange={(value) => props.onUpdate(control.key, value)}
+                />
+              </Show>
+            )}
+          </For>
+        </div>
+      </Show>
+      <Show when={switches().length > 0}>
+        <fieldset
+          class={
+            fields().length > 0
+              ? "border-t border-border px-5 py-2"
+              : "px-5 py-2"
+          }
+        >
+          <legend class="sr-only">Estados</legend>
+          <div class="divide-y divide-border/60">
+            <For each={switches()}>
+              {(control) => (
+                <KnobSwitch
+                  label={control.label}
+                  checked={!!props.values[control.key]}
+                  onChange={(value) => props.onUpdate(control.key, value)}
+                />
+              )}
+            </For>
+          </div>
+        </fieldset>
+      </Show>
     </section>
   );
 }

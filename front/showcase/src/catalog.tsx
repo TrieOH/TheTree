@@ -239,7 +239,7 @@ export function createCatalog(options: {
       group: "Layout",
       description:
         "Foto com iniciais como alternativa quando a imagem não está disponível.",
-      defaults: { name: "Sophia Hoffmann", initials: "", src: "", size: "md" },
+      defaults: { name: "Fulano de Tal", initials: "", src: "", size: "md" },
       controls: [
         text("name", "Nome"),
         text("initials", "Iniciais personalizadas"),
