@@ -12,6 +12,7 @@ import {
   CatalogNav,
   CodeBlock,
   Link,
+  OverlayScrollbar,
   SearchInput,
   Tooltip,
   Toaster,
@@ -123,6 +124,7 @@ export default function App() {
 
   return (
     <div class="studio">
+      <OverlayScrollbar />
       <Toaster position="bottom-right" />
       <header class="studio-header">
         <div class="header-inner">
