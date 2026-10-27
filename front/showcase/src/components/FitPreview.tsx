@@ -33,10 +33,10 @@ export function FitPreview(props: ParentProps) {
   });
 
   return (
-    <div ref={(el) => (box = el)} class="fit-box">
+    <div ref={(el) => (box = el)} class="absolute inset-0">
       <div
         ref={(el) => (inner = el)}
-        class="fit-inner"
+        class="absolute top-1/2 left-1/2 flex w-max min-w-55 max-w-none origin-center items-center justify-center"
         style={{ transform: `translate(-50%, -50%) scale(${scale()})` }}
       >
         {props.children}

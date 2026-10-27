@@ -58,7 +58,7 @@ import { DeviceFrame } from "./components/DeviceFrame";
 
 export type Values = Record<string, string | boolean>;
 type Control = { key: string; label: string; options?: readonly string[] };
-type Entry = {
+export type Entry = {
   name: string;
   group: string;
   description: string;
@@ -1036,7 +1036,7 @@ export function createCatalog(options: {
       controls: [
         text("title", "Título"),
         text("description", "Descrição"),
-        text("eyebrow", "Texto superior"),
+        text("text-[13px] font-semibold", "Texto superior"),
         text("showAction", "Mostrar ação"),
         text("actionLabel", "Texto da ação"),
       ],
@@ -1404,7 +1404,11 @@ export function createCatalog(options: {
           sortFields={[{ key: "name", label: "Nome" }]}
           renderItems={(items) => (
             <For each={items}>
-              {(item) => <div class="sample-row">{item.name}</div>}
+              {(item) => (
+                <div class="my-1 rounded-[5px] border border-border bg-card px-3 py-2 text-[11px]">
+                  {item.name}
+                </div>
+              )}
             </For>
           )}
         />
@@ -1418,17 +1422,17 @@ export function createCatalog(options: {
       defaults: { enabled: true },
       controls: [text("enabled", "Ativar na página")],
       render: (v) => (
-        <div class="scrollbar-preview">
+        <div class="w-full">
           <iframe
             title="Demonstração da OverlayScrollbar"
             src={`#/preview/scrollbar?enabled=${v.enabled}&dark=${options.isDark()}`}
             class={
               options.isDetail()
-                ? "scrollbar-frame"
-                : "scrollbar-frame scrollbar-frame-compact"
+                ? "block h-80 w-full rounded-md border border-border bg-background"
+                : "block h-37.5 w-full rounded-md border border-border bg-background"
             }
           />
-          <p class="scrollbar-preview-caption">
+          <p class="mt-3 text-[11px] text-muted-foreground">
             Role dentro da prévia para testar a barra.
           </p>
         </div>

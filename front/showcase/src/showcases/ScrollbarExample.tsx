@@ -30,13 +30,17 @@ export function ScrollbarExample() {
       <Show when={options().get("enabled") !== "false"}>
         <OverlayScrollbar />
       </Show>
-      <main class="scrollbar-example">
-        <header>
+      <main class="mx-auto max-w-160 px-7 pt-6 pb-8">
+        <header class="pb-6">
           <span class="text-xs text-muted-foreground">
             Documento de exemplo
           </span>
-          <h1>Notas de versão</h1>
-          <p>Atualizações da biblioteca de componentes.</p>
+          <h1 class="my-2 text-2xl font-semibold tracking-[-0.6px]">
+            Notas de versão
+          </h1>
+          <p class="text-[13px] leading-[1.8] text-muted-foreground">
+            Atualizações da biblioteca de componentes.
+          </p>
         </header>
         <For
           each={[
@@ -63,9 +67,11 @@ export function ScrollbarExample() {
           ]}
         >
           {([title, description]) => (
-            <section>
-              <h2>{title}</h2>
-              <p>{description}</p>
+            <section class="border-t border-border py-6">
+              <h2 class="mb-2 text-sm font-semibold">{title}</h2>
+              <p class="text-[13px] leading-[1.8] text-muted-foreground">
+                {description}
+              </p>
             </section>
           )}
         </For>
