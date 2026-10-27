@@ -64,28 +64,31 @@ export function UploadQueueProvider(props: { children?: JSX.Element }): JSX.Elem
   );
 
   createEffect(
-    () => queue.tasks.map((task) => ({ id: task.id, status: task.status, label: task.label })),
-    (tasks) => {
-      for (const task of tasks) {
-        const prev = previousStatuses.get(task.id);
-        if (prev && prev !== task.status && notificationStatuses.has(task.status)) {
-          if (task.status === "completed") {
-            toast.success(`Upload concluído: ${task.label}`);
-          } else if (task.status === "rejected") {
-            const currentTask = queue.tasks.find((item) => item.id === task.id);
-            toast.error(`A imagem foi rejeitada: ${task.label}`, {
-              action: currentTask
-                ? {
-                    label: "Corrigir",
-                    onClick: () => handleCorrectImage(currentTask),
-                  }
-                : undefined,
+    () =>
+      queue.tasks.map((task) => ({
+        id: task.id,
+        status: task.status,
+        label: task.label,
+        task,
+      })),
+    (items) => {
+      for (const item of items) {
+        const prev = previousStatuses.get(item.id);
+        if (prev && prev !== item.status && notificationStatuses.has(item.status)) {
+          if (item.status === "completed") {
+            toast.success(`Upload concluído: ${item.label}`);
+          } else if (item.status === "rejected") {
+            toast.error(`A imagem foi rejeitada: ${item.label}`, {
+              action: {
+                label: "Corrigir",
+                onClick: () => handleCorrectImage(item.task),
+              },
             });
-          } else if (task.status === "failed") {
-            toast.error(`Falha no upload: ${task.label}`);
+          } else if (item.status === "failed") {
+            toast.error(`Falha no upload: ${item.label}`);
           }
         }
-        previousStatuses.set(task.id, task.status);
+        previousStatuses.set(item.id, item.status);
       }
     },
   );

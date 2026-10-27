@@ -27,6 +27,17 @@ type FailedApiResponse = {
   message?: string;
 };
 
+function isStorageConfigurationError(msg?: string): boolean {
+  if (!msg) return false;
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes("bucket does not exist") ||
+    lower.includes("nosuchbucket") ||
+    lower.includes("accessdenied") ||
+    lower.includes("invalidaccesskeyid") ||
+    lower.includes("signaturedoesnotmatch")
+  );
+}
 
 export function classifyUploadError(error: unknown): UploadTaskError {
   const occurredAt = Date.now();
@@ -72,6 +83,17 @@ export function classifyUploadError(error: unknown): UploadTaskError {
         message: "A imagem não foi aprovada pela moderação.",
         retryable: false,
         requiresReplacement: true,
+        occurredAt,
+      };
+    }
+
+    if (isStorageConfigurationError(error.message)) {
+      return {
+        kind: "configuration",
+        code: error.code || "STORAGE_CONFIGURATION_ERROR",
+        message: error.message || "Erro de configuração no armazenamento.",
+        retryable: false,
+        requiresReplacement: false,
         occurredAt,
       };
     }
@@ -171,6 +193,23 @@ export function classifyUploadError(error: unknown): UploadTaskError {
       code: "NETWORK_ERROR",
       message: "Não foi possível conectar ao servidor.",
       retryable: true,
+      requiresReplacement: false,
+      occurredAt,
+    };
+  }
+
+  const rawMsg =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  if (isStorageConfigurationError(rawMsg)) {
+    return {
+      kind: "configuration",
+      code: "STORAGE_CONFIGURATION_ERROR",
+      message: rawMsg || "Erro de configuração no armazenamento.",
+      retryable: false,
       requiresReplacement: false,
       occurredAt,
     };
