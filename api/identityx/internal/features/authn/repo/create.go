@@ -1,0 +1,24 @@
+package repo
+
+import (
+	"IdentityX/internal/sqlc"
+	"IdentityX/models"
+	"context"
+	"lib/database"
+)
+
+func (repo *Repo) Create(ctx context.Context, identity models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
+	row, err := database.Queries(ctx, repo.q).CreateExternalIdentity(ctx, sqlc.CreateExternalIdentityParams{
+		ActorID:               identity.ActorID,
+		Provider:              string(identity.Provider),
+		Subject:               identity.Subject,
+		Email:                 identity.Email,
+		EncryptedAccessToken:  identity.EncryptedAccessToken,
+		EncryptedRefreshToken: identity.EncryptedRefreshToken,
+		TokenExpiresAt:        identity.TokenExpiresAt,
+	})
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapExternalIdentity(row)), nil
+}

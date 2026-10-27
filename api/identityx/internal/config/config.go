@@ -6,10 +6,8 @@ import (
 	"time"
 
 	libconfig "lib/config"
-	"lib/database"
 	"lib/email"
 	"lib/errx"
-	"lib/httpserver"
 
 	"github.com/caarlos0/env/v11"
 )
@@ -34,7 +32,7 @@ type Config struct {
 	SMTPStartTLS bool   `env:"SMTP_STARTTLS"`
 
 	// Background jobs. Empty: run them in-process (local compose). Set: POST
-	// them to this queue producer, which delivers them back to /events; the
+	// them to this queue producer, which delivers them back to /_jobs; the
 	// deploy's scheduler fires the periodic ones there.
 	JobsURL string `env:"JOBS_URL"`
 
@@ -54,10 +52,6 @@ type Config struct {
 	EmailResetTokenTTL  time.Duration `env:"EMAIL_RESET_TOKEN_TTL"  envDefault:"10m"`
 }
 
-func (cfg *Config) ToDBConfig() database.Config {
-	return libconfig.DBConnectionConfig(cfg.Postgres)
-}
-
 func (cfg *Config) ToEmailConfig() email.Config {
 	port, err := strconv.Atoi(cfg.SMTPPort)
 	if err != nil {
@@ -70,14 +64,6 @@ func (cfg *Config) ToEmailConfig() email.Config {
 		Password: cfg.SMTPPass,
 		From:     cfg.EmailFrom,
 		TLS:      cfg.SMTPTLS,
-	}
-}
-
-func (cfg *Config) ToRateLimit() httpserver.RateLimit {
-	return httpserver.RateLimit{
-		Disabled: cfg.DisableRateLimit,
-		RPS:      cfg.RateLimitRPS,
-		Burst:    cfg.RateLimitBurst,
 	}
 }
 

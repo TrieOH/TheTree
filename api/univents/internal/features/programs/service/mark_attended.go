@@ -1,0 +1,41 @@
+package service
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+
+	"univents/errs"
+	"univents/models"
+)
+
+// MarkAttended flips a participation to attended (staff-only). Any event
+// staff (owner/admin/staff) may mark any activity in the edition — the
+// domain's per-program staff assignment is deferred. The guarded update
+// flips any non-cancelled row: re-marking an attended participation is
+// idempotent, a no_show→attended correction is allowed, and a cancelled
+// participation (refunded purchase, or the attendee dropped out) is 409.
+func (o *Operations) MarkAttended(ctx context.Context, participationID, actorID uuid.UUID) (*models.ProgramParticipation, error) {
+	part, err := o.Participations.GetParticipationByID(ctx, participationID)
+	if err != nil {
+		return nil, err
+	}
+
+	edition, err := o.Editions.GetByID(ctx, part.EditionID)
+	if err != nil {
+		return nil, err
+	}
+	err = o.Authz.EventFor(ctx, actorID, edition.EventID, models.EventMemberRoleStaff)
+	if err != nil {
+		return nil, err
+	}
+
+	updated, err := o.Participations.UpdateParticipationStatusIfNotCancelled(ctx, participationID, models.ProgramParticipationStatusAttended)
+	if err != nil {
+		return nil, err
+	}
+	if updated == nil {
+		return nil, errs.ErrParticipationCancelled
+	}
+	return updated, nil
+}

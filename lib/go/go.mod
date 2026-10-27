@@ -1,10 +1,9 @@
 module lib
 
-go 1.26.2
+go 1.27.3
 
 require (
 	github.com/MintzyG/fun v0.10.6
-	github.com/MintzyG/fun/bind v0.1.1
 	github.com/MintzyG/fun/middlewares v0.1.3
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.35
@@ -12,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.5
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/exaring/otelpgx v0.11.1
-	github.com/go-chi/chi/v5 v5.3.1
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0

@@ -90,15 +90,17 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	return nil
 }
 
-type ConstraintRegistry map[string]string
+// ConstraintErrors maps the schema's constraint and unique-index names to
+// the Backend's named error for a violation (ADR-0016).
+type ConstraintErrors map[string]error
 
-// constraintRegistry maps constraint/index names to the client-facing
-// messages repos surface on violation. SetupDB — the one owner of DB boot —
-// receives it as an argument and stores it here for the error mapper, so
-// there is no init-order contract with callers: the registry travels as
-// data into the one function that owns DB setup, and boot fails loudly
-// when a constraint has no message (see validateConstraints).
-var constraintRegistry ConstraintRegistry
+// constraintRegistry maps constraint/index names to what repos surface on
+// violation. SetupDB — the one owner of DB boot — receives it as an
+// argument and stores it here for the error handlers, so there is no
+// init-order contract with callers: the registry travels as data into the
+// one function that owns DB setup, and boot fails loudly when a constraint
+// has no entry (see validateConstraints).
+var constraintRegistry map[string]error
 
 func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
 	rows, err := db.Query(ctx, `

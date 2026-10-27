@@ -3,9 +3,10 @@ package idx
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -50,14 +51,19 @@ func WithIdentity(ctx context.Context, identity *Identity) context.Context {
 	return context.WithValue(ctx, identityContextKey, identity)
 }
 
+// ErrNoIdentity is RequireIdentity on a request no auth middleware
+// authenticated. The Backends' error maps answer it with a 401.
+var ErrNoIdentity = errors.New("identity not found in context")
+
+// RequireIdentity returns the caller's identity, or ErrNoIdentity.
 func RequireIdentity(ctx context.Context) (*Identity, error) {
 	val := ctx.Value(identityContextKey)
 	if val == nil {
-		return nil, fun.ErrUnauthorized("identity not found in context")
+		return nil, ErrNoIdentity
 	}
 	id, ok := val.(*Identity)
 	if !ok {
-		return nil, fun.Errf("invalid identity type, was: %T", val).Internal()
+		return nil, fmt.Errorf("idx: invalid identity type %T in context", val)
 	}
 	return id, nil
 }

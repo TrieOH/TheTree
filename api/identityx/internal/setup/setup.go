@@ -1,9 +1,12 @@
 // Package setup holds IdentityX's setup state: whether the initial platform
 // setup (/auth/setup) has completed. The database is the source of truth —
 // setup is complete once any actor exists — because several processes
-// (function instances, replicas) serve the same database and each must see
+// (container instances, replicas) serve the same database and each must see
 // a setup another one completed. Completion never reverts, so once observed
 // it is cached and later checks cost nothing.
+//
+// A State is built once at boot and passed to what reads it (the setup
+// guard and the /auth/setup handlers); there is no package-level instance.
 package setup
 
 import (
@@ -11,33 +14,36 @@ import (
 	"sync/atomic"
 )
 
-var (
+// State tracks setup completion for one process.
+type State struct {
 	complete atomic.Bool
-	probe    atomic.Pointer[func(context.Context) (bool, error)]
-)
+	probe    func(context.Context) (bool, error)
+}
 
-// UseProbe sets how Check asks the database whether setup has completed.
-func UseProbe(fn func(context.Context) (bool, error)) { probe.Store(&fn) }
+// NewState returns a State that asks probe whether setup has completed. A
+// nil probe means only MarkComplete can complete it.
+func NewState(probe func(context.Context) (bool, error)) *State {
+	return &State{probe: probe}
+}
 
 // Check reports whether setup has completed, asking the database until it
-// has. With no probe configured only MarkComplete can complete it.
-func Check(ctx context.Context) (bool, error) {
-	if complete.Load() {
+// has.
+func (s *State) Check(ctx context.Context) (bool, error) {
+	if s.complete.Load() {
 		return true, nil
 	}
-	fn := probe.Load()
-	if fn == nil {
+	if s.probe == nil {
 		return false, nil
 	}
-	done, err := (*fn)(ctx)
+	done, err := s.probe(ctx)
 	if err != nil {
 		return false, err
 	}
 	if done {
-		complete.Store(true)
+		s.complete.Store(true)
 	}
 	return done, nil
 }
 
 // MarkComplete records completion observed by this process.
-func MarkComplete() { complete.Store(true) }
+func (s *State) MarkComplete() { s.complete.Store(true) }

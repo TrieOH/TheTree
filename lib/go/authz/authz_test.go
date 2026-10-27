@@ -1,9 +1,11 @@
 package authz
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/MintzyG/fun"
+	"lib/database"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,43 +33,36 @@ func (r testRole) Rank() int {
 
 func (r testRole) String() string { return string(r) }
 
-func isForbidden(t *testing.T, err error) {
-	t.Helper()
-	require.Error(t, err)
-	var appErr *fun.AppError
-	require.ErrorAs(t, err, &appErr, "expected *fun.AppError, got %T", err)
-	require.Equal(t, fun.CodeForbidden, appErr.Code)
-}
-
-func TestMin(t *testing.T) {
-	t.Run("below threshold is forbidden", func(t *testing.T) {
-		isForbidden(t, Min(testRoleViewer, testRoleAdmin))
+func TestAtLeast(t *testing.T) {
+	t.Run("below threshold is denied", func(t *testing.T) {
+		require.ErrorIs(t, AtLeast(testRoleViewer, testRoleAdmin), ErrInsufficientRole)
 	})
 
 	t.Run("equal to threshold passes", func(t *testing.T) {
-		require.NoError(t, Min(testRoleAdmin, testRoleAdmin))
+		require.NoError(t, AtLeast(testRoleAdmin, testRoleAdmin))
 	})
 
 	t.Run("above threshold passes", func(t *testing.T) {
-		require.NoError(t, Min(testRoleOwner, testRoleAdmin))
+		require.NoError(t, AtLeast(testRoleOwner, testRoleAdmin))
 	})
 
 	t.Run("unknown role fails closed", func(t *testing.T) {
-		isForbidden(t, Min(testRoleUnknown, testRoleAdmin))
+		require.ErrorIs(t, AtLeast(testRoleUnknown, testRoleAdmin), ErrInsufficientRole)
 	})
 }
 
-func TestForbiddenIfNotFound(t *testing.T) {
+func TestDenyIfNotFound(t *testing.T) {
 	t.Run("nil passes through", func(t *testing.T) {
-		require.NoError(t, ForbiddenIfNotFound(nil))
+		require.NoError(t, DenyIfNotFound(nil))
 	})
 
-	t.Run("not found becomes forbidden", func(t *testing.T) {
-		isForbidden(t, ForbiddenIfNotFound(fun.ErrNotFound("event not found")))
+	t.Run("not found is denied", func(t *testing.T) {
+		missing := &database.NotFoundError{Named: errors.New("event not found")}
+		require.ErrorIs(t, DenyIfNotFound(missing), ErrInsufficientRole)
 	})
 
 	t.Run("other errors pass through", func(t *testing.T) {
-		internal := fun.ErrInternal("boom")
-		require.Equal(t, internal, ForbiddenIfNotFound(internal))
+		internal := errors.New("boom")
+		require.Equal(t, internal, DenyIfNotFound(internal))
 	})
 }

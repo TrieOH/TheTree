@@ -38,11 +38,9 @@ func newSigningKey(t *testing.T) (*crypto.KeyPair, uuid.UUID) {
 func mintAccessToken(t *testing.T, kp *crypto.KeyPair, keyID, jti uuid.UUID, actor models.Actor) string {
 	t.Helper()
 	claims := models.AccessClaims{
-		Sub: models.AccessSub{ID: actor.ID, ProjectID: actor.ProjectID, Email: actor.Email, Type: actor.Type},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
-			Issuer:    "test-issuer", ID: jti.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
-		},
+		Sub:       models.AccessSub{ID: actor.ID, ProjectID: actor.ProjectID, Email: actor.Email, Type: actor.Type},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+		Issuer:    "test-issuer", ID: jti.String(), IssuedAt: jwt.NewNumericDate(time.Now()),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	token.Header["kid"] = keyID

@@ -1,17 +1,10 @@
 name: Setup Node + pnpm
 description: >
   Node + pnpm toolchain with automatic pnpm-store caching via setup-node's
-  built-in cache. Optionally runs `pnpm install --frozen-lockfile` (install
-  input).
+  built-in cache. Node is NODE_VERSION from tools.versions; pnpm is the
+  version package.json's packageManager pins. Optionally runs
+  `pnpm install --frozen-lockfile` (install input).
 inputs:
-  node-version:
-    description: Node version
-    required: false
-    default: "22"
-  pnpm-version:
-    description: pnpm version
-    required: false
-    default: "11.26.0"
   install:
     description: "run `pnpm install --frozen-lockfile` after cache restore (true/false)"
     required: false
@@ -19,15 +12,19 @@ inputs:
 runs:
   using: composite
   steps:
+    # tools.versions → GITHUB_ENV, so this and later steps read the pins
+    - name: Load tool versions
+      shell: bash
+      run: grep -E '^[A-Z0-9_]+=' tools.versions >> "$GITHUB_ENV"
+
+    # no version input: action-setup reads package.json's packageManager
     - name: pnpm
       uses: pnpm/action-setup@v6
-      with:
-        version: ${{ inputs.pnpm-version }}
 
     - name: Toolchain
       uses: actions/setup-node@v7
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version: ${{ env.NODE_VERSION }}
         cache: pnpm
 
     - name: Install dependencies

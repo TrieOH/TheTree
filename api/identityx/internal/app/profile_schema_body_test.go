@@ -6,9 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"IdentityX/internal/handlers"
-	"IdentityX/internal/services"
-	"IdentityX/internal/setup"
 	libauthz "lib/authz"
 	"lib/validator"
 
@@ -22,14 +19,14 @@ import (
 func schemaTestRouter(t *testing.T) http.Handler {
 	t.Helper()
 	validator.SetupValidator()
-	setup.MarkComplete()
-	server := handlers.NewServer(&services.Operations{})
+	st := completedSetup()
+	server := newServer(operations{}, st)
 	return newTestRouter(t, server, libauthz.Primitives{
 		JWT:    mwJWT,
 		APIKey: mwJWT,
 		Any:    mwAnyAuth,
 		Scopes: testScopeCheckers(),
-	})
+	}, st)
 }
 
 func putProjectSchema(t *testing.T, r http.Handler, body string) *httptest.ResponseRecorder {

@@ -6,9 +6,11 @@ import (
 	"reflect"
 	"slices"
 
+	"lib/telemetry"
 	"lib/validator"
 
 	"github.com/MintzyG/fun"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // StrictHandlerFunc mirrors the strict-server handler shape every backend's
@@ -65,6 +67,30 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 	}
 }
 
+// TraceMiddleware returns a strict middleware that runs each operation
+// inside one span named after its operationID, recording a returned error
+// on it. Only an error answered with a 5xx marks the span as failed: a 4xx
+// is the caller's mistake, not the service's (ADR-0016). It is the
+// outermost strict middleware, so validation and auth show up inside the
+// span. Repos need no spans of their own: the pgx tracer already records
+// every query (lib/database).
+func TraceMiddleware() StrictMiddlewareFunc {
+	return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
+		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+			ctx, span := telemetry.StartSpan(ctx, operationID)
+			defer span.End()
+			resp, err := f(ctx, w, r.WithContext(ctx), request)
+			if err != nil {
+				span.RecordError(err)
+				if errorStatus(err) >= http.StatusInternalServerError {
+					span.SetStatus(codes.Error, err.Error())
+				}
+			}
+			return resp, err
+		}
+	}
+}
+
 // StrictHandlerFuncT and StrictMiddlewareFuncT capture the generated
 // packages' strict types structurally: every backend's oapi-codegen output
 // defines StrictHandlerFunc and StrictMiddlewareFunc with these exact
@@ -88,8 +114,8 @@ func adaptTo[HF StrictHandlerFuncT, MF StrictMiddlewareFuncT[HF]](mw StrictMiddl
 }
 
 // MountStrict mounts the backend's generated strict server with the
-// harness's standard strict stack — request validation, then the
-// spec-derived fail-closed auth dispatch — in that order, on every
+// harness's standard strict stack — one span per operation around the
+// spec-derived fail-closed auth dispatch around request validation — on every
 // backend. The generated package's surface crosses the seam as function
 // values and type parameters; every piece of policy (middleware order,
 // fail-closed dispatch, unified param-binding error mapping) lives here,
@@ -113,6 +139,7 @@ func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF
 	strict := newStrict(server, []MF{
 		adaptTo[HF, MF](ValidateMiddleware()),
 		adaptTo[HF, MF](AuthDispatch(chains)),
+		adaptTo[HF, MF](TraceMiddleware()), // the generated server wraps in order: last runs first
 	}, strictOpts)
 	return handlerWith(strict, chiOpts)
 }

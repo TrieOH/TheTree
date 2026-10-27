@@ -2,9 +2,11 @@ package database
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -34,11 +36,11 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
-		return fun.ErrInternal("transaction had nil context")
+		return errors.New("transaction had nil context")
 	}
 
 	if ctx.Value(TxKeyValue) != nil {
-		return fun.ErrInternal("nested transactions not allowed")
+		return errors.New("nested transactions not allowed")
 	}
 
 	pgxOpts := pgx.TxOptions{
@@ -49,7 +51,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	var tx pgx.Tx
 	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
-		return fun.Errf("error beginning transaction: %s", err.Error()).Internal()
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
 	committed := false
@@ -63,7 +65,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 				}
 			}
 			telemetry.Log().Error("transaction function panicked", zap.Any("panic", p))
-			err = fun.ErrInternal("transaction panicked")
+			err = fmt.Errorf("transaction panicked: %v", p)
 		}
 	}()
 
@@ -85,7 +87,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 		if rbErr != nil {
 			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
-		return fun.Errf("error commiting transaction: %s", err.Error()).Internal()
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 	committed = true
 	return nil

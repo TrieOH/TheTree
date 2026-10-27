@@ -3,14 +3,16 @@ package tokens
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 	"lib/telemetry"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -21,23 +23,6 @@ type ActionTokenConfig struct {
 	VerifyTTL time.Duration // email verification links
 	ResetTTL  time.Duration // password reset links
 }
-
-// Redeem failure classes, attached to the returned AppError so callers can
-// branch with errors.Is while the HTTP layer still maps them as BadRequest.
-var (
-	// ErrActionTokenInvalid covers unparseable, wrongly-purposed, or
-	// unknown tokens. The failure always surfaces as the same generic
-	// message so the endpoint never leaks token internals.
-	ErrActionTokenInvalid = errors.New("action token invalid")
-	// ErrActionTokenExpired covers tokens whose anti-replay record has
-	// expired.
-	ErrActionTokenExpired = errors.New("action token expired")
-	// ErrActionTokenUsed covers tokens already consumed — Redeem's strict
-	// answer; callers apply their own actor-state policy on top (the
-	// verify email's idempotent fall-through is authn's business, not
-	// this module's).
-	ErrActionTokenUsed = errors.New("action token already used")
-)
 
 // ActionTokenOption configures an ActionTokenManager at construction.
 type ActionTokenOption func(*ActionTokenManager)
@@ -92,12 +77,10 @@ func (m *ActionTokenManager) Mint(ctx context.Context, purpose models.ActionToke
 	now := m.now()
 	expiresAt := now.Add(ttl)
 	token, err := crypto.SignHMACJWT(models.ActionTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   actorID.String(),
-			ID:        jti.String(),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(now),
-		},
+		Subject:   actorID.String(),
+		ID:        jti.String(),
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		IssuedAt:  jwt.NewNumericDate(now),
 		Purpose:   string(purpose),
 		ProjectID: projectID,
 	}, m.hmacSecret)
@@ -120,9 +103,9 @@ func (m *ActionTokenManager) Mint(ctx context.Context, purpose models.ActionToke
 
 // Redeem validates the HMAC signature, scopes the purpose, and atomically
 // consumes the token's anti-replay record. Strict: a consumed or expired
-// token is an error, with its failure class attached
-// (ErrActionTokenUsed / ErrActionTokenExpired / ErrActionTokenInvalid) so
-// callers can branch with errors.Is. The parsed actorID is returned even
+// token is an error, one of errs.ErrActionTokenUsed /
+// errs.ErrActionTokenExpired / errs.ErrActionTokenInvalid, so callers can
+// branch with errors.Is. The parsed actorID is returned even
 // on used/expired errors — the signature verified, so the caller already
 // knows who the token was for and can apply actor-state policy.
 func (m *ActionTokenManager) Redeem(ctx context.Context, purpose models.ActionTokenPurpose, tokenStr string) (uuid.UUID, error) {
@@ -132,38 +115,38 @@ func (m *ActionTokenManager) Redeem(ctx context.Context, purpose models.ActionTo
 	claims := &models.ActionTokenClaims{}
 	_, err := crypto.ParseHMACJWT(tokenStr, claims, m.hmacSecret)
 	if err != nil {
-		return uuid.Nil, m.redeemError(ErrActionTokenInvalid, "invalid or expired token")
+		return uuid.Nil, errs.ErrActionTokenInvalid
 	}
 	if claims.Purpose != string(purpose) {
-		return uuid.Nil, m.redeemError(ErrActionTokenInvalid, "invalid or expired token")
+		return uuid.Nil, errs.ErrActionTokenInvalid
 	}
 	actorID, err := uuid.Parse(claims.Subject)
 	if err != nil {
-		return uuid.Nil, m.redeemError(ErrActionTokenInvalid, "invalid or expired token")
+		return uuid.Nil, errs.ErrActionTokenInvalid
 	}
 	jti, err := uuid.Parse(claims.ID)
 	if err != nil {
-		return uuid.Nil, m.redeemError(ErrActionTokenInvalid, "invalid or expired token")
+		return uuid.Nil, errs.ErrActionTokenInvalid
 	}
 
 	record, err := m.actionTokens.GetByJTI(ctx, jti)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
-			return uuid.Nil, m.redeemError(ErrActionTokenInvalid, "invalid or expired token")
+		if errors.Is(err, database.ErrNotFound) {
+			return uuid.Nil, errs.ErrActionTokenInvalid
 		}
 		return uuid.Nil, err
 	}
 	if record.UsedAt != nil {
-		return actorID, m.redeemError(ErrActionTokenUsed, "token already used")
+		return actorID, errs.ErrActionTokenUsed
 	}
 	if m.now().After(record.ExpiresAt) {
-		return actorID, m.redeemError(ErrActionTokenExpired, "token expired")
+		return actorID, errs.ErrActionTokenExpired
 	}
 	_, err = m.actionTokens.Consume(ctx, jti)
 	if err != nil {
-		if fun.Is(err, fun.CodeNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			// consumed concurrently; the token is dead either way.
-			return actorID, m.redeemError(ErrActionTokenUsed, "token already used")
+			return actorID, errs.ErrActionTokenUsed
 		}
 		return uuid.Nil, err
 	}
@@ -178,11 +161,6 @@ func (m *ActionTokenManager) DeleteExpired(ctx context.Context) error {
 	return m.actionTokens.DeleteExpired(ctx)
 }
 
-// redeemError wraps a failure class with the wire-facing BadRequest error.
-func (m *ActionTokenManager) redeemError(class error, msg string) error {
-	return fun.Err(msg).WithErr(class).BadRequest()
-}
-
 // ttlFor resolves the lifetime for a purpose from the construction-time
 // config. An unknown purpose is a programming error, not a runtime one.
 func (m *ActionTokenManager) ttlFor(purpose models.ActionTokenPurpose) (time.Duration, error) {
@@ -192,6 +170,6 @@ func (m *ActionTokenManager) ttlFor(purpose models.ActionTokenPurpose) (time.Dur
 	case models.PasswordResetActionTokenPurpose:
 		return m.cfg.ResetTTL, nil
 	default:
-		return 0, fun.ErrInternal("unknown action token purpose: " + string(purpose))
+		return 0, fmt.Errorf("unknown action token purpose: %s", purpose)
 	}
 }

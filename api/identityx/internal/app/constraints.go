@@ -1,81 +1,87 @@
 package app
 
-import "lib/database"
+import (
+	"IdentityX/errs"
+	"lib/database"
+)
 
-func constraintMessages() database.ConstraintRegistry {
-	return database.ConstraintRegistry{
+// Constraints maps every named constraint in the schema to the named error
+// repos surface on violation (ADR-0016); the postgres module takes it at
+// boot, and boot fails when the schema has a constraint missing here.
+func Constraints() database.ConstraintErrors {
+	return database.ConstraintErrors{
 		// actors
-		"chk_actors_type":                      "actor type must be one of: human, service, machine",
-		"chk_actors_auth_method":               "auth method must be one of: api_key, password, google, github",
-		"chk_actors_email_required_for_humans": "email is required for human actors",
-		"uniq_email_per_scope_per_method":      "an account with this email already exists for this scope and auth method",
+		"chk_actors_type":                      errs.ErrInvalidActorType,
+		"chk_actors_auth_method":               errs.ErrInvalidAuthMethod,
+		"chk_actors_email_required_for_humans": errs.ErrHumanEmailRequired,
+		"uniq_email_per_scope_per_method":      errs.ErrEmailTakenForScope,
 
 		// actor_external_identities
-		"chk_actor_external_identities_provider": "external identity provider must be one of: google, github",
-		"uniq_external_identity_per_actor":       "this external identity is already linked to this account",
+		"chk_actor_external_identities_provider": errs.ErrInvalidExternalIDP,
+		"uniq_external_identity_per_actor":       errs.ErrExternalIdentityTaken,
 
 		// organizations
-		"uniq_organizations_slug": "an organization with this slug already exists",
+		"uniq_organizations_slug": errs.ErrOrgSlugTaken,
 
 		// org_members
-		"chk_org_members_role": "organization role must be one of: owner, admin, member",
+		"chk_org_members_role": errs.ErrInvalidOrgRole,
 
 		// projects
-		"uniq_projects_slug":    "a project with this slug already exists",
-		"uniq_verified_domain":  "this domain is already verified by another project",
-		"chk_brand_slug_format": "brand slug must contain only lowercase letters",
-		"chk_brand_slug_length": "brand slug length must be between 3 and 32 characters",
+		"uniq_projects_slug":    errs.ErrProjectSlugTaken,
+		"uniq_verified_domain":  errs.ErrDomainTaken,
+		"chk_brand_slug_format": errs.ErrInvalidBrandSlugFormat,
+		"chk_brand_slug_length": errs.ErrInvalidBrandSlugLength,
 
 		// project_members
-		"chk_project_members_role": "project role must be one of: owner, admin, member",
+		"chk_project_members_role": errs.ErrInvalidProjectRole,
 
 		// project_oauth_providers
-		"chk_project_oauth_providers_provider": "OAuth provider must be one of: google, github",
-		"uniq_project_oauth_provider":          "this OAuth provider is already configured for this project",
+		"chk_project_oauth_providers_provider": errs.ErrInvalidOAuthProvider,
+		"uniq_project_oauth_provider":          errs.ErrOAuthProviderConfigured,
 
 		// oauth_login_states
-		"chk_oauth_login_states_provider": "OAuth provider must be one of: google, github",
-		"uniq_oauth_login_state":          "duplicate OAuth login state",
+		"chk_oauth_login_states_provider": errs.ErrInvalidOAuthProvider,
+		"uniq_oauth_login_state":          errs.ErrDuplicateOAuthState,
 
 		// platform_roles
-		"chk_platform_roles_role": "platform role must be one of: super_admin, admin, support",
+		"chk_platform_roles_role": errs.ErrInvalidPlatformRole,
 
 		// api_keys
-		"uniq_idx_api_keys_display_prefix": "an API key with this display prefix already exists",
+		"uniq_idx_api_keys_display_prefix": errs.ErrAPIKeyPrefixTaken,
 
 		// capabilities
-		"uniq_capability_per_scope": "a capability with this resource and action already exists for this scope",
+		"uniq_capability_per_scope": errs.ErrCapabilityExists,
 
 		// profile schemas
-		"uniq_project_profile_schema_project_id": "a profile schema already exists for this project",
-		"uniq_profile_schema_version_per_scope":  "this profile schema version already exists for the scope",
-		"uniq_profile_schema_version_platform":   "a platform profile schema version already exists",
+		"uniq_project_profile_schema_project_id": errs.ErrProjectProfileSchemaExists,
+		"uniq_profile_schema_version_per_scope":  errs.ErrProfileSchemaVersionExists,
+		"uniq_profile_schema_version_platform":   errs.ErrPlatformSchemaVersionExists,
 
 		// actor profiles
-		"uniq_actor_profiles_handle": "this handle is already in use by another profile",
+		"uniq_actor_profiles_handle": errs.ErrHandleTaken,
 
 		// crypto_keys
-		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",
-		"chk_crypto_keys_status": "crypto key status must be one of: active, retiring, retired, revoked",
+		"chk_crypto_keys_type":   errs.ErrInvalidCryptoKeyType,
+		"chk_crypto_keys_status": errs.ErrInvalidCryptoKeyStat,
 
 		// email_templates
-		"chk_email_templates_kind":        "email template kind must be one of: verify, reset",
-		"uniq_email_template_per_project": "this project already has an email template of this kind",
+		"chk_email_templates_kind":        errs.ErrInvalidTemplateKindColumn,
+		"uniq_email_template_per_project": errs.ErrEmailTemplateExists,
 
 		// terms_of_service
-		"chk_terms_of_service_content":      "terms of service content must not be empty",
-		"chk_terms_of_service_version":      "terms of service version must be at least 1",
-		"uniq_terms_of_service_per_project": "this project already has terms of service",
+		"chk_terms_of_service_content":      errs.ErrTosContentEmpty,
+		"chk_terms_of_service_version":      errs.ErrInvalidTosVersion,
+		"uniq_terms_of_service_per_project": errs.ErrTosAlreadyExists,
 
 		// tos_acceptances
-		"chk_tos_acceptances_source":            "terms acceptance source must be clickwrap or continued_use",
-		"uniq_tos_acceptance_per_actor_version": "this actor has already accepted this terms version",
+		"chk_tos_acceptances_source":            errs.ErrInvalidAcceptanceSource,
+		"uniq_tos_acceptance_per_actor_version": errs.ErrTosAlreadyAccepted,
 
 		// action_tokens
-		"chk_action_tokens_purpose": "action token purpose must be one of: email_verify, password_reset",
+		"chk_action_tokens_purpose": errs.ErrInvalidActionTokenPurpose,
 
 		// blacklist_entries
-		"chk_blacklist_entries_type":         "blacklist entry type must be one of: actor, token, api_key, email, ip",
-		"uniq_blacklist_target_type_project": "this target is already blacklisted for this scope",
+		"chk_blacklist_entries_type":         errs.ErrInvalidBlacklistType,
+		"uniq_blacklist_target_type_project": errs.ErrAlreadyBlacklisted,
 	}
 }

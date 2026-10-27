@@ -1,4 +1,0 @@
-set shell := ["bash", "-cu"]
-
-test:
-    gotestsum --format testdox --format-hide-empty-pkg

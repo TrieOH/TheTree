@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"IdentityX/errs"
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
@@ -72,7 +73,7 @@ func newFixture(t *testing.T) *fixture {
 	mock.When(keys.GetByID(mock.AnyContext(), mock.Any[uuid.UUID]())).
 		ThenAnswer(func(_ []any) []any {
 			if f.keyNotFound {
-				return []any{nil, fun.ErrNotFound("key gone")}
+				return []any{nil, database.ErrNotFound}
 			}
 			return []any{&f.resolvedKey, nil}
 		})
@@ -95,7 +96,7 @@ func newFixture(t *testing.T) *fixture {
 			if f.revoked[target] {
 				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeToken}, nil}
 			}
-			return []any{nil, fun.ErrNotFound("not blacklisted")}
+			return []any{nil, database.ErrNotFound}
 		})
 
 	actors := mock.Mock[ports.ActorRepo]()
@@ -137,11 +138,9 @@ func (f *fixture) stubKeyNotFound() {
 func (f *fixture) signAccess(t *testing.T, withoutKid bool) string {
 	t.Helper()
 	claims := models.AccessClaims{
-		Sub: models.AccessSub{ID: f.actor.ID, ProjectID: f.actor.ProjectID, Email: f.actor.Email, Type: f.actor.Type},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(f.now.Add(testAccessTTL)),
-			Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(f.now),
-		},
+		Sub:       models.AccessSub{ID: f.actor.ID, ProjectID: f.actor.ProjectID, Email: f.actor.Email, Type: f.actor.Type},
+		ExpiresAt: jwt.NewNumericDate(f.now.Add(testAccessTTL)),
+		Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(f.now),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	if !withoutKid {
@@ -163,11 +162,9 @@ func (f *fixture) signAccess(t *testing.T, withoutKid bool) string {
 func (f *fixture) mintExpiredRefresh(t *testing.T) string {
 	t.Helper()
 	claims := models.RefreshClaims{
-		Sub: models.RefreshSub{ID: f.actor.ID, ProjectID: nil, AccessJTI: uuid.New()},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-			Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
-		},
+		Sub:       models.RefreshSub{ID: f.actor.ID, ProjectID: nil, AccessJTI: uuid.New()},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+		Issuer:    testIssuer, ID: uuid.New().String(), IssuedAt: jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	token.Header["kid"] = f.key.ID
@@ -241,7 +238,7 @@ func TestVerifyRejectsBlacklistedToken(t *testing.T) {
 	f.revoked[openAccess(t, out.AccessToken).ID] = true
 
 	err := f.mgr.Verify(context.Background(), out.AccessToken, &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrTokenRevoked) {
 		t.Fatalf("want unauthorized for a revoked token, got %v", err)
 	}
 }
@@ -252,7 +249,7 @@ func TestVerifyRejectsBadSignature(t *testing.T) {
 	tampered := out.AccessToken[:len(out.AccessToken)-2] + "xx"
 
 	err := f.mgr.Verify(context.Background(), tampered, &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrInvalidToken) {
 		t.Fatalf("want unauthorized for a tampered token, got %v", err)
 	}
 }
@@ -261,7 +258,7 @@ func TestVerifyMissingKid(t *testing.T) {
 	f := newFixture(t)
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, true), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrMissingKID) {
 		t.Fatalf("want unauthorized for a kid-less token, got %v", err)
 	}
 }
@@ -273,7 +270,7 @@ func TestVerifyRejectsRevokedSigningKey(t *testing.T) {
 	f.stubKey(&revoked)
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrSigningKeyRevoked) {
 		t.Fatalf("want unauthorized for a revoked signing key, got %v", err)
 	}
 }
@@ -285,7 +282,7 @@ func TestVerifyRejectsRetiredSigningKey(t *testing.T) {
 	f.stubKey(&retired)
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrSigningKeyRetired) {
 		t.Fatalf("want unauthorized for a retired signing key, got %v", err)
 	}
 }
@@ -307,7 +304,7 @@ func TestVerifyOutdatedKey(t *testing.T) {
 	f.stubKeyNotFound()
 
 	err := f.mgr.Verify(context.Background(), f.signAccess(t, false), &models.AccessClaims{})
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrOutdatedToken) {
 		t.Fatalf("want unauthorized for an outdated key, got %v", err)
 	}
 }
@@ -384,7 +381,7 @@ func TestRotateRejectsBlacklistedRefresh(t *testing.T) {
 	f.revoked[openRefresh(t, old.RefreshToken).ID] = true
 
 	_, err := f.mgr.Rotate(context.Background(), old.RefreshToken)
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrTokenRevoked) {
 		t.Fatalf("want unauthorized for a revoked refresh token, got %v", err)
 	}
 }
@@ -402,7 +399,7 @@ func TestRotateRejectsExpiredRefresh(t *testing.T) {
 	f := newFixture(t)
 
 	_, err := f.mgr.Rotate(context.Background(), f.mintExpiredRefresh(t))
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrInvalidToken) {
 		t.Fatalf("want unauthorized for an expired refresh token, got %v", err)
 	}
 }
@@ -482,7 +479,7 @@ func TestRevokeRejectsInvalidAccess(t *testing.T) {
 	f := newFixture(t)
 
 	err := f.mgr.Revoke(context.Background(), "garbage", "x")
-	if !fun.Is(err, fun.CodeUnauthorized) {
+	if !errors.Is(err, errs.ErrInvalidAccessToken) {
 		t.Fatalf("want unauthorized for an invalid access token, got %v", err)
 	}
 	if len(f.appended) != 0 {

@@ -1,0 +1,26 @@
+package repo
+
+import (
+	"context"
+	"lib/database"
+	"univents/internal/sqlc"
+	"univents/models"
+
+	"github.com/google/uuid"
+)
+
+func (repo *Repo) PatchVariant(ctx context.Context, id uuid.UUID, variant *models.ProductVariant) (*models.ProductVariant, error) {
+	result, err := database.Queries(ctx, repo.q).PatchProductVariant(ctx, sqlc.PatchProductVariantParams{
+		VendorCode:  variant.VendorCode,
+		Name:        variant.Name,
+		Description: variant.Description,
+		Price:       variant.Price,
+		Stock:       variant.Stock,
+		GalleryUrls: variant.GalleryURLs,
+		ID:          id,
+	})
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return new(mapVariant(result)), nil
+}

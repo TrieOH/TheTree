@@ -1,0 +1,22 @@
+package service
+
+import (
+	"IdentityX/models"
+	"context"
+
+	"github.com/google/uuid"
+)
+
+// ListOutdatedProfiles lists profiles flagged as outdated (they failed to
+// migrate to the active schema version). A nil projectID means the platform
+// scope; the project variant requires a project admin.
+func (o *Operations) ListOutdatedProfiles(ctx context.Context, projectID *uuid.UUID) ([]models.ActorProfile, error) {
+	if projectID != nil {
+		err := o.Authz.CheckProject(ctx, *projectID, models.ProjectRoleAdmin)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return o.Profiles.ListOutdated(ctx, projectID)
+}

@@ -3,48 +3,21 @@ package app
 import (
 	"net/http"
 
-	"lib/authz"
-	"lib/errx"
 	"lib/httpserver"
-	spec "univents"
-	"univents/internal/handlers"
-	"univents/internal/handlers/webhooks"
+	"univents/internal/features/webhooks"
 	"univents/internal/openapi"
-
-	"lib/jobs/httpjobs"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// CreateRouter builds the API router. events, when non-nil, is the job
-// events endpoint the queue delivers to; it is outside the spec and its auth
-// chains, so the deploy must keep it unreachable from the internet (the
-// Cloudflare Worker refuses it on public requests).
-func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Server, events http.Handler) http.Handler {
-	resolver, err := authz.NewResolver(spec.OpenAPISpec, primitives, authz.Options{})
-	errx.Exit(err, "resolve auth chains")
-	return httpserver.NewRouter(httpserver.Config{
-		AppName:            app.cfg.AppName,
-		CorsAllowedOrigins: app.cfg.AllowedOrigins,
-		CorsAllowedHeaders: app.cfg.AllowedHeaders,
-		OpenAPISpec:        spec.OpenAPISpec,
-		RateLimit:          app.cfg.ToRateLimit(),
-		Routes: func(r *chi.Mux) {
-			mountStrict(r, h, resolver.Chains())
-
-			// Raw realtime routes (split 6) — deliberately outside the strict
-			// handler: the WS handshake cannot carry Authorization headers (the
-			// one-time query token is the auth), and SSE must stream without the
-			// fun/validate envelope machinery buffering the body. Both are
-			// documented in the spec's description block, not as spec ops.
-			r.Get("/editions/{edition_id}/store/stream", h.ServeStoreStream)
-			r.Handle("/ws", http.HandlerFunc(h.ServeWS))
-
-			if events != nil {
-				r.Method(http.MethodPost, httpjobs.Path, events)
-			}
-		},
-	})
+// mountRaw mounts the realtime routes (split 6) — deliberately outside the
+// strict handler: the WS handshake cannot carry Authorization headers (the
+// one-time query token is the auth), and SSE must stream without the
+// fun/validate envelope machinery buffering the body. Both are documented in
+// the spec's description block, not as spec ops.
+func mountRaw(r chi.Router, h *server) {
+	r.Get("/editions/{edition_id}/store/stream", h.ServeStoreStream)
+	r.Handle("/ws", http.HandlerFunc(h.ServeWS))
 }
 
 // mountStrict is the backend's one strict-server mount point: the generated
@@ -54,7 +27,7 @@ func (app *Univents) CreateRouter(primitives authz.Primitives, h *handlers.Serve
 // middleware runs first so the Payssage webhook can verify the signature
 // against the exact body bytes payssage POSTed (the strict server decodes
 // the body afterwards; D2). Path-scoped to /webhooks/ inside the middleware.
-func mountStrict(r *chi.Mux, h openapi.StrictServerInterface, chains map[string][]func(http.Handler) http.Handler) {
+func mountStrict(r chi.Router, h openapi.StrictServerInterface, chains map[string][]func(http.Handler) http.Handler) {
 	httpserver.MountStrict[openapi.StrictHandlerFunc](
 		h,
 		chains,

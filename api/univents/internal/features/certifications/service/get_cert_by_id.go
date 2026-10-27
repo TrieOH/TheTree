@@ -1,0 +1,38 @@
+package service
+
+import (
+	"context"
+	"univents/models"
+
+	idx "sdk/identityx"
+
+	"github.com/google/uuid"
+)
+
+func (o *Operations) GetCertByID(ctx context.Context, id uuid.UUID) (*models.Certification, error) {
+	ident, err := idx.RequireIdentity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := o.Certs.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if cert.UserID == ident.Sub.ID {
+		return cert, nil
+	}
+
+	edition, err := o.Editions.GetByID(ctx, cert.EditionID)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = o.Authz.Event(ctx, edition.EventID, models.EventMemberRoleStaff)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
+}

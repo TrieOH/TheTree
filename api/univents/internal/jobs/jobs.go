@@ -1,6 +1,6 @@
 // Package jobs holds the one declaration of Univents' background work: which
 // job kinds exist. The handlers live with their feature
-// (services/checkouts/jobs, services/certifications/jobs); the carrier is
+// (features/checkouts/jobs, features/certifications/jobs); the carrier is
 // chosen by the app wiring, and nothing here knows it. Univents has no
 // periodic jobs: the expiry and gift-email jobs are enqueued with a delay.
 package jobs
@@ -9,8 +9,8 @@ import (
 	"lib/database"
 	"lib/email"
 	libjobs "lib/jobs"
-	certs "univents/internal/services/certifications/jobs"
-	checkouts "univents/internal/services/checkouts/jobs"
+	certs "univents/internal/features/certifications/jobs"
+	checkouts "univents/internal/features/checkouts/jobs"
 	"univents/ports"
 )
 

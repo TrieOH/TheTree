@@ -6,8 +6,9 @@ import (
 
 	spec "IdentityX"
 	"IdentityX/internal/authz"
-	"IdentityX/internal/handlers"
+	"IdentityX/internal/setup"
 	libauthz "lib/authz"
+	"lib/httpserver"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -24,19 +25,36 @@ func testScopeCheckers() map[string]libauthz.ScopeChecker {
 	return authz.New(nil, nil, nil).ScopeCheckers()
 }
 
+// completedSetup is a setup state that has already completed.
+func completedSetup() *setup.State {
+	st := setup.NewState(nil)
+	st.MarkComplete()
+	return st
+}
+
 // newTestRouter mounts the strict server with the real middleware stack
-// (validation + auth dispatch + fun-envelope error handlers) on a fresh
-// chi router plus harness routes.
-func newTestRouter(t *testing.T, h *handlers.Server, primitives libauthz.Primitives) *chi.Mux {
+// (validation + auth dispatch + setup guard + fun-envelope error handlers)
+// on a fresh chi router.
+func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *setup.State) *chi.Mux {
 	t.Helper()
-	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, libauthz.Options{
-		SetupGuard:     setupGuard(),
-		SkipSetupGuard: []string{"getSetup", "postSetup"},
-	})
+	resolver, err := libauthz.NewResolver(spec.OpenAPISpec, primitives, chainOptions(st))
 	if err != nil {
 		t.Fatalf("resolve auth chains: %v", err)
 	}
+	// Boot installs the error map before serving; the router under test
+	// answers errors through the same table.
+	httpserver.UseErrorMap(Errors())
 	r := chi.NewRouter()
 	mountStrict(r, h, resolver.Chains())
 	return r
+}
+
+// testPrimitives are pass-through auth stubs with the real scope checkers.
+func testPrimitives() libauthz.Primitives {
+	return libauthz.Primitives{
+		JWT:    mwJWT,
+		APIKey: mwJWT,
+		Any:    mwAnyAuth,
+		Scopes: testScopeCheckers(),
+	}
 }

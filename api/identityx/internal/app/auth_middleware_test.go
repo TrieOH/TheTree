@@ -6,12 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"IdentityX/internal/services"
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	"IdentityX/ports"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/ovechkin-dm/mockio/mock"
 )
@@ -29,12 +28,12 @@ func newAuthMW(t *testing.T, key models.CryptoKey, blacklisted func(jti string) 
 			if blacklisted(target) {
 				return []any{&models.BlacklistEntry{Target: target, Type: models.BlacklistEntryTypeToken}, nil}
 			}
-			return []any{nil, fun.ErrNotFound("not blacklisted")}
+			return []any{nil, database.ErrNotFound}
 		})
 
-	mw := (&IdentityX{}).SetupAuthMiddlewares(
+	mw := authMiddlewares(
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
-		&services.Operations{},
+		nil,
 	)
 	return mw.JWT()
 }

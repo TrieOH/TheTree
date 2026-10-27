@@ -1,0 +1,19 @@
+package repo
+
+import (
+	"context"
+
+	"Informd/models"
+	"lib/database"
+	"lib/xslices"
+
+	"github.com/google/uuid"
+)
+
+func (repo *Repo) ListByFormID(ctx context.Context, formID uuid.UUID) ([]models.Field, error) {
+	rows, err := database.Queries(ctx, repo.q).ListFieldsByFormID(ctx, formID)
+	if err != nil {
+		return nil, repo.dbe(err)
+	}
+	return xslices.MapSlice(rows, mapField), nil
+}

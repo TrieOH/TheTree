@@ -1,17 +1,16 @@
 module IdentityX
 
-go 1.26.4
+go 1.27.3
 
 require (
-	github.com/MintzyG/fun v0.10.6
 	github.com/MintzyG/fun/middlewares v0.1.3
 	github.com/caarlos0/env/v11 v11.4.1
-	github.com/go-chi/chi/v5 v5.3.1
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.8.0
 	github.com/ovechkin-dm/mockio v1.0.2
 	go.uber.org/zap v1.28.0
 	golang.org/x/oauth2 v0.36.0
@@ -19,6 +18,7 @@ require (
 )
 
 require (
+	github.com/MintzyG/fun v0.10.6 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

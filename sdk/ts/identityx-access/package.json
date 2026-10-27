@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://git.trieoh.com/TrieOH/TheTree"
+    "url": "https://github.com/TrieOH/TheTree"
   },
   "publishConfig": {
     "access": "public"

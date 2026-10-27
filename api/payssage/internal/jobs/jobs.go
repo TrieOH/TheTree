@@ -1,6 +1,6 @@
 // Package jobs holds the one declaration of Payssage's background work:
 // which job kinds exist and how often the periodic ones run. The handlers
-// live with their feature (services/webhooks/jobs); the carrier is chosen
+// live with their feature (features/webhooks/jobs); the carrier is chosen
 // by the app wiring, and nothing here knows it.
 package jobs
 
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	libjobs "lib/jobs"
-	webhooks "payssage/internal/services/webhooks/jobs"
+	webhooks "payssage/internal/features/webhooks/jobs"
 	"payssage/ports"
 
 	"resty.dev/v3"

@@ -9,8 +9,8 @@ import (
 	"IdentityX/models"
 	"IdentityX/ports"
 	"lib/crypto"
+	"lib/database"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -79,14 +79,14 @@ func (f *fakeKeys) GetActive(_ context.Context, typ models.CryptoKeyType, scope 
 			return f.toModel(k), nil
 		}
 	}
-	return nil, fun.Err("crypto key not found").NotFound()
+	return nil, database.ErrNotFound
 }
 
 func (f *fakeKeys) GetByID(_ context.Context, id uuid.UUID) (*models.CryptoKey, error) {
 	if k := f.find(id); k != nil {
 		return f.toModel(k), nil
 	}
-	return nil, fun.Err("crypto key not found").NotFound()
+	return nil, database.ErrNotFound
 }
 
 func (f *fakeKeys) GetActiveSigningKeys(_ context.Context, _ *uuid.UUID) ([]models.ActiveSigningKey, error) {

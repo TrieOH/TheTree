@@ -1,0 +1,135 @@
+// Package checkouts serves the edition checkout (split 7 — the money path)
+// and the resume read (split 5). Checkout reserves the cart and creates the
+// Payssage intent in one request; the webhook receiver (split 4) and the
+// expiry worker (split 7) own all status changes — checkout never
+// self-approves (D3).
+package service
+
+import (
+	"context"
+	"time"
+
+	"lib/database"
+	libjobs "lib/jobs"
+	"univents/internal/authz"
+	"univents/internal/notify"
+	"univents/models"
+	"univents/ports"
+
+	payssage "sdk/payssage"
+
+	"github.com/google/uuid"
+)
+
+// defaultIntentAttempts / defaultIntentRetryDelay are the resume's intent
+// fetch budget: up to 3 tries with a short pause, then degrade gracefully
+// (a Payssage blip must not fail the source-of-truth read).
+const (
+	defaultIntentAttempts   = 3
+	defaultIntentRetryDelay = 250 * time.Millisecond
+)
+
+// IntentClient is the Payssage intent read seam (resume's `intent_status`).
+// Satisfied by *payssage.Client (sdk/go/Payssage) and faked in tests.
+type IntentClient interface {
+	GetIntent(ctx context.Context, intentID uuid.UUID) (*payssage.Intent, error)
+}
+
+// PayssageClient is the checkout's Payssage write seam: create the intent
+// (post-commit), best-effort cancel it when storing the intent id back
+// fails, and refund it on the organizer refund path. Satisfied by
+// *payssage.Client and faked in tests.
+type PayssageClient interface {
+	Checkout(ctx context.Context, walletID uuid.UUID, req payssage.CreateIntentRequest) (*payssage.Intent, error)
+	CancelIntent(ctx context.Context, intentID uuid.UUID) (*payssage.Intent, error)
+	RefundIntent(ctx context.Context, intentID uuid.UUID) (*payssage.Intent, error)
+}
+
+// TokenIssuer is the one-time WS handshake token seam (split 6). Satisfied
+// by *ws.Operations; transaction-aware through the shared tx runner, so the
+// token + purchase commit atomically inside the checkout tx.
+type TokenIssuer interface {
+	IssueToken(ctx context.Context, purchaseID, userID uuid.UUID) (string, time.Time, error)
+}
+
+// ActorResolver is the IdentityX actor lookup seam (ports.ActorResolver),
+// used by checkout for attendee resolution (gift buying) and the gift claim.
+// Badges is the badge-emission surface the free-order path calls (a free
+// ticket is confirmed at checkout, so the participant badge emits
+// immediately). Satisfied by *badges.Operations.
+type Badges interface {
+	EmitForConfirmedRegistration(ctx context.Context, registrationID uuid.UUID) (*models.BadgeEmission, error)
+}
+
+// Notifier is the LISTEN/NOTIFY publish surface (split 6 subscribes).
+// Satisfied by *database.Notifier (lib/go/database).
+type Notifier interface {
+	Notify(ctx context.Context, channel, payload string) error
+}
+
+// Jobs is the background-work surface: the expiry and gift-email jobs are
+// enqueued inside the checkout tx, before commit, with a delay — the job
+// cannot run before the purchase is visible, a failed enqueue fails the
+// checkout, and a rolled-back checkout leaves a job that finds nothing and
+// no-ops. Satisfied by the lib/jobs carriers.
+type Jobs interface {
+	EnqueueAfter(ctx context.Context, job libjobs.Job, delay time.Duration) error
+}
+
+// channelUniventsChanges is the single NOTIFY channel the store publishes
+// on (contract in internal/notify).
+const channelUniventsChanges = notify.Channel
+
+type Deps struct {
+	Purchases        ports.PurchaseRepo
+	Editions         ports.EditionRepo
+	Events           ports.EventRepo
+	TicketTypes      ports.TicketTypeRepo
+	Products         ports.ProductRepo // product variants (variants live on the products repo)
+	Programs         ports.ProgramRepo
+	Occurrences      ports.ProgramOccurrenceRepo
+	Registrations    ports.RegistrationRepo
+	ProductPurchases ports.ProductPurchaseRepo
+	Participations   ports.ProgramParticipationRepo
+	Badges           Badges
+	Notifier         Notifier
+	Jobs             Jobs
+	Tx               database.TxRunner
+	Intents          IntentClient // resume (split 5)
+	Payssage         PayssageClient
+	WalletID         uuid.UUID // the single platform wallet (D6)
+	Tokens           TokenIssuer
+	Actors           ports.ActorResolver // attendee email → account (gift buying)
+	Authz            *authz.Service      // organizer orders/refund (refund plan B3)
+}
+
+type Operations struct {
+	Deps
+
+	// intentAttempts / intentRetryDelay are the resume's GetIntent budget.
+	// Overridable in tests.
+	intentAttempts   int
+	intentRetryDelay time.Duration
+}
+
+func New(d Deps) *Operations {
+	return &Operations{
+		Deps:             d,
+		intentAttempts:   defaultIntentAttempts,
+		intentRetryDelay: defaultIntentRetryDelay,
+	}
+}
+
+// SetIntentRetry overrides the intent-status retry budget. Test-only.
+func (o *Operations) SetIntentRetry(attempts int, delay time.Duration) {
+	o.intentAttempts = attempts
+	o.intentRetryDelay = delay
+}
+
+// Resume is the getCheckout payload: the purchase (flat, mirroring the WS
+// snapshot shape) plus its items and the intent's status when relevant.
+type Resume struct {
+	Purchase     models.Purchase
+	Items        []models.PurchaseItem
+	IntentStatus *string
+}

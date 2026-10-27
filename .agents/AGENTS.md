@@ -23,7 +23,7 @@ TheTree is the monorepo for **TrieOH**, a SaaS platform built as a suite of doma
 | `sdk/go/` | Go               | Public SDKs for IdentityX and Payssage                                              |
 | `sdk/ts/` | TypeScript       | Public TypeScript SDKs for IdentityX and Payssage                                   |
 
-## Backend Services (Go 1.26)
+## Backend Services (Go 1.27)
 
 All services follow a consistent internal structure:
 - `cmd/` — entry point
@@ -80,10 +80,10 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 
 ## Infrastructure (Docker Compose)
 
-Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written digest ledger; server checks it out at `~/deploy/thetree`). This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
+Production backends run on **Cloudflare Containers**: `deploy.yml` pushes the GHCR image (by digest) to Cloudflare's registry and `wrangler deploy`s it from `api/<svc>/cloudflare/`. This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
 
-- Prod stack (postgres, rustfs, identityx, univents, payssage, informd): `TrieOH/deploy` → `thetree/compose.yml`
-- Infra stacks (caddy, forgejo, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
+- Prod backends (identityx, univents, payssage, informd): `api/<svc>/cloudflare/wrangler.jsonc`, service env from the `<SERVICE>_API_ENV` repo secret
+- Infra stacks (caddy, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
 
 ## Shared Go Library (`lib/go/`)
 
@@ -99,7 +99,7 @@ Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written d
 
 ## Key Technology Choices
 
-- **Go 1.26**, TypeScript 5.7, React 19
+- **Go 1.27**, TypeScript 5.7, React 19
 - **sqlc** — type-safe SQL code generation from raw SQL
 - **orval** — TS client + TanStack Query hooks generated from `api-spec.yml`
 - **SpiceDB / Authzed** — fine-grained authorization (Zanzibar-style)
@@ -110,11 +110,12 @@ Production runtime lives in the **`TrieOH/deploy`** repo (the pipeline-written d
 - **lib/jobs** — background jobs on Cloudflare Queues when deployed, in-process locally (ADR-0011)
 - **`just`** — command runner
 
-## Go 1.26 language features in use
+## Go 1.27 language features in use
 
-The whole Go workspace is on Go 1.26 (`go 1.26.x` in every `go.mod`). Code uses post-1.22 language features that may look like errors — do not flag them:
+The whole Go workspace is on Go 1.27 (`go 1.27.x` in `go.work` and every `go.mod`; the version lives in `tools.versions`). Code uses post-1.22 language features that may look like errors — do not flag them:
 
 - **`new(EXPR)`** — the `new` builtin accepts a value expression and returns a pointer to it: `new("logout")` is a `*string` initialized to `"logout"` (equivalent to `s := "logout"; &s`). Used for pointer-to-literal fields, e.g. `Reason: new("logout")` in IdentityX's blacklist entries.
+- **Promoted fields in composite literals** — a struct literal can set an embedded struct's fields directly: `models.ActionTokenClaims{Subject: ..., Purpose: ...}` sets `RegisteredClaims.Subject` without spelling out `RegisteredClaims: jwt.RegisteredClaims{...}`. golangci-lint's `modernize` (embedlit) rewrites the nested form to this one.
 
 ## Development Workflow
 
@@ -129,7 +130,7 @@ The whole Go workspace is on Go 1.26 (`go 1.26.x` in every `go.mod`). Code uses 
 
 ### Issue tracker
 
-Issues live as Forgejo issues on the self-hosted instance at git.trieoh.com (repo TrieOH/TheTree); access via curl + token at `~/.config/trieoh/forgejo.token`. See `docs/agents/issue-tracker.md`.
+Issues live as GitHub issues on TrieOH/TheTree; access via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

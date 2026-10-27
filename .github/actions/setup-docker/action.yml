@@ -4,8 +4,6 @@ description: >
   No caching — installed fresh every run. NOTE: on GitHub-hosted
   ubuntu-latest runners, Docker + buildx are already preinstalled, so this
   action is only needed on self-hosted runners without Docker.
-  Keep `version` in sync with the DinD daemon image in
-  infra/forgejo/compose.yml (docker:<version>-dind), if still relevant.
 inputs:
   version:
     description: Docker CLI version (static tarball on download.docker.com)

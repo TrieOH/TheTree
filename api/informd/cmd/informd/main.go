@@ -1,10 +1,26 @@
 package main
 
 import (
+	spec "Informd"
 	"Informd/internal/app"
+	"Informd/internal/config"
+	"lib/backend"
+	"lib/backend/identityx"
+	"lib/backend/postgres"
 	"lib/errx"
 )
 
 func main() {
-	errx.Exit(app.Run(), "informd exited with error")
+	cfg := config.LoadConfig()
+	errx.Exit(backend.Run(backend.App{
+		Name:   cfg.AppName,
+		Spec:   spec.OpenAPISpec,
+		Server: backend.ServerFrom(cfg.Server, cfg.CORS, cfg.ProfilePort),
+		Modules: []backend.Module{
+			postgres.Module(cfg.Postgres, app.Constraints()),
+			identityx.Module(cfg.IdentityX, identityx.Debug(true)),
+		},
+		Build:  app.Build,
+		Errors: app.Errors(),
+	}), "informd exited with error")
 }

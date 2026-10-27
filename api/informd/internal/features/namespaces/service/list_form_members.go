@@ -1,0 +1,52 @@
+package service
+
+import (
+	"context"
+
+	"Informd/models"
+
+	"github.com/google/uuid"
+)
+
+// TODO: kill this duplicated namespaced route — authz.Form already anchors via the form's namespace.
+func (o *Operations) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
+	_, err := o.Authz.Form(ctx, formID, models.FormMemberRoleMember)
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := o.Forms.ListDirectMembers(ctx, formID)
+	if err != nil {
+		return nil, err
+	}
+	namespaceMembers, err := o.Namespaces.ListMembers(ctx, namespaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Index direct members by UserID for O(1) lookup during dedup.
+	// Namespace membership wins unless the direct role is strictly higher.
+	merged := make(map[uuid.UUID]models.FormMember, len(members)+len(namespaceMembers))
+	for _, m := range members {
+		merged[m.UserID] = m
+	}
+	for _, m := range namespaceMembers {
+		ns := models.FormMember{
+			UserID:  m.UserID,
+			FormID:  formID,
+			Role:    models.FormMemberRole(m.Role),
+			AddedAt: m.AddedAt,
+			AddedBy: m.AddedBy,
+		}
+		if existing, ok := merged[m.UserID]; !ok || ns.Role.Rank() >= existing.Role.Rank() {
+			merged[m.UserID] = ns
+		}
+	}
+
+	members = make([]models.FormMember, 0, len(merged))
+	for _, m := range merged {
+		members = append(members, m)
+	}
+
+	return members, nil
+}
