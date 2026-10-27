@@ -14,7 +14,7 @@ export function apiReference(): Plugin {
   const moduleId = "virtual:api-reference";
   const resolvedId = `\0${moduleId}`;
   return {
-    name: "showcase-api-reference",
+    name: "trieoh-components-api-reference",
     resolveId(id) {
       if (id === moduleId) return resolvedId;
     },

@@ -923,7 +923,7 @@ importers:
         specifier: 'catalog:'
         version: 4.97.0(@cloudflare/workers-types@4.20260702.1)
 
-  front/showcase:
+  front/trieoh-components:
     dependencies:
       '@solidjs/web':
         specifier: catalog:solid

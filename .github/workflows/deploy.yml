@@ -1,9 +1,10 @@
 name: Deploy
-# THE one deploy file: gate + publish for all artifact types (Go services,
+# Gate + publish for service, Worker frontend and SDK artifact types (Go services,
 # fronts, TS SDKs), both lanes. Replaces publish.yml, publish-ts-sdks.yml and
 # deploy-front.yml once proven out on a sandbox tag.
 #
-# Tag grammar (the trigger is the single glob '*/v*'):
+# Tags pages/<directory>/v* use deploy-pages.yml and never enter this workflow.
+# Tag grammar:
 #   <service>/v1.2.3              → full lane   (all checks)
 #   <app>-ui/v1.2.3               → full lane   (front checks)
 #   <sdk>-sdk-ts/v1.2.3           → full lane   (version guard)
@@ -17,6 +18,7 @@ on:
   push:
     tags:
       - '*/v*'
+      - '!pages/**'
 
 # Release lock per artifact: tags for different artifacts deploy in
 # parallel; tags for the same artifact queue and never cancel (§3.8), so an

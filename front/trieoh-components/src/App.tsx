@@ -7,7 +7,7 @@ import {
 } from "solid-js";
 import { CatalogNav, OverlayScrollbar, Toaster, toast } from "@trieoh/ui-solid";
 import { createCatalog, type Values } from "./catalog";
-import { ScrollbarExample } from "./showcases/ScrollbarExample";
+import { ScrollbarExample } from "./examples/ScrollbarExample";
 import { StudioHeader } from "./components/StudioHeader";
 import { CatalogPage } from "./components/CatalogPage";
 import { ComponentPage } from "./components/ComponentPage";
