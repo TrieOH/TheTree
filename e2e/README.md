@@ -24,9 +24,11 @@ just e2e-down
 ```
 
 Needs Docker, Go (for goose), pnpm (root `pnpm install` done) and
-[uv](https://docs.astral.sh/uv/). The first `e2e-run` also runs
-`rfbrowser init chromium`, which installs Playwright and Chromium into
-`e2e/.venv`. Reports land in `e2e/results/` (`log.html` has every step).
+[uv](https://docs.astral.sh/uv/). `just init` (from `e2e/`, or
+`just e2e/init` from the root) installs the Robot deps, Playwright and
+Chromium into `e2e/.venv`; `e2e-run` runs it too, so it's only needed to set
+up the venv ahead of time (e.g. for the IDE). Every root `e2e*` recipe also
+works from `e2e/`. Reports land in `e2e/results/` (`log.html` has every step).
 
 ## The stack
 

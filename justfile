@@ -209,9 +209,8 @@ e2e-down:
 e2e-run SUITE="identityx" *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
+    just e2e/init
     cd e2e
-    uv sync --quiet
-    [ -f .venv/.rfbrowser-ready ] || { uv run rfbrowser init chromium && touch .venv/.rfbrowser-ready; }
     uv run robot --outputdir results {{ARGS}} "suites/{{SUITE}}"
 
 # Up → run → down in one go: the whole e2e lane.
