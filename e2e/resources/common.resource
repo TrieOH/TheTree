@@ -34,6 +34,12 @@ Unique Slug
     ${id}=    Evaluate    uuid.uuid4().hex[:8]    modules=uuid
     RETURN    ${prefix}-${id}
 
+Unique Brand Slug
+    [Documentation]    A project brand slug: the DB only takes lowercase letters (^[a-z]+$, 3-32).
+    [Arguments]    ${prefix}=prj
+    ${id}=    Evaluate    ''.join(random.choices(string.ascii_lowercase, k=12))    modules=random,string
+    RETURN    ${prefix}${id}
+
 Data Of
     [Documentation]    The `data` payload of a `fun.Response` envelope.
     [Arguments]    ${response}

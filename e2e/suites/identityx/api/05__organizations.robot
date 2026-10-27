@@ -27,4 +27,5 @@ Project users cannot create organizations
     Given a signed-in user who owns a project
     And a user signed in to that project
     When they try to create an organization
-    Then the request is forbidden
+    # A project token is the wrong realm, not too few rights: IdentityX answers 401.
+    Then the request is unauthorized

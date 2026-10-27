@@ -174,10 +174,13 @@ They try to create an organization
     They create an organization called "Not Allowed"
 
 They create a project called "${name}" in their organization
-    ${slug}=    Unique Slug    prj
+    ${slug}=    Unique Brand Slug    prj
     # A project needs a domain: its users' verify/reset links point there.
+    # Domains are unique across projects, so each gets its own *.localhost
+    # subdomain, which still resolves to the front.
+    ${domain}=    Evaluate    $IDX_APP_URL.replace("://", f"://{$slug}.", 1)
     ${response}=    IDX Create Organization Project
-    ...    ${TOKENS}[access_token]    ${ORGANIZATION}[id]    ${name}    ${slug}    domain=${IDX_APP_URL}
+    ...    ${TOKENS}[access_token]    ${ORGANIZATION}[id]    ${name}    ${slug}    domain=${domain}
     VAR    ${RESPONSE}    ${response}    scope=TEST
 
 They create an API key for the project
@@ -230,7 +233,7 @@ The error points at the "${field}" field
 
 The service reports it is healthy
     Response Status Should Be    200    ${RESPONSE}
-    ${body}=    Set Variable    ${RESPONSE.json()}
+    ${body}=    Data Of    ${RESPONSE}
     Should Be Equal    ${body}[status]    ok
     Should Be Equal    ${body}[service]    IdentityX
 
