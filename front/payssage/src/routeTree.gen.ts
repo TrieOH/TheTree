@@ -9,36 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminWalletsRouteImport } from './routes/admin/wallets'
-import { Route as AdminTransactionsRouteImport } from './routes/admin/transactions'
-import { Route as AdminTestModeIntentsRouteImport } from './routes/admin/test-mode-intents'
-import { Route as AdminKeysRouteImport } from './routes/admin/keys'
-import { Route as AdminCollectorsRouteImport } from './routes/admin/collectors'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
-import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
+import { Route as AdminCollectorsRouteImport } from './routes/admin/collectors'
+import { Route as AdminKeysRouteImport } from './routes/admin/keys'
+import { Route as AdminTestModeIntentsRouteImport } from './routes/admin/test-mode-intents'
+import { Route as AdminTransactionsRouteImport } from './routes/admin/transactions'
+import { Route as AdminWalletsRouteImport } from './routes/admin/wallets'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
-import { Route as AdminWalletsWalletIDRouteImport } from './routes/admin/wallets/$walletID'
-import { Route as AdminOrganizationIDTransactionsRouteImport } from './routes/admin/$organizationID/transactions'
-import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
 import { Route as AdminOrganizationIDCollectorsRouteImport } from './routes/admin/$organizationID/collectors'
+import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
+import { Route as AdminOrganizationIDTransactionsRouteImport } from './routes/admin/$organizationID/transactions'
+import { Route as AdminWalletsWalletIDRouteImport } from './routes/admin/wallets/$walletID'
+import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminWalletsWalletIDIndexRouteImport } from './routes/admin/wallets/$walletID/index'
-import { Route as AdminWalletsWalletIDWebhooksRouteImport } from './routes/admin/wallets/$walletID/webhooks'
-import { Route as AdminWalletsWalletIDTransactionsRouteImport } from './routes/admin/wallets/$walletID/transactions'
-import { Route as AdminWalletsWalletIDSellersRouteImport } from './routes/admin/wallets/$walletID/sellers'
-import { Route as AdminWalletsWalletIDConnectSellerRouteImport } from './routes/admin/wallets/$walletID/connect-seller'
 import { Route as AdminWalletsWalletIDApiKeysRouteImport } from './routes/admin/wallets/$walletID/api-keys'
+import { Route as AdminWalletsWalletIDConnectSellerRouteImport } from './routes/admin/wallets/$walletID/connect-seller'
+import { Route as AdminWalletsWalletIDSellersRouteImport } from './routes/admin/wallets/$walletID/sellers'
+import { Route as AdminWalletsWalletIDTransactionsRouteImport } from './routes/admin/wallets/$walletID/transactions'
+import { Route as AdminWalletsWalletIDWebhooksRouteImport } from './routes/admin/wallets/$walletID/webhooks'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -46,24 +46,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminWalletsRoute = AdminWalletsRouteImport.update({
-  id: '/wallets',
-  path: '/wallets',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTestModeIntentsRoute = AdminTestModeIntentsRouteImport.update({
-  id: '/test-mode-intents',
-  path: '/test-mode-intents',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminKeysRoute = AdminKeysRouteImport.update({
-  id: '/keys',
-  path: '/keys',
+const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
+  id: '/$organizationID',
+  path: '/$organizationID',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCollectorsRoute = AdminCollectorsRouteImport.update({
@@ -71,37 +56,30 @@ const AdminCollectorsRoute = AdminCollectorsRouteImport.update({
   path: '/collectors',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
-  id: '/$organizationID',
-  path: '/$organizationID',
+const AdminKeysRoute = AdminKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
   getParentRoute: () => AdminRoute,
 } as any)
-const CallbackProviderIndexRoute = CallbackProviderIndexRouteImport.update({
-  id: '/callback/$provider/',
-  path: '/callback/$provider/',
-  getParentRoute: () => rootRouteImport,
+const AdminTestModeIntentsRoute = AdminTestModeIntentsRouteImport.update({
+  id: '/test-mode-intents',
+  path: '/test-mode-intents',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWalletsRoute = AdminWalletsRouteImport.update({
+  id: '/wallets',
+  path: '/wallets',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrganizationIDIndexRoute =
   AdminOrganizationIDIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AdminOrganizationIDRoute,
-  } as any)
-const AdminWalletsWalletIDRoute = AdminWalletsWalletIDRouteImport.update({
-  id: '/$walletID',
-  path: '/$walletID',
-  getParentRoute: () => AdminWalletsRoute,
-} as any)
-const AdminOrganizationIDTransactionsRoute =
-  AdminOrganizationIDTransactionsRouteImport.update({
-    id: '/transactions',
-    path: '/transactions',
-    getParentRoute: () => AdminOrganizationIDRoute,
-  } as any)
-const AdminOrganizationIDMembersRoute =
-  AdminOrganizationIDMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
 const AdminOrganizationIDCollectorsRoute =
@@ -110,28 +88,38 @@ const AdminOrganizationIDCollectorsRoute =
     path: '/collectors',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AdminOrganizationIDMembersRoute =
+  AdminOrganizationIDMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AdminOrganizationIDRoute,
+  } as any)
+const AdminOrganizationIDTransactionsRoute =
+  AdminOrganizationIDTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => AdminOrganizationIDRoute,
+  } as any)
+const AdminWalletsWalletIDRoute = AdminWalletsWalletIDRouteImport.update({
+  id: '/$walletID',
+  path: '/$walletID',
+  getParentRoute: () => AdminWalletsRoute,
+} as any)
+const CallbackProviderIndexRoute = CallbackProviderIndexRouteImport.update({
+  id: '/callback/$provider/',
+  path: '/callback/$provider/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminWalletsWalletIDIndexRoute =
   AdminWalletsWalletIDIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminWalletsWalletIDRoute,
   } as any)
-const AdminWalletsWalletIDWebhooksRoute =
-  AdminWalletsWalletIDWebhooksRouteImport.update({
-    id: '/webhooks',
-    path: '/webhooks',
-    getParentRoute: () => AdminWalletsWalletIDRoute,
-  } as any)
-const AdminWalletsWalletIDTransactionsRoute =
-  AdminWalletsWalletIDTransactionsRouteImport.update({
-    id: '/transactions',
-    path: '/transactions',
-    getParentRoute: () => AdminWalletsWalletIDRoute,
-  } as any)
-const AdminWalletsWalletIDSellersRoute =
-  AdminWalletsWalletIDSellersRouteImport.update({
-    id: '/sellers',
-    path: '/sellers',
+const AdminWalletsWalletIDApiKeysRoute =
+  AdminWalletsWalletIDApiKeysRouteImport.update({
+    id: '/api-keys',
+    path: '/api-keys',
     getParentRoute: () => AdminWalletsWalletIDRoute,
   } as any)
 const AdminWalletsWalletIDConnectSellerRoute =
@@ -140,10 +128,22 @@ const AdminWalletsWalletIDConnectSellerRoute =
     path: '/connect-seller',
     getParentRoute: () => AdminWalletsWalletIDRoute,
   } as any)
-const AdminWalletsWalletIDApiKeysRoute =
-  AdminWalletsWalletIDApiKeysRouteImport.update({
-    id: '/api-keys',
-    path: '/api-keys',
+const AdminWalletsWalletIDSellersRoute =
+  AdminWalletsWalletIDSellersRouteImport.update({
+    id: '/sellers',
+    path: '/sellers',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
+const AdminWalletsWalletIDTransactionsRoute =
+  AdminWalletsWalletIDTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
+const AdminWalletsWalletIDWebhooksRoute =
+  AdminWalletsWalletIDWebhooksRouteImport.update({
+    id: '/webhooks',
+    path: '/webhooks',
     getParentRoute: () => AdminWalletsWalletIDRoute,
   } as any)
 
@@ -291,18 +291,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -312,32 +312,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/wallets': {
-      id: '/admin/wallets'
-      path: '/wallets'
-      fullPath: '/admin/wallets'
-      preLoaderRoute: typeof AdminWalletsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/transactions': {
-      id: '/admin/transactions'
-      path: '/transactions'
-      fullPath: '/admin/transactions'
-      preLoaderRoute: typeof AdminTransactionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/test-mode-intents': {
-      id: '/admin/test-mode-intents'
-      path: '/test-mode-intents'
-      fullPath: '/admin/test-mode-intents'
-      preLoaderRoute: typeof AdminTestModeIntentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/keys': {
-      id: '/admin/keys'
-      path: '/keys'
-      fullPath: '/admin/keys'
-      preLoaderRoute: typeof AdminKeysRouteImport
+    '/admin/$organizationID': {
+      id: '/admin/$organizationID'
+      path: '/$organizationID'
+      fullPath: '/admin/$organizationID'
+      preLoaderRoute: typeof AdminOrganizationIDRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/collectors': {
@@ -347,46 +326,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCollectorsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/$organizationID': {
-      id: '/admin/$organizationID'
-      path: '/$organizationID'
-      fullPath: '/admin/$organizationID'
-      preLoaderRoute: typeof AdminOrganizationIDRouteImport
+    '/admin/keys': {
+      id: '/admin/keys'
+      path: '/keys'
+      fullPath: '/admin/keys'
+      preLoaderRoute: typeof AdminKeysRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/callback/$provider/': {
-      id: '/callback/$provider/'
-      path: '/callback/$provider'
-      fullPath: '/callback/$provider/'
-      preLoaderRoute: typeof CallbackProviderIndexRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/test-mode-intents': {
+      id: '/admin/test-mode-intents'
+      path: '/test-mode-intents'
+      fullPath: '/admin/test-mode-intents'
+      preLoaderRoute: typeof AdminTestModeIntentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/transactions': {
+      id: '/admin/transactions'
+      path: '/transactions'
+      fullPath: '/admin/transactions'
+      preLoaderRoute: typeof AdminTransactionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/wallets': {
+      id: '/admin/wallets'
+      path: '/wallets'
+      fullPath: '/admin/wallets'
+      preLoaderRoute: typeof AdminWalletsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/$organizationID/': {
       id: '/admin/$organizationID/'
       path: '/'
       fullPath: '/admin/$organizationID/'
       preLoaderRoute: typeof AdminOrganizationIDIndexRouteImport
-      parentRoute: typeof AdminOrganizationIDRoute
-    }
-    '/admin/wallets/$walletID': {
-      id: '/admin/wallets/$walletID'
-      path: '/$walletID'
-      fullPath: '/admin/wallets/$walletID'
-      preLoaderRoute: typeof AdminWalletsWalletIDRouteImport
-      parentRoute: typeof AdminWalletsRoute
-    }
-    '/admin/$organizationID/transactions': {
-      id: '/admin/$organizationID/transactions'
-      path: '/transactions'
-      fullPath: '/admin/$organizationID/transactions'
-      preLoaderRoute: typeof AdminOrganizationIDTransactionsRouteImport
-      parentRoute: typeof AdminOrganizationIDRoute
-    }
-    '/admin/$organizationID/members': {
-      id: '/admin/$organizationID/members'
-      path: '/members'
-      fullPath: '/admin/$organizationID/members'
-      preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
     '/admin/$organizationID/collectors': {
@@ -396,6 +368,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrganizationIDCollectorsRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
+    '/admin/$organizationID/members': {
+      id: '/admin/$organizationID/members'
+      path: '/members'
+      fullPath: '/admin/$organizationID/members'
+      preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
+      parentRoute: typeof AdminOrganizationIDRoute
+    }
+    '/admin/$organizationID/transactions': {
+      id: '/admin/$organizationID/transactions'
+      path: '/transactions'
+      fullPath: '/admin/$organizationID/transactions'
+      preLoaderRoute: typeof AdminOrganizationIDTransactionsRouteImport
+      parentRoute: typeof AdminOrganizationIDRoute
+    }
+    '/admin/wallets/$walletID': {
+      id: '/admin/wallets/$walletID'
+      path: '/$walletID'
+      fullPath: '/admin/wallets/$walletID'
+      preLoaderRoute: typeof AdminWalletsWalletIDRouteImport
+      parentRoute: typeof AdminWalletsRoute
+    }
+    '/callback/$provider/': {
+      id: '/callback/$provider/'
+      path: '/callback/$provider'
+      fullPath: '/callback/$provider/'
+      preLoaderRoute: typeof CallbackProviderIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/wallets/$walletID/': {
       id: '/admin/wallets/$walletID/'
       path: '/'
@@ -403,25 +403,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletsWalletIDIndexRouteImport
       parentRoute: typeof AdminWalletsWalletIDRoute
     }
-    '/admin/wallets/$walletID/webhooks': {
-      id: '/admin/wallets/$walletID/webhooks'
-      path: '/webhooks'
-      fullPath: '/admin/wallets/$walletID/webhooks'
-      preLoaderRoute: typeof AdminWalletsWalletIDWebhooksRouteImport
-      parentRoute: typeof AdminWalletsWalletIDRoute
-    }
-    '/admin/wallets/$walletID/transactions': {
-      id: '/admin/wallets/$walletID/transactions'
-      path: '/transactions'
-      fullPath: '/admin/wallets/$walletID/transactions'
-      preLoaderRoute: typeof AdminWalletsWalletIDTransactionsRouteImport
-      parentRoute: typeof AdminWalletsWalletIDRoute
-    }
-    '/admin/wallets/$walletID/sellers': {
-      id: '/admin/wallets/$walletID/sellers'
-      path: '/sellers'
-      fullPath: '/admin/wallets/$walletID/sellers'
-      preLoaderRoute: typeof AdminWalletsWalletIDSellersRouteImport
+    '/admin/wallets/$walletID/api-keys': {
+      id: '/admin/wallets/$walletID/api-keys'
+      path: '/api-keys'
+      fullPath: '/admin/wallets/$walletID/api-keys'
+      preLoaderRoute: typeof AdminWalletsWalletIDApiKeysRouteImport
       parentRoute: typeof AdminWalletsWalletIDRoute
     }
     '/admin/wallets/$walletID/connect-seller': {
@@ -431,11 +417,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletsWalletIDConnectSellerRouteImport
       parentRoute: typeof AdminWalletsWalletIDRoute
     }
-    '/admin/wallets/$walletID/api-keys': {
-      id: '/admin/wallets/$walletID/api-keys'
-      path: '/api-keys'
-      fullPath: '/admin/wallets/$walletID/api-keys'
-      preLoaderRoute: typeof AdminWalletsWalletIDApiKeysRouteImport
+    '/admin/wallets/$walletID/sellers': {
+      id: '/admin/wallets/$walletID/sellers'
+      path: '/sellers'
+      fullPath: '/admin/wallets/$walletID/sellers'
+      preLoaderRoute: typeof AdminWalletsWalletIDSellersRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
+    '/admin/wallets/$walletID/transactions': {
+      id: '/admin/wallets/$walletID/transactions'
+      path: '/transactions'
+      fullPath: '/admin/wallets/$walletID/transactions'
+      preLoaderRoute: typeof AdminWalletsWalletIDTransactionsRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
+    '/admin/wallets/$walletID/webhooks': {
+      id: '/admin/wallets/$walletID/webhooks'
+      path: '/webhooks'
+      fullPath: '/admin/wallets/$walletID/webhooks'
+      preLoaderRoute: typeof AdminWalletsWalletIDWebhooksRouteImport
       parentRoute: typeof AdminWalletsWalletIDRoute
     }
   }

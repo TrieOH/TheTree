@@ -2,3 +2,5 @@
 .run/
 results/
 __pycache__/
+playwright-log.txt
+playwright-log.txt
