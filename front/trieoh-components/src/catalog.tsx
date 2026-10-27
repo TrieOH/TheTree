@@ -1,3 +1,4 @@
+import { catalogSections, catalogTop } from "./catalog-navigation";
 import { createSignal, For, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import {
@@ -1499,22 +1500,13 @@ export function createCatalog(options: {
       name: "CatalogNav",
       group: "Navegação",
       description: "Navegação lateral de catálogo ou documentação, com topbar para telas pequenas e bordas que se dissolvem.",
-      defaults: { mode: "sidebar", fade: true, activeId: "Button" },
+      defaults: { mode: "sidebar", fade: true, activeId: "CatalogNav" },
       controls: [
         select("mode", "Modo", ["sidebar", "topbar"]),
         text("fade", "Bordas suaves"),
       ],
       render: (v, update) => {
-        const sections = ["Ações", "Formulários", "Navegação", "Overlays"].map((title) => ({
-          id: title,
-          title,
-          href: "#/components/CatalogNav",
-          items: ["Primeiro", "Segundo", "Terceiro", "Quarto", "Quinto", "Sexto"].map((label) => ({
-            id: `${title}-${label}`,
-            label: `${title} · ${label}`,
-            href: "#/components/CatalogNav",
-          })),
-        }));
+        const sections = catalogSections(entries);
         return (
           <div
             class={cn(
@@ -1526,7 +1518,7 @@ export function createCatalog(options: {
               mode={v.mode === "topbar" ? "topbar" : "sidebar"}
               fade={!!v.fade}
               sections={sections}
-              top={{ id: "all", label: "Todos os componentes", href: "#/components/CatalogNav" }}
+              top={catalogTop}
               activeId={String(v.activeId)}
               listClass="max-h-72"
               onNavigate={(item) => update("activeId", item.id)}

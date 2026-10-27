@@ -12,17 +12,13 @@ import { StudioHeader } from "./components/StudioHeader";
 import { CatalogPage } from "./components/CatalogPage";
 import { ComponentPage } from "./components/ComponentPage";
 
-const ALL_GROUPS = "Todos";
-const groupHref = (group: string) =>
-  group === ALL_GROUPS ? "#/" : `#/group/${encodeURIComponent(group)}`;
-const groups = [
-  "Ações",
-  "Formulários",
-  "Navegação",
-  "Overlays",
-  "Feedback",
-  "Layout",
-];
+import {
+  ALL_GROUPS,
+  groups,
+  catalogTop,
+  catalogSections,
+} from "./catalog-navigation";
+
 export default function App() {
   if (window.location.hash.startsWith("#/preview/scrollbar"))
     return <ScrollbarExample />;
@@ -66,24 +62,8 @@ export default function App() {
       draft[name][key] = value;
     });
   };
-  const navTop = {
-    id: ALL_GROUPS,
-    label: "Todos os componentes",
-    href: groupHref(ALL_GROUPS),
-  };
-  const navSections = () =>
-    groups.map((title) => ({
-      id: title,
-      title,
-      href: groupHref(title),
-      items: entries
-        .filter((entry) => entry.group === title)
-        .map((entry) => ({
-          id: entry.name,
-          label: entry.name,
-          href: `#/components/${entry.name}`,
-        })),
-    }));
+  const navTop = catalogTop;
+  const navSections = catalogSections(entries);
   const active = () => entries.find((entry) => entry.name === selected())!;
   const orderedEntries = groups.flatMap((title) =>
     entries.filter((entry) => entry.group === title),
@@ -107,7 +87,7 @@ export default function App() {
       <Toaster position="bottom-right" />
       <StudioHeader
         navTop={navTop}
-        sections={navSections()}
+        sections={navSections}
         activeId={detail() ? selected() : group()}
         currentName={detail() ? active().name : undefined}
         dark={dark()}
@@ -120,7 +100,7 @@ export default function App() {
           class="sticky top-17 hidden pt-8 pb-6 pl-10 lg:block"
           top={navTop}
           activeId={detail() ? selected() : group()}
-          sections={navSections()}
+          sections={navSections}
         />
         <Show
           when={detail()}
