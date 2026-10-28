@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/MintzyG/sdkkit"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -88,13 +88,15 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 	}
 
 	var res JWKS
-	path := fmt.Sprintf("/.well-known/jwks.json?project_id=%s", s.client.projectID)
-	err := s.client.DoRequestRaw(ctx, "GET", path, nil, &res)
+	req := s.client.http.R().SetContext(ctx).
+		SetQueryParam("project_id", s.client.projectID.String()).
+		SetResult(&res)
+	err := s.client.send(req, http.MethodGet, "/.well-known/jwks.json")
 	if err != nil {
 		if s.jwks != nil {
 			return s.jwks, nil // stale cache fallback on network error
 		}
-		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
+		return nil, err
 	}
 
 	s.jwks = &res
@@ -154,12 +156,12 @@ func (s *TokenService) decodeKey(key JWK) (any, error) {
 
 	pubBytes, err := base64.RawURLEncoding.DecodeString(key.X)
 	if err != nil {
-		return nil, &sdkkit.SDKError{Op: "decode jwks key", Cause: err}
+		return nil, &DecodeKeyError{Kid: key.Kid, Cause: err}
 	}
 
 	if len(pubBytes) != ed25519.PublicKeySize {
-		return nil, &sdkkit.SDKError{
-			Op:    "decode jwks key",
+		return nil, &DecodeKeyError{
+			Kid:   key.Kid,
 			Cause: fmt.Errorf("invalid key size: %s bytes", strconv.Itoa(len(pubBytes))),
 		}
 	}

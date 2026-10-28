@@ -3,7 +3,7 @@ package idx
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -44,21 +44,27 @@ type ActorService struct {
 }
 
 func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, error) {
-	var res Actor
-	path := fmt.Sprintf("/projects/%s/actors/%s:by_email", s.client.projectID, email)
-	err := s.client.DoRequest(ctx, "GET", path, nil, &res)
+	var res envelope[Actor]
+	req := s.client.http.R().SetContext(ctx).
+		SetPathParam("project_id", s.client.projectID.String()).
+		SetPathParam("email", email).
+		SetResult(&res)
+	err := s.client.send(req, http.MethodGet, "/projects/{project_id}/actors/{email}:by_email")
 	if err != nil {
-		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
+		return nil, err
 	}
-	return &res, nil
+	return &res.Data, nil
 }
 
 func (s *ActorService) GetByID(ctx context.Context, id uuid.UUID) (*Actor, error) {
-	var res Actor
-	path := fmt.Sprintf("/projects/%s/actors/%s", s.client.projectID, id.String())
-	err := s.client.DoRequest(ctx, "GET", path, nil, &res)
+	var res envelope[Actor]
+	req := s.client.http.R().SetContext(ctx).
+		SetPathParam("project_id", s.client.projectID.String()).
+		SetPathParam("id", id.String()).
+		SetResult(&res)
+	err := s.client.send(req, http.MethodGet, "/projects/{project_id}/actors/{id}")
 	if err != nil {
-		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
+		return nil, err
 	}
-	return &res, nil
+	return &res.Data, nil
 }

@@ -6,7 +6,6 @@ import (
 	idx "sdk/identityx"
 	"univents/ports"
 
-	"github.com/MintzyG/sdkkit"
 	"github.com/google/uuid"
 )
 
@@ -29,7 +28,7 @@ func NewSDKActorResolver(actors *idx.ActorService) ports.ActorResolver {
 func (s *sdkActors) GetByEmail(ctx context.Context, email string) (*idx.Actor, error) {
 	actor, err := s.actors.GetByEmail(ctx, email)
 	if err != nil {
-		if sdkkit.IsNotFound(err) {
+		if idx.IsNotFound(err) {
 			return nil, ports.ErrActorNotFound
 		}
 		return nil, err
@@ -40,7 +39,7 @@ func (s *sdkActors) GetByEmail(ctx context.Context, email string) (*idx.Actor, e
 func (s *sdkActors) GetByID(ctx context.Context, id uuid.UUID) (*idx.Actor, error) {
 	actor, err := s.actors.GetByID(ctx, id)
 	if err != nil {
-		if sdkkit.IsNotFound(err) {
+		if idx.IsNotFound(err) {
 			return nil, ports.ErrActorNotFound
 		}
 		return nil, err

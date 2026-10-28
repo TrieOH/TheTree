@@ -1,7 +1,9 @@
 package idx
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -91,4 +93,55 @@ type UnsupportedKeyError struct {
 
 func (e *UnsupportedKeyError) Error() string {
 	return fmt.Sprintf("idx: unsupported key type: kty=%s crv=%s (expected OKP/Ed25519)", e.Kty, e.Crv)
+}
+
+// --------------------------------------------------------------------------
+// API errors — IdentityX answered with a 4xx/5xx
+// --------------------------------------------------------------------------
+
+// APIError is returned when IdentityX responds with a failure status.
+// StatusCode is the HTTP status; the rest is the decoded error body, which
+// may be empty when the body was not the usual JSON error shape.
+type APIError struct {
+	StatusCode int      `json:"-"`
+	Module     string   `json:"module"`
+	Message    string   `json:"message"`
+	Code       int      `json:"code"`
+	Trace      []string `json:"trace"`
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("idx: api error %d: %s", e.StatusCode, e.Message)
+}
+
+// DecodeKeyError is returned when a JWKS key's public key material is not a
+// valid base64url Ed25519 key.
+type DecodeKeyError struct {
+	Kid   string
+	Cause error
+}
+
+func (e *DecodeKeyError) Error() string {
+	return fmt.Sprintf("idx: decode jwks key %q: %s", e.Kid, e.Cause)
+}
+
+func (e *DecodeKeyError) Unwrap() error { return e.Cause }
+
+func IsNotFound(err error) bool      { return hasStatus(err, http.StatusNotFound) }
+func IsUnauthorized(err error) bool  { return hasStatus(err, http.StatusUnauthorized) }
+func IsForbidden(err error) bool     { return hasStatus(err, http.StatusForbidden) }
+func IsConflict(err error) bool      { return hasStatus(err, http.StatusConflict) }
+func IsUnprocessable(err error) bool { return hasStatus(err, http.StatusUnprocessableEntity) }
+
+// StatusCode returns the HTTP status behind an *APIError, or 0 for any other
+// error.
+func StatusCode(err error) int {
+	if e, ok := errors.AsType[*APIError](err); ok {
+		return e.StatusCode
+	}
+	return 0
+}
+
+func hasStatus(err error, code int) bool {
+	return StatusCode(err) == code
 }
