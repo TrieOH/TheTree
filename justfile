@@ -157,11 +157,31 @@ _go-pkgs TARGET="":
     esac
 
 # ── End-to-end tests (Robot Framework, e2e/) ──────────────────────────────
+#
+# Every e2e recipe takes a TARGET, then flags, then anything robot accepts:
+#
+#   all (default)     every suite, API and browser
+#   api               every API-only suite (tag `api`), across services
+#   ui                every browser suite (tag `ui`), across services
+#   identityx         one service; identityx/api, identityx/ui, or any
+#                     path under e2e/suites (a single .robot file too)
+#
+#   --headless        no browser window (also forced when there is no
+#                     display, or with E2E_HEADLESS=1). Browsers are visible
+#                     by default so you can watch them.
+#   --slow            250ms between browser actions, to follow along by eye
+#
+#   just e2e                                    everything, browser visible
+#   just e2e api                                no browser at all
+#   just e2e ui --headless                      browser suites, no window
+#   just e2e-run identityx/ui --slow -t "*password*"
 
-# Start the isolated e2e stack (compose project thetree-e2e): IdentityX on
-# :18080, mailpit on :18025, the IdentityX front on :13001. Fresh tmpfs
-# database and throwaway secrets every time; never touches the dev stack.
-e2e-up:
+# Compose project thetree-e2e: IdentityX on :18080, mailpit on :18025, the
+# IdentityX front on :13001. Fresh tmpfs database and throwaway secrets every
+# time; never touches the dev stack.
+#
+# Start the isolated e2e stack (--no-front: API and mailpit only).
+e2e-up *FLAGS:
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p e2e/results e2e/.run
@@ -174,6 +194,7 @@ e2e-up:
     PGPASSWORD="$E2E_POSTGRES_PASSWORD" go run github.com/pressly/goose/v3/cmd/goose@v$GOOSE_VERSION \
         -dir api/identityx/db/migrations postgres "$dsn" up
     $compose up --build --detach --wait identityx
+    case " {{FLAGS}} " in *" --no-front "*) echo "e2e stack up (no front)"; exit 0 ;; esac
     # The front runs on the host (vite + workerd), pointed at the e2e API.
     # CLOUDFLARE_INCLUDE_PROCESS_ENV hands these vars to the worker too.
     VITE_API_URL=http://localhost:18080 \
@@ -204,21 +225,48 @@ e2e-down:
         docker compose -f e2e/compose.yml down --volumes --remove-orphans
 
 # Run Robot suites against a running e2e stack (`just e2e-up` first).
-# SUITE is a path under e2e/suites (identityx, identityx/api, ...); extra
-# args go to robot, e.g. `just e2e-run identityx --include api`.
-e2e-run SUITE="identityx" *ARGS:
+[positional-arguments]
+e2e-run TARGET="all" *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
+    shift || true
+    headless="${E2E_HEADLESS:-}"
+    if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then headless=1; fi
+    robot_args=()
+    for arg in "$@"; do
+      case "$arg" in
+        --headless) headless=1 ;;
+        --slow)     robot_args+=(--variable SLOW_MO:250ms) ;;
+        *)          robot_args+=("$arg") ;;
+      esac
+    done
+    [ -n "$headless" ] && robot_args+=(--variable HEADLESS:True)
+    case "{{TARGET}}" in
+      all) ;;
+      api|ui) robot_args+=(--include "{{TARGET}}") ;;
+      *)
+        target="{{TARGET}}"; target="${target%/}"
+        [ -e "e2e/suites/$target" ] || { echo "no such e2e target: $target (use all, api, ui or a path under e2e/suites)" >&2; exit 2; }
+        # Robot runs a directory's __init__.robot (sessions, browser) only
+        # when it parses that directory, so always start at suites/ and pick
+        # the subtree by suite name: "identityx/api/03__sessions.robot" →
+        # "Suites.identityx.api.sessions" (Robot drops the NN__ prefix).
+        name="Suites.$(printf '%s' "$target" | sed -E 's/\.robot$//; s#(^|/)[0-9]+__#\1#g; s#/#.#g')"
+        robot_args+=(--suite "$name") ;;
+    esac
     just e2e/init
     cd e2e
-    uv run robot --outputdir results {{ARGS}} "suites/{{SUITE}}"
+    uv run robot --outputdir results "${robot_args[@]}" suites
 
-# Up → run → down in one go: the whole e2e lane.
-e2e SUITE="identityx" *ARGS:
+# Up → run → down in one go: the whole e2e lane. API-only targets skip the front.
+[positional-arguments]
+e2e TARGET="all" *ARGS:
     #!/usr/bin/env bash
     set -uo pipefail
-    just e2e-up || { just e2e-down; exit 1; }
-    just e2e-run "{{SUITE}}" {{ARGS}}; status=$?
+    up_flags=""
+    case "{{TARGET}}" in api|*/api|*/api/*) up_flags="--no-front" ;; esac
+    just e2e-up $up_flags || { just e2e-down; exit 1; }
+    just e2e-run "$@"; status=$?
     just e2e-down
     exit $status
 
