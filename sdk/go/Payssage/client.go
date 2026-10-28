@@ -1,17 +1,16 @@
 package payssage
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"resty.dev/v3"
 )
 
 type Config struct {
@@ -20,66 +19,53 @@ type Config struct {
 }
 
 type Client struct {
-	baseURL    string
-	apiKey     string
-	httpClient *http.Client
+	http *resty.Client
 }
 
 func New(cfg Config) *Client {
 	// otelhttp.NewTransport injects traceparent from the request context, so
 	// calls made under an active span join the caller's distributed trace.
 	return &Client{
-		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
-		apiKey:  cfg.APIKey,
-		httpClient: &http.Client{
-			Timeout:   15 * time.Second,
-			Transport: otelhttp.NewTransport(http.DefaultTransport),
-		},
+		http: resty.NewWithClient(&http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}).
+			SetBaseURL(strings.TrimRight(cfg.BaseURL, "/")).
+			SetTimeout(15*time.Second).
+			SetHeader("Accept", "application/json").
+			SetHeader("X-API-Key", cfg.APIKey),
 	}
 }
 
+// Close releases the underlying HTTP client's resources.
+func (c *Client) Close() error {
+	return c.http.Close()
+}
+
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
-	var reqBody io.Reader
+	var env struct {
+		Data json.RawMessage `json:"data"`
+	}
+
+	req := c.http.R().SetContext(ctx).SetResponseExpectContentType("application/json")
 	if body != nil {
-		b, err := json.Marshal(body)
-		if err != nil {
-			return fmt.Errorf("payssage: marshal request: %w", err)
-		}
-		reqBody = bytes.NewReader(b)
+		req.SetBody(body)
+	}
+	if out != nil {
+		req.SetResult(&env)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody)
+	res, err := req.Execute(method, path)
 	if err != nil {
-		return fmt.Errorf("payssage: build request: %w", err)
+		return fmt.Errorf("payssage: %s %s: %w", method, path, err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-API-Key", c.apiKey)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("payssage: http: %w", err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode >= 400 {
+	if res.IsStatusFailure() {
 		var apiErr APIError
-		_ = json.NewDecoder(resp.Body).Decode(&apiErr)
-		apiErr.StatusCode = resp.StatusCode
+		_ = json.Unmarshal(res.Bytes(), &apiErr)
+		apiErr.StatusCode = res.StatusCode()
 		return &apiErr
 	}
 
 	if out != nil {
-		raw := struct {
-			Data json.RawMessage `json:"data"`
-		}{}
-		err = json.NewDecoder(resp.Body).Decode(&raw)
-		if err != nil {
-			return fmt.Errorf("payssage: decode envelope: %w", err)
-		}
-		err = json.Unmarshal(raw.Data, out)
+		err = json.Unmarshal(env.Data, out)
 		if err != nil {
 			return fmt.Errorf("payssage: decode data: %w", err)
 		}

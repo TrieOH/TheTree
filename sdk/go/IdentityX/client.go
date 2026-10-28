@@ -2,12 +2,15 @@ package idx
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/MintzyG/sdkkit"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"resty.dev/v3"
 )
 
 type Config struct {
@@ -18,11 +21,9 @@ type Config struct {
 }
 
 type Client struct {
-	*sdkkit.Client
+	http *resty.Client
 
 	projectID uuid.UUID
-	baseURL   string
-	debug     bool
 
 	Tokens *TokenService
 	Actors *ActorService
@@ -33,32 +34,59 @@ func NewClient(cfg Config) (*Client, error) {
 		return nil, &ConfigError{Field: "ProjectID", Message: "required"}
 	}
 
-	core, err := sdkkit.New(sdkkit.Config{
-		BaseURL: cfg.BaseURL,
-		APIKey:  cfg.APIKey,
-		Debug:   cfg.Debug,
-		// otelhttp.NewTransport injects traceparent from the request context,
-		// so calls made under an active span join the caller's distributed
-		// trace instead of starting a fresh root trace on the receiving API.
-		HTTPClient: &http.Client{
-			Timeout:   30 * time.Second,
-			Transport: otelhttp.NewTransport(http.DefaultTransport),
-		},
-	})
-	if err != nil {
-		return nil, err
+	if cfg.BaseURL == "" {
+		return nil, &ConfigError{Field: "BaseURL", Message: "required"}
 	}
 
+	// otelhttp.NewTransport injects traceparent from the request context, so
+	// calls made under an active span join the caller's distributed trace
+	// instead of starting a fresh root trace on the receiving API.
+	hc := resty.NewWithClient(&http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}).
+		SetBaseURL(strings.TrimRight(cfg.BaseURL, "/")).
+		SetTimeout(30*time.Second).
+		SetHeader("Accept", "application/json").
+		SetHeader("X-API-Key", cfg.APIKey).
+		SetDebug(cfg.Debug)
+
 	c := &Client{
-		Client:    core,
+		http:      hc,
 		projectID: cfg.ProjectID,
-		baseURL:   cfg.BaseURL,
-		debug:     cfg.Debug,
 	}
 
 	c.Tokens = &TokenService{client: c, cacheTTL: time.Hour}
 	c.Actors = &ActorService{client: c}
 	return c, nil
+}
+
+// Close releases the underlying HTTP client's resources.
+func (c *Client) Close() error {
+	return c.http.Close()
+}
+
+// envelope is the {"data": ...} wrapper IdentityX puts around JSON
+// responses (JWKS is the exception and comes back bare).
+type envelope[T any] struct {
+	Data T `json:"data"`
+}
+
+// send executes req and decodes a 2xx body into the request's result. Any
+// 4xx/5xx comes back as *APIError carrying the HTTP status, whatever the body
+// looks like.
+func (c *Client) send(req *resty.Request, method, path string) error {
+	res, err := req.SetResponseExpectContentType("application/json").Execute(method, path)
+	if err != nil {
+		return fmt.Errorf("idx: %s %s: %w", method, path, err)
+	}
+	if res.IsStatusFailure() {
+		apiErr := &APIError{}
+		_ = json.Unmarshal(res.Bytes(), apiErr)
+		apiErr.StatusCode = res.StatusCode()
+		if apiErr.Message == "" {
+			apiErr.Message = res.String()
+		}
+		return apiErr
+	}
+	return nil
 }
 
 // Bootstrap creates a client and verifies the initial JWKS so the caller can
