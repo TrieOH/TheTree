@@ -53,12 +53,12 @@ catalog:
   lucide-solid: ^1.41.0
 
   # === Validation ===
-  zod: ^4.4.3
+  zod: ^4.6.7
   react-hook-form: ^7.78.0
 
   # === Build / Tooling ===
   typescript: ^7.0.2
-  vite: ^8.2.2
+  vite: ^8.3.5
   '@solidjs/vite-plugin': ^3.0.0-next.39
   '@vitejs/plugin-react': ^6.0.2
   '@cloudflare/vite-plugin': ^1.39.2
@@ -103,7 +103,8 @@ overrides:
   browserslist: 4.28.7
   'posthog-js>fflate': ^0.4.9
   fflate: 0.8.3
-  dompurify: 3.4.16
+  dompurify: 3.4.17
+  zod: ^4.6.7
   js-yaml: 4.3.2
   nanoid: 3.3.18
   esbuild: ">=0.28.1"
