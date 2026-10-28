@@ -1,5 +1,6 @@
 import type { ParentProps } from 'solid-js';
 import { HydrationScript } from '@solidjs/web';
+import { WaveSpinnerLoading } from '@/shared/ui/loader/WaveSpinnerLoading';
 
 // Mirrors ThemeProvider: the "theme" key in localStorage, falling back to the OS.
 const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);r.style.colorScheme=d?"dark":"light"}catch(e){}})()`;
@@ -33,16 +34,24 @@ export default function Document(props: ParentProps) {
         {/* Applied before first paint. ThemeProvider only runs once the bundle
             has loaded, so without this a dark-mode user sees a light page flash. */}
         <script innerHTML={THEME_BOOTSTRAP} />
-        {/* The two fonts every page uses, fetched with the document instead of
-            after the CSS, so text doesn't paint in a fallback and then reflow. */}
+        {/* Body font only, fetched with the document so text doesn't paint in a
+            fallback and reflow. The display font (font-display: swap) is left
+            to load on demand: preloading both put 116 kB ahead of the app's JS
+            on a slow link. */}
         <link rel="preload" href="/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
-        <link rel="preload" href="/fonts/space-grotesk-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
         <HydrationScript />
       </head>
       <body class="min-w-[320px] antialiased wrap:anywhere">
         <a class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-background focus:px-4 focus:py-2" href="#main-content">
           Pular para o conteúdo principal
         </a>
+        {/* Client-only shell: until the bundle has booted the page would be
+            blank. This paints with the HTML + CSS and is removed by
+            RouterHost (App.tsx) once the first route is on screen. It mirrors
+            the AuthProvider fallback so the two hand over without a flash. */}
+        <div id="boot" class="fixed inset-0 z-200 flex items-center justify-center bg-background">
+          <WaveSpinnerLoading text="Carregando..." />
+        </div>
         {props.children}
       </body>
     </html>

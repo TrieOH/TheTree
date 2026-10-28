@@ -15,7 +15,7 @@ import {
 import type { RouterSession } from "@trieoh/front-core-solid";
 import { initBrowserTracing } from "@trieoh/front-core/tracing/browser";
 import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-solid";
-import { untrack } from "solid-js";
+import { onSettled, untrack } from "solid-js";
 import { bffTransport } from "@/features/auths/api/bff-client";
 import { ThemeProvider } from "@/shared/lib/theme";
 import { appQueryClient } from "@/shared/lib/query-client";
@@ -128,6 +128,10 @@ export default function App() {
 // /auth for a frame before <AuthContextUpdater> catches up.
 function RouterHost() {
   const auth = useAuth();
+
+  onSettled(() => {
+    document.getElementById("boot")?.remove();
+  });
 
   return (
     <RouterProvider

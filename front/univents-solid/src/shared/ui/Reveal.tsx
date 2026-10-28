@@ -1,6 +1,31 @@
 import type { JSX } from "@solidjs/web";
-import { animate } from "motion";
 import { onCleanup, untrack } from "solid-js";
+
+// One observer for every Reveal on the page instead of one per element
+const pending = new WeakMap<Element, () => void>();
+let shared: IntersectionObserver | undefined;
+
+function whenVisible(element: Element, onVisible: () => void): () => void {
+  shared ??= new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const callback = pending.get(entry.target);
+        shared?.unobserve(entry.target);
+        pending.delete(entry.target);
+        callback?.();
+      }
+    },
+    { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
+  );
+  pending.set(element, onVisible);
+  shared.observe(element);
+
+  return () => {
+    shared?.unobserve(element);
+    pending.delete(element);
+  };
+}
 
 export function Reveal(props: {
   children: JSX.Element;
@@ -15,8 +40,8 @@ export function Reveal(props: {
   animate?: boolean;
 }) {
   let element!: HTMLDivElement;
-  let observer: IntersectionObserver | undefined;
-  let animation: ReturnType<typeof animate> | undefined;
+  let release: (() => void) | undefined;
+  let animation: Animation | undefined;
 
   const offset = () =>
     props.direction === "left"
@@ -24,6 +49,21 @@ export function Reveal(props: {
       : props.direction === "right"
         ? "translateX(15px)"
         : "translateY(15px)";
+
+  const play = () => {
+    // Native WAAPI: the backwards fill holds the hidden state through the
+    // delay, so the inline opacity can go as soon as the animation exists.
+    animation = element.animate(
+      { opacity: [0, 1], transform: [offset(), "translate(0, 0)"] },
+      {
+        delay: (props.delay ?? 0) * 1000,
+        duration: 400,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        fill: "backwards",
+      },
+    );
+    element.style.removeProperty("opacity");
+  };
 
   const reveal = () => {
     if (
@@ -34,25 +74,12 @@ export function Reveal(props: {
       return;
     }
     element.style.opacity = "0";
-    observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        observer?.disconnect();
-        observer = undefined;
-        animation = animate(
-          element,
-          { opacity: [0, 1], transform: [offset(), "translate(0, 0)"] },
-          { delay: props.delay ?? 0, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-        );
-      },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
-    );
-    observer.observe(element);
+    release = whenVisible(element, play);
   };
 
   onCleanup(() => {
-    animation?.stop();
-    observer?.disconnect();
+    animation?.cancel();
+    release?.();
   });
 
   return (

@@ -57,9 +57,12 @@ describe("AuthenticatedPostHogProvider", () => {
     h.setSubject({ id: "actor-1", email: "maria@example.com" });
   });
 
-  it("initializes the client and renders its children", () => {
-    provider("phc_test");
+  it("initializes the client and renders its children", async () => {
+    const view = provider("phc_test");
 
+    expect(view.getByText("child")).toBeTruthy();
+    // posthog-js is a lazy chunk: init lands once the browser is idle.
+    await vi.waitFor(() => expect(h.init).toHaveBeenCalled());
     expect(h.init).toHaveBeenCalledWith(
       "phc_test",
       expect.objectContaining({
@@ -70,18 +73,20 @@ describe("AuthenticatedPostHogProvider", () => {
     );
   });
 
-  it("lets the app turn pageviews off explicitly", () => {
+  it("lets the app turn pageviews off explicitly", async () => {
     provider("phc_test", false);
 
+    await vi.waitFor(() => expect(h.init).toHaveBeenCalled());
     expect(h.init).toHaveBeenCalledWith(
       "phc_test",
       expect.objectContaining({ capture_pageview: false }),
     );
   });
 
-  it("keeps the placeholder key from initializing", () => {
+  it("keeps the placeholder key from initializing", async () => {
     provider("phc_xxx");
 
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(h.init).not.toHaveBeenCalled();
   });
 
@@ -89,18 +94,18 @@ describe("AuthenticatedPostHogProvider", () => {
     h.loaded.value = true;
     provider("phc_test");
 
-    await Promise.resolve();
-    expect(h.identify).toHaveBeenCalledWith("actor-1", { email: "maria@example.com" });
+    await vi.waitFor(() =>
+      expect(h.identify).toHaveBeenCalledWith("actor-1", { email: "maria@example.com" }),
+    );
   });
 
   it("resets the person once the session is gone", async () => {
     h.loaded.value = true;
     provider("phc_test");
-    await Promise.resolve();
+    await vi.waitFor(() => expect(h.identify).toHaveBeenCalled());
 
     h.setSubject(null);
-    await Promise.resolve();
 
-    expect(h.reset).toHaveBeenCalled();
+    await vi.waitFor(() => expect(h.reset).toHaveBeenCalled());
   });
 });

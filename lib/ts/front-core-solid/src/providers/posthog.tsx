@@ -1,5 +1,5 @@
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid"
-import posthog from "posthog-js"
+import type { PostHog } from "posthog-js"
 import { createEffect, onSettled, type ParentProps } from "solid-js"
 
 export interface PostHogConfig {
@@ -46,15 +46,32 @@ export function AuthenticatedPostHogProvider(
       const subject = isAuthenticated() ? auth.profile() : null
       return [subject?.id, subject?.email] as const
     },
-    ([id, email]) => {
-      if (!posthog.__loaded) return
-
-      if (id) posthog.identify(id, email ? { email } : undefined)
-      else if (posthog.get_property("$user_id")) posthog.reset()
-    },
+    ([id, email]) => identify(id, email),
   )
 
   return props.children
+}
+
+// posthog-js is ~74 kB brotli: it is fetched as its own chunk once the browser
+// is idle, so analytics never competes with the first render for bandwidth.
+let client: PostHog | undefined
+let booting = false
+let identity: readonly [string | undefined, string | null | undefined] | undefined
+
+function identify(id: string | undefined, email: string | null | undefined) {
+  identity = [id, email]
+  if (!client?.__loaded) return
+
+  if (id) client.identify(id, email ? { email } : undefined)
+  else if (client.get_property("$user_id")) client.reset()
+}
+
+function whenIdle(task: () => void) {
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(task, { timeout: 4000 })
+  } else {
+    setTimeout(task, 1)
+  }
 }
 
 function initPostHog(config: PostHogConfig) {
@@ -63,15 +80,27 @@ function initPostHog(config: PostHogConfig) {
     typeof window === "undefined" ||
     !config.key ||
     config.key === "phc_xxx" ||
-    posthog.__loaded
+    booting
   ) {
     return
   }
+  booting = true
 
-  posthog.init(config.key, {
-    api_host: config.host || "https://us.i.posthog.com",
-    person_profiles: config.personProfiles ?? "identified_only",
-    capture_pageview: config.capturePageview ?? "history_change",
-    defaults: "2026-05-30",
+  whenIdle(() => {
+    void import("posthog-js").then(({ default: posthog }) => {
+      if (!posthog.__loaded) {
+        posthog.init(config.key, {
+          api_host: config.host || "https://us.i.posthog.com",
+          person_profiles: config.personProfiles ?? "identified_only",
+          capture_pageview: config.capturePageview ?? "history_change",
+          defaults: "2026-05-30",
+        })
+      }
+      client = posthog
+      // The subject may have settled while the chunk was loading.
+      if (identity) identify(...identity)
+    }).finally(() => {
+      booting = false
+    })
   })
 }
