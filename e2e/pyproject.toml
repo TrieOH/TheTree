@@ -1,0 +1,14 @@
+[project]
+name = "thetree-e2e"
+version = "0.1.0"
+description = "End-to-end tests for TheTree, written in Robot Framework"
+requires-python = ">=3.12"
+dependencies = [
+    "robotframework==7.5",
+    # Browser = Playwright under the hood (`rfbrowser init chromium` installs it).
+    "robotframework-browser==20.6.0",
+    "robotframework-requests==0.9.7",
+]
+
+[tool.uv]
+package = false
