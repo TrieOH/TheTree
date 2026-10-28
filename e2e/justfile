@@ -1,0 +1,22 @@
+set shell := ["bash", "-cu"]
+# Recipes not defined here (e2e, e2e-up, e2e-run, e2e-down, ...) fall back to
+# the root justfile, so `just e2e` works from this directory too.
+set fallback
+
+default:
+    @just --list
+
+# Playwright and Chromium for the Browser library come along too.
+# Install the Robot deps into .venv; safe to rerun, `just init force` redoes the browser.
+init FORCE="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v uv >/dev/null || { echo "uv not found: https://docs.astral.sh/uv/" >&2; exit 1; }
+    uv sync --quiet
+    # The node deps and Chromium live inside the Browser package, so a version
+    # bump wipes them; checking for them (not a marker file) catches that.
+    wrapper="$(uv run python -c 'import Browser, pathlib; print(pathlib.Path(Browser.__file__).parent / "wrapper")')"
+    if [ -n "{{FORCE}}" ] || [ ! -d "$wrapper/node_modules" ]; then
+      uv run rfbrowser init chromium
+    fi
+    echo "e2e ready: just e2e"

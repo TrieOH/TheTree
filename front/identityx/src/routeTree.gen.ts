@@ -9,45 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthIndexRouteImport } from './routes/auth/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
-import { Route as AuthVerifyRouteImport } from './routes/auth/verify'
-import { Route as AuthSetupRouteImport } from './routes/auth/setup'
-import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
-import { Route as AuthResetRouteImport } from './routes/auth/reset'
-import { Route as AuthResendVerificationRouteImport } from './routes/auth/resend-verification'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
-import { Route as AdminIntrospectRouteImport } from './routes/admin/introspect'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
-import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
+import { Route as AdminIntrospectRouteImport } from './routes/admin/introspect'
+import { Route as AuthIndexRouteImport } from './routes/auth/index'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AuthResendVerificationRouteImport } from './routes/auth/resend-verification'
+import { Route as AuthResetRouteImport } from './routes/auth/reset'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthSetupRouteImport } from './routes/auth/setup'
+import { Route as AuthVerifyRouteImport } from './routes/auth/verify'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
-import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provider/callback'
-import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/projects/$projectID'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
+import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
+import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/projects/$projectID'
+import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provider/callback'
 import { Route as AdminProjectsProjectIDIndexRouteImport } from './routes/admin/projects/$projectID/index'
-import { Route as AdminProjectsProjectIDProfilesRouteImport } from './routes/admin/projects/$projectID/profiles'
-import { Route as AdminProjectsProjectIDOauthRouteImport } from './routes/admin/projects/$projectID/oauth'
-import { Route as AdminProjectsProjectIDMembersRouteImport } from './routes/admin/projects/$projectID/members'
-import { Route as AdminProjectsProjectIDEmailsRouteImport } from './routes/admin/projects/$projectID/emails'
-import { Route as AdminProjectsProjectIDCapabilitiesRouteImport } from './routes/admin/projects/$projectID/capabilities'
 import { Route as AdminProjectsProjectIDActorsRouteImport } from './routes/admin/projects/$projectID/actors'
+import { Route as AdminProjectsProjectIDCapabilitiesRouteImport } from './routes/admin/projects/$projectID/capabilities'
+import { Route as AdminProjectsProjectIDEmailsRouteImport } from './routes/admin/projects/$projectID/emails'
+import { Route as AdminProjectsProjectIDMembersRouteImport } from './routes/admin/projects/$projectID/members'
+import { Route as AdminProjectsProjectIDOauthRouteImport } from './routes/admin/projects/$projectID/oauth'
+import { Route as AdminProjectsProjectIDProfilesRouteImport } from './routes/admin/projects/$projectID/profiles'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthIndexRoute = AuthIndexRouteImport.update({
-  id: '/auth/',
-  path: '/auth/',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -55,34 +50,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
-  id: '/auth/verify-email',
-  path: '/auth/verify-email',
-  getParentRoute: () => rootRouteImport,
+const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
+  id: '/$organizationID',
+  path: '/$organizationID',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AuthVerifyRoute = AuthVerifyRouteImport.update({
-  id: '/auth/verify',
-  path: '/auth/verify',
-  getParentRoute: () => rootRouteImport,
+const AdminIntrospectRoute = AdminIntrospectRouteImport.update({
+  id: '/introspect',
+  path: '/introspect',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AuthSetupRoute = AuthSetupRouteImport.update({
-  id: '/auth/setup',
-  path: '/auth/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/auth/reset-password',
-  path: '/auth/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthResetRoute = AuthResetRouteImport.update({
-  id: '/auth/reset',
-  path: '/auth/reset',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthResendVerificationRoute = AuthResendVerificationRouteImport.update({
-  id: '/auth/resend-verification',
-  path: '/auth/resend-verification',
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/auth/',
+  path: '/auth/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
@@ -90,20 +70,35 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIntrospectRoute = AdminIntrospectRouteImport.update({
-  id: '/introspect',
-  path: '/introspect',
-  getParentRoute: () => AdminRoute,
+const AuthResendVerificationRoute = AuthResendVerificationRouteImport.update({
+  id: '/auth/resend-verification',
+  path: '/auth/resend-verification',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
-  id: '/$organizationID',
-  path: '/$organizationID',
-  getParentRoute: () => AdminRoute,
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminProjectsIndexRoute = AdminProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
-  getParentRoute: () => AdminRoute,
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSetupRoute = AuthSetupRouteImport.update({
+  id: '/auth/setup',
+  path: '/auth/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth/verify-email',
+  path: '/auth/verify-email',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminOrganizationIDIndexRoute =
   AdminOrganizationIDIndexRouteImport.update({
@@ -111,50 +106,37 @@ const AdminOrganizationIDIndexRoute =
     path: '/',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
-const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
-  id: '/auth/$provider/callback',
-  path: '/auth/$provider/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminProjectsProjectIDRoute = AdminProjectsProjectIDRouteImport.update({
-  id: '/projects/$projectID',
-  path: '/projects/$projectID',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminOrganizationIDMembersRoute =
   AdminOrganizationIDMembersRouteImport.update({
     id: '/members',
     path: '/members',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AdminProjectsIndexRoute = AdminProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProjectsProjectIDRoute = AdminProjectsProjectIDRouteImport.update({
+  id: '/projects/$projectID',
+  path: '/projects/$projectID',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
+  id: '/auth/$provider/callback',
+  path: '/auth/$provider/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminProjectsProjectIDIndexRoute =
   AdminProjectsProjectIDIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
-const AdminProjectsProjectIDProfilesRoute =
-  AdminProjectsProjectIDProfilesRouteImport.update({
-    id: '/profiles',
-    path: '/profiles',
-    getParentRoute: () => AdminProjectsProjectIDRoute,
-  } as any)
-const AdminProjectsProjectIDOauthRoute =
-  AdminProjectsProjectIDOauthRouteImport.update({
-    id: '/oauth',
-    path: '/oauth',
-    getParentRoute: () => AdminProjectsProjectIDRoute,
-  } as any)
-const AdminProjectsProjectIDMembersRoute =
-  AdminProjectsProjectIDMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
-    getParentRoute: () => AdminProjectsProjectIDRoute,
-  } as any)
-const AdminProjectsProjectIDEmailsRoute =
-  AdminProjectsProjectIDEmailsRouteImport.update({
-    id: '/emails',
-    path: '/emails',
+const AdminProjectsProjectIDActorsRoute =
+  AdminProjectsProjectIDActorsRouteImport.update({
+    id: '/actors',
+    path: '/actors',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
 const AdminProjectsProjectIDCapabilitiesRoute =
@@ -163,10 +145,28 @@ const AdminProjectsProjectIDCapabilitiesRoute =
     path: '/capabilities',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
-const AdminProjectsProjectIDActorsRoute =
-  AdminProjectsProjectIDActorsRouteImport.update({
-    id: '/actors',
-    path: '/actors',
+const AdminProjectsProjectIDEmailsRoute =
+  AdminProjectsProjectIDEmailsRouteImport.update({
+    id: '/emails',
+    path: '/emails',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
+const AdminProjectsProjectIDMembersRoute =
+  AdminProjectsProjectIDMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
+const AdminProjectsProjectIDOauthRoute =
+  AdminProjectsProjectIDOauthRouteImport.update({
+    id: '/oauth',
+    path: '/oauth',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
+const AdminProjectsProjectIDProfilesRoute =
+  AdminProjectsProjectIDProfilesRouteImport.update({
+    id: '/profiles',
+    path: '/profiles',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
 
@@ -346,13 +346,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -360,11 +353,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/': {
-      id: '/auth/'
-      path: '/auth'
-      fullPath: '/auth/'
-      preLoaderRoute: typeof AuthIndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -374,46 +367,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/auth/verify-email': {
-      id: '/auth/verify-email'
-      path: '/auth/verify-email'
-      fullPath: '/auth/verify-email'
-      preLoaderRoute: typeof AuthVerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/$organizationID': {
+      id: '/admin/$organizationID'
+      path: '/$organizationID'
+      fullPath: '/admin/$organizationID'
+      preLoaderRoute: typeof AdminOrganizationIDRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/auth/verify': {
-      id: '/auth/verify'
-      path: '/auth/verify'
-      fullPath: '/auth/verify'
-      preLoaderRoute: typeof AuthVerifyRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/introspect': {
+      id: '/admin/introspect'
+      path: '/introspect'
+      fullPath: '/admin/introspect'
+      preLoaderRoute: typeof AdminIntrospectRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/auth/setup': {
-      id: '/auth/setup'
-      path: '/auth/setup'
-      fullPath: '/auth/setup'
-      preLoaderRoute: typeof AuthSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/reset-password': {
-      id: '/auth/reset-password'
-      path: '/auth/reset-password'
-      fullPath: '/auth/reset-password'
-      preLoaderRoute: typeof AuthResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/reset': {
-      id: '/auth/reset'
-      path: '/auth/reset'
-      fullPath: '/auth/reset'
-      preLoaderRoute: typeof AuthResetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/resend-verification': {
-      id: '/auth/resend-verification'
-      path: '/auth/resend-verification'
-      fullPath: '/auth/resend-verification'
-      preLoaderRoute: typeof AuthResendVerificationRouteImport
+    '/auth/': {
+      id: '/auth/'
+      path: '/auth'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/forgot-password': {
@@ -423,26 +395,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/introspect': {
-      id: '/admin/introspect'
-      path: '/introspect'
-      fullPath: '/admin/introspect'
-      preLoaderRoute: typeof AdminIntrospectRouteImport
-      parentRoute: typeof AdminRoute
+    '/auth/resend-verification': {
+      id: '/auth/resend-verification'
+      path: '/auth/resend-verification'
+      fullPath: '/auth/resend-verification'
+      preLoaderRoute: typeof AuthResendVerificationRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/$organizationID': {
-      id: '/admin/$organizationID'
-      path: '/$organizationID'
-      fullPath: '/admin/$organizationID'
-      preLoaderRoute: typeof AdminOrganizationIDRouteImport
-      parentRoute: typeof AdminRoute
+    '/auth/reset': {
+      id: '/auth/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/projects/': {
-      id: '/admin/projects/'
-      path: '/projects'
-      fullPath: '/admin/projects/'
-      preLoaderRoute: typeof AdminProjectsIndexRouteImport
-      parentRoute: typeof AdminRoute
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/setup': {
+      id: '/auth/setup'
+      path: '/auth/setup'
+      fullPath: '/auth/setup'
+      preLoaderRoute: typeof AuthSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify-email': {
+      id: '/auth/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/$organizationID/': {
       id: '/admin/$organizationID/'
@@ -451,12 +444,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrganizationIDIndexRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
-    '/auth/$provider/callback': {
-      id: '/auth/$provider/callback'
-      path: '/auth/$provider/callback'
-      fullPath: '/auth/$provider/callback'
-      preLoaderRoute: typeof AuthProviderCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/$organizationID/members': {
+      id: '/admin/$organizationID/members'
+      path: '/members'
+      fullPath: '/admin/$organizationID/members'
+      preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
+      parentRoute: typeof AdminOrganizationIDRoute
+    }
+    '/admin/projects/': {
+      id: '/admin/projects/'
+      path: '/projects'
+      fullPath: '/admin/projects/'
+      preLoaderRoute: typeof AdminProjectsIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/projects/$projectID': {
       id: '/admin/projects/$projectID'
@@ -465,12 +465,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjectsProjectIDRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/$organizationID/members': {
-      id: '/admin/$organizationID/members'
-      path: '/members'
-      fullPath: '/admin/$organizationID/members'
-      preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
-      parentRoute: typeof AdminOrganizationIDRoute
+    '/auth/$provider/callback': {
+      id: '/auth/$provider/callback'
+      path: '/auth/$provider/callback'
+      fullPath: '/auth/$provider/callback'
+      preLoaderRoute: typeof AuthProviderCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/projects/$projectID/': {
       id: '/admin/projects/$projectID/'
@@ -479,32 +479,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjectsProjectIDIndexRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
-    '/admin/projects/$projectID/profiles': {
-      id: '/admin/projects/$projectID/profiles'
-      path: '/profiles'
-      fullPath: '/admin/projects/$projectID/profiles'
-      preLoaderRoute: typeof AdminProjectsProjectIDProfilesRouteImport
-      parentRoute: typeof AdminProjectsProjectIDRoute
-    }
-    '/admin/projects/$projectID/oauth': {
-      id: '/admin/projects/$projectID/oauth'
-      path: '/oauth'
-      fullPath: '/admin/projects/$projectID/oauth'
-      preLoaderRoute: typeof AdminProjectsProjectIDOauthRouteImport
-      parentRoute: typeof AdminProjectsProjectIDRoute
-    }
-    '/admin/projects/$projectID/members': {
-      id: '/admin/projects/$projectID/members'
-      path: '/members'
-      fullPath: '/admin/projects/$projectID/members'
-      preLoaderRoute: typeof AdminProjectsProjectIDMembersRouteImport
-      parentRoute: typeof AdminProjectsProjectIDRoute
-    }
-    '/admin/projects/$projectID/emails': {
-      id: '/admin/projects/$projectID/emails'
-      path: '/emails'
-      fullPath: '/admin/projects/$projectID/emails'
-      preLoaderRoute: typeof AdminProjectsProjectIDEmailsRouteImport
+    '/admin/projects/$projectID/actors': {
+      id: '/admin/projects/$projectID/actors'
+      path: '/actors'
+      fullPath: '/admin/projects/$projectID/actors'
+      preLoaderRoute: typeof AdminProjectsProjectIDActorsRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
     '/admin/projects/$projectID/capabilities': {
@@ -514,11 +493,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjectsProjectIDCapabilitiesRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
-    '/admin/projects/$projectID/actors': {
-      id: '/admin/projects/$projectID/actors'
-      path: '/actors'
-      fullPath: '/admin/projects/$projectID/actors'
-      preLoaderRoute: typeof AdminProjectsProjectIDActorsRouteImport
+    '/admin/projects/$projectID/emails': {
+      id: '/admin/projects/$projectID/emails'
+      path: '/emails'
+      fullPath: '/admin/projects/$projectID/emails'
+      preLoaderRoute: typeof AdminProjectsProjectIDEmailsRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
+    '/admin/projects/$projectID/members': {
+      id: '/admin/projects/$projectID/members'
+      path: '/members'
+      fullPath: '/admin/projects/$projectID/members'
+      preLoaderRoute: typeof AdminProjectsProjectIDMembersRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
+    '/admin/projects/$projectID/oauth': {
+      id: '/admin/projects/$projectID/oauth'
+      path: '/oauth'
+      fullPath: '/admin/projects/$projectID/oauth'
+      preLoaderRoute: typeof AdminProjectsProjectIDOauthRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
+    '/admin/projects/$projectID/profiles': {
+      id: '/admin/projects/$projectID/profiles'
+      path: '/profiles'
+      fullPath: '/admin/projects/$projectID/profiles'
+      preLoaderRoute: typeof AdminProjectsProjectIDProfilesRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
   }
