@@ -10,6 +10,8 @@ Resource            common.resource
 
 *** Variables ***
 ${EMAIL_TIMEOUT}        30s
+# How long a "nothing was sent" check waits for a job that should not run.
+${EMAIL_GRACE}          3s
 
 
 *** Keywords ***
@@ -63,3 +65,20 @@ Action Token From Email
     ${tokens}=    Get Regexp Matches    ${body}    [?&;]token=([A-Za-z0-9._-]+)    1
     Should Not Be Empty    ${tokens}    msg=No token link in the "${subject}" email to ${address}
     RETURN    ${tokens}[0]
+
+Action Link From Email
+    [Documentation]    The whole verify/reset link, for a browser to follow.
+    [Arguments]    ${address}    ${subject}    ${count}=1
+    ${message_id}=    Wait For Email To    ${address}    ${subject}    ${count}
+    ${body}=    Body Of Email    ${message_id}
+    ${links}=    Get Regexp Matches    ${body}    href="([^"]*[?&;]token=[^"]+)"    1
+    Should Not Be Empty    ${links}    msg=No token link in the "${subject}" email to ${address}
+    ${link}=    Replace String    ${links}[0]    &amp;    &
+    RETURN    ${link}
+
+No Email Should Arrive To
+    [Documentation]    Gives the background jobs ${EMAIL_GRACE} to send, then checks nothing came.
+    [Arguments]    ${address}    ${subject}
+    Sleep    ${EMAIL_GRACE}
+    ${messages}=    Emails To    ${address}    ${subject}
+    Should Be Empty    ${messages}    msg=Did not expect a "${subject}" email to ${address}

@@ -12,7 +12,11 @@ Library             RequestsLibrary
 ${IDX_URL}              http://localhost:18080
 ${IDX_APP_URL}          http://localhost:13001
 ${MAILPIT_URL}          http://localhost:18025
-${HEADLESS}             ${True}
+# Browser suites open a visible Chromium by default so you can watch them;
+# `just e2e ... --headless` (or no display at all) flips this.
+${HEADLESS}             ${False}
+# Playwright's per-action delay, e.g. 250ms, to follow a headed run by eye.
+${SLOW_MO}              0s
 
 # The platform super admin `/auth/setup` creates once per stack.
 ${ADMIN_EMAIL}          admin@e2e.trieoh.test
