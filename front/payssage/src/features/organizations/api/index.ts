@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import type {
   MemberAddToOrganizationI,
@@ -24,9 +25,9 @@ export const createOrganizationFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of organizations objects.
  */
 export const getAllOrganizationsFn = createClientOnlyFn(async () => {
-  const organizations =
-    await tanstackQueryFetcher<OrganizationI[]>("/organizations");
-  return Array.isArray(organizations) ? organizations : [];
+  return itemsOf<OrganizationI>(
+    await tanstackQueryFetcher<unknown>("/organizations"),
+  );
 });
 
 /**
@@ -78,9 +79,9 @@ export const removeMemberFromOrganizationFn = createClientOnlyFn(
  */
 export const getAllOrganizationsMemberFn = createClientOnlyFn(
   (organization_id: string) => {
-    return tanstackQueryFetcher<OrganizationMemberI[]>(
+    return tanstackQueryFetcher<unknown>(
       `/organizations/${organization_id}/members`,
-    ).then((members) => (Array.isArray(members) ? members : []));
+    ).then(itemsOf<OrganizationMemberI>);
   },
 );
 

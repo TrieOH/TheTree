@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher } from "#/shared/lib/api/fetch";
 import type {
   WebhookDelivery,
@@ -10,11 +11,11 @@ import type {
 
 const unwrapList = <T>(response: {
   success: boolean;
-  data?: T[];
+  data?: unknown;
   message?: string;
 }) => {
   if (!response.success) throw response;
-  return Array.isArray(response.data) ? response.data : [];
+  return itemsOf<T>(response.data);
 };
 
 export const createWebhookEndpointFn = createClientOnlyFn(
@@ -29,8 +30,8 @@ export const webhookEndpointsQueryOptions = (walletId: string) =>
   queryOptions({
     queryKey: ["wallets", walletId, "webhooks", "endpoints"],
     queryFn: async () =>
-      unwrapList(
-        await authFetcher.get<WebhookEndpoint[]>(
+      unwrapList<WebhookEndpoint>(
+        await authFetcher.get<unknown>(
           `/wallets/${walletId}/webhooks/endpoints`,
         ),
       ),
@@ -49,8 +50,8 @@ export const webhookDeliveriesQueryOptions = (endpointId: string) =>
   queryOptions({
     queryKey: ["webhooks", "endpoints", endpointId, "deliveries"],
     queryFn: async () =>
-      unwrapList(
-        await authFetcher.get<WebhookDelivery[]>(
+      unwrapList<WebhookDelivery>(
+        await authFetcher.get<unknown>(
           `/webhooks/endpoints/${endpointId}/deliveries`,
         ),
       ),
@@ -64,10 +65,8 @@ export const webhookEventsQueryOptions = (walletId: string) =>
   queryOptions({
     queryKey: ["wallets", walletId, "webhooks", "events"],
     queryFn: async () =>
-      unwrapList(
-        await authFetcher.get<WebhookEvent[]>(
-          `/wallets/${walletId}/webhooks/events`,
-        ),
+      unwrapList<WebhookEvent>(
+        await authFetcher.get<unknown>(`/wallets/${walletId}/webhooks/events`),
       ),
   });
 

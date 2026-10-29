@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type {
   WalletBindCollectorI,
@@ -90,10 +91,11 @@ export const unbindCollectorFromWalletFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of WalletI objects.
  */
 export const getWalletsFn = createClientOnlyFn(async (orgId?: string) => {
-  const wallets = await tanstackQueryFetcher<WalletI[]>(
-    orgId ? `/organizations/${orgId}/wallets` : "/wallets",
+  return itemsOf<WalletI>(
+    await tanstackQueryFetcher<unknown>(
+      orgId ? `/organizations/${orgId}/wallets` : "/wallets",
+    ),
   );
-  return Array.isArray(wallets) ? wallets : [];
 });
 
 /**
