@@ -6,7 +6,7 @@ export { BFF_PATH };
 
 /**
  * The BFF only needs infrastructure config: IdentityX URLs, and the secret that
- * seals the session cookie. Endpoints, envelopes and refresh stay in the shared
+ * seals the session cookie. Endpoints, responses and refresh stay in the shared
  * core.
  */
 export function handleBffRequest(
