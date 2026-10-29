@@ -5,30 +5,25 @@ import {
   type DefaultSuccessEnvelope,
 } from "@trieoh/envoy-fetch-ts";
 
-// IdentityX is moving off the `fun.Response` envelope: the payload itself on
-// success, `{ code, message, fields }` on failure, lists as `{ items }`. These
-// read both shapes, so the SDK works on either side of the move.
+// IdentityX's wire: the payload itself on success (nothing on a 204), lists
+// as `{ items }`, and `{ code, message, fields }` on failure.
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-/** A `fun.Response` envelope: a numeric `code` next to `data` or `module`. */
-export const isEnvelope = (raw: unknown): raw is { code: number; data?: unknown; message?: string } =>
-  isRecord(raw) && typeof raw.code === "number" && ("data" in raw || "module" in raw);
-
-/** `toSuccess` for the fetch client: the envelope's data, or the body itself. */
+/** `toSuccess` for the fetch client: the body is the payload. */
 export function toSuccess<T>(raw: unknown): DefaultSuccessEnvelope & { data: T } {
-  return defaultToSuccess<T>(isEnvelope(raw) ? raw : { module: "IdentityX", data: raw });
+  return defaultToSuccess<T>({ module: "IdentityX", data: raw });
 }
 
-/** `toFailure` for the fetch client: the envelope, or a bare error object. */
+/** `toFailure` for the fetch client: the HTTP status, the error's code and message. */
 export function toFailure(raw: unknown, status: number): DefaultFailureEnvelope {
-  if (!isEnvelope(raw) && isRecord(raw) && typeof raw.code === "string" && typeof raw.message === "string") {
-    return defaultToFailure({ module: "IdentityX", code: status, message: raw.message, error_id: raw.code }, status);
-  }
-  return defaultToFailure(raw, status);
+  const error = isRecord(raw) && typeof raw.code === "string" && typeof raw.message === "string"
+    ? { message: raw.message, error_id: raw.code }
+    : {};
+  return defaultToFailure({ module: "IdentityX", code: status, ...error }, status);
 }
 
-/** The items of a list payload: `{ items }`, or the bare array of the envelope days. */
+/** The items of a list payload (`{ items }`). */
 export const itemsOf = <T>(data: unknown): T[] =>
-  Array.isArray(data) ? (data as T[]) : ((data as { items?: T[] } | undefined)?.items ?? []);
+  (data as { items?: T[] } | undefined)?.items ?? [];
