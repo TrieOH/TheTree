@@ -24,6 +24,8 @@ import { CertificateCanvas } from "./certificate-canvas";
 import { CertificatePropertiesPanel } from "./certificate-properties-panel";
 import { CertificateTextToolbar } from "./certificate-text-toolbar";
 import { CertificateToolsSidebar } from "./certificate-tools-sidebar";
+import { EditorSkeleton } from "@/shared/ui/EditorSkeleton";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const ArrowLeft = ArrowLeftIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Loader2 = Loader2Icon as unknown as (props: { class?: string }) => JSX.Element;
@@ -37,7 +39,31 @@ export interface CertificateEditorProps {
   duplicate?: boolean;
 }
 
+/**
+ * Editing an existing template waits for it before mounting the workspace, so
+ * the editor never shows an empty document and then replaces it.
+ */
 export function CertificateEditor(props: CertificateEditorProps): JSX.Element {
+  const templateQuery = useQuery(() => ({
+    ...certificationTemplateQueryOptions(props.templateId ?? ""),
+    enabled: Boolean(props.templateId),
+  }));
+
+  return (
+    <Show when={props.templateId} fallback={<CertificateEditorWorkspace {...props} />}>
+      <QueryBoundary
+        query={templateQuery}
+        what="o modelo de certificado"
+        skeleton={<EditorSkeleton />}
+        class="mx-auto my-24 max-w-xl"
+      >
+        {() => <CertificateEditorWorkspace {...props} />}
+      </QueryBoundary>
+    </Show>
+  );
+}
+
+function CertificateEditorWorkspace(props: CertificateEditorProps): JSX.Element {
   const navigate = useNavigate();
 
   const signaturesQuery = useQuery(() =>

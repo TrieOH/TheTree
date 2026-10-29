@@ -8,19 +8,6 @@ export type CertificateVariableValues = Partial<
   Record<CertificateVariableKey, string>
 >;
 
-export const SAMPLE_CERTIFICATE_VARIABLES: CertificateVariableValues = {
-  participant_name: "Nome do Participante",
-  event_name: "Nome do Evento",
-  edition_name: "Nome da Edição",
-  activity_name: "Nome da Atividade",
-  participation_type: "edição",
-  location: "Local do Evento",
-  workload_hours: "8",
-  participation_date: "15 de março de 2026",
-  certified_at: "15 de mar. de 2026, 12:00",
-  cert_hash: "UNIV-2026-CERT-SAMPLE",
-  verify_url: "https://univents.app/verify/UNIV-2026-CERT-SAMPLE",
-};
 
 /**
  * Formats a duration in milliseconds into a workload hours string in pt-BR.

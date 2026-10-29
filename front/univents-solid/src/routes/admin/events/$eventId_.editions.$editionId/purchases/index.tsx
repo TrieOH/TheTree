@@ -1,10 +1,11 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import type { SortState } from "@trieoh/ui-solid";
 import { EmptyState, PaginatedContainer } from "@trieoh/ui-solid";
 import type { EditionPurchase } from "@trieoh/univents-api/schemas";
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, createMemo, createSignal } from "solid-js";
 
 import ShoppingBagIcon from "~icons/lucide/shopping-bag";
 
@@ -13,12 +14,15 @@ import { useRefundPurchaseMutation } from "@/features/purchases/api/mutations";
 import { AdminPurchaseCard } from "@/features/purchases/ui/AdminPurchaseCard";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import { toast } from "@/shared/ui/toast";
+import { warmQuery } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const ShoppingBag = ShoppingBagIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/purchases/",
 )({
+  loader: ({ params }) => warmQuery(appQueryClient, editionPurchasesQueryOptions(params.editionId)),
   head: () => ({
     meta: [{ title: "Compras - Admin Univents" }],
   }),
@@ -59,9 +63,10 @@ function AdminEditionPurchasesRoute(): JSX.Element {
 
   return (
     <div class="mx-auto max-w-7xl space-y-6">
-      <Show
-        when={!purchasesQuery().isLoading}
-        fallback={
+      <QueryBoundary
+        query={purchasesQuery}
+        what="as compras"
+        skeleton={
           <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             <For each={[1, 2, 3, 4]}>
               {() => <div class="h-32 animate-pulse rounded-xl bg-muted" />}
@@ -69,15 +74,17 @@ function AdminEditionPurchasesRoute(): JSX.Element {
           </div>
         }
       >
-        <AdminEditionPurchasesContent
-          purchases={purchases()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onRefund={setRefundTarget}
-        />
-      </Show>
+        {() => (
+          <AdminEditionPurchasesContent
+            purchases={purchases()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onRefund={setRefundTarget}
+          />
+        )}
+      </QueryBoundary>
 
       <AlertModal
         open={refundTarget() !== null}

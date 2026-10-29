@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -36,10 +37,21 @@ import {
 import { EditionOverviewDashboard } from "@/features/editions/ui/EditionOverviewDashboard";
 import { EditionOverviewChecklist } from "@/features/editions/ui/EditionOverviewChecklist";
 import { EditionOverviewDialogs } from "@/features/editions/ui/EditionOverviewDialogs";
+import { warmQueries } from "@/shared/lib/route-data";
+import { QueryBoundary, combineQueries } from "@/shared/ui/QueryBoundary";
 
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/",
 )({
+  loader: ({ params }) => warmQueries(appQueryClient, [
+    allAdminEditionsQueryOptions(params.eventId),
+    editionPurchasesQueryOptions(params.editionId),
+    attendeeCountQueryOptions(params.editionId),
+    allTicketsQueryOptions(params.editionId),
+    productsByEditionQueryOptions(params.editionId),
+    programsQueryOptions(params.editionId),
+    occurrencesQueryOptions(params.editionId),
+  ]),
   head: () => ({
     meta: [{ title: "Edição - Admin - Univents" }],
   }),
@@ -148,19 +160,26 @@ function AdminEditionDetailView(): JSX.Element {
     }
   };
 
+  // The dashboard needs every one of these. Building it from whatever has
+  // landed (with `?? []`) paints zeros and then jumps to the real numbers, so
+  // it waits for all of them and holds its place with a skeleton meanwhile.
+  const dashboardQuery = combineQueries(
+    purchasesQuery,
+    attendeeCountQuery,
+    ticketsQuery,
+    productsQuery,
+    programsQuery,
+    occurrencesQuery,
+  );
+
   const metrics = createMemo(() => {
     const ed = edition();
-    if (!ed) return null;
-
-    const purchases = purchasesQuery().data ?? [];
-    const attendeesData = attendeeCountQuery().data;
+    const data = dashboardQuery().data;
+    if (!ed || !data) return null;
+    const [purchases, attendeesData, tickets, products, programs, occurrences] = data;
     const attendees = typeof attendeesData === "number"
       ? attendeesData
       : (attendeesData?.count ?? 0);
-    const tickets = ticketsQuery().data ?? [];
-    const products = productsQuery().data ?? [];
-    const programs = programsQuery().data ?? [];
-    const occurrences = occurrencesQuery().data ?? [];
 
     return buildEditionOverviewMetrics({
       edition: ed,
@@ -253,62 +272,69 @@ function AdminEditionDetailView(): JSX.Element {
   );
 
   return (
-    <Show
-      when={!editionsQuery().isPending}
-      fallback={
-        <div class="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
-          Carregando edição...
-        </div>
-      }
+    <QueryBoundary
+      query={editionsQuery}
+      what="a edição"
+      skeleton={<div class="mx-auto h-72 w-full max-w-7xl animate-pulse rounded-xl bg-muted" />}
     >
-      <Show
-        when={edition()}
-        fallback={
-          <div class="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
-            Edição não encontrada.
-          </div>
-        }
-      >
-        {(ed) => (
-          <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6 pb-28">
-            <EditionOverviewHeader edition={ed()} eventId={eventId()} />
+      {() => (
+        <Show
+          when={edition()}
+          fallback={
+            <div class="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
+              Edição não encontrada.
+            </div>
+          }
+        >
+          {(ed) => (
+            <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6 pb-28">
+              <EditionOverviewHeader edition={ed()} eventId={eventId()} />
 
-            <EditionQuickActions actions={actions()} />
+              <EditionQuickActions actions={actions()} />
 
-            <Show when={metrics()}>
-              {(m) => <EditionOverviewDashboard metrics={m()} />}
-            </Show>
+              <QueryBoundary
+                query={dashboardQuery}
+                what="as métricas da edição"
+                skeleton={<div class="h-80 animate-pulse rounded-xl bg-muted" />}
+              >
+                {() => (
+                  <Show when={metrics()}>
+                    {(m) => <EditionOverviewDashboard metrics={m()} />}
+                  </Show>
+                )}
+              </QueryBoundary>
 
-            <EditionOverviewChecklist
-              hasLogo={Boolean(ed().logo_url)}
-              hasBanner={Boolean(ed().banner_url)}
-              hasDescription={Boolean(ed().description)}
-              hasTagline={Boolean(ed().tagline)}
-              hasLocation={Boolean(ed().location_name)}
-              logoUploading={isImageUploading("logo_url")}
-              bannerUploading={isImageUploading("banner_url")}
-              onAddLogo={() =>
-                document.getElementById(`edition-${ed().id}-logo-upload`)?.click()
-              }
-              onAddBanner={() =>
-                document.getElementById(`edition-${ed().id}-banner-upload`)?.click()
-              }
-              onEdit={() => setEditEditionOpen(true)}
-            />
+              <EditionOverviewChecklist
+                hasLogo={Boolean(ed().logo_url)}
+                hasBanner={Boolean(ed().banner_url)}
+                hasDescription={Boolean(ed().description)}
+                hasTagline={Boolean(ed().tagline)}
+                hasLocation={Boolean(ed().location_name)}
+                logoUploading={isImageUploading("logo_url")}
+                bannerUploading={isImageUploading("banner_url")}
+                onAddLogo={() =>
+                  document.getElementById(`edition-${ed().id}-logo-upload`)?.click()
+                }
+                onAddBanner={() =>
+                  document.getElementById(`edition-${ed().id}-banner-upload`)?.click()
+                }
+                onEdit={() => setEditEditionOpen(true)}
+              />
 
-            <EditionOverviewDialogs
-              edition={ed()}
-              editOpen={editEditionOpen()}
-              publishOpen={publishConfirmOpen()}
-              publishing={isPublishing()}
-              onEditOpenChange={setEditEditionOpen}
-              onPublishOpenChange={setPublishConfirmOpen}
-              onEdit={handleEditEdition}
-              onPublish={handlePublish}
-            />
-          </div>
-        )}
-      </Show>
-    </Show>
+              <EditionOverviewDialogs
+                edition={ed()}
+                editOpen={editEditionOpen()}
+                publishOpen={publishConfirmOpen()}
+                publishing={isPublishing()}
+                onEditOpenChange={setEditEditionOpen}
+                onPublishOpenChange={setPublishConfirmOpen}
+                onEdit={handleEditEdition}
+                onPublish={handlePublish}
+              />
+            </div>
+          )}
+        </Show>
+      )}
+    </QueryBoundary>
   );
 }

@@ -1,3 +1,4 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "./lib/cn";
@@ -13,9 +14,10 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        outline: "border border-border bg-background hover:bg-muted hover:text-foreground",
+        outline:
+          "border border-border bg-background hover:bg-muted hover:text-foreground",
         ghost: "hover:bg-muted hover:text-foreground",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        destructive: "bg-destructive text-primary hover:bg-destructive/90",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -29,8 +31,12 @@ export const buttonVariants = cva(
   },
 );
 
-export type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
-export type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
+export type ButtonVariant = NonNullable<
+  VariantProps<typeof buttonVariants>["variant"]
+>;
+export type ButtonSize = NonNullable<
+  VariantProps<typeof buttonVariants>["size"]
+>;
 
 /**
  * Props are declared explicitly instead of spreading the DOM's: Solid 2 dropped
@@ -39,6 +45,7 @@ export type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]
  * attribute — add to the list when a screen needs more.
  */
 export interface ButtonProps {
+  shape?: Shape;
   variant?: ButtonVariant;
   size?: ButtonSize;
   type?: "button" | "submit" | "reset";
@@ -73,6 +80,7 @@ export function Button(props: ButtonProps) {
       onClick={props.onClick}
       class={cn(
         buttonVariants({ variant: props.variant, size: props.size }),
+        shapeClass(props.shape),
         props.class,
       )}
     >

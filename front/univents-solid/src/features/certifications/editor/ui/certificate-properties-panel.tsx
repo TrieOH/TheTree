@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { Button } from "@trieoh/ui-solid";
@@ -218,7 +219,7 @@ function ImageProperties(props: { element: ImageCertificateElement }): JSX.Eleme
     <div class="space-y-4">
       <div class="overflow-hidden rounded-md border bg-white p-2">
         <img
-          src={props.element.src}
+          src={resolveStorageUrl(props.element.src)}
           alt=""
           class="max-h-32 w-full object-contain"
         />
@@ -319,7 +320,7 @@ function SignatureProperties(props: {
               >
                 <span class="flex h-14 items-center justify-center bg-white p-1.5">
                   <img
-                    src={signature.url}
+                    src={resolveStorageUrl(signature.url)}
                     alt=""
                     class="max-h-full max-w-full object-contain"
                   />

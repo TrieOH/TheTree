@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
@@ -43,6 +44,9 @@ import { ManageProgramDialog } from "@/features/programs/ui/ManageProgramDialog"
 import { toast } from "@/shared/ui/toast";
 import { AlertModal } from "@/widgets/ui/AlertModal";
 import { Combobox, type ComboboxOption } from "@/shared/ui/Combobox";
+import { warmQueries } from "@/shared/lib/route-data";
+import { GridSkeleton } from "@/shared/ui/GridSkeleton";
+import { QueryBoundary, combineQueries } from "@/shared/ui/QueryBoundary";
 
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -52,6 +56,11 @@ const Award = AwardIcon as unknown as (props: { class?: string }) => JSX.Element
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/programs/",
 )({
+  loader: ({ params }) => warmQueries(appQueryClient, [
+    programsQueryOptions(params.editionId),
+    occurrencesQueryOptions(params.editionId),
+    allCertificationTemplatesQueryOptions(params.editionId),
+  ]),
   head: () => ({
     meta: [{ title: "Programação - Univents Admin" }],
   }),
@@ -68,6 +77,10 @@ function AdminProgramsRoute(): JSX.Element {
   // Queries
   const programsQuery = useQuery(() => programsQueryOptions(editionId()));
   const occurrencesQuery = useQuery(() => occurrencesQueryOptions(editionId()));
+  const scheduleQuery = combineQueries(
+    programsQuery,
+    occurrencesQuery,
+  );
 
   // Mutations
   const createMutation = useCreateProgramMutation(editionId);
@@ -417,201 +430,209 @@ function AdminProgramsRoute(): JSX.Element {
         </div>
       </div>
 
-      <PaginatedContainer<ProgramI>
-        items={filteredPrograms()}
-        layout="grid"
-        minItemWidth="16rem"
-        maxRows={(columns) => (columns === 1 ? 8 : 4)}
-        gap="2"
-        sort={sort()}
-        onSortChange={setSort}
-        sortFields={[
-          {
-            key: "name",
-            label: "Nome",
-            ascLabel: "A → Z",
-            descLabel: "Z → A",
-          },
-          {
-            key: "kind",
-            label: "Tipo",
-            ascLabel: "Atividade primeiro",
-            descLabel: "Checkpoint primeiro",
-          },
-        ]}
-        filterValue={filter()}
-        onFilterChange={setFilter}
-        filterPlaceholder="Buscar por nome ou descrição..."
-        filterFields={["name", "description"]}
-        headerActions={
-          <div class="relative" ref={(el) => (filterMenuRef = el)}>
-            <button
-              type="button"
-              onClick={() => setFilterMenuOpen((prev) => !prev)}
-              class={`relative flex items-center gap-1.5 h-9 px-3 text-xs font-medium rounded-md border transition-all cursor-pointer ${activeFilterCount() > 0
-                ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
-                : "border-border bg-background hover:bg-muted text-foreground"
-                }`}
-              title="Filtrar programações"
-            >
-              <Filter class="size-3.5" />
-              <span>Filtrar</span>
-              <Show when={activeFilterCount() > 0}>
-                <span class="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold shadow-xs">
-                  {activeFilterCount()}
-                </span>
-              </Show>
-            </button>
-
-            <Show when={filterMenuOpen()}>
-              <div
-                ref={(el) => {
-                  filterPopoverEl = el;
-                  clampFilterMenu(el);
-                }}
-                class="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-popover p-3 shadow-xl z-50 text-xs space-y-3"
-              >
-                <div class="flex items-center justify-between pb-1.5 border-b border-border/60">
-                  <div class="flex items-center gap-1.5 font-semibold text-foreground">
-                    <Filter class="size-3.5 text-primary" />
-                    <span>Filtros</span>
-                  </div>
+      <QueryBoundary
+        query={scheduleQuery}
+        what="a programação"
+        skeleton={<GridSkeleton />}
+      >
+        {() => (
+          <PaginatedContainer<ProgramI>
+            items={filteredPrograms()}
+            layout="grid"
+            minItemWidth="16rem"
+            maxRows={(columns) => (columns === 1 ? 8 : 4)}
+            gap="2"
+            sort={sort()}
+            onSortChange={setSort}
+            sortFields={[
+              {
+                key: "name",
+                label: "Nome",
+                ascLabel: "A → Z",
+                descLabel: "Z → A",
+              },
+              {
+                key: "kind",
+                label: "Tipo",
+                ascLabel: "Atividade primeiro",
+                descLabel: "Checkpoint primeiro",
+              },
+            ]}
+            filterValue={filter()}
+            onFilterChange={setFilter}
+            filterPlaceholder="Buscar por nome ou descrição..."
+            filterFields={["name", "description"]}
+            headerActions={
+              <div class="relative" ref={(el) => (filterMenuRef = el)}>
+                <button
+                  type="button"
+                  onClick={() => setFilterMenuOpen((prev) => !prev)}
+                  class={`relative flex items-center gap-1.5 h-9 px-3 text-xs font-medium rounded-md border transition-all cursor-pointer ${activeFilterCount() > 0
+                    ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
+                    : "border-border bg-background hover:bg-muted text-foreground"
+                    }`}
+                  title="Filtrar programações"
+                >
+                  <Filter class="size-3.5" />
+                  <span>Filtrar</span>
                   <Show when={activeFilterCount() > 0}>
-                    <button
-                      type="button"
-                      onClick={clearAllFilters}
-                      class="text-[11px] text-primary hover:underline cursor-pointer font-medium"
-                    >
-                      Limpar todos
-                    </button>
+                    <span class="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold shadow-xs">
+                      {activeFilterCount()}
+                    </span>
                   </Show>
-                </div>
+                </button>
 
-                {/* Kind Filter Tabs */}
-                <div class="space-y-1">
-                  <label class="text-[11px] font-medium text-muted-foreground">Tipo de atividade</label>
-                  <div class="flex rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => setKindFilter("all")}
-                      class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "all"
-                        ? "bg-background text-foreground shadow-2xs font-semibold"
-                        : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      Todos ({programs().length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setKindFilter("activity")}
-                      class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "activity"
-                        ? "bg-background text-foreground shadow-2xs font-semibold"
-                        : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      Atividades ({activityCount()})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setKindFilter("checkpoint")}
-                      class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "checkpoint"
-                        ? "bg-background text-foreground shadow-2xs font-semibold"
-                        : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      Checkpoints ({checkpointCount()})
-                    </button>
-                  </div>
-                </div>
+                <Show when={filterMenuOpen()}>
+                  <div
+                    ref={(el) => {
+                      filterPopoverEl = el;
+                      clampFilterMenu(el);
+                    }}
+                    class="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-popover p-3 shadow-xl z-50 text-xs space-y-3"
+                  >
+                    <div class="flex items-center justify-between pb-1.5 border-b border-border/60">
+                      <div class="flex items-center gap-1.5 font-semibold text-foreground">
+                        <Filter class="size-3.5 text-primary" />
+                        <span>Filtros</span>
+                      </div>
+                      <Show when={activeFilterCount() > 0}>
+                        <button
+                          type="button"
+                          onClick={clearAllFilters}
+                          class="text-[11px] text-primary hover:underline cursor-pointer font-medium"
+                        >
+                          Limpar todos
+                        </button>
+                      </Show>
+                    </div>
 
-                {/* Event Day Combobox */}
-                <Show when={distinctDates().length > 0}>
-                  <div class="space-y-1">
-                    <label class="text-[11px] font-medium text-muted-foreground">Dia específico</label>
-                    <Combobox
-                      value={dateFilter() ?? "all"}
-                      options={dateOptions()}
-                      placeholder="Todos os dias..."
-                      searchPlaceholder="Buscar dia..."
-                      onChange={(val) => setDateFilter(val === "all" ? null : val)}
-                      class="w-full"
-                      triggerClass="h-8 text-xs"
-                    />
+                    {/* Kind Filter Tabs */}
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-medium text-muted-foreground">Tipo de atividade</label>
+                      <div class="flex rounded-md border border-border bg-muted/40 p-0.5 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setKindFilter("all")}
+                          class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "all"
+                            ? "bg-background text-foreground shadow-2xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                          Todos ({programs().length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setKindFilter("activity")}
+                          class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "activity"
+                            ? "bg-background text-foreground shadow-2xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                          Atividades ({activityCount()})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setKindFilter("checkpoint")}
+                          class={`flex-1 py-1 rounded text-center font-medium transition-colors cursor-pointer ${kindFilter() === "checkpoint"
+                            ? "bg-background text-foreground shadow-2xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                          Checkpoints ({checkpointCount()})
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Event Day Combobox */}
+                    <Show when={distinctDates().length > 0}>
+                      <div class="space-y-1">
+                        <label class="text-[11px] font-medium text-muted-foreground">Dia específico</label>
+                        <Combobox
+                          value={dateFilter() ?? "all"}
+                          options={dateOptions()}
+                          placeholder="Todos os dias..."
+                          searchPlaceholder="Buscar dia..."
+                          onChange={(val) => setDateFilter(val === "all" ? null : val)}
+                          class="w-full"
+                          triggerClass="h-8 text-xs"
+                        />
+                      </div>
+                    </Show>
                   </div>
                 </Show>
               </div>
-            </Show>
-          </div>
-        }
-        itemLabel="programas"
-        emptyState={
-          <EmptyState
-            icon={<CalendarDays class="size-6 text-foreground/70" />}
-            eyebrow="Programação"
-            title="Nenhum programa cadastrado"
-            description={
-              filter()
-                ? "Nenhum programa corresponde à busca informada."
-                : "Crie o primeiro programa desta edição para definir a grade de horários."
             }
-            class="border-0 bg-transparent px-0 py-4 shadow-none"
-            action={emptyStateAction}
-          />
-        }
-        renderItems={(slice, options) => (
-          <>
-            <AdminCreateProgramCard
-              index={0}
-              animate={options.animate}
-              onCreate={() => setCreating(true)}
-            />
-
-            <For each={slice}>
-              {(program, index) => (
-                <AdminProgramCard
-                  program={program}
-                  eventId={eventId()}
-                  index={index() + 1}
+            itemLabel="programas"
+            emptyState={
+              <EmptyState
+                icon={<CalendarDays class="size-6 text-foreground/70" />}
+                eyebrow="Programação"
+                title="Nenhum programa cadastrado"
+                description={
+                  filter()
+                    ? "Nenhum programa corresponde à busca informada."
+                    : "Crie o primeiro programa desta edição para definir a grade de horários."
+                }
+                class="border-0 bg-transparent px-0 py-4 shadow-none"
+                action={emptyStateAction}
+              />
+            }
+            renderItems={(slice, options) => (
+              <>
+                <AdminCreateProgramCard
+                  index={0}
                   animate={options.animate}
-                  occurrences={occurrences().filter((o) => o.program_id === program.id)}
-                  occurrencesHref={`/admin/events/${eventId()}/editions/${editionId()}/programs/${program.id}/occurrences`}
-                  hasCertificate={Boolean(linkedTemplateByProgram().get(program.id))}
-                  isEmittingCertificates={emittingProgramId() === program.id}
-                  emissionCooldownLabel={
-                    cooldownRemaining(program.id) > 0
-                      ? formatCooldown(cooldownRemaining(program.id))
-                      : undefined
-                  }
-                  onManageCertificate={(p) => {
-                    setCertificateProgram(p);
-                    setCertificateTemplateId(linkedTemplateByProgram().get(p.id) ?? "");
-                  }}
-                  onUnlinkCertificate={(p) => setProgramToUnlink(p)}
-                  onEmitCertificates={(p) => void handleEmitCertificates(p)}
-                  onEdit={setEditing}
-                  onDelete={(p) => setDeleting(p)}
-                  onManageOccurrences={(p) =>
-                    navigate({
-                      to: "/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences",
-                      params: {
-                        eventId: eventId(),
-                        editionId: editionId(),
-                        programId: p.id,
-                      },
-                    })
-                  }
-                  onOpenCalendar={(_p) =>
-                    navigate({
-                      to: "/admin/events/$eventId/editions/$editionId/programs/calendar",
-                      params: { eventId: eventId(), editionId: editionId() },
-                    })
-                  }
+                  onCreate={() => setCreating(true)}
                 />
-              )}
-            </For>
-          </>
+
+                <For each={slice}>
+                  {(program, index) => (
+                    <AdminProgramCard
+                      program={program}
+                      eventId={eventId()}
+                      index={index() + 1}
+                      animate={options.animate}
+                      occurrences={occurrences().filter((o) => o.program_id === program.id)}
+                      occurrencesHref={`/admin/events/${eventId()}/editions/${editionId()}/programs/${program.id}/occurrences`}
+                      hasCertificate={Boolean(linkedTemplateByProgram().get(program.id))}
+                      isEmittingCertificates={emittingProgramId() === program.id}
+                      emissionCooldownLabel={
+                        cooldownRemaining(program.id) > 0
+                          ? formatCooldown(cooldownRemaining(program.id))
+                          : undefined
+                      }
+                      onManageCertificate={(p) => {
+                        setCertificateProgram(p);
+                        setCertificateTemplateId(linkedTemplateByProgram().get(p.id) ?? "");
+                      }}
+                      onUnlinkCertificate={(p) => setProgramToUnlink(p)}
+                      onEmitCertificates={(p) => void handleEmitCertificates(p)}
+                      onEdit={setEditing}
+                      onDelete={(p) => setDeleting(p)}
+                      onManageOccurrences={(p) =>
+                        navigate({
+                          to: "/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences",
+                          params: {
+                            eventId: eventId(),
+                            editionId: editionId(),
+                            programId: p.id,
+                          },
+                        })
+                      }
+                      onOpenCalendar={(_p) =>
+                        navigate({
+                          to: "/admin/events/$eventId/editions/$editionId/programs/calendar",
+                          params: { eventId: eventId(), editionId: editionId() },
+                        })
+                      }
+                    />
+                  )}
+                </For>
+              </>
+            )}
+          />
         )}
-      />
+      </QueryBoundary>
 
       {/* Dialog: Create or Edit */}
       <ManageProgramDialog

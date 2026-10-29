@@ -11,6 +11,26 @@ import { uploadQueueStore } from "./store";
 
 const QUEUE_LOCK_NAME = "univents-upload-queue-processor";
 
+function resolveTaskMaxEdge(task: UploadTask): number {
+  const handlerKey = task.association?.handlerKey;
+  const field = task.association?.input?.field;
+
+  if (handlerKey === "event-image" || handlerKey === "edition-image") {
+    if (field === "logo_url") return 800;
+    if (field === "banner_url") return 1920;
+  }
+
+  if (handlerKey === "program-image") {
+    return 1920;
+  }
+
+  if (handlerKey === "variant-gallery") {
+    return 1200;
+  }
+
+  return 1920;
+}
+
 class UploadQueueProcessor {
   private started = false;
   private running = false;
@@ -168,6 +188,7 @@ class UploadQueueProcessor {
               }),
               current.storagePath,
               current.id,
+              resolveTaskMaxEdge(current),
             ),
           catch: (err) => err,
         });
@@ -235,8 +256,13 @@ class UploadQueueProcessor {
       if (!claimedAssociationTask) return;
       current = claimedAssociationTask;
 
+      const url = current.uploadedUrl;
+      if (!url) {
+        return;
+      }
+
       yield* Effect.tryPromise({
-        try: () => handler(current, current.uploadedUrl!),
+        try: () => handler(current, url),
         catch: (err) => err,
       });
       yield* Effect.tryPromise({

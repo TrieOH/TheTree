@@ -1,6 +1,5 @@
 import type { JSX } from "@solidjs/web";
 import { Show, createEffect, createMemo, createSignal, untrack } from "solid-js";
-import PackageIcon from "~icons/lucide/package";
 import ShieldCheckIcon from "~icons/lucide/shield-check";
 
 import {
@@ -9,13 +8,15 @@ import {
   cn,
 } from "@trieoh/ui-solid";
 import { formatPrice } from "@/shared/lib/money";
-import type {
-  CreateInitialProductOutputI,
-  ProductI,
-  ProductPatchOutputI,
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  productStep1Schema,
+  productVariantStepSchema,
+  type CreateInitialProductOutputI,
+  type ProductI,
+  type ProductPatchOutputI,
 } from "../model";
 
-const Package = PackageIcon as unknown as (props: { class?: string }) => JSX.Element;
 const ShieldCheck = ShieldCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export interface ManageProductValues {
@@ -56,7 +57,7 @@ const valuesOf = (product: ProductI | null): ManageProductValues =>
       }
     : { ...emptyValues };
 
-export function ManageProductDialog(props: ManageProductDialogProps): JSX.Element {
+export function ManageProductDialog(props: ManageProductDialogProps) {
   const [currentStep, setCurrentStep] = createSignal(0);
   let currentValues: ManageProductValues = untrack(() => valuesOf(props.product));
   const [values, setValues] = createSignal<ManageProductValues>(
@@ -66,8 +67,6 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
   const [errors, setErrors] = createSignal<
     Partial<Record<keyof ManageProductValues, string>>
   >({});
-
-  const isEditing = createMemo(() => Boolean(props.product));
 
   let isMounted = false;
   createEffect(
@@ -84,19 +83,7 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
     },
   );
 
-  const resetForm = () => {
-    currentValues = valuesOf(props.product);
-    setValues(currentValues);
-    setErrors({});
-    setCurrentStep(0);
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      resetForm();
-    }
-    props.onOpenChange(open);
-  };
+  const isEditing = () => Boolean(props.product);
 
   const handleChange = (
     key: keyof ManageProductValues & string,
@@ -114,37 +101,16 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
 
   const validateStep = (stepIndex: number): boolean => {
     const current = currentValues;
-    const nextErrors: Partial<Record<keyof ManageProductValues, string>> = {};
+    let nextErrors: Partial<Record<keyof ManageProductValues, string>> = {};
 
     if (stepIndex === 0) {
-      if (current.vendor_code.trim().length < 2) {
-        nextErrors.vendor_code = "O código do produto deve ter pelo menos 2 caracteres.";
-      }
-    }
-
-    if (!isEditing() && stepIndex === 1) {
-      if (current.variant_vendor_code.trim().length < 2) {
-        nextErrors.variant_vendor_code = "O código da variação deve ter pelo menos 2 caracteres.";
-      }
-
-      if (current.variant_name.trim().length < 2) {
-        nextErrors.variant_name = "O nome da variação deve ter pelo menos 2 caracteres.";
-      }
-
-      if (
-        typeof current.variant_price_cents !== "number" ||
-        isNaN(current.variant_price_cents) ||
-        current.variant_price_cents < 0
-      ) {
-        nextErrors.variant_price_cents = "Informe um preço válido (>= 0).";
-      }
-
-      if (current.variant_stock.trim() !== "") {
-        const qty = Number(current.variant_stock);
-        if (!Number.isInteger(qty) || qty <= 0) {
-          nextErrors.variant_stock = "Quantidade em estoque deve ser um número inteiro maior que 0.";
-        }
-      }
+      nextErrors = getFieldErrors<ManageProductValues>(
+        productStep1Schema.safeParse(current),
+      );
+    } else if (!isEditing() && stepIndex === 1) {
+      nextErrors = getFieldErrors<ManageProductValues>(
+        productVariantStepSchema.safeParse(current),
+      );
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -166,16 +132,14 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
           requires_registration: current.requires_registration,
         });
         if (ok) {
-          resetForm();
           props.onOpenChange(false);
+          return true;
         }
-        return Boolean(ok);
+        return false;
       }
 
-      const stockQty =
-        current.variant_stock.trim() !== ""
-          ? parseInt(current.variant_stock, 10)
-          : null;
+      const stockRaw = current.variant_stock.trim();
+      const stock = stockRaw === "" ? null : parseInt(stockRaw, 10);
 
       const ok = await props.onCreate?.({
         vendor_code: current.vendor_code.trim(),
@@ -184,63 +148,100 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
         name: current.variant_name.trim(),
         description: current.variant_description.trim() || null,
         price: current.variant_price_cents,
-        stock: stockQty,
+        stock,
       });
 
       if (ok) {
-        resetForm();
         props.onOpenChange(false);
+        return true;
       }
-      return Boolean(ok);
+      return false;
     } finally {
       setSubmitting(false);
     }
   };
 
   const steps = createMemo<MultiStepItem<ManageProductValues>[]>(() => {
+    const baseStep: MultiStepItem<ManageProductValues> = {
+      id: "identificacao",
+      title: "Produto",
+      description: "Identificação do produto no catálogo",
+      fields: [
+        {
+          name: "vendor_code",
+          label: "Código do produto (SKU)",
+          required: true,
+          placeholder: "Ex: PROD-CAMISA-01",
+          hint: "Identificador único do produto no seu inventário.",
+        },
+        {
+          name: "requires_registration",
+          label: "Exigir cadastro do comprador",
+          kind: "custom",
+          render: (ctx) => {
+            const checked = () => Boolean(ctx.value);
+            return (
+              <div
+                class={cn(
+                  "flex items-start gap-3 rounded-xl border p-3.5 transition-colors cursor-pointer select-none",
+                  checked()
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border hover:bg-muted/30",
+                )}
+                onClick={() => ctx.onChange(!checked())}
+              >
+                <div class="mt-0.5 shrink-0 text-muted-foreground">
+                  <ShieldCheck class="size-5" />
+                </div>
+                <div class="flex-1 space-y-0.5">
+                  <label
+                    for={ctx.ids.id}
+                    class="text-xs font-semibold text-foreground cursor-pointer block"
+                  >
+                    Exigir cadastro do comprador
+                  </label>
+                  <p class="text-xs text-muted-foreground">
+                    Quando ativado, o comprador precisará preencher os dados de cadastro ao comprar este produto.
+                  </p>
+                </div>
+                <input
+                  id={ctx.ids.id}
+                  type="checkbox"
+                  checked={checked()}
+                  onChange={(e) => ctx.onChange(e.currentTarget.checked)}
+                  class="sr-only"
+                />
+                <div
+                  class={cn(
+                    "size-4 rounded border transition-colors flex items-center justify-center mt-0.5 shrink-0",
+                    checked()
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background",
+                  )}
+                  aria-hidden="true"
+                >
+                  <Show when={checked()}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      class="size-3"
+                    >
+                      <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </Show>
+                </div>
+              </div>
+            );
+          },
+        },
+      ],
+    };
+
     if (isEditing()) {
       return [
-        {
-          id: "produto",
-          title: "Identificação",
-          description: "Código SKU e configurações do produto",
-          fields: [
-            {
-              name: "vendor_code",
-              label: "Código do produto (SKU geral)",
-              required: true,
-              placeholder: "Ex: CAMISETA-OFICIAL",
-              hint: "Identificador único do produto no evento.",
-            },
-            {
-              name: "requires_registration",
-              kind: "custom",
-              label: "Requisitos de compra",
-              layout: "full",
-              render: (fieldProps) => (
-                <div class="w-full pt-1">
-                  <label class="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3.5 transition-colors hover:bg-muted/40 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      id={fieldProps.ids?.id}
-                      checked={Boolean(fieldProps.value)}
-                      onChange={(e) => fieldProps.onChange(e.currentTarget.checked)}
-                      class="size-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <div class="space-y-0.5">
-                      <span class="text-xs font-semibold text-foreground block">
-                        Exigir cadastro do comprador
-                      </span>
-                      <span class="text-[11px] text-muted-foreground block">
-                        Solicita dados de participante e formulário no momento da compra
-                      </span>
-                    </div>
-                  </label>
-                </div>
-              ),
-            },
-          ],
-        },
+        baseStep,
         {
           id: "resumo",
           title: "Resumo",
@@ -250,220 +251,112 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
             badge: () => "Pronto para salvar",
             items: [
               {
-                label: "Código do produto (SKU)",
-                value: () => values().vendor_code || "Sem código",
+                label: "Código (SKU)",
+                value: () => values().vendor_code,
+                mono: true,
               },
               {
-                label: "Exige cadastro",
+                label: "Cadastro exigido",
                 value: () =>
-                  values().requires_registration
-                    ? "Sim (Exige formulário de participante)"
-                    : "Não (Venda direta)",
+                  values().requires_registration ? "Sim" : "Não",
               },
             ],
-            extra: () => (
-              <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 shadow-xs space-y-3">
-                <div class="flex items-center justify-between pb-2 border-b border-border/60">
-                  <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <Package class="size-4 text-primary" />
-                    {values().vendor_code || "SKU-PRODUTO"}
-                  </span>
-                  <span
-                    class={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                      values().requires_registration
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <ShieldCheck class="size-3" />
-                    {values().requires_registration ? "Exige cadastro" : "Livre"}
-                  </span>
-                </div>
-                <p class="text-xs text-muted-foreground">
-                  As variações e fotos deste produto podem ser gerenciadas na tela de variações.
-                </p>
-              </div>
-            ),
           },
         },
       ];
     }
 
     return [
-      {
-        id: "produto",
-        title: "Identificação",
-        description: "Código geral do produto no catálogo",
-        fields: [
-          {
-            name: "vendor_code",
-            label: "Código do produto (SKU geral)",
-            required: true,
-            placeholder: "Ex: CAMISETA-OFICIAL",
-            hint: "Identificador único do produto no evento.",
-          },
-          {
-            name: "requires_registration",
-            kind: "custom",
-            label: "Requisitos de compra",
-            layout: "full",
-            render: (fieldProps) => (
-              <div class="w-full pt-1">
-                <label class="flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3.5 transition-colors hover:bg-muted/40 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    id={fieldProps.ids?.id}
-                    checked={Boolean(fieldProps.value)}
-                    onChange={(e) => fieldProps.onChange(e.currentTarget.checked)}
-                    class="size-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <div class="space-y-0.5">
-                    <span class="text-xs font-semibold text-foreground block">
-                      Exigir cadastro do comprador
-                    </span>
-                    <span class="text-[11px] text-muted-foreground block">
-                      Solicita dados de participante e formulário no momento da compra
-                    </span>
-                  </div>
-                </label>
-              </div>
-            ),
-          },
-        ],
-      },
+      baseStep,
       {
         id: "variacao",
         title: "Primeira Variação",
-        description: "Defina o modelo, preço e estoque inicial",
+        description: "Configure a variação inicial deste produto",
         fields: [
           {
             name: "variant_vendor_code",
             label: "Código da variação (SKU)",
             required: true,
             layout: "half",
-            placeholder: "Ex: CAM-PRETA-M",
-            hint: "SKU específico deste modelo.",
+            placeholder: "Ex: CAMISA-AZUL-G",
+            hint: "Identificador único desta opção.",
           },
           {
             name: "variant_name",
             label: "Nome da variação",
             required: true,
             layout: "half",
-            placeholder: "Ex: Tamanho M - Preta",
-            hint: "Como o comprador verá este item.",
+            placeholder: "Ex: Azul / Tamanho G",
           },
           {
             name: "variant_price_cents",
+            label: "Preço",
             kind: "money",
             currency: "BRL",
-            label: "Preço",
+            locale: "pt-BR",
             layout: "half",
-            hint: "Valor unitário de venda.",
+            required: true,
+            hint: "R$ 0,00 para item gratuito.",
           },
           {
             name: "variant_stock",
-            kind: "number",
-            min: "1",
-            step: "1",
             label: "Estoque inicial",
+            kind: "number",
+            step: "1",
+            min: "1",
             layout: "half",
             placeholder: "Ilimitado",
-            hint: "Deixe em branco para estoque ilimitado.",
+            hint: "Deixe vazio para estoque ilimitado.",
           },
           {
             name: "variant_description",
+            label: "Descrição da variação",
             kind: "textarea",
             rows: 2,
-            label: "Descrição da variação (opcional)",
-            layout: "full",
-            placeholder: "Detalhes sobre tecido, medidas, cor ou especificações...",
-            hint: "Informações adicionais para os participantes.",
+            placeholder: "Detalhes adicionais sobre esta opção específica (opcional)...",
           },
         ],
       },
       {
         id: "resumo",
         title: "Resumo",
-        description: "Revise os dados antes de cadastrar o produto",
+        description: "Revise os dados antes de salvar o produto",
         summary: {
           title: "Dados do produto e variação",
           badge: () => "Pronto para cadastrar",
           items: [
             {
               label: "Código do produto",
-              value: () => values().vendor_code || "Sem código",
+              value: () => values().vendor_code,
+              mono: true,
             },
             {
-              label: "Exige cadastro",
+              label: "Cadastro exigido",
               value: () =>
                 values().requires_registration ? "Sim" : "Não",
             },
             {
-              label: "Primeira variação",
-              value: () => values().variant_name || "Sem nome",
+              label: "Variação inicial",
+              value: () => values().variant_name,
             },
             {
               label: "SKU da variação",
-              value: () => values().variant_vendor_code || "Sem SKU",
+              value: () => values().variant_vendor_code,
+              mono: true,
             },
             {
-              label: "Preço unitário",
-              value: () => formatPrice(values().variant_price_cents),
+              label: "Preço",
+              value: () =>
+                formatPrice(values().variant_price_cents ?? 0),
             },
             {
               label: "Estoque",
               value: () =>
-                values().variant_stock.trim() !== ""
+                values().variant_stock
                   ? `${values().variant_stock} unidades`
                   : "Ilimitado",
             },
           ],
-          extra: () => (
-            <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 shadow-xs space-y-3">
-              <div class="flex items-center justify-between pb-2 border-b border-border/60">
-                <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <Package class="size-4 text-primary" />
-                  {values().vendor_code || "SKU-PRODUTO"}
-                </span>
-                <span
-                  class={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                    values().requires_registration
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  <ShieldCheck class="size-3" />
-                  {values().requires_registration ? "Exige cadastro" : "Livre"}
-                </span>
-              </div>
-
-              <div class="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3">
-                <div class="space-y-0.5 min-w-0 flex-1">
-                  <span class="text-xs font-semibold text-foreground block truncate">
-                    {values().variant_name || "Nome da Variação"}
-                  </span>
-                  <span class="text-[11px] font-mono text-muted-foreground block truncate">
-                    {values().variant_vendor_code || "SKU-VAR"}
-                  </span>
-                </div>
-                <div class="text-right shrink-0">
-                  <span class="text-xs font-bold text-foreground block">
-                    {formatPrice(values().variant_price_cents)}
-                  </span>
-                  <span class="text-[11px] text-muted-foreground block">
-                    <Show
-                      when={values().variant_stock.trim() !== ""}
-                      fallback="Estoque ilimitado"
-                    >
-                      {values().variant_stock} un.
-                    </Show>
-                  </span>
-                </div>
-              </div>
-            </div>
-          ),
         },
       },
     ];
@@ -472,12 +365,12 @@ export function ManageProductDialog(props: ManageProductDialogProps): JSX.Elemen
   return (
     <MultiStepDialog
       open={props.open}
-      onOpenChange={handleOpenChange}
+      onOpenChange={props.onOpenChange}
       title={isEditing() ? "Editar produto" : "Novo produto"}
       description={
         isEditing()
-          ? "Atualize o código de referência e configurações de registro."
-          : "Cadastre o produto no catálogo com sua primeira variação de estoque e preço."
+          ? "Atualize as informações do produto."
+          : "Cadastre um produto com sua primeira opção de venda."
       }
       steps={steps()}
       currentStep={currentStep()}

@@ -2,7 +2,23 @@
  * Solid bindings for the TrieOH design system.
  */
 export { cn } from "./lib/cn";
-export { Button, buttonVariants, type ButtonProps } from "./button";
+export { Sidebar, type SidebarProps, type SidebarItem, type SidebarSection, type SidebarItemRenderProps } from "./sidebar";
+export {
+  CatalogNav,
+  type CatalogNavItem,
+  type CatalogNavMode,
+  type CatalogNavProps,
+  type CatalogNavSection,
+  type CatalogNavTriggerApi,
+} from "./catalog-nav";
+export { Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from "./breadcrumb";
+export {
+  Button,
+  buttonVariants,
+  type ButtonProps,
+  type ButtonVariant,
+  type ButtonSize,
+} from "./button";
 export {
   Field,
   Input,
@@ -12,6 +28,7 @@ export {
   type InputProps,
   type LabelProps,
   type TextareaProps,
+  type TextareaResize,
 } from "./input";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
 export { CardSkeleton, Skeleton, type SkeletonProps } from "./skeleton";
@@ -45,6 +62,7 @@ export {
   type MultiStepItem,
   type MultiStepRenderContext,
   type MultiStepStepperProps,
+  type MultiStepStepperStep,
   type MultiStepSummaryConfig,
   type MultiStepSummaryItem,
   type TextMultiStepField,
@@ -59,3 +77,68 @@ export {
   type SortField,
   type SortState,
 } from "./paginated-container";
+export { Tooltip, type TooltipProps } from "./tooltip";
+export {
+  Accordion,
+  type AccordionItem,
+  type AccordionProps,
+} from "./accordion";
+export {
+  Tabs,
+  type TabsActivation,
+  type TabsItem,
+  type TabsOrientation,
+  type TabsProps,
+  type TabsSize,
+  type TabsVariant,
+} from "./tabs";
+export { Drawer, type DrawerProps } from "./drawer";
+export { Combobox, type ComboboxOption, type ComboboxProps } from "./combobox";
+export {
+  Toaster,
+  toast,
+  type ToastAction,
+  type ToastFn,
+  type ToastOptions,
+  type ToastPayload,
+  type ToastPosition,
+  type ToastRecord,
+  type ToastType,
+} from "./toast";
+export {
+  OverlayScrollbar,
+  type OverlayScrollbarProps,
+} from "./overlay-scrollbar";
+export { Checkbox, type CheckboxProps } from "./checkbox";
+export { Card, type CardProps } from "./card";
+export { Link, type LinkProps } from "./link";
+export { SearchInput, type SearchInputProps } from "./search-input";
+export { CodeBlock, type CodeBlockProps } from "./code-block";
+export { shapes, shapeClass, type Shape } from "./lib/shape";
+export { Badge, type BadgeProps } from "./badge";
+export { Avatar, type AvatarProps } from "./avatar";
+export { Loading, type LoadingProps } from "./loading";
+export { Spinner, type SpinnerProps } from "./spinner";
+export { DesktopOnly, type DesktopOnlyProps } from "./desktop-only";
+export { CanvasControls, type CanvasControlsProps } from "./canvas-controls";
+export { WaveText, type WaveTextProps } from "./wave-text";
+export {
+  WaveSpinnerLoading,
+  type WaveSpinnerLoadingProps,
+} from "./wave-spinner-loading";
+
+export { Switch, type SwitchProps } from "./switch";
+export {
+  Separator,
+  type SeparatorLabelPosition,
+  type SeparatorOrientation,
+  type SeparatorProps,
+  type SeparatorVariant,
+} from "./separator";
+export {
+  Reveal,
+  type RevealDirection,
+  type RevealProps,
+  type RevealTag,
+  type RevealVariant,
+} from "./reveal";

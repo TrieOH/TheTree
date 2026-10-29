@@ -1,0 +1,71 @@
+name: Deploy Pages
+
+on:
+  push:
+    tags:
+      - 'pages/*/v*'
+
+permissions:
+  contents: read
+  deployments: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    outputs:
+      directory: ${{ steps.release.outputs.directory }}
+    steps:
+      - uses: useblacksmith/checkout@v1
+
+      - name: Validate Pages release
+        id: release
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^pages/([a-z0-9][a-z0-9-]*)/v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::expected pages/<directory>/v<major>.<minor>.<patch>"
+            exit 1
+          }
+          DIRECTORY="front/${BASH_REMATCH[1]}"
+          test -f "$DIRECTORY/package.json"
+          test -f "$DIRECTORY/wrangler.jsonc"
+          echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: validate
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    concurrency:
+      group: release-pages-${{ needs.validate.outputs.directory }}
+      cancel-in-progress: false
+    env:
+      PAGES_DIRECTORY: ${{ needs.validate.outputs.directory }}
+    steps:
+      - uses: useblacksmith/checkout@v1
+
+      - uses: ./.github/actions/setup-node
+        with:
+          install: 'true'
+
+      - name: Typecheck
+        run: pnpm --dir "$PAGES_DIRECTORY" typecheck
+
+      - name: Lint
+        run: pnpm --dir "$PAGES_DIRECTORY" check
+
+      - name: Build
+        run: pnpm --dir "$PAGES_DIRECTORY" build
+
+      - name: Deploy static assets to Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '4.97.0'
+          workingDirectory: ${{ needs.validate.outputs.directory }}
+          command: pages deploy --branch=main

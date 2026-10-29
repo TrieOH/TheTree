@@ -5,7 +5,16 @@
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./theme.css": "./src/theme.css",
+    "./tailwind.css": "./src/tailwind.css",
+    "./icons": {
+      "types": "./src/icons.d.ts"
+    }
+  },
+  "scripts": {
+    "check": "oxlint src",
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "@solidjs/web": "catalog:solid",
@@ -19,8 +28,12 @@
     "@types/node": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
+    "oxlint": "catalog:",
     "solid-js": "catalog:solid",
     "tailwind-merge": "catalog:",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "prettier": "3.8.3"
   }
 }

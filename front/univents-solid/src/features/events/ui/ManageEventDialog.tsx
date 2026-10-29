@@ -1,4 +1,4 @@
-import { Show, createEffect, createSignal, untrack } from "solid-js";
+import { Show, createMemo, createSignal } from "solid-js";
 import {
   MultiStepDialog,
   type MultiStepField,
@@ -6,7 +6,12 @@ import {
 } from "@trieoh/ui-solid";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { toast } from "@/shared/ui/toast";
-import type { EventI } from "../model";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  eventStep1Schema,
+  eventStep2Schema,
+  type EventI,
+} from "../model";
 
 export interface ManageEventValues {
   full_name: string;
@@ -121,22 +126,19 @@ const CONTACT_FIELDS: MultiStepField<FormInternalValues>[] = [
 ];
 
 export function ManageEventDialog(props: ManageEventDialogProps) {
-  const [values, setValues] = createSignal<FormInternalValues>(untrack(() => valuesOf(props.event)));
-  const [currentStep, setCurrentStep] = createSignal(0);
-  const [submitting, setSubmitting] = createSignal(false);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>({});
-
-  // Reset or re-sync values only when the dialog opens (reading proxies inside compute function to avoid STRICT_READ_UNTRACKED)
-  createEffect(
-    () => (props.open ? valuesOf(props.event) : null),
-    (computedValues) => {
-      if (computedValues) {
-        setValues(computedValues);
-        setCurrentStep(0);
-        setErrors({});
-      }
-    },
+  const initialValues = createMemo(
+    () => (props.open ? valuesOf(props.event) : { ...emptyValues }),
   );
+  const [values, setValues] = createSignal(() => initialValues());
+  const [currentStep, setCurrentStep] = createSignal(() => {
+    initialValues();
+    return 0;
+  });
+  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>(() => {
+    initialValues();
+    return {};
+  });
+  const [submitting, setSubmitting] = createSignal(false);
 
   const update = <K extends keyof FormInternalValues>(key: K, value: FormInternalValues[K]) => {
     const current = values();
@@ -174,19 +176,16 @@ export function ManageEventDialog(props: ManageEventDialogProps) {
 
   const validateStep = (stepIndex: number): boolean => {
     const v = values();
-    const stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
+    let stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
 
     if (stepIndex === 0) {
-      if (v.full_name.trim().length < 2) {
-        stepErrors.full_name = "Informe ao menos 2 caracteres.";
-      }
-      if (v.slug.trim().length < 2) {
-        stepErrors.slug = "Informe ao menos 2 caracteres.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        eventStep1Schema.safeParse(v),
+      );
     } else if (stepIndex === 1) {
-      if (v.contact_email && !v.contact_email.includes("@")) {
-        stepErrors.contact_email = "E-mail inválido.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        eventStep2Schema.safeParse(v),
+      );
     }
 
     setErrors((prev) => ({ ...prev, ...stepErrors }));

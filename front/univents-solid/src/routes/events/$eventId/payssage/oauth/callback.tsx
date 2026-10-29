@@ -4,17 +4,22 @@ import type { JSX } from "@solidjs/web";
 import Loader2Icon from "~icons/lucide/loader-2";
 import { useCompleteEventSellerMutation } from "@/features/payments/api/mutations";
 import { toast } from "@/shared/ui/toast";
-import z from "zod";
+import { Schema, createSchema, uuid } from "@/shared/lib/effect-schema";
 
 const Loader2 = Loader2Icon as unknown as (props: { class?: string }) => JSX.Element;
 
-const searchSchema = z.object({
-  credential_id: z.uuid(),
-  public_key: z.string().min(1),
-});
+const searchSchema = createSchema(
+  Schema.Struct({
+    credential_id: Schema.String.pipe(uuid()),
+    public_key: Schema.NonEmptyString,
+  }),
+);
 
 export const Route = createFileRoute("/events/$eventId/payssage/oauth/callback")({
   validateSearch: searchSchema,
+  head: () => ({
+    meta: [{ title: "Conectando Mercado Pago - Univents" }],
+  }),
   component: SellerCallback,
 });
 
@@ -26,8 +31,8 @@ function SellerCallback() {
   let started = false;
 
   createEffect(
-    () => ({ params: params(), search: search() }),
-    ({ params: currentParams, search: currentSearch }) => {
+    () => ({ currentParams: params(), currentSearch: search() }),
+    ({ currentParams, currentSearch }) => {
       const { eventId } = currentParams;
       const { credential_id, public_key } = currentSearch;
       if (started) return;
@@ -38,17 +43,20 @@ function SellerCallback() {
           toast.success("Mercado Pago conectado");
           void navigate({ to: "/admin/events/$eventId", params: { eventId } });
         })
-        .catch(() => {
-          toast.error("Não foi possível concluir a conexão do Mercado Pago");
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "Falha ao vincular vendedor";
+          toast.error(message);
           void navigate({ to: "/admin/events/$eventId", params: { eventId } });
         });
     },
   );
 
   return (
-    <div class="flex min-h-100 flex-col items-center justify-center gap-4">
-      <Loader2 class="size-10 animate-spin text-primary" />
-      <p class="text-sm text-muted-foreground">Conectando Mercado Pago…</p>
+    <div class="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <div class="flex items-center gap-3 text-muted-foreground text-sm">
+        <Loader2 class="size-5 animate-spin text-primary" />
+        <span>Concluindo conexão com Mercado Pago...</span>
+      </div>
     </div>
   );
 }

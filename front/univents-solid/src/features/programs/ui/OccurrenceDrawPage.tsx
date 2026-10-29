@@ -263,7 +263,7 @@ export function OccurrenceDrawPage(props: OccurrenceDrawPageProps): JSX.Element 
 
   return (
     <Portal>
-      <main class="fixed inset-0 z-100 h-dvh w-screen overflow-y-auto bg-white text-[#17201b] dark:bg-[#141618] dark:text-[#f3f5f2] lg:overflow-hidden select-none">
+      <div class="fixed inset-0 z-100 h-dvh w-screen overflow-y-auto bg-white text-[#17201b] dark:bg-[#141618] dark:text-[#f3f5f2] lg:overflow-hidden select-none">
         <style>{`
           @keyframes confetti-fall {
             0% {
@@ -682,7 +682,7 @@ export function OccurrenceDrawPage(props: OccurrenceDrawPageProps): JSX.Element 
             </Show>
           </section>
         </div>
-      </main>
+      </div>
     </Portal>
   );
 }

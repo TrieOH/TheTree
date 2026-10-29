@@ -60,7 +60,7 @@ describe("handleStorageImagePreprocess", () => {
     await expect(response.json()).resolves.toEqual({ approved: false });
   });
 
-  it("uploads and returns the public URL when the model approves", async () => {
+  it("uploads and returns only the object key when the model approves", async () => {
     vi.spyOn(env.AI, "run").mockResolvedValue({
       description: "safe",
     } as never);
@@ -76,9 +76,10 @@ describe("handleStorageImagePreprocess", () => {
     expect(upload).toHaveBeenCalledOnce();
     const body = (await response.json()) as {
       approved: boolean;
-      publicUrl: string;
+      key: string;
     };
     expect(body.approved).toBe(true);
-    expect(body.publicUrl).toContain("/profiles/images/");
+    expect(body.key).toMatch(/^profiles\/images\//);
+    expect(body).not.toHaveProperty("publicUrl");
   });
 });

@@ -1,3 +1,4 @@
+import type { Shape } from "../lib/shape";
 import type { JSX } from "@solidjs/web";
 
 export type MultiStepFieldKind =
@@ -23,8 +24,9 @@ export interface BaseMultiStepField<T = Record<string, unknown>> {
   layout?: "full" | "half";
 }
 
-export interface TextMultiStepField<T = Record<string, unknown>>
-  extends BaseMultiStepField<T> {
+export interface TextMultiStepField<
+  T = Record<string, unknown>,
+> extends BaseMultiStepField<T> {
   kind?:
     | "text"
     | "email"
@@ -40,8 +42,9 @@ export interface TextMultiStepField<T = Record<string, unknown>>
   step?: string | number;
 }
 
-export interface MoneyMultiStepField<T = Record<string, unknown>>
-  extends BaseMultiStepField<T> {
+export interface MoneyMultiStepField<
+  T = Record<string, unknown>,
+> extends BaseMultiStepField<T> {
   kind: "money";
   currency?: string;
   locale?: string;
@@ -49,14 +52,16 @@ export interface MoneyMultiStepField<T = Record<string, unknown>>
   maxCents?: number;
 }
 
-export interface TextareaMultiStepField<T = Record<string, unknown>>
-  extends BaseMultiStepField<T> {
+export interface TextareaMultiStepField<
+  T = Record<string, unknown>,
+> extends BaseMultiStepField<T> {
   kind: "textarea";
   rows?: number;
 }
 
-export interface CustomMultiStepField<T = Record<string, unknown>>
-  extends BaseMultiStepField<T> {
+export interface CustomMultiStepField<
+  T = Record<string, unknown>,
+> extends BaseMultiStepField<T> {
   kind: "custom";
   render: (args: {
     value: unknown;
@@ -72,7 +77,8 @@ export type MultiStepFieldConfig<T = Record<string, unknown>> =
   | TextareaMultiStepField<T>
   | CustomMultiStepField<T>;
 
-export type MultiStepField<T = Record<string, unknown>> = MultiStepFieldConfig<T>;
+export type MultiStepField<T = Record<string, unknown>> =
+  MultiStepFieldConfig<T>;
 
 export interface MultiStepFieldsProps<T = Record<string, unknown>> {
   fields: MultiStepFieldConfig<T>[];
@@ -122,14 +128,27 @@ export interface MultiStepItem<T = Record<string, unknown>> {
   render?: (context: MultiStepRenderContext<T>) => JSX.Element;
 }
 
-export interface MultiStepStepperProps<T = Record<string, unknown>> {
-  steps: MultiStepItem<T>[];
+export interface MultiStepStepperStep {
+  id?: string;
+  title: string;
+  description?: string;
+}
+
+export interface MultiStepStepperProps {
+  /** Auto uses a compact progress indicator when the container is narrow. */
+  orientation?: "auto" | "horizontal" | "vertical";
+  showDescriptions?: boolean;
+  /** Shape of the numbered markers. */
+  shape?: Shape;
+  ariaLabel?: string;
+  steps: readonly MultiStepStepperStep[];
   currentStep: number;
   onStepClick?: (stepIndex: number) => void;
   class?: string;
 }
 
 export interface MultiStepDialogProps<T = Record<string, unknown>> {
+  shape?: Shape;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -151,12 +170,6 @@ export interface MultiStepDialogProps<T = Record<string, unknown>> {
   fixedHeight?: boolean;
   class?: string;
   contentClass?: string;
-  /**
-   * Optional custom children. If omitted, `step.fields` and `step.summary` are rendered automatically.
-   */
+  footer?: JSX.Element | ((context: MultiStepRenderContext<T>) => JSX.Element);
   children?: (context: MultiStepRenderContext<T>) => JSX.Element;
-  /**
-   * Optional custom footer. If omitted, standard Back / Continue buttons are rendered.
-   */
-  footer?: (context: MultiStepRenderContext<T>) => JSX.Element;
 }

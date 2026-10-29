@@ -1,15 +1,10 @@
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
-import { useQuery, useQueryClient } from "@trieoh/front-core-solid";
+import { useQuery, type QueryClient } from "@trieoh/front-core-solid";
 import type { EditionPurchase } from "@trieoh/univents-api/schemas";
-import {
-  Show,
-  createEffect,
-  createMemo,
-  createSignal,
-} from "solid-js";
+import { createMemo, createSignal, Show } from "solid-js";
 import { allAdminEditionsQueryOptions } from "@/features/editions/api";
-import type { EditionI } from "@/features/editions/model";
+import { eventKeys } from "@/features/events/api/query-keys";
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
@@ -52,8 +47,13 @@ import {
 import { createHotkeys } from "@/shared/lib/hotkeys";
 import { useUploadQueue } from "@/features/upload-queue";
 import { handleShare } from "@/shared/lib/share";
+import { appQueryClient } from "@/shared/lib/query-client";
+import { GridSkeleton } from "@/shared/ui/GridSkeleton";
+import { QueryBoundary, combineQueries } from "@/shared/ui/QueryBoundary";
+import { warmQuery } from "@/shared/lib/route-data";
 
 export const Route = createFileRoute("/admin/events/$eventId/")({
+  loader: ({ params }) => warmQuery(appQueryClient, allAdminEditionsQueryOptions(params.eventId)),
   head: ({ params }) => ({
     meta: [{ title: `Evento ${params.eventId} - Admin - Univents` }],
   }),
@@ -63,14 +63,16 @@ export const Route = createFileRoute("/admin/events/$eventId/")({
 function AdminEventOverviewRoute(): JSX.Element {
   const params = Route.useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const uploadQueue = useUploadQueue();
 
   const eventId = () => params().eventId;
 
-  const ownedQuery = useQuery(() => allOwnEventsQueryOptions());
-  const joinedQuery = useQuery(() => allJoinedEventsQueryOptions());
+  const eventsQuery = combineQueries(
+    useQuery(() => allOwnEventsQueryOptions()),
+    useQuery(() => allJoinedEventsQueryOptions()),
+  );
   const editionsQuery = useQuery(() => allAdminEditionsQueryOptions(eventId()));
+  const pageQuery = combineQueries(eventsQuery, editionsQuery);
 
   const [publishConfirmOpen, setPublishConfirmOpen] = createSignal(false);
   const [discontinueConfirmOpen, setDiscontinueConfirmOpen] =
@@ -80,105 +82,46 @@ function AdminEventOverviewRoute(): JSX.Element {
   const [editEventOpen, setEditEventOpen] = createSignal(false);
 
   const event = createMemo(() => {
-    const owned = ownedQuery().data ?? [];
-    const joined = joinedQuery().data ?? [];
+    const [owned = [], joined = []] = eventsQuery().data ?? [];
     return [...owned, ...joined].find((item) => item.id === eventId()) ?? null;
   });
 
   const editions = createMemo(() => editionsQuery().data ?? []);
 
-  const [metrics, setMetrics] = createSignal<EventOverviewMetrics | null>(null);
+  // Totals across every edition. Each edition's data goes through the query
+  // cache, so this mostly reuses what other pages already loaded. A failed
+  // request fails the whole thing (instead of silently counting as zero), and
+  // it always recomputes on mount since the pieces it reads may have changed.
+  const metricsQuery = useQuery(() => ({
+    queryKey: [...eventKeys.all, eventId(), "overview-metrics", editions().map((edition) => edition.id)] as const,
+    enabled: editionsQuery().data !== undefined,
+    staleTime: 0,
+    queryFn: async ({ client }: { client: QueryClient }): Promise<EventOverviewMetrics> => {
+      const current = editions();
+      const results = await Promise.all(
+        current.map((edition) =>
+          Promise.all([
+            client.fetchQuery({ ...editionPurchasesQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...attendeeCountQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...allTicketsQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...productsQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...programsQueryOptions(edition.id), staleTime: 0 }),
+            client.fetchQuery({ ...occurrencesQueryOptions(edition.id), staleTime: 0 }),
+          ]),
+        ),
+      );
 
-  createEffect(
-    () => editions(),
-    (currentEditions) => {
-      let cancelled = false;
-
-      if (currentEditions.length === 0) {
-        setMetrics(
-          buildEventOverviewMetrics({
-            editions: [],
-            purchasesByEdition: [],
-            attendeeCounts: [],
-            ticketCounts: [],
-            productCounts: [],
-            programCounts: [],
-            occurrenceCounts: [],
-          }),
-        );
-        return;
-      }
-
-      const loadMetrics = async (eds: EditionI[]) => {
-        try {
-          const results = await Promise.all(
-            eds.map((edition) =>
-              Promise.all([
-                queryClient
-                  .fetchQuery(editionPurchasesQueryOptions(edition.id))
-                  .catch(() => []),
-                queryClient
-                  .fetchQuery(attendeeCountQueryOptions(edition.id))
-                  .catch(() => ({ count: 0 })),
-                queryClient
-                  .fetchQuery(allTicketsQueryOptions(edition.id))
-                  .catch(() => []),
-                queryClient
-                  .fetchQuery(productsQueryOptions(edition.id))
-                  .catch(() => []),
-                queryClient
-                  .fetchQuery(programsQueryOptions(edition.id))
-                  .catch(() => []),
-                queryClient
-                  .fetchQuery(occurrencesQueryOptions(edition.id))
-                  .catch(() => []),
-              ]),
-            ),
-          );
-          if (cancelled) return;
-
-          const purchasesByEdition = results.map(
-            (r) => (r[0] as EditionPurchase[]) ?? [],
-          );
-          const attendeeCounts = results.map(
-            (r) => ((r[1] as { count?: number })?.count ?? 0),
-          );
-          const ticketCounts = results.map(
-            (r) => ((r[2] as unknown[]) ?? []).length,
-          );
-          const productCounts = results.map(
-            (r) => ((r[3] as unknown[]) ?? []).length,
-          );
-          const programCounts = results.map(
-            (r) => ((r[4] as unknown[]) ?? []).length,
-          );
-          const occurrenceCounts = results.map(
-            (r) => ((r[5] as unknown[]) ?? []).length,
-          );
-
-          const calculated = buildEventOverviewMetrics({
-            editions: eds,
-            purchasesByEdition,
-            attendeeCounts,
-            ticketCounts,
-            productCounts,
-            programCounts,
-            occurrenceCounts,
-          });
-
-          setMetrics(calculated);
-        } catch {
-          // Handled silently
-        }
-      };
-
-      void loadMetrics(currentEditions);
-
-      return () => {
-        cancelled = true;
-      };
+      return buildEventOverviewMetrics({
+        editions: current,
+        purchasesByEdition: results.map((r) => r[0] as EditionPurchase[]),
+        attendeeCounts: results.map((r) => (r[1] as { count?: number })?.count ?? 0),
+        ticketCounts: results.map((r) => r[2].length),
+        productCounts: results.map((r) => r[3].length),
+        programCounts: results.map((r) => r[4].length),
+        occurrenceCounts: results.map((r) => r[5].length),
+      });
     },
-  );
+  }));
 
   const isImageUploading = (field: "logo_url" | "banner_url") =>
     uploadQueue.tasks.some(
@@ -351,57 +294,86 @@ function AdminEventOverviewRoute(): JSX.Element {
   );
 
   return (
-    <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <EventOverviewHeader event={event()} />
+    <QueryBoundary
+      query={pageQuery}
+      what="o evento"
+      skeleton={
+        <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
+          <div class="h-28 animate-pulse rounded-xl bg-muted" />
+          <div class="h-80 animate-pulse rounded-xl bg-muted" />
+          <GridSkeleton minItemWidth="16rem" itemClass="h-28" />
+        </div>
+      }
+    >
+      {() => (
+        <Show
+          when={event()}
+          fallback={
+            <div class="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
+              Evento não encontrado.
+            </div>
+          }
+        >
+          {(ev) => (
+            <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
+              <EventOverviewHeader event={ev()} />
 
-      <EventQuickActions actions={actions()} />
+              <EventQuickActions actions={actions()} />
 
-      <Show when={metrics()}>
-        {(m) => <EventOverviewDashboard metrics={m()} />}
-      </Show>
+              <QueryBoundary
+                query={metricsQuery}
+                what="as métricas do evento"
+                skeleton={<div class="h-80 animate-pulse rounded-xl bg-muted" />}
+              >
+                {(metrics) => <EventOverviewDashboard metrics={metrics()} />}
+              </QueryBoundary>
 
-      <EventEditionsList eventId={eventId()} editions={editions()} />
+              <EventEditionsList eventId={eventId()} editions={editions()} />
 
-      <EventPaymentPanel
-        connected={Boolean(event()?.payssage_seller_id)}
-        disabled={!event() || isConnectingSeller() || isDisconnectingSeller()}
-        onConnect={handleConnectSeller}
-        onDisconnect={() => setDisconnectSellerConfirmOpen(true)}
-      />
+              <EventPaymentPanel
+                connected={Boolean(ev().payssage_seller_id)}
+                disabled={!ev() || isConnectingSeller() || isDisconnectingSeller()}
+                onConnect={handleConnectSeller}
+                onDisconnect={() => setDisconnectSellerConfirmOpen(true)}
+              />
 
-      <EventOverviewChecklist
-        editionCount={editions().length}
-        hasLogo={Boolean(event()?.logo_url)}
-        hasBanner={Boolean(event()?.banner_url)}
-        hasDescription={Boolean(event()?.description)}
-        paymentConnected={Boolean(event()?.payssage_seller_id)}
-        logoUploading={isImageUploading("logo_url")}
-        bannerUploading={isImageUploading("banner_url")}
-        onAddLogo={() => document.getElementById("event-logo-upload")?.click()}
-        onAddBanner={() =>
-          document.getElementById("event-banner-upload")?.click()
-        }
-        onEdit={() => setEditEventOpen(true)}
-      />
+              <EventOverviewChecklist
+                editionCount={editions().length}
+                hasLogo={Boolean(ev().logo_url)}
+                hasBanner={Boolean(ev().banner_url)}
+                hasDescription={Boolean(ev().description)}
+                paymentConnected={Boolean(ev().payssage_seller_id)}
+                logoUploading={isImageUploading("logo_url")}
+                bannerUploading={isImageUploading("banner_url")}
+                onAddLogo={() => document.getElementById("event-logo-upload")?.click()}
+                onAddBanner={() =>
+                  document.getElementById("event-banner-upload")?.click()
+                }
+                onEdit={() => setEditEventOpen(true)}
+              />
 
-      <EventOverviewDialogs
-        event={event()}
-        editOpen={editEventOpen()}
-        publishOpen={publishConfirmOpen()}
-        discontinueOpen={discontinueConfirmOpen()}
-        disconnectOpen={disconnectSellerConfirmOpen()}
-        publishing={isPublishing()}
-        discontinuing={isDiscontinuing()}
-        disconnecting={isDisconnectingSeller()}
-        onEditOpenChange={setEditEventOpen}
-        onPublishOpenChange={setPublishConfirmOpen}
-        onDiscontinueOpenChange={setDiscontinueConfirmOpen}
-        onDisconnectOpenChange={setDisconnectSellerConfirmOpen}
-        onEdit={handleEditEvent}
-        onPublish={handlePublish}
-        onDiscontinue={handleDiscontinue}
-        onDisconnect={handleDisconnectSeller}
-      />
-    </div>
+              <EventOverviewDialogs
+                event={ev()}
+                editOpen={editEventOpen()}
+                publishOpen={publishConfirmOpen()}
+                discontinueOpen={discontinueConfirmOpen()}
+                disconnectOpen={disconnectSellerConfirmOpen()}
+                publishing={isPublishing()}
+                discontinuing={isDiscontinuing()}
+                disconnecting={isDisconnectingSeller()}
+                onEditOpenChange={setEditEventOpen}
+                onPublishOpenChange={setPublishConfirmOpen}
+                onDiscontinueOpenChange={setDiscontinueConfirmOpen}
+                onDisconnectOpenChange={setDisconnectSellerConfirmOpen}
+                onEdit={handleEditEvent}
+                onPublish={handlePublish}
+                onDiscontinue={handleDiscontinue}
+                onDisconnect={handleDisconnectSeller}
+              />
+            </div>
+          )}
+        </Show>
+      )}
+    </QueryBoundary>
   );
 }

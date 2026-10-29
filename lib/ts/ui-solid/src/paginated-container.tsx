@@ -4,7 +4,6 @@ import {
   Show,
   createMemo,
   createSignal,
-  onCleanup,
   onSettled,
 } from "solid-js";
 

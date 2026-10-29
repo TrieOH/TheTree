@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
 import { For, Show, createMemo, createSignal } from "solid-js";
@@ -33,6 +34,9 @@ import {
   type SignatureSection,
   SignatureSectionTabs,
 } from "@/features/signatures/ui";
+import { warmQueries } from "@/shared/lib/route-data";
+import { GridSkeleton } from "@/shared/ui/GridSkeleton";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const Mail = MailIcon as unknown as (props: { class?: string }) => JSX.Element;
 const PenLine = PenLineIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -41,6 +45,10 @@ const Plus = PlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/signatures/",
 )({
+  loader: ({ params }) => warmQueries(appQueryClient, [
+    allSignaturesQueryOptions(params.editionId),
+    allSignatureRequestsQueryOptions(params.editionId),
+  ]),
   head: () => ({
     meta: [{ title: "Assinaturas - Admin Univents" }],
   }),
@@ -175,160 +183,176 @@ function AdminEditionSignaturesRoute(): JSX.Element {
           setFilter("");
           setActiveSection(sec);
         }}
-        signaturesCount={signatures().length}
-        invitesCount={requests().length}
+        signaturesCount={signaturesQuery().data?.length}
+        invitesCount={requestsQuery().data?.length}
       />
 
       {/* Content: Approved Signatures */}
       <Show when={activeSection() === "signatures"}>
-        <PaginatedContainer<SignatureI>
-          items={filteredSignatures()}
-          layout="grid"
-          minItemWidth="16rem"
-          maxRows={(columns) => (columns === 1 ? 8 : 4)}
-          gap="3"
-          sort={signatureSort()}
-          onSortChange={setSignatureSort}
-          sortFields={[
-            {
-              key: "signatory_name",
-              label: "Nome do signatário",
-              ascLabel: "A → Z",
-              descLabel: "Z → A",
-            },
-            {
-              key: "created_at",
-              label: "Data de cadastro",
-              ascLabel: "Mais antigas primeiro",
-              descLabel: "Mais recentes primeiro",
-              comparator: (a, b) =>
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime(),
-            },
-          ]}
-          filterValue={filter()}
-          onFilterChange={setFilter}
-          filterPlaceholder="Buscar por nome, cargo ou e-mail..."
-          itemLabel="assinaturas"
-          emptyState={
-            <EmptyState
-              class="border-0 bg-transparent px-0 py-8 shadow-none"
-              icon={<PenLine class="size-6 text-foreground/70" />}
-              title="Nenhuma assinatura cadastrada"
-              description={
-                filter()
-                  ? "Nenhuma assinatura corresponde à busca informada."
-                  : "Cadastre a primeira assinatura ou importe uma imagem para autenticar certificados desta edição."
+        <QueryBoundary
+          query={signaturesQuery}
+          what="as assinaturas"
+          skeleton={<GridSkeleton />}
+        >
+          {() => (
+            <PaginatedContainer<SignatureI>
+              items={filteredSignatures()}
+              layout="grid"
+              minItemWidth="16rem"
+              maxRows={(columns) => (columns === 1 ? 8 : 4)}
+              gap="3"
+              sort={signatureSort()}
+              onSortChange={setSignatureSort}
+              sortFields={[
+                {
+                  key: "signatory_name",
+                  label: "Nome do signatário",
+                  ascLabel: "A → Z",
+                  descLabel: "Z → A",
+                },
+                {
+                  key: "created_at",
+                  label: "Data de cadastro",
+                  ascLabel: "Mais antigas primeiro",
+                  descLabel: "Mais recentes primeiro",
+                  comparator: (a, b) =>
+                    new Date(a.created_at).getTime() -
+                    new Date(b.created_at).getTime(),
+                },
+              ]}
+              filterValue={filter()}
+              onFilterChange={setFilter}
+              filterPlaceholder="Buscar por nome, cargo ou e-mail..."
+              itemLabel="assinaturas"
+              emptyState={
+                <EmptyState
+                  class="border-0 bg-transparent px-0 py-8 shadow-none"
+                  icon={<PenLine class="size-6 text-foreground/70" />}
+                  title="Nenhuma assinatura cadastrada"
+                  description={
+                    filter()
+                      ? "Nenhuma assinatura corresponde à busca informada."
+                      : "Cadastre a primeira assinatura ou importe uma imagem para autenticar certificados desta edição."
+                  }
+                  action={
+                    <Button
+                      onClick={() => setCreateSignatureOpen(true)}
+                      class="gap-1.5 text-xs cursor-pointer"
+                    >
+                      <Plus class="size-4" />
+                      <span>Cadastrar primeira assinatura</span>
+                    </Button>
+                  }
+                />
               }
-              action={
-                <Button
-                  onClick={() => setCreateSignatureOpen(true)}
-                  class="gap-1.5 text-xs cursor-pointer"
-                >
-                  <Plus class="size-4" />
-                  <span>Cadastrar primeira assinatura</span>
-                </Button>
-              }
-            />
-          }
-          renderItems={(slice, options) => (
-            <>
-              <AdminCreateSignatureCard
-                index={0}
-                animate={options.animate}
-                onCreate={() => setCreateSignatureOpen(true)}
-              />
-              <For each={slice}>
-                {(sig) => (
-                  <AdminSignatureCard
-                    signature={sig}
-                    isDeleting={deletingId() === sig.id}
-                    onDelete={() => handleDeleteSignature(sig)}
+              renderItems={(slice, options) => (
+                <>
+                  <AdminCreateSignatureCard
+                    index={0}
+                    animate={options.animate}
+                    onCreate={() => setCreateSignatureOpen(true)}
                   />
-                )}
-              </For>
-            </>
+                  <For each={slice}>
+                    {(sig) => (
+                      <AdminSignatureCard
+                        signature={sig}
+                        isDeleting={deletingId() === sig.id}
+                        onDelete={() => handleDeleteSignature(sig)}
+                      />
+                    )}
+                  </For>
+                </>
+              )}
+            />
           )}
-        />
+        </QueryBoundary>
       </Show>
 
       {/* Content: Signature Request Invites */}
       <Show when={activeSection() === "invites"}>
-        <PaginatedContainer<SignatureRequestI>
-          items={filteredRequests()}
-          layout="grid"
-          minItemWidth="18rem"
-          maxRows={(columns) => (columns === 1 ? 8 : 4)}
-          gap="3"
-          sort={requestSort()}
-          onSortChange={setRequestSort}
-          sortFields={[
-            {
-              key: "signatory_name",
-              label: "Signatário",
-              ascLabel: "A → Z",
-              descLabel: "Z → A",
-            },
-            {
-              key: "status",
-              label: "Status",
-              ascLabel: "Status (A → Z)",
-              descLabel: "Status (Z → A)",
-            },
-            {
-              key: "created_at",
-              label: "Data de envio",
-              ascLabel: "Mais antigos primeiro",
-              descLabel: "Mais recentes primeiro",
-              comparator: (a, b) =>
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime(),
-            },
-          ]}
-          filterValue={filter()}
-          onFilterChange={setFilter}
-          filterPlaceholder="Buscar por nome, e-mail ou status..."
-          itemLabel="convites"
-          emptyState={
-            <EmptyState
-              class="border-0 bg-transparent px-0 py-8 shadow-none"
-              icon={<Mail class="size-6 text-foreground/70" />}
-              title="Nenhum convite enviado"
-              description={
-                filter()
-                  ? "Nenhum convite corresponde à busca informada."
-                  : "Envie um convite por e-mail para que um palestrante, diretor ou coordenador assine digitalmente."
+        <QueryBoundary
+          query={requestsQuery}
+          what="os convites"
+          skeleton={<GridSkeleton minItemWidth="18rem" />}
+        >
+          {() => (
+            <PaginatedContainer<SignatureRequestI>
+              items={filteredRequests()}
+              layout="grid"
+              minItemWidth="18rem"
+              maxRows={(columns) => (columns === 1 ? 8 : 4)}
+              gap="3"
+              sort={requestSort()}
+              onSortChange={setRequestSort}
+              sortFields={[
+                {
+                  key: "signatory_name",
+                  label: "Signatário",
+                  ascLabel: "A → Z",
+                  descLabel: "Z → A",
+                },
+                {
+                  key: "status",
+                  label: "Status",
+                  ascLabel: "Status (A → Z)",
+                  descLabel: "Status (Z → A)",
+                },
+                {
+                  key: "created_at",
+                  label: "Data de envio",
+                  ascLabel: "Mais antigos primeiro",
+                  descLabel: "Mais recentes primeiro",
+                  comparator: (a, b) =>
+                    new Date(a.created_at).getTime() -
+                    new Date(b.created_at).getTime(),
+                },
+              ]}
+              filterValue={filter()}
+              onFilterChange={setFilter}
+              filterPlaceholder="Buscar por nome, e-mail ou status..."
+              itemLabel="convites"
+              emptyState={
+                <EmptyState
+                  class="border-0 bg-transparent px-0 py-8 shadow-none"
+                  icon={<Mail class="size-6 text-foreground/70" />}
+                  title="Nenhum convite enviado"
+                  description={
+                    filter()
+                      ? "Nenhum convite corresponde à busca informada."
+                      : "Envie um convite por e-mail para que um palestrante, diretor ou coordenador assine digitalmente."
+                  }
+                  action={
+                    <Button
+                      onClick={() => setCreateRequestOpen(true)}
+                      class="gap-1.5 text-xs cursor-pointer"
+                    >
+                      <Mail class="size-4" />
+                      <span>Enviar primeiro convite</span>
+                    </Button>
+                  }
+                />
               }
-              action={
-                <Button
-                  onClick={() => setCreateRequestOpen(true)}
-                  class="gap-1.5 text-xs cursor-pointer"
-                >
-                  <Mail class="size-4" />
-                  <span>Enviar primeiro convite</span>
-                </Button>
-              }
-            />
-          }
-          renderItems={(slice, options) => (
-            <>
-              <AdminCreateSignatureRequestCard
-                index={0}
-                animate={options.animate}
-                onCreate={() => setCreateRequestOpen(true)}
-              />
-              <For each={slice}>
-                {(req) => (
-                  <AdminSignatureRequestCard
-                    request={req}
-                    isCancelling={cancellingId() === req.id}
-                    onCancel={(reason) => handleCancelRequest(req, reason)}
+              renderItems={(slice, options) => (
+                <>
+                  <AdminCreateSignatureRequestCard
+                    index={0}
+                    animate={options.animate}
+                    onCreate={() => setCreateRequestOpen(true)}
                   />
-                )}
-              </For>
-            </>
+                  <For each={slice}>
+                    {(req) => (
+                      <AdminSignatureRequestCard
+                        request={req}
+                        isCancelling={cancellingId() === req.id}
+                        onCancel={(reason) => handleCancelRequest(req, reason)}
+                      />
+                    )}
+                  </For>
+                </>
+              )}
+            />
           )}
-        />
+        </QueryBoundary>
       </Show>
 
       {/* Modal: New Direct Signature */}

@@ -1,3 +1,4 @@
+import { shapeClass, type Shape } from "../lib/shape";
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { cn } from "../lib/cn";
@@ -9,6 +10,7 @@ import type { MultiStepSummaryConfig } from "./types";
  */
 export function MultiStepSummaryCard(props: {
   summary: MultiStepSummaryConfig;
+  shape?: Shape;
   class?: string;
 }): JSX.Element {
   const badgeText = () =>
@@ -20,6 +22,7 @@ export function MultiStepSummaryCard(props: {
     <div
       class={cn(
         "w-full max-w-full min-w-0 rounded-xl border border-border/70 bg-card p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 shadow-xs overflow-hidden",
+        shapeClass(props.shape, "surface"),
         props.class,
       )}
     >
@@ -44,7 +47,9 @@ export function MultiStepSummaryCard(props: {
         <For each={props.summary.items}>
           {(item) => {
             const rawVal = () =>
-              typeof item.value === "function" ? (item.value as () => unknown)() : item.value;
+              typeof item.value === "function"
+                ? (item.value as () => unknown)()
+                : item.value;
             const displayVal = () => {
               const v = rawVal();
               return v != null && v !== "" ? String(v) : "—";
@@ -93,7 +98,9 @@ export function MultiStepSummaryCard(props: {
       </div>
 
       <Show when={props.summary.extra}>
-        {(renderExtra) => <div class="w-full min-w-0 pt-1">{renderExtra()()}</div>}
+        {(renderExtra) => (
+          <div class="w-full min-w-0 pt-1">{renderExtra()()}</div>
+        )}
       </Show>
     </div>
   );

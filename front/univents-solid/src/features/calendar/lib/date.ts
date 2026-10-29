@@ -1,4 +1,4 @@
-export function pad(n: number): string {
+function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
@@ -72,10 +72,6 @@ export function shortDayName(date: Date): string {
   }).format(date);
 }
 
-export function toISODateTimeLocal(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 export function getDurationMinutes(start: string, end: string): number {
   return (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60);
 }
@@ -84,15 +80,6 @@ export function getNowPosition(): number {
   const now = new Date();
   const mins = now.getHours() * 60 + now.getMinutes();
   return mins;
-}
-
-export function getWeekDays(date: Date): Date[] {
-  const dayOfWeek = date.getDay(); // 0 is Sunday
-  const sunday = new Date(date);
-  sunday.setDate(date.getDate() - dayOfWeek);
-  sunday.setHours(0, 0, 0, 0);
-
-  return Array.from({ length: 7 }, (_, i) => addDays(sunday, i));
 }
 
 export function getMonthGrid(date: Date): Date[][] {

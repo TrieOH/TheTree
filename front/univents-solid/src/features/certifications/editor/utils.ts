@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { CertificationTemplateElement } from "../model";
 import { CERTIFICATE_IMAGE_MIME_TYPES } from "./constants";
 
@@ -12,14 +13,6 @@ export function createCertificateElementId(prefix: string): string {
       : Math.random().toString(36).slice(2);
 
   return `${prefix}_${random}`;
-}
-
-export function clampCertificateValue(
-  value: number,
-  min: number,
-  max: number,
-): number {
-  return Math.min(Math.max(value, min), max);
 }
 
 export function readCertificateFile(file: File): Promise<string> {
@@ -39,11 +32,9 @@ export function loadCertificateImageDimensions(
     image.onload = () =>
       resolve({ width: image.naturalWidth, height: image.naturalHeight });
     image.onerror = () => reject(new Error("Falha ao carregar a imagem"));
-    image.src = src;
+    image.src = resolveStorageUrl(src);
   });
 }
-
-export const loadImageDimensions = loadCertificateImageDimensions;
 
 export function scaleCertificateElements(
   elements: CertificationTemplateElement[],

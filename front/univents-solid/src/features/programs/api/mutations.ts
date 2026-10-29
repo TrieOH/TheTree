@@ -1,25 +1,34 @@
 import { useQueryClient } from "@trieoh/front-core-solid";
-import { deregisterOccurrence, registerOccurrence } from "@trieoh/univents-api";
+import {
+  checkInOccurrence,
+  createProgram,
+  createProgramOccurrence,
+  deleteOccurrence,
+  deleteProgram,
+  deregisterOccurrence,
+  markParticipationAttended,
+  patchOccurrence,
+  patchProgram,
+  registerOccurrence,
+} from "@trieoh/univents-api";
 import { orvalData } from "@trieoh/api-client";
-import type { ProgramParticipation } from "@trieoh/univents-api/schemas";
+import type {
+  CreateProgramOccurrenceRequest,
+  CreateProgramRequest,
+  PatchProgramOccurrenceRequest,
+  PatchProgramRequest,
+  ProgramParticipation,
+} from "@trieoh/univents-api/schemas";
 import { Effect } from "effect";
 import { apiEffect, useEffectMutation } from "@/shared/lib/effect-query";
 import { invalidateParticipationCache } from "./cache";
-import {
-  checkInOccurrenceFn,
-  createOccurrenceFn,
-  createProgramFn,
-  deleteOccurrenceFn,
-  deleteProgramFn,
-  markParticipationAttendedFn,
-  patchOccurrenceFn,
-  patchProgramFn,
-} from "./index";
 import { programKeys } from "./query-keys";
 import type {
   OccurrenceCreateOutput,
+  OccurrenceI,
   ProgramCreateInput,
   ProgramCreateOutput,
+  ProgramI,
 } from "../model";
 
 export const registerOccurrenceEffect = (occurrenceId: string) =>
@@ -30,6 +39,71 @@ export const registerOccurrenceEffect = (occurrenceId: string) =>
 export const deregisterOccurrenceEffect = (occurrenceId: string) =>
   apiEffect(() =>
     deregisterOccurrence(occurrenceId).then(orvalData<ProgramParticipation>),
+  );
+
+export const createProgramEffect = (
+  editionId: string,
+  data: ProgramCreateInput | ProgramCreateOutput,
+) =>
+  apiEffect(() =>
+    createProgram(editionId, data as CreateProgramRequest).then(
+      orvalData<ProgramI>,
+    ),
+  );
+
+export const patchProgramEffect = (
+  programId: string,
+  data: ProgramCreateInput | ProgramCreateOutput,
+) =>
+  apiEffect(() =>
+    patchProgram(programId, data as PatchProgramRequest).then(
+      orvalData<ProgramI>,
+    ),
+  );
+
+export const deleteProgramEffect = (programId: string) =>
+  apiEffect(() => deleteProgram(programId).then(orvalData<ProgramI>));
+
+export const createOccurrenceEffect = (
+  programId: string,
+  data: OccurrenceCreateOutput,
+) =>
+  apiEffect(() =>
+    createProgramOccurrence(
+      programId,
+      data as CreateProgramOccurrenceRequest,
+    ).then(orvalData<OccurrenceI>),
+  );
+
+export const patchOccurrenceEffect = (
+  occurrenceId: string,
+  data: OccurrenceCreateOutput,
+) =>
+  apiEffect(() =>
+    patchOccurrence(
+      occurrenceId,
+      data as PatchProgramOccurrenceRequest,
+    ).then(orvalData<OccurrenceI>),
+  );
+
+export const deleteOccurrenceEffect = (occurrenceId: string) =>
+  apiEffect(() => deleteOccurrence(occurrenceId).then(orvalData<OccurrenceI>));
+
+export const markParticipationAttendedEffect = (participationId: string) =>
+  apiEffect(() =>
+    markParticipationAttended(participationId).then(
+      orvalData<ProgramParticipation>,
+    ),
+  );
+
+export const checkInOccurrenceEffect = (
+  occurrenceId: string,
+  attendeeId: string,
+) =>
+  apiEffect(() =>
+    checkInOccurrence(occurrenceId, { attendee_id: attendeeId }).then(
+      orvalData<ProgramParticipation>,
+    ),
   );
 
 export const useRegisterOccurrenceMutation = () => {
@@ -79,7 +153,7 @@ export const useCreateProgramMutation = (editionId: () => string) => {
   return useEffectMutation({
     retryTransient: true,
     mutationEffect: (data: ProgramCreateInput | ProgramCreateOutput) =>
-      apiEffect(() => createProgramFn(editionId(), data)).pipe(
+      createProgramEffect(editionId(), data).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -102,7 +176,7 @@ export const useUpdateProgramMutation = (editionId: () => string) => {
       id: string;
       data: ProgramCreateInput | ProgramCreateOutput;
     }) =>
-      apiEffect(() => patchProgramFn(id, data)).pipe(
+      patchProgramEffect(id, data).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -119,7 +193,7 @@ export const useDeleteProgramMutation = (editionId: () => string) => {
   return useEffectMutation({
     retryTransient: true,
     mutationEffect: (id: string) =>
-      apiEffect(() => deleteProgramFn(id)).pipe(
+      deleteProgramEffect(id).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -145,7 +219,7 @@ export const useCreateOccurrenceMutation = (editionId: () => string) => {
       programId: string;
       data: OccurrenceCreateOutput;
     }) =>
-      apiEffect(() => createOccurrenceFn(programId, data)).pipe(
+      createOccurrenceEffect(programId, data).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -168,7 +242,7 @@ export const useUpdateOccurrenceMutation = (editionId: () => string) => {
       id: string;
       data: OccurrenceCreateOutput;
     }) =>
-      apiEffect(() => patchOccurrenceFn(id, data)).pipe(
+      patchOccurrenceEffect(id, data).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -185,7 +259,7 @@ export const useDeleteOccurrenceMutation = (editionId: () => string) => {
   return useEffectMutation({
     retryTransient: true,
     mutationEffect: (id: string) =>
-      apiEffect(() => deleteOccurrenceFn(id)).pipe(
+      deleteOccurrenceEffect(id).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -202,7 +276,7 @@ export const useMarkParticipationAttendedMutation = (occurrenceId: () => string)
   return useEffectMutation({
     retryTransient: true,
     mutationEffect: (participationId: string) =>
-      apiEffect(() => markParticipationAttendedFn(participationId)).pipe(
+      markParticipationAttendedEffect(participationId).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({
@@ -219,7 +293,7 @@ export const useCheckpointCheckInMutation = (occurrenceId: () => string) => {
   return useEffectMutation({
     retryTransient: true,
     mutationEffect: (attendeeId: string) =>
-      apiEffect(() => checkInOccurrenceFn(occurrenceId(), attendeeId)).pipe(
+      checkInOccurrenceEffect(occurrenceId(), attendeeId).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
             void queryClient.invalidateQueries({

@@ -9,9 +9,16 @@ import { Breadcrumb } from "@/shared/ui/Breadcrumb";
 import { MobileTopbar } from "@/widgets/sidebar/MobileTopbar";
 import { Sidebar } from "@/widgets/sidebar/Sidebar";
 import { SidebarProvider, useSidebar } from "@/widgets/sidebar/use-sidebar";
+import { allOwnEventsQueryOptions, allJoinedEventsQueryOptions } from "@/features/events/api";
+import { appQueryClient } from "@/shared/lib/query-client";
+import { warmQueries } from "@/shared/lib/route-data";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: requireAuth,
+  loader: () => warmQueries(appQueryClient, [
+    allOwnEventsQueryOptions(),
+    allJoinedEventsQueryOptions(),
+  ]),
   head: () => ({
     meta: [{ title: "Admin - Univents" }],
   }),
@@ -64,8 +71,8 @@ function AdminShell(): JSX.Element {
 
         <div
           class={cn(
-            "flex min-h-dvh min-w-0 max-w-full flex-col transition-[padding] duration-300 ease-in-out",
-            collapsed() ? "lg:pl-18" : "lg:pl-72",
+            "flex min-h-dvh min-w-0 max-w-full flex-col transition-[padding] duration-200 ease-in-out motion-reduce:transition-none",
+            collapsed() ? "lg:pl-16" : "lg:pl-64",
           )}
         >
           <div class="print:hidden shrink-0 min-w-0 max-w-full">
@@ -76,9 +83,9 @@ function AdminShell(): JSX.Element {
             <Breadcrumb />
           </div>
 
-          <main class="flex-1 min-w-0 max-w-full px-4 sm:px-6 py-6 pb-28">
+          <div class="flex-1 min-w-0 max-w-full px-4 sm:px-6 py-6 pb-28">
             <Outlet />
-          </main>
+          </div>
         </div>
       </div>
     </Show>

@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Match, Show, Switch, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import { Button, cn } from "@trieoh/ui-solid";
@@ -89,7 +90,7 @@ function TaskPreview(props: { task: UploadTask }) {
     },
   );
 
-  const source = () => props.task.uploadedUrl ?? objectUrl();
+  const source = () => resolveStorageUrl(props.task.uploadedUrl) || objectUrl();
 
   return (
     <Show

@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 
@@ -65,7 +66,7 @@ export function AdminProductCard(props: AdminProductCardProps): JSX.Element {
         role="region"
         aria-label={`Produto ${props.product.vendor_code}`}
         class={cn(
-          "group relative flex h-full w-full min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-border border-t-[3px] border-t-primary bg-card bg-linear-to-b from-primary/[0.04] via-card to-card p-4 text-left shadow-xs transition-all duration-200",
+          "group relative flex h-full w-full min-w-0 flex-col justify-between overflow-hidden rounded-xl border border-border border-t-[3px] border-t-primary bg-card bg-linear-to-b from-primary/4 via-card to-card p-4 text-left shadow-xs transition-all duration-200",
           "hover:-translate-y-0.5 hover:border-foreground/20 hover:border-t-primary hover:shadow-md",
           "focus-within:ring-2 focus-within:ring-ring",
           isDeleted() && "opacity-60 grayscale",
@@ -86,7 +87,7 @@ export function AdminProductCard(props: AdminProductCardProps): JSX.Element {
                 >
                   {(url) => (
                     <img
-                      src={url()}
+                      src={resolveStorageUrl(url())}
                       alt={props.product.vendor_code}
                       class="size-full object-cover"
                     />
@@ -116,7 +117,7 @@ export function AdminProductCard(props: AdminProductCardProps): JSX.Element {
                     </span>
                   </Show>
 
-                  <Show when={variantsCount() != null && variantsCount()! > 0}>
+                  <Show when={(variantsCount() ?? 0) > 0}>
                     <span class="text-[10px] text-muted-foreground/60">•</span>
                     <span class="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                       <Layers class="size-2.5" />
@@ -154,7 +155,7 @@ export function AdminProductCard(props: AdminProductCardProps): JSX.Element {
             </div>
           </div>
 
-          <div class="flex items-center justify-between text-[11px] text-muted-foreground min-h-[1.25rem]">
+          <div class="flex items-center justify-between text-[11px] text-muted-foreground min-h-5">
             <span class="inline-flex items-center gap-1.5">
               <Calendar class="size-3 shrink-0 opacity-70" />
               <span>Criado em {formatDate(props.product.created_at)}</span>

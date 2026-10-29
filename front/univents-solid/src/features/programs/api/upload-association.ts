@@ -1,11 +1,13 @@
 import { orvalItems } from "@trieoh/api-client";
-import { listEditionPrograms, patchProgram } from "@trieoh/univents-api";
+import { listEditionPrograms } from "@trieoh/univents-api";
 import type { Program } from "@trieoh/univents-api/schemas";
+import { Effect } from "effect";
 import {
   UploadAssociationError,
   registerUploadAssociationHandler,
 } from "@/features/upload-queue";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { patchProgramEffect } from "./mutations";
 import { programKeys } from "./query-keys";
 
 async function associateProgramImage(
@@ -32,15 +34,17 @@ async function associateProgramImage(
   }
 
   try {
-    const response = await patchProgram(program.id, {
-      kind: program.kind,
-      name: program.name,
-      description: program.description ?? undefined,
-      min_access_level: program.min_access_level ?? 0,
-      staff_only: Boolean(program.staff_only),
-      banner_url: uploadedUrl,
-      price: program.price ?? undefined,
-    });
+    const response = await Effect.runPromise(
+      patchProgramEffect(program.id, {
+        kind: program.kind,
+        name: program.name,
+        description: program.description ?? undefined,
+        min_access_level: program.min_access_level ?? 0,
+        staff_only: Boolean(program.staff_only),
+        banner_url: uploadedUrl,
+        price: program.price ?? undefined,
+      }),
+    );
 
     if (!response) {
       throw new UploadAssociationError("Não foi possível associar a imagem à programação.", {

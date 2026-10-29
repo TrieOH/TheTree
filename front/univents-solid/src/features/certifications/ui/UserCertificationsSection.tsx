@@ -12,10 +12,7 @@ import {
   programsQueryOptions,
 } from "@/features/programs/api";
 
-import {
-  certificationTemplateQueryOptions,
-  myCertificationsQueryOptions,
-} from "../api";
+import { certificationTemplateQueryOptions } from "../api";
 import { getCertificationTemplateOrDefault } from "../default-template";
 import { DEFAULT_CERTIFICATE_CANVAS } from "../editor/constants";
 import {
@@ -28,75 +25,39 @@ import { CertificateTemplateStaticView } from "./CertViewer";
 
 export interface UserCertificationsSectionProps {
   participantName: string;
-  certifications?: CertificationI[];
+  certifications: CertificationI[];
 }
 
 export function UserCertificationsSection(
   props: UserCertificationsSectionProps,
 ): JSX.Element {
-  const certsQuery = useQuery(() => ({
-    ...myCertificationsQueryOptions(),
-    enabled: props.certifications === undefined,
-  }));
-
-  const certifications = createMemo<CertificationI[]>(() => {
-    if (props.certifications !== undefined) {
-      return props.certifications;
-    }
-    return (certsQuery().data ?? []) as CertificationI[];
-  });
-
-  const isLoading = createMemo(() => {
-    if (props.certifications !== undefined) return false;
-    return certsQuery().isLoading;
-  });
-
   const eventsQuery = useQuery(() => allPublicEventsQueryOptions());
   const events = createMemo<EventI[]>(() => (eventsQuery().data ?? []) as EventI[]);
 
   return (
     <Show
-      when={!isLoading()}
+      when={props.certifications.length > 0}
       fallback={
-        <div class="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
-          <For each={[1, 2, 3]}>
-            {() => (
-              <div
-                class="animate-pulse rounded-lg border border-border/40 bg-muted/40"
-                style={{
-                  width: "320px",
-                  height: "226px",
-                  "max-width": "100%",
-                }}
-              />
-            )}
-          </For>
+        <div class="rounded-md border border-dashed border-border p-10 text-center">
+          <h2 class="font-semibold">Você ainda não possui certificados</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Seus certificados aparecerão aqui quando forem emitidos.
+          </p>
         </div>
       }
     >
-      <Show
-        when={certifications().length > 0}
-        fallback={
-          <div class="rounded-md border border-dashed border-border p-10 text-center">
-            <h2 class="font-semibold">Você ainda não possui certificados</h2>
-            <p class="mt-2 text-sm text-muted-foreground">
-              Seus certificados aparecerão aqui quando forem emitidos.
-            </p>
-          </div>
-        }
-      >
-        <div class="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
-          <For each={certifications()}>
-            {(certification) => (
-              <CertificateProfileCard
-                certification={certification}
-                participantName={props.participantName}
-                events={events()}
-              />
-            )}
-          </For>
-        </div>
-      </Show>
+      <div class="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
+        <For each={props.certifications}>
+          {(certification) => (
+            <CertificateProfileCard
+              certification={certification}
+              participantName={props.participantName}
+              events={events()}
+              eventsLoading={eventsQuery().isLoading}
+            />
+          )}
+        </For>
+      </div>
     </Show>
   );
 }
@@ -105,6 +66,8 @@ function CertificateProfileCard(props: {
   certification: CertificationI;
   participantName: string;
   events: EventI[];
+  /** The edition lookup is disabled until the events are known, so it can't signal this itself. */
+  eventsLoading: boolean;
 }): JSX.Element {
   const templateQuery = useQuery(() => ({
     ...certificationTemplateQueryOptions(props.certification.template_id ?? ""),
@@ -194,22 +157,53 @@ function CertificateProfileCard(props: {
     });
   });
 
+  // The certificate is drawn from the template plus the edition, programs and
+  // attendance: five requests. Drawing it as each lands would repaint the
+  // artwork, the text and the card's height several times, so it waits until
+  // they have all settled (a failed one just leaves its fields blank).
+  const ready = createMemo(
+    () =>
+      !props.eventsLoading &&
+      ![
+        templateQuery(),
+        editionQuery(),
+        programsQuery(),
+        occurrencesQuery(),
+        myParticipationsQuery(),
+      ].some((query) => query.isLoading),
+    { name: "CertificateProfileCard.ready" },
+  );
+
   return (
-    <Link
-      to="/verify/$hash"
-      params={{ hash: props.certification.verification_hash }}
-      class="block max-w-full cursor-pointer transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg overflow-hidden shadow-xs hover:shadow-md"
-      style={{
-        width: `${width}px` as `${number}px`,
-        height: `${height()}px` as `${number}px`,
-        "max-width": "100%",
-      }}
-      aria-label={`Abrir certificado de ${scopeName()}`}
+    <Show
+      when={ready()}
+      fallback={
+        <div
+          aria-hidden="true"
+          class="max-w-full animate-pulse rounded-lg border border-border/40 bg-muted/40"
+          style={{
+            width: `${width}px` as `${number}px`,
+            height: `${height()}px` as `${number}px`,
+          }}
+        />
+      }
     >
-      <CertificateTemplateStaticView
-        template={template()}
-        variables={variables()}
-      />
-    </Link>
+      <Link
+        to="/verify/$hash"
+        params={{ hash: props.certification.verification_hash }}
+        class="block max-w-full cursor-pointer transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg overflow-hidden shadow-xs hover:shadow-md"
+        style={{
+          width: `${width}px` as `${number}px`,
+          height: `${height()}px` as `${number}px`,
+          "max-width": "100%",
+        }}
+        aria-label={`Abrir certificado de ${scopeName()}`}
+      >
+        <CertificateTemplateStaticView
+          template={template()}
+          variables={variables()}
+        />
+      </Link>
+    </Show>
   );
 }

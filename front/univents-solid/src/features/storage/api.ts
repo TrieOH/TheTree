@@ -118,7 +118,6 @@ export const uploadProfileImageEffect = (
         try: () =>
           response.json().catch(() => ({})) as Promise<{
             key?: string;
-            publicUrl?: string;
             error?: string;
             approved?: boolean;
           }>,
@@ -129,7 +128,7 @@ export const uploadProfileImageEffect = (
           }),
       });
 
-      if (!response.ok || (!result.key && !result.publicUrl)) {
+      if (!response.ok || !result.key) {
         return yield* Effect.fail(
           new StorageModerationError({
             reason: result.error ?? "A imagem não foi aprovada.",
@@ -138,7 +137,7 @@ export const uploadProfileImageEffect = (
         );
       }
 
-      return result.key ?? result.publicUrl!;
+      return result.key;
     });
 
     const schedule = options?.retrySchedule ?? uploadRetrySchedule;

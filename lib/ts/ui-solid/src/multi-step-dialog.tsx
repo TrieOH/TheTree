@@ -3,12 +3,7 @@ import { Show, createEffect, createSignal } from "solid-js";
 import { Button } from "./button";
 import { Dialog, type DialogProps } from "./dialog";
 import { cn } from "./lib/cn";
-import {
-  MultiStepCustomField,
-  MultiStepFields,
-  MultiStepTextField,
-  MultiStepTextareaField,
-} from "./multi-step/fields";
+import { MultiStepFields } from "./multi-step/fields";
 import { MultiStepStepper } from "./multi-step/stepper";
 import { MultiStepSummaryCard } from "./multi-step/summary-card";
 import type {
@@ -36,6 +31,7 @@ export type {
   MultiStepItem,
   MultiStepRenderContext,
   MultiStepStepperProps,
+  MultiStepStepperStep,
   MultiStepSummaryConfig,
   MultiStepSummaryItem,
   TextMultiStepField,
@@ -44,17 +40,37 @@ export type {
 
 export function MultiStepDialog<T = Record<string, unknown>>(
   props: MultiStepDialogProps<T> & {
+    items?: MultiStepItem<T>[];
     size?: DialogProps["size"];
     backLabel?: string;
   },
 ): JSX.Element {
   const [internalStep, setInternalStep] = createSignal(0);
+  const [submissionPending, setSubmissionPending] = createSignal(false);
+  // Signals update the UI in a batch; this lock also covers same-turn submits.
+  let submissionInFlight = false;
+  const busy = () => Boolean(props.loading || submissionPending() || submissionInFlight);
+
+  const runSubmission = async (action: () => Promise<void>) => {
+    if (busy()) return;
+    submissionInFlight = true;
+    setSubmissionPending(true);
+    try {
+      await action();
+    } finally {
+      submissionInFlight = false;
+      setSubmissionPending(false);
+    }
+  };
+
+  const stepItems = () => props.steps ?? props.items ?? [];
+  const totalSteps = () => stepItems().length;
 
   const isControlled = () => props.currentStep !== undefined;
-  const stepIndex = () => (isControlled() ? props.currentStep! : internalStep());
+  const stepIndex = () => props.currentStep ?? internalStep();
 
   const setStep = (next: number) => {
-    const clamped = Math.max(0, Math.min(next, props.steps.length - 1));
+    const clamped = Math.max(0, Math.min(next, totalSteps() - 1));
     if (!isControlled()) {
       setInternalStep(clamped);
     }
@@ -72,15 +88,13 @@ export function MultiStepDialog<T = Record<string, unknown>>(
     },
   );
 
-  const totalSteps = () => props.steps.length;
   const isFirst = () => stepIndex() === 0;
   const isLast = () => stepIndex() === totalSteps() - 1;
 
-  const currentStepItem = () => props.steps[stepIndex()] ?? props.steps[0];
+  const currentStepItem = () => stepItems()[stepIndex()] ?? stepItems()[0];
 
   const handleNext = async () => {
-    if (props.loading) return;
-
+    if (busy()) return;
     if (props.onBeforeNext) {
       const allowed = await props.onBeforeNext(stepIndex());
       if (allowed === false) return;
@@ -88,10 +102,12 @@ export function MultiStepDialog<T = Record<string, unknown>>(
 
     if (isLast()) {
       const submitFn = props.onFormSubmit ?? props.onSubmit;
-      const result = await submitFn?.();
-      if (result !== false) {
-        props.onOpenChange(false);
-      }
+      await runSubmission(async () => {
+        const result = await submitFn?.();
+        if (result !== false) {
+          props.onOpenChange(false);
+        }
+      });
       return;
     }
 
@@ -99,7 +115,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   };
 
   const handleBack = () => {
-    if (props.loading) return;
+    if (busy()) return;
     if (isFirst()) {
       props.onOpenChange(false);
       return;
@@ -109,11 +125,14 @@ export function MultiStepDialog<T = Record<string, unknown>>(
 
   const handleFormSubmit = async (event: SubmitEvent) => {
     event.preventDefault();
-    if (props.onFormSubmit) {
-      const result = await props.onFormSubmit();
-      if (result !== false) {
-        props.onOpenChange(false);
-      }
+    const submitFn = props.onFormSubmit;
+    if (submitFn) {
+      await runSubmission(async () => {
+        const result = await submitFn();
+        if (result !== false) {
+          props.onOpenChange(false);
+        }
+      });
       return;
     }
     await handleNext();
@@ -122,7 +141,8 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   const submitLabel = () => props.submitLabel ?? "Salvar";
   const nextLabel = () => props.nextLabel ?? "Continuar";
   const backLabel = () =>
-    props.backLabel ?? (isFirst() ? (props.cancelLabel ?? "Cancelar") : "Voltar");
+    props.backLabel ??
+    (isFirst() ? (props.cancelLabel ?? "Cancelar") : "Voltar");
 
   const renderContext: MultiStepRenderContext<T> = {
     get currentStep() {
@@ -137,8 +157,9 @@ export function MultiStepDialog<T = Record<string, unknown>>(
     get isLast() {
       return isLast();
     },
-    values: () => (props.values ?? {}) as T,
-    errors: () => (props.errors ?? {}) as Partial<Record<keyof T & string, string>>,
+    values: () => (props.values ?? ({} as T)),
+    errors: () =>
+      (props.errors ?? {}) as Partial<Record<keyof T & string, string>>,
     next: () => void handleNext(),
     prev: handleBack,
     cancel: () => props.onOpenChange(false),
@@ -149,11 +170,12 @@ export function MultiStepDialog<T = Record<string, unknown>>(
   };
 
   const hasCustomChildren = () => typeof props.children === "function";
-  const activeSummary = () => currentStepItem().summary;
-  const activeFields = () => currentStepItem().fields;
+  const activeSummary = () => currentStepItem()?.summary;
+  const activeFields = () => currentStepItem()?.fields;
 
   return (
     <Dialog
+      shape={props.shape}
       open={props.open}
       onOpenChange={props.onOpenChange}
       size={props.size ?? "lg"}
@@ -171,7 +193,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
                 type="button"
                 variant="ghost"
                 onClick={handleBack}
-                disabled={props.loading}
+                disabled={busy()}
               >
                 {backLabel()}
               </Button>
@@ -181,7 +203,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
                   type="button"
                   variant="default"
                   onClick={handleNext}
-                  disabled={props.loading}
+                  disabled={busy()}
                   class="min-w-28 font-medium transition-all shadow-xs"
                 >
                   {isLast() ? submitLabel() : nextLabel()}
@@ -190,17 +212,19 @@ export function MultiStepDialog<T = Record<string, unknown>>(
             </div>
           }
         >
-          {props.footer!(renderContext)}
+          {typeof props.footer === "function"
+            ? props.footer(renderContext)
+            : props.footer}
         </Show>
       }
     >
       <div class="flex flex-col gap-5">
         {/* Stepper progress (desktop and mobile responsive) */}
         <MultiStepStepper
-          steps={props.steps as MultiStepItem<any>[]}
+          steps={stepItems()}
           currentStep={stepIndex()}
           onStepClick={(target) => {
-            if (target < stepIndex()) {
+            if (!busy() && target < stepIndex()) {
               setStep(target);
             }
           }}
@@ -210,7 +234,11 @@ export function MultiStepDialog<T = Record<string, unknown>>(
         <div class="min-h-0">
           <Show
             when={!hasCustomChildren()}
-            fallback={props.children!(renderContext)}
+            fallback={
+              typeof props.children === "function"
+                ? props.children(renderContext)
+                : props.children
+            }
           >
             <form
               id={props.formId ?? "multi-step-form"}
@@ -222,7 +250,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
                 fallback={
                   <Show
                     when={activeFields()}
-                    fallback={currentStepItem().render?.(renderContext) ?? null}
+                    fallback={currentStepItem()?.render?.(renderContext) ?? null}
                   >
                     <MultiStepFields
                       fields={activeFields() ?? []}
@@ -233,7 +261,7 @@ export function MultiStepDialog<T = Record<string, unknown>>(
                   </Show>
                 }
               >
-                <MultiStepSummaryCard summary={activeSummary()!} />
+                {(summary) => <MultiStepSummaryCard summary={summary()} />}
               </Show>
             </form>
           </Show>

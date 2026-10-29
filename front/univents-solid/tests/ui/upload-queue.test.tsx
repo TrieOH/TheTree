@@ -13,6 +13,7 @@ import {
   InvalidFileTypeError,
   StorageModerationError,
 } from "@/features/storage/api";
+import { StorageImageError } from "@/features/storage/api/index";
 
 afterEach(cleanup);
 
@@ -72,6 +73,17 @@ describe("upload-queue", () => {
       const classified = classifyUploadError(err);
       expect(classified.kind).toBe("unknown");
       expect(classified.retryable).toBe(true);
+    });
+
+    it("classifies bucket not found or storage configuration errors as non-retryable", () => {
+      const err = new StorageImageError(
+        "Falha ao enviar imagem para o storage (404): The specified bucket does not exist",
+        "STORAGE_HTTP_500",
+        500,
+      );
+      const classified = classifyUploadError(err);
+      expect(classified.kind).toBe("configuration");
+      expect(classified.retryable).toBe(false);
     });
   });
 

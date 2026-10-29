@@ -1,18 +1,19 @@
 import { orvalItems } from "@trieoh/api-client";
 import { listJoinedEvents, listOwnedEvents } from "@trieoh/univents-api";
+import { Effect } from "effect";
 import {
   UploadAssociationError,
   registerUploadAssociationHandler,
 } from "@/features/upload-queue";
 import { appQueryClient } from "@/shared/lib/query-client";
 import type { EventI } from "../model";
-import { patchEventFn } from "./index";
+import { patchEventEffect } from "./mutations";
 import { syncEventCaches } from "./cache";
 import { eventKeys } from "./query-keys";
 
 type ImageField = "logo_url" | "banner_url";
 
-export function patchData(
+function patchData(
   event: EventI,
   field: ImageField,
   url: string | null,
@@ -52,9 +53,8 @@ async function associateEventImage(
   }
 
   try {
-    const updated = await patchEventFn(
-      event.id,
-      patchData(event, field, uploadedUrl),
+    const updated = await Effect.runPromise(
+      patchEventEffect(event.id, patchData(event, field, uploadedUrl)),
     );
     if (!updated) {
       throw new UploadAssociationError("Não foi possível associar a imagem.", {

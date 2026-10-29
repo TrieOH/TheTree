@@ -3,9 +3,7 @@ import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import {
-  Loading,
   Show,
-  createMemo,
   createSignal,
   untrack,
   type Component,
@@ -32,6 +30,8 @@ import {
 import { OrderSummary } from "@/features/payments/ui/checkout/OrderSummary";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
 import { formatMoney } from "@/shared/lib/money";
+import { PageNotice } from "@/shared/ui/PageNotice";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const LucideCheck = CheckRaw as Component<{ class?: string }>;
 const LucideGift = GiftRaw as Component<{ class?: string }>;
@@ -54,10 +54,9 @@ function CheckoutPage() {
   const dataQuery = useQuery<CheckoutPageData | null>(() =>
     checkoutPageQueryOptions(params().slug),
   );
-  const data = createMemo(() => dataQuery().data);
 
   const submitCheckout = async (
-    loaded: NonNullable<Awaited<ReturnType<typeof data>>>,
+    loaded: CheckoutPageData,
     items: ReturnType<typeof useCart>["items"] extends () => infer T ? T : never,
     payment?: CheckoutPayment,
     gift?: { name: string; email: string },
@@ -91,27 +90,54 @@ function CheckoutPage() {
   };
 
   return (
-    <Loading fallback={<main class="p-12 text-center">Carregando checkout…</main>}>
-      <Show
-        when={dataQuery().isSuccess && data()}
-        fallback={<main class="p-12 text-center">Evento indisponível.</main>}
-      >
-        {(loaded) => (
-          <CheckoutForm
-            editionId={loaded().edition.id}
-            eventName={loaded().event.full_name}
-            slug={loaded().event.slug}
-            submitting={submitting()}
-            accountEmail={auth.profile()?.email ?? ""}
-            heldTicket={Boolean(loaded().heldTicket)}
-            payssagePublicKey={loaded().event.payssage_public_key ?? undefined}
-            submit={(items, payment, gift) =>
-              submitCheckout(loaded(), items, payment, gift)
-            }
-          />
-        )}
-      </Show>
-    </Loading>
+    <QueryBoundary
+      query={dataQuery}
+      what="o checkout"
+      skeleton={<CheckoutSkeleton />}
+      notFound={<PageNotice title="Evento indisponível." />}
+    >
+      {(data) => (
+        // Keyed: the form snapshots its edition once, so another event must
+        // rebuild it.
+        <Show
+          when={data()}
+          keyed
+          fallback={<PageNotice title="Evento indisponível." />}
+        >
+          {(loaded) => (
+            <CheckoutForm
+              editionId={loaded.edition.id}
+              eventName={loaded.event.full_name}
+              slug={loaded.event.slug}
+              submitting={submitting()}
+              accountEmail={auth.profile()?.email ?? ""}
+              heldTicket={Boolean(loaded.heldTicket)}
+              payssagePublicKey={loaded.event.payssage_public_key ?? undefined}
+              submit={(items, payment, gift) =>
+                submitCheckout(loaded, items, payment, gift)
+              }
+            />
+          )}
+        </Show>
+      )}
+    </QueryBoundary>
+  );
+}
+
+/** The form's header and its two columns (summary, payment) at the loaded sizes. */
+function CheckoutSkeleton() {
+  return (
+    <div class="mx-auto w-full max-w-6xl px-4 pb-44 pt-6 sm:px-6 md:pb-36 md:pt-12">
+      <div class="mb-6 space-y-3 border-b border-border pb-5 md:mb-8 md:pb-6">
+        <div class="h-6 w-48 animate-pulse rounded bg-muted" />
+        <div class="h-8 w-56 animate-pulse rounded bg-muted" />
+        <div class="h-4 w-64 animate-pulse rounded bg-muted" />
+      </div>
+      <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-8">
+        <div class="h-64 animate-pulse rounded-md bg-muted" />
+        <div class="h-80 animate-pulse rounded-md bg-muted" />
+      </div>
+    </div>
   );
 }
 
@@ -145,7 +171,7 @@ function CheckoutForm(props: {
 
   if (cart.items().length === 0) {
     return (
-      <main class="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center gap-4 px-4 text-center">
+      <div class="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 class="text-xl font-semibold">Seu carrinho está vazio</h1>
         <p class="text-sm text-muted-foreground">
           Adicione ao menos um item antes de iniciar o pagamento.
@@ -158,7 +184,7 @@ function CheckoutForm(props: {
         >
           Voltar aos produtos
         </Link>
-      </main>
+      </div>
     );
   }
 
@@ -185,7 +211,7 @@ function CheckoutForm(props: {
   };
 
   return (
-    <main class="mx-auto w-full max-w-6xl px-4 pb-44 pt-6 sm:px-6 md:pb-36 md:pt-12">
+    <div class="mx-auto w-full max-w-6xl px-4 pb-44 pt-6 sm:px-6 md:pb-36 md:pt-12">
       {/* Header + stepper */}
       <div class="mb-6 border-b border-border pb-5 md:mb-8 md:pb-6">
         <div class="mb-3 flex items-center gap-2 text-xs font-medium text-primary md:mb-4">
@@ -419,6 +445,6 @@ function CheckoutForm(props: {
           </a>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

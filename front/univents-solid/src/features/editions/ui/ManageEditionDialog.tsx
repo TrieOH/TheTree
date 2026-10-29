@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { Show, createEffect, createSignal, untrack } from "solid-js";
+import { Show, createMemo, createSignal } from "solid-js";
 import {
   MultiStepDialog,
   type MultiStepField,
@@ -7,7 +7,12 @@ import {
 } from "@trieoh/ui-solid";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { toast } from "@/shared/ui/toast";
-import type { EditionI } from "../model";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  editionStep1Schema,
+  editionStep2Schema,
+  type EditionI,
+} from "../model";
 
 export interface ManageEditionValues {
   name: string;
@@ -154,24 +159,19 @@ const SCHEDULE_FIELDS: MultiStepField<FormInternalValues>[] = [
 ];
 
 export function ManageEditionDialog(props: ManageEditionDialogProps): JSX.Element {
-  const [values, setValues] = createSignal<FormInternalValues>(
-    untrack(() => valuesOf(props.edition)),
+  const initialValues = createMemo(
+    () => (props.open ? valuesOf(props.edition) : { ...emptyValues }),
   );
-  const [currentStep, setCurrentStep] = createSignal(0);
+  const [values, setValues] = createSignal(() => initialValues());
+  const [currentStep, setCurrentStep] = createSignal(() => {
+    initialValues();
+    return 0;
+  });
+  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>(() => {
+    initialValues();
+    return {};
+  });
   const [submitting, setSubmitting] = createSignal(false);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof FormInternalValues, string>>>({});
-
-  // Reset or re-sync values when dialog opens or edition changes
-  createEffect(
-    () => (props.open ? valuesOf(props.edition) : null),
-    (computedValues) => {
-      if (computedValues) {
-        setValues(computedValues);
-        setCurrentStep(0);
-        setErrors({});
-      }
-    },
-  );
 
   const update = <K extends keyof FormInternalValues>(key: K, value: FormInternalValues[K]) => {
     const current = values();
@@ -212,24 +212,16 @@ export function ManageEditionDialog(props: ManageEditionDialogProps): JSX.Elemen
 
   const validateStep = (stepIndex: number): boolean => {
     const v = values();
-    const stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
+    let stepErrors: Partial<Record<keyof FormInternalValues, string>> = {};
 
     if (stepIndex === 0) {
-      if (v.name.trim().length < 2) {
-        stepErrors.name = "Informe ao menos 2 caracteres.";
-      }
-      if (v.slug.trim().length < 2) {
-        stepErrors.slug = "Informe ao menos 2 caracteres.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        editionStep1Schema.safeParse(v),
+      );
     } else if (stepIndex === 1) {
-      if (!v.starts_at) {
-        stepErrors.starts_at = "Informe a data de início.";
-      }
-      if (!v.ends_at) {
-        stepErrors.ends_at = "Informe a data de término.";
-      } else if (v.starts_at && new Date(v.ends_at).getTime() <= new Date(v.starts_at).getTime()) {
-        stepErrors.ends_at = "O término deve ser posterior ao início.";
-      }
+      stepErrors = getFieldErrors<FormInternalValues>(
+        editionStep2Schema.safeParse(v),
+      );
     }
 
     setErrors((prev) => ({ ...prev, ...stepErrors }));

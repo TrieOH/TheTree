@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { For, Show, createMemo, createSignal, onCleanup } from "solid-js";
 import { StaticText } from "@/features/editor/static-text";
@@ -58,7 +59,7 @@ export function CertificatePreview(props: CertificatePreviewProps): JSX.Element 
     return w / canvasWidth();
   });
 
-  const backgroundUrl = () => props.template.design_data?.background;
+  const backgroundUrl = () => resolveStorageUrl(props.template.design_data?.background);
   const elements = () => props.template.design_data?.elements ?? [];
 
   const values = createMemo<Record<string, string>>(() => {
@@ -139,7 +140,7 @@ export function CertificatePreview(props: CertificatePreviewProps): JSX.Element 
               </Show>
               <Show when={element.type === "image"}>
                 <img
-                  src={element.type === "image" ? element.src : ""}
+                  src={resolveStorageUrl(element.type === "image" ? element.src : "")}
                   alt="Elemento"
                   class="h-full w-full object-contain pointer-events-none"
                 />
@@ -148,7 +149,7 @@ export function CertificatePreview(props: CertificatePreviewProps): JSX.Element 
                 <div class="flex h-full w-full flex-col items-center justify-end pointer-events-none">
                   <Show when={element.type === "signature" && (element.src || (element as { imageUrl?: string }).imageUrl)}>
                     <img
-                      src={element.type === "signature" ? ((element as { imageUrl?: string }).imageUrl ?? element.src) : ""}
+                      src={resolveStorageUrl(element.type === "signature" ? ((element as { imageUrl?: string }).imageUrl ?? element.src) : "")}
                       alt={element.type === "signature" ? element.name : ""}
                       class="max-h-full max-w-full object-contain"
                     />

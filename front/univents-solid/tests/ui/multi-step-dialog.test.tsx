@@ -16,6 +16,27 @@ const STEPS: MultiStepItem[] = [
 ];
 
 describe("MultiStepDialog", () => {
+  it("ignores repeated form and button submissions while saving", async () => {
+    let finish!: (value: boolean) => void;
+    const onSubmit = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+    const onOpenChange = vi.fn();
+    render(() => (
+      <MultiStepDialog open title="Salvar uma vez" steps={[STEPS[0]!]}
+        formId="pending-save" onOpenChange={onOpenChange}
+        onFormSubmit={onSubmit} onSubmit={onSubmit} />
+    ));
+    const form = document.getElementById("pending-save")!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    try {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    } finally {
+      finish(true);
+    }
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false));
+  });
+
   it("renders the first step with mobile progressbar and navigation", () => {
     render(() => (
       <MultiStepDialog
@@ -77,6 +98,7 @@ describe("MultiStepDialog", () => {
     ));
 
     expect(screen.getByText("Passo ativo: 0")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
 
     // Advance to step 1
     const nextBtn = screen.getByRole("button", { name: /continuar/i });
@@ -84,6 +106,11 @@ describe("MultiStepDialog", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Passo ativo: 1")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "2");
+      expect(screen.getByRole("progressbar")).toHaveAttribute(
+        "aria-valuetext",
+        "Etapa 2 de 2: Segundo Passo",
+      );
     });
 
     // Step 1 has "Voltar" and "Salvar"
@@ -97,6 +124,7 @@ describe("MultiStepDialog", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Passo ativo: 0")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
     });
   });
 
@@ -127,6 +155,7 @@ describe("MultiStepDialog", () => {
       expect(guard).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByText("Passo ativo: 0")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
 
     // Now permit
     allowed = true;

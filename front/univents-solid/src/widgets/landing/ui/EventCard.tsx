@@ -8,6 +8,9 @@ import { resolveStorageUrl } from "@/shared/lib/storage-url";
 
 const ArrowIcon = ArrowUpRight as unknown as () => JSX.Element;
 
+const prefersReducedMotion = () =>
+  window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+
 export function EventCard(props: {
   event: Event;
   index?: number;
@@ -34,21 +37,24 @@ export function EventCard(props: {
     <article
       ref={(element) => {
         card = element;
+        if (prefersReducedMotion()) return;
+        // Hidden before the first paint; otherwise the card shows for a frame
+        // at full opacity and then snaps to 0 to start its entrance.
+        element.style.opacity = "0";
         requestAnimationFrame(() => {
-          if (card) {
-            animate(
-              card,
-              {
-                opacity: [0, 1],
-                transform: ["translateY(20px)", "translateY(0)"],
-              },
-              {
-                delay: (props.index ?? 0) * 0.06,
-                duration: 0.4,
-                ease: [0.25, 0.1, 0.25, 1],
-              },
-            );
-          }
+          if (!card) return;
+          animate(
+            card,
+            {
+              opacity: [0, 1],
+              transform: ["translateY(20px)", "translateY(0)"],
+            },
+            {
+              delay: (props.index ?? 0) * 0.06,
+              duration: 0.4,
+              ease: [0.25, 0.1, 0.25, 1],
+            },
+          );
         });
       }}
       class={cn(

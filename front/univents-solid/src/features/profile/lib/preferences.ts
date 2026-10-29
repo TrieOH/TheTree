@@ -1,5 +1,5 @@
-export const INPLACE_EDIT_PREFERENCE_KEY = "univents.inplace-edit-enabled";
-export const DASHBOARD_SHOW_MONETARY_KEY = "univents.dashboard-show-monetary-default";
+const INPLACE_EDIT_PREFERENCE_KEY = "univents.inplace-edit-enabled";
+const DASHBOARD_SHOW_MONETARY_KEY = "univents.dashboard-show-monetary-default";
 
 export function readInplaceEditPreference() {
   if (typeof window === "undefined") return false;

@@ -5,14 +5,24 @@ import AlertCircleIcon from "~icons/lucide/alert-circle";
 import { Button } from "@trieoh/ui-solid";
 import { AuthActionPage } from "@/features/auths/ui/AuthActionPage";
 import { toast } from "@/shared/ui/toast";
-import z from "zod";
+import { Schema, createSchema } from "@/shared/lib/effect-schema";
 
 const AlertCircle = AlertCircleIcon as unknown as (props: {
   class?: string;
 }) => JSX.Element;
 
+const resetSearchSchema = createSchema(
+  Schema.Struct({
+    token: Schema.optional(Schema.String),
+  }),
+);
+
 export const Route = createFileRoute("/auth_/reset")({
-  validateSearch: z.object({ token: z.string().catch("") }),
+  validateSearch: (search) => {
+    const parsed = resetSearchSchema.parse(search);
+    return { token: parsed.token ?? "" };
+  },
+  staticData: { ownsMain: true },
   component: ResetPasswordPage,
 });
 

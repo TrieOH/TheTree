@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import type { SignatureCertificateElement } from "../../types";
 
@@ -8,7 +9,7 @@ interface SignatureElementViewProps {
 export function SignatureElementView(props: SignatureElementViewProps): JSX.Element {
   return (
     <img
-      src={props.element.src}
+      src={resolveStorageUrl(props.element.src)}
       alt={`Assinatura de ${props.element.name}`}
       title={props.element.name}
       draggable={false}

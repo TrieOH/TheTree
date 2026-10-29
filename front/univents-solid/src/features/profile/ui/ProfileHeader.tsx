@@ -1,7 +1,7 @@
 import type { JSX } from "@solidjs/web";
 import { For, untrack } from "solid-js";
 import { Link } from "@tanstack/solid-router";
-import { cn } from "@trieoh/ui-solid";
+import { Avatar as UIAvatar, cn } from "@trieoh/ui-solid";
 import CalendarIcon from "~icons/lucide/calendar";
 import MailIcon from "~icons/lucide/mail";
 import PencilIcon from "~icons/lucide/pencil";
@@ -9,7 +9,7 @@ import SettingsIcon from "~icons/lucide/settings";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { UniventsProfile } from "../model/profile-data";
 import { ProfileShareButton } from "./ProfileShareButton";
-import type { ProfileTab } from "./profile-tabs";
+import { PROFILE_TABS, PROFILE_TAB_LABELS, type ProfileTab } from "../model/profile-tabs";
 
 const Calendar = CalendarIcon as unknown as (p: {
   class?: string;
@@ -102,8 +102,8 @@ export function ProfileHeader(props: {
       </div>
       <div class="relative mx-auto max-w-7xl">
         <nav class="flex overflow-x-auto px-4 pr-12 sm:pr-4">
-          <For each={tabs(props.ownProfile)}>
-            {([tab, label]) => (
+          <For each={PROFILE_TABS.filter((tab) => props.ownProfile || tab === "about" || tab === "badges")}>
+            {(tab) => (
               <button
                 type="button"
                 class={cn(
@@ -114,7 +114,7 @@ export function ProfileHeader(props: {
                 )}
                 onClick={() => props.onTabChange(tab)}
               >
-                {label}
+                {PROFILE_TAB_LABELS[tab]}
               </button>
             )}
           </For>
@@ -128,19 +128,6 @@ export function ProfileHeader(props: {
       </div>
     </section>
   );
-}
-
-function tabs(own: boolean): [ProfileTab, string][] {
-  return [
-    ["about", "Sobre"],
-    ["badges", "Crachás"],
-    ...(own
-      ? [
-        ["certificates", "Certificados"],
-        ["purchases", "Compras"],
-      ]
-      : []),
-  ] as [ProfileTab, string][];
 }
 
 function Identity(props: {
@@ -222,23 +209,18 @@ function Avatar(props: {
   imageUrl?: string | null;
   size: "mobile" | "desktop";
 }) {
-  const url = () => resolveStorageUrl(props.imageUrl);
-
   return (
-    <div
+    <UIAvatar
+      name={props.name}
+      src={resolveStorageUrl(props.imageUrl) || undefined}
+      initials={props.name.slice(0, 2).toUpperCase()}
+      shape="pill"
+      size="lg"
       class={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-background text-2xl font-semibold shadow-xl",
+        "relative border-4 border-background bg-muted text-2xl text-muted-foreground shadow-xl",
         props.size === "mobile" ? "size-24" : "size-32",
       )}
-    >
-      {url() ? (
-        <img src={url()} alt={props.name} class="size-full object-cover" />
-      ) : (
-        <span class="flex size-full items-center justify-center rounded-full bg-muted text-muted-foreground">
-          {props.name.slice(0, 2).toUpperCase()}
-        </span>
-      )}
-    </div>
+    />
   );
 }
 

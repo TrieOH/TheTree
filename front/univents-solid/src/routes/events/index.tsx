@@ -1,20 +1,22 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { For, Match, Switch, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import SearchIcon from "~icons/lucide/search";
 import SlidersIcon from "~icons/lucide/sliders-horizontal";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
-import type { EventI } from "@/features/events/model";
 import { EventCard } from "@/widgets/landing/ui/EventCard";
-import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import Logo from "@/shared/ui/Logo";
 import { Drawer } from "@/shared/ui/Drawer";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
+import { appQueryClient } from "@/shared/lib/query-client";
+import { warmQuery } from "@/shared/lib/route-data";
 
 const Search = SearchIcon as unknown as () => JSX.Element;
 const Sliders = SlidersIcon as unknown as () => JSX.Element;
 
 export const Route = createFileRoute("/events/")({
+  loader: () => warmQuery(appQueryClient, allPublicEventsQueryOptions()),
   head: () => ({ meta: [{ title: "Eventos - Univents" }] }),
   component: EventsPage,
 });
@@ -24,12 +26,35 @@ function EventsPage() {
   const [filter, setFilter] = createSignal<"all" | "series">("all");
   const [drawerOpen, setDrawerOpen] = createSignal(false);
 
-  const events = createMemo(() => eventsQuery().data ?? []);
+  const visibleEvents = createMemo(() =>
+    [...(eventsQuery().data ?? [])]
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )
+      .filter(() => filter() === "all"),
+  );
 
+  // The shell never remounts: the header, logo and filters stay put while the
+  // body goes skeleton -> list, instead of swapping one whole page for another.
   return (
-    <Switch>
-      <Match when={eventsQuery().isPending}>
-        <EventsShell count="...">
+    <EventsShell
+      count={eventsQuery().data ? String(visibleEvents().length) : "…"}
+      actions={
+        <Show when={eventsQuery().data}>
+          <EventFilters
+            filter={filter}
+            setFilter={setFilter}
+            drawerOpen={drawerOpen}
+            setDrawerOpen={setDrawerOpen}
+          />
+        </Show>
+      }
+    >
+      <QueryBoundary
+        query={eventsQuery}
+        what="os eventos"
+        skeleton={
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 md:gap-8">
             <For each={[1, 2, 3, 4]}>
               {() => (
@@ -37,124 +62,94 @@ function EventsPage() {
               )}
             </For>
           </div>
-        </EventsShell>
-      </Match>
-      <Match when={eventsQuery().isError}>
-        <EventsShell count="—">
-          <EventQueryError
-            message="Não foi possível carregar os eventos. Verifique sua conexão e tente novamente."
-            onRetry={() => void eventsQuery().refetch()}
-          />
-        </EventsShell>
-      </Match>
-      <Match when={eventsQuery().isSuccess}>
-        <EventsContent
-          events={events()}
-          filter={filter}
-          setFilter={setFilter}
-          drawerOpen={drawerOpen}
-          setDrawerOpen={setDrawerOpen}
-        />
-      </Match>
-    </Switch>
+        }
+      >
+        {() => (
+          <Show
+            when={visibleEvents().length > 0}
+            fallback={
+              <div class="flex flex-col items-center justify-center space-y-6 py-12 md:py-16">
+                <div class="flex size-16 items-center justify-center rounded-full bg-muted">
+                  <Search />
+                </div>
+                <div class="space-y-1 text-center">
+                  <h2 class="text-lg font-medium">Nenhum evento encontrado</h2>
+                  <p class="text-sm text-muted-foreground">
+                    Tente ajustar os filtros ou volte mais tarde.
+                  </p>
+                </div>
+              </div>
+            }
+          >
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 md:gap-8">
+              <For each={visibleEvents()}>
+                {(event, index) => <EventCard event={event} index={index()} />}
+              </For>
+            </div>
+          </Show>
+        )}
+      </QueryBoundary>
+    </EventsShell>
   );
 }
 
-function EventsContent(props: {
-  events: EventI[];
+function EventFilters(props: {
   filter: () => "all" | "series";
   setFilter: (value: "all" | "series") => void;
   drawerOpen: () => boolean;
   setDrawerOpen: (value: boolean) => void;
 }) {
-  const filteredEvents = createMemo(() =>
-    [...props.events]
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
-      .filter(() => props.filter() === "all"),
-  );
-
   return (
-    <EventsShell
-      count={String(filteredEvents().length)}
-      actions={
-        <>
-          <div class="hidden rounded-lg bg-muted p-1 sm:flex">
-            <FilterButton
-              active={props.filter() === "all"}
-              onClick={() => props.setFilter("all")}
-            >
-              Todos
-            </FilterButton>
-            <FilterButton
-              active={props.filter() === "series"}
-              onClick={() => props.setFilter("series")}
-            >
-              Séries
-            </FilterButton>
-          </div>
-          <button
-            type="button"
-            aria-label="Filtrar eventos"
-            class={`flex size-9 items-center justify-center rounded-lg sm:hidden ${props.drawerOpen() ? "bg-muted" : "hover:bg-muted"}`}
-            onClick={() => props.setDrawerOpen(true)}
-          >
-            <Sliders />
-          </button>
-          <Drawer
-            open={props.drawerOpen()}
-            title="Filtrar eventos"
-            onClose={() => props.setDrawerOpen(false)}
-          >
-            <div class="space-y-1">
-              <FilterButton
-                active={props.filter() === "all"}
-                onClick={() => {
-                  props.setFilter("all");
-                  props.setDrawerOpen(false);
-                }}
-              >
-                Todos os eventos
-              </FilterButton>
-              <FilterButton
-                active={props.filter() === "series"}
-                onClick={() => {
-                  props.setFilter("series");
-                  props.setDrawerOpen(false);
-                }}
-              >
-                Apenas séries
-              </FilterButton>
-            </div>
-          </Drawer>
-        </>
-      }
-    >
-      <Show
-        when={filteredEvents().length > 0}
-        fallback={
-          <div class="flex flex-col items-center justify-center space-y-6 py-12 md:py-16">
-            <div class="flex size-16 items-center justify-center rounded-full bg-muted">
-              <Search />
-            </div>
-            <div class="space-y-1 text-center">
-              <h2 class="text-lg font-medium">Nenhum evento encontrado</h2>
-              <p class="text-sm text-muted-foreground">
-                Tente ajustar os filtros ou volte mais tarde.
-              </p>
-            </div>
-          </div>
-        }
+    <>
+      <div class="hidden rounded-lg bg-muted p-1 sm:flex">
+        <FilterButton
+          active={props.filter() === "all"}
+          onClick={() => props.setFilter("all")}
+        >
+          Todos
+        </FilterButton>
+        <FilterButton
+          active={props.filter() === "series"}
+          onClick={() => props.setFilter("series")}
+        >
+          Séries
+        </FilterButton>
+      </div>
+      <button
+        type="button"
+        aria-label="Filtrar eventos"
+        class={`flex size-9 items-center justify-center rounded-lg sm:hidden ${props.drawerOpen() ? "bg-muted" : "hover:bg-muted"}`}
+        onClick={() => props.setDrawerOpen(true)}
       >
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 md:gap-8">
-          <For each={filteredEvents()}>
-            {(event, index) => <EventCard event={event} index={index()} />}
-          </For>
+        <Sliders />
+      </button>
+      <Drawer
+        open={props.drawerOpen()}
+        title="Filtrar eventos"
+        onClose={() => props.setDrawerOpen(false)}
+      >
+        <div class="space-y-1">
+          <FilterButton
+            active={props.filter() === "all"}
+            onClick={() => {
+              props.setFilter("all");
+              props.setDrawerOpen(false);
+            }}
+          >
+            Todos os eventos
+          </FilterButton>
+          <FilterButton
+            active={props.filter() === "series"}
+            onClick={() => {
+              props.setFilter("series");
+              props.setDrawerOpen(false);
+            }}
+          >
+            Apenas séries
+          </FilterButton>
         </div>
-      </Show>
-    </EventsShell>
+      </Drawer>
+    </>
   );
 }
 
@@ -197,7 +192,7 @@ function EventsShell(props: {
           <div class="ml-auto flex items-center gap-2">{props.actions}</div>
         </div>
       </header>
-      <main class="mx-auto max-w-7xl px-4 py-8 md:py-12">{props.children}</main>
+      <div class="mx-auto max-w-7xl px-4 py-8 md:py-12">{props.children}</div>
     </div>
   );
 }

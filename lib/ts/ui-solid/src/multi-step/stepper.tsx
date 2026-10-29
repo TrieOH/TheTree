@@ -1,133 +1,156 @@
 import type { JSX } from "@solidjs/web";
 import { For, Show } from "solid-js";
 import { cn } from "../lib/cn";
+import { shapeClass } from "../lib/shape";
 import type { MultiStepStepperProps } from "./types";
 
-/**
- * Responsive Stepper:
- * - Mobile (< 640px): Compact progress indicator with progress bar & step title
- * - Desktop (≥ 640px): Step pills with numbers/checkmarks, titles & connectors
- */
+/** Compact progress with optional navigation to previously completed steps. */
 export function MultiStepStepper(props: MultiStepStepperProps): JSX.Element {
-  const total = () => props.steps.length;
-  const safeCurrent = () => Math.min(Math.max(0, props.currentStep), total() - 1);
-  const activeStep = () => props.steps[safeCurrent()];
-  const progressPercent = () =>
-    total() > 1 ? Math.round((safeCurrent() / (total() - 1)) * 100) : 100;
+  const total = () => props.steps?.length ?? 0;
+  const current = () => Math.max(0, Math.min(props.currentStep, total() - 1));
+  const vertical = () => props.orientation === "vertical";
+  const automatic = () => !props.orientation || props.orientation === "auto";
 
   return (
-    <div class={cn("w-full space-y-2.5 min-w-0", props.class)}>
-      {/* Mobile view (< 640px) */}
-      <div class="space-y-1.5 sm:hidden min-w-0">
-        <div class="flex items-center justify-between gap-2 text-xs">
-          <span class="font-medium text-foreground truncate min-w-0">
-            {activeStep()?.title}
-          </span>
-          <span class="shrink-0 font-mono text-[11px] text-muted-foreground">
-            {safeCurrent() + 1} de {total()}
-          </span>
-        </div>
+    <Show when={total() > 0}>
+      <nav
+        aria-label={props.ariaLabel ?? "Etapas"}
+        data-orientation={props.orientation ?? "auto"}
+        class={cn("@container/stepper w-full min-w-0", props.class)}
+      >
         <div
-          class="h-1.5 w-full overflow-hidden rounded-full bg-muted/60"
           role="progressbar"
-          aria-valuenow={safeCurrent() + 1}
+          class="sr-only"
+          aria-label={props.ariaLabel ?? "Progresso das etapas"}
           aria-valuemin={1}
           aria-valuemax={total()}
-          aria-label={`Passo ${safeCurrent() + 1} de ${total()}: ${activeStep()?.title ?? ""}`}
-        >
-          <div
-            class="h-full bg-primary transition-all duration-300 ease-out"
-            style={{ width: `${progressPercent()}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Desktop view (≥ 640px) */}
-      <ol class="hidden sm:flex sm:items-center sm:gap-2 text-xs min-w-0">
-        <For each={props.steps}>
-          {(step, idx) => {
-            const isCompleted = () => idx() < safeCurrent();
-            const isActive = () => idx() === safeCurrent();
-            const isClickable = () =>
-              Boolean(props.onStepClick && idx() <= safeCurrent());
-
-            return (
-              <li class="flex flex-1 items-center gap-2 min-w-0">
-                <button
-                  type="button"
-                  disabled={!isClickable()}
-                  onClick={() => props.onStepClick?.(idx())}
-                  class={cn(
-                    "group flex items-center gap-2 rounded-md text-left transition-colors min-w-0",
-                    isClickable() ? "cursor-pointer hover:opacity-85" : "cursor-default",
-                  )}
-                  aria-current={isActive() ? "step" : undefined}
-                >
-                  <span
-                    class={cn(
-                      "flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition-all",
-                      isCompleted()
-                        ? "bg-primary text-primary-foreground shadow-xs"
-                        : isActive()
-                          ? "border-2 border-primary bg-primary/10 text-primary font-bold shadow-xs"
-                          : "border border-border bg-muted/50 text-muted-foreground",
-                    )}
-                  >
-                    <Show
-                      when={isCompleted()}
-                      fallback={<span>{idx() + 1}</span>}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="3"
-                        class="size-3"
-                        aria-hidden="true"
-                      >
-                        <polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </Show>
-                  </span>
-
-                  <span class="min-w-0">
-                    <span
-                      class={cn(
-                        "block truncate font-medium text-xs",
-                        isActive()
-                          ? "text-foreground font-semibold"
-                          : isCompleted()
-                            ? "text-foreground"
-                            : "text-muted-foreground",
-                      )}
-                    >
-                      {step.title}
-                    </span>
-                    <Show when={step.description}>
-                      {(desc) => (
-                        <span class="block truncate text-[10px] text-muted-foreground">
-                          {desc()}
-                        </span>
-                      )}
-                    </Show>
-                  </span>
-                </button>
-
-                {/* Connector line between steps */}
-                <Show when={idx() < total() - 1}>
+          aria-valuenow={current() + 1}
+          aria-valuetext={`Etapa ${current() + 1} de ${total()}: ${props.steps?.[current()]?.title ?? ""}`}
+        />
+        <div class={cn("hidden", automatic() && "@max-[28rem]/stepper:block")}>
+          <div class="flex min-w-0 items-center justify-between gap-3 text-xs">
+            <span class="truncate font-medium text-foreground">
+              {props.steps?.[current()]?.title}
+            </span>
+            <span class="shrink-0 tabular-nums text-muted-foreground">
+              {current() + 1} de {total()}
+            </span>
+          </div>
+          <ol class="mt-1 flex gap-1.5" aria-label="Progresso das etapas">
+            <For each={props.steps ?? []}>
+              {(_, i) => (
+                <li class="h-1 flex-1 rounded-full overflow-hidden bg-muted">
                   <div
                     class={cn(
-                      "h-px flex-1 transition-colors min-w-2",
-                      idx() < safeCurrent() ? "bg-primary/50" : "bg-border/60",
+                      "h-full transition-all",
+                      i() <= current() ? "bg-primary" : "bg-transparent",
                     )}
-                    aria-hidden="true"
                   />
-                </Show>
-              </li>
-            );
-          }}
-        </For>
-      </ol>
-    </div>
+                </li>
+              )}
+            </For>
+          </ol>
+        </div>
+
+        <ol
+          class={cn(
+            vertical() ? "grid gap-3" : "flex items-center gap-3",
+            automatic() && "@max-[28rem]/stepper:hidden",
+          )}
+        >
+          <For each={props.steps ?? []}>
+            {(step, i) => {
+              const isDone = () => i() < current();
+              const isCurrent = () => i() === current();
+              const isInteractive = () =>
+                typeof props.onStepClick === "function" && isDone();
+
+              return (
+                <li
+                  class={cn(
+                    "flex flex-1 items-center gap-3",
+                    vertical() && "w-full",
+                  )}
+                >
+                  <button
+                    type="button"
+                    disabled={!isInteractive()}
+                    onClick={() => props.onStepClick?.(i())}
+                    class={cn(
+                      "group flex items-center gap-3 text-left transition-colors",
+                      isInteractive() && "cursor-pointer",
+                    )}
+                  >
+                    <span
+                      class={cn(
+                        "flex size-7 shrink-0 items-center justify-center text-xs font-semibold border transition-all",
+                        shapeClass(props.shape ?? "pill"),
+                        isCurrent() &&
+                          "border-primary bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20",
+                        isDone() &&
+                          "border-primary/40 bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
+                        !isCurrent() &&
+                          !isDone() &&
+                          "border-border bg-muted/40 text-muted-foreground",
+                      )}
+                    >
+                      <Show when={isDone()} fallback={i() + 1}>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          class="size-3.5"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M20 6 9 17l-5-5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </Show>
+                    </span>
+
+                    <span class="flex min-w-0 flex-col">
+                      <span
+                        class={cn(
+                          "truncate text-xs font-medium",
+                          isCurrent() && "text-foreground font-semibold",
+                          isDone() &&
+                            "text-muted-foreground group-hover:text-foreground",
+                          !isCurrent() &&
+                            !isDone() &&
+                            "text-muted-foreground/80",
+                        )}
+                      >
+                        {step.title}
+                      </span>
+                      <Show when={props.showDescriptions && step.description}>
+                        {(desc) => (
+                          <span class="truncate text-[11px] text-muted-foreground/70">
+                            {desc()}
+                          </span>
+                        )}
+                      </Show>
+                    </span>
+                  </button>
+
+                  <Show when={!vertical() && i() < total() - 1}>
+                    <div
+                      aria-hidden="true"
+                      class={cn(
+                        "h-px flex-1 transition-colors",
+                        isDone() ? "bg-primary/50" : "bg-border/60",
+                      )}
+                    />
+                  </Show>
+                </li>
+              );
+            }}
+          </For>
+        </ol>
+      </nav>
+    </Show>
   );
 }

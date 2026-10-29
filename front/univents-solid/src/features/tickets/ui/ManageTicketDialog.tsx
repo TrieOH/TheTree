@@ -4,7 +4,13 @@ import {
   type MultiStepItem,
 } from "@trieoh/ui-solid";
 import { formatPrice } from "@/shared/lib/money";
-import type { TicketCreateOutputI, TicketI } from "../model";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
+import {
+  ticketStep1Schema,
+  ticketStep2Schema,
+  type TicketCreateOutputI,
+  type TicketI,
+} from "../model";
 
 export interface ManageTicketValues {
   name: string;
@@ -84,45 +90,16 @@ export function ManageTicketDialog(props: ManageTicketDialogProps) {
 
   const validateStep = (stepIndex: number): boolean => {
     const current = currentValues;
-    const nextErrors: Partial<Record<keyof ManageTicketValues, string>> = {};
+    let nextErrors: Partial<Record<keyof ManageTicketValues, string>> = {};
 
     if (stepIndex === 0) {
-      if (current.name.trim().length < 2) {
-        nextErrors.name = "O nome deve ter pelo menos 2 caracteres.";
-      }
-    }
-
-    if (stepIndex === 1) {
-      if (
-        typeof current.price_cents !== "number" ||
-        isNaN(current.price_cents) ||
-        current.price_cents < 0
-      ) {
-        nextErrors.price_cents = "Informe um preço válido.";
-      }
-
-      const rawLevel = String(current.access_level ?? "").trim();
-      if (rawLevel === "") {
-        nextErrors.access_level = "O nível de acesso é obrigatório.";
-      } else {
-        const accessLevel = Number(rawLevel);
-        if (
-          isNaN(accessLevel) ||
-          accessLevel < 0 ||
-          !Number.isInteger(accessLevel)
-        ) {
-          nextErrors.access_level =
-            "O nível de acesso deve ser um número inteiro >= 0.";
-        }
-      }
-
-      if (String(current.max_quantity ?? "").trim() !== "") {
-        const qty = Number(current.max_quantity);
-        if (!Number.isInteger(qty) || qty <= 0) {
-          nextErrors.max_quantity =
-            "Quantidade deve ser um número inteiro maior que 0.";
-        }
-      }
+      nextErrors = getFieldErrors<ManageTicketValues>(
+        ticketStep1Schema.safeParse(current),
+      );
+    } else if (stepIndex === 1) {
+      nextErrors = getFieldErrors<ManageTicketValues>(
+        ticketStep2Schema.safeParse(current),
+      );
     }
 
     if (Object.keys(nextErrors).length > 0) {

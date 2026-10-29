@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -24,12 +25,14 @@ import {
   ManageEditionDialog,
   type ManageEditionValues,
 } from "@/features/editions/ui/ManageEditionDialog";
-import { toast } from "@/shared/ui/toast";
+import { warmQuery } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const CalendarDays = CalendarDaysIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarPlus = CalendarPlusIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/admin/events/$eventId/editions/")({
+  loader: ({ params }) => warmQuery(appQueryClient, allAdminEditionsQueryOptions(params.eventId)),
   head: () => ({
     meta: [{ title: "Edições - Admin Univents" }],
   }),
@@ -79,8 +82,7 @@ function AdminEventEditionsRoute(): JSX.Element {
     });
 
     if (overlaps) {
-      toast.error("Já existe uma edição cadastrada nesse período.");
-      return false;
+      throw new Error("Já existe uma edição cadastrada nesse período.");
     }
 
     try {
@@ -103,7 +105,6 @@ function AdminEventEditionsRoute(): JSX.Element {
             banner_url: values.banner_url ?? currentTarget.banner_url ?? null,
           },
         });
-        toast.success("Edição atualizada com sucesso!");
       } else {
         await createMutation.mutateAsync({
           eventId: eventId(),
@@ -114,22 +115,21 @@ function AdminEventEditionsRoute(): JSX.Element {
             ends_at: values.ends_at,
           },
         });
-        toast.success("Edição criada com sucesso!");
       }
       setCreating(false);
       setEditing(null);
       return true;
     } catch {
-      toast.error(currentTarget ? "Erro ao atualizar edição." : "Erro ao criar edição.");
-      return false;
+      throw new Error(currentTarget ? "Erro ao atualizar edição." : "Erro ao criar edição.");
     }
   };
 
   return (
     <div class="space-y-6">
-      <Show
-        when={!editionsQuery().isLoading}
-        fallback={
+      <QueryBoundary
+        query={editionsQuery}
+        what="as edições"
+        skeleton={
           <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             <For each={[1, 2, 3, 4]}>
               {() => <div class="h-24 animate-pulse rounded-xl bg-muted" />}
@@ -137,17 +137,19 @@ function AdminEventEditionsRoute(): JSX.Element {
           </div>
         }
       >
-        <AdminEventEditionsContent
-          editions={editions()}
-          eventId={eventId()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onCreate={() => setCreating(true)}
-          onEdit={setEditing}
-        />
-      </Show>
+        {() => (
+          <AdminEventEditionsContent
+            editions={editions()}
+            eventId={eventId()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onCreate={() => setCreating(true)}
+            onEdit={setEditing}
+          />
+        )}
+      </QueryBoundary>
 
       <Show
         when={editing()}

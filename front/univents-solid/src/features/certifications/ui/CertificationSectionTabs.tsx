@@ -3,7 +3,7 @@ import AlertTriangleIcon from "~icons/lucide/alert-triangle";
 import AwardIcon from "~icons/lucide/award";
 import FileTextIcon from "~icons/lucide/file-text";
 
-import { SectionTabs, type SectionTabItem } from "@/shared/ui/SectionTabs";
+import { Tabs, type TabsItem } from "@trieoh/ui-solid";
 
 const AlertTriangle = AlertTriangleIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Award = AwardIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -21,7 +21,7 @@ export interface CertificationSectionTabsProps {
 }
 
 export function CertificationSectionTabs(props: CertificationSectionTabsProps): JSX.Element {
-  const items = (): SectionTabItem<CertificationSection>[] => [
+  const items = (): TabsItem<CertificationSection>[] => [
     {
       id: "templates",
       label: "Templates",
@@ -43,9 +43,9 @@ export function CertificationSectionTabs(props: CertificationSectionTabsProps): 
   ];
 
   return (
-    <SectionTabs<CertificationSection>
+    <Tabs<CertificationSection>
       items={items()}
-      active={props.active}
+      value={props.active}
       onChange={props.onChange}
       ariaLabel="Certificações da edição"
       class={props.class}

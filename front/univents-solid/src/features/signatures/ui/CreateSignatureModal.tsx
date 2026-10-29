@@ -1,8 +1,7 @@
 import type { JSX } from "@solidjs/web";
-import { Show, createSignal, untrack } from "solid-js";
+import { Show, createSignal } from "solid-js";
 import CheckCircle2Icon from "~icons/lucide/check-circle-2";
 import EraserIcon from "~icons/lucide/eraser";
-import ImageIcon from "~icons/lucide/image";
 import PenLineIcon from "~icons/lucide/pen-line";
 import UploadIcon from "~icons/lucide/upload";
 
@@ -13,12 +12,13 @@ import {
 } from "@trieoh/ui-solid";
 import { uploadFile } from "@/features/storage/api/index";
 import { toast } from "@/shared/ui/toast";
+import { getFieldErrors } from "@/shared/lib/effect-schema";
 import { useCreateSignatureMutation } from "../api/mutations";
+import { signatureStep1Schema } from "../model";
 import { SignatureCanvas, type SignatureCanvasRef } from "./SignatureCanvas";
 
 const CheckCircle2 = CheckCircle2Icon as unknown as (props: { class?: string }) => JSX.Element;
 const Eraser = EraserIcon as unknown as (props: { class?: string }) => JSX.Element;
-const ImageLucide = ImageIcon as unknown as (props: { class?: string }) => JSX.Element;
 const PenLine = PenLineIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Upload = UploadIcon as unknown as (props: { class?: string }) => JSX.Element;
 
@@ -30,13 +30,11 @@ export interface CreateSignatureModalProps {
   onSuccess?: () => void;
 }
 
-export type SignatureOriginMode = "draw" | "upload";
-
 export interface CreateSignatureValues {
   signatory_name: string;
   signatory_title: string;
   signatory_email: string;
-  mode: SignatureOriginMode;
+  mode: "draw" | "upload";
 }
 
 const emptyValues: CreateSignatureValues = {
@@ -49,42 +47,41 @@ const emptyValues: CreateSignatureValues = {
 export function CreateSignatureModal(
   props: CreateSignatureModalProps,
 ): JSX.Element {
+  const createSignatureMutation = useCreateSignatureMutation();
+
   const [currentStep, setCurrentStep] = createSignal(0);
   let currentValues: CreateSignatureValues = { ...emptyValues };
-  const [values, setValues] = createSignal<CreateSignatureValues>(
-    untrack(() => currentValues),
-  );
-  const [errors, setErrors] = createSignal<
-    Partial<Record<keyof CreateSignatureValues | "signature", string>>
-  >({});
-  const [isSubmitting, setIsSubmitting] = createSignal(false);
-  const [isDragging, setIsDragging] = createSignal(false);
+  const [values, setValues] = createSignal<CreateSignatureValues>({
+    ...emptyValues,
+  });
 
+  const [isDragging, setIsDragging] = createSignal(false);
   const [importedFile, setImportedFile] = createSignal<File | null>(null);
   const [previewUrl, setPreviewUrl] = createSignal<string | null>(null);
   const [drawingDataUrl, setDrawingDataUrl] = createSignal<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = createSignal(false);
+  const [errors, setErrors] = createSignal<
+    Partial<Record<keyof CreateSignatureValues | "signature", string>>
+  >({});
 
   let canvasRef: SignatureCanvasRef | undefined;
-
-  const createSignatureMutation = useCreateSignatureMutation();
 
   const resetForm = () => {
     currentValues = { ...emptyValues };
     setValues({ ...emptyValues });
-    setErrors({});
-    setCurrentStep(0);
     setImportedFile(null);
-    setIsDragging(false);
-    if (previewUrl()) {
+    const existing = previewUrl();
+    if (existing) {
       try {
         if (typeof URL.revokeObjectURL === "function") {
-          URL.revokeObjectURL(previewUrl()!);
+          URL.revokeObjectURL(existing);
         }
-      } catch { }
-      setPreviewUrl(null);
+      } catch {}
     }
+    setPreviewUrl(null);
     setDrawingDataUrl(null);
-    canvasRef?.clear();
+    setErrors({});
+    setCurrentStep(0);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -95,17 +92,24 @@ export function CreateSignatureModal(
   };
 
   const handleChange = (
-    key: (keyof CreateSignatureValues | "signature") & string,
+    key: keyof CreateSignatureValues & string,
     value: unknown,
   ) => {
-    if (key in emptyValues) {
-      currentValues = { ...currentValues, [key]: value };
-      setValues(currentValues);
-    }
+    currentValues = { ...currentValues, [key]: value };
+    setValues(currentValues);
     setErrors((prev) => {
-      if (!prev[key as keyof typeof prev]) return prev;
+      if (!prev[key as keyof CreateSignatureValues]) return prev;
       const nextErrors = { ...prev };
-      delete nextErrors[key as keyof typeof prev];
+      delete nextErrors[key as keyof CreateSignatureValues];
+      return nextErrors;
+    });
+  };
+
+  const handleModeChange = (mode: "draw" | "upload") => {
+    handleChange("mode", mode);
+    setErrors((prev) => {
+      const nextErrors = { ...prev };
+      delete nextErrors.signature;
       return nextErrors;
     });
   };
@@ -114,22 +118,23 @@ export function CreateSignatureModal(
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Por favor, selecione um arquivo de imagem (PNG, JPG ou WebP).");
+      toast.error("Por favor, selecione apenas arquivos de imagem.");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 5MB.");
+      toast.error("O arquivo deve ter no máximo 5MB.");
       return;
     }
 
     setImportedFile(file);
-    if (previewUrl()) {
+    const existing = previewUrl();
+    if (existing) {
       try {
         if (typeof URL.revokeObjectURL === "function") {
-          URL.revokeObjectURL(previewUrl()!);
+          URL.revokeObjectURL(existing);
         }
-      } catch { }
+      } catch {}
     }
     try {
       if (typeof URL.createObjectURL === "function") {
@@ -140,8 +145,8 @@ export function CreateSignatureModal(
     } catch {
       setPreviewUrl("blob:mock-file");
     }
+
     setErrors((prev) => {
-      if (!prev.signature) return prev;
       const nextErrors = { ...prev };
       delete nextErrors.signature;
       return nextErrors;
@@ -164,24 +169,15 @@ export function CreateSignatureModal(
 
   const validateStep = (stepIndex: number): boolean => {
     const current = currentValues;
-    const nextErrors: Partial<
+    let nextErrors: Partial<
       Record<keyof CreateSignatureValues | "signature", string>
     > = {};
 
     if (stepIndex === 0) {
-      const name = current.signatory_name.trim();
-      if (name.length < 2) {
-        nextErrors.signatory_name =
-          "O nome do signatário deve ter pelo menos 2 caracteres.";
-      }
-
-      const email = current.signatory_email.trim();
-      if (email.length > 0 && (!email.includes("@") || !email.includes("."))) {
-        nextErrors.signatory_email = "Informe um e-mail válido.";
-      }
-    }
-
-    if (stepIndex === 1) {
+      nextErrors = getFieldErrors<CreateSignatureValues>(
+        signatureStep1Schema.safeParse(current),
+      );
+    } else if (stepIndex === 1) {
       if (current.mode === "draw") {
         if (!canvasRef || canvasRef.isEmpty()) {
           nextErrors.signature = "Por favor, desenhe uma assinatura no quadro.";
@@ -217,36 +213,34 @@ export function CreateSignatureModal(
 
       if (current.mode === "draw") {
         if (!canvasRef || canvasRef.isEmpty()) {
+          setErrors({
+            signature: "Por favor, desenhe uma assinatura no quadro.",
+          });
           toast.error("Por favor, desenhe uma assinatura no quadro.");
           return false;
         }
 
-        const blob = await canvasRef.toBlob("image/png");
+        const blob = await canvasRef.toBlob();
         if (!blob) {
-          throw new Error("Não foi possível capturar a assinatura do canvas.");
+          toast.error("Erro ao gerar imagem da assinatura.");
+          return false;
         }
 
-        const file = new File(
-          [blob],
-          `signature-${Date.now()}.png`,
-          { type: "image/png" },
-        );
-
-        imageUrl = await uploadFile(
-          file,
-          `editions/${props.editionId}/signatures`,
-        );
+        const file = new File([blob], `signature_${Date.now()}.png`, {
+          type: "image/png",
+        });
+        imageUrl = await uploadFile(file, "signatures");
       } else {
         const file = importedFile();
         if (!file) {
+          setErrors({
+            signature: "Selecione um arquivo de imagem com a assinatura.",
+          });
           toast.error("Selecione um arquivo de imagem com a assinatura.");
           return false;
         }
 
-        imageUrl = await uploadFile(
-          file,
-          `editions/${props.editionId}/signatures`,
-        );
+        imageUrl = await uploadFile(file, "signatures");
       }
 
       await createSignatureMutation.mutateAsync({
@@ -259,55 +253,46 @@ export function CreateSignatureModal(
         },
       });
 
-      toast.success("Assinatura adicionada com sucesso!");
+      toast.success("Assinatura cadastrada com sucesso!");
       resetForm();
       props.onOpenChange(false);
       props.onSuccess?.();
       return true;
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Erro ao cadastrar assinatura.";
-      toast.error(msg);
+    } catch {
+      toast.error("Não foi possível cadastrar a assinatura.");
       return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const activeSignaturePreview = () => {
-    if (values().mode === "draw") {
-      return drawingDataUrl() ?? (canvasRef && !canvasRef.isEmpty() ? canvasRef.toDataURL() : null);
-    }
-    return previewUrl();
-  };
-
   const steps: MultiStepItem<CreateSignatureValues>[] = [
     {
       id: "signatario",
       title: "Signatário",
-      description: "Identificação da autoridade que assinará os documentos",
+      description: "Identificação do responsável pela assinatura",
       fields: [
         {
           name: "signatory_name",
           label: "Nome do signatário",
           required: true,
-          placeholder: "Ex.: Prof. Dra. Carolina Mendes",
-          hint: "Nome completo como deve constar no certificado.",
+          placeholder: "Ex: Prof. Dr. Carlos Eduardo Mendes",
+          hint: "Nome completo como deve constar nos certificados e crachás.",
         },
         {
           name: "signatory_title",
           label: "Cargo / Função",
-          layout: "half",
-          placeholder: "Ex.: Coordenadora Científica, Reitora",
-          hint: "Titulação ou cargo oficial.",
+          required: false,
+          placeholder: "Ex: Coordenador Geral, Reitor, Diretor Científico",
+          hint: "Título ou atribuição institucional que confere autoridade ao signatário.",
         },
         {
           name: "signatory_email",
-          label: "E-mail de contato",
+          label: "E-mail de contato (opcional)",
           kind: "email",
-          layout: "half",
-          placeholder: "carolina.mendes@evento.com",
-          hint: "E-mail institucional (opcional).",
+          required: false,
+          placeholder: "carlos.mendes@instituicao.org",
+          hint: "E-mail para registro interno e eventuais notificações.",
         },
       ],
     },
@@ -315,225 +300,239 @@ export function CreateSignatureModal(
       id: "assinatura",
       title: "Assinatura Digital",
       description: "Desenhe diretamente na tela ou importe uma imagem",
-      render: () => (
-        <div class="space-y-4">
-          {/* Mode Selector */}
-          <div class="space-y-1.5">
-            <span class="text-xs font-medium text-foreground">
-              Origem da assinatura
-            </span>
-            <div class="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleChange("mode", "draw")}
-                class={cn(
-                  "flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-medium transition-all cursor-pointer",
-                  values().mode === "draw"
-                    ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/20 shadow-xs"
-                    : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-                )}
-              >
-                <PenLine class="size-4" />
-                <span>Desenhar no quadro</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleChange("mode", "upload")}
-                class={cn(
-                  "flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-medium transition-all cursor-pointer",
-                  values().mode === "upload"
-                    ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/20 shadow-xs"
-                    : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-                )}
-              >
-                <Upload class="size-4" />
-                <span>Importar imagem</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Draw or Upload Content */}
-          <Show
-            when={values().mode === "draw"}
-            fallback={
-              <div class="space-y-2">
-                <label
-                  for="sig-file-upload"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    setIsDragging(false);
-                  }}
-                  onDrop={handleDrop}
-                  class={cn(
-                    "flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-muted/10 p-6 text-center transition-all cursor-pointer hover:border-primary/60 hover:bg-muted/20",
-                    isDragging() && "border-primary bg-primary/10",
-                    errors().signature
-                      ? "border-destructive/70 bg-destructive/5"
-                      : "border-border/80",
-                  )}
-                >
-                  <Show
-                    when={previewUrl()}
-                    fallback={
-                      <>
-                        <div class="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground shadow-xs">
-                          <ImageLucide class="size-5" />
-                        </div>
-                        <div class="space-y-1">
-                          <p class="text-xs font-semibold text-foreground">
-                            Clique para escolher ou arraste o arquivo
-                          </p>
-                          <p class="text-[11px] text-muted-foreground">
-                            Formatos aceitos: PNG transparente, WebP ou JPEG (máx. 5MB)
-                          </p>
-                        </div>
-                      </>
-                    }
-                  >
-                    <div class="relative max-h-32 w-full overflow-hidden rounded-lg bg-card p-3 shadow-xs">
-                      <img
-                        src={previewUrl()!}
-                        alt="Prévia da assinatura"
-                        class="mx-auto max-h-24 object-contain"
-                      />
-                    </div>
-                    <span class="text-xs font-medium text-primary hover:underline">
-                      Clique para trocar de imagem
-                    </span>
-                  </Show>
-                  <input
-                    id="sig-file-upload"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    class="sr-only"
-                    onChange={handleFileChange}
-                  />
-                </label>
-              </div>
-            }
-          >
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-muted-foreground">
-                  Assine com o mouse, trackpad ou caneta:
-                </span>
+      fields: [
+        {
+          name: "mode",
+          label: "Origem da assinatura",
+          kind: "custom",
+          render: (fieldProps) => (
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 p-1 bg-muted/50 rounded-xl border border-border/60">
                 <button
                   type="button"
-                  onClick={() => {
-                    canvasRef?.clear();
-                    setDrawingDataUrl(null);
-                  }}
-                  class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  onClick={() => handleModeChange("draw")}
+                  class={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                    fieldProps.value === "draw"
+                      ? "bg-card text-foreground shadow-xs border border-border/80"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <Eraser class="size-3.5" />
-                  <span>Limpar quadro</span>
+                  <PenLine class="size-4 text-primary" />
+                  Desenhar na tela
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("upload")}
+                  class={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                    fieldProps.value === "upload"
+                      ? "bg-card text-foreground shadow-xs border border-border/80"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Upload class="size-4 text-primary" />
+                  Importar imagem
                 </button>
               </div>
 
-              <div
-                class={cn(
-                  "overflow-hidden rounded-xl border bg-white shadow-xs transition-colors",
-                  errors().signature
-                    ? "border-destructive ring-1 ring-destructive/30"
-                    : "border-border",
-                )}
-              >
-                <SignatureCanvas
-                  ref={(r) => {
-                    canvasRef = r;
-                  }}
-                  onStroke={() => {
-                    if (errors().signature) {
-                      setErrors((prev) => {
-                        const next = { ...prev };
-                        delete next.signature;
-                        return next;
-                      });
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </Show>
+              <Show when={fieldProps.value === "draw"}>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-muted-foreground">
+                      Quadro de assinatura
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => canvasRef?.clear()}
+                      class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-muted"
+                    >
+                      <Eraser class="size-3.5" />
+                      Limpar quadro
+                    </button>
+                  </div>
 
-          <Show when={errors().signature}>
-            <p class="text-xs font-medium text-destructive">
-              {errors().signature}
-            </p>
-          </Show>
-        </div>
-      ),
+                  <div
+                    class={cn(
+                      "rounded-xl border overflow-hidden transition-colors bg-white",
+                      errors().signature
+                        ? "border-destructive ring-1 ring-destructive/40"
+                        : "border-border/80",
+                    )}
+                  >
+                    <SignatureCanvas
+                      ref={(el) => (canvasRef = el)}
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div class="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
+                    <span>
+                      Assine no quadro branco com o mouse ou caneta óptica
+                    </span>
+                    <span class="text-primary font-medium">Fundo transparente</span>
+                  </div>
+
+                  <Show when={errors().signature}>
+                    <p class="text-xs text-destructive font-medium">
+                      {errors().signature}
+                    </p>
+                  </Show>
+                </div>
+              </Show>
+
+              <Show when={fieldProps.value === "upload"}>
+                <div class="space-y-2">
+                  <label
+                    for="sig-file-upload"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    class={cn(
+                      "relative flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed transition-all cursor-pointer",
+                      isDragging()
+                        ? "border-primary bg-primary/5 scale-[0.99]"
+                        : previewUrl()
+                          ? "border-border/70 bg-card hover:border-primary/50"
+                          : "border-border/70 bg-muted/20 hover:bg-muted/40 hover:border-border",
+                      errors().signature && !previewUrl()
+                        ? "border-destructive bg-destructive/5"
+                        : "",
+                    )}
+                  >
+                    <input
+                      id="sig-file-upload"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={handleFileChange}
+                      class="sr-only"
+                    />
+
+                    <Show
+                      when={previewUrl()}
+                      fallback={
+                        <div class="flex flex-col items-center gap-2 text-center py-4">
+                          <div class="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Upload class="size-5" />
+                          </div>
+                          <div>
+                            <p class="text-xs font-semibold text-foreground">
+                              Arraste a imagem da assinatura ou clique para buscar
+                            </p>
+                            <p class="text-[11px] text-muted-foreground mt-0.5">
+                              PNG com fundo transparente recomendado (máx. 5MB)
+                            </p>
+                          </div>
+                        </div>
+                      }
+                    >
+                      <div class="flex flex-col items-center gap-3 w-full py-2">
+                        <div class="relative max-h-36 max-w-full p-4 rounded-lg bg-checkerboard border border-border/40 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={previewUrl() ?? ""}
+                            alt="Prévia da assinatura"
+                            class="max-h-28 object-contain"
+                          />
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <CheckCircle2 class="size-3.5 text-emerald-500" />
+                          <span class="font-medium text-foreground">
+                            {importedFile()?.name}
+                          </span>
+                          <span>•</span>
+                          <span class="text-xs font-medium text-primary hover:underline">
+                            Clique para trocar de imagem
+                          </span>
+                        </div>
+                      </div>
+                    </Show>
+                  </label>
+
+                  <Show when={errors().signature}>
+                    <p class="text-xs text-destructive font-medium">
+                      {errors().signature}
+                    </p>
+                  </Show>
+                </div>
+              </Show>
+            </div>
+          ),
+        },
+      ],
     },
     {
       id: "resumo",
       title: "Resumo",
-      description: "Revise os dados antes de salvar a assinatura digital",
+      description: "Revise os dados antes de salvar a assinatura",
       summary: {
         title: "Dados da assinatura",
         badge: () => "Pronto para cadastrar",
         items: [
           {
-            label: "Nome do signatário",
-            value: () => values().signatory_name || "Não informado",
+            label: "Signatário",
+            value: () => values().signatory_name,
           },
           {
             label: "Cargo / Função",
             value: () => values().signatory_title || "Não informado",
           },
           {
-            label: "E-mail de contato",
+            label: "E-mail",
             value: () => values().signatory_email || "Não informado",
           },
           {
-            label: "Origem do traço",
+            label: "Tipo de assinatura",
             value: () =>
               values().mode === "draw"
-                ? "Quadro digital interativo"
+                ? "Desenho feito na tela"
                 : "Arquivo de imagem importado",
           },
         ],
         extra: () => (
-          <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-5 shadow-xs">
-            <div class="flex items-center justify-between pb-3 border-b border-border/60">
-              <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Prévia do Certificado
-              </span>
-              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 class="size-3.5" />
-                <span>Autenticação Digital</span>
-              </span>
-            </div>
-
-            <div class="mt-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-border/70 bg-muted/15 p-6">
-              <Show
-                when={activeSignaturePreview()}
-                fallback={
-                  <div class="h-16 flex items-center justify-center text-xs text-muted-foreground italic">
-                    Assinatura não capturada
-                  </div>
-                }
-              >
-                <img
-                  src={activeSignaturePreview()!}
-                  alt="Prévia da assinatura"
-                  class="max-h-24 max-w-full object-contain filter contrast-125 dark:invert"
-                />
-              </Show>
-
-              <div class="mt-2 w-52 border-b-2 border-foreground/40" />
-
-              <h4 class="mt-2 text-sm font-bold text-foreground">
-                {values().signatory_name || "Nome do Signatário"}
-              </h4>
-              <Show when={values().signatory_title}>
-                <p class="text-xs text-muted-foreground italic mt-0.5">
-                  {values().signatory_title}
+          <div class="relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 shadow-xs">
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Prévia do Registro
+            </p>
+            <div class="flex items-center justify-between gap-4">
+              <div class="space-y-1 min-w-0">
+                <h4 class="text-sm font-semibold text-foreground truncate">
+                  {values().signatory_name || "Nome do signatário"}
+                </h4>
+                <p class="text-xs text-muted-foreground">
+                  {values().signatory_title || "Cargo ou Função"}
                 </p>
-              </Show>
+                <Show when={values().signatory_email}>
+                  <p class="text-xs text-muted-foreground font-mono">
+                    {values().signatory_email}
+                  </p>
+                </Show>
+              </div>
+
+              <div class="shrink-0 flex items-center justify-center h-16 w-32 rounded-lg border border-border/60 bg-muted/30 p-2">
+                <Show
+                  when={
+                    values().mode === "draw" ? drawingDataUrl() : previewUrl()
+                  }
+                  fallback={
+                    <span class="text-[11px] text-muted-foreground italic text-center">
+                      Sem assinatura
+                    </span>
+                  }
+                >
+                  <img
+                    src={
+                      (values().mode === "draw"
+                        ? drawingDataUrl()
+                        : previewUrl()) ?? ""
+                    }
+                    alt="Assinatura"
+                    class="max-h-full max-w-full object-contain filter dark:invert"
+                  />
+                </Show>
+              </div>
             </div>
           </div>
         ),
@@ -546,7 +545,7 @@ export function CreateSignatureModal(
       open={props.open}
       onOpenChange={handleOpenChange}
       title="Adicionar assinatura"
-      description="Cadastre uma assinatura digital para autenticar certificados desta edição."
+      description="Cadastre uma assinatura para uso automático na emissão de crachás e certificados."
       steps={steps}
       currentStep={currentStep()}
       onStepChange={setCurrentStep}
@@ -560,5 +559,3 @@ export function CreateSignatureModal(
     />
   );
 }
-
-export { CreateSignatureModal as ManageSignatureDialog };

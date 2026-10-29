@@ -28,6 +28,21 @@ describe("storage-handlers Effect pipeline", () => {
   });
 
   describe("handleStorageUploadEffect", () => {
+    it("returns a signed upload URL and key without a public URL", async () => {
+      const request = new Request("http://localhost/storage/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: "events/123/banner.webp", contentType: "image/webp", size: 10 }),
+      });
+      const response = await Effect.runPromise(handleStorageUploadEffect(request, env));
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body).toEqual({
+        uploadUrl: expect.stringContaining("X-Amz-Signature="),
+        key: "events/123/banner.webp",
+      });
+    });
+
     it("returns status 400 when JSON body is invalid", async () => {
       const request = new Request("http://localhost/storage/upload", {
         method: "POST",

@@ -1,38 +1,14 @@
 import {
   DEFAULT_CERTIFICATE_FONT,
-  DEFAULT_CERTIFICATE_SUBTLE_COLOR,
   DEFAULT_CERTIFICATE_TEXT_COLOR,
 } from "./constants";
 import type {
   CertificateCanvasSize,
-  HashCertificateElement,
   ImageCertificateElement,
   SignatureCertificateElement,
   TextCertificateElement,
 } from "./types";
 import { createCertificateElementId } from "./utils";
-
-export function createHashElement(
-  canvas: CertificateCanvasSize,
-): HashCertificateElement {
-  const width = Math.min(420, canvas.width * 0.42);
-
-  return {
-    id: createCertificateElementId("hash"),
-    type: "hash",
-    x: (canvas.width - width) / 2,
-    y: canvas.height - 92,
-    width,
-    height: 60,
-    hashLabel: "Código de verificação",
-    hash: "{{cert_hash}}",
-    linkLabel: "Verificar autenticidade",
-    url: "{{verify_url}}",
-    fontSize: 13,
-    color: DEFAULT_CERTIFICATE_SUBTLE_COLOR,
-    align: "center",
-  };
-}
 
 export function createTextElement(
   canvas: CertificateCanvasSize,
@@ -122,28 +98,3 @@ export function createSignatureElement(
     height,
   };
 }
-
-export const createCertificateTextElement = createTextElement;
-export const createCertificateImageElement = (params: {
-  canvas: CertificateCanvasSize;
-  src: string;
-  intrinsicWidth?: number;
-  intrinsicHeight?: number;
-}) =>
-  createImageElement(
-    params.src,
-    params.canvas,
-    params.intrinsicWidth && params.intrinsicHeight
-      ? { width: params.intrinsicWidth, height: params.intrinsicHeight }
-      : undefined,
-  );
-export const createCertificateSignatureElement = (params: {
-  canvas: CertificateCanvasSize;
-  signatureId: string;
-  src: string;
-  name: string;
-}) =>
-  createSignatureElement(
-    { id: params.signatureId, url: params.src, name: params.name },
-    params.canvas,
-  );

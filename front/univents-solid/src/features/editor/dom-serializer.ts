@@ -69,7 +69,7 @@ function channelsToHex(channels: number[]): string {
     .join("")}`;
 }
 
-export function computedColorToHex(color: string): string {
+function computedColorToHex(color: string): string {
   if (!color) return DEFAULT_EDITOR_TEXT_COLOR;
   if (color.startsWith("#")) return color;
   const cached = convertedColorCache.get(color);

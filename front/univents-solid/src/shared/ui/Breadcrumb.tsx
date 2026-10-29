@@ -1,12 +1,8 @@
 import type { JSX } from "@solidjs/web";
 import { Link, useLocation } from "@tanstack/solid-router";
-import { For, Show, createMemo } from "solid-js";
+import { createMemo } from "solid-js";
 
-import ChevronRightIcon from "~icons/lucide/chevron-right";
-
-import { cn } from "@trieoh/ui-solid";
-
-const ChevronRight = ChevronRightIcon as unknown as (props: { class?: string }) => JSX.Element;
+import { Breadcrumb as UIBreadcrumb } from "@trieoh/ui-solid";
 
 /** Portuguese labels for the segments we know; anything else keeps its own text. */
 const LABELS: Record<string, string> = {
@@ -46,45 +42,16 @@ export function Breadcrumb(): JSX.Element {
       return {
         path: `/${segments.slice(0, index + 1).join("/")}`,
         label: display,
-        last: index === segments.length - 1,
       };
     });
   });
 
   return (
-    <nav
-      aria-label="Trilha de navegação"
-      class={cn(
-        "flex items-center space-x-2 text-muted-foreground",
-        "font-bold uppercase tracking-[0.2em] text-[10px]",
-        "h-16 border-b border-border/60 px-6",
-        "bg-background/95 backdrop-blur-md",
-        "overflow-x-auto whitespace-nowrap min-w-0 max-w-full",
+    <UIBreadcrumb
+      items={crumbs()}
+      renderLink={(item, linkProps) => (
+        <Link to={item().path} class={linkProps.class}>{item().label}</Link>
       )}
-    >
-      <For each={crumbs()}>
-        {(crumb, index) => (
-          <>
-            <Show when={index() > 0}>
-              <ChevronRight class="h-3 w-3 shrink-0 text-muted-foreground/40" />
-            </Show>
-
-            <Show
-              when={!crumb.last}
-              fallback={
-                <span class="max-w-37.5 truncate text-foreground">{crumb.label}</span>
-              }
-            >
-              <Link
-                to={crumb.path}
-                class="max-w-37.5 truncate transition-colors hover:text-primary"
-              >
-                {crumb.label}
-              </Link>
-            </Show>
-          </>
-        )}
-      </For>
-    </nav>
+    />
   );
 }

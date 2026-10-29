@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
-import { Show, createMemo, untrack } from "solid-js";
+import { Show, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import CalendarIcon from "~icons/lucide/calendar";
 import MapPinIcon from "~icons/lucide/map-pin";
@@ -13,9 +13,12 @@ import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import type { EditionI } from "@/features/editions/model";
 import { EditionSummaryCard } from "@/features/editions/ui/EditionSummaryCard";
 import { EventCatalog } from "@/features/events/ui/EventCatalog";
-import { EventQueryError } from "@/features/events/ui/EventQueryError";
 import { EventCart } from "@/features/products/ui/EventCart";
+import { appQueryClient } from "@/shared/lib/query-client";
+import { warmQuery } from "@/shared/lib/route-data";
 import { handleShare } from "@/shared/lib/share";
+import { PageNotice } from "@/shared/ui/PageNotice";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 
 const Calendar = CalendarIcon as unknown as () => JSX.Element;
@@ -24,6 +27,8 @@ const Share = ShareIcon as unknown as () => JSX.Element;
 const ArrowRight = ArrowRightIcon as unknown as (props: { class?: string }) => JSX.Element;
 
 export const Route = createFileRoute("/events/$slug/")({
+  loader: ({ params }) =>
+    warmQuery(appQueryClient, publicEventBySlugQueryOptions(params.slug)),
   head: ({ params }) => ({
     meta: [{ title: `${params.slug} - Univents` }],
   }),
@@ -33,42 +38,59 @@ export const Route = createFileRoute("/events/$slug/")({
 function EventPage() {
   const params = Route.useParams();
   const eventQuery = useQuery(() => publicEventBySlugQueryOptions(params().slug));
-  const event = createMemo(() => eventQuery().data);
+
   return (
-    <Show
-      when={!eventQuery().isPending}
-      fallback={<div class="min-h-screen animate-pulse bg-muted" />}
+    <QueryBoundary
+      query={eventQuery}
+      what="este evento"
+      skeleton={<EventSkeleton />}
+      notFound={<EventNotFound />}
+      class="mt-24"
     >
-      <Show
-        when={!eventQuery().isError}
-        fallback={
-          <main class="grid min-h-screen place-items-center bg-background px-6">
-            <EventQueryError
-              message="Não foi possível carregar este evento. Verifique sua conexão e tente novamente."
-              onRetry={() => void eventQuery().refetch()}
-            />
-          </main>
-        }
-      >
-        <Show
-          when={event()}
-          fallback={<div class="p-12 text-center">Evento não encontrado.</div>}
-        >
-          {(loaded) => <EventContent event={loaded()} />}
+      {(event) => (
+        // Keyed: another slug on the same route is another event, not an update
+        // of this one, so the page is rebuilt instead of showing stale content.
+        <Show when={event()} keyed fallback={<EventNotFound />}>
+          {(loaded) => <EventContent event={loaded} />}
         </Show>
-      </Show>
-    </Show>
+      )}
+    </QueryBoundary>
   );
 }
 
-function EventContent(props: { event: EventI | null }) {
+function EventNotFound() {
+  return (
+    <PageNotice
+      title="Evento não encontrado"
+      description="Este evento não existe ou ainda não foi publicado."
+    />
+  );
+}
+
+/** Same banner, logo and title boxes as the loaded page, so nothing moves when it lands. */
+function EventSkeleton() {
+  return (
+    <div class="min-h-screen pb-24">
+      <div class="relative">
+        <div class="h-40 w-full animate-pulse border-b-4 border-b-accent bg-muted min-[300px]:h-48 sm:h-52 md:h-64" />
+        <div class="absolute inset-x-0 top-full z-10 flex -translate-y-1/2 justify-center">
+          <div class="size-37.5 animate-pulse rounded-full border-4 border-accent bg-muted sm:size-40" />
+        </div>
+      </div>
+      <div class="mx-auto max-w-6xl px-4 pt-24 sm:px-6 sm:pt-28 md:px-8">
+        <div class="mx-auto h-8 w-2/3 max-w-md animate-pulse rounded-md bg-muted" />
+      </div>
+    </div>
+  );
+}
+
+function EventContent(props: { event: EventI }) {
   const event = untrack(() => props.event);
-  if (!event) return <div class="p-12 text-center">Evento não encontrado.</div>;
   const bannerUrl = () => resolveStorageUrl(event.banner_url);
   const logoUrl = () => resolveStorageUrl(event.logo_url);
 
   return (
-    <main class="min-h-screen bg-background pb-24">
+    <div class="min-h-screen bg-background pb-24">
       <div class="relative">
         <div class="relative h-40 w-full border-b-4 border-b-accent min-[300px]:h-48 sm:h-52 md:h-64">
           {bannerUrl() ? (
@@ -111,35 +133,25 @@ function EventContent(props: { event: EventI | null }) {
         </h1>
         <EditionDetails event={event} />
       </div>
-    </main>
+    </div>
   );
 }
 
 function EditionDetails(props: { event: EventI }) {
   const editionsQuery = useQuery(() => allPublicEditionsQueryOptions(props.event.id));
-  const editions = createMemo(() => editionsQuery().data ?? []);
   return (
-    <Show
-      when={!editionsQuery().isPending}
-      fallback={
+    <QueryBoundary
+      query={editionsQuery}
+      what="as edições deste evento"
+      skeleton={
         <div class="mt-6 grid gap-4 md:grid-cols-2">
           <div class="h-28 animate-pulse rounded-xl bg-muted" />
           <div class="h-28 animate-pulse rounded-xl bg-muted" />
         </div>
       }
     >
-      <Show
-        when={!editionsQuery().isError}
-        fallback={
-          <EventQueryError
-            message="Não foi possível carregar as edições deste evento."
-            onRetry={() => void editionsQuery().refetch()}
-          />
-        }
-      >
-        <EditionBody event={props.event} editions={editions()} />
-      </Show>
-    </Show>
+      {(editions) => <EditionBody event={props.event} editions={editions()} />}
+    </QueryBoundary>
   );
 }
 

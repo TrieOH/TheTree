@@ -1,7 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { For, Show, createMemo } from "solid-js";
 import { createFileRoute } from "@tanstack/solid-router";
-import { z } from "zod";
 import { Button } from "@trieoh/ui-solid";
 
 import AlertTriangleIcon from "~icons/lucide/alert-triangle";
@@ -12,6 +11,7 @@ import UploadCloudIcon from "~icons/lucide/upload-cloud";
 
 import { useUploadQueue } from "@/features/upload-queue";
 import { UploadTaskCard } from "@/features/upload-queue/ui/upload-task-card";
+import { Schema, createSchema } from "@/shared/lib/effect-schema";
 
 const AlertTriangle = AlertTriangleIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CheckCircle2 = CheckCircle2Icon as unknown as (props: { class?: string }) => JSX.Element;
@@ -19,9 +19,11 @@ const Images = ImagesIcon as unknown as (props: { class?: string }) => JSX.Eleme
 const RefreshCw = RefreshCwIcon as unknown as (props: { class?: string }) => JSX.Element;
 const UploadCloud = UploadCloudIcon as unknown as (props: { class?: string }) => JSX.Element;
 
-const searchSchema = z.object({
-  task: z.string().optional(),
-});
+const searchSchema = createSchema(
+  Schema.Struct({
+    task: Schema.optional(Schema.String),
+  }),
+);
 
 export const Route = createFileRoute("/admin/uploads")({
   validateSearch: searchSchema,

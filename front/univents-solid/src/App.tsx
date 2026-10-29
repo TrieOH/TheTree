@@ -15,11 +15,14 @@ import {
 import type { RouterSession } from "@trieoh/front-core-solid";
 import { initBrowserTracing } from "@trieoh/front-core/tracing/browser";
 import { AuthProvider, useAuth } from "@trieoh/identityx-sdk-ts-solid";
-import { untrack } from "solid-js";
+import { onSettled, untrack } from "solid-js";
 import { bffTransport } from "@/features/auths/api/bff-client";
 import { ThemeProvider } from "@/shared/lib/theme";
 import { appQueryClient } from "@/shared/lib/query-client";
+import { withApiResilience } from "@/shared/lib/resilient-transport";
+import { NotFoundPage, RouteError } from "@/widgets/ui/RouteStatus";
 import "./App.css";
+import { Loading } from "@trieoh/ui-solid";
 
 const authProjectId = import.meta.env.VITE_TRIEOH_AUTH_PROJECT_ID;
 
@@ -30,7 +33,7 @@ initBrowserTracing(
 );
 
 // Public traffic goes straight to the API; anything authenticated goes through
-// the BFF.
+// the BFF (whose transport carries its own resilience wrapper).
 
 const { publicFetcher } = createAppFetchers({
   apiURL: import.meta.env.VITE_API_URL ?? "http://localhost:8081",
@@ -44,7 +47,7 @@ const { authFetcher } = createBffProxyFetchers(bffTransport, {
 configureApiClient({
   baseURL: "",
   transport: createOrvalTransport(authFetcher),
-  publicTransport: createOrvalTransport(publicFetcher),
+  publicTransport: withApiResilience(createOrvalTransport(publicFetcher), "api"),
 });
 
 const authAdapter = createBffAuthAdapter(bffTransport, {
@@ -60,10 +63,24 @@ import WaveSpinnerLoading from "./shared/ui/loader/WaveSpinnerLoading";
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
+  scrollRestoration: true,
+  // Loaders are bounded (see shared/lib/route-data), so the pending screen is
+  // for slow route chunks only. Show it late and keep it long enough to read,
+  // otherwise it flashes in and out between two pages.
+  defaultPendingMs: 500,
+  defaultPendingMinMs: 300,
+  defaultErrorComponent: RouteError,
+  defaultNotFoundComponent: NotFoundPage,
   context: {
     session: undefined as RouterSession | undefined,
   },
-  defaultPendingComponent: () => <main>Loading…</main>,
+  defaultPendingComponent: () => (
+    <Loading
+      label="Carregando página…"
+      layout="stacked"
+      class="min-h-64 px-6 py-12"
+    />
+  ),
 });
 
 // Registers the router's types library-wide, so `to`/`params` on every
@@ -111,6 +128,10 @@ export default function App() {
 // /auth for a frame before <AuthContextUpdater> catches up.
 function RouterHost() {
   const auth = useAuth();
+
+  onSettled(() => {
+    document.getElementById("boot")?.remove();
+  });
 
   return (
     <RouterProvider

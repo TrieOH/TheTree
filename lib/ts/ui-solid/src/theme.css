@@ -1,0 +1,106 @@
+/* TrieOH / Univents design tokens and typography. */
+@font-face {
+  font-family: "Geist";
+  src: url("./fonts/geist-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("./fonts/space-grotesk-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --background: oklch(0.9702 0 0);
+  --foreground: oklch(0.1944 0.0051 248.09);
+  --card: oklch(0.9816 0.0017 247.84);
+  --card-foreground: oklch(0.1944 0.0051 248.09);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1944 0.0051 248.09);
+  --primary: oklch(0.1139 0.0789 264.05);
+  --primary-foreground: oklch(0.9702 0 0);
+  --secondary: oklch(0.7975 0.1018 262.7);
+  --secondary-foreground: oklch(0.1139 0.0789 264.05);
+  --muted: oklch(0.9551 0 0);
+  --muted-foreground: oklch(0.5278 0 0);
+  --accent: oklch(0.6999 0.157 61.76);
+  --accent-foreground: oklch(0.1139 0.0789 264.05);
+  --destructive: oklch(0.5966 0.1818 24.51);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.8761 0 0);
+  --input: oklch(0.8761 0 0);
+  --ring: oklch(0.6816 0.167674 261.9443);
+  --selection: oklch(0.7975 0.1018 262.7 / 0.45);
+  --selection-foreground: oklch(0.1139 0.0789 264.05);
+}
+
+.light,
+:root.light {
+  color-scheme: light;
+}
+
+.dark,
+:root.dark {
+  color-scheme: dark;
+  --background: oklch(0.18 0.015 260);
+  --foreground: oklch(0.95 0.005 260);
+  --card: oklch(0.22 0.015 260);
+  --card-foreground: oklch(0.95 0.005 260);
+  --popover: oklch(0.25 0.015 260);
+  --popover-foreground: oklch(0.95 0.005 260);
+  --primary: oklch(0.9702 0 0);
+  --primary-foreground: oklch(0.1139 0.0789 264.05);
+  --secondary: oklch(0.1139 0.0789 264.05);
+  --secondary-foreground: oklch(0.7975 0.1018 262.7);
+  --muted: oklch(0.28 0.02 260);
+  --muted-foreground: oklch(0.65 0.02 260);
+  --accent-foreground: oklch(0.1139 0.0789 264.05);
+  --accent: oklch(0.6999 0.157 61.76);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.35 0.02 260);
+  --input: oklch(0.35 0.02 260);
+  --ring: oklch(0.55 0.15 260);
+  --selection: oklch(0.6999 0.157 61.76 / 0.45);
+  --selection-foreground: oklch(0.95 0.005 260);
+}
+
+body {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+}
+h1,
+h2,
+h3 {
+  font-family: "Space Grotesk", "Geist", sans-serif;
+}
+
+/* OverlayScrollbar follows the document, matching the Univents widget. */
+html.overlay-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html.overlay-scrollbar::-webkit-scrollbar,
+html.overlay-scrollbar body::-webkit-scrollbar {
+  display: none;
+}
+
+:root {
+  --code-background: oklch(0.9551 0 0);
+  --code-keyword: oklch(0.46 0.16 300);
+  --code-string: oklch(0.4 0.09 155);
+  --code-component: oklch(0.4 0.13 260);
+  --code-number: oklch(0.47 0.12 55);
+}
+.dark {
+  --code-background: oklch(0.16 0.012 260);
+  --code-keyword: oklch(0.78 0.12 300);
+  --code-string: oklch(0.8 0.1 155);
+  --code-component: oklch(0.8 0.1 260);
+  --code-number: oklch(0.8 0.1 65);
+}

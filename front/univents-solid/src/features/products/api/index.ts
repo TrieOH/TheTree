@@ -1,20 +1,10 @@
-import { orvalData, orvalItems } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import {
-  createInitialProduct,
-  createProductVariant,
-  deleteProduct,
-  deleteProductVariant,
   listEditionProducts,
   listEditionStoreStock,
   listProductVariants,
-  patchProduct,
-  patchProductVariant,
 } from "@trieoh/univents-api";
 import type {
-  CreateInitialProductRequest,
-  CreateProductVariantRequest,
-  PatchProductRequest,
-  PatchProductVariantRequest,
   Product,
   ProductVariant,
   StoreStockItem,
@@ -22,6 +12,7 @@ import type {
   MyTicket,
 } from "@trieoh/univents-api/schemas";
 import { productKeys } from "./query-keys";
+import { degradeTo } from "@/shared/lib/degrade";
 import type { QueryClient } from "@tanstack/query-core";
 import { allPublicEditionsQueryOptions } from "@/features/editions/api";
 import { publicEventBySlugQueryOptions } from "@/features/events/api";
@@ -29,10 +20,7 @@ import type { EventI } from "@/features/events/model";
 import type { EditionI } from "@/features/editions/model";
 import { myTicketQueryOptions, ticketsQueryOptions } from "@/features/tickets/api";
 import type {
-  CreateInitialProductOutputI,
   ProductI,
-  ProductPatchOutputI,
-  VariantCreateOutputI,
   VariantI,
 } from "../model";
 
@@ -76,9 +64,9 @@ export const storePageQueryOptions = (
 ) => ({
   queryKey: productKeys.storePage(slug, authenticated),
   queryFn: async (): Promise<StorePageData | null> => {
-    const event = await publicEventBySlugQueryOptions(slug).queryFn();
+    const event = await client.fetchQuery(publicEventBySlugQueryOptions(slug));
     if (!event) return null;
-    const editions = await allPublicEditionsQueryOptions(event.id).queryFn();
+    const editions = await client.fetchQuery(allPublicEditionsQueryOptions(event.id));
     const edition =
       editions.find((item) => new Date(item.ends_at).getTime() >= Date.now()) ??
       editions.at(-1);
@@ -88,7 +76,7 @@ export const storePageQueryOptions = (
       client.fetchQuery(productsQueryOptions(edition.id)),
       client.fetchQuery(storeStockQueryOptions(edition.id)),
       authenticated
-        ? client.fetchQuery(myTicketQueryOptions(edition.id))
+        ? degradeTo(client.fetchQuery(myTicketQueryOptions(edition.id)), null)
         : null,
     ]);
     const productItems = await Promise.all(
@@ -109,45 +97,3 @@ export const storePageQueryOptions = (
     };
   },
 });
-
-export const createInitialProductFn = (
-  data: CreateInitialProductOutputI,
-  editionId: string,
-) =>
-  createInitialProduct(
-    editionId,
-    data as unknown as CreateInitialProductRequest,
-  ).then(orvalData<ProductI>);
-
-export const patchProductFn = (
-  productId: string,
-  data: ProductPatchOutputI,
-) =>
-  patchProduct(
-    productId,
-    data as unknown as PatchProductRequest,
-  ).then(orvalData<ProductI>);
-
-export const deleteProductFn = (productId: string) =>
-  deleteProduct(productId).then(orvalData<{ success?: boolean }>);
-
-export const createVariantFn = (
-  productId: string,
-  data: VariantCreateOutputI,
-) =>
-  createProductVariant(
-    productId,
-    data as unknown as CreateProductVariantRequest,
-  ).then(orvalData<VariantI>);
-
-export const patchVariantFn = (
-  variantId: string,
-  data: Partial<VariantCreateOutputI>,
-) =>
-  patchProductVariant(
-    variantId,
-    data as unknown as PatchProductVariantRequest,
-  ).then(orvalData<VariantI>);
-
-export const deleteVariantFn = (variantId: string) =>
-  deleteProductVariant(variantId).then(orvalData<{ success?: boolean }>);

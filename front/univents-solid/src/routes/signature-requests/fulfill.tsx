@@ -13,5 +13,5 @@ export const Route = createFileRoute("/signature-requests/fulfill")({
 
 function FulfillSignatureRequestRoute(): JSX.Element {
   const search = Route.useSearch();
-  return <FulfillSignatureRequestView token={search().token} />;
+  return <FulfillSignatureRequestView token={search().token ?? ""} />;
 }

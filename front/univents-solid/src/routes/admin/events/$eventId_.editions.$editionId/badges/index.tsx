@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -45,6 +46,9 @@ import { allTicketsQueryOptions } from "@/features/tickets/api";
 import type { TicketType } from "@trieoh/univents-api/schemas";
 import { printElement } from "@/shared/lib/print-element";
 import { toast } from "@/shared/ui/toast";
+import { warmQueries } from "@/shared/lib/route-data";
+import { GridSkeleton } from "@/shared/ui/GridSkeleton";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const BadgeCheck = BadgeCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const CalendarClock = CalendarClockIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -55,6 +59,13 @@ const QrCode = QrCodeIcon as unknown as (props: { class?: string }) => JSX.Eleme
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/badges/",
 )({
+  loader: ({ params }) => warmQueries(appQueryClient, [
+    badgeTemplatesQueryOptions(params.editionId),
+    badgeEmissionsQueryOptions(params.editionId),
+    badgePrintQueryOptions(params.editionId),
+    allAdminEditionsQueryOptions(params.eventId),
+    allTicketsQueryOptions(params.editionId),
+  ]),
   head: () => ({
     meta: [{ title: "Crachás - Admin Univents" }],
   }),
@@ -379,174 +390,190 @@ function AdminEditionBadgesRoute(): JSX.Element {
 
         {/* Content: Templates */}
         <Show when={activeSection() === "templates"}>
-          <PaginatedContainer<BadgeTemplate>
-            items={filteredTemplates()}
-            layout="grid"
-            minItemWidth="16rem"
-            maxRows={(columns) => (columns === 1 ? 8 : 4)}
-            gap="2"
-            sort={templateSort()}
-            onSortChange={setTemplateSort}
-            sortFields={[
-              {
-                key: "name",
-                label: "Nome",
-                ascLabel: "A → Z",
-                descLabel: "Z → A",
-              },
-              {
-                key: "created_at",
-                label: "Data de criação",
-                ascLabel: "Mais antigos primeiro",
-                descLabel: "Mais recentes primeiro",
-                comparator: (a, b) =>
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-              },
-            ]}
-            filterValue={templateFilter()}
-            onFilterChange={setTemplateFilter}
-            filterPlaceholder="Buscar por nome do template..."
-            itemLabel="templates"
-            emptyState={
-              <EmptyState
-                class="border-0 bg-transparent px-0 py-4 shadow-none"
-                icon={<BadgeCheck class="size-6 text-foreground/70" />}
-                eyebrow="Crachás da edição"
-                title="Nenhum template cadastrado"
-                description={
-                  templateFilter()
-                    ? "Nenhum template corresponde à busca informada."
-                    : "Crie o primeiro modelo para começar a emitir crachás nesta edição."
+          <QueryBoundary
+            query={templatesQuery}
+            what="os modelos de crachá"
+            skeleton={<GridSkeleton />}
+          >
+            {() => (
+              <PaginatedContainer<BadgeTemplate>
+                items={filteredTemplates()}
+                layout="grid"
+                minItemWidth="16rem"
+                maxRows={(columns) => (columns === 1 ? 8 : 4)}
+                gap="2"
+                sort={templateSort()}
+                onSortChange={setTemplateSort}
+                sortFields={[
+                  {
+                    key: "name",
+                    label: "Nome",
+                    ascLabel: "A → Z",
+                    descLabel: "Z → A",
+                  },
+                  {
+                    key: "created_at",
+                    label: "Data de criação",
+                    ascLabel: "Mais antigos primeiro",
+                    descLabel: "Mais recentes primeiro",
+                    comparator: (a, b) =>
+                      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+                  },
+                ]}
+                filterValue={templateFilter()}
+                onFilterChange={setTemplateFilter}
+                filterPlaceholder="Buscar por nome do template..."
+                itemLabel="templates"
+                emptyState={
+                  <EmptyState
+                    class="border-0 bg-transparent px-0 py-4 shadow-none"
+                    icon={<BadgeCheck class="size-6 text-foreground/70" />}
+                    eyebrow="Crachás da edição"
+                    title="Nenhum template cadastrado"
+                    description={
+                      templateFilter()
+                        ? "Nenhum template corresponde à busca informada."
+                        : "Crie o primeiro modelo para começar a emitir crachás nesta edição."
+                    }
+                    action={
+                      <Button
+                        variant="outline"
+                        class="gap-2 rounded-sm py-4 cursor-pointer"
+                        onClick={() => handleOpenEditor()}
+                      >
+                        <Plus class="size-4" />
+                        Novo template
+                      </Button>
+                    }
+                  />
                 }
-                action={
-                  <Button
-                    variant="outline"
-                    class="gap-2 rounded-sm py-4 cursor-pointer"
-                    onClick={() => handleOpenEditor()}
-                  >
-                    <Plus class="size-4" />
-                    Novo template
-                  </Button>
-                }
-              />
-            }
-            renderItems={(slice, options) => (
-              <>
-                <AdminCreateBadgeCard
-                  index={0}
-                  animate={options.animate}
-                  onCreate={() => handleOpenEditor()}
-                />
-                <For each={slice}>
-                  {(template, index) => (
-                    <AdminTemplateBadgeItem
-                      template={template}
-                      index={index() + 1}
+                renderItems={(slice, options) => (
+                  <>
+                    <AdminCreateBadgeCard
+                      index={0}
                       animate={options.animate}
-                      ticketNames={ticketNames}
-                      location={location}
-                      onEdit={() => handleOpenEditor(template.id)}
-                      onDuplicate={() => handleOpenEditor(template.id, true)}
-                      onDelete={() => handleDeleteTemplate(template)}
+                      onCreate={() => handleOpenEditor()}
                     />
-                  )}
-                </For>
-              </>
+                    <For each={slice}>
+                      {(template, index) => (
+                        <AdminTemplateBadgeItem
+                          template={template}
+                          index={index() + 1}
+                          animate={options.animate}
+                          ticketNames={ticketNames}
+                          location={location}
+                          onEdit={() => handleOpenEditor(template.id)}
+                          onDuplicate={() => handleOpenEditor(template.id, true)}
+                          onDelete={() => handleDeleteTemplate(template)}
+                        />
+                      )}
+                    </For>
+                  </>
+                )}
+              />
             )}
-          />
+          </QueryBoundary>
         </Show>
 
         {/* Content: Emissions */}
         <Show when={activeSection() === "emissions"}>
-          <PaginatedContainer<BadgePrintItem>
-            items={filteredPrintItems()}
-            layout="grid"
-            minItemWidth="16rem"
-            maxRows={(columns) => (columns === 1 ? 8 : 4)}
-            gap="2"
-            sort={emissionSort()}
-            onSortChange={setEmissionSort}
-            sortFields={[
-              {
-                key: "template_name",
-                label: "Template",
-                ascLabel: "A → Z",
-                descLabel: "Z → A",
-              },
-              {
-                key: "user_id",
-                label: "Participante",
-                ascLabel: "A → Z",
-                descLabel: "Z → A",
-              },
-            ]}
-            filterValue={emissionFilter()}
-            onFilterChange={setEmissionFilter}
-            filterPlaceholder="Buscar por evento, edição ou template..."
-            itemLabel="crachás"
-            headerActions={
-              <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <Button
-                  variant={printedAfter() ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDateDialogOpen(true)}
-                  class="relative h-9 gap-1.5 px-2.5 sm:px-3 text-xs cursor-pointer"
-                >
-                  <CalendarClock class="size-3.5 sm:size-4" />
-                  <span class="hidden sm:inline">Filtrar data</span>
-                  <span class="sm:hidden">Data</span>
-                  <Show when={printedAfter()}>
-                    <span class="size-1.5 rounded-full bg-primary-foreground" />
-                  </Show>
-                </Button>
+          <QueryBoundary
+            query={printQuery}
+            what="as emissões"
+            skeleton={<GridSkeleton />}
+          >
+            {() => (
+              <PaginatedContainer<BadgePrintItem>
+                items={filteredPrintItems()}
+                layout="grid"
+                minItemWidth="16rem"
+                maxRows={(columns) => (columns === 1 ? 8 : 4)}
+                gap="2"
+                sort={emissionSort()}
+                onSortChange={setEmissionSort}
+                sortFields={[
+                  {
+                    key: "template_name",
+                    label: "Template",
+                    ascLabel: "A → Z",
+                    descLabel: "Z → A",
+                  },
+                  {
+                    key: "user_id",
+                    label: "Participante",
+                    ascLabel: "A → Z",
+                    descLabel: "Z → A",
+                  },
+                ]}
+                filterValue={emissionFilter()}
+                onFilterChange={setEmissionFilter}
+                filterPlaceholder="Buscar por evento, edição ou template..."
+                itemLabel="crachás"
+                headerActions={
+                  <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <Button
+                      variant={printedAfter() ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDateDialogOpen(true)}
+                      class="relative h-9 gap-1.5 px-2.5 sm:px-3 text-xs cursor-pointer"
+                    >
+                      <CalendarClock class="size-3.5 sm:size-4" />
+                      <span class="hidden sm:inline">Filtrar data</span>
+                      <span class="sm:hidden">Data</span>
+                      <Show when={printedAfter()}>
+                        <span class="size-1.5 rounded-full bg-primary-foreground" />
+                      </Show>
+                    </Button>
 
-                <Button
-                  variant="default"
-                  size="sm"
-                  disabled={isPrinting() || printableItems().length === 0}
-                  onClick={handlePrintBadges}
-                  class="h-9 gap-1.5 px-2.5 sm:px-3 text-xs cursor-pointer"
-                >
-                  <Printer class="size-3.5 sm:size-4" />
-                  <span>{isPrinting() && printMode() === "badges" ? "Preparando..." : "Crachás"}</span>
-                </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      disabled={isPrinting() || printableItems().length === 0}
+                      onClick={handlePrintBadges}
+                      class="h-9 gap-1.5 px-2.5 sm:px-3 text-xs cursor-pointer"
+                    >
+                      <Printer class="size-3.5 sm:size-4" />
+                      <span>{isPrinting() && printMode() === "badges" ? "Preparando..." : "Crachás"}</span>
+                    </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isPrinting() || printableItems().length === 0}
-                  onClick={() => setQrDialogOpen(true)}
-                  class="h-9 gap-1.5 px-2.5 sm:px-3 text-xs cursor-pointer"
-                >
-                  <QrCode class="size-3.5 sm:size-4" />
-                  <span class="hidden sm:inline">Imprimir </span>
-                  <span>QR codes</span>
-                </Button>
-              </div>
-            }
-            emptyState={
-              <EmptyState
-                class="border-0 bg-transparent px-0 py-4 shadow-none"
-                icon={<BadgeCheck class="size-6 text-foreground/70" />}
-                eyebrow="Crachás emitidos"
-                title="Nenhum crachá emitido"
-                description="Os crachás serão gerados automaticamente quando os participantes confirmarem suas inscrições."
-              />
-            }
-            renderItems={(slice, options) => (
-              <For each={slice}>
-                {(badge, index) => (
-                  <AdminEmissionBadgeItem
-                    badge={badge}
-                    index={index()}
-                    animate={options.animate}
-                    participantNames={participantNames}
-                    location={location}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isPrinting() || printableItems().length === 0}
+                      onClick={() => setQrDialogOpen(true)}
+                      class="h-9 gap-1.5 px-2.5 sm:px-3 text-xs cursor-pointer"
+                    >
+                      <QrCode class="size-3.5 sm:size-4" />
+                      <span class="hidden sm:inline">Imprimir </span>
+                      <span>QR codes</span>
+                    </Button>
+                  </div>
+                }
+                emptyState={
+                  <EmptyState
+                    class="border-0 bg-transparent px-0 py-4 shadow-none"
+                    icon={<BadgeCheck class="size-6 text-foreground/70" />}
+                    eyebrow="Crachás emitidos"
+                    title="Nenhum crachá emitido"
+                    description="Os crachás serão gerados automaticamente quando os participantes confirmarem suas inscrições."
                   />
+                }
+                renderItems={(slice, options) => (
+                  <For each={slice}>
+                    {(badge, index) => (
+                      <AdminEmissionBadgeItem
+                        badge={badge}
+                        index={index()}
+                        animate={options.animate}
+                        participantNames={participantNames}
+                        location={location}
+                      />
+                    )}
+                  </For>
                 )}
-              </For>
+              />
             )}
-          />
+          </QueryBoundary>
         </Show>
       </div>
 

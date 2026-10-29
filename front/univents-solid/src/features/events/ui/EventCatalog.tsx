@@ -10,7 +10,7 @@ import type {
   TicketType,
 } from "@trieoh/univents-api/schemas";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
-import { Loading, Show, createMemo, untrack } from "solid-js";
+import { untrack } from "solid-js";
 import {
   productsQueryOptions,
   productVariantsQueryOptions,
@@ -19,6 +19,8 @@ import {
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 import { eventKeys } from "@/features/events/api/query-keys";
 import { ProductsSection } from "@/features/products/ui/ProductsSection";
+import { degradeTo } from "@/shared/lib/degrade";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 import {
   myParticipationsQueryOptions,
   occurrencesQueryOptions,
@@ -52,11 +54,13 @@ export function EventCatalog(props: { editionId: string; eventSlug: string }) {
         queryClient.fetchQuery(occurrencesQueryOptions(props.editionId)),
         queryClient.fetchQuery(productsQueryOptions(props.editionId)),
         queryClient.fetchQuery(storeStockQueryOptions(props.editionId)),
+        // Personal data goes through the session: an auth outage must not hide
+        // the public catalog.
         authenticated
-          ? queryClient.fetchQuery(myTicketQueryOptions(props.editionId))
+          ? degradeTo(queryClient.fetchQuery(myTicketQueryOptions(props.editionId)), null)
           : null,
         authenticated
-          ? queryClient.fetchQuery(myParticipationsQueryOptions(props.editionId))
+          ? degradeTo(queryClient.fetchQuery(myParticipationsQueryOptions(props.editionId)), [])
           : [],
       ]);
       const productsWithVariants = await Promise.all(
@@ -79,20 +83,21 @@ export function EventCatalog(props: { editionId: string; eventSlug: string }) {
       };
     },
   }));
-  const catalog = createMemo(() => catalogQuery().data);
 
   return (
-    <Loading fallback={<CatalogSkeleton />}>
-      <Show when={catalog()}>
-        {(loaded) => (
-          <LiveCatalog
-            editionId={props.editionId}
-            eventSlug={props.eventSlug}
-            catalog={loaded()}
-          />
-        )}
-      </Show>
-    </Loading>
+    <QueryBoundary
+      query={catalogQuery}
+      what="ingressos, programação e produtos"
+      skeleton={<CatalogSkeleton />}
+    >
+      {(loaded) => (
+        <LiveCatalog
+          editionId={props.editionId}
+          eventSlug={props.eventSlug}
+          catalog={loaded()}
+        />
+      )}
+    </QueryBoundary>
   );
 }
 

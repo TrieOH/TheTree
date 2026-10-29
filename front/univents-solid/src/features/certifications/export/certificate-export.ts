@@ -1,6 +1,3 @@
-import { toBlob } from "html-to-image";
-import { jsPDF } from "jspdf";
-
 export type CertificateExportFormat = "png" | "pdf";
 
 function safeFilename(filename: string) {
@@ -24,6 +21,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export async function createCertificatePng(canvas: HTMLElement): Promise<Blob> {
   const { width, height } = readCanvasSize(canvas);
+  const { toBlob } = await import("html-to-image");
   const blob = await toBlob(canvas, {
     width,
     height,
@@ -44,6 +42,7 @@ export async function createCertificatePdf(canvas: HTMLElement): Promise<Blob> {
   const links = readCanvasLinks(canvas, width, height);
   const png = await createCertificatePng(canvas);
   const imageUrl = await blobToDataUrl(png);
+  const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({
     orientation: width >= height ? "landscape" : "portrait",
     unit: "px",

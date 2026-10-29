@@ -20,7 +20,7 @@ function ContactPage() {
     window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(message())}`;
   };
   return (
-    <main class="min-h-screen bg-background pb-28 md:pb-40">
+    <div class="min-h-screen bg-background pb-28 md:pb-40">
       <section class="border-b border-border/40 bg-card/30">
         <div class="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
           <div class="mb-2 flex items-center gap-3 text-primary">
@@ -136,6 +136,6 @@ function ContactPage() {
           </Reveal>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

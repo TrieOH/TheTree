@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Show, createSignal } from "solid-js";
 import CalendarIcon from "~icons/lucide/calendar";
@@ -55,7 +56,7 @@ export function AdminSignatureCard(
           />
 
           <img
-            src={props.signature.image_url}
+            src={resolveStorageUrl(props.signature.image_url)}
             alt={`Assinatura de ${props.signature.signatory_name}`}
             class="max-h-full max-w-full object-contain filter drop-shadow-xs transition-transform duration-200 group-hover:scale-[1.02]"
             loading="lazy"

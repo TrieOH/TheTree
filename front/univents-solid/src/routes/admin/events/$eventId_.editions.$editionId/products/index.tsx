@@ -1,3 +1,4 @@
+import { appQueryClient } from "@/shared/lib/query-client";
 import type { JSX } from "@solidjs/web";
 import { createFileRoute, useNavigate } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
@@ -24,6 +25,8 @@ import { AdminProductCard } from "@/features/products/ui/AdminProductCard";
 import { ManageProductDialog } from "@/features/products/ui/ManageProductDialog";
 import { toast } from "@/shared/ui/toast";
 import { AlertModal } from "@/widgets/ui/AlertModal";
+import { warmQuery } from "@/shared/lib/route-data";
+import { QueryBoundary } from "@/shared/ui/QueryBoundary";
 
 const Package = PackageIcon as unknown as (props: { class?: string }) => JSX.Element;
 const PackagePlus = PackagePlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -31,6 +34,7 @@ const PackagePlus = PackagePlusIcon as unknown as (props: { class?: string }) =>
 export const Route = createFileRoute(
   "/admin/events/$eventId_/editions/$editionId/products/",
 )({
+  loader: ({ params }) => warmQuery(appQueryClient, productsByEditionQueryOptions(params.editionId)),
   head: () => ({
     meta: [{ title: "Produtos - Admin Univents" }],
   }),
@@ -121,9 +125,10 @@ function AdminEditionProductsRoute(): JSX.Element {
 
   return (
     <div class="mx-auto max-w-7xl space-y-6">
-      <Show
-        when={!productsQuery().isLoading}
-        fallback={
+      <QueryBoundary
+        query={productsQuery}
+        what="os produtos"
+        skeleton={
           <div class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             <For each={[1, 2, 3, 4]}>
               {() => <div class="h-28 animate-pulse rounded-xl bg-muted" />}
@@ -131,18 +136,20 @@ function AdminEditionProductsRoute(): JSX.Element {
           </div>
         }
       >
-        <AdminEditionProductsContent
-          products={products()}
-          filter={filter()}
-          onFilterChange={setFilter}
-          sort={sort()}
-          onSortChange={setSort}
-          onCreate={() => setCreating(true)}
-          onEdit={setEditing}
-          onDelete={setDeleting}
-          onManageVariants={handleManageVariants}
-        />
-      </Show>
+        {() => (
+          <AdminEditionProductsContent
+            products={products()}
+            filter={filter()}
+            onFilterChange={setFilter}
+            sort={sort()}
+            onSortChange={setSort}
+            onCreate={() => setCreating(true)}
+            onEdit={setEditing}
+            onDelete={setDeleting}
+            onManageVariants={handleManageVariants}
+          />
+        )}
+      </QueryBoundary>
 
       {/* Modal de Criação / Edição */}
       <Show

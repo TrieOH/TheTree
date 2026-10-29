@@ -20,6 +20,10 @@ export const loginServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ email: z.email(), password: z.string().min(1) }))
   .handler(({ data }) => bff.login(data.email, data.password));
 
+export const registerServerFn = createServerFn({ method: "POST" })
+  .validator(z.object({ email: z.email(), password: z.string().min(1) }))
+  .handler(({ data }) => bff.register(data.email, data.password));
+
 export const logoutServerFn = createServerFn({ method: "POST" }).handler(() =>
   bff.logout(),
 );

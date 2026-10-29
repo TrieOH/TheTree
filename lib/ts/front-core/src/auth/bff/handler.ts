@@ -1,4 +1,4 @@
-import { createIdentityXBff } from "./core";
+import { createIdentityXBff, type IdentityXBffConfig } from "./core";
 import { createCookieBffSession, type CookieSessionOptions } from "./cookie-session";
 import { BffInputError, runBffOperation } from "./operations";
 import type { IdentityXTransportLogEvent } from "./types";
@@ -9,6 +9,8 @@ export interface BffHandlerConfig {
     projectId?: string;
   };
   apiBaseURL: string;
+  /** See {@link IdentityXBffConfig.readTimeoutMs}. */
+  readTimeoutMs?: number;
   session: CookieSessionOptions;
   observability?: {
     log?: (event: IdentityXTransportLogEvent) => void;
@@ -49,6 +51,7 @@ export function createBffHandler(config: BffHandlerConfig) {
     const bff = createIdentityXBff({
       identityX: config.identityX,
       apiBaseURL: config.apiBaseURL,
+      readTimeoutMs: config.readTimeoutMs,
       observability: config.observability,
       session: () => cookieSession.session,
       request: () => request,

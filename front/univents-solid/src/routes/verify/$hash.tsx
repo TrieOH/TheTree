@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/solid-router";
 import { useQuery } from "@trieoh/front-core-solid";
 import { useAuth } from "@trieoh/identityx-sdk-ts-solid";
 import { cn } from "@trieoh/ui-solid";
-import { Show, createEffect, createMemo, createSignal } from "solid-js";
+import { Show, createMemo, createSignal } from "solid-js";
 
 import BadgeCheckIcon from "~icons/lucide/badge-check";
 import FileX2Icon from "~icons/lucide/file-x-2";
@@ -28,6 +28,7 @@ import {
 } from "@/features/certifications/ui/CertViewer";
 import { editionLocationQueryOptions } from "@/features/editions/api";
 import { allPublicEventsQueryOptions } from "@/features/events/api";
+import { ownProfileQueryOptions } from "@/features/profile/api";
 import { asUniventsProfile, profileDisplayName } from "@/features/profile/model/profile-data";
 import {
   myParticipationsQueryOptions,
@@ -66,7 +67,6 @@ function VerifyCertificationPage(): JSX.Element {
   const hash = () => params().hash;
   const { auth } = useAuth();
 
-  const [participantName, setParticipantName] = createSignal("");
   const [canvasEl, setCanvasEl] = createSignal<HTMLDivElement | undefined>(undefined);
 
   // 1. Verify query
@@ -98,24 +98,17 @@ function VerifyCertificationPage(): JSX.Element {
 
   const canvas = createMemo(() => template().design_data?.canvas ?? DEFAULT_CERTIFICATE_CANVAS);
 
-  // 3. Fetch actor profile for participant name
-  createEffect(
-    () => cert()?.user_id,
-    (userId) => {
-      if (!userId) {
-        setParticipantName("");
-        return;
-      }
-      void auth.getActorProfile(userId).then((res) => {
-        if (res.success && res.data) {
-          const p = asUniventsProfile(res.data.profile ?? {});
-          setParticipantName(p.legalName || profileDisplayName(p) || "Participante");
-        }
-      }).catch(() => {
-        setParticipantName("Participante");
-      });
-    },
+  // 3. The participant's name, through the profile cache.
+  const participantQuery = useQuery(() =>
+    ownProfileQueryOptions(cert()?.user_id ?? "", auth),
   );
+
+  const participantName = createMemo(() => {
+    const participant = participantQuery().data;
+    if (!participant) return participantQuery().isError ? "Participante" : "";
+    const profile = asUniventsProfile(participant.profile ?? {});
+    return profile.legalName || profileDisplayName(profile) || "Participante";
+  });
 
   // 4. Events & Editions
   const eventsQuery = useQuery(() => allPublicEventsQueryOptions());
@@ -125,20 +118,13 @@ function VerifyCertificationPage(): JSX.Element {
       (eventsQuery().data ?? []) as Array<{ id: string }>,
     ),
   );
-  const [editionName, setEditionName] = createSignal<string>("");
-  const [eventName, setEventName] = createSignal<string>("");
-  const [locationName, setLocationName] = createSignal<string>("");
-
-  createEffect(
-    () => ({ edition: editionQuery().data, events: eventsQuery().data ?? [] }),
-    ({ edition, events }) => {
-      if (!edition) return;
-      setEditionName(edition.name);
-      setLocationName(edition.location_name ?? "");
-      const event = events.find((item) => item.id === edition.event_id);
-      setEventName(event?.full_name ?? "");
-    },
-  );
+  const editionName = () => editionQuery().data?.name ?? "";
+  const locationName = () => editionQuery().data?.location_name ?? "";
+  const eventName = createMemo(() => {
+    const edition = editionQuery().data;
+    if (!edition) return "";
+    return (eventsQuery().data ?? []).find((item) => item.id === edition.event_id)?.full_name ?? "";
+  });
 
   // 5. Program query if certified for a program
   const programsQuery = useQuery(() => ({
@@ -169,6 +155,25 @@ function VerifyCertificationPage(): JSX.Element {
     ...myParticipationsQueryOptions(cert()?.edition_id ?? ""),
     enabled: Boolean(cert()?.edition_id && isCertificateOwner()),
   }));
+
+  // The certificate is drawn from nine pieces of data (template, participant,
+  // event, edition, programs, occurrences, attendance...). Painting it as each
+  // arrives would redraw the artwork and reflow the details several times, so
+  // it, and the details beside it, wait until every request has settled. A
+  // failed one just leaves its field out.
+  const detailsReady = createMemo(
+    () =>
+      !eventsQuery().isLoading &&
+      ![
+        templateQuery(),
+        participantQuery(),
+        editionQuery(),
+        programsQuery(),
+        occurrencesQuery(),
+        myParticipationsQuery(),
+      ].some((query) => query.isLoading),
+    { name: "VerifyCertificationPage.detailsReady" },
+  );
 
   const attendedOccurrences = createMemo(() => {
     const currentCert = cert();
@@ -230,14 +235,19 @@ function VerifyCertificationPage(): JSX.Element {
     return "Este documento não possui uma emissão válida.";
   });
 
+  const issuedAtFormatted = createMemo(() => {
+    const c = cert();
+    return c ? formatCertifiedAt(c.issued_at) : null;
+  });
+
   return (
-    <main class="min-h-screen bg-background pb-24 text-foreground">
+    <div class="min-h-screen bg-background pb-24 text-foreground">
       <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">
           {/* Left Column: Certificate Preview Canvas */}
           <div class={showCertificateArea() ? "min-w-0" : "hidden"}>
             <Show
-              when={!isLoading()}
+              when={!isLoading() && (detailsReady() || !verified())}
               fallback={
                 <div class="grid h-80 place-items-center rounded-xl border border-border/60 bg-muted/20">
                   <div class="flex flex-col items-center gap-2 text-muted-foreground">
@@ -319,14 +329,18 @@ function VerifyCertificationPage(): JSX.Element {
                 </div>
               </Show>
 
-              <Show when={!isLoading() && verified()}>
+              <Show when={!isLoading() && verified() && !detailsReady()}>
+                <div class="h-40 animate-pulse border-y border-border/40 bg-muted/30" />
+              </Show>
+
+              <Show when={!isLoading() && verified() && detailsReady()}>
                 <dl class="grid grid-cols-2 gap-x-6 border-y border-border/40">
                   <DetailItem label="Evento" value={eventName()} />
                   <DetailItem label="Edição" value={editionName()} />
                   <DetailItem label="Atividade" value={programName()} />
                   <DetailItem
                     label="Emitido em"
-                    value={cert() ? formatCertifiedAt(cert()!.issued_at) : null}
+                    value={issuedAtFormatted()}
                   />
                   <DetailItem
                     label="Carga horária"
@@ -381,6 +395,6 @@ function VerifyCertificationPage(): JSX.Element {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

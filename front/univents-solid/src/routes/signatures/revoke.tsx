@@ -13,5 +13,5 @@ export const Route = createFileRoute("/signatures/revoke")({
 
 function RevokeSignatureRoute(): JSX.Element {
   const search = Route.useSearch();
-  return <RevokeSignatureView token={search().token} />;
+  return <RevokeSignatureView token={search().token ?? ""} />;
 }

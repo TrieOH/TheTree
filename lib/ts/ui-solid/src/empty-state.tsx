@@ -1,8 +1,10 @@
+import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface EmptyStateProps {
+  shape?: Shape;
   /** Pass an icon element; this package deliberately carries no icon library. */
   icon?: JSX.Element;
   eyebrow?: JSX.Element;
@@ -17,6 +19,7 @@ export function EmptyState(props: EmptyStateProps) {
     <div
       class={cn(
         "relative overflow-hidden rounded-2xl border border-border/60 bg-card px-6 py-8 text-center shadow-sm sm:px-8 sm:py-10",
+        shapeClass(props.shape, "surface"),
         props.class,
       )}
     >

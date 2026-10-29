@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./dom-serializer";
 export * from "./use-drag-resize";
+export * from "./use-element-size";
 export * from "./element-frame";
 export * from "./canvas-controls";
 export * from "./rich-text-toolbar";

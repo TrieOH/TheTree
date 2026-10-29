@@ -1,16 +1,19 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import {
   For,
   Show,
-  createEffect,
   createMemo,
   createSignal,
+  onCleanup,
 } from "solid-js";
+import { CanvasControls } from "@trieoh/ui-solid";
 import {
   EditableText,
   EditorElementFrame,
   QrRenderer,
   StaticText,
+  useElementSize,
   type ElementBounds,
   type TextElementAdapter,
 } from "@/features/editor";
@@ -26,97 +29,185 @@ export interface BadgeCanvasProps {
   previewValues?: Record<string, string>;
 }
 
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 4;
+
 export function BadgeCanvas(props: BadgeCanvasProps): JSX.Element {
-  let containerRef: HTMLDivElement | undefined;
-  const [scale, setScale] = createSignal(1, { ownedWrite: true });
-  const [editingId, setEditingId] = createSignal<string | null>(null, {
-    ownedWrite: true,
-  });
+  const { ref: containerRef, size: viewport } = useElementSize<HTMLDivElement>();
+  let wheelCleanup: (() => void) | undefined;
+  const [zoom, setZoom] = createSignal(1);
+  const [pan, setPan] = createSignal({ x: 0, y: 0 });
+  const [panning, setPanning] = createSignal(false);
+  let panStart: { pointerX: number; pointerY: number; x: number; y: number } | null = null;
+  const [editingId, setEditingId] = createSignal<string | null>(null);
 
   const elementIds = createMemo(() => props.design.elements.map((e) => e.id));
 
-  createEffect(
-    () => ({
-      width: props.design.canvas.width,
-      height: props.design.canvas.height,
-    }),
-    ({ width, height }) => {
-      if (!containerRef) return;
-      const { clientWidth, clientHeight } = containerRef;
-      const padding = 64;
-      const availW = Math.max(100, clientWidth - padding);
-      const availH = Math.max(100, clientHeight - padding);
-      const scaleW = availW / width;
-      const scaleH = availH / height;
-      setScale(Math.min(1.5, Math.max(0.2, Math.min(scaleW, scaleH))));
-    },
-  );
+  let lastFitScale = 1;
+  const fitScale = createMemo(() => {
+    const vp = viewport();
+    const w = props.design.canvas.width;
+    const h = props.design.canvas.height;
+    if (vp.width <= 0 || vp.height <= 0 || w <= 0 || h <= 0) {
+      return lastFitScale;
+    }
+    const padding = 64;
+    const availW = Math.max(100, vp.width - padding);
+    const availH = Math.max(100, vp.height - padding);
+    const scaleW = availW / w;
+    const scaleH = availH / h;
+    const nextScale = Math.min(1.5, Math.max(0.2, Math.min(scaleW, scaleH)));
+    if (Number.isFinite(nextScale) && nextScale > 0) {
+      lastFitScale = nextScale;
+    }
+    return lastFitScale;
+  });
+
+  onCleanup(() => {
+    wheelCleanup?.();
+  });
+
+  const effectiveScale = () => fitScale() * zoom();
+
+  function startPan(event: PointerEvent) {
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-editor-element], [data-canvas-controls], button, input")) {
+      return;
+    }
+    props.onSelect(null);
+    setEditingId(null);
+    panStart = {
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      ...pan(),
+    };
+    setPanning(true);
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function finishPan(event: PointerEvent) {
+    panStart = null;
+    setPanning(false);
+    const el = event.currentTarget as HTMLElement;
+    if (el.hasPointerCapture(event.pointerId)) {
+      el.releasePointerCapture(event.pointerId);
+    }
+  }
 
   return (
     <div
-      ref={(el) => (containerRef = el)}
-      class="relative flex flex-1 items-center justify-center overflow-auto p-8 select-none"
+      ref={(el) => {
+        containerRef(el);
+        wheelCleanup?.();
+        if (!el) return;
+
+        const handleWheel = (event: WheelEvent) => {
+          event.preventDefault();
+          const delta =
+            event.deltaMode === 1
+              ? event.deltaY * 20
+              : event.deltaMode === 2
+                ? event.deltaY * 100
+                : event.deltaY;
+          const factor = Math.exp(-delta * 0.0015);
+          const clampedFactor = Math.min(1.2, Math.max(0.8, factor));
+          setZoom((value) => {
+            const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value * clampedFactor));
+            return Number(next.toFixed(3));
+          });
+        };
+
+        el.addEventListener("wheel", handleWheel, { passive: false });
+        wheelCleanup = () => {
+          el.removeEventListener("wheel", handleWheel);
+        };
+      }}
+      class={
+        "relative flex min-h-0 min-w-0 flex-1 touch-none items-center justify-center overflow-hidden p-8 select-none " +
+        (panning() ? "cursor-grabbing" : "cursor-grab")
+      }
       style={{
         background:
           "radial-gradient(circle, var(--color-muted) 1px, transparent 1px)",
         "background-size": "16px 16px",
       }}
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget) {
-          props.onSelect(null);
-          setEditingId(null);
-        }
+      onPointerDown={startPan}
+      onPointerMove={(event) => {
+        if (!panStart) return;
+        setPan({
+          x: panStart.x + event.clientX - panStart.pointerX,
+          y: panStart.y + event.clientY - panStart.pointerY,
+        });
       }}
+      onPointerUp={finishPan}
+      onPointerCancel={finishPan}
     >
-      <div
-        class="relative shadow-2xl transition-all duration-150"
-        style={{
-          width: `${props.design.canvas.width}px`,
-          height: `${props.design.canvas.height}px`,
-          transform: `scale(${scale()})`,
-          "transform-origin": "center center",
-          "background-color": props.design.backgroundColor,
-          "background-image": props.design.background
-            ? `url(${props.design.background})`
-            : undefined,
-          "background-size": "cover",
-          "background-position": "center",
+      <CanvasControls
+        scale={effectiveScale()}
+        onZoomIn={() =>
+          setZoom((v) => Math.min(MAX_ZOOM, Number((v * 1.1).toFixed(3))))
+        }
+        onZoomOut={() =>
+          setZoom((v) => Math.max(MIN_ZOOM, Number((v * 0.9).toFixed(3))))
+        }
+        onReset={() => {
+          setZoom(1);
+          setPan({ x: 0, y: 0 });
         }}
-        onPointerDown={(event) => {
-          if (event.target === event.currentTarget) {
-            props.onSelect(null);
-            setEditingId(null);
-          }
+      />
+
+      <div
+        class="relative shrink-0 shadow-2xl m-auto"
+        style={{
+          width: `${props.design.canvas.width * effectiveScale()}px`,
+          height: `${props.design.canvas.height * effectiveScale()}px`,
+          transform: `translate(${pan().x}px, ${pan().y}px)`,
         }}
       >
-        <For each={elementIds()}>
-          {(id) => (
-            <CanvasElementItem
-              id={id}
-              design={() => props.design}
-              scale={scale}
-              selectedId={() => props.selectedId}
-              editingId={editingId}
-              onSelect={(selectedId) => {
-                props.onSelect(selectedId);
-                if (editingId() && editingId() !== selectedId) {
-                  setEditingId(null);
+        <div
+          class="relative overflow-hidden"
+          style={{
+            width: `${props.design.canvas.width}px`,
+            height: `${props.design.canvas.height}px`,
+            transform: `scale(${effectiveScale()})`,
+            "transform-origin": "top left",
+            "background-color": props.design.backgroundColor,
+            "background-image": props.design.background
+              ? `url(${resolveStorageUrl(props.design.background)})`
+              : undefined,
+            "background-size": "cover",
+            "background-position": "center",
+          }}
+        >
+          <For each={elementIds()}>
+            {(id) => (
+              <CanvasElementItem
+                id={id}
+                design={() => props.design}
+                scale={effectiveScale}
+                selectedId={() => props.selectedId}
+                editingId={editingId}
+                onSelect={(selectedId) => {
+                  props.onSelect(selectedId);
+                  if (editingId() && editingId() !== selectedId) {
+                    setEditingId(null);
+                  }
+                }}
+                onStartEditing={(editId) => {
+                  props.onSelect(editId);
+                  setEditingId(editId);
+                }}
+                onStopEditing={() => setEditingId(null)}
+                onChangeBounds={(bounds) => props.onChangeElement(id, bounds)}
+                onDeleteElement={
+                  props.onDeleteElement ? () => props.onDeleteElement?.(id) : undefined
                 }
-              }}
-              onStartEditing={(editId) => {
-                props.onSelect(editId);
-                setEditingId(editId);
-              }}
-              onStopEditing={() => setEditingId(null)}
-              onChangeBounds={(bounds) => props.onChangeElement(id, bounds)}
-              onDeleteElement={
-                props.onDeleteElement ? () => props.onDeleteElement?.(id) : undefined
-              }
-              previewValues={props.previewValues}
-              textAdapter={props.textAdapter}
-            />
-          )}
-        </For>
+                previewValues={props.previewValues}
+                textAdapter={props.textAdapter}
+              />
+            )}
+          </For>
+        </div>
       </div>
     </div>
   );
@@ -162,7 +253,7 @@ function CanvasElementItem(props: {
             }
           }}
           onChangeBounds={props.onChangeBounds}
-          onDelete={el().type !== "qr" ? props.onDeleteElement : undefined}
+          onDelete={props.onDeleteElement}
         >
           <Show
             when={el().type === "text"}
@@ -170,26 +261,22 @@ function CanvasElementItem(props: {
               <Show
                 when={el().type === "image"}
                 fallback={
-                  <div class="h-full w-full pointer-events-none">
-                    <QrRenderer
-                      value="https://univents.app/check-in"
-                      foreground={
-                        el().type === "qr"
-                          ? (el() as Extract<BadgeElement, { type: "qr" }>).foreground
-                          : "#000000"
-                      }
-                      background={
-                        el().type === "qr"
-                          ? (el() as Extract<BadgeElement, { type: "qr" }>).background
-                          : "#ffffff"
-                      }
-                      style={
-                        el().type === "qr"
-                          ? (el() as Extract<BadgeElement, { type: "qr" }>).style
-                          : "square"
-                      }
-                    />
-                  </div>
+                  <Show when={el().type === "qr"}>
+                    <div class="h-full w-full pointer-events-none">
+                      <QrRenderer
+                        value="https://univents.app/check-in"
+                        foreground={
+                          (el() as Extract<BadgeElement, { type: "qr" }>).foreground ?? "#000000"
+                        }
+                        background={
+                          (el() as Extract<BadgeElement, { type: "qr" }>).background ?? "#ffffff"
+                        }
+                        style={
+                          (el() as Extract<BadgeElement, { type: "qr" }>).style ?? "square"
+                        }
+                      />
+                    </div>
+                  </Show>
                 }
               >
                 {(() => {
@@ -197,7 +284,7 @@ function CanvasElementItem(props: {
                     el() as Extract<BadgeElement, { type: "image" }>;
                   return (
                     <img
-                      src={img().src}
+                      src={resolveStorageUrl(img().src)}
                       alt=""
                       class="h-full w-full pointer-events-none select-none"
                       style={{
@@ -215,7 +302,6 @@ function CanvasElementItem(props: {
             {(() => {
               const txt = () =>
                 el() as Extract<BadgeElement, { type: "text" }>;
-
               return (
                 <div
                   class="relative h-full w-full cursor-text"

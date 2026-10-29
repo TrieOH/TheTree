@@ -168,7 +168,7 @@ function ProfileConfigPage() {
   ];
 
   return (
-    <main class="min-h-dvh min-w-0 overflow-x-clip bg-background pb-16 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden">
+    <div class="min-h-dvh min-w-0 overflow-x-clip bg-background pb-16 lg:flex lg:h-dvh lg:flex-col lg:overflow-hidden">
       {/* HEADER */}
 
       <header class="sticky top-0 z-40 shrink-0 overflow-hidden border-b border-border bg-card/95 shadow-sm backdrop-blur">
@@ -227,7 +227,7 @@ function ProfileConfigPage() {
           />
         </section>
       </div>
-    </main>
+    </div>
   );
 }
 

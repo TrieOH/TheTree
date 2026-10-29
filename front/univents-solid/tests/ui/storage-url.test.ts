@@ -1,7 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveStorageUrl } from "../../src/shared/lib/storage-url";
 
 describe("resolveStorageUrl", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("uses a new public base without changing the stored key", () => {
+    const key = "events/123/banner.webp";
+    vi.stubEnv("VITE_STORAGE_URL", "https://old-storage.test");
+    expect(resolveStorageUrl(key)).toBe(`https://old-storage.test/${key}`);
+    vi.stubEnv("VITE_STORAGE_URL", "https://new-storage.test/");
+    expect(resolveStorageUrl(key)).toBe(`https://new-storage.test/${key}`);
+  });
   it("returns empty string for null, undefined, or empty string", () => {
     expect(resolveStorageUrl(null)).toBe("");
     expect(resolveStorageUrl(undefined)).toBe("");

@@ -5,7 +5,7 @@ import { createEvent, discontinueEvent, patchEvent, publishEvent, addEventMember
 import type { AddEventMemberInput, RemoveEventMemberInput, EventMemberWithEmailI } from "./members";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import { Effect } from "effect";
-import { apiEffect, useEffectMutation, toMutationFn } from "@/shared/lib/effect-query";
+import { apiEffect, useEffectMutation } from "@/shared/lib/effect-query";
 import type { EventI } from "../model";
 import { eventKeys } from "./query-keys";
 import { syncEventCaches } from "./cache";
@@ -111,34 +111,6 @@ export const useDiscontinueEventMutation = () => {
       ),
   });
 };
-
-export const publishEventMutation = (queryClient: QueryClient) =>
-  toMutationFn(
-    (eventId: string) =>
-      publishEventEffect(eventId).pipe(
-        Effect.tap(() =>
-          Effect.tryPromise({
-            try: () => invalidateEvents(queryClient),
-            catch: () => undefined,
-          }),
-        ),
-      ),
-    { retryTransient: true },
-  );
-
-export const discontinueEventMutation = (queryClient: QueryClient) =>
-  toMutationFn(
-    (eventId: string) =>
-      discontinueEventEffect(eventId).pipe(
-        Effect.tap(() =>
-          Effect.tryPromise({
-            try: () => invalidateEvents(queryClient),
-            catch: () => undefined,
-          }),
-        ),
-      ),
-    { retryTransient: true },
-  );
 
 export const addEventMemberEffect = (input: AddEventMemberInput) =>
   apiEffect(() =>

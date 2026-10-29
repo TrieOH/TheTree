@@ -1,6 +1,5 @@
 import { createSignal, type ParentProps } from "solid-js";
-import type { OAuthProviderI } from "@trieoh/identityx-sdk-ts";
-import { AuthLayout } from "./Shared";
+import { AuthLayout } from "./Shared/AuthLayout";
 import { ModernSignIn } from "./ModernSignIn";
 import { ModernSignUp } from "./ModernSignUp";
 import { ModernForgotPassword } from "./ModernForgotPassword";
@@ -9,34 +8,34 @@ export type AuthView = "signin" | "signup" | "forgot-password";
 
 export interface ModernAuthProps {
   initialView?: AuthView;
-  onLoginSuccess?: (message?: string) => Promise<void>;
+  onLoginSuccess?: () => Promise<void>;
   onSignUpSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
+  providers?: ("google" | "github")[];
   backLink?: ParentProps["children"];
-  providers?: OAuthProviderI[];
 }
 
-const viewConfig: Record<AuthView, { title: string; subtitle: string; toggleLabel: string; toggleAction: string; toggleTo: AuthView }> = {
+const viewConfig = {
   signin: {
     title: "Bem-vindo de volta",
     subtitle: "Entre com suas credenciais para acessar a plataforma",
     toggleLabel: "Ainda não tem uma conta?",
     toggleAction: "Cadastre-se",
-    toggleTo: "signup",
+    toggleTo: "signup" as const,
   },
   signup: {
     title: "Criar sua conta",
     subtitle: "Preencha os dados abaixo para se cadastrar",
     toggleLabel: "Já possui uma conta?",
     toggleAction: "Faça login",
-    toggleTo: "signin",
+    toggleTo: "signin" as const,
   },
   "forgot-password": {
     title: "Recuperar senha",
     subtitle: "Digite seu e-mail para receber instruções",
     toggleLabel: "Lembrou da senha?",
     toggleAction: "Voltar ao login",
-    toggleTo: "signin",
+    toggleTo: "signin" as const,
   },
 };
 

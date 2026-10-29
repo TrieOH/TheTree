@@ -1,5 +1,6 @@
 import { orvalItems } from "@trieoh/api-client";
 import { listEventMembers } from "@trieoh/univents-api";
+import type { QueryClient } from "@trieoh/front-core-solid";
 
 import type { EventMemberRole, EventMemberWithEmailI } from "../model/member";
 import type { ActorRecord } from "./actor-emails-handler";
@@ -53,3 +54,13 @@ export const actorEmailsQueryOptions = (actorIds: string[]) => ({
   staleTime: 5 * 60 * 1000,
   gcTime: 15 * 60 * 1000,
 });
+
+/** Load the list and its identity details before displaying member cards. */
+export async function prefetchEventMembers(client: QueryClient, eventId: string) {
+  const options = allEventMembersQueryOptions(eventId);
+  await client.prefetchQuery(options);
+  const members = client.getQueryData<EventMemberWithEmailI[]>(options.queryKey);
+  if (members?.length) {
+    await client.prefetchQuery(actorEmailsQueryOptions(members.map((member) => member.user_id)));
+  }
+}

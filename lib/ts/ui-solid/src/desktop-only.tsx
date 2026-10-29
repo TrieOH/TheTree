@@ -1,0 +1,123 @@
+import type { JSX } from "@solidjs/web";
+import { Show, createSignal, onCleanup } from "solid-js";
+import MonitorIcon from "~icons/lucide/monitor";
+import ArrowLeftIcon from "~icons/lucide/arrow-left";
+import { Button } from "./button";
+import { cn } from "./lib/cn";
+
+export interface DesktopOnlyProps {
+  children?: JSX.Element;
+  /**
+   * Width threshold in pixels. Defaults to 1200.
+   */
+  threshold?: number;
+  /**
+   * The width to test against, in pixels. Defaults to the window's width; set
+   * it to preview the notice inside a simulated viewport.
+   */
+  width?: number;
+  /** Classes for the notice (it fills the screen height by default). */
+  class?: string;
+  /**
+   * Custom title for the mobile/tablet blocking notice.
+   */
+  title?: string;
+  /**
+   * Custom description text.
+   */
+  description?: string;
+  /**
+   * Label for the back/exit button. Defaults to "Voltar à página anterior".
+   */
+  actionLabel?: string;
+  /**
+   * Callback when the user clicks the action button.
+   * Defaults to window.history.back().
+   */
+  onAction?: () => void;
+}
+
+/**
+ * Reusable guard component that restricts access to desktop screens.
+ * When screen width is below the specified threshold (default 1200px),
+ * renders a clean, distraction-free page informing the user to open on desktop.
+ */
+export function DesktopOnly(props: DesktopOnlyProps): JSX.Element {
+  const thresholdPx = () => props.threshold ?? 1200;
+  const [windowWidth, setWindowWidth] = createSignal(
+    typeof window !== "undefined" ? window.innerWidth : 1200,
+  );
+  const currentWidth = () => props.width ?? windowWidth();
+  const isDesktop = () => currentWidth() >= thresholdPx();
+
+  if (typeof window !== "undefined") {
+    const updateMatch = () => setWindowWidth(window.innerWidth);
+
+    window.addEventListener("resize", updateMatch, { passive: true });
+    onCleanup(() => {
+      window.removeEventListener("resize", updateMatch);
+    });
+  }
+
+  const handleAction = () => {
+    if (props.onAction) {
+      props.onAction();
+    } else if (typeof window !== "undefined") {
+      window.history.back();
+    }
+  };
+
+  return (
+    <Show
+      when={isDesktop()}
+      fallback={
+        <div
+          class={cn(
+            "flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12 select-none",
+            props.class,
+          )}
+        >
+          <div class="flex w-full max-w-md flex-col items-center text-center">
+            {/* Monitor icon */}
+            <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40 text-muted-foreground">
+              <MonitorIcon class="size-6" />
+            </div>
+
+            {/* Title */}
+            <h1 class="text-lg font-semibold tracking-tight text-foreground">
+              {props.title ?? "Disponível apenas no computador"}
+            </h1>
+
+            {/* Description */}
+            <p class="mt-2 text-sm text-muted-foreground leading-normal">
+              {props.description ??
+                "Esta ferramenta foi projetada para telas a partir de 1200px de largura para permitir o gerenciamento da grade e organização dos horários."}
+            </p>
+
+            {/* Resolution readout */}
+            <div class="mt-4 flex items-center gap-2 text-xs text-muted-foreground font-mono">
+              <span>{currentWidth()}px</span>
+              <span>/</span>
+              <span>mínimo de {thresholdPx()}px</span>
+            </div>
+
+            {/* Back action */}
+            <div class="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAction}
+                class="gap-2 text-xs font-medium cursor-pointer"
+              >
+                <ArrowLeftIcon class="size-3.5" />
+                {props.actionLabel ?? "Voltar à página anterior"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {props.children}
+    </Show>
+  );
+}

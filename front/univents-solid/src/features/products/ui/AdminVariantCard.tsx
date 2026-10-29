@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 
@@ -65,7 +66,7 @@ export function AdminVariantCard(props: AdminVariantCardProps): JSX.Element {
                 >
                   {(url) => (
                     <img
-                      src={url()}
+                      src={resolveStorageUrl(url())}
                       alt={props.variant.name}
                       class="size-full object-cover"
                     />

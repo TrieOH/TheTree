@@ -4,22 +4,28 @@ import { useAuth, AuthLayout } from "@trieoh/identityx-sdk-ts-solid";
 import { Show, createMemo, createSignal } from "solid-js";
 import SaveIcon from "~icons/lucide/save";
 import UserPenIcon from "~icons/lucide/user-pen";
-import z from "zod";
 
 import { requireAuth } from "@/features/auths/lib/route-guard";
 import { useProfileSetupMutation } from "@/features/profile/api/mutations";
 import { ProfileImageInput } from "@/features/profile/ui/ProfileImageInput";
 import { toast } from "@/shared/ui/toast";
-
+import { Schema, createSchema } from "@/shared/lib/effect-schema";
 
 const Save = SaveIcon as unknown as (props: { class?: string }) => JSX.Element;
 const UserPen = UserPenIcon as unknown as (props: {
   class?: string;
 }) => JSX.Element;
 
+const setupSearchSchema = createSchema(
+  Schema.Struct({
+    returnTo: Schema.optional(Schema.String),
+  }),
+);
+
 export const Route = createFileRoute("/profile/setup")({
   beforeLoad: requireAuth,
-  validateSearch: z.object({ returnTo: z.string().optional() }),
+  validateSearch: setupSearchSchema,
+  staticData: { ownsMain: true },
   component: ProfileSetup,
 });
 
@@ -58,12 +64,13 @@ function ProfileSetup(): JSX.Element {
         photo: photo(),
       });
       toast.success("Perfil criado");
-      if (search().returnTo && !personalizeMore) {
-        window.location.assign(search().returnTo!);
+      const targetReturnTo = search().returnTo;
+      if (targetReturnTo && !personalizeMore) {
+        window.location.assign(targetReturnTo);
       } else {
         void navigate(
           personalizeMore
-            ? { to: "/profile/edit", search: { returnTo: search().returnTo } }
+            ? { to: "/profile/edit", search: { returnTo: targetReturnTo } }
             : { to: "/profile", search: { tab: "about" } },
         );
       }
@@ -82,7 +89,9 @@ function ProfileSetup(): JSX.Element {
     <AuthLayout class="px-5 py-12 pb-32 sm:px-8">
       <div class="w-full max-w-md z-10 flex flex-col">
         <div class="text-center mb-6">
-          <h1 class="font-heading text-3xl font-bold tracking-tight mb-2">Configure seu perfil</h1>
+          <h1 class="font-heading text-3xl font-bold tracking-tight mb-2">
+            Configure seu perfil
+          </h1>
           <p class="text-muted-foreground text-sm mb-4">
             Preencha o básico para começar a usar o Univents.
           </p>

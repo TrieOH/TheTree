@@ -11,7 +11,7 @@
     "@tanstack/query-core": "catalog:"
   },
   "peerDependencies": {
-    "@tanstack/solid-router": "^2.0.0-rc.6",
+    "@tanstack/solid-router": "catalog:solid",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts-solid": "catalog:",
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@tanstack/query-core": "catalog:",
-    "@tanstack/solid-router": "^2.0.0-rc.6",
+    "@tanstack/solid-router": "catalog:solid",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts-solid": "catalog:",

@@ -1,112 +1,131 @@
-import z from "zod";
+import {
+  Schema,
+  createSchema,
+  min,
+  max,
+  minLength,
+  pattern,
+  nonNegative,
+  type Infer,
+} from "@/shared/lib/effect-schema";
 
-const hexColorSchema = z
-  .string()
-  .regex(/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, {
-    message: "Cor inválida, use um hexadecimal (ex: #1A2B3C)",
-  });
+const hexColorSchema = Schema.String.pipe(
+  pattern(/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/),
+);
 
-const elementBoundsSchema = z.object({
-  id: z.string().min(1),
-  x: z.number(),
-  y: z.number(),
-  width: z.number().min(1),
-  height: z.number().min(1),
-});
+const elementBoundsFields = {
+  id: Schema.String.pipe(minLength(1)),
+  x: Schema.Number,
+  y: Schema.Number,
+  width: Schema.Number.pipe(min(1)),
+  height: Schema.Number.pipe(min(1)),
+};
 
-const richTextRunSchema = z.object({
-  text: z.string(),
-  bold: z.boolean(),
-  italic: z.boolean(),
-  underline: z.boolean(),
+const richTextRunSchema = Schema.Struct({
+  text: Schema.String,
+  bold: Schema.Boolean,
+  italic: Schema.Boolean,
+  underline: Schema.Boolean,
   color: hexColorSchema,
-  fontSize: z.number().min(6).max(400),
-  fontFamily: z.string().min(1),
+  fontSize: Schema.Number.pipe(min(6), max(400)),
+  fontFamily: Schema.String.pipe(minLength(1)),
 });
 
-const richTextParagraphSchema = z.object({
-  align: z.enum(["left", "center", "right", "justify"]),
-  lineHeight: z.number().min(0.5).max(4).default(1.25),
-  runs: z.array(richTextRunSchema),
+const richTextParagraphSchema = Schema.Struct({
+  align: Schema.Literals(["left", "center", "right", "justify"]),
+  lineHeight: Schema.Number.pipe(min(0.5), max(4)),
+  runs: Schema.Array(richTextRunSchema),
 });
 
-export const certificationTemplateElementSchema = z.discriminatedUnion("type", [
-  elementBoundsSchema.extend({
-    type: z.literal("hash"),
-    hashLabel: z.string(),
-    hash: z.string(),
-    linkLabel: z.string(),
-    url: z.string(),
-    fontSize: z.number().min(6).max(200),
-    color: hexColorSchema,
-    align: z.enum(["left", "center", "right"]),
-  }),
-  elementBoundsSchema.extend({
-    type: z.literal("text"),
-    paragraphs: z.array(richTextParagraphSchema).min(1),
-  }),
-  elementBoundsSchema.extend({
-    type: z.literal("image"),
-    src: z.string(),
-    fit: z.enum(["cover", "contain", "fill"]),
-    radius: z.number().min(0).max(400),
-    opacity: z.number().min(0).max(1),
-  }),
-  elementBoundsSchema.extend({
-    type: z.literal("signature"),
-    signatureId: z.string().min(1),
-    src: z.string(),
-    name: z.string(),
-    fit: z.enum(["cover", "contain", "fill"]),
-    radius: z.number().min(0).max(400),
-    opacity: z.number().min(0).max(1),
-  }),
-]);
-
-export type CertificationTemplateElement = z.infer<
-  typeof certificationTemplateElementSchema
->;
-
-export const certificationTemplateKindSchema = z.enum([
-  "edition_attendance",
-  "program_attendance",
-]);
-
-export const certificationTemplateDesignSchema = z.object({
-  canvas: z
-    .object({
-      width: z.number().min(320).max(6000),
-      height: z.number().min(320).max(6000),
-    })
-    .optional(),
-  background: z.string().nullable(),
-  elements: z.array(certificationTemplateElementSchema),
+const hashElementSchema = Schema.Struct({
+  ...elementBoundsFields,
+  type: Schema.Literal("hash"),
+  hashLabel: Schema.String,
+  hash: Schema.String,
+  linkLabel: Schema.String,
+  url: Schema.String,
+  fontSize: Schema.Number.pipe(min(6), max(200)),
+  color: hexColorSchema,
+  align: Schema.Literals(["left", "center", "right"]),
 });
 
-export type CertificationTemplateDesignData = z.infer<
-  typeof certificationTemplateDesignSchema
->;
-
-export const certificationTemplateCreateSchema = z.object({
-  kind: certificationTemplateKindSchema,
-  name: z.string({ error: "Nome é obrigatório" }).min(3, {
-    message: "O título deve ter pelo menos 3 caracteres",
-  }),
-  description: z.string().nullable().optional(),
-  design_data: certificationTemplateDesignSchema,
+const textElementSchema = Schema.Struct({
+  ...elementBoundsFields,
+  type: Schema.Literal("text"),
+  paragraphs: Schema.Array(richTextParagraphSchema),
 });
 
-export type CertificationTemplateCreateI = z.infer<
-  typeof certificationTemplateCreateSchema
->;
+const imageElementSchema = Schema.Struct({
+  ...elementBoundsFields,
+  type: Schema.Literal("image"),
+  src: Schema.String,
+  fit: Schema.Literals(["cover", "contain", "fill"]),
+  radius: Schema.Number.pipe(nonNegative(), max(400)),
+  opacity: Schema.Number.pipe(nonNegative(), max(1)),
+});
+
+const signatureElementSchema = Schema.Struct({
+  ...elementBoundsFields,
+  type: Schema.Literal("signature"),
+  signatureId: Schema.String.pipe(minLength(1)),
+  src: Schema.String,
+  name: Schema.String,
+  fit: Schema.Literals(["cover", "contain", "fill"]),
+  radius: Schema.Number.pipe(nonNegative(), max(400)),
+  opacity: Schema.Number.pipe(nonNegative(), max(1)),
+});
+
+export const certificationTemplateElementSchema = createSchema(
+  Schema.Union([
+    hashElementSchema,
+    textElementSchema,
+    imageElementSchema,
+    signatureElementSchema,
+  ]),
+);
+
+export type CertificationTemplateElement =
+  Infer<typeof certificationTemplateElementSchema>;
+
+export const certificationTemplateKindSchema = createSchema(
+  Schema.Literals(["edition_attendance", "program_attendance"]),
+);
+
+export const certificationTemplateDesignSchema = createSchema(
+  Schema.Struct({
+    canvas: Schema.optional(
+      Schema.Struct({
+        width: Schema.Number.pipe(min(320), max(6000)),
+        height: Schema.Number.pipe(min(320), max(6000)),
+      }),
+    ),
+    background: Schema.NullOr(Schema.String),
+    elements: Schema.Array(certificationTemplateElementSchema),
+  }),
+);
+
+export type CertificationTemplateDesignData =
+  Infer<typeof certificationTemplateDesignSchema>;
+
+export const certificationTemplateCreateSchema = createSchema(
+  Schema.Struct({
+    kind: certificationTemplateKindSchema,
+    name: Schema.String.pipe(minLength(3)),
+    description: Schema.optional(Schema.NullOr(Schema.String)),
+    design_data: certificationTemplateDesignSchema,
+  }),
+);
+
+export type CertificationTemplateCreateI =
+  Infer<typeof certificationTemplateCreateSchema>;
 
 export interface CertificationTemplateI {
   id: string;
   edition_id: string;
-  kind: z.infer<typeof certificationTemplateKindSchema>;
+  kind: Infer<typeof certificationTemplateKindSchema>;
   name: string;
   description: string | null;
-  design_data: z.infer<typeof certificationTemplateDesignSchema>;
+  design_data: Infer<typeof certificationTemplateDesignSchema>;
   created_at: string;
 }
 
