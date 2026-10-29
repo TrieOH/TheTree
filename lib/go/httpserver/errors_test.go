@@ -221,3 +221,32 @@ func TestWriteErrorListsFields(t *testing.T) {
 		t.Fatalf("unexpected response %d: %s", rec.Code, rec.Body.String())
 	}
 }
+
+// TestPlainErrorsDropTheEnvelope — with UsePlainErrors the body is the bare
+// error object, with the mapped status, code, message and fields.
+func TestPlainErrorsDropTheEnvelope(t *testing.T) {
+	useTestErrorMap(t, ErrorMap{Is(errTermsMissing, http.StatusBadRequest).Validation()})
+	UsePlainErrors()
+	t.Cleanup(func() { plainErrors.Store(false) })
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/auth/register", nil)
+	WriteError(rec, req, fielderr.On(errTermsMissing, "accept_terms", "required"))
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("want 400, got %d", rec.Code)
+	}
+	var body map[string]any
+	err := json.Unmarshal(rec.Body.Bytes(), &body)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	want := map[string]any{
+		"code":    "VALIDATION_ERROR",
+		"message": errTermsMissing.Error(),
+		"fields":  []any{map[string]any{"field": "accept_terms", "message": "required"}},
+	}
+	if fmt.Sprint(body) != fmt.Sprint(want) {
+		t.Fatalf("body = %s, want %v", rec.Body.String(), want)
+	}
+}

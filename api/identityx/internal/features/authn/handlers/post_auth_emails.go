@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -13,9 +12,7 @@ func (h *Handlers) PostVerifyEmail(ctx context.Context, req openapi.PostVerifyEm
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PostVerifyEmail200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostVerifyEmail204Response{}, nil
 }
 
 func (h *Handlers) PostResendVerification(ctx context.Context, req openapi.PostResendVerificationRequestObject) (openapi.PostResendVerificationResponseObject, error) {
@@ -26,9 +23,7 @@ func (h *Handlers) PostResendVerification(ctx context.Context, req openapi.PostR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PostResendVerification200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostResendVerification204Response{}, nil
 }
 
 func (h *Handlers) PostForgotPassword(ctx context.Context, req openapi.PostForgotPasswordRequestObject) (openapi.PostForgotPasswordResponseObject, error) {
@@ -39,9 +34,7 @@ func (h *Handlers) PostForgotPassword(ctx context.Context, req openapi.PostForgo
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PostForgotPassword200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostForgotPassword204Response{}, nil
 }
 
 func (h *Handlers) PostResetPassword(ctx context.Context, req openapi.PostResetPasswordRequestObject) (openapi.PostResetPasswordResponseObject, error) {
@@ -52,7 +45,5 @@ func (h *Handlers) PostResetPassword(ctx context.Context, req openapi.PostResetP
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PostResetPassword200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostResetPassword204Response{}, nil
 }

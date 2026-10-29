@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -17,7 +16,5 @@ func (h *Handlers) PostLogin(ctx context.Context, req openapi.PostLoginRequestOb
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PostLogin200JSONResponse{
-		Code: 200, Data: tokens, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostLogin200JSONResponse(*tokens), nil
 }

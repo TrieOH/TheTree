@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -16,7 +15,5 @@ func (h *Handlers) UpsertPlatformProfileSchema(ctx context.Context, req openapi.
 	if err != nil {
 		return nil, err
 	}
-	return openapi.UpsertPlatformProfileSchema200JSONResponse{
-		Code: 200, Data: schema, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.UpsertPlatformProfileSchema200JSONResponse(*schema), nil
 }

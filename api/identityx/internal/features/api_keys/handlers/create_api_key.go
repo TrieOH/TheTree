@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -21,7 +20,5 @@ func (h *Handlers) CreateAPIKey(ctx context.Context, req openapi.CreateAPIKeyReq
 		return nil, err
 	}
 	resp := models.CreateAPIKeyResponse{Key: key, RawKey: raw}
-	return openapi.CreateAPIKey201JSONResponse{
-		Code: 201, Data: &resp, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateAPIKey201JSONResponse(resp), nil
 }

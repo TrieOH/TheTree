@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -14,9 +13,7 @@ func (h *Handlers) GetProjectTos(ctx context.Context, req openapi.GetProjectTosR
 		return nil, err
 	}
 	data := toOpenTos(*tos)
-	return openapi.GetProjectTos200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetProjectTos200JSONResponse(data), nil
 }
 
 func (h *Handlers) PostProjectTos(ctx context.Context, req openapi.PostProjectTosRequestObject) (openapi.PostProjectTosResponseObject, error) {
@@ -25,9 +22,7 @@ func (h *Handlers) PostProjectTos(ctx context.Context, req openapi.PostProjectTo
 		return nil, err
 	}
 	data := toOpenTos(*tos)
-	return openapi.PostProjectTos200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostProjectTos200JSONResponse(data), nil
 }
 
 func (h *Handlers) PutProjectTos(ctx context.Context, req openapi.PutProjectTosRequestObject) (openapi.PutProjectTosResponseObject, error) {
@@ -36,9 +31,7 @@ func (h *Handlers) PutProjectTos(ctx context.Context, req openapi.PutProjectTosR
 		return nil, err
 	}
 	data := toOpenTos(*tos)
-	return openapi.PutProjectTos200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PutProjectTos200JSONResponse(data), nil
 }
 
 func (h *Handlers) PostTosAcceptance(ctx context.Context, req openapi.PostTosAcceptanceRequestObject) (openapi.PostTosAcceptanceResponseObject, error) {
@@ -47,9 +40,7 @@ func (h *Handlers) PostTosAcceptance(ctx context.Context, req openapi.PostTosAcc
 		return nil, err
 	}
 	data := toOpenAcceptance(models.TosAcceptanceWithActor{TosAcceptance: *acceptance})
-	return openapi.PostTosAcceptance200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostTosAcceptance200JSONResponse(data), nil
 }
 
 func (h *Handlers) ListTosAcceptances(ctx context.Context, req openapi.ListTosAcceptancesRequestObject) (openapi.ListTosAcceptancesResponseObject, error) {
@@ -61,7 +52,5 @@ func (h *Handlers) ListTosAcceptances(ctx context.Context, req openapi.ListTosAc
 	for _, a := range acceptances {
 		data = append(data, toOpenAcceptance(a))
 	}
-	return openapi.ListTosAcceptances200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListTosAcceptances200JSONResponse{Items: data}, nil
 }

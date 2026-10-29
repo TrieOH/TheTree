@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   addOrganizationMember,
   createOrganization,
@@ -31,7 +31,7 @@ export const createOrganizationFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of organizations objects.
  */
 export const getAllOrganizationsFn = createClientOnlyFn(() => {
-  return listOrganizations().then(orvalData<OrganizationI[]>);
+  return listOrganizations().then(orvalItems<OrganizationI>);
 });
 
 /**
@@ -83,7 +83,7 @@ export const removeMemberFromOrganizationFn = createClientOnlyFn(
 export const getAllOrganizationsMemberFn = createClientOnlyFn(
   (organization_id: string) => {
     return listOrganizationMembers(organization_id).then(
-      orvalData<OrganizationMemberI[]>,
+      orvalItems<OrganizationMemberI>,
     );
   },
 );

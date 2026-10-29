@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetPlatformProfile(ctx context.Context, req openapi.GetPlatfo
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetPlatformProfile200JSONResponse{
-		Code: 200, Data: profile, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetPlatformProfile200JSONResponse(*profile), nil
 }

@@ -2,6 +2,7 @@ import { clearAuthTokens, getStoredRefreshToken, getUserInfo, saveAuthSession } 
 import { validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
+import { itemsOf } from "./wire";
 import type { IntrospectResponse } from "../types/instropect-types";
 import { AuthTokens } from "../types/token-types";
 import type { OAuthProviderI } from "../types/common-types";
@@ -171,7 +172,11 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     const query = projectId ? `?project_id=${projectId}` : "";
     const url = `/auth/oauth-providers${query}`;
 
-    return apiInstance.get<OAuthProviderDiscoveryItem[]>(url, { requiresAuth: false });
+    const res = await apiInstance.get<unknown>(url, { requiresAuth: false });
+    // Callers get the array; IdentityX sends it as { items }.
+    return res.success
+      ? { ...res, data: itemsOf<OAuthProviderDiscoveryItem>(res.data) }
+      : res;
   },
 
   getProjectProfile: async (actorId: string, overrideProjectId?: string) => {

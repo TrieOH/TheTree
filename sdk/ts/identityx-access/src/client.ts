@@ -1,4 +1,4 @@
-import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts";
+import { createDefaultFetchClient, type DefaultFetchResult } from "@trieoh/envoy-fetch-ts";
 import type {
   ApiKeyCreateResponseI,
   // ApiKeyI,
@@ -9,12 +9,15 @@ import type {
   CreateApiKeyRequest,
 } from "./types";
 import { env } from "./env";
+import { itemsOf, toFailure, toSuccess } from "./wire";
 
 type FetchClient = ReturnType<typeof createDefaultFetchClient>;
 
 function createClient({ baseURL, apiKey, fetch: fetchImpl }: CreateIdentityXAccessClientConfig) {
   return createDefaultFetchClient({
     baseURL,
+    toSuccess,
+    toFailure,
     // An adapter is handed the bare path, so it joins the base URL itself.
     ...(fetchImpl
       ? {
@@ -26,6 +29,11 @@ function createClient({ baseURL, apiKey, fetch: fetchImpl }: CreateIdentityXAcce
       "X-API-Key": apiKey,
     },
   });
+}
+
+// Callers get the array; IdentityX sends a list as { items }.
+function items<T>(res: DefaultFetchResult<unknown>): DefaultFetchResult<T[]> {
+  return res.success ? { ...res, data: itemsOf<T>(res.data) } : res;
 }
 
 export class IdentityXAccessClient {
@@ -44,12 +52,12 @@ export class IdentityXAccessClient {
 
   capabilities = {
     list: (projectId: string) =>
-      this.client.get<CapabilityI[]>(`/projects/${projectId}/capabilities`),
+      this.client.get<unknown>(`/projects/${projectId}/capabilities`).then(items<CapabilityI>),
   };
 
   actors = {
     list: (projectId: string) =>
-      this.client.get<ActorI[]>(`/projects/${projectId}/actors`),
+      this.client.get<unknown>(`/projects/${projectId}/actors`).then(items<ActorI>),
     getById: (projectId: string, actorId: string) =>
       this.client.get<ActorI>(`/projects/${projectId}/actors/${actorId}`),
     getByEmail: (projectId: string, email: string) =>

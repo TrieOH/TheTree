@@ -22,33 +22,28 @@
  * that requirement is called out per operation, since both schemes can
  * satisfy the auth step itself.
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response (except `/.well-known/jwks.json`, which is a raw
- * JWKS document) is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "IdentityX"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. `message` is informational and
- *   often empty.
- * - Failure: `error` carries an `AppError` — `{ "code", "message",
- *   "fields", "meta" }`. `data` is absent.
- * - `pagination` is reserved for paged list endpoints (currently unused
- *   by IdentityX routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -74,30 +69,8 @@
  *
  * OpenAPI spec version: 0.22.0
  */
-import type { Error } from './error';
-import type { PaginationMeta } from './paginationMeta';
-import type { ResponseData } from './responseData';
+import type { Capability } from './capability';
 
-/**
- * The `fun.Response` envelope wrapping every JSON payload (except
- * `/.well-known/jwks.json`). On success `error` is absent and `data`
- * carries the operation payload; on failure `data` is absent and
- * `error` carries the AppError. `pagination` is reserved for paged
- * list endpoints.
- */
-export interface Response {
-  /** HTTP status code, duplicated for convenience. */
-  code: number;
-  /** Informational message; often empty on success. */
-  message: string;
-  /** The operation payload. Shape is documented per operation. */
-  data?: ResponseData;
-  /** Present (non-null) only on failure. */
-  error?: Error;
-  /** Present only on paged list endpoints. */
-  pagination?: PaginationMeta;
-  /** Server time the response was produced. */
-  timestamp: string;
-  /** Service that produced the response. */
-  module: string;
-}
+export type ListCapabilities200 = {
+  items: Capability[];
+};

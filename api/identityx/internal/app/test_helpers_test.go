@@ -45,6 +45,7 @@ func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *
 	// Boot installs the error map before serving; the router under test
 	// answers errors through the same table.
 	httpserver.UseErrorMap(Errors())
+	httpserver.UsePlainErrors()
 	r := chi.NewRouter()
 	openapi.Mount(r, h, resolver.Chains())
 	return r

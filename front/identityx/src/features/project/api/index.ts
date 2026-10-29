@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   addOrganizationProjectMember,
   addProjectMember,
@@ -42,8 +42,8 @@ export const createProjectFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of ProjectI objects.
  */
 export const getProjectsFn = createClientOnlyFn(async (orgId?: string) => {
-  if (orgId) return listOrganizationProjects(orgId).then(orvalData<ProjectI[]>);
-  return listProjects().then(orvalData<ProjectI[]>);
+  if (orgId) return listOrganizationProjects(orgId).then(orvalItems<ProjectI>);
+  return listProjects().then(orvalItems<ProjectI>);
 });
 
 /**
@@ -112,9 +112,9 @@ export const getAllProjectMembersFn = createClientOnlyFn(
   (project_id: string, organization_id?: string) => {
     if (organization_id)
       return listOrganizationProjectMembers(organization_id, project_id).then(
-        orvalData<ProjectMemberI[]>,
+        orvalItems<ProjectMemberI>,
       );
-    return listProjectMembers(project_id).then(orvalData<ProjectMemberI[]>);
+    return listProjectMembers(project_id).then(orvalItems<ProjectMemberI>);
   },
 );
 

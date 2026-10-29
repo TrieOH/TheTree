@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListProjects(ctx context.Context, _ openapi.ListProjectsReque
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListProjects200JSONResponse{
-		Code: 200, Data: &projects, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListProjects200JSONResponse{Items: projects}, nil
 }

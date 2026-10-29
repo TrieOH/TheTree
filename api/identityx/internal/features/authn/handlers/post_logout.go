@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"strings"
-	"time"
 
 	"IdentityX/errs"
 	"IdentityX/internal/openapi"
@@ -22,7 +21,5 @@ func (h *Handlers) PostLogout(ctx context.Context, req openapi.PostLogoutRequest
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PostLogout200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostLogout204Response{}, nil
 }

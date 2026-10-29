@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -14,7 +13,5 @@ func (h *Handlers) ListOutdatedPlatformProfiles(ctx context.Context, _ openapi.L
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListOutdatedPlatformProfiles200JSONResponse{
-		Code: 200, Data: profiles, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListOutdatedPlatformProfiles200JSONResponse{Items: profiles}, nil
 }
