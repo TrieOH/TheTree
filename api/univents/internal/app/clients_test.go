@@ -17,11 +17,11 @@ func TestVerifyPayssageWallet_Resolves(t *testing.T) {
 	walletID := uuid.New()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"code":200,"data":{
+		_, _ = w.Write([]byte(`{
 			"id":"` + walletID.String() + `","owner_id":"` + uuid.New().String() + `",
 			"organization_id":null,"name":"platform","sandbox":false,
 			"fee_bps":500,"collector_id":null,"created_at":"2026-08-01T00:00:00Z"
-		},"timestamp":"2026-08-01T00:00:00Z"}`))
+		}`))
 	}))
 	t.Cleanup(srv.Close)
 
