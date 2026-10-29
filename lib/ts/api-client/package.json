@@ -4,8 +4,12 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
+  "scripts": {
+    "test": "node --test src/*.test.ts"
+  },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./envelope": "./src/envelope.ts"
   },
   "peerDependencies": {
     "@trieoh/identityx-sdk-ts": "catalog:",

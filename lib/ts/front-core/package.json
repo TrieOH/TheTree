@@ -19,6 +19,7 @@
     "./tracing/ingest": "./src/tracing/ingest.ts"
   },
   "dependencies": {
+    "@trieoh/api-client": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/resources": "catalog:",
     "@opentelemetry/sdk-trace-base": "catalog:",

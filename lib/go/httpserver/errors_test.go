@@ -129,6 +129,44 @@ func TestWriteErrorKeepsEnvelope(t *testing.T) {
 	}
 }
 
+// TestWriteMiddlewareErrorKeepsItsStatus — a middleware's rejection keeps
+// the middleware's status whatever the map says, reads as the mapped
+// link's message, and a 5xx never shows its cause.
+func TestWriteMiddlewareErrorKeepsItsStatus(t *testing.T) {
+	useTestErrorMap(t, ErrorMap{Is(errBadCreds, http.StatusForbidden)})
+
+	cases := []struct {
+		name   string
+		status int
+		err    error
+		msg    string
+	}{
+		{"mapped error keeps the middleware's status", 401, fmt.Errorf("hook: %w", errBadCreds), errBadCreds.Error()},
+		{"unmapped 4xx reads as its error", 401, errors.New("missing X-API-Key header"), "missing X-API-Key header"},
+		{"5xx stays generic", 500, errors.New("panic: nil map"), "internal error"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/projects", nil)
+			writeMiddlewareError(rec, req, tc.status, tc.err)
+
+			var body struct {
+				Error struct {
+					Message string `json:"message"`
+				} `json:"error"`
+			}
+			err := json.Unmarshal(rec.Body.Bytes(), &body)
+			if err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if rec.Code != tc.status || body.Error.Message != tc.msg {
+				t.Fatalf("got (%d, %q), want (%d, %q)", rec.Code, body.Error.Message, tc.status, tc.msg)
+			}
+		})
+	}
+}
+
 // TestTraceMiddlewareLeavesClientErrorsUnset — a 4xx is recorded on the
 // span but does not mark it failed.
 func TestTraceMiddlewareLeavesClientErrorsUnset(t *testing.T) {

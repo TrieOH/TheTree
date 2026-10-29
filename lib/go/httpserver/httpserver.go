@@ -96,6 +96,7 @@ func SetupFUN(appName string) {
 
 	validator.SetupValidator()
 	fun.SetPathParamFunc(chi.URLParam)
+	mws.SetErrorWriter(writeMiddlewareError)
 
 	err := fun.AddInterceptor(&simpleLogger{})
 	if err != nil {
