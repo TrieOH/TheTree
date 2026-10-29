@@ -1,4 +1,4 @@
-package repo
+package webhook_deliveries
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type Repo struct {
 
 var _ ports.WebhookDeliveryRepo = (*Repo)(nil)
 
-func New(q *sqlc.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler(errs.ErrWebhookDeliveryNotFound),

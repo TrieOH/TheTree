@@ -1,4 +1,4 @@
-package repo
+package oauth
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type Repo struct {
 
 var _ ports.OAuthStateRepo = (*Repo)(nil)
 
-func New(q *sqlc.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler(errs.ErrOAuthStateNotFound),

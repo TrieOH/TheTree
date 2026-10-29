@@ -1,4 +1,4 @@
-package handlers
+package orgs
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) AddOrganizationMember(ctx context.Context, req openapi.AddOrganizationMemberRequestObject) (openapi.AddOrganizationMemberResponseObject, error) {
 	err := h.ops.AddMember(ctx, models.AddOrganizationMemberInput{

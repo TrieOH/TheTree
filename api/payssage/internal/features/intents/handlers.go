@@ -1,4 +1,4 @@
-package handlers
+package intents
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) CancelIntent(ctx context.Context, req openapi.CancelIntentRequestObject) (openapi.CancelIntentResponseObject, error) {
 	intent, err := h.ops.Cancel(ctx, req.IntentId)

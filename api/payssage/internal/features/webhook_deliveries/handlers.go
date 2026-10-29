@@ -1,4 +1,4 @@
-package handlers
+package webhook_deliveries
 
 import (
 	"context"
@@ -11,7 +11,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) GetWebhookDelivery(ctx context.Context, req openapi.GetWebhookDeliveryRequestObject) (openapi.GetWebhookDeliveryResponseObject, error) {
 	delivery, err := h.ops.GetByID(ctx, req.DeliveryId)

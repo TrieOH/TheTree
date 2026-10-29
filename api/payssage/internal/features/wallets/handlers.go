@@ -1,4 +1,4 @@
-package handlers
+package wallets
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) BindCollector(ctx context.Context, req openapi.BindCollectorRequestObject) (openapi.BindCollectorResponseObject, error) {
 	err := h.ops.BindCollector(ctx, req.WalletId, req.Body.CollectorId)

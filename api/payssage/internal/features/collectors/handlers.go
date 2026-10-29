@@ -1,4 +1,4 @@
-package handlers
+package collectors
 
 import (
 	"context"
@@ -11,7 +11,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) GetCollector(ctx context.Context, req openapi.GetCollectorRequestObject) (openapi.GetCollectorResponseObject, error) {
 	collector, err := h.ops.GetByID(ctx, req.CollectorId)

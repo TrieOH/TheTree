@@ -1,4 +1,4 @@
-package handlers
+package oauth
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) ConnectProvider(ctx context.Context, req openapi.ConnectProviderRequestObject) (openapi.ConnectProviderResponseObject, error) {
 	url, err := h.ops.Connect(ctx, models.ConnectInput{

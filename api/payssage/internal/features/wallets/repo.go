@@ -1,4 +1,4 @@
-package repo
+package wallets
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type Repo struct {
 
 var _ ports.WalletRepo = (*Repo)(nil)
 
-func New(q *sqlc.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler(errs.ErrWalletNotFound),
