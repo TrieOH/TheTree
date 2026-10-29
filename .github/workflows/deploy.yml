@@ -159,6 +159,11 @@ jobs:
         if: ${{ env.TYPE == 'front' }}
         run: pnpm orval
 
+      # worker-configuration.d.ts is gitignored too — same as `just gen-cf`
+      - name: R0 generate Workers types
+        if: ${{ env.TYPE == 'front' }}
+        run: pnpm -F "$FRONT_NAME" exec wrangler types --strict-vars=false
+
       # ── R1 compile ──────────────────────────────────────────────────────
       - name: R1 compile
         if: ${{ env.TYPE == 'service' }}

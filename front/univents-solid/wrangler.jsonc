@@ -11,7 +11,31 @@
     "VITE_API_URL": "https://api.univents.com.br",
     "VITE_AUTH_API_URL": "https://auth.univents.com.br",
     "VITE_STORAGE_URL": "https://media.univents.com.br",
-    "VITE_TRACING_ENABLED": "true"
+    "VITE_TRACING_ENABLED": "true",
+    // set per release by deploy.yml (`--var`, from a GitHub secret)
+    "VITE_TRIEOH_AUTH_PROJECT_ID": "",
+    // optional overrides; empty means the defaults in storage-handlers.ts
+    "STORAGE_IMAGE_ALLOWED_TYPES": "",
+    "STORAGE_IMAGE_MAX_SIZE_BYTES": "",
+    "STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS": "",
+    "STORAGE_IMAGE_MODERATION_MODEL": "",
+    "STORAGE_IMAGE_MODERATION_PROMPT": ""
+  },
+  // Runtime secrets (`wrangler secret put`). Declared so `wrangler types` is
+  // built from config, not a local .env, and deploys fail while one is
+  // missing. Local dev also only loads the .env keys declared here or in vars.
+  "secrets": {
+    "required": [
+      "AUTH_SESSION_PASSWORD",
+      "IDENTITYX_ACCESS_API_KEY",
+      "S3_ENDPOINT",
+      "S3_BUCKET",
+      "S3_ACCESS_KEY_ID",
+      "S3_SECRET_ACCESS_KEY",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_EXPORTER_OTLP_HEADERS",
+      "OTEL_EXPORTER_OTLP_PROTOCOL"
+    ]
   },
   "assets": {
     "directory": "./dist/client",
