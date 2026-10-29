@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 	"Informd/models"
@@ -16,7 +15,5 @@ func (h *Handlers) RemoveNamespaceMember(ctx context.Context, req openapi.Remove
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RemoveNamespaceMember200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.RemoveNamespaceMember204Response{}, nil
 }

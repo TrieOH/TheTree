@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 	"Informd/models"
@@ -19,7 +18,5 @@ func (h *Handlers) CreateStepNamespaced(ctx context.Context, req openapi.CreateS
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateStepNamespaced201JSONResponse{
-		Code: 201, Data: step, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateStepNamespaced201JSONResponse(*step), nil
 }

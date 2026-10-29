@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListNamespaces(ctx context.Context, _ openapi.ListNamespacesR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListNamespaces200JSONResponse{
-		Code: 200, Data: &namespaces, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListNamespaces200JSONResponse{Items: namespaces}, nil
 }

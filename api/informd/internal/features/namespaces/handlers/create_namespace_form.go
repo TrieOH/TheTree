@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) CreateNamespaceForm(ctx context.Context, req openapi.CreateNa
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateNamespaceForm201JSONResponse{
-		Code: 201, Data: form, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateNamespaceForm201JSONResponse(*form), nil
 }

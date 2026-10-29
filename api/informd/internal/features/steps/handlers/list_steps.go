@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListSteps(ctx context.Context, req openapi.ListStepsRequestOb
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListSteps200JSONResponse{
-		Code: 200, Data: &steps, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListSteps200JSONResponse{Items: steps}, nil
 }

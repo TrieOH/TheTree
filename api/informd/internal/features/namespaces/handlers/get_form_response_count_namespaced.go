@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,11 +11,5 @@ func (h *Handlers) GetFormResponseCountNamespaced(ctx context.Context, req opena
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetFormResponseCountNamespaced200JSONResponse{
-		Code: 200,
-		Data: &struct {
-			Count int `json:"count"`
-		}{Count: count},
-		Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetFormResponseCountNamespaced200JSONResponse{Count: count}, nil
 }

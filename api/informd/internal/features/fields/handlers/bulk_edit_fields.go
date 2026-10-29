@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 	"Informd/models"
@@ -30,7 +29,5 @@ func (h *Handlers) BulkEditFields(ctx context.Context, req openapi.BulkEditField
 	if err != nil {
 		return nil, err
 	}
-	return openapi.BulkEditFields200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.BulkEditFields204Response{}, nil
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListFormMembers(ctx context.Context, req openapi.ListFormMemb
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListFormMembers200JSONResponse{
-		Code: 200, Data: &members, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListFormMembers200JSONResponse{Items: members}, nil
 }
