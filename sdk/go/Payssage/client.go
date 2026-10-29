@@ -40,18 +40,10 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
-	var env struct {
-		Data json.RawMessage `json:"data"`
-	}
-
 	req := c.http.R().SetContext(ctx).SetResponseExpectContentType("application/json")
 	if body != nil {
 		req.SetBody(body)
 	}
-	if out != nil {
-		req.SetResult(&env)
-	}
-
 	res, err := req.Execute(method, path)
 	if err != nil {
 		return fmt.Errorf("payssage: %s %s: %w", method, path, err)
@@ -65,12 +57,49 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	}
 
 	if out != nil {
-		err = json.Unmarshal(env.Data, out)
+		err = decode(res.Bytes(), out)
 		if err != nil {
 			return fmt.Errorf("payssage: decode data: %w", err)
 		}
 	}
 
+	return nil
+}
+
+// decode reads a success body into out, with or without the fun envelope:
+// an envelope is a numeric code next to data or module.
+func decode(body []byte, out any) error {
+	var probe struct {
+		Code   *int            `json:"code"`
+		Data   json.RawMessage `json:"data"`
+		Module *string         `json:"module"`
+	}
+	if json.Unmarshal(body, &probe) == nil && probe.Code != nil && (probe.Data != nil || probe.Module != nil) {
+		if len(probe.Data) == 0 {
+			return nil
+		}
+		body = probe.Data
+	}
+	return json.Unmarshal(body, out)
+}
+
+// list reads a list payload: `{ "items": [...] }`, or the bare array a
+// Payssage still on the envelope sends.
+type list[T any] []T
+
+func (l *list[T]) UnmarshalJSON(b []byte) error {
+	var items []T
+	if json.Unmarshal(b, &items) != nil {
+		var obj struct {
+			Items []T `json:"items"`
+		}
+		err := json.Unmarshal(b, &obj)
+		if err != nil {
+			return err
+		}
+		items = obj.Items
+	}
+	*l = items
 	return nil
 }
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 	"payssage/models"
@@ -19,7 +18,5 @@ func (h *Handlers) ConnectProvider(ctx context.Context, req openapi.ConnectProvi
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ConnectProvider200JSONResponse{
-		Code: 200, Data: &url, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ConnectProvider200JSONResponse(url), nil
 }

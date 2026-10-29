@@ -12,7 +12,7 @@ import (
 func TestGetWallet(t *testing.T) {
 	walletID := uuid.New()
 	ownerID := uuid.New()
-	client, getReq, _ := newTestClient(t, http.StatusOK, `{"data": {
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"code":200,"data": {
 		"id": "`+walletID.String()+`", "owner_id": "`+ownerID.String()+`",
 		"organization_id": null, "name": "platform", "sandbox": true,
 		"fee_bps": 500, "collector_id": null, "created_at": "2026-08-01T00:00:00Z"
@@ -47,7 +47,7 @@ func TestGetWallet_NotFound(t *testing.T) {
 func TestCheckout(t *testing.T) {
 	walletID := uuid.New()
 	intentID := uuid.New()
-	client, getReq, getBody := newTestClient(t, http.StatusCreated, `{"data": {
+	client, getReq, getBody := newTestClient(t, http.StatusCreated, `{"code":200,"data": {
 		"id": "`+intentID.String()+`", "wallet_id": "`+walletID.String()+`",
 		"seller_id": "`+uuid.New().String()+`", "collector_id": null,
 		"amount_cents": 1234, "currency": "BRL", "sandbox": false,
@@ -81,7 +81,7 @@ func TestCheckout(t *testing.T) {
 
 func TestGetIntent(t *testing.T) {
 	intentID := uuid.New()
-	client, getReq, _ := newTestClient(t, http.StatusOK, `{"data": {
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"code":200,"data": {
 		"id": "`+intentID.String()+`", "wallet_id": "`+uuid.New().String()+`",
 		"seller_id": "`+uuid.New().String()+`", "collector_id": null,
 		"amount_cents": 100, "currency": "BRL", "sandbox": false,
@@ -104,7 +104,7 @@ func TestGetIntent(t *testing.T) {
 
 func TestCancelIntent(t *testing.T) {
 	intentID := uuid.New()
-	client, getReq, _ := newTestClient(t, http.StatusOK, `{"data": {
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"code":200,"data": {
 		"id": "`+intentID.String()+`", "wallet_id": "`+uuid.New().String()+`",
 		"seller_id": "`+uuid.New().String()+`", "collector_id": null,
 		"amount_cents": 100, "currency": "BRL", "sandbox": false,
@@ -130,7 +130,7 @@ func TestCancelIntent(t *testing.T) {
 // payment.refunded webhook confirms).
 func TestRefundIntent(t *testing.T) {
 	intentID := uuid.New()
-	client, getReq, _ := newTestClient(t, http.StatusOK, `{"data": {
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"code":200,"data": {
 		"id": "`+intentID.String()+`", "wallet_id": "`+uuid.New().String()+`",
 		"seller_id": "`+uuid.New().String()+`", "collector_id": null,
 		"amount_cents": 100, "currency": "BRL", "sandbox": false,
