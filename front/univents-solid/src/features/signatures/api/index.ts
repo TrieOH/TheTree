@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   getSignature,
   getSignatureRequest,
@@ -12,7 +12,7 @@ export const allSignaturesQueryOptions = (editionId: string) => ({
   queryKey: signatureKeys.byEdition(editionId),
   queryFn: async () => {
     return listEditionSignatures(editionId, { public: true }).then(
-      orvalData<SignatureI[]>,
+      orvalItems<SignatureI>,
     );
   },
   enabled: Boolean(editionId),
@@ -30,7 +30,7 @@ export const allSignatureRequestsQueryOptions = (editionId: string) => ({
   queryKey: signatureKeys.requestsByEdition(editionId),
   queryFn: async () => {
     return listEditionSignatureRequests(editionId, { public: true }).then(
-      orvalData<SignatureRequestI[]>,
+      orvalItems<SignatureRequestI>,
     );
   },
   enabled: Boolean(editionId),

@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   listDraftEditions,
   listPublicEditions,
@@ -60,10 +60,10 @@ async function associateEditionImage(
 
   const [publicEditions, draftEditions] = await Promise.all([
     listPublicEditions(eventId, { public: true })
-      .then(orvalData<Edition[]>)
+      .then(orvalItems<Edition>)
       .then((list) => (list ?? []).map(normalizeEdition)),
     listDraftEditions(eventId)
-      .then(orvalData<Edition[]>)
+      .then(orvalItems<Edition>)
       .then((list) => (list ?? []).map(normalizeEdition)),
   ]);
 

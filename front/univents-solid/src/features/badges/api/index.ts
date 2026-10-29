@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createBadgeTemplate,
   deleteBadgeTemplate,
@@ -19,7 +19,7 @@ import { badgeKeys } from "./query-keys";
 
 export const badgeTemplatesQueryOptions = (editionId: string) => ({
   queryKey: badgeKeys.byEdition(editionId),
-  queryFn: () => listBadgeTemplates(editionId).then(orvalData<BadgeTemplate[]>),
+  queryFn: () => listBadgeTemplates(editionId).then(orvalItems<BadgeTemplate>),
 });
 
 export const badgeTemplateQueryOptions = (templateId: string) => ({
@@ -39,7 +39,7 @@ export const badgeEmissionsQueryOptions = (editionId: string) => ({
   queryKey: badgeKeys.emissions(editionId),
   queryFn: () =>
     listEditionBadgeEmissions(editionId).then(
-      orvalData<BadgeEditionEmission[]>,
+      orvalItems<BadgeEditionEmission>,
     ),
 });
 
@@ -50,7 +50,7 @@ export const badgePrintQueryOptions = (
   queryKey: badgeKeys.print(editionId, emissionIds),
   queryFn: () =>
     getEditionBadgesPrint(editionId, { emission_ids: emissionIds }).then(
-      orvalData<BadgePrintItem[]>,
+      orvalItems<BadgePrintItem>,
     ),
 });
 
