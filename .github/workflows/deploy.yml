@@ -147,6 +147,7 @@ jobs:
           sqlc generate
           oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
           oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+          go run tools/strictmount internal/openapi/mount.gen.go
           go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"
 
       # ── R1 compile ──────────────────────────────────────────────────────
@@ -215,7 +216,7 @@ jobs:
           set -euo pipefail
           echo "▶ R5 trivy scan"
           case "$TYPE" in
-            service) PATHS="api/$ARTIFACT lib/go" ;;
+            service) PATHS="api/$ARTIFACT lib/go tools/go" ;;
             front)
               FRONT_DIR="$FRONT_NAME"
               [ "$FRONT_NAME" = "univents" ] && FRONT_DIR="univents-solid"

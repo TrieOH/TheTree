@@ -112,6 +112,7 @@ gen +SERVICES=services:
           --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
         go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v$OAPI_CODEGEN_VERSION \
           --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+        go run tools/strictmount internal/openapi/mount.gen.go
         go get github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION
       )
     done
@@ -120,7 +121,7 @@ gen +SERVICES=services:
 # ── Checks ────────────────────────────────────────────────────────────────
 
 # Fast lane: -short skips the testcontainers tests, as CI and the
-# pre-commit hook do. Target: a backend, lib, sdk, or nothing for all.
+# pre-commit hook do. Target: a backend, lib, sdk, tools, or nothing for all.
 #
 # Go tests (fast lane).
 test TARGET="":
@@ -136,7 +137,7 @@ test-all TARGET="":
     pkgs="$(just _go-pkgs "{{TARGET}}")"
     gotestsum --format testdox --format-hide-empty-pkg -- -count=1 $pkgs
 
-# golangci-lint. Target: a backend, lib, sdk, or nothing for all.
+# golangci-lint. Target: a backend, lib, sdk, tools, or nothing for all.
 lint TARGET="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -152,8 +153,9 @@ _go-pkgs TARGET="":
       identityx|informd|payssage|univents) echo "./api/{{TARGET}}/..." ;;
       lib) echo "./lib/go/..." ;;
       sdk) echo "./sdk/go/IdentityX/... ./sdk/go/Payssage/..." ;;
-      "")  echo "./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/..." ;;
-      *)   echo "unknown target: {{TARGET}} (use one of: {{services}} lib sdk)" >&2; exit 2 ;;
+      tools) echo "./tools/go/..." ;;
+      "")  echo "./api/identityx/... ./api/informd/... ./api/payssage/... ./api/univents/... ./lib/go/... ./sdk/go/IdentityX/... ./sdk/go/Payssage/... ./tools/go/..." ;;
+      *)   echo "unknown target: {{TARGET}} (use one of: {{services}} lib sdk tools)" >&2; exit 2 ;;
     esac
 
 # ── End-to-end tests (Robot Framework, e2e/) ──────────────────────────────
