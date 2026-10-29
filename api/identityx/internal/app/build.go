@@ -25,6 +25,7 @@ import (
 	"IdentityX/internal/features/tos"
 	"IdentityX/internal/jobs"
 	"IdentityX/internal/keys"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/setup"
 	"IdentityX/internal/sqlc"
 	"IdentityX/internal/tokens"
@@ -137,7 +138,7 @@ func Build(cfg config.Config) backend.BuildFunc {
 		if err != nil {
 			return err
 		}
-		mountStrict(r, newServer(ops, setupState), chains)
+		openapi.Mount(r, newServer(ops, setupState), chains)
 		return nil
 	}
 }
