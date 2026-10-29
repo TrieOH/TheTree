@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type { FormCreateI, FormI } from "../model";
 
@@ -17,7 +18,7 @@ export const createFormFn = createClientOnlyFn((formData: FormCreateI) => {
  * @returns A promise that resolves to an array of Form objects.
  */
 export const getAllUserFormsFn = createClientOnlyFn(async () => {
-  return tanstackQueryFetcher<FormI[]>("/forms");
+  return itemsOf<FormI>(await tanstackQueryFetcher<unknown>("/forms"));
 });
 
 /**
@@ -25,7 +26,7 @@ export const getAllUserFormsFn = createClientOnlyFn(async () => {
  * @returns A promise that resolves to an array of archived Form objects.
  */
 export const getAllUserArchivedFormsFn = createClientOnlyFn(async () => {
-  return tanstackQueryFetcher<FormI[]>("/forms/archived");
+  return itemsOf<FormI>(await tanstackQueryFetcher<unknown>("/forms/archived"));
 });
 
 /**

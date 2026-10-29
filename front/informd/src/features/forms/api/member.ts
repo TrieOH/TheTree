@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type { FormMemberI, MemberAddToFormI } from "../model/member";
 
@@ -48,10 +49,14 @@ export const removeMemberFromFormFn = createClientOnlyFn(
 export const getAllFormsMembersFn = createClientOnlyFn(
   async (form_id: string, namespace_id?: string) => {
     if (namespace_id)
-      return tanstackQueryFetcher<FormMemberI[]>(
-        `/namespaces/${namespace_id}/forms/${form_id}/members`,
+      return itemsOf<FormMemberI>(
+        await tanstackQueryFetcher<unknown>(
+          `/namespaces/${namespace_id}/forms/${form_id}/members`,
+        ),
       );
-    return tanstackQueryFetcher<FormMemberI[]>(`/forms/${form_id}/members`);
+    return itemsOf<FormMemberI>(
+      await tanstackQueryFetcher<unknown>(`/forms/${form_id}/members`),
+    );
   },
 );
 

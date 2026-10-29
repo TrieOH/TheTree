@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import type { FormCreateI, FormI } from "#/features/forms/model";
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type {
@@ -24,8 +25,10 @@ export const createNamespaceFn = createClientOnlyFn(
  * Fetches all namespaces from the server.
  * @returns A promise that resolves to an array of namespaces objects.
  */
-export const getAllNamespacesFn = createClientOnlyFn(() => {
-  return tanstackQueryFetcher<NamespaceI[]>("/namespaces");
+export const getAllNamespacesFn = createClientOnlyFn(async () => {
+  return itemsOf<NamespaceI>(
+    await tanstackQueryFetcher<unknown>("/namespaces"),
+  );
 });
 
 /**
@@ -73,9 +76,11 @@ export const removeMemberFromNamespaceFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of members objects.
  */
 export const getAllNamespacesMemberFn = createClientOnlyFn(
-  (namespace_id: string) => {
-    return tanstackQueryFetcher<NamespaceMemberI[]>(
-      `/namespaces/${namespace_id}/members`,
+  async (namespace_id: string) => {
+    return itemsOf<NamespaceMemberI>(
+      await tanstackQueryFetcher<unknown>(
+        `/namespaces/${namespace_id}/members`,
+      ),
     );
   },
 );
@@ -115,8 +120,10 @@ export const createFormOnNamespaceFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of form objects.
  */
 export const getAllNamespacesFormsFn = createClientOnlyFn(
-  (namespace_id: string) => {
-    return tanstackQueryFetcher<FormI[]>(`/namespaces/${namespace_id}/forms`);
+  async (namespace_id: string) => {
+    return itemsOf<FormI>(
+      await tanstackQueryFetcher<unknown>(`/namespaces/${namespace_id}/forms`),
+    );
   },
 );
 
@@ -126,9 +133,11 @@ export const getAllNamespacesFormsFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of archived form objects.
  */
 export const getAllNamespacesArchivedFormsFn = createClientOnlyFn(
-  (namespace_id: string) => {
-    return tanstackQueryFetcher<FormI[]>(
-      `/namespaces/${namespace_id}/forms/archived`,
+  async (namespace_id: string) => {
+    return itemsOf<FormI>(
+      await tanstackQueryFetcher<unknown>(
+        `/namespaces/${namespace_id}/forms/archived`,
+      ),
     );
   },
 );

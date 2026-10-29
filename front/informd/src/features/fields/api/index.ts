@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type {
   CreateFieldRequestI,
@@ -98,11 +99,15 @@ export const deleteFieldFn = createClientOnlyFn(
 export const getAllUserFieldsFn = createClientOnlyFn(
   async (form_id: string, step_id: string, namespace_id?: string) => {
     if (namespace_id)
-      return tanstackQueryFetcher<FieldI[]>(
-        `/namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields`,
+      return itemsOf<FieldI>(
+        await tanstackQueryFetcher<unknown>(
+          `/namespaces/${namespace_id}/forms/${form_id}/steps/${step_id}/fields`,
+        ),
       );
-    return tanstackQueryFetcher<FieldI[]>(
-      `/forms/${form_id}/steps/${step_id}/fields`,
+    return itemsOf<FieldI>(
+      await tanstackQueryFetcher<unknown>(
+        `/forms/${form_id}/steps/${step_id}/fields`,
+      ),
     );
   },
 );
