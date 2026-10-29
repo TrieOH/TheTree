@@ -33,7 +33,7 @@ func newTestClient(t *testing.T, status int, envelope string) (*Client, func() *
 func TestCreateWallet(t *testing.T) {
 	walletID := uuid.New()
 	ownerID := uuid.New()
-	client, getReq, getBody := newTestClient(t, http.StatusCreated, `{"data": {
+	client, getReq, getBody := newTestClient(t, http.StatusCreated, `{"code":200,"data": {
 		"id": "`+walletID.String()+`", "owner_id": "`+ownerID.String()+`",
 		"organization_id": null, "name": "event-slug", "sandbox": false,
 		"fee_bps": 0, "collector_id": null, "created_at": "2026-08-01T00:00:00Z"
@@ -62,7 +62,7 @@ func TestCreateWallet(t *testing.T) {
 
 func TestCreateWalletWithOrganization(t *testing.T) {
 	orgID := uuid.New()
-	client, _, getBody := newTestClient(t, http.StatusCreated, `{"data": {}}`)
+	client, _, getBody := newTestClient(t, http.StatusCreated, `{"code":200,"data": {}}`)
 	_, err := client.CreateWallet(context.Background(), CreateWalletRequest{Name: "org-wallet", OrganizationID: &orgID})
 	if err != nil {
 		t.Fatalf("CreateWallet: %v", err)
@@ -90,7 +90,7 @@ func TestSetWalletFee(t *testing.T) {
 func TestListWalletSellers(t *testing.T) {
 	walletID := uuid.New()
 	sellerID := uuid.New()
-	client, getReq, _ := newTestClient(t, http.StatusOK, `{"data": [{
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"code":200,"data": [{
 		"id": "`+sellerID.String()+`", "wallet_id": "`+walletID.String()+`",
 		"provider": "mercado_pago", "provider_user_id": "12345",
 		"created_at": "2026-08-01T00:00:00Z", "revoked_at": null
@@ -110,7 +110,7 @@ func TestListWalletSellers(t *testing.T) {
 
 func TestConnectProvider(t *testing.T) {
 	walletID := uuid.New()
-	client, getReq, getBody := newTestClient(t, http.StatusOK, `{"data":"https://auth.mercadopago.com/consent"}`)
+	client, getReq, getBody := newTestClient(t, http.StatusOK, `{"code":200,"data":"https://auth.mercadopago.com/consent"}`)
 
 	url, err := client.ConnectProvider(context.Background(), "mercado_pago", ConnectProviderRequest{
 		Flow:             OAuthFlowSeller,
