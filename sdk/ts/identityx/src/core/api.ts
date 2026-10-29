@@ -10,6 +10,7 @@ import {
   type FetchClient,
   type FetchClientOptions
 } from "@trieoh/envoy-fetch-ts";
+import { toFailure, toSuccess } from "./wire";
 
 export type { DefaultFetchResult as ApiResponse };
 
@@ -67,6 +68,8 @@ export class Api {
     });
 
     this.client = createDefaultFetchClient({
+      toSuccess,
+      toFailure,
       ...fetchConfig,
       adapter: this.interceptor.fetch.bind(this.interceptor),
     });

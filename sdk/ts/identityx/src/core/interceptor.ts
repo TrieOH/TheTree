@@ -11,6 +11,7 @@ import { env } from "./env";
 import { logger } from "@trieoh/envoy-fetch-ts";
 import { defaultTokenStore, type TokenStore } from "../store/token-store";
 import type { AuthTokenClaims, AuthTokens } from "../types/token-types";
+import { isEnvelope } from "./wire";
 
 export interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -38,11 +39,15 @@ interface RefreshEnvelope {
 
 async function readRefreshEnvelope(response: Response): Promise<RefreshEnvelope> {
   try {
-    const body = (await response.json()) as Partial<RefreshEnvelope>;
+    const body: unknown = await response.json();
+    // The token pair comes bare, or under the envelope's data.
+    const enveloped = isEnvelope(body);
+    const data = (enveloped ? body.data : response.ok ? body : undefined) as AuthTokens | undefined;
+    const message = (body as { message?: unknown } | null)?.message;
     return {
-      code: typeof body.code === "number" ? body.code : response.status,
-      ...(body.data ? { data: body.data } : {}),
-      ...(body.message ? { message: body.message } : {}),
+      code: enveloped ? body.code : response.status,
+      ...(data ? { data } : {}),
+      ...(typeof message === "string" && message ? { message } : {}),
     };
   } catch {
     return { code: response.status, message: response.statusText };
