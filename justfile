@@ -328,3 +328,13 @@ goup:
     done
     # sync go.work.sum
     go work sync
+
+# Count lines of hand-written code: tracked files only (so gitignored codegen
+# never shows up), minus lockfiles, generated route trees, vendored shadcn,
+# static assets, docs and agent config. Extra args go to cloc, e.g. `--by-file`.
+loc *ARGS:
+    cloc --vcs=git --quiet \
+        --exclude-dir=docs,.agents,.github,.husky,patches,public,shadcn,stories,testdata \
+        --not-match-f='(\.gen\.ts|pnpm-lock\.yaml|go\.work\.sum)$' \
+        --exclude-lang=Markdown,JSON,SVG,Text,diff \
+        {{ARGS}}
