@@ -55,23 +55,23 @@ describe("IdentityX BFF token refresh", () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           if (call > 1) {
             return Response.json(
-              { code: 401, message: "refresh token already rotated" },
+              {
+                code: "UNAUTHORIZED",
+                message: "refresh token already rotated",
+              },
               { status: 401 },
             );
           }
           return Response.json({
-            code: 200,
-            data: {
-              access_token: "fresh.access.token",
-              refresh_token: "fresh.refresh.token",
-              access_expires_at: "2100-01-01T00:00:00.000Z",
-              refresh_expires_at: "2100-01-01T00:00:00.000Z",
-            },
+            access_token: "fresh.access.token",
+            refresh_token: "fresh.refresh.token",
+            access_expires_at: "2100-01-01T00:00:00.000Z",
+            refresh_expires_at: "2100-01-01T00:00:00.000Z",
           });
         }
 
         apiAuthorizations.push(new Headers(init?.headers).get("Authorization"));
-        return Response.json({ code: 200, data: [] });
+        return Response.json({ items: [] });
       }),
     );
 
@@ -105,22 +105,19 @@ describe("IdentityX BFF token refresh", () => {
           if (refreshCalls === 1) {
             await new Promise((resolve) => setTimeout(resolve, 5));
             return Response.json({
-              code: 200,
-              data: {
-                access_token: "fresh.access.token",
-                refresh_token: "fresh.refresh.token",
-                access_expires_at: "2100-01-01T00:00:00.000Z",
-                refresh_expires_at: "2100-01-01T00:00:00.000Z",
-              },
+              access_token: "fresh.access.token",
+              refresh_token: "fresh.refresh.token",
+              access_expires_at: "2100-01-01T00:00:00.000Z",
+              refresh_expires_at: "2100-01-01T00:00:00.000Z",
             });
           }
           await new Promise((resolve) => setTimeout(resolve, 10));
           return Response.json(
-            { code: 401, message: "refresh token already rotated" },
+            { code: "UNAUTHORIZED", message: "refresh token already rotated" },
             { status: 401 },
           );
         }
-        return Response.json({ code: 200, data: [] });
+        return Response.json({ items: [] });
       }),
     );
 
@@ -182,13 +179,10 @@ describe("IdentityX BFF token refresh", () => {
         if (String(input).endsWith("/auth/refresh")) {
           refreshCalls += 1;
           return Response.json({
-            code: 200,
-            data: {
-              access_token: "fresh.access.token",
-              refresh_token: "fresh.refresh.token",
-              access_expires_at: "2100-01-01T00:00:00.000Z",
-              refresh_expires_at: "2100-01-01T00:00:00.000Z",
-            },
+            access_token: "fresh.access.token",
+            refresh_token: "fresh.refresh.token",
+            access_expires_at: "2100-01-01T00:00:00.000Z",
+            refresh_expires_at: "2100-01-01T00:00:00.000Z",
           });
         }
 
@@ -196,10 +190,10 @@ describe("IdentityX BFF token refresh", () => {
         apiAuthorizations.push(new Headers(init?.headers).get("Authorization"));
         return apiCalls === 1
           ? Response.json(
-              { code: 401, message: "access token rejected" },
+              { code: "UNAUTHORIZED", message: "access token rejected" },
               { status: 401 },
             )
-          : Response.json({ code: 200, data: { recovered: true } });
+          : Response.json({ recovered: true });
       }),
     );
 
@@ -229,18 +223,15 @@ describe("IdentityX BFF token refresh", () => {
       vi.fn(async (input: string | URL | Request) => {
         if (String(input).endsWith("/auth/refresh")) {
           return Response.json({
-            code: 200,
-            data: {
-              access_token: "fresh.access.token",
-              refresh_token: "fresh.refresh.token",
-              access_expires_at: "2100-01-01T00:00:00.000Z",
-              refresh_expires_at: "2100-01-01T00:00:00.000Z",
-            },
+            access_token: "fresh.access.token",
+            refresh_token: "fresh.refresh.token",
+            access_expires_at: "2100-01-01T00:00:00.000Z",
+            refresh_expires_at: "2100-01-01T00:00:00.000Z",
           });
         }
         apiCalls += 1;
         return Response.json(
-          { code: 401, message: "access token rejected" },
+          { code: "UNAUTHORIZED", message: "access token rejected" },
           { status: 401 },
         );
       }),

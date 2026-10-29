@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { envelopeFetch } from "@trieoh/api-client";
 import { createIdentityXAccessClient } from "@trieoh/identityx-access-sdk-ts";
 import { env } from "@/env";
 import { preventResponseCaching } from "@/shared/lib/http-cache";
@@ -7,7 +6,6 @@ import { preventResponseCaching } from "@/shared/lib/http-cache";
 const identityXAccessClient = createIdentityXAccessClient({
   baseURL: env.VITE_AUTH_API_URL,
   apiKey: env.IDENTITYX_ACCESS_API_KEY,
-  fetch: envelopeFetch(),
 });
 
 export const getActorEmailsServerFn = createServerFn({ method: "GET" })
