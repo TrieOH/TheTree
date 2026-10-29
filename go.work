@@ -8,4 +8,5 @@ use (
 	./lib/go
 	./sdk/go/IdentityX
 	./sdk/go/Payssage
+	./tools/go
 )

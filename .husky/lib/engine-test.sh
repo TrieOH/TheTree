@@ -7,7 +7,7 @@
 # Prints one "ok <case> → <result>" line per case and exits non-zero on any
 # FAIL.
 set -u
-cd /home/sophia/GolandProjects/TheTree
+cd "$(git rev-parse --show-toplevel)"
 ENGINE_TMP=$(mktemp -d); trap 'rm -rf "$ENGINE_TMP"' EXIT
 . .husky/lib/engine.sh
 
@@ -27,6 +27,9 @@ check "lib-go"                "lib-go"            "$(scope_of lib/go/errx/e.go)"
 check "one lib/ts member"     "lib-ts"            "$(scope_of lib/ts/front-core/i.ts)"
 check "two lib/ts members"    "libs-ts"           "$(scope_of lib/ts/front-core/i.ts lib/ts/ui-base/b.ts)"
 check "lib mix go+ts"         "libs"              "$(scope_of lib/go/e.go lib/ts/ui-base/b.ts)"
+check "tools-go"              "tools-go"          "$(scope_of tools/go/strictmount/main.go)"
+check "tools/ js script"      "root"              "$(scope_of tools/check-package-boundaries.mjs)"
+check "tools-go + lib-go"     "root"              "$(scope_of tools/go/a.go lib/go/b.go)"
 check "single sdk-ts"         "sdk-ts-identityx"  "$(scope_of sdk/ts/identityx/s.ts)"
 check "two sdk-ts"            "sdks-ts"           "$(scope_of sdk/ts/identityx/s.ts sdk/ts/payssage/p.ts)"
 check "two sdk-go"            "sdks-go"           "$(scope_of sdk/go/IdentityX/a.go sdk/go/Payssage/b.go)"
@@ -46,7 +49,8 @@ t=$(targets_of go.work)
 echo "$t" | grep -q '^go:api/payssage$'      && echo "ok   broad-go hits api"    || { echo "FAIL broad-go api"; fail=1; }
 echo "$t" | grep -q '^go:lib/go$'            && echo "ok   broad-go hits lib/go" || { echo "FAIL broad-go lib/go"; fail=1; }
 echo "$t" | grep -q '^ts:'                   && echo "FAIL broad-go leaked ts"   || echo "ok   broad-go has no ts"
-[ "$(echo "$t" | grep -c '^go:')" -eq 7 ]    && echo "ok   broad-go = 7 go members" || { echo "FAIL broad-go count: $(echo "$t"|grep -c '^go:')"; fail=1; }
+echo "$t" | grep -q '^go:tools/go$'          && echo "ok   broad-go hits tools/go" || { echo "FAIL broad-go tools/go"; fail=1; }
+[ "$(echo "$t" | grep -c '^go:')" -eq 8 ]    && echo "ok   broad-go = 8 go members" || { echo "FAIL broad-go count: $(echo "$t"|grep -c '^go:')"; fail=1; }
 
 t=$(targets_of pnpm-lock.yaml)
 echo "$t" | grep -q '^ts:front/identityx$'   && echo "ok   broad-ts hits front"  || { echo "FAIL broad-ts front"; fail=1; }

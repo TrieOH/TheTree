@@ -24,6 +24,7 @@ import (
 	"univents/internal/features/ws"
 	"univents/internal/features/ws_tokens"
 	"univents/internal/jobs"
+	"univents/internal/openapi"
 	"univents/internal/sqlc"
 
 	"github.com/go-chi/chi/v5"
@@ -141,7 +142,11 @@ func Build(cfg config.Config) backend.BuildFunc {
 		if err != nil {
 			return err
 		}
-		mountStrict(r, srv, chains)
+		// The raw-request capture runs before the strict server decodes the
+		// body, so the Payssage webhook verifies its signature against the
+		// exact bytes Payssage POSTed (D2). Path-scoped to /webhooks/ inside
+		// the middleware.
+		openapi.Mount(r, srv, chains, webhooks.RawRequestMiddleware)
 		mountRaw(r, srv)
 		return nil
 	}

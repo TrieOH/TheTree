@@ -73,7 +73,7 @@ Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree
 
 - `app/strict.go` ×4 — 15 lines each, near-identical (differ only by service name): fold into the libs #4 boot audit.
 - `auth_dispatch.go` ×3 md5-identical — already tracked in libs #1/#11.
-- Dockerfiles: the `lib/cmd/healthcheck` build RUN line ×4 — one shared base stage kills the copy (XS).
+- Dockerfiles: the `tools/healthcheck` build RUN line ×4 — one shared base stage kills the copy (XS).
 
 **Effort.** XS–M, mostly already tracked elsewhere.
 

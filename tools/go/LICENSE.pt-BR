@@ -1,0 +1,109 @@
+Licença de Código-Fonte Disponível TrieOH v1.1 (TSAL-1.1)
+Copyright (c) 2026 TrieOH. Todos os direitos reservados.
+
+RESOLUÇÃO DE CONFLITOS
+Em caso de conflito ou inconsistência entre esta versão em português e a
+versão em inglês (LICENSE), esta versão em português prevalecerá para todos
+os efeitos legais no território brasileiro. Fora do Brasil, a versão em
+inglês prevalecerá.
+
+0. DEFINIÇÕES
+
+"Software" significa o código-fonte, documentação, arquivos de configuração
+e todos os materiais associados disponibilizados pela TrieOH sob esta
+Licença.
+
+"Execução Local" significa executar o Software em máquina pessoal
+exclusivamente para fins de estudo ou avaliação, sem qualquer uso em
+produção ou prestação de serviços.
+
+"Uso Comercial" significa qualquer uso do Software, no todo ou em parte,
+em conexão com um produto, serviço ou atividade destinada a gerar receita
+ou fornecer valor a terceiros.
+
+1. CONCESSÃO DE DIREITOS
+
+Sujeito aos termos desta Licença, a TrieOH concede a você um direito
+limitado, não exclusivo, intransferível e revogável de:
+
+  a) Visualizar e estudar o código-fonte para fins pessoais, não
+     comerciais e educacionais; e
+
+  b) Executar Localmente o Software exclusivamente para fins de avaliação
+     ou estudo pessoal.
+
+2. RESTRIÇÕES
+
+Sem autorização prévia e por escrito da TrieOH, você NÃO poderá:
+
+  a) Copiar, distribuir, publicar ou de qualquer outra forma disponibilizar
+     este Software a terceiros;
+
+  b) Modificar, adaptar, traduzir ou criar obras derivadas com base no
+     Software;
+
+  c) Usar o Software, no todo ou em parte, em qualquer produto ou serviço,
+     comercial ou não, acessível a terceiros;
+
+  d) Implantar, hospedar ou operar o Software em qualquer ambiente de
+     produção ou homologação;
+
+  e) Sublicenciar, vender, alugar, arrendar ou transferir quaisquer
+     direitos concedidos por esta Licença;
+
+  f) Remover ou alterar quaisquer avisos de direitos autorais, avisos de
+     licença ou legendas de propriedade presentes no Software.
+
+3. VEDAÇÃO DE FORKS
+
+É expressamente proibida a criação de cópias ou forks deste repositório —
+sejam públicos, privados ou de qualquer outra natureza —, exceto quando
+estritamente necessário para a avaliação local permitida pela Seção 1(b).
+Qualquer cópia local deve ser excluída ao término da avaliação ou ao
+encerramento desta Licença.
+
+4. ALTERAÇÕES NA LICENÇA
+
+A TrieOH reserva-se o direito de modificar os termos desta Licença a
+qualquer momento. As alterações aplicar-se-ão a:
+
+  a) Todas as novas versões e lançamentos do Software publicados após a
+     data de vigência da Licença modificada; e
+
+  b) Versões existentes do Software, desde que a TrieOH conceda aviso
+     prévio de pelo menos 30 (trinta) dias por escrito, mediante publicação
+     no repositório oficial ou no site da TrieOH.
+
+As versões do Software baixadas ou acessadas antes da data de vigência de
+uma alteração permanecem regidas pela versão da Licença vigente no momento
+do acesso, salvo se você concordar expressamente com os novos termos.
+
+5. LICENCIAMENTO COMERCIAL
+
+Para uso comercial, integração, OEM ou qualquer outro uso não expressamente
+permitido por esta Licença, entre em contato: legal@trieoh.com
+
+6. AUSÊNCIA DE GARANTIA
+
+ESTE SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE
+QUALQUER ESPÉCIE, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO
+ÀS GARANTIAS DE COMERCIABILIDADE, ADEQUAÇÃO A UMA FINALIDADE ESPECÍFICA E
+NÃO VIOLAÇÃO. EM NENHUMA HIPÓTESE A TRIEOH SERÁ RESPONSÁVEL POR QUALQUER
+RECLAMAÇÃO, DANO OU OUTRA RESPONSABILIDADE, SEJA EM AÇÃO CONTRATUAL,
+EXTRACONTRATUAL OU DE OUTRA NATUREZA, DECORRENTE DE, OU EM CONEXÃO COM O
+SOFTWARE OU SEU USO.
+
+7. RESCISÃO
+
+Seus direitos sob esta Licença encerram-se automática e imediatamente
+mediante qualquer violação de seus termos. Com o encerramento, você deverá
+cessar todo uso do Software e destruir quaisquer cópias em sua posse. As
+Seções 5, 6 e 7 sobrevivem ao encerramento desta Licença.
+
+8. LEI APLICÁVEL E FORO
+
+Esta Licença será regida e interpretada de acordo com as leis da República
+Federativa do Brasil, em especial a Lei nº 9.609/1998 (Lei de Software) e
+a Lei nº 9.610/1998 (Lei de Direitos Autorais). Quaisquer disputas
+decorrentes desta Licença ficam sujeitas à jurisdição exclusiva do foro da
+Comarca do Rio de Janeiro, Estado do Rio de Janeiro, Brasil.

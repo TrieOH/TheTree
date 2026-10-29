@@ -18,6 +18,7 @@ import (
 	"payssage/internal/features/webhook_events"
 	"payssage/internal/features/webhooks"
 	"payssage/internal/jobs"
+	"payssage/internal/openapi"
 	"payssage/internal/providers"
 	"payssage/internal/providers/mercado_pago_provider"
 	"payssage/internal/sqlc"
@@ -106,7 +107,10 @@ func Build(cfg config.Config) backend.BuildFunc {
 		if err != nil {
 			return err
 		}
-		mountStrict(r, srv, chains)
+		// The raw-request capture runs before the strict server decodes the
+		// body, so the provider webhook receive verifies signatures against
+		// the exact bytes. Path-scoped to /webhooks/ inside the middleware.
+		openapi.Mount(r, srv, chains, webhooks.RawRequestMiddleware)
 		return nil
 	}
 }
