@@ -5,21 +5,21 @@
 package testrepos
 
 import (
-	action_tokens "IdentityX/internal/features/action_tokens/repo"
-	actors "IdentityX/internal/features/actors/repo"
-	api_keys "IdentityX/internal/features/api_keys/repo"
-	authn "IdentityX/internal/features/authn/repo"
-	blacklist "IdentityX/internal/features/blacklist/repo"
-	capabilities "IdentityX/internal/features/capabilities/repo"
-	crypto_keys "IdentityX/internal/features/crypto_keys/repo"
-	email_templates "IdentityX/internal/features/email_templates/repo"
-	oauth_providers "IdentityX/internal/features/oauth_providers/repo"
-	organizations "IdentityX/internal/features/organizations/repo"
-	platform_roles "IdentityX/internal/features/platform_roles/repo"
-	profile_schemas "IdentityX/internal/features/profile_schemas/repo"
-	profiles "IdentityX/internal/features/profiles/repo"
-	projects "IdentityX/internal/features/projects/repo"
-	tos "IdentityX/internal/features/tos/repo"
+	"IdentityX/internal/features/action_tokens"
+	"IdentityX/internal/features/actors"
+	"IdentityX/internal/features/api_keys"
+	"IdentityX/internal/features/authn"
+	"IdentityX/internal/features/blacklist"
+	"IdentityX/internal/features/capabilities"
+	"IdentityX/internal/features/crypto_keys"
+	"IdentityX/internal/features/email_templates"
+	"IdentityX/internal/features/oauth_providers"
+	"IdentityX/internal/features/organizations"
+	"IdentityX/internal/features/platform_roles"
+	"IdentityX/internal/features/profile_schemas"
+	"IdentityX/internal/features/profiles"
+	"IdentityX/internal/features/projects"
+	"IdentityX/internal/features/tos"
 	"IdentityX/internal/sqlc"
 )
 
@@ -43,23 +43,23 @@ type Repos struct {
 }
 
 func New(q *sqlc.Queries) *Repos {
-	authnRepo := authn.New(q)
+	authnRepo := authn.NewRepo(q)
 	return &Repos{
-		Actors:             actors.New(q),
-		APIKeys:            api_keys.New(q),
+		Actors:             actors.NewRepo(q),
+		APIKeys:            api_keys.NewRepo(q),
 		Authn:              authnRepo,
-		ActionTokens:       action_tokens.New(q),
-		Blacklist:          blacklist.New(q),
-		Capabilities:       capabilities.New(q),
-		CryptoKeys:         crypto_keys.New(q),
-		EmailTemplates:     email_templates.New(q),
-		Organizations:      organizations.New(q),
-		OAuthProviders:     oauth_providers.New(q),
-		PlatformRoles:      platform_roles.New(q),
-		ProfileSchemas:     profile_schemas.New(q),
-		Profiles:           profiles.New(q),
-		Projects:           projects.New(q),
-		Tos:                tos.New(q),
+		ActionTokens:       action_tokens.NewRepo(q),
+		Blacklist:          blacklist.NewRepo(q),
+		Capabilities:       capabilities.NewRepo(q),
+		CryptoKeys:         crypto_keys.NewRepo(q),
+		EmailTemplates:     email_templates.NewRepo(q),
+		Organizations:      organizations.NewRepo(q),
+		OAuthProviders:     oauth_providers.NewRepo(q),
+		PlatformRoles:      platform_roles.NewRepo(q),
+		ProfileSchemas:     profile_schemas.NewRepo(q),
+		Profiles:           profiles.NewRepo(q),
+		Projects:           projects.NewRepo(q),
+		Tos:                tos.NewRepo(q),
 		ExternalIdentities: authnRepo,
 	}
 }
