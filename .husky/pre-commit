@@ -167,7 +167,8 @@ if [ -s "$ENGINE_TMP/ts_targets" ]; then
         stale=2
     fi
     # worker-configuration.d.ts is gitignored too (`just gen-cf`): rebuild it
-    # for fronts missing it or with a staged wrangler.jsonc
+    # for Workers (fronts, api/<svc>/cloudflare) missing it or with a staged
+    # wrangler.jsonc
     for t in $(cat "$ENGINE_TMP/ts_targets"); do
         d=${t#ts:}
         [ -f "$d/wrangler.jsonc" ] || continue

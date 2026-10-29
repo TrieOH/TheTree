@@ -201,6 +201,10 @@ engine_targets() {
                     grep -q "\"@trieoh/$name-api\"" "${d}package.json" 2>/dev/null \
                         && add_target "ts:${d%/}"
                 done ;;
+            api/*/cloudflare/*)
+                # the Worker fronting the container is TS, not Go
+                rest=${f#api/}; name=${rest%%/*}
+                [ -d "api/$name/cloudflare" ] && add_target "ts:api/$name/cloudflare" ;;
             api/*)
                 rest=${f#api/}; name=${rest%%/*}
                 [ -d "api/$name" ] && add_target "go:api/$name" ;;
