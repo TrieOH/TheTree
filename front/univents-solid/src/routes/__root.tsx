@@ -3,7 +3,7 @@ import type { RouterSession } from '@trieoh/front-core-solid';
 import { OverlayScrollbar } from "@/widgets/ui/OverlayScrollbar";
 import { AuthContextUpdater } from '@trieoh/front-core-solid';
 import { Toaster } from '@/shared/ui/toast';
-import { NavigationDock } from '@/widgets/ui/NavigationDock';
+import { LazyNavigationDock } from '@/widgets/ui/LazyNavigationDock';
 import { UploadQueueProvider } from '@/features/upload-queue';
 import { requireConfiguredProfile } from '@/features/auths/lib/route-guard';
 import { NotFoundPage, RootError } from '@/widgets/ui/RouteStatus';
@@ -27,7 +27,7 @@ export const Route = createRootRouteWithContext<{ session?: RouterSession }>()({
         </UploadQueueProvider>
       </AuthContextUpdater>
       <OverlayScrollbar />
-      <NavigationDock />
+      <LazyNavigationDock />
       <ServiceStatusBanner />
       <Toaster />
     </>

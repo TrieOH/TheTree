@@ -5,14 +5,6 @@ import { WaveSpinnerLoading } from '@/shared/ui/loader/WaveSpinnerLoading';
 // Mirrors ThemeProvider: the "theme" key in localStorage, falling back to the OS.
 const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);r.style.colorScheme=d?"dark":"light"}catch(e){}})()`;
 
-// The document shell — the new index.html: picked up by the src/Document.*
-// convention, it wraps the app in the plugin's generated entries and must
-// render the full <html>. Head tags go here. It is compiled only into the
-// prerendered static shell and ships no bundle of its own (only the tiny
-// theme bootstrap below, which has to run before first paint): in client mode
-// <HydrationScript /> is stripped from the shell, and it activates when the
-// app flips to SSR (`ssr: true` in vite.config.ts) — no document changes
-// needed. Delete this file to fall back to the plugin's built-in shell.
 export default function Document(props: ParentProps) {
   return (
     <html lang="pt-BR" class="overlay-scrollbar">
@@ -34,11 +26,6 @@ export default function Document(props: ParentProps) {
         {/* Applied before first paint. ThemeProvider only runs once the bundle
             has loaded, so without this a dark-mode user sees a light page flash. */}
         <script innerHTML={THEME_BOOTSTRAP} />
-        {/* Body font only, fetched with the document so text doesn't paint in a
-            fallback and reflow. The display font (font-display: swap) is left
-            to load on demand: preloading both put 116 kB ahead of the app's JS
-            on a slow link. */}
-        <link rel="preload" href="/fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
         <HydrationScript />
       </head>
       <body class="min-w-[320px] antialiased wrap:anywhere">
