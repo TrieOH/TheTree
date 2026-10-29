@@ -17,30 +17,28 @@
  * |---|---|
  * | Bearer JWT | `Authorization: Bearer <token>` |
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "Payssage"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. Errors: `error` carries an
- *   `AppError` — `{ "code", "message", "fields", "meta" }`.
- * - `pagination` is reserved for paged list endpoints (currently
- *   unused by Payssage routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -116,10 +114,7 @@ export * from './createWalletRequest';
 export * from './createWebhookEndpointRequest';
 export * from './error';
 export * from './errorCode';
-export * from './errorDebug';
 export * from './errorFieldsItem';
-export * from './errorMeta';
-export * from './errorResponse';
 export * from './forbiddenResponse';
 export * from './getHealth200';
 export * from './hardCreateIntentRequest';
@@ -131,18 +126,28 @@ export * from './intentProviderData';
 export * from './intentStatus';
 export * from './intentStatusDetail';
 export * from './internalServerErrorResponse';
+export * from './listCollectors200';
+export * from './listIntentsByProfile200';
+export * from './listOrganizationCollectors200';
+export * from './listOrganizationIntents200';
+export * from './listOrganizationMembers200';
+export * from './listOrganizations200';
+export * from './listOrganizationWallets201';
+export * from './listWalletIntents200';
+export * from './listWallets201';
+export * from './listWalletSellers200';
+export * from './listWebhookDeliveries200';
+export * from './listWebhookEndpoints200';
+export * from './listWebhookEvents200';
 export * from './notFoundResponse';
 export * from './nullableUUID';
 export * from './oAuthFlow';
 export * from './organization';
 export * from './organizationMember';
 export * from './organizationRole';
-export * from './paginationMeta';
 export * from './providerCallbackParams';
 export * from './receiveWebhookBody';
 export * from './removeOrganizationMemberRequest';
-export * from './response';
-export * from './responseData';
 export * from './revokeRequest';
 export * from './seller';
 export * from './setFeeBPSRequest';

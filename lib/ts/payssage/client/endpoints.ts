@@ -17,30 +17,28 @@
  * |---|---|
  * | Bearer JWT | `Authorization: Bearer <token>` |
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "Payssage"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. Errors: `error` carries an
- *   `AppError` — `{ "code", "message", "fields", "meta" }`.
- * - `pagination` is reserved for paged list endpoints (currently
- *   unused by Payssage routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -117,6 +115,19 @@ import type {
   HardCreateIntentRequest,
   Intent,
   InternalServerErrorResponse,
+  ListCollectors200,
+  ListIntentsByProfile200,
+  ListOrganizationCollectors200,
+  ListOrganizationIntents200,
+  ListOrganizationMembers200,
+  ListOrganizationWallets201,
+  ListOrganizations200,
+  ListWalletIntents200,
+  ListWalletSellers200,
+  ListWallets201,
+  ListWebhookDeliveries200,
+  ListWebhookEndpoints200,
+  ListWebhookEvents200,
   NotFoundResponse,
   Organization,
   OrganizationMember,
@@ -124,7 +135,6 @@ import type {
   ReceiveWebhookBody,
   RemoveOrganizationMemberRequest,
   RevokeRequest,
-  Seller,
   SetFeeBPSRequest,
   SetSandboxRequest,
   UnauthorizedResponse,
@@ -214,7 +224,7 @@ export const getHealth = async ( options?: Parameters<typeof customInstance>[1])
 
 
 export type listOrganizationsResponse200 = {
-  data: Organization[]
+  data: ListOrganizations200
   status: 200
 }
 
@@ -317,7 +327,7 @@ export const createOrganization = async (createOrganizationRequest: CreateOrgani
 
 
 export type listOrganizationMembersResponse200 = {
-  data: OrganizationMember[]
+  data: ListOrganizationMembers200
   status: 200
 }
 
@@ -447,9 +457,9 @@ export const addOrganizationMember = async (organizationId: string,
 
 
 
-export type removeOrganizationMemberResponse200 = {
-  data: unknown
-  status: 200
+export type removeOrganizationMemberResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeOrganizationMemberResponse400 = {
@@ -477,7 +487,7 @@ export type removeOrganizationMemberResponse500 = {
   status: 500
 }
 
-export type removeOrganizationMemberResponseSuccess = (removeOrganizationMemberResponse200) & {
+export type removeOrganizationMemberResponseSuccess = (removeOrganizationMemberResponse204) & {
   headers: Headers;
 };
 export type removeOrganizationMemberResponseError = (removeOrganizationMemberResponse400 | removeOrganizationMemberResponse401 | removeOrganizationMemberResponse403 | removeOrganizationMemberResponse404 | removeOrganizationMemberResponse500) & {
@@ -637,7 +647,7 @@ export const getOrganizationMemberByEmail = async (organizationId: string,
 
 
 export type listWalletsResponse201 = {
-  data: Wallet[]
+  data: ListWallets201
   status: 201
 }
 
@@ -799,9 +809,9 @@ export const getWallet = async (walletId: string, options?: Parameters<typeof cu
 
 
 
-export type setWalletFeeResponse200 = {
-  data: unknown
-  status: 200
+export type setWalletFeeResponse204 = {
+  data: void
+  status: 204
 }
 
 export type setWalletFeeResponse400 = {
@@ -829,7 +839,7 @@ export type setWalletFeeResponse500 = {
   status: 500
 }
 
-export type setWalletFeeResponseSuccess = (setWalletFeeResponse200) & {
+export type setWalletFeeResponseSuccess = (setWalletFeeResponse204) & {
   headers: Headers;
 };
 export type setWalletFeeResponseError = (setWalletFeeResponse400 | setWalletFeeResponse401 | setWalletFeeResponse403 | setWalletFeeResponse404 | setWalletFeeResponse500) & {
@@ -865,9 +875,9 @@ export const setWalletFee = async (walletId: string,
 
 
 
-export type setWalletSandboxResponse200 = {
-  data: unknown
-  status: 200
+export type setWalletSandboxResponse204 = {
+  data: void
+  status: 204
 }
 
 export type setWalletSandboxResponse400 = {
@@ -895,7 +905,7 @@ export type setWalletSandboxResponse500 = {
   status: 500
 }
 
-export type setWalletSandboxResponseSuccess = (setWalletSandboxResponse200) & {
+export type setWalletSandboxResponseSuccess = (setWalletSandboxResponse204) & {
   headers: Headers;
 };
 export type setWalletSandboxResponseError = (setWalletSandboxResponse400 | setWalletSandboxResponse401 | setWalletSandboxResponse403 | setWalletSandboxResponse404 | setWalletSandboxResponse500) & {
@@ -1054,7 +1064,7 @@ export const unbindCollector = async (walletId: string, options?: Parameters<typ
 
 
 export type listOrganizationWalletsResponse201 = {
-  data: Wallet[]
+  data: ListOrganizationWallets201
   status: 201
 }
 
@@ -1114,7 +1124,7 @@ export const listOrganizationWallets = async (organizationId: string, options?: 
 
 
 export type listCollectorsResponse200 = {
-  data: Collector[]
+  data: ListCollectors200
   status: 200
 }
 
@@ -1218,7 +1228,7 @@ export const getCollector = async (collectorId: Uuid, options?: Parameters<typeo
 
 
 export type listOrganizationCollectorsResponse200 = {
-  data: Collector[]
+  data: ListOrganizationCollectors200
   status: 200
 }
 
@@ -1278,7 +1288,7 @@ export const listOrganizationCollectors = async (organizationId: string, options
 
 
 export type listWalletSellersResponse200 = {
-  data: Seller[]
+  data: ListWalletSellers200
   status: 200
 }
 
@@ -1338,7 +1348,7 @@ export const listWalletSellers = async (walletId: string, options?: Parameters<t
 
 
 export type listIntentsByProfileResponse200 = {
-  data: Intent[]
+  data: ListIntentsByProfile200
   status: 200
 }
 
@@ -1567,7 +1577,7 @@ export const refundIntent = async (intentId: string, options?: Parameters<typeof
 
 
 export type listWalletIntentsResponse200 = {
-  data: Intent[]
+  data: ListWalletIntents200
   status: 200
 }
 
@@ -1697,7 +1707,7 @@ export const checkout = async (walletId: string,
 
 
 export type listOrganizationIntentsResponse200 = {
-  data: Intent[]
+  data: ListOrganizationIntents200
   status: 200
 }
 
@@ -2069,9 +2079,9 @@ export const revokeProvider = async (provider: string,
 
 
 
-export type receiveWebhookResponse200 = {
-  data: unknown
-  status: 200
+export type receiveWebhookResponse204 = {
+  data: void
+  status: 204
 }
 
 export type receiveWebhookResponse400 = {
@@ -2084,7 +2094,7 @@ export type receiveWebhookResponse404 = {
   status: 404
 }
 
-export type receiveWebhookResponseSuccess = (receiveWebhookResponse200) & {
+export type receiveWebhookResponseSuccess = (receiveWebhookResponse204) & {
   headers: Headers;
 };
 export type receiveWebhookResponseError = (receiveWebhookResponse400 | receiveWebhookResponse404) & {
@@ -2127,7 +2137,7 @@ export const receiveWebhook = async (provider: string,
 
 
 export type listWebhookEndpointsResponse200 = {
-  data: WebhookEndpoint[]
+  data: ListWebhookEndpoints200
   status: 200
 }
 
@@ -2365,7 +2375,7 @@ export const deleteWebhookEndpoint = async (endpointId: string, options?: Parame
 
 
 export type listWebhookEventsResponse200 = {
-  data: WebhookEvent[]
+  data: ListWebhookEvents200
   status: 200
 }
 
@@ -2480,7 +2490,7 @@ export const getWebhookEvent = async (eventId: Uuid, options?: Parameters<typeof
 
 
 export type listWebhookDeliveriesResponse200 = {
-  data: WebhookDelivery[]
+  data: ListWebhookDeliveries200
   status: 200
 }
 
