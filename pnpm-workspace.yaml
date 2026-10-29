@@ -130,7 +130,8 @@ overrides:
   js-yaml: 4.3.2
   nanoid: 3.3.18
   esbuild: ">=0.28.1"
-  "@opentelemetry/core": ">=2.8.0"
+  # SDK trace 2.x relies on core's otperformance export, removed in core 3.x.
+  "@opentelemetry/core": "2.12.0"
   "@tanstack/query-core": "5.101.4"
   # must be the version @tanstack/react-start pins, or the app and Start
   # end up on two routers with different APIs
