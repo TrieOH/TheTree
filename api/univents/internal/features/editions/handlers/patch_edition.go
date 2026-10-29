@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -27,7 +26,5 @@ func (h *Handlers) PatchEdition(ctx context.Context, req openapi.PatchEditionReq
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PatchEdition200JSONResponse{
-		Code: 200, Data: edition, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PatchEdition200JSONResponse(*edition), nil
 }

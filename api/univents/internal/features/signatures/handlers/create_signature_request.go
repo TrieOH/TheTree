@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -24,7 +23,5 @@ func (h *Handlers) CreateSignatureRequest(ctx context.Context, req openapi.Creat
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateSignatureRequest201JSONResponse{
-		Code: 201, Data: request, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateSignatureRequest201JSONResponse(*request), nil
 }

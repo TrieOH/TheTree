@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -18,7 +17,5 @@ func (h *Handlers) RegisterOccurrence(ctx context.Context, req openapi.RegisterO
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RegisterOccurrence201JSONResponse{
-		Code: 201, Data: part, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.RegisterOccurrence201JSONResponse(*part), nil
 }

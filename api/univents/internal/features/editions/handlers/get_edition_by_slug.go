@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetEditionBySlug(ctx context.Context, req openapi.GetEditionB
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetEditionBySlug200JSONResponse{
-		Code: 200, Data: edition, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetEditionBySlug200JSONResponse(*edition), nil
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetBadgeTemplate(ctx context.Context, req openapi.GetBadgeTem
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetBadgeTemplate200JSONResponse{
-		Code: 200, Data: template, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetBadgeTemplate200JSONResponse(*template), nil
 }

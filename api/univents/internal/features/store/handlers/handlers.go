@@ -8,8 +8,6 @@ import (
 	"univents/internal/features/store/service"
 )
 
-const module = "Univents"
-
 type Handlers struct {
 	ops *service.Operations
 }

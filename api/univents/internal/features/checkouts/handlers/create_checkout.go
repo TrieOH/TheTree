@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -26,28 +25,23 @@ func (h *Handlers) CreateEditionCheckout(ctx context.Context, req openapi.Create
 		return nil, err
 	}
 
-	return openapi.CreateEditionCheckout201JSONResponse{
-		Code: 201,
-		Data: &openapi.CheckoutResult{
-			PurchaseId:       res.PurchaseID,
-			EditionId:        res.EditionID,
-			Status:           openapi.PurchaseStatus(res.Status),
-			StatusReason:     res.StatusReason,
-			TotalCents:       res.TotalCents,
-			Currency:         res.Currency,
-			PaymentMethod:    res.PaymentMethod,
-			PayssageIntentId: res.PayssageIntentID,
-			QrCode:           res.QRCode,
-			QrCodeBase64:     res.QRCodeBase64,
-			ExpiresAt:        res.ExpiresAt,
-			CreatedAt:        &res.CreatedAt,
-			Items:            toItems(res.Items),
-			WsToken:          res.WsToken,
-			WsTokenExpiresAt: &res.WsTokenExpiresAt,
-		},
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.CreateEditionCheckout201JSONResponse(openapi.CheckoutResult{
+		PurchaseId:       res.PurchaseID,
+		EditionId:        res.EditionID,
+		Status:           openapi.PurchaseStatus(res.Status),
+		StatusReason:     res.StatusReason,
+		TotalCents:       res.TotalCents,
+		Currency:         res.Currency,
+		PaymentMethod:    res.PaymentMethod,
+		PayssageIntentId: res.PayssageIntentID,
+		QrCode:           res.QRCode,
+		QrCodeBase64:     res.QRCodeBase64,
+		ExpiresAt:        res.ExpiresAt,
+		CreatedAt:        &res.CreatedAt,
+		Items:            toItems(res.Items),
+		WsToken:          res.WsToken,
+		WsTokenExpiresAt: &res.WsTokenExpiresAt,
+	}), nil
 }
 
 // toCheckoutInput maps the generated request body to the service's domain

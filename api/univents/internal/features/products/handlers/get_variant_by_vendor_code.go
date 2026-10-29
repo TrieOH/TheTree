@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetVariantByVendorCode(ctx context.Context, req openapi.GetVa
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetVariantByVendorCode200JSONResponse{
-		Code: 200, Data: variant, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetVariantByVendorCode200JSONResponse(*variant), nil
 }

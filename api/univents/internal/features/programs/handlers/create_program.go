@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -25,7 +24,5 @@ func (h *Handlers) CreateProgram(ctx context.Context, req openapi.CreateProgramR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateProgram201JSONResponse{
-		Code: 201, Data: program, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateProgram201JSONResponse(*program), nil
 }

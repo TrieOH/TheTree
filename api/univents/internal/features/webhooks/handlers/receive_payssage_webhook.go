@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/errs"
 	"univents/internal/features/webhooks/service"
@@ -30,7 +29,5 @@ func (h *Handlers) ReceivePayssageWebhook(ctx context.Context, req openapi.Recei
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ReceivePayssageWebhook200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ReceivePayssageWebhook204Response{}, nil
 }
