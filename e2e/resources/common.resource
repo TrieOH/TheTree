@@ -44,17 +44,35 @@ Unique Brand Slug
     ${id}=    Evaluate    ''.join(random.choices(string.ascii_lowercase, k=12))    modules=random,string
     RETURN    ${prefix}${id}
 
+Is Envelope
+    [Documentation]    True for a `fun.Response` envelope: a numeric `code` next to
+    ...    `data` or `module` (no payload has those fields). The backends are moving
+    ...    off it one at a time; drop this once none sends it.
+    [Arguments]    ${body}
+    ${enveloped}=    Evaluate    isinstance($body, dict) and isinstance($body.get("code"), int) and ("data" in $body or "module" in $body)
+    RETURN    ${enveloped}
+
 Data Of
-    [Documentation]    The `data` payload of a `fun.Response` envelope.
+    [Documentation]    The payload of a response: the body itself, or the `data`
+    ...    of a `fun.Response` envelope.
     [Arguments]    ${response}
     ${body}=    Set Variable    ${response.json()}
+    ${enveloped}=    Is Envelope    ${body}
+    IF    not ${enveloped}    RETURN    ${body}
     Dictionary Should Contain Key    ${body}    data    msg=No data in response: ${response.text}
     RETURN    ${body}[data]
 
 Error Of
-    [Documentation]    The `error` object of a failed `fun.Response` envelope.
+    [Documentation]    The error of a failed response as `{code, message, fields}`:
+    ...    the body itself, an RFC 9457 problem's `code`, `detail` and `errors`, or
+    ...    the `error` object of a `fun.Response` envelope.
     [Arguments]    ${response}
     ${body}=    Set Variable    ${response.json()}
+    ${enveloped}=    Is Envelope    ${body}
+    IF    not ${enveloped}
+        ${error}=    Evaluate    {k: v for k, v in {"code": $body.get("code"), "message": $body.get("message") or $body.get("detail") or $body.get("title"), "fields": $body.get("fields") or $body.get("errors")}.items() if v is not None}
+        RETURN    ${error}
+    END
     Dictionary Should Contain Key    ${body}    error    msg=No error in response: ${response.text}
     RETURN    ${body}[error]
 
