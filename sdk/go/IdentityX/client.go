@@ -63,29 +63,6 @@ func (c *Client) Close() error {
 	return c.http.Close()
 }
 
-// envelope reads an IdentityX JSON body into Data whichever shape it
-// comes in: the fun envelope (a numeric code next to data or module; no
-// payload has those fields) or the bare payload IdentityX is moving to.
-// Drop it once IdentityX only answers bare.
-type envelope[T any] struct {
-	Data T
-}
-
-func (e *envelope[T]) UnmarshalJSON(b []byte) error {
-	var probe struct {
-		Code   *int            `json:"code"`
-		Data   json.RawMessage `json:"data"`
-		Module *string         `json:"module"`
-	}
-	if json.Unmarshal(b, &probe) == nil && probe.Code != nil && (probe.Data != nil || probe.Module != nil) {
-		if len(probe.Data) == 0 {
-			return nil
-		}
-		return json.Unmarshal(probe.Data, &e.Data)
-	}
-	return json.Unmarshal(b, &e.Data)
-}
-
 // send executes req and decodes a 2xx body into the request's result. Any
 // 4xx/5xx comes back as *APIError carrying the HTTP status, whatever the body
 // looks like.
