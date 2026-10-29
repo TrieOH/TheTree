@@ -12,9 +12,16 @@ import { env } from "./env";
 
 type FetchClient = ReturnType<typeof createDefaultFetchClient>;
 
-function createClient({ baseURL, apiKey }: CreateIdentityXAccessClientConfig) {
+function createClient({ baseURL, apiKey, fetch: fetchImpl }: CreateIdentityXAccessClientConfig) {
   return createDefaultFetchClient({
     baseURL,
+    // An adapter is handed the bare path, so it joins the base URL itself.
+    ...(fetchImpl
+      ? {
+          adapter: (path: string, init?: RequestInit) =>
+            fetchImpl(`${baseURL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`, init),
+        }
+      : {}),
     headers: {
       "X-API-Key": apiKey,
     },
