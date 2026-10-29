@@ -13,6 +13,7 @@
  */
 import { ApiError, createFetcher } from "@trieoh/identityx-sdk-ts"
 import type { DefaultFailureEnvelope } from "@trieoh/envoy-fetch-ts"
+import { envelopeFetch } from "./envelope"
 
 export interface ApiClientConfig {
   /** Base URL for the main API. */
@@ -50,6 +51,7 @@ const getApi = (): ReturnType<typeof createFetcher> => {
     api = createFetcher({
       baseURL: config.baseURL,
       authBaseURL: config.authBaseURL,
+      clientConfig: { fetch: envelopeFetch() },
     })
   }
   return api

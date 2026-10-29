@@ -1,3 +1,4 @@
+import { toEnvelope } from "@trieoh/api-client/envelope";
 import type { AuthTokens, TokenClaims, TokenSubject } from "@trieoh/identityx-sdk-ts";
 import type {
   BffIntrospectResponse,
@@ -111,7 +112,12 @@ async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T>> {
   }
 
   try {
-    return await response.json() as ApiEnvelope<T>;
+    // The Backend may answer bare or with problem+json; read either as the envelope.
+    return toEnvelope<T>(
+      await response.json(),
+      response.status,
+      response.headers.get("content-type"),
+    ) as ApiEnvelope<T>;
   } catch {
     return { code: response.status, message: response.statusText };
   }

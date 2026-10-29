@@ -1265,6 +1265,9 @@ importers:
       '@opentelemetry/semantic-conventions':
         specifier: 'catalog:'
         version: 1.43.0
+      '@trieoh/api-client':
+        specifier: workspace:*
+        version: link:../api-client
     devDependencies:
       '@trieoh/envoy-fetch-ts':
         specifier: 'catalog:'
