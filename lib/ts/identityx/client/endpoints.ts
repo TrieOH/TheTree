@@ -22,33 +22,28 @@
  * that requirement is called out per operation, since both schemes can
  * satisfy the auth step itself.
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response (except `/.well-known/jwks.json`, which is a raw
- * JWKS document) is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "IdentityX"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. `message` is informational and
- *   often empty.
- * - Failure: `error` carries an `AppError` — `{ "code", "message",
- *   "fields", "meta" }`. `data` is absent.
- * - `pagination` is reserved for paged list endpoints (currently unused
- *   by IdentityX routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -94,7 +89,7 @@ import type {
   CredentialRequest,
   EffectiveEmailTemplate,
   EmailTemplateBody,
-  ErrorResponse,
+  Error,
   ForbiddenResponse,
   ForgotPasswordRequest,
   GetHealth200,
@@ -103,18 +98,30 @@ import type {
   GetOAuthCallbackParams,
   GetOAuthConnect200,
   GetOAuthConnectParams,
+  GetOAuthProviders200,
   GetOAuthProvidersParams,
   Identity,
   InternalServerErrorResponse,
+  ListActors200,
+  ListCapabilities200,
+  ListEmailTemplates200,
+  ListOrganizationMembers200,
+  ListOrganizationProjectActors200,
+  ListOrganizationProjectMembers200,
+  ListOrganizationProjects200,
+  ListOrganizations200,
+  ListOutdatedPlatformProfiles200,
+  ListOutdatedProjectProfiles200,
+  ListProjectMembers200,
+  ListProjectOAuthProviders200,
+  ListProjects200,
+  ListTosAcceptances200,
   NotFoundResponse,
-  OAuthProviderDiscoveryItem,
   OAuthProviderOutput,
   Organization,
-  OrganizationMember,
   PostLoginParams,
   PostRegisterParams,
   Project,
-  ProjectMember,
   ProjectProfileSchema,
   ProjectTos,
   RegisterRequest,
@@ -220,7 +227,7 @@ export type getSetupResponse204 = {
 }
 
 export type getSetupResponse409 = {
-  data: ErrorResponse
+  data: Error
   status: 409
 }
 
@@ -392,9 +399,9 @@ export const postRegister = async (registerRequest: RegisterRequest,
 
 
 
-export type postVerifyEmailResponse200 = {
-  data: unknown
-  status: 200
+export type postVerifyEmailResponse204 = {
+  data: void
+  status: 204
 }
 
 export type postVerifyEmailResponse400 = {
@@ -412,7 +419,7 @@ export type postVerifyEmailResponse503 = {
   status: 503
 }
 
-export type postVerifyEmailResponseSuccess = (postVerifyEmailResponse200) & {
+export type postVerifyEmailResponseSuccess = (postVerifyEmailResponse204) & {
   headers: Headers;
 };
 export type postVerifyEmailResponseError = (postVerifyEmailResponse400 | postVerifyEmailResponse500 | postVerifyEmailResponse503) & {
@@ -450,9 +457,9 @@ export const postVerifyEmail = async (verifyEmailRequest: VerifyEmailRequest, op
 
 
 
-export type postResendVerificationResponse200 = {
-  data: unknown
-  status: 200
+export type postResendVerificationResponse204 = {
+  data: void
+  status: 204
 }
 
 export type postResendVerificationResponse400 = {
@@ -470,7 +477,7 @@ export type postResendVerificationResponse503 = {
   status: 503
 }
 
-export type postResendVerificationResponseSuccess = (postResendVerificationResponse200) & {
+export type postResendVerificationResponseSuccess = (postResendVerificationResponse204) & {
   headers: Headers;
 };
 export type postResendVerificationResponseError = (postResendVerificationResponse400 | postResendVerificationResponse500 | postResendVerificationResponse503) & {
@@ -507,9 +514,9 @@ export const postResendVerification = async (resendVerificationRequest: ResendVe
 
 
 
-export type postForgotPasswordResponse200 = {
-  data: unknown
-  status: 200
+export type postForgotPasswordResponse204 = {
+  data: void
+  status: 204
 }
 
 export type postForgotPasswordResponse400 = {
@@ -527,7 +534,7 @@ export type postForgotPasswordResponse503 = {
   status: 503
 }
 
-export type postForgotPasswordResponseSuccess = (postForgotPasswordResponse200) & {
+export type postForgotPasswordResponseSuccess = (postForgotPasswordResponse204) & {
   headers: Headers;
 };
 export type postForgotPasswordResponseError = (postForgotPasswordResponse400 | postForgotPasswordResponse500 | postForgotPasswordResponse503) & {
@@ -564,9 +571,9 @@ export const postForgotPassword = async (forgotPasswordRequest: ForgotPasswordRe
 
 
 
-export type postResetPasswordResponse200 = {
-  data: unknown
-  status: 200
+export type postResetPasswordResponse204 = {
+  data: void
+  status: 204
 }
 
 export type postResetPasswordResponse400 = {
@@ -584,7 +591,7 @@ export type postResetPasswordResponse503 = {
   status: 503
 }
 
-export type postResetPasswordResponseSuccess = (postResetPasswordResponse200) & {
+export type postResetPasswordResponseSuccess = (postResetPasswordResponse204) & {
   headers: Headers;
 };
 export type postResetPasswordResponseError = (postResetPasswordResponse400 | postResetPasswordResponse500 | postResetPasswordResponse503) & {
@@ -693,9 +700,9 @@ export const postLogin = async (credentialRequest: CredentialRequest,
 
 
 
-export type postLogoutResponse200 = {
-  data: unknown
-  status: 200
+export type postLogoutResponse204 = {
+  data: void
+  status: 204
 }
 
 export type postLogoutResponse401 = {
@@ -713,7 +720,7 @@ export type postLogoutResponse503 = {
   status: 503
 }
 
-export type postLogoutResponseSuccess = (postLogoutResponse200) & {
+export type postLogoutResponseSuccess = (postLogoutResponse204) & {
   headers: Headers;
 };
 export type postLogoutResponseError = (postLogoutResponse401 | postLogoutResponse500 | postLogoutResponse503) & {
@@ -943,7 +950,7 @@ export const getOAuthCallback = async (provider: SupportedOAuthProviders,
 
 
 export type getOAuthProvidersResponse200 = {
-  data: OAuthProviderDiscoveryItem[]
+  data: GetOAuthProviders200
   status: 200
 }
 
@@ -1112,7 +1119,7 @@ export const getGetJWKSUrl = (params?: GetJWKSParams,) => {
  * Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by
  * the authentication service. Omit `project_id` for the platform
  * keyset, or pass a project id for that project's keyset. Response
- * is a raw JWKS document (RFC 7517), NOT the fun envelope, and is
+ * is a raw JWKS document (RFC 7517), and is
  * cached for 2 hours by the server.
  * @summary Get a JWKS
  */
@@ -1130,7 +1137,7 @@ export const getJWKS = async (params?: GetJWKSParams, options?: Parameters<typeo
 
 
 export type listOrganizationsResponse200 = {
-  data: Organization[]
+  data: ListOrganizations200
   status: 200
 }
 
@@ -1246,7 +1253,7 @@ export const createOrganization = async (createOrganizationRequest: CreateOrgani
 
 
 export type listOrganizationMembersResponse200 = {
-  data: OrganizationMember[]
+  data: ListOrganizationMembers200
   status: 200
 }
 
@@ -1387,9 +1394,9 @@ export const addOrganizationMember = async (organizationId: string,
 
 
 
-export type removeOrganizationMemberResponse200 = {
-  data: unknown
-  status: 200
+export type removeOrganizationMemberResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeOrganizationMemberResponse400 = {
@@ -1422,7 +1429,7 @@ export type removeOrganizationMemberResponse503 = {
   status: 503
 }
 
-export type removeOrganizationMemberResponseSuccess = (removeOrganizationMemberResponse200) & {
+export type removeOrganizationMemberResponseSuccess = (removeOrganizationMemberResponse204) & {
   headers: Headers;
 };
 export type removeOrganizationMemberResponseError = (removeOrganizationMemberResponse400 | removeOrganizationMemberResponse401 | removeOrganizationMemberResponse403 | removeOrganizationMemberResponse404 | removeOrganizationMemberResponse500 | removeOrganizationMemberResponse503) & {
@@ -1460,7 +1467,7 @@ export const removeOrganizationMember = async (organizationId: string,
 
 
 export type listOrganizationProjectsResponse200 = {
-  data: Project[]
+  data: ListOrganizationProjects200
   status: 200
 }
 
@@ -1596,7 +1603,7 @@ export const createOrganizationProject = async (organizationId: string,
 
 
 export type listOrganizationProjectActorsResponse200 = {
-  data: Actor[]
+  data: ListOrganizationProjectActors200
   status: 200
 }
 
@@ -1736,7 +1743,7 @@ export const createOrganizationProjectActor = async (orgId: string,
 
 
 export type listOrganizationProjectMembersResponse200 = {
-  data: ProjectMember[]
+  data: ListOrganizationProjectMembers200
   status: 200
 }
 
@@ -1881,9 +1888,9 @@ export const addOrganizationProjectMember = async (organizationId: string,
 
 
 
-export type removeOrganizationProjectMemberResponse200 = {
-  data: unknown
-  status: 200
+export type removeOrganizationProjectMemberResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeOrganizationProjectMemberResponse400 = {
@@ -1916,7 +1923,7 @@ export type removeOrganizationProjectMemberResponse503 = {
   status: 503
 }
 
-export type removeOrganizationProjectMemberResponseSuccess = (removeOrganizationProjectMemberResponse200) & {
+export type removeOrganizationProjectMemberResponseSuccess = (removeOrganizationProjectMemberResponse204) & {
   headers: Headers;
 };
 export type removeOrganizationProjectMemberResponseError = (removeOrganizationProjectMemberResponse400 | removeOrganizationProjectMemberResponse401 | removeOrganizationProjectMemberResponse403 | removeOrganizationProjectMemberResponse404 | removeOrganizationProjectMemberResponse500 | removeOrganizationProjectMemberResponse503) & {
@@ -2024,7 +2031,7 @@ export const getOrganizationProjectActor = async (organizationId: string,
 
 
 export type listProjectsResponse200 = {
-  data: Project[]
+  data: ListProjects200
   status: 200
 }
 
@@ -2140,7 +2147,7 @@ export const createProject = async (createProjectRequest: CreateProjectRequest, 
 
 
 export type listProjectMembersResponse200 = {
-  data: ProjectMember[]
+  data: ListProjectMembers200
   status: 200
 }
 
@@ -2281,9 +2288,9 @@ export const addProjectMember = async (projectId: string,
 
 
 
-export type removeProjectMemberResponse200 = {
-  data: unknown
-  status: 200
+export type removeProjectMemberResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeProjectMemberResponse400 = {
@@ -2316,7 +2323,7 @@ export type removeProjectMemberResponse503 = {
   status: 503
 }
 
-export type removeProjectMemberResponseSuccess = (removeProjectMemberResponse200) & {
+export type removeProjectMemberResponseSuccess = (removeProjectMemberResponse204) & {
   headers: Headers;
 };
 export type removeProjectMemberResponseError = (removeProjectMemberResponse400 | removeProjectMemberResponse401 | removeProjectMemberResponse403 | removeProjectMemberResponse404 | removeProjectMemberResponse500 | removeProjectMemberResponse503) & {
@@ -2353,7 +2360,7 @@ export const removeProjectMember = async (projectId: string,
 
 
 export type listActorsResponse200 = {
-  data: Actor[]
+  data: ListActors200
   status: 200
 }
 
@@ -2609,7 +2616,7 @@ export const getActorByEmail = async (projectId: string,
 
 
 export type listEmailTemplatesResponse200 = {
-  data: EffectiveEmailTemplate[]
+  data: ListEmailTemplates200
   status: 200
 }
 
@@ -2749,7 +2756,7 @@ export type putEmailTemplateResponse200 = {
 }
 
 export type putEmailTemplateResponse400 = {
-  data: ErrorResponse
+  data: Error
   status: 400
 }
 
@@ -2821,9 +2828,9 @@ export const putEmailTemplate = async (projectId: string,
 
 
 
-export type deleteEmailTemplateResponse200 = {
-  data: unknown
-  status: 200
+export type deleteEmailTemplateResponse204 = {
+  data: void
+  status: 204
 }
 
 export type deleteEmailTemplateResponse401 = {
@@ -2851,7 +2858,7 @@ export type deleteEmailTemplateResponse503 = {
   status: 503
 }
 
-export type deleteEmailTemplateResponseSuccess = (deleteEmailTemplateResponse200) & {
+export type deleteEmailTemplateResponseSuccess = (deleteEmailTemplateResponse204) & {
   headers: Headers;
 };
 export type deleteEmailTemplateResponseError = (deleteEmailTemplateResponse401 | deleteEmailTemplateResponse403 | deleteEmailTemplateResponse404 | deleteEmailTemplateResponse500 | deleteEmailTemplateResponse503) & {
@@ -3103,7 +3110,7 @@ export const putProjectTos = async (projectId: string,
 
 
 export type listTosAcceptancesResponse200 = {
-  data: TosAcceptance[]
+  data: ListTosAcceptances200
   status: 200
 }
 
@@ -3307,7 +3314,7 @@ export const createAPIKey = async (projectId: string,
 
 
 export type listProjectOAuthProvidersResponse200 = {
-  data: OAuthProviderOutput[]
+  data: ListProjectOAuthProviders200
   status: 200
 }
 
@@ -3523,9 +3530,9 @@ export const updateOAuthProvider = async (oauthProviderId: string,
 
 
 
-export type deleteOAuthProviderResponse200 = {
-  data: unknown
-  status: 200
+export type deleteOAuthProviderResponse204 = {
+  data: void
+  status: 204
 }
 
 export type deleteOAuthProviderResponse401 = {
@@ -3553,7 +3560,7 @@ export type deleteOAuthProviderResponse503 = {
   status: 503
 }
 
-export type deleteOAuthProviderResponseSuccess = (deleteOAuthProviderResponse200) & {
+export type deleteOAuthProviderResponseSuccess = (deleteOAuthProviderResponse204) & {
   headers: Headers;
 };
 export type deleteOAuthProviderResponseError = (deleteOAuthProviderResponse401 | deleteOAuthProviderResponse403 | deleteOAuthProviderResponse404 | deleteOAuthProviderResponse500 | deleteOAuthProviderResponse503) & {
@@ -3721,7 +3728,7 @@ export const enableOAuthProvider = async (oauthProviderId: string, options?: Par
 
 
 export type listCapabilitiesResponse200 = {
-  data: Capability[]
+  data: ListCapabilities200
   status: 200
 }
 
@@ -4411,7 +4418,7 @@ export const getProfileByHandle = async (handle: string, options?: Parameters<ty
 
 
 export type listOutdatedPlatformProfilesResponse200 = {
-  data: ActorProfile[]
+  data: ListOutdatedPlatformProfiles200
   status: 200
 }
 
@@ -4468,7 +4475,7 @@ export const listOutdatedPlatformProfiles = async ( options?: Parameters<typeof 
 
 
 export type listOutdatedProjectProfilesResponse200 = {
-  data: ActorProfile[]
+  data: ListOutdatedProjectProfiles200
   status: 200
 }
 

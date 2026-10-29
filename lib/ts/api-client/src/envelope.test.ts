@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
-import { envelopeFetch, toEnvelope } from "./envelope.ts"
+import { envelopeFetch, itemsOf, toEnvelope } from "./envelope.ts"
 
 const enveloped = {
   code: 200,
@@ -79,4 +79,10 @@ test("envelopeFetch returns an enveloped response untouched", async () => {
   const original = Response.json(enveloped)
   const wrapped = envelopeFetch((async () => original) as typeof fetch)
   assert.equal(await wrapped("/actors"), original)
+})
+
+test("itemsOf reads a list either way", () => {
+  assert.deepEqual(itemsOf([1, 2]), [1, 2])
+  assert.deepEqual(itemsOf({ items: [1, 2] }), [1, 2])
+  assert.deepEqual(itemsOf(undefined), [])
 })

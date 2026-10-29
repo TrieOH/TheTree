@@ -17,10 +17,10 @@ import {
   type ApiError,
 } from "@trieoh/identityx-sdk-ts"
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts"
-import { envelopeFetch } from "./envelope"
+import { envelopeFetch, itemsOf } from "./envelope"
 
 export type { ApiError }
-export { envelopeFetch, isEnvelope, toEnvelope, toEnvelopeResponse, type WireEnvelope } from "./envelope"
+export { envelopeFetch, isEnvelope, itemsOf, toEnvelope, toEnvelopeResponse, type WireEnvelope } from "./envelope"
 export {
   configureApiClient,
   createOrvalTransport,
@@ -32,6 +32,10 @@ export {
 /** Extracts the payload from Orval's full HTTP response wrapper. */
 export const orvalData = <T>(response: { data: unknown }): T =>
   response.data as T
+
+/** Extracts the items of a list payload from Orval's response wrapper. */
+export const orvalItems = <T>(response: { data: unknown }): T[] =>
+  itemsOf<T>(response.data)
 
 export interface AppFetcherConfig {
   /** Base URL for the main API. */

@@ -22,33 +22,28 @@
  * that requirement is called out per operation, since both schemes can
  * satisfy the auth step itself.
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response (except `/.well-known/jwks.json`, which is a raw
- * JWKS document) is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "IdentityX"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. `message` is informational and
- *   often empty.
- * - Failure: `error` carries an `AppError` — `{ "code", "message",
- *   "fields", "meta" }`. `data` is absent.
- * - `pagination` is reserved for paged list endpoints (currently unused
- *   by IdentityX routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -107,10 +102,7 @@ export * from './emailTemplateBody';
 export * from './emailTemplateKind';
 export * from './error';
 export * from './errorCode';
-export * from './errorDebug';
 export * from './errorFieldsItem';
-export * from './errorMeta';
-export * from './errorResponse';
 export * from './forbiddenResponse';
 export * from './forgotPasswordRequest';
 export * from './getHealth200';
@@ -120,9 +112,24 @@ export * from './getJWKSParams';
 export * from './getOAuthCallbackParams';
 export * from './getOAuthConnect200';
 export * from './getOAuthConnectParams';
+export * from './getOAuthProviders200';
 export * from './getOAuthProvidersParams';
 export * from './identity';
 export * from './internalServerErrorResponse';
+export * from './listActors200';
+export * from './listCapabilities200';
+export * from './listEmailTemplates200';
+export * from './listOrganizationMembers200';
+export * from './listOrganizationProjectActors200';
+export * from './listOrganizationProjectMembers200';
+export * from './listOrganizationProjects200';
+export * from './listOrganizations200';
+export * from './listOutdatedPlatformProfiles200';
+export * from './listOutdatedProjectProfiles200';
+export * from './listProjectMembers200';
+export * from './listProjectOAuthProviders200';
+export * from './listProjects200';
+export * from './listTosAcceptances200';
 export * from './notFoundResponse';
 export * from './nullableUUID';
 export * from './oAuthProviderDiscoveryItem';
@@ -132,7 +139,6 @@ export * from './organizationMember';
 export * from './organizationMemberMetadata';
 export * from './organizationMetadata';
 export * from './organizationRole';
-export * from './paginationMeta';
 export * from './postLoginParams';
 export * from './postRegisterParams';
 export * from './project';
@@ -150,8 +156,6 @@ export * from './removeOrgProjectMemberRequest';
 export * from './removeProjectMemberRequest';
 export * from './resendVerificationRequest';
 export * from './resetPasswordRequest';
-export * from './response';
-export * from './responseData';
 export * from './serviceUnavailableResponse';
 export * from './subject';
 export * from './subjectCapabilities';

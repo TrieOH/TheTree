@@ -133,3 +133,10 @@ export const envelopeFetch =
   (fetchImpl: typeof fetch = (input, init) => fetch(input, init)): typeof fetch =>
   async (input, init) =>
     toEnvelopeResponse(await fetchImpl(input, init))
+
+/**
+ * The items of a list payload: `{ items }` from a Backend that moved off the
+ * envelope, or the bare array one still on it sends.
+ */
+export const itemsOf = <T>(data: unknown): T[] =>
+  Array.isArray(data) ? (data as T[]) : ((data as { items?: T[] } | undefined)?.items ?? [])

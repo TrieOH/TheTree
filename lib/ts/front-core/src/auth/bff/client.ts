@@ -1,3 +1,4 @@
+import { itemsOf } from "@trieoh/api-client/envelope";
 import {
   createDefaultFetchClient,
   type DefaultFetchResult,
@@ -7,6 +8,7 @@ import {
   type AuthCallbacks,
   type AuthService,
   type AuthTokens,
+  type OAuthProviderDiscoveryItem,
   type TokenSubject,
 } from "@trieoh/identityx-sdk-ts";
 import {
@@ -353,12 +355,16 @@ export function createBffAuthAdapter(
           // proxy like everything else.
           getProfileByHandle: (handle: string) =>
             proxyResponse("getProfileByHandle", `/profiles/by-handle/${encodeURIComponent(handle)}`),
-          getOAuthProviders: (overrideProjectId?: string) => {
+          getOAuthProviders: async (overrideProjectId?: string) => {
             const projectId = overrideProjectId ?? options.projectId;
             const query = projectId
               ? `?project_id=${encodeURIComponent(projectId)}`
               : "";
-            return proxyResponse("getOAuthProviders", `/auth/oauth-providers${query}`);
+            const res = await proxyResponse<unknown>("getOAuthProviders", `/auth/oauth-providers${query}`);
+            // Callers get the array; IdentityX sends it as { items }.
+            return res.success
+              ? { ...res, data: itemsOf<OAuthProviderDiscoveryItem>(res.data) }
+              : res;
           },
           health: () => proxyResponse("health", "/health"),
         } : {}),
