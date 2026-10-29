@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   checkInOccurrence,
@@ -35,12 +35,12 @@ import type {
 import { programKeys } from "./query-keys";
 
 export const listProgramsFn = createClientOnlyFn((editionId: string) =>
-  listEditionPrograms(editionId, { public: true }).then(orvalData<ProgramI[]>),
+  listEditionPrograms(editionId, { public: true }).then(orvalItems<ProgramI>),
 );
 
 export const listOccurrencesFn = createClientOnlyFn((editionId: string) =>
   listEditionOccurrences(editionId, { public: true }).then(
-    orvalData<OccurrenceI[]>,
+    orvalItems<OccurrenceI>,
   ),
 );
 
@@ -87,7 +87,7 @@ export const deleteOccurrenceFn = createClientOnlyFn((id: string) =>
 );
 
 export const listMyParticipationsFn = createClientOnlyFn((editionId: string) =>
-  listMyParticipations(editionId).then(orvalData<MyParticipation[] | null>),
+  listMyParticipations(editionId).then(orvalItems<MyParticipation>),
 );
 
 export const registerOccurrenceFn = createClientOnlyFn((occurrenceId: string) =>
@@ -102,7 +102,7 @@ export const deregisterOccurrenceFn = createClientOnlyFn(
 export const listOccurrenceParticipantsFn = createClientOnlyFn(
   (occurrenceId: string) =>
     listOccurrenceParticipants(occurrenceId).then(
-      orvalData<ProgramParticipant[]>,
+      orvalItems<ProgramParticipant>,
     ),
 );
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) CompleteEventPayments(ctx context.Context, req openapi.Comple
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CompleteEventPayments200JSONResponse{
-		Code: 200, Data: event, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CompleteEventPayments200JSONResponse(*event), nil
 }

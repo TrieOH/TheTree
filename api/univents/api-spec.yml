@@ -28,30 +28,28 @@ info:
     created). The token binds the request to a single signature
     request/edition.
 
-    ## Response envelope
+    ## Responses
 
-    Every JSON response is the `fun.Response` envelope:
+    A successful response's body is the operation's payload itself; an
+    operation with nothing to return answers `204 No Content`. A list is
+    an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+    items later.
+
+    A failed response's body is an `Error`:
 
     ```json
     {
-      "code": 200,
-      "message": "",
-      "data": { "...": "operation payload" },
-      "error": null,
-      "pagination": null,
-      "timestamp": "2026-01-01T12:00:00Z",
-      "module": "Univents"
+      "code": "VALIDATION_ERROR",
+      "message": "invalid request body: name: this field is required",
+      "fields": [{ "field": "name", "message": "this field is required" }]
     }
     ```
 
-    - Success: `data` carries the payload. Errors: `error` carries an
-      `AppError` — `{ "code", "message", "fields", "meta" }`.
-    - `pagination` is reserved for paged list endpoints (currently
-      unused by Univents routes).
+    `fields` is present only when the failure names request fields.
 
     ## Error codes → HTTP status
 
-    The `error.code` sentinel maps to the HTTP status:
+    The `code` sentinel maps to the HTTP status:
 
     | code | status |
     |---|---|
@@ -91,8 +89,8 @@ info:
 
     Two live surfaces are **raw routes** — deliberately NOT OpenAPI
     operations: WebSocket handshakes cannot carry Authorization headers,
-    and streaming responses must bypass the fun/validate envelope machinery
-    (which buffers the body). They are documented here instead.
+    and streaming responses must bypass the strict server's validation
+    machinery (which buffers the body). They are documented here instead.
 
     ### `WS /ws?token=...` — per-purchase socket (one-time token)
 
@@ -260,14 +258,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Event'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
         '500':
           $ref: '#/components/responses/InternalServerError'
     post:
@@ -297,12 +294,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Event'
+                $ref: '#/components/schemas/Event'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -332,12 +324,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Event'
+                $ref: '#/components/schemas/Event'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -358,14 +345,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Event'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -387,14 +373,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Event'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -424,12 +409,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Event'
+                $ref: '#/components/schemas/Event'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -468,12 +448,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ConnectEventPaymentsResult'
+                $ref: '#/components/schemas/ConnectEventPaymentsResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -511,12 +486,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Event'
+                $ref: '#/components/schemas/Event'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -619,14 +589,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/EventMember'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventMember'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -661,12 +630,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/EventMember'
+                $ref: '#/components/schemas/EventMember'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -754,12 +718,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Edition'
+                $ref: '#/components/schemas/Edition'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -781,14 +740,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Edition'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -822,12 +780,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Edition'
+                $ref: '#/components/schemas/Edition'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -856,12 +809,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Edition'
+                $ref: '#/components/schemas/Edition'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -883,14 +831,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Edition'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -912,14 +859,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Edition'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -943,14 +889,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Edition'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Edition'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -985,12 +930,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Edition'
+                $ref: '#/components/schemas/Edition'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1048,14 +988,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/StoreStockItem'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StoreStockItem'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1148,12 +1087,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/CheckoutResult'
+                $ref: '#/components/schemas/CheckoutResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1181,14 +1115,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/TicketType'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TicketType'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1223,12 +1156,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TicketType'
+                $ref: '#/components/schemas/TicketType'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1260,12 +1188,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TicketType'
+                $ref: '#/components/schemas/TicketType'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1298,12 +1221,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TicketType'
+                $ref: '#/components/schemas/TicketType'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1332,14 +1250,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Product'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1375,12 +1292,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/Product'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1415,12 +1327,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/Product'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1449,12 +1356,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProductVariant'
+                $ref: '#/components/schemas/ProductVariant'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1480,12 +1382,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/Product'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1518,12 +1415,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/Product'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1582,14 +1474,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ProductVariant'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductVariant'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1628,12 +1519,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProductVariant'
+                $ref: '#/components/schemas/ProductVariant'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1674,12 +1560,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProductVariant'
+                $ref: '#/components/schemas/ProductVariant'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1735,14 +1616,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Program'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Program'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1777,12 +1657,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Program'
+                $ref: '#/components/schemas/Program'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1814,12 +1689,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Program'
+                $ref: '#/components/schemas/Program'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1852,12 +1722,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Program'
+                $ref: '#/components/schemas/Program'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1890,12 +1755,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Program'
+                $ref: '#/components/schemas/Program'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1926,14 +1786,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ProgramOccurrence'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramOccurrence'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1970,12 +1829,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramOccurrence'
+                $ref: '#/components/schemas/ProgramOccurrence'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2015,12 +1869,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramCertEmissionResult'
+                $ref: '#/components/schemas/ProgramCertEmissionResult'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2046,14 +1895,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ProgramOccurrence'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramOccurrence'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2079,12 +1927,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramOccurrence'
+                $ref: '#/components/schemas/ProgramOccurrence'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2117,12 +1960,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramOccurrence'
+                $ref: '#/components/schemas/ProgramOccurrence'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2155,12 +1993,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramOccurrence'
+                $ref: '#/components/schemas/ProgramOccurrence'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2202,12 +2035,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramParticipation'
+                $ref: '#/components/schemas/ProgramParticipation'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2244,12 +2072,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramParticipation'
+                $ref: '#/components/schemas/ProgramParticipation'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2286,14 +2109,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/ProgramParticipant'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramParticipant'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2342,12 +2164,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramParticipation'
+                $ref: '#/components/schemas/ProgramParticipation'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2386,12 +2203,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProgramParticipation'
+                $ref: '#/components/schemas/ProgramParticipation'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2425,14 +2237,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/MyParticipation'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MyParticipation'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2458,14 +2269,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/BadgeTemplate'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BadgeTemplate'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2504,12 +2314,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/BadgeTemplate'
+                $ref: '#/components/schemas/BadgeTemplate'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2544,12 +2349,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/BadgeTemplate'
+                $ref: '#/components/schemas/BadgeTemplate'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2620,12 +2420,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/BadgeTemplate'
+                $ref: '#/components/schemas/BadgeTemplate'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2660,12 +2455,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/BadgeProfileGroups'
+                $ref: '#/components/schemas/BadgeProfileGroups'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -2689,14 +2479,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/BadgeEditionEmission'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BadgeEditionEmission'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2736,14 +2525,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/BadgePrintItem'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BadgePrintItem'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2770,14 +2558,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Signature'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Signature'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2811,12 +2598,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Signature'
+                $ref: '#/components/schemas/Signature'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2848,12 +2630,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Signature'
+                $ref: '#/components/schemas/Signature'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2902,14 +2679,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/SignatureRequest'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SignatureRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2945,12 +2721,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SignatureRequest'
+                $ref: '#/components/schemas/SignatureRequest'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2982,12 +2753,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SignatureRequest'
+                $ref: '#/components/schemas/SignatureRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3072,12 +2838,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Signature'
+                $ref: '#/components/schemas/Signature'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3177,14 +2938,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/CertificationTemplate'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CertificationTemplate'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3219,12 +2979,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/CertificationTemplate'
+                $ref: '#/components/schemas/CertificationTemplate'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3256,12 +3011,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/CertificationTemplate'
+                $ref: '#/components/schemas/CertificationTemplate'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3294,12 +3044,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/CertificationTemplate'
+                $ref: '#/components/schemas/CertificationTemplate'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3434,14 +3179,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/CertificationTemplateProgram'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CertificationTemplateProgram'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3469,12 +3213,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/VerifyCertResponse'
+                $ref: '#/components/schemas/VerifyCertResponse'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3503,12 +3242,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Certification'
+                $ref: '#/components/schemas/Certification'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3536,14 +3270,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Certification'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Certification'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3568,14 +3301,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Certification'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Certification'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -3639,14 +3371,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/CertEmissionError'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CertEmissionError'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3692,12 +3423,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ReceivePayssageWebhookRequest'
       responses:
-        '200':
+        '204':
           description: Webhook acknowledged (processed or expected-ignored)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -3732,12 +3459,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Checkout'
+                $ref: '#/components/schemas/Checkout'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3763,12 +3485,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MyPurchases'
+                $ref: '#/components/schemas/MyPurchases'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -3796,12 +3513,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Purchase'
+                $ref: '#/components/schemas/Purchase'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3837,14 +3549,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/EditionPurchase'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EditionPurchase'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3878,13 +3589,8 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        allOf:
-                          - $ref: '#/components/schemas/MyTicket'
-                        nullable: true
+                  - $ref: '#/components/schemas/MyTicket'
+                nullable: true
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3912,12 +3618,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/AttendeeCount'
+                $ref: '#/components/schemas/AttendeeCount'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3952,12 +3653,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/WsToken'
+                $ref: '#/components/schemas/WsToken'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -4003,42 +3699,42 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     Unauthorized:
       description: Missing or invalid credentials
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     Forbidden:
       description: Insufficient permissions for the requested operation
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     NotFound:
       description: The requested resource does not exist
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     Conflict:
       description: The request conflicts with the current state of the resource
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     InternalServerError:
       description: Unexpected server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
   schemas:
     UUID:
@@ -4056,42 +3752,13 @@ components:
       x-go-type-import:
         path: github.com/google/uuid
 
-    Response:
-      type: object
-      description: |
-        The `fun.Response` envelope wrapping every JSON payload. On
-        success `data` carries the operation payload; on failure `error`
-        carries the AppError.
-      required: [code, message, timestamp, module]
-      properties:
-        code:
-          type: integer
-          description: HTTP status code, duplicated for convenience.
-        message:
-          type: string
-          description: Informational message; often empty on success.
-        data:
-          type: object
-          description: The operation payload. Shape is documented per operation.
-        error:
-          allOf:
-            - $ref: '#/components/schemas/Error'
-          description: Present (non-null) only on failure.
-        pagination:
-          allOf:
-            - $ref: '#/components/schemas/PaginationMeta'
-          description: Present only on paged list endpoints.
-        timestamp:
-          type: string
-          format: date-time
-        module:
-          type: string
-          description: Service that produced the response.
-
     Error:
       type: object
       title: AppError
-      description: The `fun.AppError` object carried in the envelope's `error` field.
+      description: |
+        The body of every error response. `code` is a machine-readable
+        sentinel whose mapping to the HTTP status is documented in the
+        top-level description.
       required: [code, message]
       properties:
         code:
@@ -4124,60 +3791,6 @@ components:
                 type: string
               message:
                 type: string
-        meta:
-          type: object
-          description: Arbitrary key/value context.
-          additionalProperties: true
-        debug:
-          type: object
-          description: Development-only diagnostics; stripped outside development environments.
-          properties:
-            raw_error:
-              type: string
-            stack_trace:
-              type: string
-
-    ErrorResponse:
-      type: object
-      description: The envelope as sent on failure.
-      required: [code, message, error, timestamp, module]
-      properties:
-        code:
-          type: integer
-        message:
-          type: string
-        error:
-          $ref: '#/components/schemas/Error'
-        timestamp:
-          type: string
-          format: date-time
-        module:
-          type: string
-          description: Service that produced the response.
-
-    PaginationMeta:
-      type: object
-      description: Pagination metadata for paged list endpoints (currently unused by Univents routes).
-      required: [page, limit, total, has_next, has_prev]
-      properties:
-        page:
-          type: integer
-          minimum: 1
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 100
-        total:
-          type: integer
-          format: int64
-        has_next:
-          type: boolean
-        has_prev:
-          type: boolean
-        next_page:
-          type: integer
-        prev_page:
-          type: integer
 
     EventStatus:
       x-go-type: models.EventStatus

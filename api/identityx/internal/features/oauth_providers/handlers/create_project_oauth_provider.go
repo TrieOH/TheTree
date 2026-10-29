@@ -4,7 +4,6 @@ import (
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
 	"context"
-	"time"
 )
 
 func (h *Handlers) CreateProjectOAuthProvider(ctx context.Context, req openapi.CreateProjectOAuthProviderRequestObject) (openapi.CreateProjectOAuthProviderResponseObject, error) {
@@ -18,7 +17,5 @@ func (h *Handlers) CreateProjectOAuthProvider(ctx context.Context, req openapi.C
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateProjectOAuthProvider201JSONResponse{
-		Code: 201, Data: created, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateProjectOAuthProvider201JSONResponse(*created), nil
 }

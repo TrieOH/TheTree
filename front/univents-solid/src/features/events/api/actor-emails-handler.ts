@@ -98,17 +98,17 @@ export async function handleActorEmailsRequest(
           let pfp_url: string | null = null;
 
           if (actorRes?.ok) {
-            const json = (await actorRes.json().catch(() => null)) as {
-              data?: { email?: string | null };
+            const actor = (await actorRes.json().catch(() => null)) as {
+              email?: string | null;
             } | null;
-            email = json?.data?.email ?? null;
+            email = actor?.email ?? null;
           }
 
           if (profileRes?.ok) {
-            const profileJson = (await profileRes.json().catch(() => null)) as {
-              data?: { pfp_url?: string | null };
+            const profile = (await profileRes.json().catch(() => null)) as {
+              pfp_url?: string | null;
             } | null;
-            pfp_url = profileJson?.data?.pfp_url ?? null;
+            pfp_url = profile?.pfp_url ?? null;
           }
 
           if (!email && !pfp_url) {

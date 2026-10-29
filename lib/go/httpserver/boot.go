@@ -35,7 +35,7 @@ type StartFunc func(ctx context.Context) (handler http.Handler, shutdown func(co
 // Boot returns an error instead of exiting: errx.Exit stays at the process
 // edge (cmd/main), and the boot path stays testable through this interface.
 func Boot(cfg Config, start StartFunc) error {
-	SetupFUN(cfg.AppName)
+	SetupFUN()
 
 	ctx := context.Background()
 	shutdownTelemetry, err := telemetry.Start(ctx, cfg.AppName)

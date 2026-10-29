@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListTicketTypes(ctx context.Context, req openapi.ListTicketTy
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListTicketTypes200JSONResponse{
-		Code: 200, Data: &ticketTypes, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListTicketTypes200JSONResponse{Items: ticketTypes}, nil
 }

@@ -21,30 +21,28 @@ info:
     original spelling, part of the interface) and
     `POST /forms/{form_id}/responses` (public submission).
 
-    ## Response envelope
+    ## Responses
 
-    Every JSON response is the `fun.Response` envelope:
+    A successful response's body is the operation's payload itself; an
+    operation with nothing to return answers `204 No Content`. A list is
+    an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+    items later.
+
+    A failed response's body is an `Error`:
 
     ```json
     {
-      "code": 200,
-      "message": "",
-      "data": { "...": "operation payload" },
-      "error": null,
-      "pagination": null,
-      "timestamp": "2026-01-01T12:00:00Z",
-      "module": "Informd"
+      "code": "VALIDATION_ERROR",
+      "message": "invalid request body: name: this field is required",
+      "fields": [{ "field": "name", "message": "this field is required" }]
     }
     ```
 
-    - Success: `data` carries the payload. Errors: `error` carries an
-      `AppError` — `{ "code", "message", "fields", "meta" }`.
-    - `pagination` is reserved for paged list endpoints (currently
-      unused by Informd routes).
+    `fields` is present only when the failure names request fields.
 
     ## Error codes → HTTP status
 
-    The `error.code` sentinel maps to the HTTP status:
+    The `code` sentinel maps to the HTTP status:
 
     | code | status |
     |---|---|
@@ -186,14 +184,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Namespace'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Namespace'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -221,12 +218,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Namespace'
+                $ref: '#/components/schemas/Namespace'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -252,14 +244,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/NamespaceMember'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NamespaceMember'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -323,12 +314,8 @@ paths:
             example:
               user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       responses:
-        '200':
+        '204':
           description: Member removed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -358,14 +345,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Form'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -399,12 +385,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -434,14 +415,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Form'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -467,14 +447,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Form'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -502,12 +481,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -530,14 +504,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Form'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -562,12 +535,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FormAnswerable'
+                $ref: '#/components/schemas/FormAnswerable'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -592,12 +560,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FullForm'
+                $ref: '#/components/schemas/FullForm'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -625,14 +588,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/FormMember'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormMember'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -696,12 +658,8 @@ paths:
             example:
               user_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       responses:
-        '200':
+        '204':
           description: Member removed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -731,12 +689,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -766,12 +719,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -801,12 +749,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -836,12 +779,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -871,24 +809,14 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        required: [count]
-                        properties:
-                          count:
-                            type: integer
-                            description: Number of responses.
+                type: object
+                required: [count]
+                properties:
+                  count:
+                    type: integer
+                    description: Number of responses.
               example:
-                code: 200
-                message: ""
-                data:
-                  count: 42
-                timestamp: '2026-01-01T12:00:00Z'
-                module: Informd
+                count: 42
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -916,14 +844,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Step'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Step'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -959,12 +886,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Step'
+                $ref: '#/components/schemas/Step'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1006,12 +928,8 @@ paths:
                 description: Tell us what you like.
                 position_hint: 2
       responses:
-        '200':
+        '204':
           description: Steps updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1042,14 +960,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Field'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Field'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1090,12 +1007,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Field'
+                $ref: '#/components/schemas/Field'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1128,12 +1040,8 @@ paths:
               items:
                 $ref: '#/components/schemas/UpdateFieldRequest'
       responses:
-        '200':
+        '204':
           description: Fields updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1166,12 +1074,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FieldSelectConfig'
+                $ref: '#/components/schemas/FieldSelectConfig'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1213,12 +1116,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FieldSelectConfig'
+                $ref: '#/components/schemas/FieldSelectConfig'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1245,12 +1143,8 @@ paths:
         - $ref: '#/components/parameters/StepID'
         - $ref: '#/components/parameters/FieldID'
       responses:
-        '200':
+        '204':
           description: Field deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1319,12 +1213,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FullForm'
+                $ref: '#/components/schemas/FullForm'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1351,14 +1240,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/FormMember'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormMember'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1415,12 +1303,8 @@ paths:
             schema:
               $ref: '#/components/schemas/RemoveFormMemberRequest'
       responses:
-        '200':
+        '204':
           description: Member removed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1449,12 +1333,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1483,12 +1362,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1517,12 +1391,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1551,12 +1420,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Form'
+                $ref: '#/components/schemas/Form'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1585,16 +1449,11 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        required: [count]
-                        properties:
-                          count:
-                            type: integer
+                type: object
+                required: [count]
+                properties:
+                  count:
+                    type: integer
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1621,14 +1480,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Step'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Step'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1659,12 +1517,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Step'
+                $ref: '#/components/schemas/Step'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1694,12 +1547,8 @@ paths:
               items:
                 $ref: '#/components/schemas/UpdateStepRequest'
       responses:
-        '200':
+        '204':
           description: Steps updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1729,14 +1578,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Field'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Field'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1768,12 +1616,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Field'
+                $ref: '#/components/schemas/Field'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1804,12 +1647,8 @@ paths:
               items:
                 $ref: '#/components/schemas/UpdateFieldRequest'
       responses:
-        '200':
+        '204':
           description: Fields updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1840,12 +1679,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FieldSelectConfig'
+                $ref: '#/components/schemas/FieldSelectConfig'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1878,12 +1712,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Response'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/FieldSelectConfig'
+                $ref: '#/components/schemas/FieldSelectConfig'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1909,12 +1738,8 @@ paths:
         - $ref: '#/components/parameters/StepID'
         - $ref: '#/components/parameters/FieldID'
       responses:
-        '200':
+        '204':
           description: Field deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Response'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1973,42 +1798,42 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     Unauthorized:
       description: Missing or invalid credentials
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     Forbidden:
       description: Insufficient permissions for the requested operation
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     NotFound:
       description: The requested resource does not exist
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     Conflict:
       description: The request conflicts with the current state of the resource
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
     InternalServerError:
       description: Unexpected server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
 
   schemas:
     UUID:
@@ -2026,42 +1851,13 @@ components:
       x-go-type-import:
         path: github.com/google/uuid
 
-    Response:
-      type: object
-      description: |
-        The `fun.Response` envelope wrapping every JSON payload. On
-        success `data` carries the operation payload; on failure `error`
-        carries the AppError.
-      required: [code, message, timestamp, module]
-      properties:
-        code:
-          type: integer
-          description: HTTP status code, duplicated for convenience.
-        message:
-          type: string
-          description: Informational message; often empty on success.
-        data:
-          type: object
-          description: The operation payload. Shape is documented per operation.
-        error:
-          allOf:
-            - $ref: '#/components/schemas/Error'
-          description: Present (non-null) only on failure.
-        pagination:
-          allOf:
-            - $ref: '#/components/schemas/PaginationMeta'
-          description: Present only on paged list endpoints.
-        timestamp:
-          type: string
-          format: date-time
-        module:
-          type: string
-          description: Service that produced the response.
-
     Error:
       type: object
       title: AppError
-      description: The `fun.AppError` object carried in the envelope's `error` field.
+      description: |
+        The body of every error response. `code` is a machine-readable
+        sentinel whose mapping to the HTTP status is documented in the
+        top-level description.
       required: [code, message]
       properties:
         code:
@@ -2094,60 +1890,6 @@ components:
                 type: string
               message:
                 type: string
-        meta:
-          type: object
-          description: Arbitrary key/value context.
-          additionalProperties: true
-        debug:
-          type: object
-          description: Development-only diagnostics; stripped outside development environments.
-          properties:
-            raw_error:
-              type: string
-            stack_trace:
-              type: string
-
-    ErrorResponse:
-      type: object
-      description: The envelope as sent on failure.
-      required: [code, message, error, timestamp, module]
-      properties:
-        code:
-          type: integer
-        message:
-          type: string
-        error:
-          $ref: '#/components/schemas/Error'
-        timestamp:
-          type: string
-          format: date-time
-        module:
-          type: string
-          description: Service that produced the response.
-
-    PaginationMeta:
-      type: object
-      description: Pagination metadata for paged list endpoints (currently unused by Informd routes).
-      required: [page, limit, total, has_next, has_prev]
-      properties:
-        page:
-          type: integer
-          minimum: 1
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 100
-        total:
-          type: integer
-          format: int64
-        has_next:
-          type: boolean
-        has_prev:
-          type: boolean
-        next_page:
-          type: integer
-        prev_page:
-          type: integer
 
     Namespace:
       x-go-type: models.Namespace

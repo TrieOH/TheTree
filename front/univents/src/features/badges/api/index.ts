@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createBadgeTemplate,
@@ -22,7 +22,7 @@ import type {
 import { badgeKeys } from "./query-keys";
 
 export const listBadgeTemplatesFn = createClientOnlyFn((editionId: string) =>
-  listBadgeTemplates(editionId).then(orvalData<BadgeTemplate[]>),
+  listBadgeTemplates(editionId).then(orvalItems<BadgeTemplate>),
 );
 export const badgeTemplatesQueryOptions = (editionId: string) =>
   queryOptions({
@@ -76,7 +76,7 @@ export const badgeEmissionsQueryOptions = (editionId: string) =>
     queryKey: badgeKeys.emissions(editionId),
     queryFn: () =>
       listEditionBadgeEmissions(editionId).then(
-        orvalData<BadgeEditionEmission[]>,
+        orvalItems<BadgeEditionEmission>,
       ),
   });
 
@@ -88,6 +88,6 @@ export const badgePrintQueryOptions = (
     queryKey: badgeKeys.print(editionId, emissionIds),
     queryFn: () =>
       getEditionBadgesPrint(editionId, { emission_ids: emissionIds }).then(
-        orvalData<BadgePrintItem[]>,
+        orvalItems<BadgePrintItem>,
       ),
   });

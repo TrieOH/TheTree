@@ -41,7 +41,6 @@ func useTestErrorMap(t *testing.T, m ErrorMap) {
 	t.Helper()
 	UseErrorMap(m)
 	t.Cleanup(func() {
-		fun.ResetAppErrorMapper()
 		errorMapMu.Lock()
 		errorMap = nil
 		errorMapMu.Unlock()
@@ -101,9 +100,9 @@ func TestErrorMapResolve(t *testing.T) {
 	}
 }
 
-// TestWriteErrorKeepsEnvelope — a named error goes out in the fun envelope
-// with the mapped status, code and message.
-func TestWriteErrorKeepsEnvelope(t *testing.T) {
+// TestWriteErrorIsTheBareObject — a named error goes out as the bare error
+// object with the mapped status, code and message.
+func TestWriteErrorIsTheBareObject(t *testing.T) {
 	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
 
 	rec := httptest.NewRecorder()
@@ -113,19 +112,50 @@ func TestWriteErrorKeepsEnvelope(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("want 400, got %d", rec.Code)
 	}
-	var body struct {
-		Code  int `json:"code"`
-		Error struct {
-			Code    string `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
+	var body map[string]any
 	err := json.Unmarshal(rec.Body.Bytes(), &body)
 	if err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if body.Code != 400 || body.Error.Code != "BAD_REQUEST" || body.Error.Message != errAddSelf.Error() {
-		t.Fatalf("unexpected envelope: %s", rec.Body.String())
+	want := map[string]any{"code": "BAD_REQUEST", "message": errAddSelf.Error()}
+	if fmt.Sprint(body) != fmt.Sprint(want) {
+		t.Fatalf("body = %s, want %v", rec.Body.String(), want)
+	}
+}
+
+// TestWriteMiddlewareErrorKeepsItsStatus — a middleware's rejection keeps
+// the middleware's status whatever the map says, reads as the mapped
+// link's message, and a 5xx never shows its cause.
+func TestWriteMiddlewareErrorKeepsItsStatus(t *testing.T) {
+	useTestErrorMap(t, ErrorMap{Is(errBadCreds, http.StatusForbidden)})
+
+	cases := []struct {
+		name   string
+		status int
+		err    error
+		msg    string
+	}{
+		{"mapped error keeps the middleware's status", 401, fmt.Errorf("hook: %w", errBadCreds), errBadCreds.Error()},
+		{"unmapped 4xx reads as its error", 401, errors.New("missing X-API-Key header"), "missing X-API-Key header"},
+		{"5xx stays generic", 500, errors.New("panic: nil map"), "internal error"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/projects", nil)
+			writeMiddlewareError(rec, req, tc.status, tc.err)
+
+			var body struct {
+				Message string `json:"message"`
+			}
+			err := json.Unmarshal(rec.Body.Bytes(), &body)
+			if err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if rec.Code != tc.status || body.Message != tc.msg {
+				t.Fatalf("got (%d, %q), want (%d, %q)", rec.Code, body.Message, tc.status, tc.msg)
+			}
+		})
 	}
 }
 
@@ -157,29 +187,28 @@ func TestTraceMiddlewareLeavesClientErrorsUnset(t *testing.T) {
 }
 
 // TestWriteErrorListsFields — a fielderr.Error answers as its named error
-// and lists its fields in the envelope.
+// and lists its fields next to the code and message.
 func TestWriteErrorListsFields(t *testing.T) {
-	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
+	useTestErrorMap(t, ErrorMap{Is(errTermsMissing, http.StatusBadRequest).Validation()})
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/checkout", nil)
-	WriteError(rec, req, fmt.Errorf("checkout: %w", fielderr.On(errAddSelf, "items[0].attendee", "required")))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/auth/register", nil)
+	WriteError(rec, req, fielderr.On(errTermsMissing, "accept_terms", "required"))
 
-	var body struct {
-		Error struct {
-			Message string `json:"message"`
-			Fields  []struct {
-				Field   string `json:"field"`
-				Message string `json:"message"`
-			} `json:"fields"`
-		} `json:"error"`
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("want 400, got %d", rec.Code)
 	}
+	var body map[string]any
 	err := json.Unmarshal(rec.Body.Bytes(), &body)
 	if err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if rec.Code != http.StatusBadRequest || body.Error.Message != errAddSelf.Error() ||
-		len(body.Error.Fields) != 1 || body.Error.Fields[0].Field != "items[0].attendee" {
-		t.Fatalf("unexpected response %d: %s", rec.Code, rec.Body.String())
+	want := map[string]any{
+		"code":    "VALIDATION_ERROR",
+		"message": errTermsMissing.Error(),
+		"fields":  []any{map[string]any{"field": "accept_terms", "message": "required"}},
+	}
+	if fmt.Sprint(body) != fmt.Sprint(want) {
+		t.Fatalf("body = %s, want %v", rec.Body.String(), want)
 	}
 }

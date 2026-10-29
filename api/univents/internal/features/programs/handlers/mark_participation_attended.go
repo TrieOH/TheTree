@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -18,7 +17,5 @@ func (h *Handlers) MarkParticipationAttended(ctx context.Context, req openapi.Ma
 	if err != nil {
 		return nil, err
 	}
-	return openapi.MarkParticipationAttended200JSONResponse{
-		Code: 200, Data: part, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.MarkParticipationAttended200JSONResponse(*part), nil
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -32,10 +31,5 @@ func (h *Handlers) GetEditionMyTicket(ctx context.Context, req openapi.GetEditio
 			TicketType:     res.TicketType,
 		}
 	}
-	return openapi.GetEditionMyTicket200JSONResponse{
-		Code:      200,
-		Data:      data,
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.GetEditionMyTicket200JSONResponse(*data), nil
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -17,7 +16,5 @@ func (h *Handlers) CreateProject(ctx context.Context, req openapi.CreateProjectR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateProject201JSONResponse{
-		Code: 201, Data: project, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateProject201JSONResponse(*project), nil
 }

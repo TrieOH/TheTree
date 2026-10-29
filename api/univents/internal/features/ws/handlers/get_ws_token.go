@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -23,10 +22,5 @@ func (h *Handlers) GetWsToken(ctx context.Context, req openapi.GetWsTokenRequest
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetWsToken200JSONResponse{
-		Code:      200,
-		Data:      &openapi.WsToken{Token: token, ExpiresAt: expiresAt},
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.GetWsToken200JSONResponse(openapi.WsToken{Token: token, ExpiresAt: expiresAt}), nil
 }

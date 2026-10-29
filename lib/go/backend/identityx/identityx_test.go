@@ -16,7 +16,7 @@ func TestIntrospectReturnsTheIdentity(t *testing.T) {
 			t.Errorf("path = %s, want /auth/introspect", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"code":200,"data":{"subject":{"id":"019a0000-0000-7000-8000-000000000001","type":"service"},"cred":{"type":"api_key"}}}`))
+		_, _ = w.Write([]byte(`{"subject":{"id":"019a0000-0000-7000-8000-000000000001","type":"service"},"cred":{"type":"api_key"}}`))
 	}))
 	defer srv.Close()
 

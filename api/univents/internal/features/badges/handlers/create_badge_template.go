@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"context"
-	"time"
 
 	"univents/errs"
 	"univents/internal/openapi"
@@ -26,7 +25,5 @@ func (h *Handlers) CreateBadgeTemplate(ctx context.Context, req openapi.CreateBa
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateBadgeTemplate201JSONResponse{
-		Code: 201, Data: template, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateBadgeTemplate201JSONResponse(*template), nil
 }

@@ -93,7 +93,7 @@ The organization shows in the other user's organizations
 They are listed as its owner
     Response Status Should Be    200    ${RESPONSE}
     ${me}=    Subject Behind Token    ${TOKENS}[access_token]
-    ${members}=    Data Of    ${RESPONSE}
+    ${members}=    Items Of    ${RESPONSE}
     ${roles}=    Evaluate    {m["actor_id"]: m["role"] for m in $members}
     Dictionary Should Contain Item    ${roles}    ${me}[id]    owner
 
@@ -101,7 +101,7 @@ The other user is listed as a "${role}"
     ${response}=    IDX List Organization Members    ${TOKENS}[access_token]    ${ORGANIZATION}[id]
     Response Status Should Be    200    ${response}
     ${other}=    Subject Behind Token    ${OTHER_TOKENS}[access_token]
-    ${members}=    Data Of    ${response}
+    ${members}=    Items Of    ${response}
     ${roles}=    Evaluate    {m["actor_id"]: m["role"] for m in $members}
     Dictionary Should Contain Item    ${roles}    ${other}[id]    ${role}
 
@@ -148,7 +148,7 @@ They are listed as the project's owner
     ...    ${TOKENS}[access_token]    ${ORGANIZATION}[id]    ${PROJECT}[id]
     Response Status Should Be    200    ${response}
     ${me}=    Subject Behind Token    ${TOKENS}[access_token]
-    ${members}=    Data Of    ${response}
+    ${members}=    Items Of    ${response}
     ${owners}=    Evaluate    [m for m in $members if m["actor_id"] == $me["id"] and m["role"] == "owner"]
     Should Not Be Empty    ${owners}    msg=Owner missing from project members: ${members}
     # Membership starts when the project does, not at Go's zero time.
@@ -213,7 +213,7 @@ The owner provisions a service actor
 
 The user is among the actors
     Response Status Should Be    200    ${RESPONSE}
-    ${actors}=    Data Of    ${RESPONSE}
+    ${actors}=    Items Of    ${RESPONSE}
     ${emails}=    Evaluate    [a.get("email") for a in $actors]
     List Should Contain Value    ${emails}    ${EMAIL}
 

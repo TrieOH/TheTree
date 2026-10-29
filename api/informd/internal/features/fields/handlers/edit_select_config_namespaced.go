@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"context"
-	"time"
 
 	"Informd/errs"
 	"Informd/internal/openapi"
@@ -25,7 +24,5 @@ func (h *Handlers) EditSelectConfigNamespaced(ctx context.Context, req openapi.E
 	if err != nil {
 		return nil, err
 	}
-	return openapi.EditSelectConfigNamespaced200JSONResponse{
-		Code: 200, Data: config, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.EditSelectConfigNamespaced200JSONResponse(*config), nil
 }

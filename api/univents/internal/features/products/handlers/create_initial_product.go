@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -26,7 +25,5 @@ func (h *Handlers) CreateInitialProduct(ctx context.Context, req openapi.CreateI
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateInitialProduct201JSONResponse{
-		Code: 201, Data: product, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateInitialProduct201JSONResponse(*product), nil
 }

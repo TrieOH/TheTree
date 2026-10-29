@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -18,7 +17,5 @@ func (h *Handlers) VerifyCertification(ctx context.Context, req openapi.VerifyCe
 		TemplateID: cert.TemplateID,
 		Cert:       cert,
 	}
-	return openapi.VerifyCertification200JSONResponse{
-		Code: 200, Data: &resp, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.VerifyCertification200JSONResponse(resp), nil
 }

@@ -3,7 +3,6 @@ package handlers
 import (
 	"IdentityX/internal/openapi"
 	"context"
-	"time"
 )
 
 func (h *Handlers) DisableOAuthProvider(ctx context.Context, req openapi.DisableOAuthProviderRequestObject) (openapi.DisableOAuthProviderResponseObject, error) {
@@ -11,7 +10,5 @@ func (h *Handlers) DisableOAuthProvider(ctx context.Context, req openapi.Disable
 	if err != nil {
 		return nil, err
 	}
-	return openapi.DisableOAuthProvider200JSONResponse{
-		Code: 200, Data: provider, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.DisableOAuthProvider200JSONResponse(*provider), nil
 }

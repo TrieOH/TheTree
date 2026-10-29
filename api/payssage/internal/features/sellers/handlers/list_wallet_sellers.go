@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListWalletSellers(ctx context.Context, req openapi.ListWallet
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListWalletSellers200JSONResponse{
-		Code: 200, Data: &sellers, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListWalletSellers200JSONResponse{Items: sellers}, nil
 }

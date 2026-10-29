@@ -29,6 +29,9 @@ func New(q *sqlc.Queries) *Repo {
 	}
 }
 
+// db is the queries handle, on the context's transaction when it carries one.
+func (repo *Repo) db(ctx context.Context) *sqlc.Queries { return database.Queries(ctx, repo.q) }
+
 func mapTos(src sqlc.TermsOfService) models.TermsOfService {
 	return models.TermsOfService{
 		ID:          src.ID,
@@ -54,65 +57,50 @@ func mapAcceptance(src sqlc.TosAcceptance) models.TosAcceptance {
 }
 
 func (repo *Repo) GetCurrent(ctx context.Context, projectID uuid.UUID) (*models.TermsOfService, error) {
-	row, err := repo.q.GetCurrentTos(ctx, projectID)
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapTos(row)), nil
+	row, err := repo.db(ctx).GetCurrentTos(ctx, projectID)
+	return database.One(row, err, repo.dbe, mapTos)
 }
 
 func (repo *Repo) Create(ctx context.Context, tos models.TermsOfService) (*models.TermsOfService, error) {
-	row, err := repo.q.InsertTos(ctx, sqlc.InsertTosParams{
+	row, err := repo.db(ctx).InsertTos(ctx, sqlc.InsertTosParams{
 		ProjectID:   tos.ProjectID,
 		Version:     tos.Version,
 		Content:     tos.Content,
 		EffectiveAt: tos.EffectiveAt,
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapTos(row)), nil
+	return database.One(row, err, repo.dbe, mapTos)
 }
 
 func (repo *Repo) Update(ctx context.Context, projectID uuid.UUID, content string, effectiveAt time.Time) (*models.TermsOfService, error) {
-	row, err := repo.q.UpdateTosBumpVersion(ctx, sqlc.UpdateTosBumpVersionParams{
+	row, err := repo.db(ctx).UpdateTosBumpVersion(ctx, sqlc.UpdateTosBumpVersionParams{
 		ProjectID:   projectID,
 		Content:     content,
 		EffectiveAt: effectiveAt,
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapTos(row)), nil
+	return database.One(row, err, repo.dbe, mapTos)
 }
 
 func (repo *Repo) RecordAcceptance(ctx context.Context, acceptance models.TosAcceptance) (*models.TosAcceptance, error) {
-	row, err := repo.q.InsertTosAcceptance(ctx, sqlc.InsertTosAcceptanceParams{
+	row, err := repo.db(ctx).InsertTosAcceptance(ctx, sqlc.InsertTosAcceptanceParams{
 		ActorID:     acceptance.ActorID,
 		ProjectID:   acceptance.ProjectID,
 		TosVersion:  acceptance.TosVersion,
 		ContentHash: acceptance.ContentHash,
 		Source:      acceptance.Source,
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapAcceptance(row)), nil
+	return database.One(row, err, repo.dbe, mapAcceptance)
 }
 
 func (repo *Repo) LatestAcceptedVersion(ctx context.Context, actorID, projectID uuid.UUID) (int, error) {
-	version, err := repo.q.GetLatestAcceptedTosVersion(ctx, sqlc.GetLatestAcceptedTosVersionParams{
+	version, err := repo.db(ctx).GetLatestAcceptedTosVersion(ctx, sqlc.GetLatestAcceptedTosVersionParams{
 		ActorID:   actorID,
 		ProjectID: projectID,
 	})
-	if err != nil {
-		return 0, repo.dbe(err)
-	}
-	return version, nil
+	return version, repo.dbe(err)
 }
 
 func (repo *Repo) ListAcceptances(ctx context.Context, projectID uuid.UUID) ([]models.TosAcceptanceWithActor, error) {
-	rows, err := repo.q.ListTosAcceptances(ctx, projectID)
+	rows, err := repo.db(ctx).ListTosAcceptances(ctx, projectID)
 	if err != nil {
 		return nil, repo.dbe(err)
 	}

@@ -14,8 +14,6 @@ type Handlers struct {
 
 func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
-const module = "IdentityX"
-
 func toOpenTos(t models.TermsOfService) openapi.ProjectTos {
 	return openapi.ProjectTos{
 		Id:          t.ID,

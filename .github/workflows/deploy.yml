@@ -54,6 +54,9 @@ jobs:
       front-name: ${{ steps.tag.outputs.front_name }}
       sdk-name: ${{ steps.tag.outputs.sdk_name }}
     steps:
+      # The sdk branch checks sdk/ts/<name> exists, so the tree must be here.
+      - uses: useblacksmith/checkout@v1
+
       - name: Parse tag
         id: tag
         env:
@@ -149,6 +152,7 @@ jobs:
           sqlc generate
           oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
           oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+          go run tools/strictmount internal/openapi/mount.gen.go
           go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"
 
       # ── R1 compile ──────────────────────────────────────────────────────
@@ -194,13 +198,14 @@ jobs:
           PKG_NAME=$(node -p "require('./package.json').name")
           PKG_VERSION=$(node -p "require('./package.json').version")
           echo "package: $PKG_NAME@$PKG_VERSION (tag: $VERSION)"
-          if [ "$PKG_VERSION" != "$VERSION" ]; then
+          # Tags carry a leading v (v0.1.8); package.json does not.
+          if [ "$PKG_VERSION" != "${VERSION#v}" ]; then
             echo "::error::Version mismatch! Tag version is $VERSION but package.json version is $PKG_VERSION"
             exit 1
           fi
           echo "name=$PKG_NAME" >> "$GITHUB_OUTPUT"
-          if npm view "$PKG_NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "::warning::$PKG_NAME@$VERSION already published to npm — skipping publish"
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "::warning::$PKG_NAME@$PKG_VERSION already published to npm — skipping publish"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -217,7 +222,7 @@ jobs:
           set -euo pipefail
           echo "▶ R5 trivy scan"
           case "$TYPE" in
-            service) PATHS="api/$ARTIFACT lib/go" ;;
+            service) PATHS="api/$ARTIFACT lib/go tools/go" ;;
             front)
               FRONT_DIR="$FRONT_NAME"
               [ "$FRONT_NAME" = "univents" ] && FRONT_DIR="univents-solid"
@@ -521,7 +526,7 @@ jobs:
             "artifact": "$ARTIFACT",
             "type": "sdk",
             "package": "${{ needs.checks.outputs.sdk-name }}",
-            "npm_version": "$VERSION"
+            "npm_version": "${VERSION#v}"
           }
           └───────────────────────────────────────────────────────
           EOF

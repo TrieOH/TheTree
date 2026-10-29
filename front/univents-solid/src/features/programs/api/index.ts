@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   checkInOccurrence,
   createProgram,
@@ -78,14 +78,14 @@ export const programPageQueryOptions = (
 export const programsQueryOptions = (editionId: string) => ({
   queryKey: programKeys.byEdition(editionId),
   queryFn: () =>
-    listEditionPrograms(editionId, { public: true }).then(orvalData<ProgramI[]>),
+    listEditionPrograms(editionId, { public: true }).then(orvalItems<ProgramI>),
 });
 
 export const occurrencesQueryOptions = (editionId: string) => ({
   queryKey: programKeys.occurrences(editionId),
   queryFn: () =>
     listEditionOccurrences(editionId, { public: true }).then(
-      orvalData<OccurrenceI[]>,
+      orvalItems<OccurrenceI>,
     ),
 });
 
@@ -107,7 +107,7 @@ export const myParticipationsQueryOptions = (editionId: string) => ({
   queryKey: programKeys.mine(editionId),
   queryFn: () =>
     listMyParticipations(editionId).then(
-      (response) => orvalData<MyParticipation[] | null>(response) ?? [],
+      orvalItems<MyParticipation>,
     ),
 });
 
@@ -153,7 +153,7 @@ export const deleteOccurrenceFn = (occurrenceId: string) =>
 
 export const listOccurrenceParticipantsFn = (occurrenceId: string) =>
   listOccurrenceParticipants(occurrenceId).then(
-    orvalData<ProgramParticipant[]>,
+    orvalItems<ProgramParticipant>,
   );
 
 export const markParticipationAttendedFn = (participationId: string) =>

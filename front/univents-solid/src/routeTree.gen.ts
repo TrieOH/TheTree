@@ -9,72 +9,57 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProfileIndexRouteImport } from './routes/profile/index'
-import { Route as EventsIndexRouteImport } from './routes/events/index'
-import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
-import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
-import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
-import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
-import { Route as ProfileEditRouteImport } from './routes/profile/edit'
-import { Route as ProfileConfigRouteImport } from './routes/profile/config'
-import { Route as CheckoutsPurchaseIdRouteImport } from './routes/checkouts/$purchaseId'
-import { Route as AuthVerifyRouteImport } from './routes/auth_/verify'
-import { Route as AuthResetRouteImport } from './routes/auth_/reset'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth_/forgot-password'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
-import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
-import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth_/forgot-password'
+import { Route as AuthResetRouteImport } from './routes/auth_/reset'
+import { Route as AuthVerifyRouteImport } from './routes/auth_/verify'
+import { Route as CheckoutsPurchaseIdRouteImport } from './routes/checkouts/$purchaseId'
+import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as ProfileConfigRouteImport } from './routes/profile/config'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as ProfileSetupRouteImport } from './routes/profile/setup'
+import { Route as SignatureRequestsFulfillRouteImport } from './routes/signature-requests/fulfill'
+import { Route as SignaturesRevokeRouteImport } from './routes/signatures/revoke'
+import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
-import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
-import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
-import { Route as EventsSlugEditionsRouteImport } from './routes/events/$slug/editions'
-import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
 import { Route as AuthProviderCallbackRouteImport } from './routes/auth_/$provider/callback'
+import { Route as EventsSlugIndexRouteImport } from './routes/events/$slug/index'
+import { Route as EventsSlugCheckoutRouteImport } from './routes/events/$slug/checkout'
+import { Route as EventsSlugEditionsRouteImport } from './routes/events/$slug/editions'
+import { Route as EventsSlugProgramsRouteImport } from './routes/events/$slug/programs'
+import { Route as EventsSlugStoreRouteImport } from './routes/events/$slug/store'
+import { Route as ProfileActorIdIndexRouteImport } from './routes/profile/$actorId/index'
 import { Route as AdminEventsEventIdIndexRouteImport } from './routes/admin/events/$eventId/index'
 import { Route as ProfileActorIdBadgesBadgeIdRouteImport } from './routes/profile/$actorId/badges/$badgeId'
-import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
+import { Route as AdminEventsEventIdMembersIndexRouteImport } from './routes/admin/events/$eventId/members/index'
 import { Route as EventsEventIdPayssageOauthCallbackRouteImport } from './routes/events/$eventId/payssage/oauth/callback'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/index'
-import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/tickets/index'
-import { Route as AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/index'
-import { Route as AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/purchases/index'
-import { Route as AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/index'
-import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
-import { Route as AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/index'
 import { Route as AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/index'
-import { Route as AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/invites'
-import { Route as AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/editor'
-import { Route as AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/calendar'
-import { Route as AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/badges/editor'
-import { Route as AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/$programId.occurrences/index'
+import { Route as AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/index'
+import { Route as AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/certifications/editor'
+import { Route as AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/index'
+import { Route as AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/index'
+import { Route as AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/calendar'
+import { Route as AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/purchases/index'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/index'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/editor'
+import { Route as AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/signatures/invites'
+import { Route as AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/tickets/index'
 import { Route as AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/products/$productId.variants/index'
+import { Route as AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRouteImport } from './routes/admin/events/$eventId_.editions.$editionId/programs/$programId.occurrences/index'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -82,14 +67,49 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileIndexRoute = ProfileIndexRouteImport.update({
-  id: '/profile/',
-  path: '/profile/',
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUploadsRoute = AdminUploadsRouteImport.update({
+  id: '/uploads',
+  path: '/uploads',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth_/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth_/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutsPurchaseIdRoute = CheckoutsPurchaseIdRouteImport.update({
+  id: '/checkouts/$purchaseId',
+  path: '/checkouts/$purchaseId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
@@ -97,14 +117,24 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VerifyHashRoute = VerifyHashRouteImport.update({
-  id: '/verify/$hash',
-  path: '/verify/$hash',
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignaturesRevokeRoute = SignaturesRevokeRouteImport.update({
-  id: '/signatures/revoke',
-  path: '/signatures/revoke',
+const ProfileConfigRoute = ProfileConfigRouteImport.update({
+  id: '/profile/config',
+  path: '/profile/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/profile/edit',
+  path: '/profile/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileSetupRoute = ProfileSetupRouteImport.update({
+  id: '/profile/setup',
+  path: '/profile/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignatureRequestsFulfillRoute =
@@ -113,54 +143,14 @@ const SignatureRequestsFulfillRoute =
     path: '/signature-requests/fulfill',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ProfileSetupRoute = ProfileSetupRouteImport.update({
-  id: '/profile/setup',
-  path: '/profile/setup',
+const SignaturesRevokeRoute = SignaturesRevokeRouteImport.update({
+  id: '/signatures/revoke',
+  path: '/signatures/revoke',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileEditRoute = ProfileEditRouteImport.update({
-  id: '/profile/edit',
-  path: '/profile/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileConfigRoute = ProfileConfigRouteImport.update({
-  id: '/profile/config',
-  path: '/profile/config',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutsPurchaseIdRoute = CheckoutsPurchaseIdRouteImport.update({
-  id: '/checkouts/$purchaseId',
-  path: '/checkouts/$purchaseId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthVerifyRoute = AuthVerifyRouteImport.update({
-  id: '/auth_/verify',
-  path: '/auth/verify',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthResetRoute = AuthResetRouteImport.update({
-  id: '/auth_/reset',
-  path: '/auth/reset',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/auth_/forgot-password',
-  path: '/auth/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUploadsRoute = AdminUploadsRouteImport.update({
-  id: '/uploads',
-  path: '/uploads',
-  getParentRoute: () => AdminRoute,
-} as any)
-const ProfileActorIdIndexRoute = ProfileActorIdIndexRouteImport.update({
-  id: '/profile/$actorId/',
-  path: '/profile/$actorId/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
-  id: '/events/$slug/',
-  path: '/events/$slug/',
+const VerifyHashRoute = VerifyHashRouteImport.update({
+  id: '/verify/$hash',
+  path: '/verify/$hash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
@@ -168,19 +158,14 @@ const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => AdminRoute,
 } as any)
-const EventsSlugStoreRoute = EventsSlugStoreRouteImport.update({
-  id: '/events/$slug/store',
-  path: '/events/$slug/store',
+const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
+  id: '/auth_/$provider/callback',
+  path: '/auth/$provider/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
-  id: '/events/$slug/programs',
-  path: '/events/$slug/programs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsSlugEditionsRoute = EventsSlugEditionsRouteImport.update({
-  id: '/events/$slug/editions',
-  path: '/events/$slug/editions',
+const EventsSlugIndexRoute = EventsSlugIndexRouteImport.update({
+  id: '/events/$slug/',
+  path: '/events/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsSlugCheckoutRoute = EventsSlugCheckoutRouteImport.update({
@@ -188,9 +173,24 @@ const EventsSlugCheckoutRoute = EventsSlugCheckoutRouteImport.update({
   path: '/events/$slug/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
-  id: '/auth_/$provider/callback',
-  path: '/auth/$provider/callback',
+const EventsSlugEditionsRoute = EventsSlugEditionsRouteImport.update({
+  id: '/events/$slug/editions',
+  path: '/events/$slug/editions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsSlugProgramsRoute = EventsSlugProgramsRouteImport.update({
+  id: '/events/$slug/programs',
+  path: '/events/$slug/programs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsSlugStoreRoute = EventsSlugStoreRouteImport.update({
+  id: '/events/$slug/store',
+  path: '/events/$slug/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileActorIdIndexRoute = ProfileActorIdIndexRouteImport.update({
+  id: '/profile/$actorId/',
+  path: '/profile/$actorId/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsEventIdIndexRoute = AdminEventsEventIdIndexRouteImport.update({
@@ -204,16 +204,16 @@ const ProfileActorIdBadgesBadgeIdRoute =
     path: '/profile/$actorId/badges/$badgeId',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AdminEventsEventIdMembersIndexRoute =
-  AdminEventsEventIdMembersIndexRouteImport.update({
-    id: '/events/$eventId/members/',
-    path: '/events/$eventId/members/',
-    getParentRoute: () => AdminRoute,
-  } as any)
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
     id: '/events/$eventId/editions/',
     path: '/events/$eventId/editions/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdMembersIndexRoute =
+  AdminEventsEventIdMembersIndexRouteImport.update({
+    id: '/events/$eventId/members/',
+    path: '/events/$eventId/members/',
     getParentRoute: () => AdminRoute,
   } as any)
 const EventsEventIdPayssageOauthCallbackRoute =
@@ -228,70 +228,10 @@ const AdminEventsEventIdEditionsEditionIdIndexRoute =
     path: '/events/$eventId/editions/$editionId/',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminEventsEventIdEditionsEditionIdTicketsIndexRoute =
-  AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/tickets/',
-    path: '/events/$eventId/editions/$editionId/tickets/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute =
-  AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/signatures/',
-    path: '/events/$eventId/editions/$editionId/signatures/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute =
-  AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/purchases/',
-    path: '/events/$eventId/editions/$editionId/purchases/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdProgramsIndexRoute =
-  AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/programs/',
-    path: '/events/$eventId/editions/$editionId/programs/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
-  AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/products/',
-    path: '/events/$eventId/editions/$editionId/products/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute =
-  AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/certifications/',
-    path: '/events/$eventId/editions/$editionId/certifications/',
-    getParentRoute: () => AdminRoute,
-  } as any)
 const AdminEventsEventIdEditionsEditionIdBadgesIndexRoute =
   AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport.update({
     id: '/events/$eventId_/editions/$editionId/badges/',
     path: '/events/$eventId/editions/$editionId/badges/',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute =
-  AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/signatures/invites',
-    path: '/events/$eventId/editions/$editionId/signatures/invites',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute =
-  AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/signatures/editor',
-    path: '/events/$eventId/editions/$editionId/signatures/editor',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute =
-  AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/programs/calendar',
-    path: '/events/$eventId/editions/$editionId/programs/calendar',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute =
-  AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport.update({
-    id: '/events/$eventId_/editions/$editionId/certifications/editor',
-    path: '/events/$eventId/editions/$editionId/certifications/editor',
     getParentRoute: () => AdminRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdBadgesEditorRoute =
@@ -300,19 +240,79 @@ const AdminEventsEventIdEditionsEditionIdBadgesEditorRoute =
     path: '/events/$eventId/editions/$editionId/badges/editor',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRoute =
-  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRouteImport.update(
-    {
-      id: '/events/$eventId_/editions/$editionId/programs/$programId/occurrences/',
-      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences/',
-      getParentRoute: () => AdminRoute,
-    } as any,
-  )
+const AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/certifications/',
+    path: '/events/$eventId/editions/$editionId/certifications/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute =
+  AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/certifications/editor',
+    path: '/events/$eventId/editions/$editionId/certifications/editor',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/products/',
+    path: '/events/$eventId/editions/$editionId/products/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdProgramsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/programs/',
+    path: '/events/$eventId/editions/$editionId/programs/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdProgramsCalendarRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/programs/calendar',
+    path: '/events/$eventId/editions/$editionId/programs/calendar',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdPurchasesIndexRoute =
+  AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/purchases/',
+    path: '/events/$eventId/editions/$editionId/purchases/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute =
+  AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/signatures/',
+    path: '/events/$eventId/editions/$editionId/signatures/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute =
+  AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/signatures/editor',
+    path: '/events/$eventId/editions/$editionId/signatures/editor',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdSignaturesInvitesRoute =
+  AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/signatures/invites',
+    path: '/events/$eventId/editions/$editionId/signatures/invites',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminEventsEventIdEditionsEditionIdTicketsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport.update({
+    id: '/events/$eventId_/editions/$editionId/tickets/',
+    path: '/events/$eventId/editions/$editionId/tickets/',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRoute =
   AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport.update(
     {
       id: '/events/$eventId_/editions/$editionId/products/$productId/variants/',
       path: '/events/$eventId/editions/$editionId/products/$productId/variants/',
+      getParentRoute: () => AdminRoute,
+    } as any,
+  )
+const AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRoute =
+  AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRouteImport.update(
+    {
+      id: '/events/$eventId_/editions/$editionId/programs/$programId/occurrences/',
+      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences/',
       getParentRoute: () => AdminRoute,
     } as any,
   )
@@ -647,32 +647,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/solid-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -682,95 +661,32 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile/': {
-      id: '/profile/'
-      path: '/profile'
-      fullPath: '/profile/'
-      preLoaderRoute: typeof ProfileIndexRouteImport
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/': {
-      id: '/events/'
-      path: '/events'
-      fullPath: '/events/'
-      preLoaderRoute: typeof EventsIndexRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/verify/$hash': {
-      id: '/verify/$hash'
-      path: '/verify/$hash'
-      fullPath: '/verify/$hash'
-      preLoaderRoute: typeof VerifyHashRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signatures/revoke': {
-      id: '/signatures/revoke'
-      path: '/signatures/revoke'
-      fullPath: '/signatures/revoke'
-      preLoaderRoute: typeof SignaturesRevokeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signature-requests/fulfill': {
-      id: '/signature-requests/fulfill'
-      path: '/signature-requests/fulfill'
-      fullPath: '/signature-requests/fulfill'
-      preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile/setup': {
-      id: '/profile/setup'
-      path: '/profile/setup'
-      fullPath: '/profile/setup'
-      preLoaderRoute: typeof ProfileSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile/edit': {
-      id: '/profile/edit'
-      path: '/profile/edit'
-      fullPath: '/profile/edit'
-      preLoaderRoute: typeof ProfileEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile/config': {
-      id: '/profile/config'
-      path: '/profile/config'
-      fullPath: '/profile/config'
-      preLoaderRoute: typeof ProfileConfigRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkouts/$purchaseId': {
-      id: '/checkouts/$purchaseId'
-      path: '/checkouts/$purchaseId'
-      fullPath: '/checkouts/$purchaseId'
-      preLoaderRoute: typeof CheckoutsPurchaseIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth_/verify': {
-      id: '/auth_/verify'
-      path: '/auth/verify'
-      fullPath: '/auth/verify'
-      preLoaderRoute: typeof AuthVerifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth_/reset': {
-      id: '/auth_/reset'
-      path: '/auth/reset'
-      fullPath: '/auth/reset'
-      preLoaderRoute: typeof AuthResetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth_/forgot-password': {
-      id: '/auth_/forgot-password'
-      path: '/auth/forgot-password'
-      fullPath: '/auth/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/uploads': {
@@ -780,18 +696,88 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminUploadsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/profile/$actorId/': {
-      id: '/profile/$actorId/'
-      path: '/profile/$actorId'
-      fullPath: '/profile/$actorId/'
-      preLoaderRoute: typeof ProfileActorIdIndexRouteImport
+    '/auth_/forgot-password': {
+      id: '/auth_/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$slug/': {
-      id: '/events/$slug/'
-      path: '/events/$slug'
-      fullPath: '/events/$slug/'
-      preLoaderRoute: typeof EventsSlugIndexRouteImport
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/verify': {
+      id: '/auth_/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkouts/$purchaseId': {
+      id: '/checkouts/$purchaseId'
+      path: '/checkouts/$purchaseId'
+      fullPath: '/checkouts/$purchaseId'
+      preLoaderRoute: typeof CheckoutsPurchaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/config': {
+      id: '/profile/config'
+      path: '/profile/config'
+      fullPath: '/profile/config'
+      preLoaderRoute: typeof ProfileConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/profile/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/setup': {
+      id: '/profile/setup'
+      path: '/profile/setup'
+      fullPath: '/profile/setup'
+      preLoaderRoute: typeof ProfileSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signature-requests/fulfill': {
+      id: '/signature-requests/fulfill'
+      path: '/signature-requests/fulfill'
+      fullPath: '/signature-requests/fulfill'
+      preLoaderRoute: typeof SignatureRequestsFulfillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signatures/revoke': {
+      id: '/signatures/revoke'
+      path: '/signatures/revoke'
+      fullPath: '/signatures/revoke'
+      preLoaderRoute: typeof SignaturesRevokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$hash': {
+      id: '/verify/$hash'
+      path: '/verify/$hash'
+      fullPath: '/verify/$hash'
+      preLoaderRoute: typeof VerifyHashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/': {
@@ -801,25 +787,18 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminEventsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/events/$slug/store': {
-      id: '/events/$slug/store'
-      path: '/events/$slug/store'
-      fullPath: '/events/$slug/store'
-      preLoaderRoute: typeof EventsSlugStoreRouteImport
+    '/auth_/$provider/callback': {
+      id: '/auth_/$provider/callback'
+      path: '/auth/$provider/callback'
+      fullPath: '/auth/$provider/callback'
+      preLoaderRoute: typeof AuthProviderCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$slug/programs': {
-      id: '/events/$slug/programs'
-      path: '/events/$slug/programs'
-      fullPath: '/events/$slug/programs'
-      preLoaderRoute: typeof EventsSlugProgramsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$slug/editions': {
-      id: '/events/$slug/editions'
-      path: '/events/$slug/editions'
-      fullPath: '/events/$slug/editions'
-      preLoaderRoute: typeof EventsSlugEditionsRouteImport
+    '/events/$slug/': {
+      id: '/events/$slug/'
+      path: '/events/$slug'
+      fullPath: '/events/$slug/'
+      preLoaderRoute: typeof EventsSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/$slug/checkout': {
@@ -829,11 +808,32 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof EventsSlugCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth_/$provider/callback': {
-      id: '/auth_/$provider/callback'
-      path: '/auth/$provider/callback'
-      fullPath: '/auth/$provider/callback'
-      preLoaderRoute: typeof AuthProviderCallbackRouteImport
+    '/events/$slug/editions': {
+      id: '/events/$slug/editions'
+      path: '/events/$slug/editions'
+      fullPath: '/events/$slug/editions'
+      preLoaderRoute: typeof EventsSlugEditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$slug/programs': {
+      id: '/events/$slug/programs'
+      path: '/events/$slug/programs'
+      fullPath: '/events/$slug/programs'
+      preLoaderRoute: typeof EventsSlugProgramsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$slug/store': {
+      id: '/events/$slug/store'
+      path: '/events/$slug/store'
+      fullPath: '/events/$slug/store'
+      preLoaderRoute: typeof EventsSlugStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$actorId/': {
+      id: '/profile/$actorId/'
+      path: '/profile/$actorId'
+      fullPath: '/profile/$actorId/'
+      preLoaderRoute: typeof ProfileActorIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/$eventId/': {
@@ -850,18 +850,18 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof ProfileActorIdBadgesBadgeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/events/$eventId/members/': {
-      id: '/admin/events/$eventId/members/'
-      path: '/events/$eventId/members'
-      fullPath: '/admin/events/$eventId/members/'
-      preLoaderRoute: typeof AdminEventsEventIdMembersIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/events/$eventId/editions/': {
       id: '/admin/events/$eventId/editions/'
       path: '/events/$eventId/editions'
       fullPath: '/admin/events/$eventId/editions/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId/members/': {
+      id: '/admin/events/$eventId/members/'
+      path: '/events/$eventId/members'
+      fullPath: '/admin/events/$eventId/members/'
+      preLoaderRoute: typeof AdminEventsEventIdMembersIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/events/$eventId/payssage/oauth/callback': {
@@ -878,81 +878,11 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId_/editions/$editionId/tickets/': {
-      id: '/admin/events/$eventId_/editions/$editionId/tickets/'
-      path: '/events/$eventId/editions/$editionId/tickets'
-      fullPath: '/admin/events/$eventId/editions/$editionId/tickets/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/signatures/': {
-      id: '/admin/events/$eventId_/editions/$editionId/signatures/'
-      path: '/events/$eventId/editions/$editionId/signatures'
-      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/purchases/': {
-      id: '/admin/events/$eventId_/editions/$editionId/purchases/'
-      path: '/events/$eventId/editions/$editionId/purchases'
-      fullPath: '/admin/events/$eventId/editions/$editionId/purchases/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/programs/': {
-      id: '/admin/events/$eventId_/editions/$editionId/programs/'
-      path: '/events/$eventId/editions/$editionId/programs'
-      fullPath: '/admin/events/$eventId/editions/$editionId/programs/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/products/': {
-      id: '/admin/events/$eventId_/editions/$editionId/products/'
-      path: '/events/$eventId/editions/$editionId/products'
-      fullPath: '/admin/events/$eventId/editions/$editionId/products/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/certifications/': {
-      id: '/admin/events/$eventId_/editions/$editionId/certifications/'
-      path: '/events/$eventId/editions/$editionId/certifications'
-      fullPath: '/admin/events/$eventId/editions/$editionId/certifications/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/events/$eventId_/editions/$editionId/badges/': {
       id: '/admin/events/$eventId_/editions/$editionId/badges/'
       path: '/events/$eventId/editions/$editionId/badges'
       fullPath: '/admin/events/$eventId/editions/$editionId/badges/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/signatures/invites': {
-      id: '/admin/events/$eventId_/editions/$editionId/signatures/invites'
-      path: '/events/$eventId/editions/$editionId/signatures/invites'
-      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/invites'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/signatures/editor': {
-      id: '/admin/events/$eventId_/editions/$editionId/signatures/editor'
-      path: '/events/$eventId/editions/$editionId/signatures/editor'
-      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/editor'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/programs/calendar': {
-      id: '/admin/events/$eventId_/editions/$editionId/programs/calendar'
-      path: '/events/$eventId/editions/$editionId/programs/calendar'
-      fullPath: '/admin/events/$eventId/editions/$editionId/programs/calendar'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events/$eventId_/editions/$editionId/certifications/editor': {
-      id: '/admin/events/$eventId_/editions/$editionId/certifications/editor'
-      path: '/events/$eventId/editions/$editionId/certifications/editor'
-      fullPath: '/admin/events/$eventId/editions/$editionId/certifications/editor'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events/$eventId_/editions/$editionId/badges/editor': {
@@ -962,11 +892,74 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdBadgesEditorRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/': {
-      id: '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/'
-      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences'
-      fullPath: '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/'
-      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRouteImport
+    '/admin/events/$eventId_/editions/$editionId/certifications/': {
+      id: '/admin/events/$eventId_/editions/$editionId/certifications/'
+      path: '/events/$eventId/editions/$editionId/certifications'
+      fullPath: '/admin/events/$eventId/editions/$editionId/certifications/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/certifications/editor': {
+      id: '/admin/events/$eventId_/editions/$editionId/certifications/editor'
+      path: '/events/$eventId/editions/$editionId/certifications/editor'
+      fullPath: '/admin/events/$eventId/editions/$editionId/certifications/editor'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/products/': {
+      id: '/admin/events/$eventId_/editions/$editionId/products/'
+      path: '/events/$eventId/editions/$editionId/products'
+      fullPath: '/admin/events/$eventId/editions/$editionId/products/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/programs/': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/'
+      path: '/events/$eventId/editions/$editionId/programs'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/programs/calendar': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/calendar'
+      path: '/events/$eventId/editions/$editionId/programs/calendar'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/calendar'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsCalendarRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/purchases/': {
+      id: '/admin/events/$eventId_/editions/$editionId/purchases/'
+      path: '/events/$eventId/editions/$editionId/purchases'
+      fullPath: '/admin/events/$eventId/editions/$editionId/purchases/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdPurchasesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/signatures/': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures/'
+      path: '/events/$eventId/editions/$editionId/signatures'
+      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/signatures/editor': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures/editor'
+      path: '/events/$eventId/editions/$editionId/signatures/editor'
+      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/editor'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/signatures/invites': {
+      id: '/admin/events/$eventId_/editions/$editionId/signatures/invites'
+      path: '/events/$eventId/editions/$editionId/signatures/invites'
+      fullPath: '/admin/events/$eventId/editions/$editionId/signatures/invites'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesInvitesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/tickets/': {
+      id: '/admin/events/$eventId_/editions/$editionId/tickets/'
+      path: '/events/$eventId/editions/$editionId/tickets'
+      fullPath: '/admin/events/$eventId/editions/$editionId/tickets/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdTicketsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events/$eventId_/editions/$editionId/products/$productId/variants/': {
@@ -974,6 +967,13 @@ declare module '@tanstack/solid-router' {
       path: '/events/$eventId/editions/$editionId/products/$productId/variants'
       fullPath: '/admin/events/$eventId/editions/$editionId/products/$productId/variants/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsProductIdVariantsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/': {
+      id: '/admin/events/$eventId_/editions/$editionId/programs/$programId/occurrences/'
+      path: '/events/$eventId/editions/$editionId/programs/$programId/occurrences'
+      fullPath: '/admin/events/$eventId/editions/$editionId/programs/$programId/occurrences/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProgramsProgramIdOccurrencesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
   }

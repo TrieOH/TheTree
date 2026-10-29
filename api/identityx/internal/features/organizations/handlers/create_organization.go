@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -16,7 +15,5 @@ func (h *Handlers) CreateOrganization(ctx context.Context, req openapi.CreateOrg
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateOrganization201JSONResponse{
-		Code: 201, Data: org, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateOrganization201JSONResponse(*org), nil
 }

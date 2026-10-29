@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createEdition,
@@ -53,7 +53,7 @@ export const publishEditionFn = createClientOnlyFn(
 
 export const getAllPublicEditionsFn = async (eventId: string) => {
   const editions = await listPublicEditions(eventId, { public: true }).then(
-    orvalData<EditionApiI[]>,
+    orvalItems<EditionApiI>,
   );
   return editions.filter((edition) => !edition.is_draft).map(normalizeEdition);
 };
@@ -82,7 +82,7 @@ const getPublicEditions = async (
 ) => {
   const fn = kind === "past" ? listPastEditions : listUpcomingEditions;
   const editions = await fn(eventId, { public: true }).then(
-    orvalData<EditionApiI[]>,
+    orvalItems<EditionApiI>,
   );
   return editions.map(normalizeEdition);
 };
@@ -115,7 +115,7 @@ export const allPublicEditionsQueryOptions = (eventId: string) => {
 export const getDraftEditionsFn = createClientOnlyFn(
   async (eventId: string) => {
     const editions = await listDraftEditions(eventId).then(
-      orvalData<EditionApiI[]>,
+      orvalItems<EditionApiI>,
     );
     return editions.map(normalizeEdition);
   },

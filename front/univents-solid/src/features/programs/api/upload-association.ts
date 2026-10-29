@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import { listEditionPrograms, patchProgram } from "@trieoh/univents-api";
 import type { Program } from "@trieoh/univents-api/schemas";
 import {
@@ -23,7 +23,7 @@ async function associateProgramImage(
   }
 
   const programs = await listEditionPrograms(editionId, { public: true })
-    .then(orvalData<Program[]>)
+    .then(orvalItems<Program>)
     .catch(() => []);
 
   const program = (programs ?? []).find((item) => item.id === task.owner.id);

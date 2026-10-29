@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { createCapability, listCapabilities } from "@trieoh/identityx-api";
 import type { CapabilityCreateI, CapabilityI } from "../model";
 
@@ -25,7 +25,7 @@ export const createCapabilityFn = createClientOnlyFn(
  */
 export const getCapabilitiesFn = createClientOnlyFn(
   async (project_id: string) => {
-    return listCapabilities(project_id).then(orvalData<CapabilityI[]>);
+    return listCapabilities(project_id).then(orvalItems<CapabilityI>);
   },
 );
 

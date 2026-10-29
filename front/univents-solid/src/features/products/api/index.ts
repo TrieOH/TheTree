@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createInitialProduct,
   createProductVariant,
@@ -49,7 +49,7 @@ export type StorePageData = {
 export const productsQueryOptions = (editionId: string) => ({
   queryKey: productKeys.byEdition(editionId),
   queryFn: () =>
-    listEditionProducts(editionId).then(orvalData<ProductI[]>),
+    listEditionProducts(editionId).then(orvalItems<ProductI>),
 });
 
 export const productsByEditionQueryOptions = productsQueryOptions;
@@ -58,7 +58,7 @@ export const productVariantsQueryOptions = (productId: string) => ({
   queryKey: productKeys.variants(productId),
   queryFn: () =>
     listProductVariants(productId).then(
-      orvalData<VariantI[]>,
+      orvalItems<VariantI>,
     ),
 });
 
@@ -66,7 +66,7 @@ export const storeStockQueryOptions = (editionId: string) => ({
   queryKey: productKeys.stock(editionId),
   queryFn: () =>
     listEditionStoreStock(editionId, { public: true }).then(
-      orvalData<StoreStockItem[]>,
+      orvalItems<StoreStockItem>,
     ),
 });
 

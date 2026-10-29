@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -18,7 +17,5 @@ func (h *Handlers) UpsertProjectProfile(ctx context.Context, req openapi.UpsertP
 	if err != nil {
 		return nil, err
 	}
-	return openapi.UpsertProjectProfile200JSONResponse{
-		Code: 200, Data: profile, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.UpsertProjectProfile200JSONResponse(*profile), nil
 }

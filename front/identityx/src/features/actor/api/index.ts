@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createActor,
   createOrganizationProjectActor,
@@ -38,9 +38,9 @@ export const getActorsFn = createClientOnlyFn(
   async (project_id: string, organization_id?: string) => {
     if (organization_id)
       return listOrganizationProjectActors(organization_id, project_id).then(
-        orvalData<ActorI[]>,
+        orvalItems<ActorI>,
       );
-    return listActors(project_id).then(orvalData<ActorI[]>);
+    return listActors(project_id).then(orvalItems<ActorI>);
   },
 );
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -16,7 +15,5 @@ func (h *Handlers) RemoveProjectMember(ctx context.Context, req openapi.RemovePr
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RemoveProjectMember200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.RemoveProjectMember204Response{}, nil
 }

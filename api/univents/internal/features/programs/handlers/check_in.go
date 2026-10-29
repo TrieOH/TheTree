@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -18,7 +17,5 @@ func (h *Handlers) CheckInOccurrence(ctx context.Context, req openapi.CheckInOcc
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CheckInOccurrence200JSONResponse{
-		Code: 200, Data: part, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CheckInOccurrence200JSONResponse(*part), nil
 }

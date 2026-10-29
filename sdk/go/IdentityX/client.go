@@ -63,12 +63,6 @@ func (c *Client) Close() error {
 	return c.http.Close()
 }
 
-// envelope is the {"data": ...} wrapper IdentityX puts around JSON
-// responses (JWKS is the exception and comes back bare).
-type envelope[T any] struct {
-	Data T `json:"data"`
-}
-
 // send executes req and decodes a 2xx body into the request's result. Any
 // 4xx/5xx comes back as *APIError carrying the HTTP status, whatever the body
 // looks like.
@@ -81,6 +75,14 @@ func (c *Client) send(req *resty.Request, method, path string) error {
 		apiErr := &APIError{}
 		_ = json.Unmarshal(res.Bytes(), apiErr)
 		apiErr.StatusCode = res.StatusCode()
+		if apiErr.Message == "" {
+			// An RFC 9457 problem carries its message in detail.
+			var problem struct {
+				Detail string `json:"detail"`
+			}
+			_ = json.Unmarshal(res.Bytes(), &problem)
+			apiErr.Message = problem.Detail
+		}
 		if apiErr.Message == "" {
 			apiErr.Message = res.String()
 		}

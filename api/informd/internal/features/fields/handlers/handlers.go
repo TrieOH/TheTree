@@ -14,8 +14,6 @@ type Handlers struct {
 
 func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
-const module = "Informd"
-
 func mustMarshal(v *map[string]any) *json.RawMessage {
 	if v == nil {
 		return nil

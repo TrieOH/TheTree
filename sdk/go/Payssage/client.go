@@ -40,18 +40,10 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
-	var env struct {
-		Data json.RawMessage `json:"data"`
-	}
-
 	req := c.http.R().SetContext(ctx).SetResponseExpectContentType("application/json")
 	if body != nil {
 		req.SetBody(body)
 	}
-	if out != nil {
-		req.SetResult(&env)
-	}
-
 	res, err := req.Execute(method, path)
 	if err != nil {
 		return fmt.Errorf("payssage: %s %s: %w", method, path, err)
@@ -65,20 +57,24 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	}
 
 	if out != nil {
-		err = json.Unmarshal(env.Data, out)
+		err = json.Unmarshal(res.Bytes(), out)
 		if err != nil {
-			return fmt.Errorf("payssage: decode data: %w", err)
+			return fmt.Errorf("payssage: decode: %w", err)
 		}
 	}
 
 	return nil
 }
 
+// list reads a list payload: `{ "items": [...] }`.
+type list[T any] struct {
+	Items []T `json:"items"`
+}
+
 type APIError struct {
 	StatusCode int    `json:"-"`
-	Module     string `json:"module"`
+	Code       string `json:"code"`
 	Message    string `json:"message"`
-	Code       int    `json:"code"`
 }
 
 func (e *APIError) Error() string {

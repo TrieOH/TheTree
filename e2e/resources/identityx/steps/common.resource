@@ -222,6 +222,6 @@ Verified At
 Ids Of
     [Documentation]    The `${key}` of every item in a list payload.
     [Arguments]    ${response}    ${key}=id
-    ${items}=    Data Of    ${response}
+    ${items}=    Items Of    ${response}
     ${ids}=    Evaluate    [item[$key] for item in ($items or [])]
     RETURN    ${ids}

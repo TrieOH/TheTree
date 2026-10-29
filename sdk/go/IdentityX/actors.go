@@ -44,7 +44,7 @@ type ActorService struct {
 }
 
 func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, error) {
-	var res envelope[Actor]
+	var res Actor
 	req := s.client.http.R().SetContext(ctx).
 		SetPathParam("project_id", s.client.projectID.String()).
 		SetPathParam("email", email).
@@ -53,11 +53,11 @@ func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, er
 	if err != nil {
 		return nil, err
 	}
-	return &res.Data, nil
+	return &res, nil
 }
 
 func (s *ActorService) GetByID(ctx context.Context, id uuid.UUID) (*Actor, error) {
-	var res envelope[Actor]
+	var res Actor
 	req := s.client.http.R().SetContext(ctx).
 		SetPathParam("project_id", s.client.projectID.String()).
 		SetPathParam("id", id.String()).
@@ -66,5 +66,5 @@ func (s *ActorService) GetByID(ctx context.Context, id uuid.UUID) (*Actor, error
 	if err != nil {
 		return nil, err
 	}
-	return &res.Data, nil
+	return &res, nil
 }

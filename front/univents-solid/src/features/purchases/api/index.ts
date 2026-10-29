@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/query-core";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   getCheckout,
   getWsToken,
@@ -36,7 +36,7 @@ export const checkoutQueryOptions = (purchaseId: string) => ({
 export const editionPurchasesQueryOptions = (editionId: string) => ({
   queryKey: purchaseKeys.edition(editionId),
   queryFn: () =>
-    listEditionPurchases(editionId).then(orvalData<EditionPurchase[]>),
+    listEditionPurchases(editionId).then(orvalItems<EditionPurchase>),
 });
 
 export type CheckoutPageData = {

@@ -6,6 +6,7 @@ import (
 
 	spec "IdentityX"
 	"IdentityX/internal/authz"
+	"IdentityX/internal/openapi"
 	"IdentityX/internal/setup"
 	libauthz "lib/authz"
 	"lib/httpserver"
@@ -45,7 +46,7 @@ func newTestRouter(t *testing.T, h *server, primitives libauthz.Primitives, st *
 	// answers errors through the same table.
 	httpserver.UseErrorMap(Errors())
 	r := chi.NewRouter()
-	mountStrict(r, h, resolver.Chains())
+	openapi.Mount(r, h, resolver.Chains())
 	return r
 }
 

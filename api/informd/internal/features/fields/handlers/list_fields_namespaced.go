@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListFieldsNamespaced(ctx context.Context, req openapi.ListFie
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListFieldsNamespaced200JSONResponse{
-		Code: 200, Data: &fields, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListFieldsNamespaced200JSONResponse{Items: fields}, nil
 }

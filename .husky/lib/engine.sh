@@ -22,6 +22,7 @@
 #
 # Categories:
 #   apis / fronts / libs / sdks   — real checkable members
+#   tools                         — tools/go, the repo's Go programs (one module)
 #   docs                          — zero checks
 #   infra                         — zero checks (dot-dirs + compose.yml + justfile, Q16)
 #   root-go / root-ts             — workspace-level files; broad escape hatch
@@ -52,6 +53,8 @@ engine_classify() {
             rest=${f#front/}; name=${rest%%/*}
             [ "$name" = "$rest" ] && return 0
             printf 'fronts\tfront/%s\t%s-ui\n' "$name" "$name" ;;
+        tools/go/*)
+            printf 'tools\ttools/go\ttools-go\n' ;;
         docs/*|README.md)
             printf 'docs\tdocs\tdocs\n' ;;
         .husky/*|.agents/*|compose.yml|justfile)
@@ -136,6 +139,8 @@ engine_scope() {
         else
             awk -F'\t' '$1=="sdks"{print $3; exit}' "$ENGINE_TMP/classes"
         fi
+    elif grep -qx 'tools' "$ENGINE_TMP/cats"; then
+        printf 'tools-go\n'                       # single module, always singular
     elif grep -qx 'infra' "$ENGINE_TMP/cats"; then
         printf 'infra\n'
     elif grep -qx 'docs' "$ENGINE_TMP/cats"; then
@@ -170,6 +175,7 @@ engine_targets() {
         for d in api/*/; do [ -d "$d" ] && add_target "go:${d%/}"; done
         [ -d lib/go ] && add_target "go:lib/go"
         for d in sdk/go/*/; do [ -d "$d" ] && add_target "go:${d%/}"; done
+        [ -d tools/go ] && add_target "go:tools/go"
     fi
     if grep -q '^root-ts' "$ENGINE_TMP/classes"; then
         for d in front/*/; do
@@ -189,6 +195,7 @@ engine_targets() {
                 rest=${f#api/}; name=${rest%%/*}
                 [ -d "api/$name" ] && add_target "go:api/$name" ;;
             lib/go/*) [ -d lib/go ] && add_target "go:lib/go" ;;
+            tools/go/*) [ -d tools/go ] && add_target "go:tools/go" ;;
             sdk/go/*)
                 rest=${f#sdk/go/}; name=${rest%%/*}
                 [ -d "sdk/go/$name" ] && add_target "go:sdk/go/$name" ;;
@@ -216,7 +223,7 @@ engine_targets() {
 engine_valid_scope() {
     scope=$1
     case "$scope" in
-        root|docs|infra|apis|fronts|libs|lib-go|lib-ts|libs-ts|sdks|sdks-go|sdks-ts)
+        root|docs|infra|apis|fronts|libs|lib-go|lib-ts|libs-ts|sdks|sdks-go|sdks-ts|tools-go)
             return 0 ;;
     esac
     for d in api/*/; do
@@ -240,7 +247,7 @@ engine_valid_scope() {
 # engine_all_scopes
 #   Prints every currently valid scope (for hard-fail messages).
 engine_all_scopes() {
-    printf '  root docs infra apis fronts libs lib-go lib-ts libs-ts sdks sdks-go sdks-ts\n'
+    printf '  root docs infra apis fronts libs lib-go lib-ts libs-ts sdks sdks-go sdks-ts tools-go\n'
     for d in api/*/;  do [ -d "$d" ] && printf '  %s\n' "$(basename "$d")"; done
     for d in front/*/; do [ -d "$d" ] && printf '  %s\n' "$(basename "$d")-ui"; done
     for d in sdk/go/*/; do [ -d "$d" ] && printf '  sdk-go-%s\n' "$(basename "$d")"; done

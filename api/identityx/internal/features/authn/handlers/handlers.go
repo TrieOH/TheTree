@@ -13,5 +13,3 @@ type Handlers struct {
 func New(ops *service.Operations, st *setup.State) *Handlers {
 	return &Handlers{ops: ops, setup: st}
 }
-
-const module = "IdentityX"

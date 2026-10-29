@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import { listEventMembers } from "@trieoh/univents-api";
 import type { QueryClient } from "@trieoh/front-core-solid";
 
@@ -21,7 +21,7 @@ export interface RemoveEventMemberInput {
 }
 
 export const getEventMembersFn = async (eventId: string): Promise<EventMemberWithEmailI[]> => {
-  return listEventMembers(eventId).then(orvalData<EventMemberWithEmailI[]>);
+  return listEventMembers(eventId).then(orvalItems<EventMemberWithEmailI>);
 };
 
 export const allEventMembersQueryOptions = (eventId: string) => ({

@@ -30,19 +30,20 @@ interface InterceptorConfig {
   fetch?: typeof fetch;
 }
 
-interface RefreshEnvelope {
+interface RefreshResult {
   code: number;
   data?: AuthTokens;
   message?: string;
 }
 
-async function readRefreshEnvelope(response: Response): Promise<RefreshEnvelope> {
+async function readRefresh(response: Response): Promise<RefreshResult> {
   try {
-    const body = (await response.json()) as Partial<RefreshEnvelope>;
+    const body: unknown = await response.json();
+    const message = (body as { message?: unknown } | null)?.message;
     return {
-      code: typeof body.code === "number" ? body.code : response.status,
-      ...(body.data ? { data: body.data } : {}),
-      ...(body.message ? { message: body.message } : {}),
+      code: response.status,
+      ...(response.ok ? { data: body as AuthTokens } : {}),
+      ...(typeof message === "string" && message ? { message } : {}),
     };
   } catch {
     return { code: response.status, message: response.statusText };
@@ -93,7 +94,7 @@ export class AuthInterceptor {
             },
           }
         );
-        const res = await readRefreshEnvelope(response);
+        const res = await readRefresh(response);
         const isSuccessfulCode = res.code >= 200 && res.code < 300;
         if (!isSuccessfulCode || !res.data || !res.data.access_token) {
           shouldClear = res.code >= 400 && res.code < 500;

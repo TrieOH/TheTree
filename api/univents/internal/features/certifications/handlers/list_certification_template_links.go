@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListCertificationTemplateLinks(ctx context.Context, req opena
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListCertificationTemplateLinks200JSONResponse{
-		Code: 200, Data: &links, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListCertificationTemplateLinks200JSONResponse{Items: links}, nil
 }

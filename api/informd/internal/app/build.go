@@ -11,6 +11,7 @@ import (
 	"Informd/internal/features/responders"
 	"Informd/internal/features/responses"
 	"Informd/internal/features/steps"
+	"Informd/internal/openapi"
 	"Informd/internal/sqlc"
 	"lib/backend"
 
@@ -55,6 +56,6 @@ func Build(_ context.Context, d *backend.Deps, r chi.Router) error {
 	if err != nil {
 		return err
 	}
-	mountStrict(r, srv, chains)
+	openapi.Mount(r, srv, chains)
 	return nil
 }

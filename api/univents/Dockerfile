@@ -14,6 +14,7 @@ COPY go.work go.work.sum ./
 COPY lib/go/go.mod lib/go/go.sum ./lib/go/
 COPY sdk/go/IdentityX/go.mod sdk/go/IdentityX/go.sum ./sdk/go/IdentityX/
 COPY sdk/go/Payssage/go.mod sdk/go/Payssage/go.sum ./sdk/go/Payssage/
+COPY tools/go/go.mod ./tools/go/
 COPY api/identityx/go.mod api/identityx/go.sum ./api/identityx/
 COPY api/informd/go.mod api/informd/go.sum ./api/informd/
 COPY api/payssage/go.mod api/payssage/go.sum ./api/payssage/
@@ -24,12 +25,14 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
 COPY lib/go/ ./lib/go/
 COPY sdk/go/IdentityX/ ./sdk/go/IdentityX/
 COPY sdk/go/Payssage/ ./sdk/go/Payssage/
+COPY tools/go/ ./tools/go/
 COPY api/univents/ ./api/univents/
 WORKDIR /app/api/univents
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     sqlc generate && \
     oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
     oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
+    go run tools/strictmount internal/openapi/mount.gen.go && \
     # generated bindings import oapi-codegen/runtime; not committed, so go mod tidy would drop it -- pin it at build time
     . /app/tools.versions && go get "github.com/oapi-codegen/runtime@v${OAPI_RUNTIME_VERSION}"
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
@@ -37,7 +40,7 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     CGO_ENABLED=0 GOOS=linux go build -o univents ./cmd/univents
 
 # Static health probe for the distroless runtime (no shell/wget/curl there).
-RUN CGO_ENABLED=0 GOOS=linux go build -o /healthcheck lib/cmd/healthcheck
+RUN CGO_ENABLED=0 GOOS=linux go build -o /healthcheck tools/healthcheck
 
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app

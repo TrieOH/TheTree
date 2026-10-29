@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   addEventMember,
   listEventMembers,
@@ -29,7 +29,7 @@ export interface RemoveEventMemberInput {
 }
 
 export const getEventMembersFn = createClientOnlyFn((eventId: string) => {
-  return listEventMembers(eventId).then(orvalData<EventMemberWithEmailI[]>);
+  return listEventMembers(eventId).then(orvalItems<EventMemberWithEmailI>);
 });
 
 export const allEventMembersQueryOptions = (eventId: string) =>

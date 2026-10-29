@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"context"
-	"time"
 
 	"univents/errs"
 	"univents/internal/openapi"
@@ -26,7 +25,5 @@ func (h *Handlers) UpdateCertificationTemplate(ctx context.Context, req openapi.
 	if err != nil {
 		return nil, err
 	}
-	return openapi.UpdateCertificationTemplate200JSONResponse{
-		Code: 200, Data: template, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.UpdateCertificationTemplate200JSONResponse(*template), nil
 }

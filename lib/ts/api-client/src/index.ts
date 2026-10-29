@@ -17,8 +17,10 @@ import {
   type ApiError,
 } from "@trieoh/identityx-sdk-ts"
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts"
+import { itemsOf, toFailure, toSuccess } from "./wire"
 
 export type { ApiError }
+export { itemsOf, readFailure, toFailure, toSuccess, type FieldError, type WireFailure } from "./wire"
 export {
   configureApiClient,
   createOrvalTransport,
@@ -30,6 +32,10 @@ export {
 /** Extracts the payload from Orval's full HTTP response wrapper. */
 export const orvalData = <T>(response: { data: unknown }): T =>
   response.data as T
+
+/** Extracts the items of a list payload from Orval's response wrapper. */
+export const orvalItems = <T>(response: { data: unknown }): T[] =>
+  itemsOf<T>(response.data)
 
 export interface AppFetcherConfig {
   /** Base URL for the main API. */
@@ -77,6 +83,8 @@ export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
 
   const publicFetcher = createDefaultFetchClient({
     baseURL: apiURL,
+    toSuccess,
+    toFailure,
     credentials: "omit",
     timeout,
   })

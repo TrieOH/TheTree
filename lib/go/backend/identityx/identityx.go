@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -138,9 +139,9 @@ func apiKeyHook(baseURL string, o options) fm.APIKeyHook {
 	}
 }
 
-// introspect asks IdentityX who owns rawKey. IdentityX answers with the fun
-// envelope; the identity is under data. A non-2xx answer is
-// ErrInvalidAPIKey; a transport failure is returned as is.
+// introspect asks IdentityX who owns rawKey. IdentityX answers with the
+// identity. A non-2xx answer is ErrInvalidAPIKey; a transport failure is
+// returned as is.
 func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*idx.Identity, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -155,12 +156,14 @@ func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*
 	if resp.StatusCode/100 != 2 {
 		return nil, ErrInvalidAPIKey
 	}
-	var envelope struct {
-		Data idx.Identity `json:"data"`
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("introspect: read: %w", err)
 	}
-	err = json.NewDecoder(resp.Body).Decode(&envelope)
+	var identity idx.Identity
+	err = json.Unmarshal(body, &identity)
 	if err != nil {
 		return nil, fmt.Errorf("introspect: decode: %w", err)
 	}
-	return &envelope.Data, nil
+	return &identity, nil
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -17,7 +16,5 @@ func (h *Handlers) CreateCapability(ctx context.Context, req openapi.CreateCapab
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateCapability201JSONResponse{
-		Code: 201, Data: capability, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateCapability201JSONResponse(*capability), nil
 }

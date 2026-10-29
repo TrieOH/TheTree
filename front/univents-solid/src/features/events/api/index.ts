@@ -6,14 +6,14 @@ import {
   patchEvent,
 } from "@trieoh/univents-api";
 import type { PatchEventRequest } from "@trieoh/univents-api/schemas";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import type { EventI } from "../model";
 import { eventKeys } from "./query-keys";
 import "./upload-association";
 
 const getPublicEventsFn = () =>
-  listPublicEvents({ public: true }).then(orvalData<EventI[]>);
+  listPublicEvents({ public: true }).then(orvalItems<EventI>);
 
 export const allPublicEventsQueryOptions = () => ({
   queryKey: eventKeys.publicLists(),
@@ -30,10 +30,10 @@ export const publicEventBySlugQueryOptions = (slug: string) => ({
 
 
 const getOwnedEventsFn = async () =>
-  listOwnedEvents({ public: false }).then(orvalData<EventI[]>);
+  listOwnedEvents({ public: false }).then(orvalItems<EventI>);
 
 const getJoinedEventsFn = async () =>
-  listJoinedEvents({ public: false }).then(orvalData<EventI[]>);
+  listJoinedEvents({ public: false }).then(orvalItems<EventI>);
 
 export const allOwnEventsQueryOptions = () => ({
   queryKey: eventKeys.ownedLists(),

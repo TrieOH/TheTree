@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetOccurrence(ctx context.Context, req openapi.GetOccurrenceR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetOccurrence200JSONResponse{
-		Code: 200, Data: occurrence, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetOccurrence200JSONResponse(*occurrence), nil
 }

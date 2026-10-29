@@ -69,6 +69,11 @@ export interface CreateActorRequest {
 export interface IdentityXAccessClientConfig {
   baseURL: string;
   apiKey: string;
+  /**
+   * Transport for every call. Inject one to add tracing or to adapt the
+   * response shape instead of patching `globalThis.fetch`.
+   */
+  fetch?: typeof fetch;
 }
 
 export interface CreateIdentityXAccessClientConfig extends IdentityXAccessClientConfig {}

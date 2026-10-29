@@ -45,18 +45,24 @@ Unique Brand Slug
     RETURN    ${prefix}${id}
 
 Data Of
-    [Documentation]    The `data` payload of a `fun.Response` envelope.
+    [Documentation]    The payload of a response: its body.
+    [Arguments]    ${response}
+    RETURN    ${response.json()}
+
+Items Of
+    [Documentation]    The items of a list response (`{items}`).
     [Arguments]    ${response}
     ${body}=    Set Variable    ${response.json()}
-    Dictionary Should Contain Key    ${body}    data    msg=No data in response: ${response.text}
-    RETURN    ${body}[data]
+    Dictionary Should Contain Key    ${body}    items    msg=No items in response: ${response.text}
+    RETURN    ${body}[items]
 
 Error Of
-    [Documentation]    The `error` object of a failed `fun.Response` envelope.
+    [Documentation]    The error of a failed response as `{code, message, fields}`:
+    ...    the body itself, or an RFC 9457 problem's `code`, `detail` and `errors`.
     [Arguments]    ${response}
     ${body}=    Set Variable    ${response.json()}
-    Dictionary Should Contain Key    ${body}    error    msg=No error in response: ${response.text}
-    RETURN    ${body}[error]
+    ${error}=    Evaluate    {k: v for k, v in {"code": $body.get("code"), "message": $body.get("message") or $body.get("detail") or $body.get("title"), "fields": $body.get("fields") or $body.get("errors")}.items() if v is not None}
+    RETURN    ${error}
 
 Response Status Should Be
     [Documentation]    Like RequestsLibrary's `Status Should Be`, but shows the body on a miss.

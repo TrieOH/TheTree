@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,13 +11,8 @@ func (h *Handlers) ConnectEventPayments(ctx context.Context, req openapi.Connect
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ConnectEventPayments200JSONResponse{
-		Code: 200,
-		Data: &openapi.ConnectEventPaymentsResult{
-			AuthUrl:  res.AuthURL,
-			WalletId: res.WalletID,
-		},
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.ConnectEventPayments200JSONResponse(openapi.ConnectEventPaymentsResult{
+		AuthUrl:  res.AuthURL,
+		WalletId: res.WalletID,
+	}), nil
 }

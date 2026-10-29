@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetActorByEmail(ctx context.Context, req openapi.GetActorByEm
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetActorByEmail200JSONResponse{
-		Code: 200, Data: actor, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetActorByEmail200JSONResponse(*actor), nil
 }

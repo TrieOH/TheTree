@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetPlatformProfileSchema(ctx context.Context, _ openapi.GetPl
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetPlatformProfileSchema200JSONResponse{
-		Code: 200, Data: schema, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetPlatformProfileSchema200JSONResponse(*schema), nil
 }

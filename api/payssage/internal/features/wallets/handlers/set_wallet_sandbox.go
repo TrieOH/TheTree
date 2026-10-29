@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 	"payssage/models"
@@ -17,7 +16,5 @@ func (h *Handlers) SetWalletSandbox(ctx context.Context, req openapi.SetWalletSa
 	if err != nil {
 		return nil, err
 	}
-	return openapi.SetWalletSandbox200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.SetWalletSandbox204Response{}, nil
 }

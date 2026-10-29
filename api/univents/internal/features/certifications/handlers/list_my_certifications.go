@@ -4,7 +4,6 @@ import (
 	idx "sdk/identityx"
 
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -18,7 +17,5 @@ func (h *Handlers) ListMyCertifications(ctx context.Context, _ openapi.ListMyCer
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListMyCertifications200JSONResponse{
-		Code: 200, Data: &certs, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListMyCertifications200JSONResponse{Items: certs}, nil
 }

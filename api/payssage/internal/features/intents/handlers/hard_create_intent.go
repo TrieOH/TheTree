@@ -5,7 +5,6 @@ import (
 
 	"context"
 	"os"
-	"time"
 
 	"payssage/errs"
 	"payssage/internal/openapi"
@@ -48,7 +47,5 @@ func (h *Handlers) HardCreateIntent(ctx context.Context, req openapi.HardCreateI
 	if err != nil {
 		return nil, err
 	}
-	return openapi.HardCreateIntent201JSONResponse{
-		Code: 201, Data: intent, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.HardCreateIntent201JSONResponse(*intent), nil
 }

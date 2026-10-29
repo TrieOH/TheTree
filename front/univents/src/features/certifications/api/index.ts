@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createCertificationTemplate,
@@ -65,7 +65,7 @@ export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
 export const getAllCertificationTemplatesFn = createClientOnlyFn(
   async (editionId: string) => {
     return listCertificationTemplates(editionId, { public: true }).then(
-      orvalData<CertificationTemplateI[]>,
+      orvalItems<CertificationTemplateI>,
     );
   },
 );
@@ -95,7 +95,7 @@ export const certificationTemplateQueryOptions = (templateId: string) => {
 export const getCertificationTemplateLinksFn = createClientOnlyFn(
   (templateId: string) =>
     listCertificationTemplateLinks(templateId, { public: true }).then(
-      orvalData<CertificationTemplateProgramI[]>,
+      orvalItems<CertificationTemplateProgramI>,
     ),
 );
 
@@ -142,7 +142,7 @@ export const certificationQueryOptions = (certId: string) => {
 };
 
 export const getAllCertificationsByUserFn = createClientOnlyFn(async () => {
-  return listMyCertifications().then(orvalData<CertificationI[]>);
+  return listMyCertifications().then(orvalItems<CertificationI>);
 });
 
 export const certificationsByUserQueryOptions = () => {
@@ -154,7 +154,7 @@ export const certificationsByUserQueryOptions = () => {
 
 export const getCertificationsByEditionFn = createClientOnlyFn(
   (editionId: string) =>
-    listEditionCertifications(editionId).then(orvalData<CertificationI[]>),
+    listEditionCertifications(editionId).then(orvalItems<CertificationI>),
 );
 
 export const invalidateCertificationFn = createClientOnlyFn(
@@ -175,7 +175,7 @@ export const certificationsByEditionQueryOptions = (editionId: string) =>
 export const getEmissionErrorsByEditionFn = createClientOnlyFn(
   (editionId: string) =>
     listCertificationEmissionErrors(editionId).then(
-      orvalData<CertificationEmissionErrorI[]>,
+      orvalItems<CertificationEmissionErrorI>,
     ),
 );
 

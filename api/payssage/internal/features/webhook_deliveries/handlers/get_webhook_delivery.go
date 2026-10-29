@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetWebhookDelivery(ctx context.Context, req openapi.GetWebhoo
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetWebhookDelivery200JSONResponse{
-		Code: 200, Data: delivery, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetWebhookDelivery200JSONResponse(*delivery), nil
 }

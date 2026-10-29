@@ -42,10 +42,10 @@ func (c *Client) SetWalletFee(ctx context.Context, walletID uuid.UUID, feeBps in
 
 // ListWalletSellers lists the sellers (provider accounts) bound to a wallet.
 func (c *Client) ListWalletSellers(ctx context.Context, walletID uuid.UUID) ([]Seller, error) {
-	var out []Seller
+	var out list[Seller]
 	err := c.do(ctx, "GET", fmt.Sprintf("/wallets/%s/sellers", walletID), nil, &out)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return out.Items, nil
 }

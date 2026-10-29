@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -41,9 +40,7 @@ func (h *Handlers) ListEditionPurchases(ctx context.Context, req openapi.ListEdi
 			Attendees:        attendees,
 		})
 	}
-	return openapi.ListEditionPurchases200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListEditionPurchases200JSONResponse{Items: data}, nil
 }
 
 // RefundPurchase initiates a full refund of an approved purchase
@@ -57,25 +54,20 @@ func (h *Handlers) RefundPurchase(ctx context.Context, req openapi.RefundPurchas
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RefundPurchase200JSONResponse{
-		Code: 200,
-		Data: &openapi.Purchase{
-			PurchaseId:       purchase.ID,
-			EditionId:        purchase.EditionID,
-			Status:           openapi.PurchaseStatus(purchase.Status),
-			StatusReason:     purchase.StatusReason,
-			TotalCents:       purchase.TotalCents,
-			Currency:         purchase.Currency,
-			PaymentMethod:    purchase.PaymentMethod,
-			PayssageIntentId: purchase.PayssageIntentID,
-			PayerEmail:       purchase.PayerEmail,
-			QrCode:           purchase.QRCode,
-			QrCodeBase64:     purchase.QRCodeBase64,
-			ExpiresAt:        purchase.ExpiresAt,
-			CreatedAt:        &purchase.CreatedAt,
-			Items:            []openapi.PurchaseItem{},
-		},
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.RefundPurchase200JSONResponse(openapi.Purchase{
+		PurchaseId:       purchase.ID,
+		EditionId:        purchase.EditionID,
+		Status:           openapi.PurchaseStatus(purchase.Status),
+		StatusReason:     purchase.StatusReason,
+		TotalCents:       purchase.TotalCents,
+		Currency:         purchase.Currency,
+		PaymentMethod:    purchase.PaymentMethod,
+		PayssageIntentId: purchase.PayssageIntentID,
+		PayerEmail:       purchase.PayerEmail,
+		QrCode:           purchase.QRCode,
+		QrCodeBase64:     purchase.QRCodeBase64,
+		ExpiresAt:        purchase.ExpiresAt,
+		CreatedAt:        &purchase.CreatedAt,
+		Items:            []openapi.PurchaseItem{},
+	}), nil
 }

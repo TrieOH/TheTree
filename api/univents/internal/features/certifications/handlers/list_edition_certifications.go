@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListEditionCertifications(ctx context.Context, req openapi.Li
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListEditionCertifications200JSONResponse{
-		Code: 200, Data: &certs, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListEditionCertifications200JSONResponse{Items: certs}, nil
 }

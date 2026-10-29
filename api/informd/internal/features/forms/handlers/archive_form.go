@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ArchiveForm(ctx context.Context, req openapi.ArchiveFormReque
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ArchiveForm200JSONResponse{
-		Code: 200, Data: form, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ArchiveForm200JSONResponse(*form), nil
 }

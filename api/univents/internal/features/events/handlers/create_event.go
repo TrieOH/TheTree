@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -19,7 +18,5 @@ func (h *Handlers) CreateEvent(ctx context.Context, req openapi.CreateEventReque
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateEvent201JSONResponse{
-		Code: 201, Data: event, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateEvent201JSONResponse(*event), nil
 }

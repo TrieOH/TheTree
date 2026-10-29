@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -18,7 +17,5 @@ func (h *Handlers) PatchOccurrence(ctx context.Context, req openapi.PatchOccurre
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PatchOccurrence200JSONResponse{
-		Code: 200, Data: occurrence, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PatchOccurrence200JSONResponse(*occurrence), nil
 }

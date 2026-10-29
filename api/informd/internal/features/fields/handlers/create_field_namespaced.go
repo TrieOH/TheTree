@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 	"Informd/models"
@@ -27,7 +26,5 @@ func (h *Handlers) CreateFieldNamespaced(ctx context.Context, req openapi.Create
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateFieldNamespaced201JSONResponse{
-		Code: 201, Data: field, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateFieldNamespaced201JSONResponse(*field), nil
 }

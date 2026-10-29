@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -28,7 +27,5 @@ func (h *Handlers) UpdateBadgeTemplate(ctx context.Context, req openapi.UpdateBa
 	if err != nil {
 		return nil, err
 	}
-	return openapi.UpdateBadgeTemplate200JSONResponse{
-		Code: 200, Data: template, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.UpdateBadgeTemplate200JSONResponse(*template), nil
 }

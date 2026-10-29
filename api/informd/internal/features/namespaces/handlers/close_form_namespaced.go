@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) CloseFormNamespaced(ctx context.Context, req openapi.CloseFor
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CloseFormNamespaced200JSONResponse{
-		Code: 200, Data: form, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CloseFormNamespaced200JSONResponse(*form), nil
 }
