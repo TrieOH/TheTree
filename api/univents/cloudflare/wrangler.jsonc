@@ -37,10 +37,12 @@
 				"dead_letter_queue": "univents-jobs-dlq"
 			}
 		]
-	}
+	},
 
 	// Config: none lives here. The whole Univents env (the same keys as
 	// api/univents/.example.env, minus JOBS_URL) is the UNIVENTS_API_ENV
 	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
 	// binding is passed to the container as an environment variable.
+	// Empty on purpose: `wrangler types` then never reads a local .dev.vars/.env.
+	"secrets": { "required": [] },
 }

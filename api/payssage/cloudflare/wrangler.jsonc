@@ -52,4 +52,6 @@
 	// api/payssage/.example.env, minus JOBS_URL) is the PAYSSAGE_API_ENV
 	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
 	// binding is passed to the container as an environment variable.
+	// Empty on purpose: `wrangler types` then never reads a local .dev.vars/.env.
+	"secrets": { "required": [] },
 }

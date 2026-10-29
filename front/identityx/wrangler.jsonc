@@ -13,7 +13,12 @@
   "upload_source_maps": true,
   "observability": {
     "enabled": true
-  }
+  },
+  // Runtime secrets (`wrangler secret put`). Declared so `wrangler types` is
+  // built from config, not a local .env, and deploys fail while one is
+  // missing. Local dev also only loads the .env keys declared here; build-time
+  // VITE_* values are inlined by Vite, not read from the Worker env.
+  "secrets": { "required": ["AUTH_SESSION_PASSWORD"] }
   /**
     * Smart Placement
     * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

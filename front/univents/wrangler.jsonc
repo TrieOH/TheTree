@@ -15,10 +15,29 @@
   },
   "vars": {
     "TRACES_ENABLED": "true",
-    "TRACES_OTLP_URL": "https://traces.trieoh.com/insert/opentelemetry/v1/traces"
+    "TRACES_OTLP_URL": "https://traces.trieoh.com/insert/opentelemetry/v1/traces",
+    // optional overrides; empty means the defaults in storage-handlers.ts
+    "STORAGE_IMAGE_ALLOWED_TYPES": "",
+    "STORAGE_IMAGE_MAX_SIZE_BYTES": "",
+    "STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS": "",
+    "STORAGE_IMAGE_MODERATION_MODEL": "",
+    "STORAGE_IMAGE_MODERATION_PROMPT": ""
   },
   "ai": {
     "binding": "AI"
+  },
+  // Runtime secrets (`wrangler secret put`). Declared so `wrangler types` is
+  // built from config, not a local .env, and deploys fail while one is
+  // missing. Local dev also only loads the .env keys declared here or in vars.
+  "secrets": {
+    "required": [
+      "AUTH_SESSION_PASSWORD",
+      "IDENTITYX_ACCESS_API_KEY",
+      "MINIO_ENDPOINT",
+      "BUCKET_NAME",
+      "MINIO_ACCESS_KEY",
+      "MINIO_SECRET_KEY"
+    ]
   },
   /**
     * Smart Placement

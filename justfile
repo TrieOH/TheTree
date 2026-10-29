@@ -116,6 +116,7 @@ gen +SERVICES=services:
       )
     done
     just gen-ts
+    just gen-cf
 
 # The fronts import these clients; they are not committed, so run this after
 # cloning and whenever an api-spec.yml changes. orval always regenerates all
@@ -124,6 +125,23 @@ gen +SERVICES=services:
 # Generate the orval TS clients (lib/ts/<svc>/client).
 gen-ts:
     pnpm orval
+
+# Built only from each wrangler.jsonc (vars, bindings, `secrets.required`) and
+# the pinned wrangler, never from a local .env, so every machine gets the same
+# file. Not committed: run after cloning and whenever a wrangler.jsonc or the
+# wrangler pin changes. Pages sites (`pages_build_output_dir`) are static, have
+# no Env to type and no wrangler dependency, so they are skipped.
+#
+# Generate the Workers types (worker-configuration.d.ts) for every Worker.
+gen-cf:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for cfg in front/*/wrangler.jsonc api/*/cloudflare/wrangler.jsonc; do
+      grep -q '"pages_build_output_dir"' "$cfg" && continue
+      dir=$(dirname "$cfg")
+      echo "==> $dir"
+      pnpm --config.verify-deps-before-run=false -C "$dir" exec wrangler types --strict-vars=false >/dev/null
+    done
 
 # ── Checks ────────────────────────────────────────────────────────────────
 
@@ -312,3 +330,13 @@ goup:
     done
     # sync go.work.sum
     go work sync
+
+# Count lines of hand-written code: tracked files only (so gitignored codegen
+# never shows up), minus lockfiles, generated route trees, vendored shadcn,
+# static assets, docs and agent config. Extra args go to cloc, e.g. `--by-file`.
+loc *ARGS:
+    cloc --vcs=git --quiet \
+        --exclude-dir=docs,.agents,.github,.husky,patches,public,shadcn,stories,testdata \
+        --not-match-f='(\.gen\.ts|pnpm-lock\.yaml|go\.work\.sum)$' \
+        --exclude-lang=Markdown,JSON,SVG,Text,diff \
+        {{ARGS}}

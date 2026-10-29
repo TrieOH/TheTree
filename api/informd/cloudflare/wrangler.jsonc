@@ -21,10 +21,12 @@
 	"durable_objects": {
 		"bindings": [{ "name": "INFORMD", "class_name": "InformdContainer" }]
 	},
-	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["InformdContainer"] }]
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["InformdContainer"] }],
 
 	// Config: none lives here. The whole Informd env (the same keys as
 	// api/informd/.example.env) is the INFORMD_API_ENV GitHub secret,
 	// uploaded by deploy.yml with --secrets-file. Every string binding is
 	// passed to the container as an environment variable.
+	// Empty on purpose: `wrangler types` then never reads a local .dev.vars/.env.
+	"secrets": { "required": [] },
 }

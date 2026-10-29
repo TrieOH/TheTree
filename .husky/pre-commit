@@ -164,6 +164,22 @@ if [ -s "$ENGINE_TMP/ts_targets" ]; then
     done
     if [ "$stale" -eq 1 ]; then
         printf '▶ orval — regenerating TS clients\n'
+        stale=2
+    fi
+    # worker-configuration.d.ts is gitignored too (`just gen-cf`): rebuild it
+    # for Workers (fronts, api/<svc>/cloudflare) missing it or with a staged
+    # wrangler.jsonc. Pages sites (`pages_build_output_dir`) have no Env to type
+    for t in $(cat "$ENGINE_TMP/ts_targets"); do
+        d=${t#ts:}
+        [ -f "$d/wrangler.jsonc" ] || continue
+        grep -q '"pages_build_output_dir"' "$d/wrangler.jsonc" && continue
+        if [ ! -f "$d/worker-configuration.d.ts" ] || grep -qxF "$d/wrangler.jsonc" "$ENGINE_TMP/staged"; then
+            printf '▶ wrangler types — %s\n' "$d"
+            pnpm --config.verify-deps-before-run=false -C "$d" exec wrangler types --strict-vars=false >/dev/null 2>&1 \
+                || { printf '  ✗ wrangler types failed in %s\n' "$d"; exit 1; }
+        fi
+    done
+    if [ "$stale" -eq 2 ]; then
         if ! pnpm --config.verify-deps-before-run=false orval >"$ENGINE_TMP/orval.log" 2>&1; then
             cat "$ENGINE_TMP/orval.log"
             printf '  ✗ orval failed\n'
