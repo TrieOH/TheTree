@@ -1,4 +1,4 @@
-package handlers
+package responses
 
 import (
 	"context"
@@ -13,7 +13,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func jsonMarshal(v *map[string]any) *json.RawMessage {
 	if v == nil {

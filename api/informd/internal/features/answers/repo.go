@@ -1,4 +1,4 @@
-package repo
+package answers
 
 import (
 	"Informd/errs"
@@ -19,7 +19,7 @@ type Repo struct {
 
 var _ ports.AnswerRepo = (*Repo)(nil)
 
-func New(q *sqlc.Queries) *Repo {
+func NewRepo(q *sqlc.Queries) *Repo {
 	return &Repo{
 		q:   q,
 		dbe: database.NewErrorHandler(errs.ErrAnswerNotFound),

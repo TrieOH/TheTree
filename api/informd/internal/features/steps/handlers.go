@@ -1,4 +1,4 @@
-package handlers
+package steps
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type Handlers struct {
 	ops *service.Operations
 }
 
-func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
 func (h *Handlers) BulkEditSteps(ctx context.Context, req openapi.BulkEditStepsRequestObject) (openapi.BulkEditStepsResponseObject, error) {
 	payload := make([]models.UpdateFormStepInput, 0, len(*req.Body))
