@@ -129,13 +129,15 @@ gen-ts:
 # Built only from each wrangler.jsonc (vars, bindings, `secrets.required`) and
 # the pinned wrangler, never from a local .env, so every machine gets the same
 # file. Not committed: run after cloning and whenever a wrangler.jsonc or the
-# wrangler pin changes.
+# wrangler pin changes. Pages sites (`pages_build_output_dir`) are static, have
+# no Env to type and no wrangler dependency, so they are skipped.
 #
 # Generate the Workers types (worker-configuration.d.ts) for every Worker.
 gen-cf:
     #!/usr/bin/env bash
     set -euo pipefail
     for cfg in front/*/wrangler.jsonc api/*/cloudflare/wrangler.jsonc; do
+      grep -q '"pages_build_output_dir"' "$cfg" && continue
       dir=$(dirname "$cfg")
       echo "==> $dir"
       pnpm --config.verify-deps-before-run=false -C "$dir" exec wrangler types --strict-vars=false >/dev/null
