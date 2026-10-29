@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 	"payssage/models"
@@ -17,7 +16,5 @@ func (h *Handlers) SetWalletFee(ctx context.Context, req openapi.SetWalletFeeReq
 	if err != nil {
 		return nil, err
 	}
-	return openapi.SetWalletFee200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.SetWalletFee204Response{}, nil
 }

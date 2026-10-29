@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListCollectors(ctx context.Context, _ openapi.ListCollectorsR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListCollectors200JSONResponse{
-		Code: 200, Data: &collectors, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListCollectors200JSONResponse{Items: collectors}, nil
 }

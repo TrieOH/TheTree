@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) CancelIntent(ctx context.Context, req openapi.CancelIntentReq
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CancelIntent200JSONResponse{
-		Code: 200, Data: intent, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CancelIntent200JSONResponse(*intent), nil
 }

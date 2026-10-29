@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ProviderCallback(ctx context.Context, req openapi.ProviderCal
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ProviderCallback200JSONResponse{
-		Code: 200, Data: &finalRedirectURI, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ProviderCallback200JSONResponse(finalRedirectURI), nil
 }

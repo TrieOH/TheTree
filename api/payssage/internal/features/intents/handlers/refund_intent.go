@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -13,7 +12,5 @@ func (h *Handlers) RefundIntent(ctx context.Context, req openapi.RefundIntentReq
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RefundIntent200JSONResponse{
-		Code: 200, Data: intent, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.RefundIntent200JSONResponse(*intent), nil
 }

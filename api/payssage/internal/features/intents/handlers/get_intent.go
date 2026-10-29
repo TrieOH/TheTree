@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetIntent(ctx context.Context, req openapi.GetIntentRequestOb
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetIntent200JSONResponse{
-		Code: 200, Data: intent, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetIntent200JSONResponse(*intent), nil
 }

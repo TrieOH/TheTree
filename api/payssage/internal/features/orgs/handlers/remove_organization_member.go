@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"payssage/internal/openapi"
 	"payssage/models"
@@ -16,7 +15,5 @@ func (h *Handlers) RemoveOrganizationMember(ctx context.Context, req openapi.Rem
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RemoveOrganizationMember200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.RemoveOrganizationMember204Response{}, nil
 }

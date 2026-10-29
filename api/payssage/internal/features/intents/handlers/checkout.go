@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"context"
-	"time"
 
 	"payssage/errs"
 	"payssage/internal/openapi"
@@ -36,7 +35,5 @@ func (h *Handlers) Checkout(ctx context.Context, req openapi.CheckoutRequestObje
 	if err != nil {
 		return nil, err
 	}
-	return openapi.Checkout201JSONResponse{
-		Code: 201, Data: intent, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.Checkout201JSONResponse(*intent), nil
 }
