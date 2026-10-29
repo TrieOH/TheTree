@@ -34,7 +34,7 @@ export interface TanStackIdentityXBffConfig {
 /**
  * TanStack Start binding for `createIdentityXBff`: it only supplies the runtime
  * pieces (encrypted session cookie, incoming request). The IdentityX contract —
- * endpoints, envelopes, refresh, proxy guard — lives in the shared core.
+ * endpoints, responses, refresh, proxy guard — lives in the shared core.
  */
 export function createTanStackIdentityXBff(config: TanStackIdentityXBffConfig) {
   if (config.session.password.length < 32) {
