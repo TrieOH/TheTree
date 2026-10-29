@@ -127,6 +127,27 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	fun.Error(err).SendWithCtx(r.Context(), w)
 }
 
+// writeMiddlewareError writes a fun middleware's rejection (installed by
+// SetupFUN), so its errors share the writer with every other error. The
+// middleware's status stands: an auth hook's error is a 401 there even
+// when the map gives it another status elsewhere. The message is the
+// mapped link's own, else the error's for a 4xx; a 5xx stays generic.
+func writeMiddlewareError(w http.ResponseWriter, r *http.Request, status int, err error) {
+	errorMapMu.RLock()
+	m := errorMap
+	errorMapMu.RUnlock()
+	_, _, msg, ok := m.lookup(err)
+	switch {
+	case ok:
+	case status < http.StatusInternalServerError:
+		msg = err.Error()
+	default:
+		telemetry.Log().Error("middleware error", zap.Int("status", status), zap.Error(err))
+		msg = "internal error"
+	}
+	fun.Error(&fun.AppError{Code: codeFor(status), Message: msg, Fields: fieldsOf(err), Err: err}).SendWithCtx(r.Context(), w)
+}
+
 // errorStatus is the status err is answered with under the installed map.
 func errorStatus(err error) int {
 	errorMapMu.RLock()
@@ -146,8 +167,19 @@ func (m ErrorMap) Status(err error) int {
 	return status
 }
 
-// resolve finds the outermost link of err the map matches.
+// resolve finds the outermost link of err the map matches; an unmatched
+// err is a generic 500.
 func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
+	status, code, msg, ok := m.lookup(err)
+	if !ok {
+		return http.StatusInternalServerError, fun.CodeInternal, "internal error"
+	}
+	return status, code, msg
+}
+
+// lookup finds the outermost link of err the map matches, and reports
+// whether one did.
+func (m ErrorMap) lookup(err error) (int, fun.ErrorCode, string, bool) {
 	queue := []error{err}
 	for len(queue) > 0 {
 		link := queue[0]
@@ -161,7 +193,7 @@ func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
 			if mapping.validation && status == http.StatusBadRequest {
 				code = fun.CodeValidation
 			}
-			return status, code, link.Error()
+			return status, code, link.Error(), true
 		}
 		switch u := link.(type) { //nolint:errorlint // walking the chain by hand
 		case interface{ Unwrap() error }:
@@ -173,7 +205,7 @@ func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
 			queue = append(queue, u.Unwrap()...)
 		}
 	}
-	return http.StatusInternalServerError, fun.CodeInternal, "internal error"
+	return 0, "", "", false
 }
 
 // sameError compares by identity, guarding links whose dynamic type is not
