@@ -1,0 +1,32 @@
+package webhooks
+
+import (
+	"context"
+
+	"payssage/errs"
+	"payssage/internal/features/webhooks/service"
+	"payssage/internal/openapi"
+	"payssage/models"
+)
+
+type Handlers struct {
+	ops *service.Operations
+}
+
+func NewHandlers(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
+
+func (h *Handlers) ReceiveWebhook(ctx context.Context, req openapi.ReceiveWebhookRequestObject) (openapi.ReceiveWebhookResponseObject, error) {
+	raw := RawRequestFrom(ctx)
+	if raw == nil {
+		return nil, errs.ErrInvalidRequest
+	}
+	err := h.ops.Receive(ctx, models.ReceiveWebhookInput{
+		Provider: req.Provider,
+		Request:  raw.Req,
+		RawBody:  raw.Body,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return openapi.ReceiveWebhook204Response{}, nil
+}
