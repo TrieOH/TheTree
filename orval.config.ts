@@ -11,7 +11,8 @@ export default defineConfig(
     services.map((svc) => [
       svc,
       {
-        input: { target: `api/${svc}/api-spec.yml` },
+        // the bundled spec (tools/problemgen), so the problem types come along
+        input: { target: `api/${svc}/api-spec.gen.yml` },
         output: {
           target: `lib/ts/${svc}/client/endpoints.ts`,
           schemas: `lib/ts/${svc}/client/schemas`,

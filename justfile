@@ -107,10 +107,11 @@ gen +SERVICES=services:
       (
         cd "api/$svc"
         sqlc generate
+        go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go
         go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v$OAPI_CODEGEN_VERSION \
-          --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml
+          --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml
         go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v$OAPI_CODEGEN_VERSION \
-          --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml
+          --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml
         go run tools/strictmount internal/openapi/mount.gen.go
         go get github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION
       )
@@ -119,11 +120,16 @@ gen +SERVICES=services:
     just gen-cf
 
 # The fronts import these clients; they are not committed, so run this after
-# cloning and whenever an api-spec.yml changes. orval always regenerates all
-# four.
+# cloning and whenever an api-spec.yml or problems.yml changes. orval reads
+# the bundled specs and always regenerates all four.
 #
 # Generate the orval TS clients (lib/ts/<svc>/client).
 gen-ts:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for svc in {{services}}; do
+      (cd "api/$svc" && go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go)
+    done
     pnpm orval
 
 # Built only from each wrangler.jsonc (vars, bindings, `secrets.required`) and

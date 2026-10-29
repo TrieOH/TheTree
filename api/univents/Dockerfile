@@ -27,11 +27,13 @@ COPY sdk/go/IdentityX/ ./sdk/go/IdentityX/
 COPY sdk/go/Payssage/ ./sdk/go/Payssage/
 COPY tools/go/ ./tools/go/
 COPY api/univents/ ./api/univents/
+COPY api/problems.yml ./api/problems.yml
 WORKDIR /app/api/univents
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     sqlc generate && \
-    oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.yml && \
-    oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.yml && \
+    go run tools/problemgen api-spec.yml api-spec.gen.yml internal/problems/problems.gen.go && \
+    oapi-codegen --config oapi-codegen.yaml -generate types -o internal/openapi/types.gen.go api-spec.gen.yml && \
+    oapi-codegen --config oapi-codegen.yaml -generate chi-server,strict-server -o internal/openapi/server.gen.go api-spec.gen.yml && \
     go run tools/strictmount internal/openapi/mount.gen.go && \
     # generated bindings import oapi-codegen/runtime; not committed, so go mod tidy would drop it -- pin it at build time
     . /app/tools.versions && go get "github.com/oapi-codegen/runtime@v${OAPI_RUNTIME_VERSION}"
