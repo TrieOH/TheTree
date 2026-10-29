@@ -21,17 +21,16 @@ import (
 	"lib/authz"
 	"lib/backend"
 	libconfig "lib/config"
+	"lib/httpserver"
 
 	idx "sdk/identityx"
-
-	fm "github.com/MintzyG/fun/middlewares"
 )
 
 // introspectTimeout bounds one API-key introspection call.
 const introspectTimeout = 15 * time.Second
 
-// The auth hooks' rejections. fun's auth middleware answers any hook error
-// with a 401 carrying its message, so these never reach the error map.
+// The authenticators' rejections. The harness auth middleware answers any
+// error with a 401 carrying its message, so these never reach the error map.
 var (
 	ErrEmailNotVerified   = errors.New("verified email required")
 	ErrAPIKeysNotAccepted = errors.New("this service does not accept api keys")
@@ -96,21 +95,20 @@ func Module(cfg libconfig.IdentityX, opts ...Option) backend.Module {
 
 // primitives builds the JWT / API key / either middlewares.
 func primitives(client *idx.Client, baseURL string, o options) authz.Primitives {
-	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
-		return client.Tokens.VerifyAccessToken(ctx, tokenStr)
-	}
-	mw := fm.New[*idx.AccessClaims](keyFunc, jwtHook(o.requireVerifiedEmail), apiKeyHook(baseURL, o))
-	return authz.Primitives{
-		JWT:    mw.JWT(),
-		APIKey: mw.APIKey(),
-		Any:    mw.AnyAuth(),
-	}
+	return httpserver.Authenticators{
+		JWT:    jwtAuth(client, o.requireVerifiedEmail),
+		APIKey: apiKeyAuth(baseURL, o),
+	}.Primitives()
 }
 
-// jwtHook writes the token's subject into the context as the caller's
-// identity.
-func jwtHook(requireVerified bool) fm.JWTHook[*idx.AccessClaims] {
-	return func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
+// jwtAuth verifies the token and writes its subject into the context as
+// the caller's identity.
+func jwtAuth(client *idx.Client, requireVerified bool) func(context.Context, string) (context.Context, error) {
+	return func(ctx context.Context, token string) (context.Context, error) {
+		claims, err := client.Tokens.VerifyAccessToken(ctx, token)
+		if err != nil {
+			return ctx, err
+		}
 		if requireVerified && claims.Sub.VerifiedAt == nil {
 			return ctx, ErrEmailNotVerified
 		}
@@ -121,9 +119,9 @@ func jwtHook(requireVerified bool) fm.JWTHook[*idx.AccessClaims] {
 	}
 }
 
-// apiKeyHook refuses API keys, or introspects them when the Backend opted
+// apiKeyAuth refuses API keys, or introspects them when the Backend opted
 // in with AcceptAPIKeys.
-func apiKeyHook(baseURL string, o options) fm.APIKeyHook {
+func apiKeyAuth(baseURL string, o options) func(context.Context, string) (context.Context, error) {
 	if !o.acceptAPIKeys {
 		return func(ctx context.Context, _ string) (context.Context, error) {
 			return ctx, ErrAPIKeysNotAccepted

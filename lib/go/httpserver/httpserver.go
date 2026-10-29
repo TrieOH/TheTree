@@ -15,15 +15,12 @@ import (
 
 	"lib/errx"
 	"lib/telemetry"
-	"lib/validator"
 
-	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/time/rate"
 )
 
 // Config carries everything a backend must tell the harness about itself.
@@ -77,13 +74,6 @@ func cleanCSV(s string) []string {
 		}
 	}
 	return out
-}
-
-// SetupFUN configures the process-wide runtime the fun middlewares and the
-// validator share. Call once at startup, before any request is handled.
-func SetupFUN() {
-	validator.SetupValidator()
-	mws.SetErrorWriter(writeMiddlewareError)
 }
 
 // health is the liveness probe: if it answers, the process is alive.
@@ -204,13 +194,13 @@ func servePprof(port, appName string) {
 
 var (
 	collectorsOnce sync.Once
-	collectorsVal  *mws.Collectors
+	collectorsVal  *httpCollectors
 	errCollectors  error
 )
 
-func collectors() (*mws.Collectors, error) {
+func collectors() (*httpCollectors, error) {
 	collectorsOnce.Do(func() {
-		collectorsVal, errCollectors = mws.NewCollectors(prometheus.DefaultRegisterer)
+		collectorsVal, errCollectors = newCollectors(prometheus.DefaultRegisterer)
 	})
 	return collectorsVal, errCollectors
 }
@@ -225,26 +215,16 @@ func stack(cfg Config) []func(http.Handler) http.Handler {
 	}
 
 	mwStack := []func(http.Handler) http.Handler{
-		mws.RealIP(),
-		mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"}),
-		mws.Logs(mws.Config{Logger: telemetry.Log(), SkipPrefixes: skipLog, RequestIDHeader: "X-Request-ID"}),
-		mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/health"}}),
-		mws.Recover(telemetry.Log()),
-		mws.Timeout(60 * time.Second),
-		mws.MaxBodySize(1 << 20),
+		realIP,
+		requestID,
+		logs(telemetry.Log(), skipLog),
+		metrics(collectors, []string{"/health"}),
+		recoverer(telemetry.Log()),
+		timeout(60 * time.Second),
+		maxBodySize(1 << 20),
 	}
 	if rl := cfg.RateLimit.withDefaults(); !rl.Disabled {
-		mwStack = append(mwStack, mws.RateLimit(mws.RateLimitConfig{
-			RPS:   rate.Limit(rl.RPS),
-			Burst: rl.Burst,
-			KeyExtractor: func(r *http.Request) string {
-				return r.RemoteAddr
-			},
-		}))
+		mwStack = append(mwStack, newRateLimiter(rl).middleware)
 	}
-	return append(mwStack, mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   cleanCSV(cfg.CorsAllowedOrigins),
-		AllowedHeaders:   cleanCSV(cfg.CorsAllowedHeaders),
-		AllowCredentials: true,
-	}))
+	return append(mwStack, CORS(cfg.CorsAllowedOrigins, cfg.CorsAllowedHeaders))
 }

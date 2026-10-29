@@ -15,7 +15,6 @@ import (
 
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +91,7 @@ var (
 )
 
 // UseErrorMap installs the Backend's error map for the process, so the
-// strict handlers' errors and the errors the fun middlewares write go
+// strict handlers' errors and the errors the harness middlewares write go
 // through the same table.
 func UseErrorMap(m ErrorMap) {
 	full := append(append(ErrorMap{}, m...), sharedErrors...)
@@ -102,24 +101,56 @@ func UseErrorMap(m ErrorMap) {
 }
 
 // fieldsOf lists the request fields a fielderr.Lister in err's chain names.
-func fieldsOf(err error) []fun.FieldError {
+func fieldsOf(err error) []fielderr.Field {
 	l, ok := errors.AsType[fielderr.Lister](err)
 	if !ok {
 		return nil
 	}
-	fields := l.FieldList()
-	out := make([]fun.FieldError, len(fields))
-	for i, f := range fields {
-		out[i] = fun.FieldError{Field: f.Field, Message: f.Message, Value: f.Value}
-	}
-	return out
+	return l.FieldList()
+}
+
+// TODO(problem-details): appError, errorCode and the code constants are
+// glue left from dropping github.com/MintzyG/fun (its AppError, ErrorCode
+// and Code* constants, same string values so the wire and the specs'
+// `code` enum stay put). Nothing reads `code` beyond "is a string". The
+// RFC 9457 move (docs/backend-wishlist.md #14) replaces errorBody with
+// application/problem+json: delete this glue then — no code enum, no
+// appError; resolve/lookup return status + detail, and the specs' code
+// enum and status table go with it.
+type errorCode string
+
+const (
+	codeBadRequest          errorCode = "BAD_REQUEST"
+	codeValidation          errorCode = "VALIDATION_ERROR"
+	codeUnauthorized        errorCode = "UNAUTHORIZED"
+	codePaymentRequired     errorCode = "PAYMENT_REQUIRED"
+	codeForbidden           errorCode = "FORBIDDEN"
+	codeNotFound            errorCode = "NOT_FOUND"
+	codeConflict            errorCode = "CONFLICT"
+	codeUnprocessableEntity errorCode = "UNPROCESSABLE_ENTITY"
+	codeTooManyRequests     errorCode = "TOO_MANY_REQUESTS"
+	codeInternal            errorCode = "INTERNAL_ERROR"
+	codeBadGateway          errorCode = "BAD_GATEWAY"
+	codeServiceUnavailable  errorCode = "SERVICE_UNAVAILABLE"
+)
+
+// appError is one error response before it is written.
+type appError struct {
+	Code    errorCode
+	Message string
+	Fields  []fielderr.Field
+}
+
+// fieldError is an appError naming one request field.
+func fieldError(code errorCode, msg, field, fieldMsg string) *appError {
+	return &appError{Code: code, Message: msg, Fields: []fielderr.Field{{Field: field, Message: fieldMsg}}}
 }
 
 // errorBody is the body of every error response: {code, message, fields}.
 type errorBody struct {
-	Code    fun.ErrorCode `json:"code"`
-	Message string        `json:"message"`
-	Fields  []errorField  `json:"fields,omitempty"`
+	Code    errorCode    `json:"code"`
+	Message string       `json:"message"`
+	Fields  []errorField `json:"fields,omitempty"`
 }
 
 type errorField struct {
@@ -128,7 +159,7 @@ type errorField struct {
 }
 
 // writeAppError writes e with status.
-func writeAppError(w http.ResponseWriter, _ *http.Request, status int, e *fun.AppError) {
+func writeAppError(w http.ResponseWriter, _ *http.Request, status int, e *appError) {
 	body := errorBody{Code: e.Code, Message: e.Message}
 	for _, f := range e.Fields {
 		body.Fields = append(body.Fields, errorField{Field: f.Field, Message: f.Message})
@@ -144,14 +175,14 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	m := errorMap
 	errorMapMu.RUnlock()
 	status, code, msg := m.resolve(err)
-	if code == fun.CodeInternal {
+	if code == codeInternal {
 		telemetry.Log().Error("unmapped error", zap.Int("status", status), zap.Error(err))
 	}
-	writeAppError(w, r, status, &fun.AppError{Code: code, Message: msg, Fields: fieldsOf(err), Err: err})
+	writeAppError(w, r, status, &appError{Code: code, Message: msg, Fields: fieldsOf(err)})
 }
 
-// writeMiddlewareError writes a fun middleware's rejection (installed by
-// SetupFUN), so its errors share the writer with every other error. The
+// writeMiddlewareError writes a harness middleware's rejection, so its
+// errors share the writer with every other error. The
 // middleware's status stands: an auth hook's error is a 401 there even
 // when the map gives it another status elsewhere. The message is the
 // mapped link's own, else the error's for a 4xx; a 5xx stays generic.
@@ -168,7 +199,7 @@ func writeMiddlewareError(w http.ResponseWriter, r *http.Request, status int, er
 		telemetry.Log().Error("middleware error", zap.Int("status", status), zap.Error(err))
 		msg = "internal error"
 	}
-	writeAppError(w, r, status, &fun.AppError{Code: codeFor(status), Message: msg, Fields: fieldsOf(err), Err: err})
+	writeAppError(w, r, status, &appError{Code: codeFor(status), Message: msg, Fields: fieldsOf(err)})
 }
 
 // errorStatus is the status err is answered with under the installed map.
@@ -192,17 +223,17 @@ func (m ErrorMap) Status(err error) int {
 
 // resolve finds the outermost link of err the map matches; an unmatched
 // err is a generic 500.
-func (m ErrorMap) resolve(err error) (int, fun.ErrorCode, string) {
+func (m ErrorMap) resolve(err error) (int, errorCode, string) {
 	status, code, msg, ok := m.lookup(err)
 	if !ok {
-		return http.StatusInternalServerError, fun.CodeInternal, "internal error"
+		return http.StatusInternalServerError, codeInternal, "internal error"
 	}
 	return status, code, msg
 }
 
 // lookup finds the outermost link of err the map matches, and reports
 // whether one did.
-func (m ErrorMap) lookup(err error) (int, fun.ErrorCode, string, bool) {
+func (m ErrorMap) lookup(err error) (int, errorCode, string, bool) {
 	queue := []error{err}
 	for len(queue) > 0 {
 		link := queue[0]
@@ -214,7 +245,7 @@ func (m ErrorMap) lookup(err error) (int, fun.ErrorCode, string, bool) {
 			}
 			code := codeFor(status)
 			if mapping.validation && status == http.StatusBadRequest {
-				code = fun.CodeValidation
+				code = codeValidation
 			}
 			return status, code, link.Error(), true
 		}
@@ -238,28 +269,28 @@ func sameError(link, target error) bool {
 	return t != nil && t.Comparable() && link == target //nolint:errorlint // identity of one link
 }
 
-func codeFor(status int) fun.ErrorCode {
+func codeFor(status int) errorCode {
 	switch status {
 	case http.StatusBadRequest:
-		return fun.CodeBadRequest
+		return codeBadRequest
 	case http.StatusUnauthorized:
-		return fun.CodeUnauthorized
+		return codeUnauthorized
 	case http.StatusPaymentRequired:
-		return fun.CodePaymentRequired
+		return codePaymentRequired
 	case http.StatusForbidden:
-		return fun.CodeForbidden
+		return codeForbidden
 	case http.StatusNotFound:
-		return fun.CodeNotFound
+		return codeNotFound
 	case http.StatusConflict:
-		return fun.CodeConflict
+		return codeConflict
 	case http.StatusUnprocessableEntity:
-		return fun.CodeUnprocessableEntity
+		return codeUnprocessableEntity
 	case http.StatusTooManyRequests:
-		return fun.CodeTooManyRequests
+		return codeTooManyRequests
 	case http.StatusBadGateway:
-		return fun.CodeBadGateway
+		return codeBadGateway
 	case http.StatusServiceUnavailable:
-		return fun.CodeServiceUnavailable
+		return codeServiceUnavailable
 	}
-	return fun.CodeInternal
+	return codeInternal
 }

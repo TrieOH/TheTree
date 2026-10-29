@@ -9,7 +9,6 @@ import (
 	"lib/telemetry"
 	"lib/validator"
 
-	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/codes"
 )
 
@@ -38,7 +37,7 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 		chain, ok := chains[operationID]
 		if !ok {
 			return func(_ context.Context, w http.ResponseWriter, r *http.Request, _ any) (any, error) {
-				writeAppError(w, r, http.StatusInternalServerError, &fun.AppError{Code: fun.CodeInternal, Message: "operation not registered with auth resolver"})
+				writeAppError(w, r, http.StatusInternalServerError, &appError{Code: codeInternal, Message: "operation not registered with auth resolver"})
 				return nil, nil
 			}
 		}
@@ -158,14 +157,14 @@ func ParamBindingErrorHandler() func(w http.ResponseWriter, r *http.Request, err
 			writeAppError(w, r, http.StatusBadRequest, appErr)
 			return
 		}
-		writeAppError(w, r, http.StatusInternalServerError, &fun.AppError{Code: fun.CodeInternal, Message: "internal error"})
+		writeAppError(w, r, http.StatusInternalServerError, &appError{Code: codeInternal, Message: "internal error"})
 	}
 }
 
 // paramBindingError classifies one param-binding error into its
 // validation error. Only the three generated classes match; anything
 // else falls through to the caller's default (500).
-func paramBindingError(err error) (*fun.AppError, bool) {
+func paramBindingError(err error) (*appError, bool) {
 	t := reflect.TypeOf(err)
 	if t == nil || t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
 		return nil, false
@@ -178,11 +177,11 @@ func paramBindingError(err error) (*fun.AppError, bool) {
 	name := reflect.ValueOf(err).Elem().FieldByName("ParamName").String()
 	switch s.Name() {
 	case "RequiredParamError":
-		return fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "parameter is required"}).Validation(), true
+		return fieldError(codeValidation, "invalid request parameter", name, "parameter is required"), true
 	case "InvalidParamFormatError":
-		return fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "invalid format"}).Validation(), true
+		return fieldError(codeValidation, "invalid request parameter", name, "invalid format"), true
 	case "RequiredHeaderError":
-		return fun.Err("invalid request header").WithFields(&fun.FieldError{Field: name, Message: "header is required"}).Validation(), true
+		return fieldError(codeValidation, "invalid request header", name, "header is required"), true
 	}
 	return nil, false
 }
@@ -244,7 +243,7 @@ func bodyOf(request any) any {
 // that only read the top-level message see why) and in the body field.
 func StrictRequestErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
-		writeAppError(w, r, http.StatusBadRequest, fun.Err("invalid request body: "+err.Error()).WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest())
+		writeAppError(w, r, http.StatusBadRequest, fieldError(codeBadRequest, "invalid request body: "+err.Error(), "body", err.Error()))
 	}
 }
 

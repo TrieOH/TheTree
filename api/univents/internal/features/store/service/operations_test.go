@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"lib/database"
+	"lib/httpserver"
 	store "univents/internal/features/store/service"
 	"univents/internal/notify"
 	"univents/models"
 
-	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/google/uuid"
 )
 
@@ -376,8 +376,8 @@ func TestSSECORSHeaders(t *testing.T) {
 
 // TestSSECORSViaHarnessMiddleware proves the env-configured CORS settings
 // reach the hijacked stream through the real middleware the harness applies
-// (fun middlewares CORS = rs/cors, AllowCredentials: true — the same
-// mws.CORS config httpserver.stack builds from CORS_ALLOWED_ORIGINS). The
+// (httpserver.CORS = rs/cors, AllowCredentials: true — the same middleware
+// httpserver.stack builds from CORS_ALLOWED_ORIGINS). The
 // handler never reads the config itself: it reproduces whatever the
 // middleware stamped on the ResponseWriter before the hijack. A disallowed
 // origin must get no Allow-Origin header (the browser still blocks it).
@@ -386,10 +386,7 @@ func TestSSECORSViaHarnessMiddleware(t *testing.T) {
 	ops, avail, _ := newStore(t, editionID)
 	avail.set(nil)
 
-	cors := mws.CORS(mws.CORSConfig{
-		AllowedOrigins:   []string{"http://localhost:3002"}, // CORS_ALLOWED_ORIGINS in .env
-		AllowCredentials: true,
-	})
+	cors := httpserver.CORS("http://localhost:3002", "") // CORS_ALLOWED_ORIGINS in .env
 	ts := httptest.NewServer(cors(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ops.ServeStream(w, r, editionID)
 	})))

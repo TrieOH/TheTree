@@ -3,8 +3,6 @@ module lib
 go 1.27.3
 
 require (
-	github.com/MintzyG/fun v0.10.6
-	github.com/MintzyG/fun/middlewares v0.2.0
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.35
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.34
@@ -21,6 +19,7 @@ require (
 	github.com/prometheus/client_golang v1.24.1
 	github.com/riverqueue/river v0.43.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.43.0
+	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0
@@ -115,7 +114,6 @@ require (
 	github.com/riverqueue/river/rivershared v0.43.0 // indirect
 	github.com/riverqueue/river/rivertype v0.43.0 // indirect
 	github.com/rogpeppe/go-internal v1.15.0 // indirect
-	github.com/rs/cors v1.11.1 // indirect
 	github.com/sethvargo/go-retry v0.4.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.7 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect

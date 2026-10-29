@@ -20,7 +20,7 @@ func TestIntrospectReturnsTheIdentity(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	hook := apiKeyHook(srv.URL+"/", options{acceptAPIKeys: true, httpClient: srv.Client()})
+	hook := apiKeyAuth(srv.URL+"/", options{acceptAPIKeys: true, httpClient: srv.Client()})
 	ctx, err := hook(context.Background(), "key-1")
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +39,7 @@ func TestIntrospectRejectsAnInvalidKey(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	hook := apiKeyHook(srv.URL, options{acceptAPIKeys: true, httpClient: srv.Client()})
+	hook := apiKeyAuth(srv.URL, options{acceptAPIKeys: true, httpClient: srv.Client()})
 	_, err := hook(context.Background(), "bad")
 	if !errors.Is(err, ErrInvalidAPIKey) {
 		t.Fatalf("err = %v, want ErrInvalidAPIKey", err)
@@ -47,7 +47,7 @@ func TestIntrospectRejectsAnInvalidKey(t *testing.T) {
 }
 
 func TestAPIKeysRefusedByDefault(t *testing.T) {
-	hook := apiKeyHook("http://unused.invalid", options{})
+	hook := apiKeyAuth("http://unused.invalid", options{})
 	_, err := hook(context.Background(), "any")
 	if !errors.Is(err, ErrAPIKeysNotAccepted) {
 		t.Fatalf("err = %v, want ErrAPIKeysNotAccepted", err)

@@ -31,11 +31,11 @@ func newAuthMW(t *testing.T, key models.CryptoKey, blacklisted func(jti string) 
 			return []any{nil, database.ErrNotFound}
 		})
 
-	mw := authMiddlewares(
+	mw := authenticators(
 		tokens.NewManager(cryptoKeys, bl, mock.Mock[ports.ActorRepo](), mock.Mock[ports.ProjectRepo](), tokens.Config{}),
 		nil,
 	)
-	return mw.JWT()
+	return mw.Primitives().JWT
 }
 
 func serveThroughJWT(t *testing.T, jwt func(http.Handler) http.Handler, token string) (*httptest.ResponseRecorder, string) {

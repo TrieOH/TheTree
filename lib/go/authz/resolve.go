@@ -22,7 +22,7 @@ type ScopeChecker func(context.Context) error
 // derives each operation's chain from the spec's security blocks: the union
 // of the scheme names an operation lists selects the primitive that enforces
 // it — JWT for "bearerAuth", APIKey for "apiKeyAuth", Any (the OR
-// composition, e.g. fun's AnyAuth) when both are listed. There is no
+// composition, httpserver.Authenticators' Any) when both are listed. There is no
 // per-combination registry to keep in sync with the spec; the spec is the
 // single source of truth for who may call what, and with which scheme. An
 // operation whose combination has no primitive is an error at construction:
