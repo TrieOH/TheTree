@@ -17,10 +17,10 @@ import {
   type ApiError,
 } from "@trieoh/identityx-sdk-ts"
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts"
-import { envelopeFetch, itemsOf } from "./envelope"
+import { itemsOf, toFailure, toSuccess } from "./wire"
 
 export type { ApiError }
-export { envelopeFetch, isEnvelope, itemsOf, toEnvelope, toEnvelopeResponse, type WireEnvelope } from "./envelope"
+export { itemsOf, readFailure, toFailure, toSuccess, type FieldError, type WireFailure } from "./wire"
 export {
   configureApiClient,
   createOrvalTransport,
@@ -67,7 +67,7 @@ export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
     timeout = 10_000,
   } = config
 
-  const clientConfig = { timeout, fetch: envelopeFetch() }
+  const clientConfig = { timeout }
 
   const authFetcher = createFetcher({
     baseURL: apiURL,
@@ -81,11 +81,10 @@ export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
     clientConfig,
   })
 
-  // An adapter is handed the bare path, so it joins the base URL itself.
-  const fetchPublic = envelopeFetch()
   const publicFetcher = createDefaultFetchClient({
-    adapter: (path, init) =>
-      fetchPublic(`${apiURL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`, init),
+    baseURL: apiURL,
+    toSuccess,
+    toFailure,
     credentials: "omit",
     timeout,
   })

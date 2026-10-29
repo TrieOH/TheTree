@@ -33,8 +33,8 @@ func TestHealthReturnsAppName(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("health status = %d, want 200", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "informd") {
-		t.Fatalf("health body %q does not contain app name", rec.Body.String())
+	if got := strings.TrimSpace(rec.Body.String()); got != `{"status":"ok","service":"informd"}` {
+		t.Fatalf("health body = %s", got)
 	}
 }
 
@@ -260,5 +260,5 @@ func TestNewServerTimeouts(t *testing.T) {
 
 func TestSetupFUNRuns(t *testing.T) {
 	_ = t
-	SetupFUN("test")
+	SetupFUN()
 }

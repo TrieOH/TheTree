@@ -1,4 +1,4 @@
-import { toEnvelope } from "@trieoh/api-client/envelope";
+import { readFailure } from "@trieoh/api-client/wire";
 import type { AuthTokens, TokenClaims, TokenSubject } from "@trieoh/identityx-sdk-ts";
 import type {
   BffIntrospectResponse,
@@ -45,16 +45,11 @@ type TokenResolution =
   | { success: true; tokens: AuthTokens }
   | { success: false; error: ServerAuthResult; sessionInvalid: boolean };
 
-interface ApiEnvelope<T> {
-  code?: number;
+/** What a Backend answered: the payload on success, else the error's code and message. */
+interface Answer<T> {
   data?: T;
   message?: string;
   error_id?: string;
-  error?: {
-    code?: string;
-    message?: string;
-  };
-  trace?: string[];
 }
 
 function joinURL(base: string, path: string): string {
@@ -92,34 +87,29 @@ function getProfile(
   return claims.subject;
 }
 
-function normalize<T>(response: Response, envelope: ApiEnvelope<T>): ServerProxyResult<T> {
-  const code = envelope.code ?? response.status;
-  const message = envelope.message ?? envelope.error?.message;
-  const errorId = envelope.error_id ?? envelope.error?.code;
+function normalize<T>(response: Response, answer: Answer<T>): ServerProxyResult<T> {
   return {
-    success: response.ok && code >= 200 && code < 300,
-    code,
-    ...(envelope.data === undefined ? {} : { data: envelope.data }),
-    ...(message ? { message } : {}),
-    ...(errorId ? { error_id: errorId } : {}),
-    ...(envelope.trace ? { trace: envelope.trace } : {}),
+    success: response.ok,
+    code: response.status,
+    ...(answer.data === undefined ? {} : { data: answer.data }),
+    ...(answer.message ? { message: answer.message } : {}),
+    ...(answer.error_id ? { error_id: answer.error_id } : {}),
   };
 }
 
-async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T>> {
-  if (response.status === 204 || response.body === null) {
-    return { code: response.status };
-  }
+async function readAnswer<T>(response: Response): Promise<Answer<T>> {
+  if (response.status === 204 || response.body === null) return {};
 
   try {
-    // The Backend may answer bare or with problem+json; read either as the envelope.
-    return toEnvelope<T>(
-      await response.json(),
-      response.status,
-      response.headers.get("content-type"),
-    ) as ApiEnvelope<T>;
+    const body: unknown = await response.json();
+    if (response.ok) return { data: body as T };
+    const failure = readFailure(body);
+    return {
+      ...(failure.message ? { message: failure.message } : {}),
+      ...(failure.code ? { error_id: failure.code } : {}),
+    };
   } catch {
-    return { code: response.status, message: response.statusText };
+    return { message: response.statusText };
   }
 }
 
@@ -135,7 +125,7 @@ const refreshes = new Map<string, Promise<TokenResolution>>();
 
 /**
  * The IdentityX server-managed session (BFF), with no framework imports. It owns
- * the IdentityX contract — endpoints, envelopes, refresh and the proxy guard —
+ * the IdentityX contract — endpoints, responses, refresh and the proxy guard —
  * and stays out of the storage and transport decisions, which the caller
  * injects.
  */
@@ -161,9 +151,9 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
       }
 
       const response = await fetch(url, { ...init, headers });
-      const failureEnvelope = response.ok
+      const failure = response.ok
         ? undefined
-        : await readEnvelope(response.clone());
+        : await readAnswer(response.clone());
       const event: IdentityXTransportLogEvent = {
         layer: "bff-server",
         operation,
@@ -173,12 +163,8 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
         success: response.ok,
         status: response.status,
         ...(traceparent ? { traceparent } : {}),
-        ...(failureEnvelope?.error_id || failureEnvelope?.error?.code
-          ? { error_id: failureEnvelope.error_id ?? failureEnvelope.error?.code }
-          : {}),
-        ...(!response.ok
-          ? { message: failureEnvelope?.message ?? failureEnvelope?.error?.message ?? response.statusText }
-          : {}),
+        ...(failure?.error_id ? { error_id: failure.error_id } : {}),
+        ...(!response.ok ? { message: failure?.message ?? response.statusText } : {}),
       };
       if (config.observability?.logSuccesses || !response.ok) {
         (config.observability?.log ?? defaultBffLogger)(event);
@@ -209,13 +195,13 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
     init: RequestInit,
   ): Promise<ServerAuthResult> {
     const response = await observedFetch("authenticate", joinURL(config.identityX.baseURL, path), init);
-    const envelope = await readEnvelope<AuthTokens>(response);
-    const normalized = normalize(response, envelope);
-    if (!normalized.success || !envelope.data) return normalized;
+    const answer = await readAnswer<AuthTokens>(response);
+    const normalized = normalize(response, answer);
+    if (!normalized.success || !answer.data) return normalized;
 
     const current = await session();
-    await current.write(envelope.data);
-    return { ...normalized, profile: getProfile(envelope.data) };
+    await current.write(answer.data);
+    return { ...normalized, profile: getProfile(answer.data) };
   }
 
   async function refreshTokens(): Promise<TokenResolution> {
@@ -273,9 +259,9 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
           };
         }
 
-        const envelope = await readEnvelope<AuthTokens>(response);
-        if (!response.ok || !envelope.data?.access_token) {
-          const normalized = normalize(response, envelope);
+        const answer = await readAnswer<AuthTokens>(response);
+        if (!response.ok || !answer.data?.access_token) {
+          const normalized = normalize(response, answer);
           const sessionInvalid = response.status === 401 || response.status === 403;
           return {
             success: false,
@@ -291,7 +277,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
           };
         }
 
-        return { success: true, tokens: envelope.data };
+        return { success: true, tokens: answer.data };
       })();
       refreshes.set(refreshToken, refresh);
       void refresh.finally(() => refreshes.delete(refreshToken));
@@ -328,7 +314,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
   return {
     async isSetupDone(): Promise<ServerAuthResult> {
       const response = await observedFetch("isSetupDone", joinURL(config.identityX.baseURL, "/auth/setup"));
-      return normalize(response, await readEnvelope(response));
+      return normalize(response, await readAnswer(response));
     },
 
     async introspect(
@@ -342,7 +328,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
         );
         return normalize(
           response,
-          await readEnvelope<BffIntrospectResponse>(response),
+          await readAnswer<BffIntrospectResponse>(response),
         );
       }
 
@@ -360,7 +346,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
       );
       return normalize(
         response,
-        await readEnvelope<BffIntrospectResponse>(response),
+        await readAnswer<BffIntrospectResponse>(response),
       );
     },
 
@@ -390,7 +376,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
           body: JSON.stringify({ email, password }),
         },
       );
-      return normalize(response, await readEnvelope(response));
+      return normalize(response, await readAnswer(response));
     },
 
     async loginWithProvider(
@@ -400,7 +386,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
         config.identityX.baseURL,
         `/auth/${provider}/connect${projectQuery()}`,
       ));
-      return normalize(response, await readEnvelope<{ url: string }>(response));
+      return normalize(response, await readAnswer<{ url: string }>(response));
     },
 
     async completeProviderLogin(
@@ -428,7 +414,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
             "Refresh-Token": resolution.tokens.refresh_token,
           },
         });
-        result = normalize(response, await readEnvelope(response));
+        result = normalize(response, await readAnswer(response));
       }
 
       await current.clear();
@@ -523,7 +509,7 @@ export function createIdentityXBff(config: IdentityXBffConfig) {
         headers.set("Authorization", `Bearer ${refreshed.tokens.access_token}`);
         response = await send();
       }
-      return normalize(response, await readEnvelope<T>(response));
+      return normalize(response, await readAnswer<T>(response));
     },
   };
 }

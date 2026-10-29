@@ -46,10 +46,6 @@ type App struct {
 	// Errors maps the Backend's named errors to HTTP (ADR-0016). Nil while
 	// the Backend still returns root-fun errors.
 	Errors httpserver.ErrorMap
-	// PlainErrors sends error bodies as the bare error object ({code,
-	// message, fields}), without the fun envelope. Set by a Backend that
-	// moved off the envelope.
-	PlainErrors bool
 }
 
 // Server is the process-level HTTP settings.
@@ -150,9 +146,6 @@ func Run(app App) error {
 	}
 	if app.Errors != nil {
 		httpserver.UseErrorMap(app.Errors)
-	}
-	if app.PlainErrors {
-		httpserver.UsePlainErrors()
 	}
 	return httpserver.Boot(httpserver.Config{
 		AppName:            app.Name,

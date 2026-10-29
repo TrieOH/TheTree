@@ -1,7 +1,7 @@
+/** The failure an ApiError carries: the HTTP status and the error's message. */
 type ErrorEnvelope = {
   code?: unknown;
   message?: unknown;
-  error?: { message?: unknown } | unknown;
 };
 
 /** Returns the most useful user-facing message exposed by local or API errors. */
@@ -13,18 +13,7 @@ export function getErrorMessage(error: unknown, fallback: string): string {
     message?: unknown;
     envelope?: ErrorEnvelope;
   };
-  const nestedMessage =
-    candidate.envelope?.error &&
-    typeof candidate.envelope.error === "object" &&
-    "message" in candidate.envelope.error
-      ? candidate.envelope.error.message
-      : undefined;
-
-  for (const message of [
-    candidate.envelope?.message,
-    nestedMessage,
-    candidate.message,
-  ]) {
+  for (const message of [candidate.envelope?.message, candidate.message]) {
     if (typeof message === "string" && message.trim()) return message;
   }
 

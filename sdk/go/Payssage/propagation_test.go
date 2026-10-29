@@ -27,7 +27,7 @@ func TestTraceContextPropagation(t *testing.T) {
 		otel.SetTextMapPropagator(prevProp)
 	})
 
-	client, getReq, _ := newTestClient(t, http.StatusOK, `{"code":200,"data": []}`)
+	client, getReq, _ := newTestClient(t, http.StatusOK, `{"items": []}`)
 
 	ctx, span := otel.Tracer("propagation-test").Start(context.Background(), "root")
 	defer span.End()

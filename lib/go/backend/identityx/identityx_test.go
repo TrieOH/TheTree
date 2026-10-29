@@ -16,7 +16,7 @@ func TestIntrospectReturnsTheIdentity(t *testing.T) {
 			t.Errorf("path = %s, want /auth/introspect", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"code":200,"data":{"subject":{"id":"019a0000-0000-7000-8000-000000000001","type":"service"},"cred":{"type":"api_key"}}}`))
+		_, _ = w.Write([]byte(`{"subject":{"id":"019a0000-0000-7000-8000-000000000001","type":"service"},"cred":{"type":"api_key"}}`))
 	}))
 	defer srv.Close()
 
@@ -51,30 +51,5 @@ func TestAPIKeysRefusedByDefault(t *testing.T) {
 	_, err := hook(context.Background(), "any")
 	if !errors.Is(err, ErrAPIKeysNotAccepted) {
 		t.Fatalf("err = %v, want ErrAPIKeysNotAccepted", err)
-	}
-}
-
-func TestIntrospectReadsBothShapes(t *testing.T) {
-	const identity = `{"subject":{"id":"019a0000-0000-7000-8000-000000000001","type":"service"},"cred":{"type":"api_key"}}`
-	bodies := map[string]string{
-		"enveloped": `{"code":200,"message":"","module":"IdentityX","timestamp":"2026-10-29T00:00:00Z","data":` + identity + `}`,
-		"bare":      identity,
-	}
-	for name, body := range bodies {
-		t.Run(name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(body))
-			}))
-			defer srv.Close()
-
-			got, err := introspect(context.Background(), srv.Client(), srv.URL, "key-1")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got.Sub.ID.String() != "019a0000-0000-7000-8000-000000000001" {
-				t.Fatalf("subject id = %s, want 019a0000-0000-7000-8000-000000000001", got.Sub.ID)
-			}
-		})
 	}
 }

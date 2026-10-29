@@ -43,7 +43,7 @@ func Validate(v any) error {
 	return nil
 }
 
-// validationMessage builds the top-level envelope message from the
+// validationMessage builds the top-level error message from the
 // per-field errors, so clients that only surface `message` still learn
 // which field failed and why.
 func validationMessage(fields []fielderr.Field) string {

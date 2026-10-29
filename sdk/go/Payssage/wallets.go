@@ -47,5 +47,5 @@ func (c *Client) ListWalletSellers(ctx context.Context, walletID uuid.UUID) ([]S
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return out.Items, nil
 }

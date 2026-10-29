@@ -103,11 +103,9 @@ func (e *UnsupportedKeyError) Error() string {
 // StatusCode is the HTTP status; the rest is the decoded error body, which
 // may be empty when the body was not the usual JSON error shape.
 type APIError struct {
-	StatusCode int      `json:"-"`
-	Module     string   `json:"module"`
-	Message    string   `json:"message"`
-	Code       int      `json:"code"`
-	Trace      []string `json:"trace"`
+	StatusCode int    `json:"-"`
+	Code       string `json:"code"`
+	Message    string `json:"message"`
 }
 
 func (e *APIError) Error() string {

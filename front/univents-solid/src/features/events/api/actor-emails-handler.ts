@@ -1,4 +1,3 @@
-import { envelopeFetch } from "@trieoh/api-client";
 import { privateJsonResponse } from "@/shared/lib/http-cache";
 
 export interface ActorEmailsRequest {
@@ -15,9 +14,6 @@ export type ActorEmailsMap = Record<string, ActorRecord>;
 // In-memory cache per worker isolate with 5-minute TTL to protect IdentityX rate limits
 const ACTOR_CACHE = new Map<string, { record: ActorRecord; expiresAt: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-// IdentityX may answer bare or enveloped while it moves off the envelope; this reads both as `{ data }`.
-const identityxFetch = envelopeFetch();
 
 export function clearActorCache(): void {
   ACTOR_CACHE.clear();
@@ -82,14 +78,14 @@ export async function handleActorEmailsRequest(
       missingIds.map(async (actorId): Promise<[string, ActorRecord] | null> => {
         try {
           const [actorRes, profileRes] = await Promise.all([
-            identityxFetch(`${baseURL}/projects/${projectId}/actors/${actorId}`, {
+            fetch(`${baseURL}/projects/${projectId}/actors/${actorId}`, {
               method: "GET",
               headers: {
                 "X-API-Key": apiKey,
                 Accept: "application/json",
               },
             }).catch(() => null),
-            identityxFetch(`${baseURL}/projects/${projectId}/actors/${actorId}/profile`, {
+            fetch(`${baseURL}/projects/${projectId}/actors/${actorId}/profile`, {
               method: "GET",
               headers: {
                 "X-API-Key": apiKey,
@@ -102,17 +98,17 @@ export async function handleActorEmailsRequest(
           let pfp_url: string | null = null;
 
           if (actorRes?.ok) {
-            const json = (await actorRes.json().catch(() => null)) as {
-              data?: { email?: string | null };
+            const actor = (await actorRes.json().catch(() => null)) as {
+              email?: string | null;
             } | null;
-            email = json?.data?.email ?? null;
+            email = actor?.email ?? null;
           }
 
           if (profileRes?.ok) {
-            const profileJson = (await profileRes.json().catch(() => null)) as {
-              data?: { pfp_url?: string | null };
+            const profile = (await profileRes.json().catch(() => null)) as {
+              pfp_url?: string | null;
             } | null;
-            pfp_url = profileJson?.data?.pfp_url ?? null;
+            pfp_url = profile?.pfp_url ?? null;
           }
 
           if (!email && !pfp_url) {
