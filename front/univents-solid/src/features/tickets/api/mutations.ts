@@ -1,5 +1,7 @@
+import { orvalData } from "@trieoh/api-client";
 import { useQueryClient } from "@trieoh/front-core-solid";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
+import { createTicketType, patchTicketType } from "@trieoh/univents-api";
 import type {
   CreateTicketTypeRequest,
   PatchTicketTypeRequest,
@@ -7,7 +9,6 @@ import type {
 } from "@trieoh/univents-api/schemas";
 import { Effect } from "effect";
 import { apiEffect, useEffectMutation } from "@/shared/lib/effect-query";
-import { createTicketFn, patchTicketFn } from "./index";
 import { ticketKeys } from "./query-keys";
 
 export interface CreateTicketInput {
@@ -27,7 +28,7 @@ export const createTicketEffect = (
 ) =>
   apiEffect(() =>
     withSpan("action:ticket-create", () =>
-      createTicketFn(data, editionId),
+      createTicketType(editionId, data).then(orvalData<TicketType>),
     ),
   );
 
@@ -37,7 +38,7 @@ export const patchTicketEffect = (
 ) =>
   apiEffect(() =>
     withSpan("action:ticket-patch", () =>
-      patchTicketFn(data, ticketId),
+      patchTicketType(ticketId, data).then(orvalData<TicketType>),
     ),
   );
 

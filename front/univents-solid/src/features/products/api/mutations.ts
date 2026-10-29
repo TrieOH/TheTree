@@ -1,5 +1,20 @@
+import { orvalData } from "@trieoh/api-client";
 import { useQueryClient } from "@trieoh/front-core-solid";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
+import {
+  createInitialProduct,
+  createProductVariant,
+  deleteProduct,
+  deleteProductVariant,
+  patchProduct,
+  patchProductVariant,
+} from "@trieoh/univents-api";
+import type {
+  CreateInitialProductRequest,
+  CreateProductVariantRequest,
+  PatchProductRequest,
+  PatchProductVariantRequest,
+} from "@trieoh/univents-api/schemas";
 import { Effect } from "effect";
 import { apiEffect, useEffectMutation } from "@/shared/lib/effect-query";
 import type {
@@ -9,14 +24,6 @@ import type {
   VariantCreateOutputI,
   VariantI,
 } from "../model";
-import {
-  createInitialProductFn,
-  createVariantFn,
-  deleteProductFn,
-  deleteVariantFn,
-  patchProductFn,
-  patchVariantFn,
-} from "./index";
 import { productKeys } from "./query-keys";
 
 export interface CreateInitialProductInput {
@@ -57,7 +64,10 @@ export const createInitialProductEffect = (
 ) =>
   apiEffect(() =>
     withSpan("action:product-create", () =>
-      createInitialProductFn(data, editionId),
+      createInitialProduct(
+        editionId,
+        data as unknown as CreateInitialProductRequest,
+      ).then(orvalData<ProductI>),
     ),
   );
 
@@ -67,14 +77,17 @@ export const updateProductEffect = (
 ) =>
   apiEffect(() =>
     withSpan("action:product-patch", () =>
-      patchProductFn(productId, data),
+      patchProduct(
+        productId,
+        data as unknown as PatchProductRequest,
+      ).then(orvalData<ProductI>),
     ),
   );
 
 export const deleteProductEffect = (productId: string) =>
   apiEffect(() =>
     withSpan("action:product-delete", () =>
-      deleteProductFn(productId),
+      deleteProduct(productId).then(orvalData<{ success?: boolean }>),
     ),
   );
 
@@ -84,7 +97,10 @@ export const createVariantEffect = (
 ) =>
   apiEffect(() =>
     withSpan("action:variant-create", () =>
-      createVariantFn(productId, data),
+      createProductVariant(
+        productId,
+        data as unknown as CreateProductVariantRequest,
+      ).then(orvalData<VariantI>),
     ),
   );
 
@@ -94,14 +110,17 @@ export const updateVariantEffect = (
 ) =>
   apiEffect(() =>
     withSpan("action:variant-patch", () =>
-      patchVariantFn(variantId, data),
+      patchProductVariant(
+        variantId,
+        data as unknown as PatchProductVariantRequest,
+      ).then(orvalData<VariantI>),
     ),
   );
 
 export const deleteVariantEffect = (variantId: string) =>
   apiEffect(() =>
     withSpan("action:variant-delete", () =>
-      deleteVariantFn(variantId),
+      deleteProductVariant(variantId).then(orvalData<{ success?: boolean }>),
     ),
   );
 

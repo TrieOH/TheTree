@@ -1,13 +1,10 @@
 import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
-  createBadgeTemplate,
-  deleteBadgeTemplate,
   getBadgeTemplate,
   getEditionBadgesPrint,
   listBadgeTemplates,
   listEditionBadgeEmissions,
   listUserBadges,
-  updateBadgeTemplate,
 } from "@trieoh/univents-api";
 import type {
   BadgeEditionEmission,
@@ -55,14 +52,3 @@ export const badgePrintQueryOptions = (
 });
 
 export * from "./query-keys";
-
-export {
-  createBadgeTemplate,
-  deleteBadgeTemplate,
-  getBadgeTemplate,
-  getEditionBadgesPrint,
-  listBadgeTemplates,
-  listEditionBadgeEmissions,
-  listUserBadges,
-  updateBadgeTemplate,
-};

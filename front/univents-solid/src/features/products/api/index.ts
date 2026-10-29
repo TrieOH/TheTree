@@ -1,20 +1,10 @@
-import { orvalData, orvalItems } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import {
-  createInitialProduct,
-  createProductVariant,
-  deleteProduct,
-  deleteProductVariant,
   listEditionProducts,
   listEditionStoreStock,
   listProductVariants,
-  patchProduct,
-  patchProductVariant,
 } from "@trieoh/univents-api";
 import type {
-  CreateInitialProductRequest,
-  CreateProductVariantRequest,
-  PatchProductRequest,
-  PatchProductVariantRequest,
   Product,
   ProductVariant,
   StoreStockItem,
@@ -30,10 +20,7 @@ import type { EventI } from "@/features/events/model";
 import type { EditionI } from "@/features/editions/model";
 import { myTicketQueryOptions, ticketsQueryOptions } from "@/features/tickets/api";
 import type {
-  CreateInitialProductOutputI,
   ProductI,
-  ProductPatchOutputI,
-  VariantCreateOutputI,
   VariantI,
 } from "../model";
 
@@ -110,45 +97,3 @@ export const storePageQueryOptions = (
     };
   },
 });
-
-export const createInitialProductFn = (
-  data: CreateInitialProductOutputI,
-  editionId: string,
-) =>
-  createInitialProduct(
-    editionId,
-    data as unknown as CreateInitialProductRequest,
-  ).then(orvalData<ProductI>);
-
-export const patchProductFn = (
-  productId: string,
-  data: ProductPatchOutputI,
-) =>
-  patchProduct(
-    productId,
-    data as unknown as PatchProductRequest,
-  ).then(orvalData<ProductI>);
-
-export const deleteProductFn = (productId: string) =>
-  deleteProduct(productId).then(orvalData<{ success?: boolean }>);
-
-export const createVariantFn = (
-  productId: string,
-  data: VariantCreateOutputI,
-) =>
-  createProductVariant(
-    productId,
-    data as unknown as CreateProductVariantRequest,
-  ).then(orvalData<VariantI>);
-
-export const patchVariantFn = (
-  variantId: string,
-  data: Partial<VariantCreateOutputI>,
-) =>
-  patchProductVariant(
-    variantId,
-    data as unknown as PatchProductVariantRequest,
-  ).then(orvalData<VariantI>);
-
-export const deleteVariantFn = (variantId: string) =>
-  deleteProductVariant(variantId).then(orvalData<{ success?: boolean }>);

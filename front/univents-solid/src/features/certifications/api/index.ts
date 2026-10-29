@@ -2,18 +2,12 @@ import { orvalData, orvalItems } from "@trieoh/api-client";
 import type { QueryClient } from "@trieoh/front-core-solid";
 import { Effect } from "effect";
 import {
-  createCertificationTemplate,
-  deleteCertificationTemplate,
-  emitProgramCertifications,
-  getCertification,
   getCertificationTemplate,
-  invalidateCertification,
   listCertificationEmissionErrors,
   listCertificationTemplates,
   listCertificationTemplateLinks,
   listEditionCertifications,
   listMyCertifications,
-  updateCertificationTemplate,
   verifyCertification,
 } from "@trieoh/univents-api";
 import type {
@@ -137,19 +131,3 @@ export const certificationVerificationQueryOptions = (hash: string) => ({
 });
 
 export * from "./query-keys";
-
-export {
-  createCertificationTemplate,
-  deleteCertificationTemplate,
-  getCertification,
-  getCertificationTemplate,
-  invalidateCertification,
-  listCertificationEmissionErrors,
-  listCertificationTemplates,
-  listCertificationTemplateLinks,
-  listEditionCertifications,
-  listMyCertifications,
-  updateCertificationTemplate,
-  verifyCertification,
-  emitProgramCertifications,
-};

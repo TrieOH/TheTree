@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { For, createSignal } from "solid-js";
+import { For } from "solid-js";
 
 import ImagePlusIcon from "~icons/lucide/image-plus";
 import TrashIcon from "~icons/lucide/trash";
@@ -7,7 +7,7 @@ import TrashIcon from "~icons/lucide/trash";
 import { useUploadQueue } from "@/features/upload-queue";
 import { resolveStorageUrl } from "@/shared/lib/storage-url";
 import { Button, Dialog } from "@trieoh/ui-solid";
-import { patchVariantFn } from "../api";
+import { useUpdateVariantMutation } from "../api/mutations";
 import type { VariantI } from "../model";
 
 const ImagePlus = ImagePlusIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -23,7 +23,8 @@ export interface VariantGalleryDialogProps {
 export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Element {
   let fileInputRef: HTMLInputElement | undefined = undefined;
   const queue = useUploadQueue();
-  const [saving, setSaving] = createSignal(false);
+  const updateVariantMutation = useUpdateVariantMutation();
+  const saving = () => updateVariantMutation.result().isPending;
 
   const images = () => props.variant.gallery_urls ?? [];
 
@@ -55,20 +56,19 @@ export function VariantGalleryDialog(props: VariantGalleryDialogProps): JSX.Elem
 
   const handleRemoveImage = async (urlToRemove: string) => {
     const nextUrls = images().filter((url) => url !== urlToRemove);
-    setSaving(true);
-    try {
-      await patchVariantFn(props.variant.id, {
+    await updateVariantMutation.mutateAsync({
+      variantId: props.variant.id,
+      productId: props.variant.product_id,
+      data: {
         vendor_code: props.variant.vendor_code,
         name: props.variant.name,
         description: props.variant.description,
         price: props.variant.price,
         stock: props.variant.stock,
         gallery_urls: nextUrls,
-      });
-      props.onUpdateGallery?.(nextUrls);
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
+    props.onUpdateGallery?.(nextUrls);
   };
 
   return (

@@ -1,16 +1,17 @@
-import { orvalData, orvalItems } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import {
   listDraftEditions,
   listPublicEditions,
-  patchEdition,
 } from "@trieoh/univents-api";
 import type { Edition } from "@trieoh/univents-api/schemas";
+import { Effect } from "effect";
 import {
   registerUploadAssociationHandler,
   UploadAssociationError,
 } from "@/features/upload-queue";
 import { appQueryClient } from "@/shared/lib/query-client";
 import { normalizeEdition, type EditionI } from "../model";
+import { patchEditionEffect } from "./mutations";
 import { syncEditionCaches } from "./cache";
 import { editionKeys } from "./query-keys";
 
@@ -74,18 +75,19 @@ async function associateEditionImage(
   }
 
   try {
-    const response = await patchEdition(
-      eventId,
-      edition.id,
-      patchEditionData(edition, field, uploadedUrl),
+    const updated = await Effect.runPromise(
+      patchEditionEffect(
+        eventId,
+        edition.id,
+        patchEditionData(edition, field, uploadedUrl),
+      ),
     );
-    if (!response) {
+    if (!updated) {
       throw new UploadAssociationError("Não foi possível associar a imagem.", {
         status: 500,
       });
     }
 
-    const updated = normalizeEdition(orvalData<Edition>(response));
     syncEditionCaches(appQueryClient, updated);
     void appQueryClient.invalidateQueries({
       queryKey: editionKeys.adminListByEvent(eventId),

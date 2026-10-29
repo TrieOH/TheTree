@@ -1,30 +1,17 @@
 import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
-  checkInOccurrence,
-  createProgram,
-  createProgramOccurrence,
-  deleteOccurrence,
-  deleteProgram,
   getOccurrence,
   listEditionOccurrences,
   listEditionPrograms,
   listMyParticipations,
   listOccurrenceParticipants,
-  markParticipationAttended,
-  patchOccurrence,
-  patchProgram,
 } from "@trieoh/univents-api";
 import type {
-  CreateProgramOccurrenceRequest,
-  CreateProgramRequest,
   MyParticipation,
   MyTicket,
-  PatchProgramOccurrenceRequest,
-  PatchProgramRequest,
   Program,
   ProgramOccurrence,
   ProgramParticipant,
-  ProgramParticipation,
 } from "@trieoh/univents-api/schemas";
 import { programKeys } from "./query-keys";
 import { degradeTo } from "@/shared/lib/degrade";
@@ -35,10 +22,7 @@ import type { EventI } from "@/features/events/model";
 import type { EditionI } from "@/features/editions/model";
 import { myTicketQueryOptions } from "@/features/tickets/api";
 import type {
-  OccurrenceCreateOutput,
   OccurrenceI,
-  ProgramCreateInput,
-  ProgramCreateOutput,
   ProgramI,
 } from "../model";
 import "./upload-association";
@@ -99,7 +83,10 @@ export const occurrenceQueryOptions = (occurrenceId: string) => ({
 
 export const occurrenceParticipantsQueryOptions = (occurrenceId: string) => ({
   queryKey: programKeys.participants(occurrenceId),
-  queryFn: () => listOccurrenceParticipantsFn(occurrenceId),
+  queryFn: () =>
+    listOccurrenceParticipants(occurrenceId).then(
+      orvalItems<ProgramParticipant>,
+    ),
   enabled: Boolean(occurrenceId),
 });
 
@@ -110,58 +97,3 @@ export const myParticipationsQueryOptions = (editionId: string) => ({
       orvalItems<MyParticipation>,
     ),
 });
-
-export const createProgramFn = (
-  editionId: string,
-  data: ProgramCreateInput | ProgramCreateOutput,
-) =>
-  createProgram(editionId, data as CreateProgramRequest).then(
-    orvalData<ProgramI>,
-  );
-
-export const patchProgramFn = (
-  programId: string,
-  data: ProgramCreateInput | ProgramCreateOutput,
-) =>
-  patchProgram(programId, data as PatchProgramRequest).then(
-    orvalData<ProgramI>,
-  );
-
-export const deleteProgramFn = (programId: string) =>
-  deleteProgram(programId).then(orvalData<ProgramI>);
-
-export const createOccurrenceFn = (
-  programId: string,
-  data: OccurrenceCreateOutput,
-) =>
-  createProgramOccurrence(
-    programId,
-    data as CreateProgramOccurrenceRequest,
-  ).then(orvalData<OccurrenceI>);
-
-export const patchOccurrenceFn = (
-  occurrenceId: string,
-  data: OccurrenceCreateOutput,
-) =>
-  patchOccurrence(
-    occurrenceId,
-    data as PatchProgramOccurrenceRequest,
-  ).then(orvalData<OccurrenceI>);
-
-export const deleteOccurrenceFn = (occurrenceId: string) =>
-  deleteOccurrence(occurrenceId).then(orvalData<OccurrenceI>);
-
-export const listOccurrenceParticipantsFn = (occurrenceId: string) =>
-  listOccurrenceParticipants(occurrenceId).then(
-    orvalItems<ProgramParticipant>,
-  );
-
-export const markParticipationAttendedFn = (participationId: string) =>
-  markParticipationAttended(participationId).then(
-    orvalData<ProgramParticipation>,
-  );
-
-export const checkInOccurrenceFn = (occurrenceId: string, attendeeId: string) =>
-  checkInOccurrence(occurrenceId, { attendee_id: attendeeId }).then(
-    orvalData<ProgramParticipation>,
-  );

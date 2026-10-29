@@ -3,11 +3,8 @@ import {
   listJoinedEvents,
   listOwnedEvents,
   listPublicEvents,
-  patchEvent,
 } from "@trieoh/univents-api";
-import type { PatchEventRequest } from "@trieoh/univents-api/schemas";
 import { orvalData, orvalItems } from "@trieoh/api-client";
-import { withSpan } from "@trieoh/front-core/tracing/browser";
 import type { EventI } from "../model";
 import { eventKeys } from "./query-keys";
 import "./upload-association";
@@ -44,8 +41,3 @@ export const allJoinedEventsQueryOptions = () => ({
   queryKey: eventKeys.joinedLists(),
   queryFn: getJoinedEventsFn,
 });
-
-export const patchEventFn = (eventId: string, data: PatchEventRequest) =>
-  withSpan("action:event-patch", () =>
-    patchEvent(eventId, data).then(orvalData<EventI>),
-  );
