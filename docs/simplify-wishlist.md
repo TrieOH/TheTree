@@ -8,7 +8,7 @@ Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree
 | 2 | Correct backend #10: rate limiting **exists** | XS | A wrong claim; re-scopes the real gap |
 | 3 | Move single-consumer `lib/go/globals` into identityx | XS–S | 1 lib with exactly one consumer = indirection |
 | 4 | Revisit ADR-0006 (consumerless encryption keys) | M | A whole module if approved — decision, not code |
-| 5 | Decouple harness from `fun/middlewares` | M–L | Third-party middleware stack; 161 files import fun |
+| 5 | ~~Decouple harness from `fun/middlewares`~~ ✅ (ADR-0018) | M–L | Third-party middleware stack; 161 files import fun |
 | 6 | Drop the global default tx runner (`SetDefaultRunner`) | M | Hidden package-global state (maybe not worth it — see note) |
 | 7 | Boot glue dedup | XS–M | `strict.go` ×4 near-identical, Dockerfile healthcheck ×4, `auth_dispatch` ×3 (tracked in libs #1) |
 | 8 | Audit 30 `nolint` + 36 TODO/FIXME | XS | Dead suppressions, stale comments |
@@ -27,7 +27,7 @@ Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree
 
 ### 2. Correct backend #10: rate limiting **exists**
 
-**Finding:** the harness already wires a global limiter (`lib/go/httpserver/httpserver.go`): `mws.RateLimit(RPS: 400, Burst: 20, key: RemoteAddr)` — every route, every service, from `fun/middlewares`. Backend #10's "zero rate limiting anywhere" is wrong.
+**Finding:** the harness already wires a global limiter (`lib/go/httpserver/httpserver.go`): a per-client-IP token bucket (RPS 400, burst 20) — every route, every service. Backend #10's "zero rate limiting anywhere" is wrong.
 
 **What this changes:** the real gap is **auth-specific, tighter limits** (login/token/OAuth at 10/min per IP+actor), not a missing limiter. The 400rps/20-burst global stops floods, not credential stuffing. Re-scope backend #10 accordingly (fixed in the doc).
 

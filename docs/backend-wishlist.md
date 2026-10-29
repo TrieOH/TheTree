@@ -128,9 +128,9 @@ The good example exists: `deliver_webhook.go` builds its own client with a 10s t
 
 ### 10. Rate limiting on auth endpoints
 
-**Problem.** A global limiter **already exists** in the harness (`lib/go/httpserver/httpserver.go`): `mws.RateLimit(RPS: 400, Burst: 20, key: RemoteAddr)` — every route, every service. That stops floods, not credential stuffing: an attacker sustains 400 req/s per IP after the burst, and login/token-mint/action-token-redeem/OAuth connect get the same coarse limit as `/health`.
+**Problem.** A global limiter **already exists** in the harness (`lib/go/httpserver/httpserver.go`): a per-client-IP token bucket (RPS 400, burst 20) — every route, every service. That stops floods, not credential stuffing: an attacker sustains 400 req/s per IP after the burst, and login/token-mint/action-token-redeem/OAuth connect get the same coarse limit as `/health`.
 
-**Fix.** Auth-specific, tighter limits on the authn chain: per-IP + per-actor (e.g. 10/min on login, 60/min on refresh, action-token redeem tighter) — a second limiter ahead of the auth routes, keyed by `RemoteAddr` + actor id where known. `golang.org/x/time/rate` (already an indirect dep) or a second `mws.RateLimit` with a tighter config. Fail 429 with the RFC 9457 shape once #14 lands. (Note: this item was originally written as "zero rate limiting anywhere" — corrected 2026-08-24 after the harness's existing limiter was found; the gap is *specificity*, not presence.)
+**Fix.** Auth-specific, tighter limits on the authn chain: per-IP + per-actor (e.g. 10/min on login, 60/min on refresh, action-token redeem tighter) — a second limiter ahead of the auth routes, keyed by `RemoteAddr` + actor id where known. `golang.org/x/time/rate` (already an indirect dep) or a second harness `rateLimiter` with a tighter config. Fail 429 with the RFC 9457 shape once #14 lands. (Note: this item was originally written as "zero rate limiting anywhere" — corrected 2026-08-24 after the harness's existing limiter was found; the gap is *specificity*, not presence.)
 
 **Effort.** M.
 
@@ -174,9 +174,11 @@ The good example exists: `deliver_webhook.go` builds its own client with a 10s t
 
 **Envelope part done 2026-10-29 (ADR-0017):** success is the plain payload, lists are `{ items }`, empty answers are 204, and errors are the bare `{ code, message, fields }` object. What's left is the error writer swap to `application/problem+json`; the TS readers and the e2e keywords already accept it.
 
+**`fun` is gone (ADR-0018).** The writer's carrier is now glue in `lib/go/httpserver/errors.go` (`appError`, `errorCode`, the `code*` constants — grep `TODO(problem-details)`). Delete it as part of this swap: no code enum, no `appError`; `ErrorMap.resolve`/`lookup` return status + detail, `fieldError` in `strict.go` becomes a problem with field extensions, and the specs' `code` enum and status table go. Nothing reads `code` beyond checking it's a string (`lib/ts/api-client/src/wire.ts`, `sdk/ts/identityx-access/src/wire.ts`).
+
 **Problem.** Everything rides the `fun.Response` envelope (`{code, message, data, error, pagination, timestamp, module}`) — HTTP semantics are hidden inside a body, errors are non-standard, and every client couples to the envelope (the orval-mutator unwraps it, `ApiError` carries `.envelope`).
 
-**Fix.** A deliberate architecture change: **plain JSON payloads on success + RFC 9457 `application/problem+json` for errors** (`type`/`title`/`status`/`detail`/`instance`) with proper HTTP status codes. Keep `fun` internally if useful, stop it at the HTTP boundary. Cross-cutting: specs → handlers → orval-mutator/`ApiError` → frontends, in one coordinated change with SDK version bumps. ADR-worthy.
+**Fix.** A deliberate architecture change: **plain JSON payloads on success + RFC 9457 `application/problem+json` for errors** (`type`/`title`/`status`/`detail`/`instance`) with proper HTTP status codes. Cross-cutting: specs → handlers → orval-mutator/`ApiError` → frontends, in one coordinated change with SDK version bumps. ADR-worthy.
 
 **Effort.** L. Do it as one project with #13 (pagination rides the same HTTP-surface change).
 

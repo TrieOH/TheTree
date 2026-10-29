@@ -257,8 +257,3 @@ func TestNewServerTimeouts(t *testing.T) {
 		t.Fatalf("timeouts = %v/%v/%v, want 30s/60s/120s", srv.ReadTimeout, srv.WriteTimeout, srv.IdleTimeout)
 	}
 }
-
-func TestSetupFUNRuns(t *testing.T) {
-	_ = t
-	SetupFUN()
-}

@@ -8,8 +8,7 @@ import (
 	"IdentityX/internal/tokens"
 	"IdentityX/models"
 	libauthz "lib/authz"
-
-	mws "github.com/MintzyG/fun/middlewares"
+	"lib/httpserver"
 )
 
 // authPrimitives builds the primitives IdentityX's spec-derived chains
@@ -18,30 +17,22 @@ import (
 // from the Access-check module: adding a scope is one spec x-scope line plus
 // one entry in authz.ScopeCheckers.
 func authPrimitives(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations, authzSvc *authz.Service) libauthz.Primitives {
-	authMW := authMiddlewares(tokensMgr, apiKeys)
-	return libauthz.Primitives{
-		JWT:    authMW.JWT(),
-		APIKey: authMW.APIKey(),
-		Any:    authMW.AnyAuth(),
-		Scopes: authzSvc.ScopeCheckers(),
-	}
+	p := authenticators(tokensMgr, apiKeys).Primitives()
+	p.Scopes = authzSvc.ScopeCheckers()
+	return p
 }
 
-// authMiddlewares wires the JWT and API-key authentication middlewares.
-// Both cross the Token-lifecycle module and the api_keys feature's
-// Authenticate seam — neither touches the repos directly, so verification
-// logic lives where the concept lives and this factory stays a thin binding.
-func authMiddlewares(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations) *mws.Middleware[*models.AccessClaims] {
-	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
+// authenticators wires JWT and API-key authentication. Both cross the
+// Token-lifecycle module and the api_keys feature's Authenticate seam —
+// neither touches the repos directly, so verification logic lives where the
+// concept lives and this factory stays a thin binding.
+func authenticators(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations) httpserver.Authenticators {
+	jwtAuth := func(ctx context.Context, token string) (context.Context, error) {
 		claims := &models.AccessClaims{}
-		err := tokensMgr.Verify(ctx, tokenStr, claims)
+		err := tokensMgr.Verify(ctx, token, claims)
 		if err != nil {
 			return nil, err
 		}
-		return claims, nil
-	}
-
-	jwtHook := func(ctx context.Context, claims *models.AccessClaims) (context.Context, error) {
 		identity := &models.Identity{
 			Sub: models.SubjectFromAccessSub(&claims.Sub),
 			Cred: models.Credential{
@@ -51,12 +42,12 @@ func authMiddlewares(tokensMgr *tokens.Manager, apiKeys *api_keys.Operations) *m
 		return models.WithIdentity(ctx, identity), nil
 	}
 
-	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
+	apiKeyAuth := func(ctx context.Context, rawKey string) (context.Context, error) {
 		identity, err := apiKeys.Authenticate(ctx, rawKey)
 		if err != nil {
 			return nil, err
 		}
 		return models.WithIdentity(ctx, identity), nil
 	}
-	return mws.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)
+	return httpserver.Authenticators{JWT: jwtAuth, APIKey: apiKeyAuth}
 }

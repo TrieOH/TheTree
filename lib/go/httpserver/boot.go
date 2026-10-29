@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"lib/telemetry"
+	"lib/validator"
 )
 
 // StartFunc opens everything the backend varies on — its storage (a Postgres
@@ -22,10 +23,10 @@ import (
 // the backend's concern, localized here.
 type StartFunc func(ctx context.Context) (handler http.Handler, shutdown func(context.Context) error, err error)
 
-// Boot is the shared process lifecycle every Backend runs through: FUN
-// runtime, tracer, the backend's components (via start), serving, then
+// Boot is the shared process lifecycle every Backend runs through:
+// validator, tracer, the backend's components (via start), serving, then
 // shutdown in reverse order on SIGTERM/SIGINT. The sequence lives here once — the per-backend
-// "call this before X" contracts it replaces (FUN before any request,
+// "call this before X" contracts it replaces (validator before any request,
 // tracer before any span, constraint messages before constraint
 // validation, tx runner before the first query) are either owned here,
 // became explicit data (the constraint registry travels into SetupDB as an
@@ -35,7 +36,7 @@ type StartFunc func(ctx context.Context) (handler http.Handler, shutdown func(co
 // Boot returns an error instead of exiting: errx.Exit stays at the process
 // edge (cmd/main), and the boot path stays testable through this interface.
 func Boot(cfg Config, start StartFunc) error {
-	SetupFUN()
+	validator.SetupValidator()
 
 	ctx := context.Background()
 	shutdownTelemetry, err := telemetry.Start(ctx, cfg.AppName)

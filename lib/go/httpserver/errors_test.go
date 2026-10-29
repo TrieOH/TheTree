@@ -15,7 +15,6 @@ import (
 
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -65,30 +64,30 @@ func TestErrorMapResolve(t *testing.T) {
 		name   string
 		err    error
 		status int
-		code   fun.ErrorCode
+		code   errorCode
 		msg    string
 	}{
-		{"sentinel", errAddSelf, 400, fun.CodeBadRequest, errAddSelf.Error()},
+		{"sentinel", errAddSelf, 400, codeBadRequest, errAddSelf.Error()},
 		{"wrapped: context never reaches the client",
-			fmt.Errorf("add member: %w", errAddSelf), 400, fun.CodeBadRequest, errAddSelf.Error()},
-		{"validation code", errTermsMissing, 400, fun.CodeValidation, errTermsMissing.Error()},
-		{"typed", fmt.Errorf("checkout: %w", &outOfStockError{items: 2}), 409, fun.CodeConflict, "2 items are out of stock"},
+			fmt.Errorf("add member: %w", errAddSelf), 400, codeBadRequest, errAddSelf.Error()},
+		{"validation code", errTermsMissing, 400, codeValidation, errTermsMissing.Error()},
+		{"typed", fmt.Errorf("checkout: %w", &outOfStockError{items: 2}), 409, codeConflict, "2 items are out of stock"},
 		{"most specific wins over its class",
-			fmt.Errorf("login: %w", fmt.Errorf("%w: %w", errBadCreds, database.ErrNotFound)), 401, fun.CodeUnauthorized, errBadCreds.Error()},
-		{"class alone", fmt.Errorf("get: %w", database.ErrNotFound), 404, fun.CodeNotFound, database.ErrNotFound.Error()},
+			fmt.Errorf("login: %w", fmt.Errorf("%w: %w", errBadCreds, database.ErrNotFound)), 401, codeUnauthorized, errBadCreds.Error()},
+		{"class alone", fmt.Errorf("get: %w", database.ErrNotFound), 404, codeNotFound, database.ErrNotFound.Error()},
 		{"unregistered constraint maps by class, hides the constraint",
-			&database.ConstraintError{Class: database.ErrUniqueViolation, Constraint: "uniq_secret"}, 409, fun.CodeConflict, database.ErrUniqueViolation.Error()},
+			&database.ConstraintError{Class: database.ErrUniqueViolation, Constraint: "uniq_secret"}, 409, codeConflict, database.ErrUniqueViolation.Error()},
 		{"missing row reads as the resource's error",
-			&database.NotFoundError{Named: errors.New("form not found")}, 404, fun.CodeNotFound, "form not found"},
+			&database.NotFoundError{Named: errors.New("form not found")}, 404, codeNotFound, "form not found"},
 		{"registered violation maps by its named error",
-			&database.ViolationError{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, fun.CodeValidation, errTermsMissing.Error()},
+			&database.ViolationError{Named: errTermsMissing, Class: database.ErrCheckViolation}, 400, codeValidation, errTermsMissing.Error()},
 		{"batch lists its items",
-			&database.BatchError{Items: []database.BatchItemError{{ID: "f1", Err: errAddSelf}}}, 400, fun.CodeValidation, "f1: " + errAddSelf.Error()},
+			&database.BatchError{Items: []database.BatchItemError{{ID: "f1", Err: errAddSelf}}}, 400, codeValidation, "f1: " + errAddSelf.Error()},
 		{"validation lists its fields in the message",
-			&validator.Error{Fields: []fielderr.Field{{Field: "name", Message: "this field is required"}}}, 400, fun.CodeValidation, "invalid request body: name: this field is required"},
-		{"no identity is a 401", fmt.Errorf("handler: %w", idx.ErrNoIdentity), 401, fun.CodeUnauthorized, idx.ErrNoIdentity.Error()},
-		{"status from the error's data", &upstreamError{status: 503}, 502, fun.CodeBadGateway, "upstream said 503"},
-		{"unmapped is a generic 500", errors.New("pq: connection reset"), 500, fun.CodeInternal, "internal error"},
+			&validator.Error{Fields: []fielderr.Field{{Field: "name", Message: "this field is required"}}}, 400, codeValidation, "invalid request body: name: this field is required"},
+		{"no identity is a 401", fmt.Errorf("handler: %w", idx.ErrNoIdentity), 401, codeUnauthorized, idx.ErrNoIdentity.Error()},
+		{"status from the error's data", &upstreamError{status: 503}, 502, codeBadGateway, "upstream said 503"},
+		{"unmapped is a generic 500", errors.New("pq: connection reset"), 500, codeInternal, "internal error"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
