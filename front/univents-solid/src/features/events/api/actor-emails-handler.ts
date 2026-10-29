@@ -1,3 +1,4 @@
+import { envelopeFetch } from "@trieoh/api-client";
 import { privateJsonResponse } from "@/shared/lib/http-cache";
 
 export interface ActorEmailsRequest {
@@ -14,6 +15,9 @@ export type ActorEmailsMap = Record<string, ActorRecord>;
 // In-memory cache per worker isolate with 5-minute TTL to protect IdentityX rate limits
 const ACTOR_CACHE = new Map<string, { record: ActorRecord; expiresAt: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// IdentityX may answer bare or enveloped while it moves off the envelope; this reads both as `{ data }`.
+const identityxFetch = envelopeFetch();
 
 export function clearActorCache(): void {
   ACTOR_CACHE.clear();
@@ -78,14 +82,14 @@ export async function handleActorEmailsRequest(
       missingIds.map(async (actorId): Promise<[string, ActorRecord] | null> => {
         try {
           const [actorRes, profileRes] = await Promise.all([
-            fetch(`${baseURL}/projects/${projectId}/actors/${actorId}`, {
+            identityxFetch(`${baseURL}/projects/${projectId}/actors/${actorId}`, {
               method: "GET",
               headers: {
                 "X-API-Key": apiKey,
                 Accept: "application/json",
               },
             }).catch(() => null),
-            fetch(`${baseURL}/projects/${projectId}/actors/${actorId}/profile`, {
+            identityxFetch(`${baseURL}/projects/${projectId}/actors/${actorId}/profile`, {
               method: "GET",
               headers: {
                 "X-API-Key": apiKey,
