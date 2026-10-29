@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import { listEditionPrograms } from "@trieoh/univents-api";
 import {
   registerUploadAssociationHandler,
@@ -16,7 +16,7 @@ registerUploadAssociationHandler("program-image", async (task, url) => {
       status: 400,
     });
   const programs = await listEditionPrograms(editionId, { public: true }).then(
-    orvalData<ProgramI[]>,
+    orvalItems<ProgramI>,
   );
   const program = programs.find((item) => item.id === task.owner.id);
   if (!program)

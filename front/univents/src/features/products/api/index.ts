@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createInitialProduct,
@@ -38,7 +38,7 @@ export const storeStockQueryOptions = (editionId: string) =>
     queryKey: productKeys.storeStock(editionId),
     queryFn: () =>
       listEditionStoreStock(editionId, { public: true }).then(
-        orvalData<StoreStockItem[]>,
+        orvalItems<StoreStockItem>,
       ),
     enabled: Boolean(editionId),
   });
@@ -49,7 +49,7 @@ export const storeStockQueryOptions = (editionId: string) =>
 export const getProductsByEditionFn = createClientOnlyFn(
   async (editionId: string) => {
     return listEditionProducts(editionId, { public: true }).then(
-      orvalData<ProductI[]>,
+      orvalItems<ProductI>,
     );
   },
 );
@@ -98,7 +98,7 @@ export const productByIdQueryOptions = (productId: string) => {
 export const getProductVariantsFn = createClientOnlyFn(
   async (productId: string) => {
     return listProductVariants(productId, { public: true }).then(
-      orvalData<VariantI[]>,
+      orvalItems<VariantI>,
     );
   },
 );

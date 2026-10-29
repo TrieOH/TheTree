@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import { listDraftEditions, listPublicEditions } from "@trieoh/univents-api";
 import {
   registerUploadAssociationHandler,
@@ -22,10 +22,8 @@ registerUploadAssociationHandler("edition-image", async (task, url) => {
       status: 400,
     });
   const [publicEditions, draftEditions] = await Promise.all([
-    listPublicEditions(eventId, { public: true }).then(
-      orvalData<EditionApiI[]>,
-    ),
-    listDraftEditions(eventId).then(orvalData<EditionApiI[]>),
+    listPublicEditions(eventId, { public: true }).then(orvalItems<EditionApiI>),
+    listDraftEditions(eventId).then(orvalItems<EditionApiI>),
   ]);
   const editions = [...publicEditions, ...draftEditions];
   const edition = editions.find((item) => item.id === task.owner.id) as

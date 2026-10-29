@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   getOccurrence,
   listEditionProducts,
@@ -36,7 +36,7 @@ export const resolvePurchaseCatalog = async (
     let promise = ticketsByEdition.get(editionId);
     if (!promise) {
       promise = listTicketTypes(editionId, { public: true }).then(
-        orvalData<TicketType[]>,
+        orvalItems<TicketType>,
       );
       ticketsByEdition.set(editionId, promise);
     }
@@ -52,7 +52,7 @@ export const resolvePurchaseCatalog = async (
           Promise.all(
             products.map((product) =>
               listProductVariants(product.id, { public: true }).then(
-                orvalData<VariantI[]>,
+                orvalItems<VariantI>,
               ),
             ),
           ),
@@ -67,7 +67,7 @@ export const resolvePurchaseCatalog = async (
     let promise = programsByEdition.get(editionId);
     if (!promise) {
       promise = listEditionPrograms(editionId, { public: true }).then(
-        orvalData<Program[]>,
+        orvalItems<Program>,
       );
       programsByEdition.set(editionId, promise);
     }
