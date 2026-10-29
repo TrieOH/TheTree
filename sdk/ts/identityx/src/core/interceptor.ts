@@ -11,7 +11,6 @@ import { env } from "./env";
 import { logger } from "@trieoh/envoy-fetch-ts";
 import { defaultTokenStore, type TokenStore } from "../store/token-store";
 import type { AuthTokenClaims, AuthTokens } from "../types/token-types";
-import { isEnvelope } from "./wire";
 
 export interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -31,22 +30,19 @@ interface InterceptorConfig {
   fetch?: typeof fetch;
 }
 
-interface RefreshEnvelope {
+interface RefreshResult {
   code: number;
   data?: AuthTokens;
   message?: string;
 }
 
-async function readRefreshEnvelope(response: Response): Promise<RefreshEnvelope> {
+async function readRefresh(response: Response): Promise<RefreshResult> {
   try {
     const body: unknown = await response.json();
-    // The token pair comes bare, or under the envelope's data.
-    const enveloped = isEnvelope(body);
-    const data = (enveloped ? body.data : response.ok ? body : undefined) as AuthTokens | undefined;
     const message = (body as { message?: unknown } | null)?.message;
     return {
-      code: enveloped ? body.code : response.status,
-      ...(data ? { data } : {}),
+      code: response.status,
+      ...(response.ok ? { data: body as AuthTokens } : {}),
       ...(typeof message === "string" && message ? { message } : {}),
     };
   } catch {
@@ -98,7 +94,7 @@ export class AuthInterceptor {
             },
           }
         );
-        const res = await readRefreshEnvelope(response);
+        const res = await readRefresh(response);
         const isSuccessfulCode = res.code >= 200 && res.code < 300;
         if (!isSuccessfulCode || !res.data || !res.data.access_token) {
           shouldClear = res.code >= 400 && res.code < 500;
