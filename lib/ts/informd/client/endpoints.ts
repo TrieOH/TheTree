@@ -19,30 +19,28 @@
  * original spelling, part of the interface) and
  * `POST /forms/{form_id}/responses` (public submission).
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "Informd"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. Errors: `error` carries an
- *   `AppError` — `{ "code", "message", "fields", "meta" }`.
- * - `pagination` is reserved for paged list endpoints (currently
- *   unused by Informd routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -100,14 +98,24 @@ import type {
   ForbiddenResponse,
   Form,
   FormAnswerable,
-  FormMember,
   FullForm,
   GetFormResponseCount200,
   GetFormResponseCountNamespaced200,
   GetHealth200,
   InternalServerErrorResponse,
+  ListFields200,
+  ListFieldsNamespaced200,
+  ListFormMembers200,
+  ListFormMembersNamespaced200,
+  ListMyArchivedForms200,
+  ListMyForms200,
+  ListNamespaceArchivedForms200,
+  ListNamespaceForms200,
+  ListNamespaceMembers200,
+  ListNamespaces200,
+  ListSteps200,
+  ListStepsNamespaced200,
   Namespace,
-  NamespaceMember,
   NotFoundResponse,
   RemoveFormMemberRequest,
   RemoveNamespaceMemberRequest,
@@ -197,7 +205,7 @@ export const getHealth = async ( options?: Parameters<typeof customInstance>[1])
 
 
 export type listNamespacesResponse200 = {
-  data: Namespace[]
+  data: ListNamespaces200
   status: 200
 }
 
@@ -302,7 +310,7 @@ export const createNamespace = async (createNamespaceRequest: CreateNamespaceReq
 
 
 export type listNamespaceMembersResponse200 = {
-  data: NamespaceMember[]
+  data: ListNamespaceMembers200
   status: 200
 }
 
@@ -432,9 +440,9 @@ export const addNamespaceMember = async (namespaceId: string,
 
 
 
-export type removeNamespaceMemberResponse200 = {
-  data: unknown
-  status: 200
+export type removeNamespaceMemberResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeNamespaceMemberResponse400 = {
@@ -462,7 +470,7 @@ export type removeNamespaceMemberResponse500 = {
   status: 500
 }
 
-export type removeNamespaceMemberResponseSuccess = (removeNamespaceMemberResponse200) & {
+export type removeNamespaceMemberResponseSuccess = (removeNamespaceMemberResponse204) & {
   headers: Headers;
 };
 export type removeNamespaceMemberResponseError = (removeNamespaceMemberResponse400 | removeNamespaceMemberResponse401 | removeNamespaceMemberResponse403 | removeNamespaceMemberResponse404 | removeNamespaceMemberResponse500) & {
@@ -499,7 +507,7 @@ export const removeNamespaceMember = async (namespaceId: string,
 
 
 export type listNamespaceFormsResponse200 = {
-  data: Form[]
+  data: ListNamespaceForms200
   status: 200
 }
 
@@ -625,7 +633,7 @@ export const createNamespaceForm = async (namespaceId: string,
 
 
 export type listNamespaceArchivedFormsResponse200 = {
-  data: Form[]
+  data: ListNamespaceArchivedForms200
   status: 200
 }
 
@@ -685,7 +693,7 @@ export const listNamespaceArchivedForms = async (namespaceId: string, options?: 
 
 
 export type listMyFormsResponse200 = {
-  data: Form[]
+  data: ListMyForms200
   status: 200
 }
 
@@ -790,7 +798,7 @@ export const createForm = async (createFormRequest: CreateFormRequest, options?:
 
 
 export type listMyArchivedFormsResponse200 = {
-  data: Form[]
+  data: ListMyArchivedForms200
   status: 200
 }
 
@@ -952,7 +960,7 @@ export const getFullForm = async (formId: string, options?: Parameters<typeof cu
 
 
 export type listFormMembersResponse200 = {
-  data: FormMember[]
+  data: ListFormMembers200
   status: 200
 }
 
@@ -1082,9 +1090,9 @@ export const addFormMember = async (formId: string,
 
 
 
-export type removeFormMemberResponse200 = {
-  data: unknown
-  status: 200
+export type removeFormMemberResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeFormMemberResponse400 = {
@@ -1112,7 +1120,7 @@ export type removeFormMemberResponse500 = {
   status: 500
 }
 
-export type removeFormMemberResponseSuccess = (removeFormMemberResponse200) & {
+export type removeFormMemberResponseSuccess = (removeFormMemberResponse204) & {
   headers: Headers;
 };
 export type removeFormMemberResponseError = (removeFormMemberResponse400 | removeFormMemberResponse401 | removeFormMemberResponse403 | removeFormMemberResponse404 | removeFormMemberResponse500) & {
@@ -1469,7 +1477,7 @@ export const getFormResponseCount = async (formId: string, options?: Parameters<
 
 
 export type listStepsResponse200 = {
-  data: Step[]
+  data: ListSteps200
   status: 200
 }
 
@@ -1594,9 +1602,9 @@ export const createStep = async (formId: string,
 
 
 
-export type bulkEditStepsResponse200 = {
-  data: unknown
-  status: 200
+export type bulkEditStepsResponse204 = {
+  data: void
+  status: 204
 }
 
 export type bulkEditStepsResponse400 = {
@@ -1624,7 +1632,7 @@ export type bulkEditStepsResponse500 = {
   status: 500
 }
 
-export type bulkEditStepsResponseSuccess = (bulkEditStepsResponse200) & {
+export type bulkEditStepsResponseSuccess = (bulkEditStepsResponse204) & {
   headers: Headers;
 };
 export type bulkEditStepsResponseError = (bulkEditStepsResponse400 | bulkEditStepsResponse401 | bulkEditStepsResponse403 | bulkEditStepsResponse404 | bulkEditStepsResponse500) & {
@@ -1663,7 +1671,7 @@ export const bulkEditSteps = async (formId: string,
 
 
 export type listFieldsResponse200 = {
-  data: Field[]
+  data: ListFields200
   status: 200
 }
 
@@ -1793,9 +1801,9 @@ export const createField = async (formId: string,
 
 
 
-export type bulkEditFieldsResponse200 = {
-  data: unknown
-  status: 200
+export type bulkEditFieldsResponse204 = {
+  data: void
+  status: 204
 }
 
 export type bulkEditFieldsResponse400 = {
@@ -1823,7 +1831,7 @@ export type bulkEditFieldsResponse500 = {
   status: 500
 }
 
-export type bulkEditFieldsResponseSuccess = (bulkEditFieldsResponse200) & {
+export type bulkEditFieldsResponseSuccess = (bulkEditFieldsResponse204) & {
   headers: Headers;
 };
 export type bulkEditFieldsResponseError = (bulkEditFieldsResponse400 | bulkEditFieldsResponse401 | bulkEditFieldsResponse403 | bulkEditFieldsResponse404 | bulkEditFieldsResponse500) & {
@@ -1997,9 +2005,9 @@ export const editSelectConfig = async (formId: string,
 
 
 
-export type deleteFieldResponse200 = {
-  data: unknown
-  status: 200
+export type deleteFieldResponse204 = {
+  data: void
+  status: 204
 }
 
 export type deleteFieldResponse401 = {
@@ -2022,7 +2030,7 @@ export type deleteFieldResponse500 = {
   status: 500
 }
 
-export type deleteFieldResponseSuccess = (deleteFieldResponse200) & {
+export type deleteFieldResponseSuccess = (deleteFieldResponse204) & {
   headers: Headers;
 };
 export type deleteFieldResponseError = (deleteFieldResponse401 | deleteFieldResponse403 | deleteFieldResponse404 | deleteFieldResponse500) & {
@@ -2188,7 +2196,7 @@ export const getFullFormNamespaced = async (namespaceId: string,
 
 
 export type listFormMembersNamespacedResponse200 = {
-  data: FormMember[]
+  data: ListFormMembersNamespaced200
   status: 200
 }
 
@@ -2320,9 +2328,9 @@ export const addFormMemberNamespaced = async (namespaceId: string,
 
 
 
-export type removeFormMemberNamespacedResponse200 = {
-  data: unknown
-  status: 200
+export type removeFormMemberNamespacedResponse204 = {
+  data: void
+  status: 204
 }
 
 export type removeFormMemberNamespacedResponse400 = {
@@ -2350,7 +2358,7 @@ export type removeFormMemberNamespacedResponse500 = {
   status: 500
 }
 
-export type removeFormMemberNamespacedResponseSuccess = (removeFormMemberNamespacedResponse200) & {
+export type removeFormMemberNamespacedResponseSuccess = (removeFormMemberNamespacedResponse204) & {
   headers: Headers;
 };
 export type removeFormMemberNamespacedResponseError = (removeFormMemberNamespacedResponse400 | removeFormMemberNamespacedResponse401 | removeFormMemberNamespacedResponse403 | removeFormMemberNamespacedResponse404 | removeFormMemberNamespacedResponse500) & {
@@ -2713,7 +2721,7 @@ export const getFormResponseCountNamespaced = async (namespaceId: string,
 
 
 export type listStepsNamespacedResponse200 = {
-  data: Step[]
+  data: ListStepsNamespaced200
   status: 200
 }
 
@@ -2840,9 +2848,9 @@ export const createStepNamespaced = async (namespaceId: string,
 
 
 
-export type bulkEditStepsNamespacedResponse200 = {
-  data: unknown
-  status: 200
+export type bulkEditStepsNamespacedResponse204 = {
+  data: void
+  status: 204
 }
 
 export type bulkEditStepsNamespacedResponse400 = {
@@ -2870,7 +2878,7 @@ export type bulkEditStepsNamespacedResponse500 = {
   status: 500
 }
 
-export type bulkEditStepsNamespacedResponseSuccess = (bulkEditStepsNamespacedResponse200) & {
+export type bulkEditStepsNamespacedResponseSuccess = (bulkEditStepsNamespacedResponse204) & {
   headers: Headers;
 };
 export type bulkEditStepsNamespacedResponseError = (bulkEditStepsNamespacedResponse400 | bulkEditStepsNamespacedResponse401 | bulkEditStepsNamespacedResponse403 | bulkEditStepsNamespacedResponse404 | bulkEditStepsNamespacedResponse500) & {
@@ -2908,7 +2916,7 @@ export const bulkEditStepsNamespaced = async (namespaceId: string,
 
 
 export type listFieldsNamespacedResponse200 = {
-  data: Field[]
+  data: ListFieldsNamespaced200
   status: 200
 }
 
@@ -3039,9 +3047,9 @@ export const createFieldNamespaced = async (namespaceId: string,
 
 
 
-export type bulkEditFieldsNamespacedResponse200 = {
-  data: unknown
-  status: 200
+export type bulkEditFieldsNamespacedResponse204 = {
+  data: void
+  status: 204
 }
 
 export type bulkEditFieldsNamespacedResponse400 = {
@@ -3069,7 +3077,7 @@ export type bulkEditFieldsNamespacedResponse500 = {
   status: 500
 }
 
-export type bulkEditFieldsNamespacedResponseSuccess = (bulkEditFieldsNamespacedResponse200) & {
+export type bulkEditFieldsNamespacedResponseSuccess = (bulkEditFieldsNamespacedResponse204) & {
   headers: Headers;
 };
 export type bulkEditFieldsNamespacedResponseError = (bulkEditFieldsNamespacedResponse400 | bulkEditFieldsNamespacedResponse401 | bulkEditFieldsNamespacedResponse403 | bulkEditFieldsNamespacedResponse404 | bulkEditFieldsNamespacedResponse500) & {
@@ -3244,9 +3252,9 @@ export const editSelectConfigNamespaced = async (namespaceId: string,
 
 
 
-export type deleteFieldNamespacedResponse200 = {
-  data: unknown
-  status: 200
+export type deleteFieldNamespacedResponse204 = {
+  data: void
+  status: 204
 }
 
 export type deleteFieldNamespacedResponse401 = {
@@ -3269,7 +3277,7 @@ export type deleteFieldNamespacedResponse500 = {
   status: 500
 }
 
-export type deleteFieldNamespacedResponseSuccess = (deleteFieldNamespacedResponse200) & {
+export type deleteFieldNamespacedResponseSuccess = (deleteFieldNamespacedResponse204) & {
   headers: Headers;
 };
 export type deleteFieldNamespacedResponseError = (deleteFieldNamespacedResponse401 | deleteFieldNamespacedResponse403 | deleteFieldNamespacedResponse404 | deleteFieldNamespacedResponse500) & {

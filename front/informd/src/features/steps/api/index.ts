@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
+import { itemsOf } from "@trieoh/api-client";
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import type { StepCreateI, StepI, StepUpdateI } from "../model";
 
@@ -48,10 +49,14 @@ export const bulkEditStepsFn = createClientOnlyFn(
 export const getAllUserStepsFn = createClientOnlyFn(
   async (form_id: string, namespace_id?: string) => {
     if (namespace_id)
-      return tanstackQueryFetcher<StepI[]>(
-        `/namespaces/${namespace_id}/forms/${form_id}/steps`,
+      return itemsOf<StepI>(
+        await tanstackQueryFetcher<unknown>(
+          `/namespaces/${namespace_id}/forms/${form_id}/steps`,
+        ),
       );
-    return tanstackQueryFetcher<StepI[]>(`/forms/${form_id}/steps`);
+    return itemsOf<StepI>(
+      await tanstackQueryFetcher<unknown>(`/forms/${form_id}/steps`),
+    );
   },
 );
 

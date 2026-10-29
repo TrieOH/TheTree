@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetSelectConfig(ctx context.Context, req openapi.GetSelectCon
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetSelectConfig200JSONResponse{
-		Code: 200, Data: config, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetSelectConfig200JSONResponse(*config), nil
 }

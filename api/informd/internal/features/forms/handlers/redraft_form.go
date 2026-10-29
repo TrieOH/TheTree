@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) RedraftForm(ctx context.Context, req openapi.RedraftFormReque
 	if err != nil {
 		return nil, err
 	}
-	return openapi.RedraftForm200JSONResponse{
-		Code: 200, Data: form, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.RedraftForm200JSONResponse(*form), nil
 }

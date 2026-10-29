@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) GetSelectConfigNamespaced(ctx context.Context, req openapi.Ge
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetSelectConfigNamespaced200JSONResponse{
-		Code: 200, Data: config, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetSelectConfigNamespaced200JSONResponse(*config), nil
 }

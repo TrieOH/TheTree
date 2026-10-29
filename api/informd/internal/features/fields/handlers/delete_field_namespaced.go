@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"Informd/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) DeleteFieldNamespaced(ctx context.Context, req openapi.Delete
 	if err != nil {
 		return nil, err
 	}
-	return openapi.DeleteFieldNamespaced200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.DeleteFieldNamespaced204Response{}, nil
 }
