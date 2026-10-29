@@ -63,10 +63,27 @@ func (c *Client) Close() error {
 	return c.http.Close()
 }
 
-// envelope is the {"data": ...} wrapper IdentityX puts around JSON
-// responses (JWKS is the exception and comes back bare).
+// envelope reads an IdentityX JSON body into Data whichever shape it
+// comes in: the fun envelope (a numeric code next to data or module; no
+// payload has those fields) or the bare payload IdentityX is moving to.
+// Drop it once IdentityX only answers bare.
 type envelope[T any] struct {
-	Data T `json:"data"`
+	Data T
+}
+
+func (e *envelope[T]) UnmarshalJSON(b []byte) error {
+	var probe struct {
+		Code   *int            `json:"code"`
+		Data   json.RawMessage `json:"data"`
+		Module *string         `json:"module"`
+	}
+	if json.Unmarshal(b, &probe) == nil && probe.Code != nil && (probe.Data != nil || probe.Module != nil) {
+		if len(probe.Data) == 0 {
+			return nil
+		}
+		return json.Unmarshal(probe.Data, &e.Data)
+	}
+	return json.Unmarshal(b, &e.Data)
 }
 
 // send executes req and decodes a 2xx body into the request's result. Any
@@ -81,6 +98,14 @@ func (c *Client) send(req *resty.Request, method, path string) error {
 		apiErr := &APIError{}
 		_ = json.Unmarshal(res.Bytes(), apiErr)
 		apiErr.StatusCode = res.StatusCode()
+		if apiErr.Message == "" {
+			// An RFC 9457 problem carries its message in detail.
+			var problem struct {
+				Detail string `json:"detail"`
+			}
+			_ = json.Unmarshal(res.Bytes(), &problem)
+			apiErr.Message = problem.Detail
+		}
 		if apiErr.Message == "" {
 			apiErr.Message = res.String()
 		}
