@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListCapabilities(ctx context.Context, req openapi.ListCapabil
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListCapabilities200JSONResponse{
-		Code: 200, Data: &caps, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListCapabilities200JSONResponse{Items: caps}, nil
 }

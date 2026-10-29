@@ -13,8 +13,6 @@ type Handlers struct {
 
 func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
-const module = "IdentityX"
-
 func deref(v *string) string {
 	if v == nil {
 		return ""

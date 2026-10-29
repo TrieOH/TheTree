@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/errs"
 	"IdentityX/internal/openapi"
@@ -32,7 +31,5 @@ func (h *Handlers) PostSetup(ctx context.Context, req openapi.PostSetupRequestOb
 		return nil, err
 	}
 	h.setup.MarkComplete()
-	return openapi.PostSetup201JSONResponse{
-		Code: 201, Data: tokens, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PostSetup201JSONResponse(*tokens), nil
 }

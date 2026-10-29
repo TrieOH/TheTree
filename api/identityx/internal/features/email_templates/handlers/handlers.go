@@ -14,8 +14,6 @@ type Handlers struct {
 
 func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
 
-const module = "IdentityX"
-
 func toEffective(t models.EffectiveEmailTemplate) openapi.EffectiveEmailTemplate {
 	return openapi.EffectiveEmailTemplate{
 		Kind:    openapi.EmailTemplateKind(t.Kind),

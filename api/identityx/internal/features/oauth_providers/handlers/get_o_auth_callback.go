@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/errs"
 	"IdentityX/internal/openapi"
@@ -19,7 +18,5 @@ func (h *Handlers) GetOAuthCallback(ctx context.Context, req openapi.GetOAuthCal
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetOAuthCallback201JSONResponse{
-		Code: 201, Data: tokens, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetOAuthCallback201JSONResponse(*tokens), nil
 }

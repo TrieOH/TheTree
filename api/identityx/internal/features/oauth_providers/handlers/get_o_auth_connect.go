@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 )
@@ -16,11 +15,5 @@ func (h *Handlers) GetOAuthConnect(ctx context.Context, req openapi.GetOAuthConn
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetOAuthConnect200JSONResponse{
-		Code: 200,
-		Data: &struct {
-			Url string `json:"url"` //nolint:revive // generated field name
-		}{Url: url},
-		Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetOAuthConnect200JSONResponse{Url: url}, nil
 }

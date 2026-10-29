@@ -22,7 +22,8 @@ func main() {
 			email.Module(cfg.ToEmailConfig()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build:  app.Build(cfg),
-		Errors: app.Errors(),
+		Build:       app.Build(cfg),
+		Errors:      app.Errors(),
+		PlainErrors: true,
 	}), "identityx exited with error")
 }

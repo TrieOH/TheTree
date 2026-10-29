@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"IdentityX/internal/authz"
@@ -122,7 +121,7 @@ func TestLogoutHTTP(t *testing.T) {
 			name:         "both headers blacklist both tokens",
 			accessToken:  accessToken,
 			refreshToken: refreshToken,
-			wantCode:     http.StatusOK,
+			wantCode:     http.StatusNoContent,
 			wantEntries:  2,
 		},
 		{
@@ -150,7 +149,7 @@ func TestLogoutHTTP(t *testing.T) {
 	}
 }
 
-// TestLogoutEndToEndBody pins the success envelope shape.
+// TestLogoutEndToEndBody pins the success shape: 204, no body.
 func TestLogoutEndToEndBody(t *testing.T) {
 	mock.SetUp(t)
 	kp, keyID := newSigningKey(t)
@@ -168,10 +167,10 @@ func TestLogoutEndToEndBody(t *testing.T) {
 	r := mountLogoutServer(t, key, actor, bl)
 
 	rec := doLogout(r, accessToken, refreshToken)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("want 200, got %d %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("want 204, got %d %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `"code":200`) {
-		t.Fatalf("want 200 envelope, got %s", rec.Body.String())
+	if rec.Body.Len() != 0 {
+		t.Fatalf("want no body, got %s", rec.Body.String())
 	}
 }

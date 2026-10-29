@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"IdentityX/internal/openapi"
 	"IdentityX/models"
@@ -17,9 +16,7 @@ func (h *Handlers) ListEmailTemplates(ctx context.Context, req openapi.ListEmail
 	for _, t := range templates {
 		data = append(data, toEffective(t))
 	}
-	return openapi.ListEmailTemplates200JSONResponse{
-		Code: 200, Data: &data, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListEmailTemplates200JSONResponse{Items: data}, nil
 }
 
 func (h *Handlers) GetEmailTemplate(ctx context.Context, req openapi.GetEmailTemplateRequestObject) (openapi.GetEmailTemplateResponseObject, error) {
@@ -28,9 +25,7 @@ func (h *Handlers) GetEmailTemplate(ctx context.Context, req openapi.GetEmailTem
 		return nil, err
 	}
 	effective := toEffective(*template)
-	return openapi.GetEmailTemplate200JSONResponse{
-		Code: 200, Data: &effective, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetEmailTemplate200JSONResponse(effective), nil
 }
 
 func (h *Handlers) PutEmailTemplate(ctx context.Context, req openapi.PutEmailTemplateRequestObject) (openapi.PutEmailTemplateResponseObject, error) {
@@ -39,9 +34,7 @@ func (h *Handlers) PutEmailTemplate(ctx context.Context, req openapi.PutEmailTem
 		return nil, err
 	}
 	effective := toEffective(*template)
-	return openapi.PutEmailTemplate200JSONResponse{
-		Code: 200, Data: &effective, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PutEmailTemplate200JSONResponse(effective), nil
 }
 
 func (h *Handlers) DeleteEmailTemplate(ctx context.Context, req openapi.DeleteEmailTemplateRequestObject) (openapi.DeleteEmailTemplateResponseObject, error) {
@@ -49,7 +42,5 @@ func (h *Handlers) DeleteEmailTemplate(ctx context.Context, req openapi.DeleteEm
 	if err != nil {
 		return nil, err
 	}
-	return openapi.DeleteEmailTemplate200JSONResponse{
-		Code: 200, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.DeleteEmailTemplate204Response{}, nil
 }

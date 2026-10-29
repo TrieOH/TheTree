@@ -3,7 +3,6 @@ package handlers
 import (
 	"IdentityX/internal/openapi"
 	"context"
-	"time"
 )
 
 func (h *Handlers) GetOAuthProviders(ctx context.Context, req openapi.GetOAuthProvidersRequestObject) (openapi.GetOAuthProvidersResponseObject, error) {
@@ -15,7 +14,5 @@ func (h *Handlers) GetOAuthProviders(ctx context.Context, req openapi.GetOAuthPr
 	for _, p := range providers {
 		items = append(items, openapi.OAuthProviderDiscoveryItem{Provider: p})
 	}
-	return openapi.GetOAuthProviders200JSONResponse{
-		Code: 200, Data: &items, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetOAuthProviders200JSONResponse{Items: items}, nil
 }
