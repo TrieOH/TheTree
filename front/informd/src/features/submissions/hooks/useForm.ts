@@ -1,10 +1,13 @@
 import { useSuspenseQueries } from "@tanstack/react-query";
-import type { FieldAnswerable, StepAnswerable } from "@trieoh/informd-models";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { isValidPhone, isValidUrl } from "#/shared/lib/helpers/mask";
 import { allFormsAnswerableQueryOptions, submitFormFn } from "../api";
-import type { AnswerCreateI } from "../model";
+import type {
+  AnswerCreateI,
+  FieldAnswerableI,
+  StepAnswerableI,
+} from "../model";
 
 interface FormState {
   currentStepIndex: number;
@@ -37,7 +40,7 @@ export function useForm(formId: string) {
   );
 
   const fieldsByStep = useMemo(() => {
-    const map: Record<string, FieldAnswerable[]> = {};
+    const map: Record<string, FieldAnswerableI[]> = {};
     for (const s of steps) {
       map[s.step.id] = s.fields;
     }
@@ -84,7 +87,7 @@ export function useForm(formId: string) {
   }, []);
 
   const currentStep = steps[state.currentStepIndex] as
-    | StepAnswerable
+    | StepAnswerableI
     | undefined;
   const lastStepId = steps.length > 0 ? steps[steps.length - 1].step.id : null;
   const lastStepHasFields = lastStepId

@@ -1,4 +1,3 @@
-import type { FieldAnswerable } from "@trieoh/informd-models";
 import {
   CalendarClock,
   Calendar as CalendarIcon,
@@ -15,17 +14,18 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import type { OptionI } from "#/features/fields/model";
+import type { FieldAnswerableI } from "#/features/submissions/model";
 import { formatPhoneMask } from "#/shared/lib/helpers/mask";
 import { cn } from "#/shared/lib/utils";
 
 interface FieldRendererProps {
-  field: FieldAnswerable;
+  field: FieldAnswerableI;
   value: unknown;
   error?: string;
   onChange: (fieldId: string, value: unknown) => void;
 }
 
-function getPlaceholder(field: FieldAnswerable): string {
+function getPlaceholder(field: FieldAnswerableI): string {
   const p = field.field.placeholder;
   if (typeof p === "object" && p !== null && "value" in p)
     return (p as { value: string }).value;

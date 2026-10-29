@@ -18,6 +18,7 @@ import {
 } from "#/features/fields/api";
 import type {
   CreateFieldRequestI,
+  CreateFieldSelectConfigRequestI,
   FieldI,
   FieldUpdateI,
 } from "#/features/fields/model";
@@ -396,7 +397,7 @@ function RouteComponent() {
       fieldId,
       stepId,
     }: {
-      config: { behaviour: string; value_type: string; options: string[] };
+      config: CreateFieldSelectConfigRequestI;
       fieldId: string;
       stepId: string;
     }) => editFieldSelectConfigFn(config, fieldId, formID, stepId, namespaceID),

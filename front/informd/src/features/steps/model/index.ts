@@ -2,7 +2,7 @@ import type {
   CreateStepRequest,
   Step,
   UpdateStepRequest,
-} from "@trieoh/informd-models";
+} from "@trieoh/informd-api/schemas";
 import z from "zod";
 
 export const stepCreateSchema = z.object({

@@ -92,8 +92,7 @@ migrate SVC ACTION="up":
 # in go.mod (the code is not committed, so `go mod tidy` drops it) — pinned
 # at generation time here and in the Dockerfiles (OAPI_RUNTIME_VERSION).
 # Per backend: sqlc queries and oapi-codegen bindings (internal/openapi);
-# then the orval TS clients (lib/ts/<svc>/client — orval always regenerates
-# all four).
+# then the orval TS clients (see gen-ts).
 #
 # Generate code for the given backends (default: all).
 gen +SERVICES=services:
@@ -116,6 +115,14 @@ gen +SERVICES=services:
         go get github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION
       )
     done
+    just gen-ts
+
+# The fronts import these clients; they are not committed, so run this after
+# cloning and whenever an api-spec.yml changes. orval always regenerates all
+# four.
+#
+# Generate the orval TS clients (lib/ts/<svc>/client).
+gen-ts:
     pnpm orval
 
 # ── Checks ────────────────────────────────────────────────────────────────

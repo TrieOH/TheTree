@@ -33,7 +33,7 @@
     "@trieoh/identityx-access-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
-    "@trieoh/payssage-models": "workspace:*",
+    "@trieoh/payssage-api": "workspace:*",
     "@trieoh/shared-utils": "workspace:*",
     "@trieoh/ui-react": "workspace:*",
     "class-variance-authority": "catalog:",
