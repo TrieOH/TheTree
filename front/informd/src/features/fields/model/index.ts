@@ -4,95 +4,49 @@ import type {
   Field,
   FieldSelectConfig,
   UpdateFieldRequest,
-} from "@trieoh/informd-models";
+} from "@trieoh/informd-api/schemas";
 import {
-  FieldTypeBool,
-  FieldTypeDate,
-  FieldTypeDatetime,
-  FieldTypeEmail,
-  FieldTypeFile,
-  FieldTypeFloat,
-  FieldTypeInt,
-  FieldTypePhone,
-  FieldTypeSelect,
-  FieldTypeString,
-  FieldTypeTime,
-  FieldTypeURL,
-  SelectBehaviourCheckbox,
-  SelectBehaviourDropdownCheckbox,
-  SelectBehaviourDropdownRadio,
-  SelectBehaviourRadio,
-  SelectValueTypeDate,
-  SelectValueTypeDatetime,
-  SelectValueTypeEmail,
-  SelectValueTypeFloat,
-  SelectValueTypeInt,
-  SelectValueTypePhone,
-  SelectValueTypeString,
-  SelectValueTypeTime,
-  SelectValueTypeURL,
-} from "@trieoh/informd-models";
+  FieldType,
+  SelectBehaviour,
+  SelectValueType,
+} from "@trieoh/informd-api/schemas";
 
 import z from "zod";
+import type { RawJSON } from "#/shared/lib/raw-json";
 
-export type FieldTypeI =
-  | typeof FieldTypeString
-  | typeof FieldTypeEmail
-  | typeof FieldTypeInt
-  | typeof FieldTypeFloat
-  | typeof FieldTypeBool
-  | typeof FieldTypeDate
-  | typeof FieldTypeTime
-  | typeof FieldTypeDatetime
-  | typeof FieldTypeSelect
-  | typeof FieldTypeFile
-  | typeof FieldTypePhone
-  | typeof FieldTypeURL;
+export type FieldTypeI = FieldType;
 
-export type SelectBehaviourI =
-  | typeof SelectBehaviourCheckbox
-  | typeof SelectBehaviourRadio
-  | typeof SelectBehaviourDropdownCheckbox
-  | typeof SelectBehaviourDropdownRadio;
+export type SelectBehaviourI = SelectBehaviour;
 
-export type SelectValueTypeI =
-  | typeof SelectValueTypeString
-  | typeof SelectValueTypeEmail
-  | typeof SelectValueTypeInt
-  | typeof SelectValueTypeFloat
-  | typeof SelectValueTypeDate
-  | typeof SelectValueTypeTime
-  | typeof SelectValueTypeDatetime
-  | typeof SelectValueTypePhone
-  | typeof SelectValueTypeURL;
+export type SelectValueTypeI = SelectValueType;
 
 /** Schema for creating/updating a select config */
 const createFieldSelectConfigSchema = z.object({
   behaviour: z.enum(
     [
-      SelectBehaviourCheckbox,
-      SelectBehaviourRadio,
-      SelectBehaviourDropdownCheckbox,
-      SelectBehaviourDropdownRadio,
+      SelectBehaviour.checkbox,
+      SelectBehaviour.radio,
+      SelectBehaviour["dropdown-checkbox"],
+      SelectBehaviour["dropdown-radio"],
     ],
     { error: "Invalid select behaviour" },
   ),
   value_type: z.enum(
     [
-      SelectValueTypeString,
-      SelectValueTypeEmail,
-      SelectValueTypeInt,
-      SelectValueTypeFloat,
-      SelectValueTypeDate,
-      SelectValueTypeTime,
-      SelectValueTypeDatetime,
-      SelectValueTypePhone,
-      SelectValueTypeURL,
+      SelectValueType.string,
+      SelectValueType.email,
+      SelectValueType.int,
+      SelectValueType.float,
+      SelectValueType.date,
+      SelectValueType.time,
+      SelectValueType.datetime,
+      SelectValueType.phone,
+      SelectValueType.url,
     ],
     { error: "Invalid select value type" },
   ),
   options: z.any(),
-}) satisfies z.ZodType<CreateFieldSelectConfigRequest>;
+}) satisfies z.ZodType<CreateFieldSelectConfigRequestI>;
 
 export const createFieldRequestSchema = z.object({
   key: z.string({ error: "Field key is required" }),
@@ -102,18 +56,18 @@ export const createFieldRequestSchema = z.object({
   required: z.boolean({ error: "Required must be a boolean" }),
   type: z.enum(
     [
-      FieldTypeString,
-      FieldTypeEmail,
-      FieldTypeInt,
-      FieldTypeFloat,
-      FieldTypeBool,
-      FieldTypeDate,
-      FieldTypeTime,
-      FieldTypeDatetime,
-      FieldTypeSelect,
-      FieldTypeFile,
-      FieldTypePhone,
-      FieldTypeURL,
+      FieldType.string,
+      FieldType.email,
+      FieldType.int,
+      FieldType.float,
+      FieldType.bool,
+      FieldType.date,
+      FieldType.time,
+      FieldType.datetime,
+      FieldType.select,
+      FieldType.file,
+      FieldType.phone,
+      FieldType.url,
     ],
     { error: "Invalid type" },
   ),
@@ -121,7 +75,7 @@ export const createFieldRequestSchema = z.object({
   default_value: z.any().optional(),
   config: z.any().optional(),
   select_config: createFieldSelectConfigSchema.optional(), // Only required when type is "select"
-}) satisfies z.ZodType<CreateFieldRequest>;
+}) satisfies z.ZodType<CreateFieldRequestI>;
 
 export const fieldUpdateRequestSchema = z.object({
   id: z.string({ error: "Field ID is required" }),
@@ -132,18 +86,18 @@ export const fieldUpdateRequestSchema = z.object({
   required: z.boolean({ error: "Required must be a boolean" }),
   type: z.enum(
     [
-      FieldTypeString,
-      FieldTypeEmail,
-      FieldTypeInt,
-      FieldTypeFloat,
-      FieldTypeBool,
-      FieldTypeDate,
-      FieldTypeTime,
-      FieldTypeDatetime,
-      FieldTypeSelect,
-      FieldTypeFile,
-      FieldTypePhone,
-      FieldTypeURL,
+      FieldType.string,
+      FieldType.email,
+      FieldType.int,
+      FieldType.float,
+      FieldType.bool,
+      FieldType.date,
+      FieldType.time,
+      FieldType.datetime,
+      FieldType.select,
+      FieldType.file,
+      FieldType.phone,
+      FieldType.url,
     ],
     { error: "Invalid type" },
   ),
@@ -151,14 +105,36 @@ export const fieldUpdateRequestSchema = z.object({
   default_value: z.any().optional(),
   config: z.any().optional(),
   select_config: createFieldSelectConfigSchema.optional(),
-}) satisfies z.ZodType<UpdateFieldRequest>;
+}) satisfies z.ZodType<FieldUpdateI>;
 
-export type CreateFieldRequestI = CreateFieldRequest;
-export type FieldUpdateI = UpdateFieldRequest;
-export type CreateFieldSelectConfigRequestI = CreateFieldSelectConfigRequest;
+type RawFields = "placeholder" | "default_value" | "config";
 
-export interface FieldI extends Omit<Field, "type"> {
+export interface CreateFieldSelectConfigRequestI
+  extends Omit<CreateFieldSelectConfigRequest, "options"> {
+  options: RawJSON;
+}
+
+export interface CreateFieldRequestI
+  extends Omit<CreateFieldRequest, RawFields | "select_config"> {
+  placeholder?: RawJSON;
+  default_value?: RawJSON;
+  config?: RawJSON;
+  select_config?: CreateFieldSelectConfigRequestI;
+}
+
+export interface FieldUpdateI
+  extends Omit<UpdateFieldRequest, RawFields | "select_config"> {
+  placeholder?: RawJSON;
+  default_value?: RawJSON;
+  config?: RawJSON;
+  select_config?: CreateFieldSelectConfigRequestI;
+}
+
+export interface FieldI extends Omit<Field, "type" | RawFields> {
   type: FieldTypeI;
+  placeholder?: RawJSON;
+  default_value?: RawJSON;
+  config?: RawJSON;
 }
 
 export interface OptionI {

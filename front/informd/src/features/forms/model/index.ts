@@ -1,18 +1,15 @@
 import type {
   CreateFormRequest,
   Form,
-  FormStatusArchived,
-  FormStatusClosed,
-  FormStatusDraft,
-  FormStatusOpen,
-} from "@trieoh/informd-models";
+  FormStatus,
+} from "@trieoh/informd-api/schemas";
 import z from "zod";
 
 export type FormStatusI =
-  | typeof FormStatusDraft
-  | typeof FormStatusOpen
-  | typeof FormStatusClosed
-  | typeof FormStatusArchived;
+  | typeof FormStatus.draft
+  | typeof FormStatus.open
+  | typeof FormStatus.closed
+  | typeof FormStatus.archived;
 
 export const formCreateSchema = z.object({
   title: z

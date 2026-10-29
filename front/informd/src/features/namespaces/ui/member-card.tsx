@@ -1,10 +1,5 @@
-import {
-  NamespaceMemberRoleAdmin,
-  NamespaceMemberRoleEditor,
-  NamespaceMemberRoleOwner,
-  NamespaceMemberRoleViewer,
-} from "@trieoh/informd-models";
-import { Crown, Eye, Pencil, Shield, User2, UserMinus } from "lucide-react";
+import { NamespaceMemberRole } from "@trieoh/informd-api/schemas";
+import { Crown, Shield, User2, UserMinus } from "lucide-react";
 import { timeAgo } from "#/shared/lib/helpers/date-utils";
 import { cn } from "#/shared/lib/utils";
 import { Button } from "#/shared/ui/shadcn/button";
@@ -16,32 +11,27 @@ interface PropsI {
 }
 
 const roleConfig = {
-  [NamespaceMemberRoleOwner]: {
+  [NamespaceMemberRole.owner]: {
     label: "Owner",
     icon: Crown,
     className: "text-amber-500 bg-amber-500/10",
   },
-  [NamespaceMemberRoleAdmin]: {
+  [NamespaceMemberRole.admin]: {
     label: "Admin",
     icon: Shield,
     className: "text-blue-500 bg-blue-500/10",
   },
-  [NamespaceMemberRoleEditor]: {
-    label: "Editor",
-    icon: Pencil,
-    className: "text-emerald-500 bg-emerald-500/10",
-  },
-  [NamespaceMemberRoleViewer]: {
-    label: "Viewer",
-    icon: Eye,
+  [NamespaceMemberRole.member]: {
+    label: "Member",
+    icon: User2,
     className: "text-muted-foreground bg-muted",
   },
 } as const;
 
 export function MemberCard({ data, onRemove }: PropsI) {
-  const role = roleConfig[data.role] ?? roleConfig[NamespaceMemberRoleViewer];
+  const role = roleConfig[data.role] ?? roleConfig[NamespaceMemberRole.member];
   const RoleIcon = role.icon;
-  const isOwner = data.role === NamespaceMemberRoleOwner;
+  const isOwner = data.role === NamespaceMemberRole.owner;
 
   return (
     <div

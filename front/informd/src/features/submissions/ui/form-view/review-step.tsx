@@ -1,10 +1,13 @@
-import type { FieldAnswerable, StepAnswerable } from "@trieoh/informd-models";
 import type { FieldI } from "#/features/fields/model";
+import type {
+  FieldAnswerableI,
+  StepAnswerableI,
+} from "#/features/submissions/model";
 import { cn } from "#/shared/lib/utils";
 
 interface ReviewStepProps {
-  steps: StepAnswerable[];
-  fields: Record<string, FieldAnswerable[]>;
+  steps: StepAnswerableI[];
+  fields: Record<string, FieldAnswerableI[]>;
   formData: Record<string, unknown>;
 }
 

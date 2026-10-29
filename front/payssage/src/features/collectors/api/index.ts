@@ -3,7 +3,7 @@ import { itemsOf } from "@trieoh/api-client";
 import type { Collector } from "#/features/oauth/model";
 import { authFetcher } from "#/shared/lib/api/fetch";
 
-export const collectorsQueryOptions = (organizationId?: string) =>
+export const collectorsQueryOptions = (organizationId?: string | null) =>
   queryOptions({
     queryKey: ["collectors", organizationId ?? "personal"],
     queryFn: async () => {
