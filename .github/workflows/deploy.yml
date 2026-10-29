@@ -196,13 +196,14 @@ jobs:
           PKG_NAME=$(node -p "require('./package.json').name")
           PKG_VERSION=$(node -p "require('./package.json').version")
           echo "package: $PKG_NAME@$PKG_VERSION (tag: $VERSION)"
-          if [ "$PKG_VERSION" != "$VERSION" ]; then
+          # Tags carry a leading v (v0.1.8); package.json does not.
+          if [ "$PKG_VERSION" != "${VERSION#v}" ]; then
             echo "::error::Version mismatch! Tag version is $VERSION but package.json version is $PKG_VERSION"
             exit 1
           fi
           echo "name=$PKG_NAME" >> "$GITHUB_OUTPUT"
-          if npm view "$PKG_NAME@$VERSION" version >/dev/null 2>&1; then
-            echo "::warning::$PKG_NAME@$VERSION already published to npm — skipping publish"
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "::warning::$PKG_NAME@$PKG_VERSION already published to npm — skipping publish"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -523,7 +524,7 @@ jobs:
             "artifact": "$ARTIFACT",
             "type": "sdk",
             "package": "${{ needs.checks.outputs.sdk-name }}",
-            "npm_version": "$VERSION"
+            "npm_version": "${VERSION#v}"
           }
           └───────────────────────────────────────────────────────
           EOF
