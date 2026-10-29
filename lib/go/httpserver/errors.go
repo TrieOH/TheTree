@@ -1,10 +1,12 @@
 package httpserver
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"reflect"
 	"sync"
+	"sync/atomic"
 
 	"lib/authz"
 	"lib/database"
@@ -122,9 +124,59 @@ func fieldsOf(err error) []fun.FieldError {
 	return out
 }
 
+// plainErrors makes error bodies the bare error object ({code, message,
+// fields}) instead of the fun envelope. A Backend opts in with
+// UsePlainErrors when it moves off the envelope; once every Backend has,
+// it is the only format.
+var plainErrors atomic.Bool
+
+// UsePlainErrors makes every error response of the process the bare error
+// object, without the fun envelope around it.
+func UsePlainErrors() {
+	plainErrors.Store(true)
+}
+
+// plainError is the error body a Backend that moved off the envelope sends.
+type plainError struct {
+	Code    fun.ErrorCode `json:"code"`
+	Message string        `json:"message"`
+	Fields  []plainField  `json:"fields,omitempty"`
+}
+
+type plainField struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+// writeAppError writes e with status, in the process's error format.
+func writeAppError(w http.ResponseWriter, r *http.Request, status int, e *fun.AppError) {
+	if !plainErrors.Load() {
+		fun.Error(e).SendWithCtx(r.Context(), w)
+		return
+	}
+	body := plainError{Code: e.Code, Message: e.Message}
+	for _, f := range e.Fields {
+		body.Fields = append(body.Fields, plainField{Field: f.Field, Message: f.Message})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
 // WriteError writes err as an error response, through the Backend's map.
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	fun.Error(err).SendWithCtx(r.Context(), w)
+	if !plainErrors.Load() {
+		fun.Error(err).SendWithCtx(r.Context(), w)
+		return
+	}
+	errorMapMu.RLock()
+	m := errorMap
+	errorMapMu.RUnlock()
+	status, code, msg := m.resolve(err)
+	if code == fun.CodeInternal {
+		telemetry.Log().Error("unmapped error", zap.Int("status", status), zap.Error(err))
+	}
+	writeAppError(w, r, status, &fun.AppError{Code: code, Message: msg, Fields: fieldsOf(err), Err: err})
 }
 
 // writeMiddlewareError writes a fun middleware's rejection (installed by
@@ -145,7 +197,7 @@ func writeMiddlewareError(w http.ResponseWriter, r *http.Request, status int, er
 		telemetry.Log().Error("middleware error", zap.Int("status", status), zap.Error(err))
 		msg = "internal error"
 	}
-	fun.Error(&fun.AppError{Code: codeFor(status), Message: msg, Fields: fieldsOf(err), Err: err}).SendWithCtx(r.Context(), w)
+	writeAppError(w, r, status, &fun.AppError{Code: codeFor(status), Message: msg, Fields: fieldsOf(err), Err: err})
 }
 
 // errorStatus is the status err is answered with under the installed map.

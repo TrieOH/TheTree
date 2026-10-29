@@ -37,8 +37,8 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 	return func(f StrictHandlerFunc, operationID string) StrictHandlerFunc {
 		chain, ok := chains[operationID]
 		if !ok {
-			return func(_ context.Context, w http.ResponseWriter, _ *http.Request, _ any) (any, error) {
-				fun.InternalServerError("operation not registered with auth resolver").Send(w)
+			return func(_ context.Context, w http.ResponseWriter, r *http.Request, _ any) (any, error) {
+				writeAppError(w, r, http.StatusInternalServerError, &fun.AppError{Code: fun.CodeInternal, Message: "operation not registered with auth resolver"})
 				return nil, nil
 			}
 		}
@@ -144,7 +144,7 @@ func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF
 	return handlerWith(strict, chiOpts)
 }
 
-// ParamBindingErrorHandler returns the fun-envelope handler for the
+// ParamBindingErrorHandler returns the error handler for the
 // generated strict server's param-binding failures, unified across the
 // backends to the superset: required params, invalid param formats, and
 // required headers. The generated error classes are oapi-codegen's and
@@ -152,20 +152,20 @@ func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF
 // harness classifies by type name and reads ParamName by reflection — the
 // generated surface is machine-owned; binding to it by name is the
 // harness's one concession to the codegen.
-func ParamBindingErrorHandler() func(w http.ResponseWriter, _ *http.Request, err error) {
-	return func(w http.ResponseWriter, _ *http.Request, err error) {
-		if resp, ok := paramBindingResponse(err); ok {
-			resp.Send(w)
+func ParamBindingErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		if appErr, ok := paramBindingError(err); ok {
+			writeAppError(w, r, http.StatusBadRequest, appErr)
 			return
 		}
-		fun.InternalServerError("internal error").Send(w)
+		writeAppError(w, r, http.StatusInternalServerError, &fun.AppError{Code: fun.CodeInternal, Message: "internal error"})
 	}
 }
 
-// paramBindingResponse classifies one param-binding error into its fun
-// validation envelope. Only the three generated classes match; anything
+// paramBindingError classifies one param-binding error into its
+// validation error. Only the three generated classes match; anything
 // else falls through to the caller's default (500).
-func paramBindingResponse(err error) (*fun.Response, bool) {
+func paramBindingError(err error) (*fun.AppError, bool) {
 	t := reflect.TypeOf(err)
 	if t == nil || t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
 		return nil, false
@@ -178,11 +178,11 @@ func paramBindingResponse(err error) (*fun.Response, bool) {
 	name := reflect.ValueOf(err).Elem().FieldByName("ParamName").String()
 	switch s.Name() {
 	case "RequiredParamError":
-		return fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "parameter is required"}).Validation()), true
+		return fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "parameter is required"}).Validation(), true
 	case "InvalidParamFormatError":
-		return fun.Error(fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "invalid format"}).Validation()), true
+		return fun.Err("invalid request parameter").WithFields(&fun.FieldError{Field: name, Message: "invalid format"}).Validation(), true
 	case "RequiredHeaderError":
-		return fun.Error(fun.Err("invalid request header").WithFields(&fun.FieldError{Field: name, Message: "header is required"}).Validation()), true
+		return fun.Err("invalid request header").WithFields(&fun.FieldError{Field: name, Message: "header is required"}).Validation(), true
 	}
 	return nil, false
 }
@@ -238,21 +238,21 @@ func bodyOf(request any) any {
 	return b.Interface()
 }
 
-// StrictRequestErrorHandler returns the fun-envelope handler for request
+// StrictRequestErrorHandler returns the error handler for request
 // binding failures, for StrictHTTPServerOptions.RequestErrorHandlerFunc.
 // The underlying decode error is surfaced both in the message (so clients
 // that only read the top-level message see why) and in the body field.
-func StrictRequestErrorHandler() func(w http.ResponseWriter, _ *http.Request, err error) {
-	return func(w http.ResponseWriter, _ *http.Request, err error) {
-		fun.Error(fun.Err("invalid request body: " + err.Error()).WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest()).Send(w)
+func StrictRequestErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		writeAppError(w, r, http.StatusBadRequest, fun.Err("invalid request body: "+err.Error()).WithFields(&fun.FieldError{Field: "body", Message: err.Error()}).BadRequest())
 	}
 }
 
-// StrictResponseErrorHandler returns the fun-envelope handler for errors
+// StrictResponseErrorHandler returns the error handler for errors
 // returned by strict handlers, for
 // StrictHTTPServerOptions.ResponseErrorHandlerFunc.
 func StrictResponseErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
-		fun.Error(err).SendWithCtx(r.Context(), w)
+		WriteError(w, r, err)
 	}
 }
