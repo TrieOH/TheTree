@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   deleteEmailTemplate,
   listEmailTemplates,
@@ -16,7 +16,7 @@ export const emailTemplatesQueryOptions = (projectId: string) =>
   queryOptions({
     queryKey: ["projects", projectId, "email-templates"],
     queryFn: () =>
-      listEmailTemplates(projectId).then(orvalData<EffectiveEmailTemplate[]>),
+      listEmailTemplates(projectId).then(orvalItems<EffectiveEmailTemplate>),
   });
 
 export const saveEmailTemplate = createClientOnlyFn(

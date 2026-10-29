@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createProjectOAuthProvider,
   deleteOAuthProvider,
@@ -19,7 +19,7 @@ export const allOAuthProvidersQueryOptions = (projectId: string) =>
   queryOptions({
     queryKey: ["projects", projectId, "oauth-providers"],
     queryFn: () =>
-      listProjectOAuthProviders(projectId).then(orvalData<OAuthProviderI[]>),
+      listProjectOAuthProviders(projectId).then(orvalItems<OAuthProviderI>),
   });
 
 export const createOAuthProviderFn = createClientOnlyFn(
