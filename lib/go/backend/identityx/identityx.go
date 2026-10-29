@@ -140,8 +140,7 @@ func apiKeyHook(baseURL string, o options) fm.APIKeyHook {
 }
 
 // introspect asks IdentityX who owns rawKey. IdentityX answers with the
-// identity, bare or under the fun envelope's data while it moves off the
-// envelope. A non-2xx answer is ErrInvalidAPIKey; a transport failure is
+// identity. A non-2xx answer is ErrInvalidAPIKey; a transport failure is
 // returned as is.
 func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*idx.Identity, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -162,24 +161,9 @@ func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*
 		return nil, fmt.Errorf("introspect: read: %w", err)
 	}
 	var identity idx.Identity
-	err = json.Unmarshal(unwrapEnvelope(body), &identity)
+	err = json.Unmarshal(body, &identity)
 	if err != nil {
 		return nil, fmt.Errorf("introspect: decode: %w", err)
 	}
 	return &identity, nil
-}
-
-// unwrapEnvelope returns the data of a fun envelope (a numeric code next
-// to data or module; an identity has neither), or body itself when it is
-// already bare. Drop it once IdentityX only answers bare.
-func unwrapEnvelope(body []byte) []byte {
-	var probe struct {
-		Code   *int            `json:"code"`
-		Data   json.RawMessage `json:"data"`
-		Module *string         `json:"module"`
-	}
-	if json.Unmarshal(body, &probe) == nil && probe.Code != nil && (probe.Data != nil || probe.Module != nil) {
-		return probe.Data
-	}
-	return body
 }
