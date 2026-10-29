@@ -1,11 +1,11 @@
 // Package httpserver is the HTTP-serving harness shared by every TrieOH backend:
-// server lifecycle, pprof, fun configuration, and the standard router skeleton
+// server lifecycle, pprof, middleware configuration, and the standard router skeleton
 // (middleware stack, /health, OpenTelemetry wrapping). Telemetry is pushed
 // over OTLP (see lib/telemetry); nothing is scraped from the process.
 package httpserver
 
 import (
-	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -17,15 +17,12 @@ import (
 	"lib/telemetry"
 	"lib/validator"
 
-	"github.com/MintzyG/fun"
-	fh "github.com/MintzyG/fun/handlers"
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -70,8 +67,6 @@ func (rl RateLimit) withDefaults() RateLimit {
 	return rl
 }
 
-// SetupFUN configures the shared fun runtime for the process. Call once at
-// startup, before any request is handled.
 // cleanCSV splits a comma-separated env value, trims whitespace, and drops
 // empty entries.
 func cleanCSV(s string) []string {
@@ -84,37 +79,23 @@ func cleanCSV(s string) []string {
 	return out
 }
 
-func SetupFUN(appName string) {
-	fun.SetConfig(fun.Config{
-		MaxTraceSize:         50,
-		ResponseSizeLimit:    10 * 1024 * 1024,
-		MaxInterceptorAmount: 20,
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-		DefaultModule:        appName,
-	})
-
+// SetupFUN configures the process-wide runtime the fun middlewares and the
+// validator share. Call once at startup, before any request is handled.
+func SetupFUN() {
 	validator.SetupValidator()
-	fun.SetPathParamFunc(chi.URLParam)
 	mws.SetErrorWriter(writeMiddlewareError)
-
-	err := fun.AddInterceptor(&simpleLogger{})
-	if err != nil {
-		errx.Exit(err, "failed to add interceptor")
-	}
 }
 
-type simpleLogger struct{}
-
-func (l *simpleLogger) Intercept(_ context.Context, rs *fun.Response, statusCode int) {
-	if statusCode == 500 {
-		telemetry.Log().Info("InternalServerError Response", zap.Any("response", rs))
-	}
-}
-
-func (l *simpleLogger) InterceptSimple(rs *fun.Response, statusCode int) {
-	if statusCode == 500 {
-		telemetry.Log().Info("InternalServerError Response", zap.Any("response", rs))
+// health is the liveness probe: if it answers, the process is alive.
+func health(service string) http.HandlerFunc {
+	body, _ := json.Marshal(struct {
+		Status  string `json:"status"`
+		Service string `json:"service"`
+	}{"ok", service})
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -154,7 +135,7 @@ func NewRouter(cfg Config) http.Handler {
 	if cfg.Routes != nil {
 		cfg.Routes(r)
 	}
-	r.Get("/health", fh.Health(cfg.AppName).Handle)
+	r.Get("/health", health(cfg.AppName))
 
 	if len(cfg.OpenAPISpec) > 0 {
 		spec := cfg.OpenAPISpec

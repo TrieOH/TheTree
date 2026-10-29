@@ -41,7 +41,6 @@ func useTestErrorMap(t *testing.T, m ErrorMap) {
 	t.Helper()
 	UseErrorMap(m)
 	t.Cleanup(func() {
-		fun.ResetAppErrorMapper()
 		errorMapMu.Lock()
 		errorMap = nil
 		errorMapMu.Unlock()
@@ -101,9 +100,9 @@ func TestErrorMapResolve(t *testing.T) {
 	}
 }
 
-// TestWriteErrorKeepsEnvelope — a named error goes out in the fun envelope
-// with the mapped status, code and message.
-func TestWriteErrorKeepsEnvelope(t *testing.T) {
+// TestWriteErrorIsTheBareObject — a named error goes out as the bare error
+// object with the mapped status, code and message.
+func TestWriteErrorIsTheBareObject(t *testing.T) {
 	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
 
 	rec := httptest.NewRecorder()
@@ -113,19 +112,14 @@ func TestWriteErrorKeepsEnvelope(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("want 400, got %d", rec.Code)
 	}
-	var body struct {
-		Code  int `json:"code"`
-		Error struct {
-			Code    string `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
+	var body map[string]any
 	err := json.Unmarshal(rec.Body.Bytes(), &body)
 	if err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if body.Code != 400 || body.Error.Code != "BAD_REQUEST" || body.Error.Message != errAddSelf.Error() {
-		t.Fatalf("unexpected envelope: %s", rec.Body.String())
+	want := map[string]any{"code": "BAD_REQUEST", "message": errAddSelf.Error()}
+	if fmt.Sprint(body) != fmt.Sprint(want) {
+		t.Fatalf("body = %s, want %v", rec.Body.String(), want)
 	}
 }
 
@@ -152,16 +146,14 @@ func TestWriteMiddlewareErrorKeepsItsStatus(t *testing.T) {
 			writeMiddlewareError(rec, req, tc.status, tc.err)
 
 			var body struct {
-				Error struct {
-					Message string `json:"message"`
-				} `json:"error"`
+				Message string `json:"message"`
 			}
 			err := json.Unmarshal(rec.Body.Bytes(), &body)
 			if err != nil {
 				t.Fatalf("decode: %v", err)
 			}
-			if rec.Code != tc.status || body.Error.Message != tc.msg {
-				t.Fatalf("got (%d, %q), want (%d, %q)", rec.Code, body.Error.Message, tc.status, tc.msg)
+			if rec.Code != tc.status || body.Message != tc.msg {
+				t.Fatalf("got (%d, %q), want (%d, %q)", rec.Code, body.Message, tc.status, tc.msg)
 			}
 		})
 	}
@@ -195,39 +187,9 @@ func TestTraceMiddlewareLeavesClientErrorsUnset(t *testing.T) {
 }
 
 // TestWriteErrorListsFields — a fielderr.Error answers as its named error
-// and lists its fields in the envelope.
+// and lists its fields next to the code and message.
 func TestWriteErrorListsFields(t *testing.T) {
-	useTestErrorMap(t, ErrorMap{Is(errAddSelf, http.StatusBadRequest)})
-
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/checkout", nil)
-	WriteError(rec, req, fmt.Errorf("checkout: %w", fielderr.On(errAddSelf, "items[0].attendee", "required")))
-
-	var body struct {
-		Error struct {
-			Message string `json:"message"`
-			Fields  []struct {
-				Field   string `json:"field"`
-				Message string `json:"message"`
-			} `json:"fields"`
-		} `json:"error"`
-	}
-	err := json.Unmarshal(rec.Body.Bytes(), &body)
-	if err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if rec.Code != http.StatusBadRequest || body.Error.Message != errAddSelf.Error() ||
-		len(body.Error.Fields) != 1 || body.Error.Fields[0].Field != "items[0].attendee" {
-		t.Fatalf("unexpected response %d: %s", rec.Code, rec.Body.String())
-	}
-}
-
-// TestPlainErrorsDropTheEnvelope — with UsePlainErrors the body is the bare
-// error object, with the mapped status, code, message and fields.
-func TestPlainErrorsDropTheEnvelope(t *testing.T) {
 	useTestErrorMap(t, ErrorMap{Is(errTermsMissing, http.StatusBadRequest).Validation()})
-	UsePlainErrors()
-	t.Cleanup(func() { plainErrors.Store(false) })
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/auth/register", nil)

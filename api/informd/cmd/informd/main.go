@@ -20,8 +20,7 @@ func main() {
 			postgres.Module(cfg.Postgres, app.Constraints()),
 			identityx.Module(cfg.IdentityX, identityx.Debug(true)),
 		},
-		Build:       app.Build,
-		Errors:      app.Errors(),
-		PlainErrors: true,
+		Build:  app.Build,
+		Errors: app.Errors(),
 	}), "informd exited with error")
 }

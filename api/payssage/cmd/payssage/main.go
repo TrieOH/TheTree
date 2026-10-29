@@ -22,8 +22,7 @@ func main() {
 			identityx.Module(cfg.IdentityX, identityx.Debug(true), identityx.AcceptAPIKeys()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build:       app.Build(cfg),
-		Errors:      app.Errors(),
-		PlainErrors: true,
+		Build:  app.Build(cfg),
+		Errors: app.Errors(),
 	}), "payssage exited with error")
 }

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"reflect"
 	"sync"
-	"sync/atomic"
 
 	"lib/authz"
 	"lib/database"
@@ -92,22 +91,14 @@ var (
 	errorMap   ErrorMap
 )
 
-// UseErrorMap installs the Backend's error map for the process. Error
-// responses keep the fun envelope until the move to fun/problems: the map
-// is registered as fun's AppErrorMapper, so the strict handlers' errors and
-// the errors the fun middlewares write go through the same table.
+// UseErrorMap installs the Backend's error map for the process, so the
+// strict handlers' errors and the errors the fun middlewares write go
+// through the same table.
 func UseErrorMap(m ErrorMap) {
 	full := append(append(ErrorMap{}, m...), sharedErrors...)
 	errorMapMu.Lock()
 	errorMap = full
 	errorMapMu.Unlock()
-	fun.RegisterAppErrorMapper(func(err error) *fun.AppError {
-		status, code, msg := full.resolve(err)
-		if code == fun.CodeInternal {
-			telemetry.Log().Error("unmapped error", zap.Int("status", status), zap.Error(err))
-		}
-		return &fun.AppError{Code: code, Message: msg, Fields: fieldsOf(err), Err: err}
-	})
 }
 
 // fieldsOf lists the request fields a fielderr.Lister in err's chain names.
@@ -124,39 +115,23 @@ func fieldsOf(err error) []fun.FieldError {
 	return out
 }
 
-// plainErrors makes error bodies the bare error object ({code, message,
-// fields}) instead of the fun envelope. A Backend opts in with
-// UsePlainErrors when it moves off the envelope; once every Backend has,
-// it is the only format.
-var plainErrors atomic.Bool
-
-// UsePlainErrors makes every error response of the process the bare error
-// object, without the fun envelope around it.
-func UsePlainErrors() {
-	plainErrors.Store(true)
-}
-
-// plainError is the error body a Backend that moved off the envelope sends.
-type plainError struct {
+// errorBody is the body of every error response: {code, message, fields}.
+type errorBody struct {
 	Code    fun.ErrorCode `json:"code"`
 	Message string        `json:"message"`
-	Fields  []plainField  `json:"fields,omitempty"`
+	Fields  []errorField  `json:"fields,omitempty"`
 }
 
-type plainField struct {
+type errorField struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-// writeAppError writes e with status, in the process's error format.
-func writeAppError(w http.ResponseWriter, r *http.Request, status int, e *fun.AppError) {
-	if !plainErrors.Load() {
-		fun.Error(e).SendWithCtx(r.Context(), w)
-		return
-	}
-	body := plainError{Code: e.Code, Message: e.Message}
+// writeAppError writes e with status.
+func writeAppError(w http.ResponseWriter, _ *http.Request, status int, e *fun.AppError) {
+	body := errorBody{Code: e.Code, Message: e.Message}
 	for _, f := range e.Fields {
-		body.Fields = append(body.Fields, plainField{Field: f.Field, Message: f.Message})
+		body.Fields = append(body.Fields, errorField{Field: f.Field, Message: f.Message})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -165,10 +140,6 @@ func writeAppError(w http.ResponseWriter, r *http.Request, status int, e *fun.Ap
 
 // WriteError writes err as an error response, through the Backend's map.
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	if !plainErrors.Load() {
-		fun.Error(err).SendWithCtx(r.Context(), w)
-		return
-	}
 	errorMapMu.RLock()
 	m := errorMap
 	errorMapMu.RUnlock()
