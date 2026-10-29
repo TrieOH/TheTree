@@ -175,7 +175,7 @@ the orval TS clients under `lib/ts/<svc>/client/` and every
 Workers types come only from `wrangler.jsonc` and the pinned wrangler, never
 from a local `.env`. The pre-commit hook regenerates the TS clients when they
 are missing or an `api-spec.yml` is staged (and type-checks the fronts that
-import them), and a front's Workers types when missing or its
+import them), and a Worker's types (fronts and `api/<svc>/cloudflare`) when missing or its
 `wrangler.jsonc` is staged.
 
 ## Releases & deploys
