@@ -35,10 +35,7 @@ describe("handleActorEmailsRequest", () => {
       if (url.includes("actor-1/profile")) {
         return Promise.resolve(
           new Response(
-            JSON.stringify({
-              code: 200,
-              data: { actor_id: "actor-1", pfp_url: "https://example.com/alice.jpg" },
-            }),
+            JSON.stringify({ actor_id: "actor-1", pfp_url: "https://example.com/alice.jpg" }),
             { status: 200 },
           ),
         );
@@ -46,10 +43,7 @@ describe("handleActorEmailsRequest", () => {
       if (url.includes("actor-1")) {
         return Promise.resolve(
           new Response(
-            JSON.stringify({
-              code: 200,
-              data: { id: "actor-1", email: "alice@example.com" },
-            }),
+            JSON.stringify({ id: "actor-1", email: "alice@example.com" }),
             { status: 200 },
           ),
         );

@@ -50,10 +50,10 @@ const stubIdentityX = () => {
     const outgoing = new Headers(init?.headers).get("traceparent");
     calls.push({ url, traceparent: outgoing });
     if (url.includes("/auth/login")) {
-      return Response.json({ code: 200, data: tokens });
+      return Response.json(tokens);
     }
     if (url.includes("/auth/introspect")) {
-      return Response.json({ code: 200, data: { cred: { type: "token" } } });
+      return Response.json({ cred: { type: "token" } });
     }
     return Response.json({ code: 404, message: `unexpected ${url}` }, { status: 404 });
   });
@@ -169,10 +169,10 @@ describe("BFF handler", () => {
       "fetch",
       vi.fn(async (input: string | URL | Request) => {
         const url = String(input);
-        if (url.includes("/auth/login")) return Response.json({ code: 200, data: expired });
+        if (url.includes("/auth/login")) return Response.json(expired);
         if (url.includes("/auth/refresh")) {
           refreshCalls += 1;
-          return Response.json({ code: 200, data: rotated });
+          return Response.json(rotated);
         }
         return Response.json({ code: 404, message: `unexpected ${url}` }, { status: 404 });
       }),
@@ -211,12 +211,12 @@ describe("BFF handler", () => {
       "fetch",
       vi.fn(async (input: string | URL | Request) => {
         const url = String(input);
-        if (url.includes("/auth/login")) return Response.json({ code: 200, data: expired });
+        if (url.includes("/auth/login")) return Response.json(expired);
         if (url.includes("/auth/refresh")) {
           refreshCalls += 1;
           // Widen the window so both requests are genuinely in flight.
           await new Promise((resolve) => setTimeout(resolve, 10));
-          return Response.json({ code: 200, data: rotated });
+          return Response.json(rotated);
         }
         return Response.json({ code: 404, message: `unexpected ${url}` }, { status: 404 });
       }),
