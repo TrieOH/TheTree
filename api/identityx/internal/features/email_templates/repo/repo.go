@@ -26,6 +26,9 @@ func New(q *sqlc.Queries) *Repo {
 	}
 }
 
+// db is the queries handle, on the context's transaction when it carries one.
+func (repo *Repo) db(ctx context.Context) *sqlc.Queries { return database.Queries(ctx, repo.q) }
+
 func mapEmailTemplate(src sqlc.EmailTemplate) models.EmailTemplate {
 	return models.EmailTemplate{
 		ID:        src.ID,
@@ -39,42 +42,33 @@ func mapEmailTemplate(src sqlc.EmailTemplate) models.EmailTemplate {
 }
 
 func (repo *Repo) Upsert(ctx context.Context, template models.EmailTemplate) (*models.EmailTemplate, error) {
-	sqlcTemplate, err := database.Queries(ctx, repo.q).UpsertEmailTemplate(ctx, sqlc.UpsertEmailTemplateParams{
+	sqlcTemplate, err := repo.db(ctx).UpsertEmailTemplate(ctx, sqlc.UpsertEmailTemplateParams{
 		ProjectID: template.ProjectID,
 		Kind:      string(template.Kind),
 		Subject:   template.Subject,
 		Body:      template.Body,
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapEmailTemplate(sqlcTemplate)), nil
+	return database.One(sqlcTemplate, err, repo.dbe, mapEmailTemplate)
 }
 
 func (repo *Repo) GetByProjectAndKind(ctx context.Context, projectID uuid.UUID, kind models.EmailTemplateKind) (*models.EmailTemplate, error) {
-	sqlcTemplate, err := database.Queries(ctx, repo.q).GetEmailTemplateByProjectAndKind(ctx, sqlc.GetEmailTemplateByProjectAndKindParams{
+	sqlcTemplate, err := repo.db(ctx).GetEmailTemplateByProjectAndKind(ctx, sqlc.GetEmailTemplateByProjectAndKindParams{
 		ProjectID: projectID,
 		Kind:      string(kind),
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapEmailTemplate(sqlcTemplate)), nil
+	return database.One(sqlcTemplate, err, repo.dbe, mapEmailTemplate)
 }
 
 func (repo *Repo) Delete(ctx context.Context, projectID uuid.UUID, kind models.EmailTemplateKind) error {
-	err := database.Queries(ctx, repo.q).DeleteEmailTemplate(ctx, sqlc.DeleteEmailTemplateParams{
+	err := repo.db(ctx).DeleteEmailTemplate(ctx, sqlc.DeleteEmailTemplateParams{
 		ProjectID: projectID,
 		Kind:      string(kind),
 	})
-	if err != nil {
-		return repo.dbe(err)
-	}
-	return nil
+	return repo.dbe(err)
 }
 
 func (repo *Repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]models.EmailTemplate, error) {
-	rows, err := database.Queries(ctx, repo.q).ListEmailTemplatesByProject(ctx, projectID)
+	rows, err := repo.db(ctx).ListEmailTemplatesByProject(ctx, projectID)
 	if err != nil {
 		return nil, repo.dbe(err)
 	}

@@ -26,6 +26,9 @@ func New(q *sqlc.Queries) *Repo {
 	}
 }
 
+// db is the queries handle, on the context's transaction when it carries one.
+func (repo *Repo) db(ctx context.Context) *sqlc.Queries { return database.Queries(ctx, repo.q) }
+
 func mapActionToken(src sqlc.ActionToken) models.ActionToken {
 	return models.ActionToken{
 		JTI:       src.Jti,
@@ -38,34 +41,26 @@ func mapActionToken(src sqlc.ActionToken) models.ActionToken {
 }
 
 func (repo *Repo) Insert(ctx context.Context, token models.ActionToken) (*models.ActionToken, error) {
-	sqlcToken, err := database.Queries(ctx, repo.q).InsertActionToken(ctx, sqlc.InsertActionTokenParams{
+	sqlcToken, err := repo.db(ctx).InsertActionToken(ctx, sqlc.InsertActionTokenParams{
 		Jti:       token.JTI,
 		Purpose:   string(token.Purpose),
 		ActorID:   token.ActorID,
 		ExpiresAt: token.ExpiresAt,
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapActionToken(sqlcToken)), nil
+	return database.One(sqlcToken, err, repo.dbe, mapActionToken)
 }
 
 func (repo *Repo) GetByJTI(ctx context.Context, jti uuid.UUID) (*models.ActionToken, error) {
-	sqlcToken, err := database.Queries(ctx, repo.q).GetActionTokenByJTI(ctx, jti)
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapActionToken(sqlcToken)), nil
+	sqlcToken, err := repo.db(ctx).GetActionTokenByJTI(ctx, jti)
+	return database.One(sqlcToken, err, repo.dbe, mapActionToken)
 }
 
 func (repo *Repo) Consume(ctx context.Context, jti uuid.UUID) (*models.ActionToken, error) {
-	sqlcToken, err := database.Queries(ctx, repo.q).ConsumeActionToken(ctx, jti)
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapActionToken(sqlcToken)), nil
+	sqlcToken, err := repo.db(ctx).ConsumeActionToken(ctx, jti)
+	return database.One(sqlcToken, err, repo.dbe, mapActionToken)
 }
 
 func (repo *Repo) DeleteExpired(ctx context.Context) error {
-	return database.Queries(ctx, repo.q).DeleteExpiredActionTokens(ctx)
+	err := repo.db(ctx).DeleteExpiredActionTokens(ctx)
+	return repo.dbe(err)
 }
