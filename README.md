@@ -113,6 +113,7 @@ jobs on a Cloudflare Queue and Cron Triggers.
 ```bash
 pnpm install
 just gen-ts                                    # orval TS clients (not committed)
+just gen-cf                                    # Workers types (not committed)
 cp front/<svc>/.env.example front/<svc>/.env   # fill in real values
 pnpm <svc> dev        # one app (e.g. pnpm univents dev) — or pnpm dev for all
 ```
@@ -123,6 +124,8 @@ Env notes (all `*.env` files are gitignored):
 - Frontend: the example's defaults already point at the local backends
   (`VITE_API_URL=http://localhost:808x`). Minimum to fill:
   `AUTH_SESSION_PASSWORD` (32+ chars); PostHog/upload keys are optional in dev.
+- A Worker only sees the runtime keys its `wrangler.jsonc` declares (`vars`
+  or `secrets.required`), in dev too: add a new one there, not just to `.env`.
 - Auth runs through the app's BFF (`AUTH_TRANSPORT=bff`) — the browser talks
   to TanStack Start server functions, which call the APIs.
 
@@ -160,16 +163,20 @@ Every `just` recipe is `just <command> [target]`; `just` alone lists them.
 ## Codegen (run after changing specs/models)
 
 ```bash
-just gen               # all backends: sqlc + oapi-codegen, then orval
-just gen payssage      # one (or several) backends; orval still regenerates all four
+just gen               # all backends: sqlc + oapi-codegen, then orval + Workers types
+just gen payssage      # one (or several) backends; orval and Workers types still cover all
 just gen-ts            # only the orval TS clients
+just gen-cf            # only the Workers types (worker-configuration.d.ts)
 ```
 
-Generated code is **never committed**: `internal/sqlc/`, `internal/openapi/` and
-the orval TS clients under `lib/ts/<svc>/client/` are gitignored and
-regenerated in CI/builds. The pre-commit hook regenerates the TS clients
-when they are missing or an `api-spec.yml` is staged, and type-checks the
-fronts that import them.
+Generated code is **never committed**: `internal/sqlc/`, `internal/openapi/`,
+the orval TS clients under `lib/ts/<svc>/client/` and every
+`worker-configuration.d.ts` are gitignored and regenerated in CI/builds. The
+Workers types come only from `wrangler.jsonc` and the pinned wrangler, never
+from a local `.env`. The pre-commit hook regenerates the TS clients when they
+are missing or an `api-spec.yml` is staged (and type-checks the fronts that
+import them), and a Worker's types (fronts and `api/<svc>/cloudflare`) when missing or its
+`wrangler.jsonc` is staged.
 
 ## Releases & deploys
 

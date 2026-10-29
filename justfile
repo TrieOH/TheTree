@@ -116,6 +116,7 @@ gen +SERVICES=services:
       )
     done
     just gen-ts
+    just gen-cf
 
 # The fronts import these clients; they are not committed, so run this after
 # cloning and whenever an api-spec.yml changes. orval always regenerates all
@@ -124,6 +125,21 @@ gen +SERVICES=services:
 # Generate the orval TS clients (lib/ts/<svc>/client).
 gen-ts:
     pnpm orval
+
+# Built only from each wrangler.jsonc (vars, bindings, `secrets.required`) and
+# the pinned wrangler, never from a local .env, so every machine gets the same
+# file. Not committed: run after cloning and whenever a wrangler.jsonc or the
+# wrangler pin changes.
+#
+# Generate the Workers types (worker-configuration.d.ts) for every Worker.
+gen-cf:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for cfg in front/*/wrangler.jsonc api/*/cloudflare/wrangler.jsonc; do
+      dir=$(dirname "$cfg")
+      echo "==> $dir"
+      pnpm --config.verify-deps-before-run=false -C "$dir" exec wrangler types --strict-vars=false >/dev/null
+    done
 
 # ── Checks ────────────────────────────────────────────────────────────────
 
