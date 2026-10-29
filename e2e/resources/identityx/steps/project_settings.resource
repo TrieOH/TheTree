@@ -133,7 +133,7 @@ They reset the "${kind}" email to the default
 
 Every kind of email comes with the default template
     Response Status Should Be    200    ${RESPONSE}
-    ${templates}=    Data Of    ${RESPONSE}
+    ${templates}=    Items Of    ${RESPONSE}
     ${sources}=    Evaluate    {t["kind"]: t["source"] for t in $templates}
     &{expected}=    Create Dictionary    verify=default    reset=default    tos=default
     Dictionaries Should Be Equal    ${sources}    ${expected}
@@ -223,7 +223,7 @@ They are told about the new terms by email
 Their acceptance of version ${version} is on record
     ${response}=    IDX List Terms Acceptances    ${OWNER_TOKENS}[access_token]    ${PROJECT}[id]
     Response Status Should Be    200    ${response}
-    ${acceptances}=    Data Of    ${response}
+    ${acceptances}=    Items Of    ${response}
     ${mine}=    Evaluate    [a for a in $acceptances if a.get("actor_email") == $EMAIL]
     Should Not Be Empty    ${mine}    msg=No acceptance on record for ${EMAIL}: ${acceptances}
     Should Be Equal As Integers    ${mine}[0][tos_version]    ${version}
@@ -233,7 +233,7 @@ Their acceptance of version ${version} is on record
 They have accepted the terms only once
     ${response}=    IDX List Terms Acceptances    ${OWNER_TOKENS}[access_token]    ${PROJECT}[id]
     Response Status Should Be    200    ${response}
-    ${acceptances}=    Data Of    ${response}
+    ${acceptances}=    Items Of    ${response}
     ${mine}=    Evaluate    [a for a in $acceptances if a.get("actor_email") == $EMAIL]
     Length Should Be    ${mine}    1
 

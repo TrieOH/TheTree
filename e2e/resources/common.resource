@@ -62,6 +62,14 @@ Data Of
     Dictionary Should Contain Key    ${body}    data    msg=No data in response: ${response.text}
     RETURN    ${body}[data]
 
+Items Of
+    [Documentation]    The items of a list response: its `items`, or the bare array
+    ...    a `fun.Response` envelope carries as data.
+    [Arguments]    ${response}
+    ${data}=    Data Of    ${response}
+    ${items}=    Evaluate    $data if isinstance($data, list) else $data["items"]
+    RETURN    ${items}
+
 Error Of
     [Documentation]    The error of a failed response as `{code, message, fields}`:
     ...    the body itself, an RFC 9457 problem's `code`, `detail` and `errors`, or
