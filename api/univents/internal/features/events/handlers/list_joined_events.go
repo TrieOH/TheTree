@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListJoinedEvents(ctx context.Context, _ openapi.ListJoinedEve
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListJoinedEvents200JSONResponse{
-		Code: 200, Data: &events, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListJoinedEvents200JSONResponse{Items: events}, nil
 }

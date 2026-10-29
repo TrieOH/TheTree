@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   createEvent,
@@ -56,7 +56,7 @@ export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
  * @returns A promise that resolves to an array of Event objects.
  */
 const getPublicEventsFn = async () => {
-  return listPublicEvents({ public: true }).then(orvalData<EventI[]>);
+  return listPublicEvents({ public: true }).then(orvalItems<EventI>);
 };
 
 /**
@@ -75,7 +75,7 @@ export const allPublicEventsQueryOptions = () => {
  * @returns A promise that resolves to an array of Event objects.
  */
 const getOwnEventsFn = createClientOnlyFn(async () => {
-  return listOwnedEvents().then(orvalData<EventI[]>);
+  return listOwnedEvents().then(orvalItems<EventI>);
 });
 
 /**
@@ -94,7 +94,7 @@ export const allOwnEventsQueryOptions = () => {
  * @returns A promise that resolves to an array of Event objects.
  */
 const getJoinedEventsFn = createClientOnlyFn(async () => {
-  return listJoinedEvents().then(orvalData<EventI[]>);
+  return listJoinedEvents().then(orvalItems<EventI>);
 });
 
 /**

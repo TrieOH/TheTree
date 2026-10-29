@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import { listProductVariants } from "@trieoh/univents-api";
 import {
   registerUploadAssociationHandler,
@@ -16,7 +16,7 @@ registerUploadAssociationHandler("variant-gallery", async (task, url) => {
       status: 400,
     });
   const variants = await listProductVariants(productId, { public: true }).then(
-    orvalData<VariantI[]>,
+    orvalItems<VariantI>,
   );
   const variant = variants.find((item) => item.id === task.owner.id);
   if (!variant)

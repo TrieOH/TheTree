@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -18,7 +17,5 @@ func (h *Handlers) ListOccurrenceParticipants(ctx context.Context, req openapi.L
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListOccurrenceParticipants200JSONResponse{
-		Code: 200, Data: &participants, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListOccurrenceParticipants200JSONResponse{Items: participants}, nil
 }

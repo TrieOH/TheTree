@@ -26,30 +26,28 @@
  * created). The token binds the request to a single signature
  * request/edition.
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "Univents"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. Errors: `error` carries an
- *   `AppError` — `{ "code", "message", "fields", "meta" }`.
- * - `pagination` is reserved for paged list endpoints (currently
- *   unused by Univents routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -89,8 +87,8 @@
  *
  * Two live surfaces are **raw routes** — deliberately NOT OpenAPI
  * operations: WebSocket handshakes cannot carry Authorization headers,
- * and streaming responses must bypass the fun/validate envelope machinery
- * (which buffers the body). They are documented here instead.
+ * and streaming responses must bypass the strict server's validation
+ * machinery (which buffers the body). They are documented here instead.
  *
  * ### `WS /ws?token=...` — per-purchase socket (one-time token)
  *
@@ -194,10 +192,7 @@ export * from './edition';
 export * from './editionPurchase';
 export * from './error';
 export * from './errorCode';
-export * from './errorDebug';
 export * from './errorFieldsItem';
-export * from './errorMeta';
-export * from './errorResponse';
 export * from './event';
 export * from './eventMember';
 export * from './eventMemberRole';
@@ -206,18 +201,45 @@ export * from './eventStyle';
 export * from './forbiddenResponse';
 export * from './fulfillSignatureRequestBody';
 export * from './fulfillSignatureRequestParams';
+export * from './getEditionBadgesPrint200';
 export * from './getEditionBadgesPrintParams';
 export * from './getHealth200';
 export * from './getWsTokenParams';
 export * from './internalServerErrorResponse';
 export * from './invalidCertReason';
+export * from './listBadgeTemplates200';
+export * from './listCertificationEmissionErrors200';
+export * from './listCertificationTemplateLinks200';
+export * from './listCertificationTemplates200';
+export * from './listDraftEditions200';
+export * from './listEditionBadgeEmissions200';
+export * from './listEditionCertifications200';
+export * from './listEditionOccurrences200';
+export * from './listEditionProducts200';
+export * from './listEditionPrograms200';
+export * from './listEditionPurchases200';
+export * from './listEditionSignatureRequests200';
+export * from './listEditionSignatures200';
+export * from './listEditionStoreStock200';
+export * from './listEventMembers200';
+export * from './listJoinedEvents200';
+export * from './listMyCertifications200';
+export * from './listMyParticipations200';
+export * from './listOccurrenceParticipants200';
+export * from './listOwnedEvents200';
+export * from './listPastEditions200';
+export * from './listProductVariants200';
+export * from './listProgramOccurrences200';
+export * from './listPublicEditions200';
+export * from './listPublicEvents200';
+export * from './listTicketTypes200';
+export * from './listUpcomingEditions200';
 export * from './myParticipation';
 export * from './myPurchases';
 export * from './myTicket';
 export * from './myTicketStatus';
 export * from './notFoundResponse';
 export * from './nullableUUID';
-export * from './paginationMeta';
 export * from './patchEditionRequest';
 export * from './patchEventRequest';
 export * from './patchProductRequest';
@@ -242,8 +264,6 @@ export * from './purchaseStatus';
 export * from './receivePayssageWebhookRequest';
 export * from './receivePayssageWebhookRequestPayload';
 export * from './removeEventMemberBody';
-export * from './response';
-export * from './responseData';
 export * from './revokeSignatureParams';
 export * from './signature';
 export * from './signatureRequest';

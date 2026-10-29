@@ -1,5 +1,5 @@
 import { listDraftEditions, listPublicEditions } from "@trieoh/univents-api";
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import type { Edition } from "@trieoh/univents-api/schemas";
 import { normalizeEdition } from "../model";
 import { editionKeys } from "./query-keys";
@@ -7,12 +7,12 @@ import "./upload-association";
 
 export const getPublicEditionsFn = (eventId: string) =>
   listPublicEditions(eventId, { public: true })
-    .then(orvalData<Edition[]>)
+    .then(orvalItems<Edition>)
     .then((list) => (list ?? []).map(normalizeEdition));
 
 export const getDraftEditionsFn = (eventId: string) =>
   listDraftEditions(eventId)
-    .then(orvalData<Edition[]>)
+    .then(orvalItems<Edition>)
     .then((list) => (list ?? []).map(normalizeEdition));
 
 export const getAllAdminEditionsFn = async (eventId: string) => {

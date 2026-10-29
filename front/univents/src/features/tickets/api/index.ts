@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createTicketType,
   getEditionAttendeeCount,
@@ -49,9 +49,7 @@ export const patchTicketFn = createClientOnlyFn(
  * @returns A promise that resolves to an array of Ticket objects.
  */
 const getAllTicketsFn = async (editionId: string) => {
-  return listTicketTypes(editionId, { public: true }).then(
-    orvalData<TicketI[]>,
-  );
+  return listTicketTypes(editionId, { public: true }).then(orvalItems<TicketI>);
 };
 
 /**

@@ -26,30 +26,28 @@
  * created). The token binds the request to a single signature
  * request/edition.
  *
- * ## Response envelope
+ * ## Responses
  *
- * Every JSON response is the `fun.Response` envelope:
+ * A successful response's body is the operation's payload itself; an
+ * operation with nothing to return answers `204 No Content`. A list is
+ * an object, `{ "items": [ ... ] }`, so paging fields can sit beside the
+ * items later.
+ *
+ * A failed response's body is an `Error`:
  *
  * ```json
  * {
- *   "code": 200,
- *   "message": "",
- *   "data": { "...": "operation payload" },
- *   "error": null,
- *   "pagination": null,
- *   "timestamp": "2026-01-01T12:00:00Z",
- *   "module": "Univents"
+ *   "code": "VALIDATION_ERROR",
+ *   "message": "invalid request body: name: this field is required",
+ *   "fields": [{ "field": "name", "message": "this field is required" }]
  * }
  * ```
  *
- * - Success: `data` carries the payload. Errors: `error` carries an
- *   `AppError` — `{ "code", "message", "fields", "meta" }`.
- * - `pagination` is reserved for paged list endpoints (currently
- *   unused by Univents routes).
+ * `fields` is present only when the failure names request fields.
  *
  * ## Error codes → HTTP status
  *
- * The `error.code` sentinel maps to the HTTP status:
+ * The `code` sentinel maps to the HTTP status:
  *
  * | code | status |
  * |---|---|
@@ -89,8 +87,8 @@
  *
  * Two live surfaces are **raw routes** — deliberately NOT OpenAPI
  * operations: WebSocket handshakes cannot carry Authorization headers,
- * and streaming responses must bypass the fun/validate envelope machinery
- * (which buffers the body). They are documented here instead.
+ * and streaming responses must bypass the strict server's validation
+ * machinery (which buffers the body). They are documented here instead.
  *
  * ### `WS /ws?token=...` — per-purchase socket (one-time token)
  *
@@ -139,16 +137,12 @@ import type {
   AddSignatureRequest,
   AttendeeCount,
   BadRequestResponse,
-  BadgeEditionEmission,
-  BadgePrintItem,
   BadgeProfileGroups,
   BadgeTemplate,
   CancelSignatureRequestBody,
-  CertEmissionError,
   CertTemplateProgramRequest,
   Certification,
   CertificationTemplate,
-  CertificationTemplateProgram,
   CheckInRequest,
   Checkout,
   CheckoutResult,
@@ -170,18 +164,44 @@ import type {
   DenySignatureRequestBody,
   DenySignatureRequestParams,
   Edition,
-  EditionPurchase,
   Event,
   EventMember,
   ForbiddenResponse,
   FulfillSignatureRequestBody,
   FulfillSignatureRequestParams,
+  GetEditionBadgesPrint200,
   GetEditionBadgesPrintParams,
   GetHealth200,
   GetWsTokenParams,
   InternalServerErrorResponse,
   InvalidCertReason,
-  MyParticipation,
+  ListBadgeTemplates200,
+  ListCertificationEmissionErrors200,
+  ListCertificationTemplateLinks200,
+  ListCertificationTemplates200,
+  ListDraftEditions200,
+  ListEditionBadgeEmissions200,
+  ListEditionCertifications200,
+  ListEditionOccurrences200,
+  ListEditionProducts200,
+  ListEditionPrograms200,
+  ListEditionPurchases200,
+  ListEditionSignatureRequests200,
+  ListEditionSignatures200,
+  ListEditionStoreStock200,
+  ListEventMembers200,
+  ListJoinedEvents200,
+  ListMyCertifications200,
+  ListMyParticipations200,
+  ListOccurrenceParticipants200,
+  ListOwnedEvents200,
+  ListPastEditions200,
+  ListProductVariants200,
+  ListProgramOccurrences200,
+  ListPublicEditions200,
+  ListPublicEvents200,
+  ListTicketTypes200,
+  ListUpcomingEditions200,
   MyPurchases,
   MyTicket,
   NotFoundResponse,
@@ -197,7 +217,6 @@ import type {
   Program,
   ProgramCertEmissionResult,
   ProgramOccurrence,
-  ProgramParticipant,
   ProgramParticipation,
   Purchase,
   ReceivePayssageWebhookRequest,
@@ -205,7 +224,6 @@ import type {
   RevokeSignatureParams,
   Signature,
   SignatureRequest,
-  StoreStockItem,
   TicketType,
   UnauthorizedResponse,
   UpdateBadgeTemplateRequest,
@@ -294,7 +312,7 @@ export const getHealth = async ( options?: Parameters<typeof customInstance>[1])
 
 
 export type listPublicEventsResponse200 = {
-  data: Event[]
+  data: ListPublicEvents200
   status: 200
 }
 
@@ -444,7 +462,7 @@ export const getEventBySlug = async (eventSlug: string, options?: Parameters<typ
 
 
 export type listOwnedEventsResponse200 = {
-  data: Event[]
+  data: ListOwnedEvents200
   status: 200
 }
 
@@ -493,7 +511,7 @@ export const listOwnedEvents = async ( options?: Parameters<typeof customInstanc
 
 
 export type listJoinedEventsResponse200 = {
-  data: Event[]
+  data: ListJoinedEvents200
   status: 200
 }
 
@@ -927,7 +945,7 @@ export const discontinueEvent = async (eventId: string, options?: Parameters<typ
 
 
 export type listEventMembersResponse200 = {
-  data: EventMember[]
+  data: ListEventMembers200
   status: 200
 }
 
@@ -1175,7 +1193,7 @@ export const getEditionBySlug = async (eventSlug: string,
 
 
 export type listPublicEditionsResponse200 = {
-  data: Edition[]
+  data: ListPublicEditions200
   status: 200
 }
 
@@ -1341,7 +1359,7 @@ export const getActiveEdition = async (eventId: string, options?: Parameters<typ
 
 
 export type listPastEditionsResponse200 = {
-  data: Edition[]
+  data: ListPastEditions200
   status: 200
 }
 
@@ -1390,7 +1408,7 @@ export const listPastEditions = async (eventId: string, options?: Parameters<typ
 
 
 export type listUpcomingEditionsResponse200 = {
-  data: Edition[]
+  data: ListUpcomingEditions200
   status: 200
 }
 
@@ -1439,7 +1457,7 @@ export const listUpcomingEditions = async (eventId: string, options?: Parameters
 
 
 export type listDraftEditionsResponse200 = {
-  data: Edition[]
+  data: ListDraftEditions200
   status: 200
 }
 
@@ -1630,7 +1648,7 @@ export const publishEdition = async (eventId: string,
 
 
 export type listEditionStoreStockResponse200 = {
-  data: StoreStockItem[]
+  data: ListEditionStoreStock200
   status: 200
 }
 
@@ -1788,7 +1806,7 @@ export const createEditionCheckout = async (editionId: string,
 
 
 export type listTicketTypesResponse200 = {
-  data: TicketType[]
+  data: ListTicketTypes200
   status: 200
 }
 
@@ -2019,7 +2037,7 @@ export const patchTicketType = async (ticketTypeId: Uuid,
 
 
 export type listEditionProductsResponse200 = {
-  data: Product[]
+  data: ListEditionProducts200
   status: 200
 }
 
@@ -2414,7 +2432,7 @@ export const deleteProduct = async (productId: Uuid, options?: Parameters<typeof
 
 
 export type listProductVariantsResponse200 = {
-  data: ProductVariant[]
+  data: ListProductVariants200
   status: 200
 }
 
@@ -2655,7 +2673,7 @@ export const deleteProductVariant = async (variantId: Uuid, options?: Parameters
 
 
 export type listEditionProgramsResponse200 = {
-  data: Program[]
+  data: ListEditionPrograms200
   status: 200
 }
 
@@ -2946,7 +2964,7 @@ export const deleteProgram = async (programId: Uuid, options?: Parameters<typeof
 
 
 export type listProgramOccurrencesResponse200 = {
-  data: ProgramOccurrence[]
+  data: ListProgramOccurrences200
   status: 200
 }
 
@@ -3126,7 +3144,7 @@ export const emitProgramCertifications = async (programId: Uuid, options?: Param
 
 
 export type listEditionOccurrencesResponse200 = {
-  data: ProgramOccurrence[]
+  data: ListEditionOccurrences200
   status: 200
 }
 
@@ -3493,7 +3511,7 @@ export const deregisterOccurrence = async (occurrenceId: Uuid, options?: Paramet
 
 
 export type listOccurrenceParticipantsResponse200 = {
-  data: ProgramParticipant[]
+  data: ListOccurrenceParticipants200
   status: 200
 }
 
@@ -3698,7 +3716,7 @@ export const markParticipationAttended = async (participationId: Uuid, options?:
 
 
 export type listMyParticipationsResponse200 = {
-  data: MyParticipation[]
+  data: ListMyParticipations200
   status: 200
 }
 
@@ -3757,7 +3775,7 @@ export const listMyParticipations = async (editionId: string, options?: Paramete
 
 
 export type listBadgeTemplatesResponse200 = {
-  data: BadgeTemplate[]
+  data: ListBadgeTemplates200
   status: 200
 }
 
@@ -4121,7 +4139,7 @@ export const listUserBadges = async (userId: Uuid, options?: Parameters<typeof c
 
 
 export type listEditionBadgeEmissionsResponse200 = {
-  data: BadgeEditionEmission[]
+  data: ListEditionBadgeEmissions200
   status: 200
 }
 
@@ -4183,7 +4201,7 @@ export const listEditionBadgeEmissions = async (editionId: string, options?: Par
 
 
 export type getEditionBadgesPrintResponse200 = {
-  data: BadgePrintItem[]
+  data: GetEditionBadgesPrint200
   status: 200
 }
 
@@ -4262,7 +4280,7 @@ export const getEditionBadgesPrint = async (editionId: string,
 
 
 export type listEditionSignaturesResponse200 = {
-  data: Signature[]
+  data: ListEditionSignatures200
   status: 200
 }
 
@@ -4488,7 +4506,7 @@ export const deleteSignature = async (signatureId: Uuid, options?: Parameters<ty
 
 
 export type listEditionSignatureRequestsResponse200 = {
-  data: SignatureRequest[]
+  data: ListEditionSignatureRequests200
   status: 200
 }
 
@@ -4938,7 +4956,7 @@ export const revokeSignature = async (params: RevokeSignatureParams, options?: P
 
 
 export type listCertificationTemplatesResponse200 = {
-  data: CertificationTemplate[]
+  data: ListCertificationTemplates200
   status: 200
 }
 
@@ -5362,7 +5380,7 @@ export const unlinkCertificationTemplate = async (templateId: Uuid,
 
 
 export type listCertificationTemplateLinksResponse200 = {
-  data: CertificationTemplateProgram[]
+  data: ListCertificationTemplateLinks200
   status: 200
 }
 
@@ -5521,7 +5539,7 @@ export const getCertification = async (certId: Uuid, options?: Parameters<typeof
 
 
 export type listEditionCertificationsResponse200 = {
-  data: Certification[]
+  data: ListEditionCertifications200
   status: 200
 }
 
@@ -5581,7 +5599,7 @@ export const listEditionCertifications = async (editionId: string, options?: Par
 
 
 export type listMyCertificationsResponse200 = {
-  data: Certification[]
+  data: ListMyCertifications200
   status: 200
 }
 
@@ -5696,7 +5714,7 @@ export const invalidateCertification = async (certId: Uuid,
 
 
 export type listCertificationEmissionErrorsResponse200 = {
-  data: CertEmissionError[]
+  data: ListCertificationEmissionErrors200
   status: 200
 }
 
@@ -5756,9 +5774,9 @@ export const listCertificationEmissionErrors = async (editionId: string, options
 
 
 
-export type receivePayssageWebhookResponse200 = {
-  data: unknown
-  status: 200
+export type receivePayssageWebhookResponse204 = {
+  data: void
+  status: 204
 }
 
 export type receivePayssageWebhookResponse400 = {
@@ -5771,7 +5789,7 @@ export type receivePayssageWebhookResponse500 = {
   status: 500
 }
 
-export type receivePayssageWebhookResponseSuccess = (receivePayssageWebhookResponse200) & {
+export type receivePayssageWebhookResponseSuccess = (receivePayssageWebhookResponse204) & {
   headers: Headers;
 };
 export type receivePayssageWebhookResponseError = (receivePayssageWebhookResponse400 | receivePayssageWebhookResponse500) & {
@@ -6014,7 +6032,7 @@ export const refundPurchase = async (purchaseId: string, options?: Parameters<ty
 
 
 export type listEditionPurchasesResponse200 = {
-  data: EditionPurchase[]
+  data: ListEditionPurchases200
   status: 200
 }
 

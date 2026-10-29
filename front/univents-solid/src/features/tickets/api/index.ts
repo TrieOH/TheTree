@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createTicketType,
   getEditionAttendeeCount,
@@ -18,7 +18,7 @@ import { ticketKeys } from "./query-keys";
 export const ticketsQueryOptions = (editionId: string) => ({
   queryKey: ticketKeys.byEdition(editionId),
   queryFn: () =>
-    listTicketTypes(editionId, { public: true }).then(orvalData<TicketType[]>),
+    listTicketTypes(editionId, { public: true }).then(orvalItems<TicketType>),
 });
 
 export const allTicketsQueryOptions = ticketsQueryOptions;

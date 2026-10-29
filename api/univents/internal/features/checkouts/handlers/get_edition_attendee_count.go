@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -17,7 +16,5 @@ func (h *Handlers) GetEditionAttendeeCount(ctx context.Context, req openapi.GetE
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetEditionAttendeeCount200JSONResponse{
-		Code: 200, Data: &openapi.AttendeeCount{Count: count}, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetEditionAttendeeCount200JSONResponse(openapi.AttendeeCount{Count: count}), nil
 }

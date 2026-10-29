@@ -14,5 +14,3 @@ type Handlers struct {
 }
 
 func New(ops *service.Operations) *Handlers { return &Handlers{ops: ops} }
-
-const module = "Univents"

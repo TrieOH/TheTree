@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import {
   createEditionCheckout,
   getCheckout,
@@ -29,7 +29,7 @@ export const listMyPurchasesFn = createClientOnlyFn(() =>
 );
 
 export const listEditionPurchasesFn = createClientOnlyFn((editionId: string) =>
-  listEditionPurchases(editionId).then(orvalData<EditionPurchase[]>),
+  listEditionPurchases(editionId).then(orvalItems<EditionPurchase>),
 );
 
 export const refundPurchaseFn = createClientOnlyFn((purchaseId: string) =>

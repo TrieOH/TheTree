@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -18,7 +17,5 @@ func (h *Handlers) DeregisterOccurrence(ctx context.Context, req openapi.Deregis
 	if err != nil {
 		return nil, err
 	}
-	return openapi.DeregisterOccurrence200JSONResponse{
-		Code: 200, Data: part, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.DeregisterOccurrence200JSONResponse(*part), nil
 }

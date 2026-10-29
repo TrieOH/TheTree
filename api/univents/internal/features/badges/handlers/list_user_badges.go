@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) ListUserBadges(ctx context.Context, req openapi.ListUserBadge
 	if err != nil {
 		return nil, err
 	}
-	return openapi.ListUserBadges200JSONResponse{
-		Code: 200, Data: groups, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.ListUserBadges200JSONResponse(*groups), nil
 }

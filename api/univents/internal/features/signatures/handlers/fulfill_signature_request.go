@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) FulfillSignatureRequest(ctx context.Context, req openapi.Fulf
 	if err != nil {
 		return nil, err
 	}
-	return openapi.FulfillSignatureRequest201JSONResponse{
-		Code: 201, Data: signature, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.FulfillSignatureRequest201JSONResponse(*signature), nil
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"context"
-	"time"
 
 	"univents/errs"
 	"univents/internal/openapi"
@@ -28,7 +27,5 @@ func (h *Handlers) PatchProductVariant(ctx context.Context, req openapi.PatchPro
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PatchProductVariant200JSONResponse{
-		Code: 200, Data: variant, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.PatchProductVariant200JSONResponse(*variant), nil
 }

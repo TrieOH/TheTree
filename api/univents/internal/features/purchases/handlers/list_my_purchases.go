@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -27,12 +26,7 @@ func (h *Handlers) ListMyPurchases(ctx context.Context, _ openapi.ListMyPurchase
 	for _, d := range details {
 		list = append(list, toPurchase(d.Purchase, d.Items))
 	}
-	return openapi.ListMyPurchases200JSONResponse{
-		Code:      200,
-		Data:      &openapi.MyPurchases{Purchases: list},
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.ListMyPurchases200JSONResponse(openapi.MyPurchases{Purchases: list}), nil
 }
 
 // toPurchase maps a purchase + its ledger rows to the shared wire shape.

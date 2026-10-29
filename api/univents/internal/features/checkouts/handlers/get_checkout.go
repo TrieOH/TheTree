@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	idx "sdk/identityx"
 
@@ -23,27 +22,22 @@ func (h *Handlers) GetCheckout(ctx context.Context, req openapi.GetCheckoutReque
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetCheckout200JSONResponse{
-		Code: 200,
-		Data: &openapi.Checkout{
-			PurchaseId:       res.Purchase.ID,
-			EditionId:        res.Purchase.EditionID,
-			Status:           openapi.PurchaseStatus(res.Purchase.Status),
-			StatusReason:     res.Purchase.StatusReason,
-			TotalCents:       res.Purchase.TotalCents,
-			Currency:         res.Purchase.Currency,
-			PaymentMethod:    res.Purchase.PaymentMethod,
-			PayssageIntentId: res.Purchase.PayssageIntentID,
-			QrCode:           res.Purchase.QRCode,
-			QrCodeBase64:     res.Purchase.QRCodeBase64,
-			ExpiresAt:        res.Purchase.ExpiresAt,
-			CreatedAt:        &res.Purchase.CreatedAt,
-			Items:            toItems(res.Items),
-			IntentStatus:     res.IntentStatus,
-		},
-		Timestamp: time.Now(),
-		Module:    module,
-	}, nil
+	return openapi.GetCheckout200JSONResponse(openapi.Checkout{
+		PurchaseId:       res.Purchase.ID,
+		EditionId:        res.Purchase.EditionID,
+		Status:           openapi.PurchaseStatus(res.Purchase.Status),
+		StatusReason:     res.Purchase.StatusReason,
+		TotalCents:       res.Purchase.TotalCents,
+		Currency:         res.Purchase.Currency,
+		PaymentMethod:    res.Purchase.PaymentMethod,
+		PayssageIntentId: res.Purchase.PayssageIntentID,
+		QrCode:           res.Purchase.QRCode,
+		QrCodeBase64:     res.Purchase.QRCodeBase64,
+		ExpiresAt:        res.Purchase.ExpiresAt,
+		CreatedAt:        &res.Purchase.CreatedAt,
+		Items:            toItems(res.Items),
+		IntentStatus:     res.IntentStatus,
+	}), nil
 }
 
 // toItems maps the ledger rows to the wire shape (item identity + server-

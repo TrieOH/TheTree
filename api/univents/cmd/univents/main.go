@@ -27,7 +27,8 @@ func main() {
 			email.Module(cfg.ToEmailConfig()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build:  app.Build(cfg),
-		Errors: errmap.Errors(),
+		Build:       app.Build(cfg),
+		Errors:      errmap.Errors(),
+		PlainErrors: true,
 	}), "univents exited with error")
 }

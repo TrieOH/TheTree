@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 )
@@ -12,7 +11,5 @@ func (h *Handlers) DeleteOccurrence(ctx context.Context, req openapi.DeleteOccur
 	if err != nil {
 		return nil, err
 	}
-	return openapi.DeleteOccurrence200JSONResponse{
-		Code: 200, Data: occurrence, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.DeleteOccurrence200JSONResponse(*occurrence), nil
 }

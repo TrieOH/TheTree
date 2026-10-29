@@ -1,4 +1,4 @@
-import { orvalData } from "@trieoh/api-client";
+import { orvalItems } from "@trieoh/api-client";
 import { listJoinedEvents, listOwnedEvents } from "@trieoh/univents-api";
 import {
   registerUploadAssociationHandler,
@@ -38,8 +38,8 @@ async function associateEventImage(
   }
 
   const [owned, joined] = await Promise.all([
-    listOwnedEvents().then(orvalData<EventI[]>),
-    listJoinedEvents().then(orvalData<EventI[]>),
+    listOwnedEvents().then(orvalItems<EventI>),
+    listJoinedEvents().then(orvalItems<EventI>),
   ]);
   const event = [...owned, ...joined].find((item) => item.id === task.owner.id);
   if (!event) {

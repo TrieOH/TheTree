@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 	"univents/models"
@@ -19,7 +18,5 @@ func (h *Handlers) CreateEdition(ctx context.Context, req openapi.CreateEditionR
 	if err != nil {
 		return nil, err
 	}
-	return openapi.CreateEdition201JSONResponse{
-		Code: 201, Data: edition, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.CreateEdition201JSONResponse(*edition), nil
 }

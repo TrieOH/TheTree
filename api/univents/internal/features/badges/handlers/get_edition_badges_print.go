@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"time"
 
 	"univents/internal/openapi"
 
@@ -19,7 +18,5 @@ func (h *Handlers) GetEditionBadgesPrint(ctx context.Context, req openapi.GetEdi
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetEditionBadgesPrint200JSONResponse{
-		Code: 200, Data: &items, Timestamp: time.Now(), Module: module,
-	}, nil
+	return openapi.GetEditionBadgesPrint200JSONResponse{Items: items}, nil
 }

@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { orvalData } from "@trieoh/api-client";
+import { orvalData, orvalItems } from "@trieoh/api-client";
 import { withSpan } from "@trieoh/front-core/tracing/browser";
 import {
   cancelSignatureRequest,
@@ -43,7 +43,7 @@ export const createSignatureFn = createClientOnlyFn(
 export const getAllSignaturesFn = createClientOnlyFn(
   async (editionId: string) => {
     return listEditionSignatures(editionId, { public: true }).then(
-      orvalData<SignatureI[]>,
+      orvalItems<SignatureI>,
     );
   },
 );
@@ -73,7 +73,7 @@ export const removeSignatureFn = createClientOnlyFn((sigId: string) => {
 export const getAllSignatureRequestsFn = createClientOnlyFn(
   (editionId: string) =>
     listEditionSignatureRequests(editionId, { public: true }).then(
-      orvalData<SignatureRequestI[]>,
+      orvalItems<SignatureRequestI>,
     ),
 );
 
