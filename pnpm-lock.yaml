@@ -422,7 +422,7 @@ overrides:
   js-yaml: 4.3.2
   nanoid: 3.3.18
   esbuild: '>=0.28.1'
-  '@opentelemetry/core': '>=2.8.0'
+  '@opentelemetry/core': 2.12.0
   '@tanstack/query-core': 5.101.4
   '@tanstack/react-router': 1.170.42
   postcss: '>=8.5.23'
@@ -2887,11 +2887,11 @@ packages:
     resolution: {integrity: sha512-0sl/9ApZBusUcEg9iYo1svqy+1qnRO1N5SUd5VSvKCKlTMSjjA+yWDcEGVu/j5mqjyBtV7cgj5XI5MYoW92X7g==}
     engines: {node: ^18.19.0 || >=20.6.0}
 
-  '@opentelemetry/core@3.0.0':
-    resolution: {integrity: sha512-whOLlww0R/RLtCWGBXhK1fdvL9t2/TL0fqdjZvcaoUUuNilRPjXecqQdzyVwV68s6XEDA5oYbm7/bZT62GXF4A==}
-    engines: {node: '>=22.15.0'}
+  '@opentelemetry/core@2.12.0':
+    resolution: {integrity: sha512-1HsSAuvT4/my0QrXWsyXFdWjKaPeCHsismKZgEEIb8NK13LP6DrMRlsUbvD/0F9mDWK3xDom9AMv3IscxgOnOQ==}
+    engines: {node: ^18.19.0 || >=20.6.0}
     peerDependencies:
-      '@opentelemetry/api': '>=1.10.0 <1.11.0'
+      '@opentelemetry/api': '>=1.0.0 <1.10.0'
 
   '@opentelemetry/instrumentation-fetch@0.221.0':
     resolution: {integrity: sha512-PPfEC0dIvhieidxtajOsbgFZ2RBUhCsk1ztHE6I5uinNc4JocL+UNRQY6iCBsckI0rjTwYvsYRYOJUjGyLhIug==}
@@ -8352,7 +8352,7 @@ snapshots:
     transitivePeerDependencies:
       - '@opentelemetry/api'
 
-  '@opentelemetry/core@3.0.0(@opentelemetry/api@1.10.0)':
+  '@opentelemetry/core@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
       '@opentelemetry/semantic-conventions': 1.44.0
@@ -8360,7 +8360,7 @@ snapshots:
   '@opentelemetry/instrumentation-fetch@0.221.0(@opentelemetry/api@1.10.0)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/instrumentation': 0.221.0(@opentelemetry/api@1.10.0)(supports-color@10.2.2)
       '@opentelemetry/sdk-trace-web': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
@@ -8380,7 +8380,7 @@ snapshots:
     dependencies:
       '@opentelemetry/api': 1.10.0
       '@opentelemetry/api-logs': 0.221.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-logs': 0.221.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-metrics': 2.10.0(@opentelemetry/api@1.10.0)
@@ -8389,33 +8389,33 @@ snapshots:
   '@opentelemetry/resources@2.10.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
 
   '@opentelemetry/resources@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
 
   '@opentelemetry/sdk-logs@0.221.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
       '@opentelemetry/api-logs': 0.221.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
 
   '@opentelemetry/sdk-metrics@2.10.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
 
   '@opentelemetry/sdk-trace-base@2.10.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
@@ -8423,7 +8423,7 @@ snapshots:
   '@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
@@ -8431,26 +8431,26 @@ snapshots:
   '@opentelemetry/sdk-trace-web@2.10.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace-base': 2.10.0(@opentelemetry/api@1.10.0)
 
   '@opentelemetry/sdk-trace-web@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace-base': 2.12.0(@opentelemetry/api@1.10.0)
 
   '@opentelemetry/sdk-trace@2.10.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
 
   '@opentelemetry/sdk-trace@2.12.0(@opentelemetry/api@1.10.0)':
     dependencies:
       '@opentelemetry/api': 1.10.0
-      '@opentelemetry/core': 3.0.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/resources': 2.12.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.44.0
 
