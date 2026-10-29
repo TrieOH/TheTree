@@ -176,7 +176,8 @@ Workers types come only from `wrangler.jsonc` and the pinned wrangler, never
 from a local `.env`. The pre-commit hook regenerates the TS clients when they
 are missing or an `api-spec.yml` is staged (and type-checks the fronts that
 import them), and a Worker's types (fronts and `api/<svc>/cloudflare`) when missing or its
-`wrangler.jsonc` is staged.
+`wrangler.jsonc` is staged. Pages sites (a `wrangler.jsonc` with
+`pages_build_output_dir`) are static and skipped.
 
 ## Releases & deploys
 
