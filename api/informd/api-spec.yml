@@ -94,7 +94,7 @@ info:
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 
 servers:
-  - url: https://api.informd.com.br
+  - url: https://api.informd.trieoh.com
     description: Production
   - url: http://localhost:8080
     description: Local development
