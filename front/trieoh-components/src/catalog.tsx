@@ -26,7 +26,6 @@ import {
   Drawer,
   Tooltip,
   Accordion,
-  SectionTabs,
   Combobox,
   EmptyState,
   Skeleton,
@@ -48,6 +47,19 @@ import {
   DesktopOnly,
   CanvasControls,
   CatalogNav,
+  Reveal,
+  Separator,
+  Tabs,
+  type RevealDirection,
+  type RevealVariant,
+  type SeparatorLabelPosition,
+  type SeparatorOrientation,
+  type SeparatorVariant,
+  type TabsActivation,
+  type TabsOrientation,
+  type TabsSize,
+  type TabsVariant,
+  type TextareaResize,
 } from "@trieoh/ui-solid";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconHome from "~icons/lucide/house";
@@ -58,7 +70,19 @@ import IconMenu from "~icons/lucide/menu";
 import { DeviceFrame } from "./components/DeviceFrame";
 
 export type Values = Record<string, string | boolean>;
-type Control = { key: string; label: string; options?: readonly string[] };
+export type NumberRange = {
+  min?: number;
+  max?: number;
+  step?: number;
+  /** An empty field means "not set". */
+  optional?: boolean;
+};
+type Control = {
+  key: string;
+  label: string;
+  options?: readonly string[];
+  number?: NumberRange;
+};
 export type Entry = {
   name: string;
   group: string;
@@ -71,6 +95,11 @@ export type Entry = {
   ) => JSX.Element;
 };
 const text = (key: string, label: string): Control => ({ key, label });
+const number = (key: string, label: string, range: NumberRange): Control => ({
+  key,
+  label,
+  number: range,
+});
 const select = (
   key: string,
   label: string,
@@ -80,6 +109,67 @@ const select = (
   label,
   options,
 });
+
+/**
+ * Previews Reveal. The effect only plays on entry, so the example remounts it
+ * (a) from the button and (b) whenever a knob changes. The swap is instant and
+ * the stage has a fixed height: unmounting first and remounting later made the
+ * centred preview collapse and jump, which read as a flash instead of the
+ * animation.
+ */
+function RevealExample(props: { v: Values }) {
+  const [run, setRun] = createSignal(0);
+  const stagger = () =>
+    Number(props.v.stagger) > 0 ? Number(props.v.stagger) : undefined;
+  const token = () =>
+    [
+      run(),
+      props.v.variant,
+      props.v.direction,
+      props.v.distance,
+      props.v.duration,
+      props.v.delay,
+      props.v.stagger,
+      props.v.once,
+    ].join("|");
+
+  return (
+    <div class="flex w-full flex-col items-center gap-6">
+      <Button size="sm" variant="outline" onClick={() => setRun(run() + 1)}>
+        Reproduzir novamente
+      </Button>
+      <div class="min-h-52 w-full max-w-xs">
+        <Show when={token()} keyed>
+          {(_token) => (
+            <Reveal
+              class={String(props.v.class)}
+              variant={props.v.variant as RevealVariant}
+              direction={props.v.direction as RevealDirection}
+              distance={Number(props.v.distance)}
+              duration={Number(props.v.duration)}
+              delay={Number(props.v.delay)}
+              stagger={stagger()}
+              once={!!props.v.once}
+            >
+              <Card class="space-y-1 p-4">
+                <h3 class="text-sm font-semibold">Conteúdo animado</h3>
+                <p class="text-xs text-muted-foreground">
+                  {stagger() === undefined
+                    ? "O bloco inteiro entra de uma vez."
+                    : "Cada filho direto entra em sequência."}
+                </p>
+              </Card>
+              <Show when={stagger() !== undefined}>
+                <Card class="mt-2 p-4 text-sm">Segundo item</Card>
+                <Card class="mt-2 p-4 text-sm">Terceiro item</Card>
+              </Show>
+            </Reveal>
+          )}
+        </Show>
+      </div>
+    </div>
+  );
+}
 
 export function createCatalog(options: {
   isDetail: () => boolean;
@@ -196,10 +286,10 @@ export function createCatalog(options: {
       },
       controls: [
         text("text", "Texto"),
-        text("duration", "Duração (ms)"),
-        text("delay", "Intervalo (ms)"),
-        text("lift", "Elevação (px)"),
-        text("waveWidth", "Largura da onda (%)"),
+        number("duration", "Duração (ms)", { min: 100, max: 10000, step: 100 }),
+        number("delay", "Intervalo (ms)", { min: 0, max: 5000, step: 50 }),
+        number("lift", "Elevação (px)", { min: 0, max: 60, step: 1 }),
+        number("waveWidth", "Largura da onda (%)", { min: 1, max: 100, step: 1 }),
       ],
       render: (v) => (
         <div class="flex items-center justify-center p-6">
@@ -498,7 +588,7 @@ export function createCatalog(options: {
         scale: "1",
       },
       controls: [
-        text("scale", "Escala"),
+        number("scale", "Escala", { min: 0.25, max: 4, step: 0.05 }),
       ],
       render: (v, update) => {
         const scaleVal = () => Number(v.scale) || 1;
@@ -610,6 +700,11 @@ export function createCatalog(options: {
         rows: "3",
         value: "",
         name: "description",
+        autosize: false,
+        maxRows: "6",
+        showCount: false,
+        maxlength: "",
+        resize: "",
       },
       controls: [
         text("placeholder", "Placeholder"),
@@ -617,6 +712,11 @@ export function createCatalog(options: {
         text("required", "Obrigatório"),
         text("readonly", "Somente leitura"),
         select("rows", "Linhas", ["2", "3", "4", "6"]),
+        text("autosize", "Cresce com o conteúdo"),
+        select("maxRows", "Máx. de linhas (autosize)", ["3", "6", "10"]),
+        text("showCount", "Mostrar contador (automático com limite)"),
+        number("maxlength", "Limite de caracteres", { min: 1, max: 2000, step: 1, optional: true }),
+        select("resize", "Redimensionar", ["", "vertical", "none", "horizontal", "both"]),
         text("value", "Valor"),
         text("name", "Nome"),
       ],
@@ -630,6 +730,11 @@ export function createCatalog(options: {
           rows={Number(v.rows)}
           required={!!v.required}
           readonly={!!v.readonly}
+          autosize={!!v.autosize}
+          maxRows={Number(v.maxRows)}
+          showCount={v.showCount ? true : undefined}
+          maxlength={Number(v.maxlength) > 0 ? Number(v.maxlength) : undefined}
+          resize={(String(v.resize) || undefined) as TextareaResize | undefined}
           value={String(v.value)}
           onInput={(e) => update("value", e.currentTarget.value)}
           aria-label="Exemplo de área de texto"
@@ -728,40 +833,6 @@ export function createCatalog(options: {
       ),
     },
     {
-      name: "SectionTabs",
-      group: "Navegação",
-      description: "Abas de seção com contagem e seleção controlada.",
-      defaults: {
-        active: "overview",
-        ariaLabel: "Navegação de exemplo",
-        count: "8",
-        badge: "",
-      },
-      controls: [
-        select("active", "Aba ativa", ["overview", "activity", "settings"]),
-        text("ariaLabel", "Nome acessível"),
-        select("count", "Contagem", ["0", "8", "24"]),
-        text("badge", "Badge de ajustes"),
-      ],
-      render: (v, update) => (
-        <SectionTabs
-          class={String(v.class)}
-          ariaLabel={String(v.ariaLabel)}
-          items={[
-            { id: "overview", label: "Visão geral" },
-            { id: "activity", label: "Atividade", count: Number(v.count) },
-            {
-              id: "settings",
-              label: "Ajustes",
-              badge: String(v.badge) || undefined,
-            },
-          ]}
-          active={String(v.active)}
-          onChange={(value) => update("active", value)}
-        />
-      ),
-    },
-    {
       name: "Accordion",
       group: "Navegação",
       description: "Lista de seções expansíveis.",
@@ -787,6 +858,142 @@ export function createCatalog(options: {
             },
           ]}
         />
+      ),
+    },
+    {
+      name: "Reveal",
+      group: "Layout",
+      description:
+        "Entrada animada quando o conteúdo aparece na tela, com Web Animations nativo e um único observador compartilhado.",
+      defaults: {
+        variant: "slide",
+        direction: "up",
+        distance: "15",
+        duration: "0.4",
+        delay: "0",
+        stagger: "0",
+        once: true,
+      },
+      controls: [
+        select("variant", "Variante", ["slide", "fade", "scale", "blur"]),
+        select("direction", "Direção (slide)", ["up", "down", "left", "right"]),
+        number("distance", "Distância (px)", { min: 0, max: 200, step: 1 }),
+        number("duration", "Duração (s)", { min: 0.05, max: 5, step: 0.05 }),
+        number("delay", "Atraso (s)", { min: 0, max: 5, step: 0.05 }),
+        number("stagger", "Intervalo entre filhos (s, 0 = bloco único)", { min: 0, max: 1, step: 0.01 }),
+        text("once", "Animar só na primeira vez"),
+      ],
+      render: (v) => <RevealExample v={v} />,
+    },
+    {
+      name: "Tabs",
+      group: "Navegação",
+      description:
+        "Abas acessíveis com painéis, navegação por setas e três variantes visuais.",
+      defaults: {
+        variant: "underline",
+        size: "md",
+        orientation: "horizontal",
+        activation: "automatic",
+        fullWidth: false,
+        panels: true,
+        keepMounted: false,
+        count: "8",
+      },
+      controls: [
+        select("variant", "Variante", ["underline", "pills", "segmented"]),
+        select("size", "Tamanho", ["sm", "md"]),
+        select("orientation", "Orientação", ["horizontal", "vertical"]),
+        select("activation", "Ativação", ["automatic", "manual"]),
+        text("fullWidth", "Ocupar toda a largura"),
+        text("panels", "Painéis embutidos (desligado: só o seletor)"),
+        text("keepMounted", "Manter painéis montados"),
+        select("count", "Contagem", ["0", "8", "24"]),
+      ],
+      render: (v) => {
+        const panel = (text: string) =>
+          v.panels ? (
+            <p class="py-2 text-sm text-muted-foreground">{text}</p>
+          ) : undefined;
+
+        return (
+        <Tabs
+          class={String(v.class)}
+          ariaLabel="Exemplo de abas"
+          variant={v.variant as TabsVariant}
+          size={v.size as TabsSize}
+          orientation={v.orientation as TabsOrientation}
+          activation={v.activation as TabsActivation}
+          fullWidth={!!v.fullWidth}
+          keepMounted={!!v.keepMounted}
+          defaultValue="overview"
+          items={[
+            {
+              id: "overview",
+              label: "Visão geral",
+              content: panel("Resumo do projeto: use as setas para trocar de aba."),
+            },
+            {
+              id: "activity",
+              label: "Atividade",
+              count: Number(v.count),
+              content: panel("Últimas alterações feitas pela equipe."),
+            },
+            {
+              id: "settings",
+              label: "Ajustes",
+              content: panel("Preferências e permissões."),
+            },
+            {
+              id: "billing",
+              label: "Cobrança",
+              disabled: true,
+              content: panel("Indisponível."),
+            },
+          ]}
+        />
+        );
+      },
+    },
+    {
+      name: "Separator",
+      group: "Layout",
+      description:
+        "Linha divisória horizontal ou vertical, com rótulo opcional e três estilos.",
+      defaults: {
+        orientation: "horizontal",
+        variant: "solid",
+        label: "",
+        labelPosition: "center",
+        decorative: true,
+      },
+      controls: [
+        select("orientation", "Orientação", ["horizontal", "vertical"]),
+        select("variant", "Estilo", ["solid", "dashed", "dotted"]),
+        text("label", "Rótulo"),
+        select("labelPosition", "Posição do rótulo", ["start", "center", "end"]),
+        text("decorative", "Decorativo (ignorado por leitores de tela)"),
+      ],
+      render: (v) => (
+        <div
+          data-wide
+          class={
+            v.orientation === "vertical"
+              ? "flex h-40 items-stretch justify-center gap-6 text-sm"
+              : "flex w-full max-w-md flex-col gap-3 text-sm"
+          }
+        >
+          <span>Entrar</span>
+          <Separator
+            class={String(v.class)}
+            orientation={v.orientation as SeparatorOrientation}
+            variant={v.variant as SeparatorVariant}
+            label={String(v.label) || undefined}
+            labelPosition={v.labelPosition as SeparatorLabelPosition}
+            decorative={!!v.decorative}
+          />
+          <span>Criar conta</span>
+        </div>
       ),
     },
     ...(["Dialog", "AlertModal", "Drawer", "MultiStepDialog"] as const).map(
@@ -1450,8 +1657,8 @@ export function createCatalog(options: {
         actionLabel: "Voltar à página anterior",
       },
       controls: [
-        text("viewport", "Largura simulada (px)"),
-        text("threshold", "Largura mínima (px)"),
+        number("viewport", "Largura simulada (px)", { min: 320, max: 2560, step: 10 }),
+        number("threshold", "Largura mínima (px)", { min: 320, max: 2560, step: 10 }),
         text("title", "Título"),
         text("description", "Descrição"),
         text("actionLabel", "Texto da ação"),

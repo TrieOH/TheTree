@@ -1,6 +1,6 @@
 import { shapeClass, type Shape } from "./lib/shape";
 import type { JSX } from "@solidjs/web";
-import { Show } from "solid-js";
+import { Show, createEffect, createSignal, onSettled } from "solid-js";
 import { cn } from "./lib/cn";
 
 export interface InputProps {
@@ -99,6 +99,8 @@ export function Input(props: InputProps) {
   );
 }
 
+export type TextareaResize = "none" | "vertical" | "horizontal" | "both";
+
 export interface TextareaProps {
   shape?: Shape;
   ref?: HTMLTextAreaElement | ((el: HTMLTextAreaElement) => void);
@@ -109,7 +111,29 @@ export interface TextareaProps {
   disabled?: boolean;
   required?: boolean;
   readonly?: boolean;
+  /** Visible lines, and the minimum height when autosizing. */
   rows?: number;
+  /**
+   * Hard character limit: the browser stops accepting input at this length.
+   * Shows the character counter unless `showCount` is `false`, so the limit is
+   * visible before you run into it.
+   */
+  maxlength?: number;
+  /**
+   * Live character count under the field. With `maxlength` it reads "12/280"
+   * and emphasises itself as the limit gets close; without one it counts
+   * characters. On by default when `maxlength` is set, off otherwise.
+   */
+  showCount?: boolean;
+  /** Grows with its content instead of scrolling. */
+  autosize?: boolean;
+  /** Tallest an autosizing field gets, in lines, before it scrolls. */
+  maxRows?: number;
+  /**
+   * Which way the user can drag to resize. Vertical by default, none while
+   * `autosize` is on (dragging would fight the automatic height).
+   */
+  resize?: TextareaResize;
   class?: string;
   "aria-label"?: string;
   "aria-describedby"?: string;
@@ -121,6 +145,13 @@ export interface TextareaProps {
   onKeyDown?: JSX.EventHandler<HTMLTextAreaElement, KeyboardEvent>;
 }
 
+const resizeClass: Record<TextareaResize, string> = {
+  none: "resize-none",
+  vertical: "resize-y",
+  horizontal: "resize-x",
+  both: "resize",
+};
+
 export function Textarea(props: TextareaProps) {
   const ariaInvalid = () => {
     const val = props["aria-invalid"];
@@ -129,9 +160,68 @@ export function Textarea(props: TextareaProps) {
     return undefined;
   };
 
-  return (
+  const counterId = `textarea-count-${Math.random().toString(36).slice(2, 9)}`;
+  let element: HTMLTextAreaElement | undefined;
+  // Length of what the user typed, for uncontrolled use; a `value` prop wins.
+  const [typed, setTyped] = createSignal(0);
+  const count = () => (props.value !== undefined ? props.value.length : typed());
+  const resize = () => props.resize ?? (props.autosize ? "none" : "vertical");
+  const showCount = () => props.showCount ?? props.maxlength !== undefined;
+
+  const describedBy = () =>
+    [props["aria-describedby"], showCount() ? counterId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  const fit = () => {
+    const el = element;
+    if (!el || !props.autosize) return;
+
+    el.style.height = "auto";
+    const style = getComputedStyle(el);
+    const borders =
+      (parseFloat(style.borderTopWidth) || 0) +
+      (parseFloat(style.borderBottomWidth) || 0);
+    const padding =
+      (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+    const line =
+      parseFloat(style.lineHeight) || (parseFloat(style.fontSize) || 14) * 1.5;
+    const content = el.scrollHeight + borders;
+    const limit =
+      props.maxRows !== undefined
+        ? line * props.maxRows + padding + borders
+        : Infinity;
+
+    el.style.height = `${Math.min(content, limit)}px`;
+    el.style.overflowY = content > limit ? "auto" : "hidden";
+  };
+
+  // Re-fit when the text, the mode or the cap changes from outside.
+  createEffect(
+    () => [props.value, props.autosize, props.maxRows] as const,
+    () => fit(),
+  );
+
+  // Wrapping depends on width, so a width change needs a re-fit too.
+  onSettled(() => {
+    if (!element || typeof ResizeObserver === "undefined") return;
+    let width = element.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      if (!element || element.offsetWidth === width) return;
+      width = element.offsetWidth;
+      fit();
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
+
+  const control = (
     <textarea
-      ref={props.ref}
+      ref={(el: HTMLTextAreaElement) => {
+        element = el;
+        const forward = props.ref;
+        if (typeof forward === "function") forward(el);
+      }}
       id={props.id}
       name={props.name}
       value={props.value ?? ""}
@@ -140,10 +230,15 @@ export function Textarea(props: TextareaProps) {
       required={props.required}
       readonly={props.readonly}
       rows={props.rows ?? 3}
+      maxlength={props.maxlength}
       aria-label={props["aria-label"]}
-      aria-describedby={props["aria-describedby"]}
+      aria-describedby={describedBy()}
       aria-invalid={ariaInvalid()}
-      onInput={props.onInput}
+      onInput={(event) => {
+        setTyped(event.currentTarget.value.length);
+        fit();
+        props.onInput?.(event);
+      }}
       onChange={props.onChange}
       onBlur={props.onBlur}
       onFocus={props.onFocus}
@@ -151,10 +246,35 @@ export function Textarea(props: TextareaProps) {
       class={cn(
         fieldBase,
         "min-h-20 custom-scrollbar",
+        resizeClass[resize()],
         shapeClass(props.shape, "surface"),
         props.class,
       )}
     />
+  );
+
+  return (
+    <Show when={showCount()} fallback={control}>
+      <div class="flex w-full flex-col gap-1">
+        {control}
+        <p
+          id={counterId}
+          class={cn(
+            "text-right text-xs tabular-nums text-muted-foreground",
+            props.maxlength !== undefined &&
+              count() >= props.maxlength * 0.9 &&
+              "text-foreground",
+            props.maxlength !== undefined &&
+              count() >= props.maxlength &&
+              "font-medium text-destructive dark:text-destructive-foreground",
+          )}
+        >
+          {props.maxlength !== undefined
+            ? `${count()}/${props.maxlength}`
+            : `${count()} caracteres`}
+        </p>
+      </div>
+    </Show>
   );
 }
 

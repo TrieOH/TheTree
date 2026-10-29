@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import MailIcon from "~icons/lucide/mail";
 import PenLineIcon from "~icons/lucide/pen-line";
 
-import { SectionTabs, type SectionTabItem } from "@/shared/ui/SectionTabs";
+import { Tabs, type TabsItem } from "@trieoh/ui-solid";
 
 const PenLine = PenLineIcon as unknown as (props: { class?: string }) => JSX.Element;
 const Mail = MailIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -18,7 +18,7 @@ export interface SignatureSectionTabsProps {
 }
 
 export function SignatureSectionTabs(props: SignatureSectionTabsProps): JSX.Element {
-  const items = (): SectionTabItem<SignatureSection>[] => [
+  const items = (): TabsItem<SignatureSection>[] => [
     {
       id: "signatures",
       label: "Assinaturas",
@@ -34,9 +34,9 @@ export function SignatureSectionTabs(props: SignatureSectionTabsProps): JSX.Elem
   ];
 
   return (
-    <SectionTabs<SignatureSection>
+    <Tabs<SignatureSection>
       items={items()}
-      active={props.active}
+      value={props.active}
       onChange={props.onChange}
       ariaLabel="Assinaturas da edição"
       class={props.class}

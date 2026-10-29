@@ -2,7 +2,7 @@ import { For, Show } from "solid-js";
 import { Button, Tooltip } from "@trieoh/ui-solid";
 import IconRotateCcw from "~icons/lucide/rotate-ccw";
 import type { Entry, Values } from "../catalog";
-import { KnobSelect, KnobSwitch, KnobText } from "./KnobControl";
+import { KnobNumber, KnobSelect, KnobSwitch, KnobText } from "./KnobControl";
 
 export function PropertiesPanel(props: {
   entry: Entry;
@@ -49,12 +49,27 @@ export function PropertiesPanel(props: {
               <Show
                 when={control().options}
                 fallback={
-                  <KnobText
-                    multiline={control().key === "code"}
-                    label={control().label}
-                    value={String(props.values[control().key])}
-                    onChange={(value) => props.onUpdate(control().key, value)}
-                  />
+                  <Show
+                    when={control().number}
+                    fallback={
+                      <KnobText
+                        multiline={control().key === "code"}
+                        label={control().label}
+                        value={String(props.values[control().key])}
+                        onChange={(value) => props.onUpdate(control().key, value)}
+                      />
+                    }
+                  >
+                    <KnobNumber
+                      label={control().label}
+                      value={String(props.values[control().key])}
+                      min={control().number!.min}
+                      max={control().number!.max}
+                      step={control().number!.step}
+                      optional={control().number!.optional}
+                      onChange={(value) => props.onUpdate(control().key, value)}
+                    />
+                  </Show>
                 }
               >
                 <KnobSelect

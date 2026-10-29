@@ -28,6 +28,7 @@ export {
   type InputProps,
   type LabelProps,
   type TextareaProps,
+  type TextareaResize,
 } from "./input";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
 export { CardSkeleton, Skeleton, type SkeletonProps } from "./skeleton";
@@ -83,10 +84,14 @@ export {
   type AccordionProps,
 } from "./accordion";
 export {
-  SectionTabs,
-  type SectionTabItem,
-  type SectionTabsProps,
-} from "./section-tabs";
+  Tabs,
+  type TabsActivation,
+  type TabsItem,
+  type TabsOrientation,
+  type TabsProps,
+  type TabsSize,
+  type TabsVariant,
+} from "./tabs";
 export { Drawer, type DrawerProps } from "./drawer";
 export { Combobox, type ComboboxOption, type ComboboxProps } from "./combobox";
 export {
@@ -123,3 +128,17 @@ export {
 } from "./wave-spinner-loading";
 
 export { Switch, type SwitchProps } from "./switch";
+export {
+  Separator,
+  type SeparatorLabelPosition,
+  type SeparatorOrientation,
+  type SeparatorProps,
+  type SeparatorVariant,
+} from "./separator";
+export {
+  Reveal,
+  type RevealDirection,
+  type RevealProps,
+  type RevealTag,
+  type RevealVariant,
+} from "./reveal";

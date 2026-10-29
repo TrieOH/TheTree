@@ -2,7 +2,7 @@ import type { JSX } from "@solidjs/web";
 import BadgeCheckIcon from "~icons/lucide/badge-check";
 import FileTextIcon from "~icons/lucide/file-text";
 
-import { SectionTabs, type SectionTabItem } from "@/shared/ui/SectionTabs";
+import { Tabs, type TabsItem } from "@trieoh/ui-solid";
 
 const BadgeCheck = BadgeCheckIcon as unknown as (props: { class?: string }) => JSX.Element;
 const FileText = FileTextIcon as unknown as (props: { class?: string }) => JSX.Element;
@@ -18,7 +18,7 @@ export interface BadgeSectionTabsProps {
 }
 
 export function BadgeSectionTabs(props: BadgeSectionTabsProps): JSX.Element {
-  const items = (): SectionTabItem<BadgeSection>[] => [
+  const items = (): TabsItem<BadgeSection>[] => [
     {
       id: "templates",
       label: "Templates",
@@ -34,9 +34,9 @@ export function BadgeSectionTabs(props: BadgeSectionTabsProps): JSX.Element {
   ];
 
   return (
-    <SectionTabs<BadgeSection>
+    <Tabs<BadgeSection>
       items={items()}
-      active={props.active}
+      value={props.active}
       onChange={props.onChange}
       ariaLabel="Crachás da edição"
       class={props.class}

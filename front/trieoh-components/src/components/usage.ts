@@ -59,10 +59,23 @@ export function usage(name: string, v: Values): string {
       jsx = `<Button ${prop("variant")} ${prop("size")} ${prop("disabled")}\\n  aria-label={${q("children")}}\\n  onClick={() => console.log("Ação executada")}\\n>\\n  ${v.size === "icon" ? '<IconArrowUpRight class="size-4" />' : `{${q("children")}}`}\\n</Button>`;
       break;
     case "Input":
-    case "Textarea":
+    case "Textarea": {
       setup = state(q("value") ?? '""');
-      jsx = `<${name} aria-label="${name === "Input" ? "E-mail" : "Descrição"}"\\n  ${prop("placeholder")} ${prop("disabled")}\\n  value={value()} onInput={event => setValue(event.currentTarget.value)}\\n/>`;
+      const extras =
+        name === "Textarea"
+          ? [
+              v.autosize ? "autosize" : "",
+              v.autosize && Number(v.maxRows) ? `maxRows={${Number(v.maxRows)}}` : "",
+              v.showCount ? "showCount" : "",
+              Number(v.maxlength) > 0 ? `maxlength={${Number(v.maxlength)}}` : "",
+              v.resize && v.resize !== (v.autosize ? "none" : "vertical") ? prop("resize") : "",
+            ]
+              .filter(Boolean)
+              .join(" ")
+          : "";
+      jsx = `<${name} aria-label="${name === "Input" ? "E-mail" : "Descrição"}"\\n  ${prop("placeholder")} ${prop("disabled")} ${extras}\\n  value={value()} onInput={event => setValue(event.currentTarget.value)}\\n/>`;
       break;
+    }
     case "Label":
       imports += ", Input";
       jsx = `<Label for={${q("for")}}>{${q("children")}}</Label>\\n<Input id={${q("for")}} />`;
@@ -75,9 +88,13 @@ export function usage(name: string, v: Values): string {
       setup = state(q("value"));
       jsx = `<Combobox value={value()} onChange={setValue} options={[{ value: "1", label: "Opção 1" }, { value: "2", label: "Opção 2" }]} ${prop("placeholder")} />`;
       break;
-    case "SectionTabs":
-      setup = state(q("value"));
-      jsx = `<SectionTabs value={value()} onChange={setValue} items={[{ id: "tab1", label: "Geral" }, { id: "tab2", label: "Segurança" }]} />`;
+    case "Tabs": {
+      const panel = (text: string) => (v.panels ? `, content: <p>${text}</p>` : "");
+      jsx = `<Tabs ariaLabel="Seções" defaultValue="overview" ${prop("variant")} ${prop("size")} ${prop("orientation")} ${prop("activation")} ${prop("fullWidth")} ${v.panels ? prop("keepMounted") : ""}\\n  items={[\\n    { id: "overview", label: "Visão geral"${panel("Resumo do projeto.")} },\\n    { id: "activity", label: "Atividade", count: ${Number(v.count)}${panel("Últimas alterações.")} },\\n    { id: "settings", label: "Ajustes"${panel("Preferências.")} },\\n  ]}\\n/>`;
+      break;
+    }
+    case "Separator":
+      jsx = `<Separator ${prop("orientation")} ${prop("variant")} ${v.label ? `label={${q("label")}}` : ""} ${v.label ? prop("labelPosition") : ""} ${v.decorative ? "" : "decorative={false}"} />`;
       break;
     case "Accordion":
       jsx = `<Accordion items={[{ id: "1", title: "Primeiro item", content: "Conteúdo do item." }, { id: "2", title: "Segundo item", content: "Outro conteúdo." }]} />`;
@@ -148,6 +165,22 @@ export function usage(name: string, v: Values): string {
     case "WaveSpinnerLoading":
       jsx = `<WaveSpinnerLoading\\n  text={${q("text")}}\\n  spinnerSize={${q("spinnerSize")}}\\n/>`;
       break;
+    case "Reveal": {
+      const stagger = Number(v.stagger) > 0;
+      jsx = `<Reveal ${[
+        prop("variant"),
+        v.variant === "slide" ? prop("direction") : "",
+        Number(v.distance) !== 15 && v.variant === "slide" ? `distance={${Number(v.distance)}}` : "",
+        Number(v.duration) !== 0.4 ? `duration={${Number(v.duration)}}` : "",
+        Number(v.delay) ? `delay={${Number(v.delay)}}` : "",
+        stagger ? `stagger={${Number(v.stagger)}}` : "",
+        v.once ? "" : "once={false}",
+      ]
+        .filter(Boolean)
+        .join(" ")}>\\n  ${stagger ? "<Card>Primeiro item</Card>\\n  <Card>Segundo item</Card>\\n  <Card>Terceiro item</Card>" : "<Card>Conteúdo animado</Card>"}\\n</Reveal>`;
+      imports += ", Card";
+      break;
+    }
     default:
       throw new Error(`Missing example for ${name}`);
   }
@@ -191,7 +224,6 @@ export function usage(name: string, v: Values): string {
     Textarea: ["required", "readonly", "rows", "name"],
     Field: ["required", "name"],
     Combobox: ["disabled", "searchPlaceholder", "emptyMessage"],
-    SectionTabs: ["ariaLabel"],
     CodeBlock: ["filename", "showLineNumbers", "format"],
     Dialog: ["description", "closable", "preventClose"],
     AlertModal: ["loading", "confirmLabel", "cancelLabel"],
