@@ -172,6 +172,8 @@ The good example exists: `deliver_webhook.go` builds its own client with a 10s t
 
 ### 14. RFC 9457 Problem Details (move off the fun envelope)
 
+**Envelope part done 2026-10-29 (ADR-0017):** success is the plain payload, lists are `{ items }`, empty answers are 204, and errors are the bare `{ code, message, fields }` object. What's left is the error writer swap to `application/problem+json`; the TS readers and the e2e keywords already accept it.
+
 **Problem.** Everything rides the `fun.Response` envelope (`{code, message, data, error, pagination, timestamp, module}`) — HTTP semantics are hidden inside a body, errors are non-standard, and every client couples to the envelope (the orval-mutator unwraps it, `ApiError` carries `.envelope`).
 
 **Fix.** A deliberate architecture change: **plain JSON payloads on success + RFC 9457 `application/problem+json` for errors** (`type`/`title`/`status`/`detail`/`instance`) with proper HTTP status codes. Keep `fun` internally if useful, stop it at the HTTP boundary. Cross-cutting: specs → handlers → orval-mutator/`ApiError` → frontends, in one coordinated change with SDK version bumps. ADR-worthy.
