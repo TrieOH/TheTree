@@ -52,6 +52,9 @@ jobs:
       front-name: ${{ steps.tag.outputs.front_name }}
       sdk-name: ${{ steps.tag.outputs.sdk_name }}
     steps:
+      # The sdk branch checks sdk/ts/<name> exists, so the tree must be here.
+      - uses: useblacksmith/checkout@v1
+
       - name: Parse tag
         id: tag
         env:
