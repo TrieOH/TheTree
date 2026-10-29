@@ -1,4 +1,4 @@
-import { itemsOf } from "@trieoh/api-client/envelope";
+import { itemsOf } from "@trieoh/api-client/wire";
 import {
   createDefaultFetchClient,
   type DefaultFetchResult,

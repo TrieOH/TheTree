@@ -2,9 +2,9 @@
  * Orval custom mutator for generated API clients (lib/ts/<svc>/client).
  *
  * Generated clients call `customInstance(url, { method, params, body })` and
- * receive orval's standard response wrapper `{ data, status }` — where `data`
- * is the unwrapped `fun.Response` payload. Failures reject with the shared
- * stack's `ApiError` (`FetchClientError`, envelope in `.envelope`), so orval
+ * receive orval's standard response wrapper `{ data, status }`, where `data`
+ * is the response payload. Failures reject with the shared stack's
+ * `ApiError` (`FetchClientError`, the failure in `.envelope`), so orval
  * clients behave exactly like the hand-written fetchers.
  *
  * Apps must call `configureApiClient` once at startup:
@@ -13,7 +13,6 @@
  */
 import { ApiError, createFetcher } from "@trieoh/identityx-sdk-ts"
 import type { DefaultFailureEnvelope } from "@trieoh/envoy-fetch-ts"
-import { envelopeFetch } from "./envelope"
 
 export interface ApiClientConfig {
   /** Base URL for the main API. */
@@ -51,7 +50,6 @@ const getApi = (): ReturnType<typeof createFetcher> => {
     api = createFetcher({
       baseURL: config.baseURL,
       authBaseURL: config.authBaseURL,
-      clientConfig: { fetch: envelopeFetch() },
     })
   }
   return api
@@ -80,7 +78,7 @@ export interface OrvalRequestOptions {
   public?: boolean
 }
 
-/** Orval mutator: dispatch a request through the shared fetcher and unwrap the envelope. */
+/** Orval mutator: dispatch a request through the shared fetcher. */
 export const customInstance = async <T>(
   url: string,
   options: OrvalRequestOptions,
