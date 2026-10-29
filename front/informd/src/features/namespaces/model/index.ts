@@ -3,13 +3,8 @@ import type {
   CreateNamespaceRequest,
   Namespace,
   NamespaceMember,
-} from "@trieoh/informd-models";
-import {
-  NamespaceMemberRoleAdmin,
-  NamespaceMemberRoleEditor,
-  NamespaceMemberRoleOwner,
-  NamespaceMemberRoleViewer,
-} from "@trieoh/informd-models";
+} from "@trieoh/informd-api/schemas";
+import { NamespaceMemberRole } from "@trieoh/informd-api/schemas";
 import z from "zod";
 
 export const namespaceCreateSchema = z.object({
@@ -25,19 +20,17 @@ export type NamespaceI = Namespace;
 // Member
 
 export type NamespaceMemberRoleI =
-  | typeof NamespaceMemberRoleViewer
-  | typeof NamespaceMemberRoleEditor
-  | typeof NamespaceMemberRoleAdmin
-  | typeof NamespaceMemberRoleOwner;
+  | typeof NamespaceMemberRole.member
+  | typeof NamespaceMemberRole.admin
+  | typeof NamespaceMemberRole.owner;
 
 export const memberAddToNamespaceSchema = z.object({
   user_id: z.string({ error: "User ID is required" }),
   role: z.enum(
     [
-      NamespaceMemberRoleViewer,
-      NamespaceMemberRoleEditor,
-      NamespaceMemberRoleAdmin,
-      NamespaceMemberRoleOwner,
+      NamespaceMemberRole.member,
+      NamespaceMemberRole.admin,
+      NamespaceMemberRole.owner,
     ],
     { error: "Invalid role" },
   ),

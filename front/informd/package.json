@@ -34,7 +34,7 @@
     "@trieoh/front-core-react": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",
     "@trieoh/identityx-sdk-ts-react": "catalog:",
-    "@trieoh/informd-models": "workspace:*",
+    "@trieoh/informd-api": "workspace:*",
     "@trieoh/ui-react": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",

@@ -1,11 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  FormStatusArchived,
-  FormStatusClosed,
-  FormStatusDraft,
-  FormStatusOpen,
-} from "@trieoh/informd-models";
+import { FormStatus } from "@trieoh/informd-api/schemas";
 import {
   Archive,
   Copy,
@@ -53,10 +48,10 @@ export default function FormAdminHeader({
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
 
   const statusConfig = {
-    [FormStatusOpen]: { label: "Open", color: "bg-green-500" },
-    [FormStatusDraft]: { label: "Draft", color: "bg-slate-400" },
-    [FormStatusClosed]: { label: "Closed", color: "bg-red-500" },
-    [FormStatusArchived]: { label: "Archived", color: "bg-amber-500" },
+    [FormStatus.open]: { label: "Open", color: "bg-green-500" },
+    [FormStatus.draft]: { label: "Draft", color: "bg-slate-400" },
+    [FormStatus.closed]: { label: "Closed", color: "bg-red-500" },
+    [FormStatus.archived]: { label: "Archived", color: "bg-amber-500" },
   };
   const currentStatus = statusConfig[form.status];
 
@@ -147,7 +142,7 @@ export default function FormAdminHeader({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {form.status === FormStatusDraft && (
+          {form.status === FormStatus.draft && (
             <Button
               size="sm"
               onClick={() => openForm()}
@@ -159,7 +154,7 @@ export default function FormAdminHeader({
             </Button>
           )}
 
-          {form.status === FormStatusOpen && (
+          {form.status === FormStatus.open && (
             <>
               <Button
                 size="sm"
@@ -212,7 +207,7 @@ export default function FormAdminHeader({
             </>
           )}
 
-          {form.status === FormStatusClosed && (
+          {form.status === FormStatus.closed && (
             <>
               <Button
                 size="sm"

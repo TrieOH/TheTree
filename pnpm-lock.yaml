@@ -616,7 +616,7 @@ importers:
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(lucide-react@1.21.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.80.0(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
-      '@trieoh/informd-models':
+      '@trieoh/informd-api':
         specifier: workspace:*
         version: link:../../lib/ts/informd
       '@trieoh/ui-react':
@@ -752,7 +752,7 @@ importers:
       '@trieoh/identityx-sdk-ts-react':
         specifier: 'catalog:'
         version: 0.16.0(lucide-react@1.21.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.80.0(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
-      '@trieoh/payssage-models':
+      '@trieoh/payssage-api':
         specifier: workspace:*
         version: link:../../lib/ts/payssage
       '@trieoh/shared-utils':

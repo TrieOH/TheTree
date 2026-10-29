@@ -1,29 +1,35 @@
 import type {
   Answer,
-  FormAnswerable,
   SubmitAnswer,
   SubmitRequest,
-} from "@trieoh/informd-models";
+} from "@trieoh/informd-api/schemas";
 import { z } from "zod";
-import type { FieldI } from "#/features/fields/model";
+import type { FieldI, FieldSelectConfigI } from "#/features/fields/model";
 import type { FormI } from "#/features/forms/model";
 import type { StepI } from "#/features/steps/model";
+import type { RawJSON } from "#/shared/lib/raw-json";
 
 export const answerSchema = z.object({
-  field_id: z.string().optional(),
-  answer: z.any().optional(),
-  response_id: z.string(),
-}) satisfies z.ZodType<SubmitAnswer>;
+  field_id: z.string(),
+  answer: z.any(),
+}) satisfies z.ZodType<AnswerCreateI>;
 
-export type AnswerCreateI = SubmitAnswer;
+export interface AnswerCreateI extends Omit<SubmitAnswer, "answer"> {
+  answer: RawJSON;
+}
 
 export const submitRequestSchema = z.object({
   email: z.email().optional().or(z.literal("")),
   answers: z.array(answerSchema),
-}) satisfies z.ZodType<SubmitRequest>;
+}) satisfies z.ZodType<SubmitRequestI>;
 
-export type SubmitRequestI = SubmitRequest;
-export type AnswerI = Answer;
+export interface SubmitRequestI extends Omit<SubmitRequest, "answers"> {
+  answers?: AnswerCreateI[];
+}
+
+export interface AnswerI extends Omit<Answer, "answer"> {
+  answer?: RawJSON;
+}
 
 export interface FullFormI {
   form: FormI;
@@ -115,4 +121,17 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
 
 // Answer
 
-export type FormAnswerableI = FormAnswerable;
+export interface FieldAnswerableI {
+  field: FieldI;
+  field_select_config?: FieldSelectConfigI;
+}
+
+export interface StepAnswerableI {
+  step: StepI;
+  fields: FieldAnswerableI[];
+}
+
+export interface FormAnswerableI {
+  form: FormI;
+  steps: StepAnswerableI[];
+}

@@ -3,7 +3,7 @@ import type {
   SetFeeBPSRequest,
   SetSandboxRequest,
   Wallet,
-} from "@trieoh/payssage-models";
+} from "@trieoh/payssage-api/schemas";
 import z from "zod";
 
 export const walletCreateSchema = z.object({

@@ -1,10 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  FormStatusArchived,
-  FormStatusClosed,
-  FormStatusDraft,
-  FormStatusOpen,
-} from "@trieoh/informd-models";
+import { FormStatus } from "@trieoh/informd-api/schemas";
 import {
   Archive,
   ClipboardCheck,
@@ -51,7 +46,7 @@ interface StatusMeta {
 }
 
 const STATUS_META: Record<string, StatusMeta> = {
-  [FormStatusOpen]: {
+  [FormStatus.open]: {
     headerBg: "bg-blue-50 dark:bg-blue-950/40",
     iconBg: "bg-blue-100 dark:bg-blue-900/60",
     iconColor: "text-blue-600 dark:text-blue-400",
@@ -60,7 +55,7 @@ const STATUS_META: Record<string, StatusMeta> = {
       "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
     label: "Open",
   },
-  [FormStatusDraft]: {
+  [FormStatus.draft]: {
     headerBg: "bg-muted/60",
     iconBg: "bg-muted",
     iconColor: "text-muted-foreground",
@@ -68,7 +63,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     badgeCn: "bg-secondary text-secondary-foreground",
     label: "Draft",
   },
-  [FormStatusClosed]: {
+  [FormStatus.closed]: {
     headerBg: "bg-red-50 dark:bg-red-950/40",
     iconBg: "bg-red-100 dark:bg-red-900/60",
     iconColor: "text-red-600 dark:text-red-400",
@@ -76,7 +71,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     badgeCn: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
     label: "Closed",
   },
-  [FormStatusArchived]: {
+  [FormStatus.archived]: {
     headerBg: "bg-amber-50 dark:bg-amber-950/40",
     iconBg: "bg-amber-100 dark:bg-amber-900/60",
     iconColor: "text-amber-600 dark:text-amber-400",
@@ -117,7 +112,7 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
 
   return (
     <>
-      {data.status === FormStatusOpen && (
+      {data.status === FormStatus.open && (
         <>
           <Item
             onClick={() => {

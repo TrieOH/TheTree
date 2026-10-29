@@ -1,4 +1,4 @@
-import { FormStatusArchived } from "@trieoh/informd-models";
+import { FormStatus } from "@trieoh/informd-api/schemas";
 import { PaginatedContainer } from "@trieoh/ui-react";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -32,8 +32,8 @@ export function FormsView({
   const visibleForms = useMemo(() => {
     return forms.filter((form) => {
       if (statusFilter === "archived")
-        return form.status === FormStatusArchived;
-      if (statusFilter === "active") return form.status !== FormStatusArchived;
+        return form.status === FormStatus.archived;
+      if (statusFilter === "active") return form.status !== FormStatus.archived;
       return true;
     });
   }, [forms, statusFilter]);

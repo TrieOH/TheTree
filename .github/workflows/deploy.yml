@@ -153,6 +153,12 @@ jobs:
           go run tools/strictmount internal/openapi/mount.gen.go
           go get "github.com/oapi-codegen/runtime@v$OAPI_RUNTIME_VERSION"
 
+      # ── R0 generate (fronts): the orval TS clients in lib/ts/<svc>/client
+      #    are gitignored too — same recipe as `just gen-ts` ───────────────
+      - name: R0 generate TS clients
+        if: ${{ env.TYPE == 'front' }}
+        run: pnpm orval
+
       # ── R1 compile ──────────────────────────────────────────────────────
       - name: R1 compile
         if: ${{ env.TYPE == 'service' }}
@@ -383,6 +389,11 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           install: 'true'
+
+      # the orval TS clients are gitignored — regenerate before building
+      - name: Generate TS clients
+        if: ${{ env.TYPE == 'front' }}
+        run: pnpm orval
 
       - name: Build & upload version (identityx)
         id: identityx

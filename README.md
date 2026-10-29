@@ -112,6 +112,7 @@ jobs on a Cloudflare Queue and Cron Triggers.
 **Frontend:**
 ```bash
 pnpm install
+just gen-ts                                    # orval TS clients (not committed)
 cp front/<svc>/.env.example front/<svc>/.env   # fill in real values
 pnpm <svc> dev        # one app (e.g. pnpm univents dev) — or pnpm dev for all
 ```
@@ -161,12 +162,14 @@ Every `just` recipe is `just <command> [target]`; `just` alone lists them.
 ```bash
 just gen               # all backends: sqlc + oapi-codegen, then orval
 just gen payssage      # one (or several) backends; orval still regenerates all four
+just gen-ts            # only the orval TS clients
 ```
 
-Generated code is **partly committed**: `internal/sqlc/` and `internal/openapi/` are gitignored and
-regenerated in CI/builds, while the orval TS clients under
-`lib/ts/<svc>/client/` **are** committed — after regenerating, run
-`pnpm -r tsc` (and `node tools/check-package-boundaries.mjs`) before committing.
+Generated code is **never committed**: `internal/sqlc/`, `internal/openapi/` and
+the orval TS clients under `lib/ts/<svc>/client/` are gitignored and
+regenerated in CI/builds. The pre-commit hook regenerates the TS clients
+when they are missing or an `api-spec.yml` is staged, and type-checks the
+fronts that import them.
 
 ## Releases & deploys
 
