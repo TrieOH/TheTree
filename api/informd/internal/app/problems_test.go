@@ -1,11 +1,19 @@
 package app
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
+	"Informd/internal/problems"
+	kit "lib/backend/identityx"
 	"lib/database"
+	"lib/httpserver"
+
+	idx "sdk/identityx"
 )
 
 // TestConstraintErrorsAreMapped — every constraint's named error answers
@@ -26,6 +34,36 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 			} else if p.Status != want {
 				t.Errorf("%s (%v): got %d, want %d", name, named, p.Status, want)
 			}
+		}
+	}
+}
+
+// TestAuthErrorsAreMapped — every error the auth step can reject a request
+// with (the harness middlewares, the IdentityX SDK's token checks and the
+// identityx kit's authenticators) answers with its declared problem, never
+// the generic 500: the auth middleware writes them through the mapper.
+func TestAuthErrorsAreMapped(t *testing.T) {
+	m := problems.Mapper(Problem)
+	cases := []struct {
+		err  error
+		want int
+	}{
+		{httpserver.ErrMissingBearer, http.StatusUnauthorized},
+		{httpserver.ErrMissingAPIKey, http.StatusUnauthorized},
+		{httpserver.ErrNoCredentials, http.StatusUnauthorized},
+		{&idx.InvalidTokenError{Cause: errors.New("token is malformed")}, http.StatusUnauthorized},
+		{&idx.InvalidTokenError{Cause: &idx.KeyNotFoundError{Kid: "k1"}}, http.StatusUnauthorized},
+		{&idx.TokenExpiredError{ExpiredAt: time.Now()}, http.StatusUnauthorized},
+		{&idx.TokenNotYetValidError{ValidAt: time.Now()}, http.StatusUnauthorized},
+		{&idx.InvalidIssuerError{Got: "x", Expected: "y"}, http.StatusUnauthorized},
+		{kit.ErrInvalidAPIKey, http.StatusUnauthorized},
+		{kit.ErrAPIKeysNotAccepted, http.StatusUnauthorized},
+		{kit.ErrEmailNotVerified, http.StatusUnauthorized},
+		{fmt.Errorf("%w: %w", kit.ErrIntrospectionFailed, errors.New("dial tcp: refused")), http.StatusServiceUnavailable},
+	}
+	for _, tc := range cases {
+		if got := m(tc.err).Status; got != tc.want {
+			t.Errorf("%v: got %d, want %d", tc.err, got, tc.want)
 		}
 	}
 }

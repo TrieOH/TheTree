@@ -1,3 +1,7 @@
+// Package errmap is Univents' problem switch (ADR-0019). It sits apart
+// from internal/app, which wires the features, so service tests can check
+// what status an error answers with without importing the features they
+// belong to.
 package errmap
 
 import (

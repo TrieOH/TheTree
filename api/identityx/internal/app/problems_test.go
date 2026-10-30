@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"IdentityX/errs"
 	"IdentityX/internal/problems"
 	"lib/database"
+	"lib/httpserver"
 )
 
 // TestConstraintErrorsAreMapped — every constraint's named error answers
@@ -43,5 +45,31 @@ func TestMostSpecificErrorWins(t *testing.T) {
 	missing := fmt.Errorf("%w: %w", errs.ErrActorNotFound, database.ErrNotFound)
 	if got := m(missing).Status; got != http.StatusNotFound {
 		t.Fatalf("got %d, want 404", got)
+	}
+}
+
+// TestAuthErrorsAreMapped — every error IdentityX's auth step can reject
+// a request with (the harness middlewares, token verification and API-key
+// authentication) answers with its declared problem, never the generic
+// 500: the auth middleware writes them through the mapper.
+func TestAuthErrorsAreMapped(t *testing.T) {
+	m := problems.Mapper(Problem)
+	for _, err := range []error{
+		httpserver.ErrMissingBearer,
+		httpserver.ErrMissingAPIKey,
+		httpserver.ErrNoCredentials,
+		fmt.Errorf("%w: %w", errs.ErrInvalidToken, errors.New("token is malformed")),
+		errs.ErrMissingKID,
+		errs.ErrInvalidKID,
+		errs.ErrOutdatedToken,
+		errs.ErrSigningKeyRevoked,
+		errs.ErrSigningKeyRetired,
+		errs.ErrTokenRevoked,
+		errs.ErrInvalidAPIKey,
+		errs.ErrAPIKeyExpired,
+	} {
+		if got := m(err).Status; got != http.StatusUnauthorized {
+			t.Errorf("%v: got %d, want 401", err, got)
+		}
 	}
 }

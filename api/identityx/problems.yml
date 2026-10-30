@@ -10,12 +10,6 @@ components:
         status: 401
         title: Platform Only
         description: "Platform-level authentication required."
-    InvalidToken:
-      x-problem:
-        slug: invalid-token
-        status: 401
-        title: Invalid Token
-        description: "Invalid token."
     InvalidAccessToken:
       x-problem:
         slug: invalid-access-token
@@ -60,16 +54,10 @@ components:
         description: "Token has been revoked."
 
     # api keys
-    InvalidAPIKey:
-      x-problem:
-        slug: invalid-api-key
-        status: 403
-        title: Invalid API Key
-        description: "Invalid api key."
     APIKeyExpired:
       x-problem:
         slug: api-key-expired
-        status: 403
+        status: 401
         title: API Key Expired
         description: "Api key expired."
     InvalidCapabilities:

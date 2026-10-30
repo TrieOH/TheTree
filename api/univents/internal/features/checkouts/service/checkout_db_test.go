@@ -13,6 +13,7 @@ import (
 	"lib/testdb"
 	"net/http"
 
+	"univents/internal/app"
 	"univents/internal/authz"
 	checkouts "univents/internal/features/checkouts/service"
 	"univents/internal/sqlc"
@@ -168,6 +169,7 @@ type fakes struct {
 func newOps(t *testing.T, payssageFn func(uuid.UUID, payssage.CreateIntentRequest) (*payssage.Intent, error)) (*testrepos.Repos, *checkouts.Operations, *fakes, *sqlc.Queries) {
 	t.Helper()
 	pool := testdb.Postgres(t, "../../../../db/migrations")
+	database.UseConstraints(app.Constraints())
 	q := sqlc.New(pool)
 	tx := database.NewPGXTxRunner(pool)
 	r := testrepos.New(q)

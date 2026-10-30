@@ -50,7 +50,7 @@ type Options struct {
 	SkipSetupGuard []string
 	// WriteError writes a scope checker's rejection. It is required when
 	// the spec has an x-scope; lib/backend passes lib/httpserver's writer,
-	// which authz cannot import (lib/httpserver maps authz's errors).
+	// which authz cannot import (lib/httpserver imports authz).
 	WriteError func(http.ResponseWriter, *http.Request, error)
 }
 

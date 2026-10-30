@@ -9,6 +9,7 @@ package tokens
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"IdentityX/errs"
@@ -73,7 +74,7 @@ func NewManager(cryptoKeys ports.CryptoKeysRepo, blacklist ports.BlacklistRepo, 
 func (m *Manager) Verify(ctx context.Context, tokenStr string, claims jwt.Claims) error {
 	token, err := crypto.OpenUnverified(tokenStr, claims)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errs.ErrInvalidToken, err)
 	}
 
 	key, err := m.keyForToken(ctx, token)

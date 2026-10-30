@@ -2,15 +2,36 @@ package httpserver
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"slices"
 
+	"lib/fielderr"
 	"lib/telemetry"
 	"lib/validator"
 
 	"go.opentelemetry.io/otel/codes"
 )
+
+// The request binding's rejections, each naming the offending field
+// (lib/fielderr). The Backend's mapper answers them (ADR-0019).
+var (
+	ErrInvalidParameter = errors.New("invalid request parameter")
+	ErrInvalidHeader    = errors.New("invalid request header")
+	// errOperationNotRegistered is spec/codegen drift: an operation the
+	// auth resolver has no chain for. It is a 500.
+	errOperationNotRegistered = errors.New("operation not registered with auth resolver")
+)
+
+// InvalidBodyError is a request body that does not decode. Its message
+// carries the decode error, so a client reading only the detail sees why.
+type InvalidBodyError struct{ Err error }
+
+func (e *InvalidBodyError) Error() string { return "invalid request body: " + e.Err.Error() }
+
+func (e *InvalidBodyError) Unwrap() error { return e.Err }
 
 // StrictHandlerFunc mirrors the strict-server handler shape every backend's
 // oapi-codegen output generates (method = openapi.StrictHandlerFunc). The
@@ -37,7 +58,7 @@ func AuthDispatch(chains map[string][]func(http.Handler) http.Handler) StrictMid
 		chain, ok := chains[operationID]
 		if !ok {
 			return func(_ context.Context, w http.ResponseWriter, r *http.Request, _ any) (any, error) {
-				writeAppError(w, r, http.StatusInternalServerError, &appError{Code: codeInternal, Message: "operation not registered with auth resolver"})
+				WriteError(w, r, fmt.Errorf("%s: %w", operationID, errOperationNotRegistered))
 				return nil, nil
 			}
 		}
@@ -153,37 +174,37 @@ func MountStrict[HF StrictHandlerFuncT, ServerT any, MF StrictMiddlewareFuncT[HF
 // harness's one concession to the codegen.
 func ParamBindingErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
-		if appErr, ok := paramBindingError(err); ok {
-			writeAppError(w, r, http.StatusBadRequest, appErr)
-			return
+		bindErr := paramBindingError(err)
+		if bindErr == nil {
+			bindErr = err // an unknown class: a 500, its cause logged
 		}
-		writeAppError(w, r, http.StatusInternalServerError, &appError{Code: codeInternal, Message: "internal error"})
+		WriteError(w, r, bindErr)
 	}
 }
 
-// paramBindingError classifies one param-binding error into its
-// validation error. Only the three generated classes match; anything
-// else falls through to the caller's default (500).
-func paramBindingError(err error) (*appError, bool) {
+// paramBindingError classifies one param-binding error into its named
+// error, naming the parameter. Only the three generated classes match;
+// anything else is nil, and the caller's default (500).
+func paramBindingError(err error) error {
 	t := reflect.TypeOf(err)
 	if t == nil || t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
-		return nil, false
+		return nil
 	}
 	s := t.Elem()
 	f, ok := s.FieldByName("ParamName")
 	if !ok || f.Type.Kind() != reflect.String {
-		return nil, false
+		return nil
 	}
 	name := reflect.ValueOf(err).Elem().FieldByName("ParamName").String()
 	switch s.Name() {
 	case "RequiredParamError":
-		return fieldError(codeValidation, "invalid request parameter", name, "parameter is required"), true
+		return fielderr.On(ErrInvalidParameter, name, "parameter is required")
 	case "InvalidParamFormatError":
-		return fieldError(codeValidation, "invalid request parameter", name, "invalid format"), true
+		return fielderr.On(ErrInvalidParameter, name, "invalid format")
 	case "RequiredHeaderError":
-		return fieldError(codeValidation, "invalid request header", name, "header is required"), true
+		return fielderr.On(ErrInvalidHeader, name, "header is required")
 	}
-	return nil, false
+	return nil
 }
 
 // ValidateMiddleware returns a strict middleware that validates every
@@ -239,11 +260,10 @@ func bodyOf(request any) any {
 
 // StrictRequestErrorHandler returns the error handler for request
 // binding failures, for StrictHTTPServerOptions.RequestErrorHandlerFunc.
-// The underlying decode error is surfaced both in the message (so clients
-// that only read the top-level message see why) and in the body field.
+// The decode error is named on the body field.
 func StrictRequestErrorHandler() func(w http.ResponseWriter, r *http.Request, err error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
-		writeAppError(w, r, http.StatusBadRequest, fieldError(codeBadRequest, "invalid request body: "+err.Error(), "body", err.Error()))
+		WriteError(w, r, fielderr.On(&InvalidBodyError{Err: err}, "body", err.Error()))
 	}
 }
 

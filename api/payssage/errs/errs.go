@@ -5,5 +5,5 @@
 //
 // A sentinel's text is the message a client reads. Errors that carry data
 // are typed. What status each error is answered with is decided in one
-// place, internal/app's error map.
+// place, internal/app's problem switch.
 package errs

@@ -26,6 +26,7 @@ import (
 	"errors"
 
 	"lib/authz"
+	kit "lib/backend/identityx"
 	"lib/database"
 	"lib/httpserver"
 	"lib/validator"
@@ -61,29 +62,66 @@ func Mapper(app fp.ErrorMapper) fp.ErrorMapper {
 // go through the whole mapper m.
 func shared(err error, m fp.ErrorMapper) *fp.Problem {
 	var (
-		notFound *database.NotFoundError
-		batch    *database.BatchError
-		invalid  *validator.Error
+		notFound      *database.NotFoundError
+		batch         *database.BatchError
+		invalid       *validator.Error
+		invalidToken  *idx.InvalidTokenError
+		notYetValid   *idx.TokenNotYetValidError
+		invalidIssuer *idx.InvalidIssuerError
+		expired       *idx.TokenExpiredError
+		badBody       *httpserver.InvalidBodyError
 	)
 	switch {
 	case errors.As(err, &notFound):
 		return NotFound(notFound.Error())
-	case errors.Is(err, database.ErrNotFound):
-		return NotFound(database.ErrNotFound.Error())
 	case errors.As(err, &batch):
 		items := make([]BatchItem, len(batch.Items))
 		for i, item := range batch.Items {
-			items[i] = BatchItem{ID: item.ID, Problem: fp.FromError(item.Err, m)}
+			p := fp.FromError(item.Err, m).Clone()
+			p.Type = httpserver.ProblemType(p.Type)
+			items[i] = BatchItem{ID: item.ID, Problem: p}
 		}
 		return BatchFailed(batch.Error(), items)
 	case errors.As(err, &invalid):
 		return Validation(invalid.Error())
-	case errors.Is(err, authz.ErrInsufficientRole):
-		return InsufficientRole(authz.ErrInsufficientRole.Error())
-	case errors.Is(err, idx.ErrNoIdentity):
-		return Unauthenticated(idx.ErrNoIdentity.Error())
+	case errors.As(err, &badBody):
+		return Validation(badBody.Error())
+	case errors.As(err, &invalidToken):
+		return InvalidToken(invalidToken.Error())
+	case errors.As(err, &notYetValid):
+		return InvalidToken(notYetValid.Error())
+	case errors.As(err, &invalidIssuer):
+		return InvalidToken(invalidIssuer.Error())
+	case errors.As(err, &expired):
+		return TokenExpired(expired.Error())
+	}
+	for _, c := range sharedSentinels {
+		if errors.Is(err, c.target) {
+			return c.problem(c.target.Error())
+		}
 	}
 	return nil
+}
+
+// sharedSentinels are the lib's named errors, each answered by its shared
+// problem with its own message as the detail.
+var sharedSentinels = []struct {
+	target  error
+	problem func(detail string) *fp.Problem
+}{
+	{database.ErrNotFound, NotFound},
+	{authz.ErrInsufficientRole, InsufficientRole},
+	{idx.ErrNoIdentity, Unauthenticated},
+	{httpserver.ErrMissingBearer, Unauthenticated},
+	{httpserver.ErrMissingAPIKey, Unauthenticated},
+	{httpserver.ErrNoCredentials, Unauthenticated},
+	{httpserver.ErrRateLimited, RateLimited},
+	{httpserver.ErrInvalidParameter, Validation},
+	{httpserver.ErrInvalidHeader, Validation},
+	{kit.ErrInvalidAPIKey, InvalidAPIKey},
+	{kit.ErrAPIKeysNotAccepted, APIKeysNotAccepted},
+	{kit.ErrEmailNotVerified, EmailNotVerified},
+	{kit.ErrIntrospectionFailed, IdentityUnavailable},
 }
 `
 

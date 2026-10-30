@@ -2,6 +2,8 @@ package httpserver
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -215,5 +217,44 @@ func TestValidateMiddlewareSkipsBodylessRequest(t *testing.T) {
 	}
 	if !called {
 		t.Fatal("handler must run for bodyless requests")
+	}
+}
+
+// RequiredParamError mirrors oapi-codegen's generated class of the same
+// name, which the harness matches by type name and ParamName.
+type RequiredParamError struct{ ParamName string }
+
+func (e *RequiredParamError) Error() string { return "required param " + e.ParamName }
+
+// TestBindingErrorsNameTheField — a param-binding or body-decode failure
+// is a 400 whose errors member names the offending field.
+func TestBindingErrorsNameTheField(t *testing.T) {
+	cases := []struct {
+		name  string
+		write func(http.ResponseWriter, *http.Request)
+		field string
+	}{
+		{"missing param", func(w http.ResponseWriter, r *http.Request) {
+			ParamBindingErrorHandler()(w, r, &RequiredParamError{ParamName: "project_id"})
+		}, "project_id"},
+		{"bad body", func(w http.ResponseWriter, r *http.Request) {
+			StrictRequestErrorHandler()(w, r, errors.New("unexpected EOF"))
+		}, "body"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			tc.write(rec, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/projects", nil))
+			var body struct {
+				Errors []fieldError `json:"errors"`
+			}
+			err := json.Unmarshal(rec.Body.Bytes(), &body)
+			if err != nil || rec.Code != http.StatusBadRequest {
+				t.Fatalf("got %d %s (%v)", rec.Code, rec.Body.String(), err)
+			}
+			if len(body.Errors) != 1 || body.Errors[0].Field != tc.field {
+				t.Fatalf("errors = %+v, want one on %s", body.Errors, tc.field)
+			}
+		})
 	}
 }

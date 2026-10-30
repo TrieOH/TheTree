@@ -4,5 +4,5 @@
 // importing each other.
 //
 // A sentinel's text is the message a client reads. What status each error
-// is answered with is decided in one place, internal/app's error map.
+// is answered with is decided in one place, internal/app's problem switch.
 package errs

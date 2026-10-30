@@ -3,6 +3,7 @@ module lib
 go 1.27.3
 
 require (
+	github.com/MintzyG/problematic v1.1.0
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.35
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.34

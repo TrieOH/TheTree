@@ -14,7 +14,7 @@ import (
 // Error is a request that failed validation. It reads as every failed
 // field, so clients that only show the message still learn which field
 // failed and why, and lists the fields for the response (fielderr.Lister).
-// lib/httpserver maps it to a 400 VALIDATION_ERROR for every Backend.
+// Every Backend answers it with the shared validation problem (ADR-0019).
 type Error struct{ Fields []fielderr.Field }
 
 func (e *Error) Error() string { return validationMessage(e.Fields) }

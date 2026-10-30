@@ -29,12 +29,17 @@ import (
 // introspectTimeout bounds one API-key introspection call.
 const introspectTimeout = 15 * time.Second
 
-// The authenticators' rejections. The harness auth middleware answers any
-// error with a 401 carrying its message, so these never reach the error map.
+// The authenticators' rejections. Every Backend's generated problems
+// answer them (ADR-0019): the auth middleware writes them through the
+// Backend's mapper like any other error.
 var (
 	ErrEmailNotVerified   = errors.New("verified email required")
 	ErrAPIKeysNotAccepted = errors.New("this service does not accept api keys")
 	ErrInvalidAPIKey      = errors.New("invalid api key")
+	// ErrIntrospectionFailed is an API key IdentityX could not be asked
+	// about (unreachable, or an unreadable answer); the cause is wrapped
+	// for the logs.
+	ErrIntrospectionFailed = errors.New("could not check the api key with IdentityX")
 )
 
 // Option tunes the module per Backend.
@@ -138,17 +143,17 @@ func apiKeyAuth(baseURL string, o options) func(context.Context, string) (contex
 }
 
 // introspect asks IdentityX who owns rawKey. IdentityX answers with the
-// identity. A non-2xx answer is ErrInvalidAPIKey; a transport failure is
-// returned as is.
+// identity. A non-2xx answer is ErrInvalidAPIKey; a transport failure or
+// an unreadable answer is ErrIntrospectionFailed.
 func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*idx.Identity, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("introspect: build request: %w", err)
+		return nil, fmt.Errorf("%w: build request: %w", ErrIntrospectionFailed, err)
 	}
 	req.Header.Set("X-API-KEY", rawKey)
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("introspect: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrIntrospectionFailed, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode/100 != 2 {
@@ -156,12 +161,12 @@ func introspect(ctx context.Context, client *http.Client, url, rawKey string) (*
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("introspect: read: %w", err)
+		return nil, fmt.Errorf("%w: read: %w", ErrIntrospectionFailed, err)
 	}
 	var identity idx.Identity
 	err = json.Unmarshal(body, &identity)
 	if err != nil {
-		return nil, fmt.Errorf("introspect: decode: %w", err)
+		return nil, fmt.Errorf("%w: decode: %w", ErrIntrospectionFailed, err)
 	}
 	return &identity, nil
 }

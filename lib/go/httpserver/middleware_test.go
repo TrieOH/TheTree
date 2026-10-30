@@ -2,7 +2,6 @@ package httpserver
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -131,7 +130,6 @@ func TestStatusWriterFlushes(t *testing.T) {
 }
 
 func TestAuthenticatorsPrimitives(t *testing.T) {
-	errBadKey := errors.New("invalid api key")
 	p := Authenticators{
 		JWT: func(ctx context.Context, token string) (context.Context, error) {
 			return context.WithValue(ctx, identityKey{}, "jwt:"+token), nil

@@ -224,7 +224,7 @@ func recoverer(logger *zap.Logger) func(http.Handler) http.Handler {
 					zap.String("stack", string(debug.Stack())),
 					zap.String("remote_addr", r.RemoteAddr),
 				)
-				writeMiddlewareError(w, r, http.StatusInternalServerError, fmt.Errorf("panic: %v", rec))
+				WriteError(w, r, fmt.Errorf("panic: %v", rec))
 			}()
 			next.ServeHTTP(w, r)
 		})
@@ -253,7 +253,8 @@ func maxBodySize(limit int64) func(http.Handler) http.Handler {
 	}
 }
 
-var errRateLimited = errors.New("rate limit exceeded")
+// ErrRateLimited is a client over its rate limit.
+var ErrRateLimited = errors.New("rate limit exceeded")
 
 // limiterIdleTTL is how long a client's bucket outlives its last request.
 // A bucket idle that long has refilled, so dropping it changes nothing.
@@ -309,7 +310,7 @@ func (rl *rateLimiter) allow(key string) bool {
 func (rl *rateLimiter) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rl.allow(r.RemoteAddr) {
-			writeMiddlewareError(w, r, http.StatusTooManyRequests, errRateLimited)
+			WriteError(w, r, ErrRateLimited)
 			return
 		}
 		next.ServeHTTP(w, r)

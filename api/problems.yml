@@ -100,8 +100,54 @@ components:
         status: 401
         title: Unauthenticated
         description: |
-          The request carries no valid credentials: a missing or invalid
-          bearer token or API key.
+          The request carries no credentials: no bearer token and no API
+          key where the operation needs one.
+
+    InvalidToken:
+      x-problem:
+        slug: invalid-token
+        status: 401
+        title: Invalid Token
+        description: |
+          The bearer token does not parse, its signature or issuer is
+          wrong, or it is not valid yet.
+
+    TokenExpired:
+      x-problem:
+        slug: token-expired
+        status: 401
+        title: Token Expired
+        description: The bearer token has expired; refresh it and retry.
+
+    InvalidAPIKey:
+      x-problem:
+        slug: invalid-api-key
+        status: 401
+        title: Invalid API Key
+        description: The API key is unknown, malformed or revoked.
+
+    APIKeysNotAccepted:
+      x-problem:
+        slug: api-keys-not-accepted
+        status: 401
+        title: API Keys Not Accepted
+        description: This API takes bearer tokens only, not API keys.
+
+    EmailNotVerified:
+      x-problem:
+        slug: email-not-verified
+        status: 401
+        title: Email Not Verified
+        description: The caller must verify their email address first.
+
+    IdentityUnavailable:
+      x-problem:
+        slug: identity-unavailable
+        status: 503
+        title: Identity Unavailable
+        description: |
+          IdentityX could not be reached to check the API key; retry
+          later.
 
     InsufficientRole:
       x-problem:

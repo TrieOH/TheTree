@@ -32,6 +32,7 @@ import (
 
 	idx "sdk/identityx"
 
+	fp "github.com/MintzyG/problematic"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -43,14 +44,21 @@ type App struct {
 	Server  Server
 	Modules []Module
 	Build   BuildFunc
-	// Errors maps the Backend's named errors to HTTP (ADR-0016). Nil while
-	// the Backend still returns root-fun errors.
-	Errors httpserver.ErrorMap
+	// Errors answers every error with its problem (ADR-0019): the
+	// Backend's generated problems.Mapper around its own switch. Nil, every
+	// error is a generic 500.
+	Errors fp.ErrorMapper
+	// Problems documents the Backend's problem types (its generated
+	// problems.Docs), served at GET /problems/{slug}.
+	Problems []httpserver.ProblemDoc
 }
 
 // Server is the process-level HTTP settings.
 type Server struct {
-	Port        string
+	Port string
+	// APIURL is the Backend's public base URL (API_URL); problem types
+	// resolve against it.
+	APIURL      string
 	ProfilePort string
 	// CorsAllowedOrigins and CorsAllowedHeaders are comma-separated.
 	CorsAllowedOrigins string
@@ -126,7 +134,7 @@ func (d *Deps) Chains(primitives authz.Primitives) (map[string][]func(http.Handl
 
 // ChainsWith is Chains with resolver options. IdentityX passes its setup
 // guard here until the guard moves into its own code (ADR-0014). Scope
-// rejections are written through the Backend's error map unless opts says
+// rejections are written through the Backend's problems unless opts says
 // otherwise.
 func (d *Deps) ChainsWith(primitives authz.Primitives, opts authz.Options) (map[string][]func(http.Handler) http.Handler, error) {
 	if opts.WriteError == nil {
@@ -144,9 +152,7 @@ func Run(app App) error {
 	if app.Build == nil {
 		return fmt.Errorf("%s: backend.App.Build is required", app.Name)
 	}
-	if app.Errors != nil {
-		httpserver.UseErrorMap(app.Errors)
-	}
+	httpserver.UseProblems(app.Errors, app.Server.APIURL)
 	return httpserver.Boot(httpserver.Config{
 		AppName:            app.Name,
 		Port:               app.Server.Port,
@@ -154,6 +160,7 @@ func Run(app App) error {
 		CorsAllowedOrigins: app.Server.CorsAllowedOrigins,
 		CorsAllowedHeaders: app.Server.CorsAllowedHeaders,
 		OpenAPISpec:        app.Spec,
+		Problems:           app.Problems,
 		RateLimit:          app.Server.RateLimit,
 	}, func(ctx context.Context) (http.Handler, func(context.Context) error, error) {
 		return start(ctx, app)
@@ -175,6 +182,7 @@ func start(ctx context.Context, app App) (http.Handler, func(context.Context) er
 		CorsAllowedOrigins: app.Server.CorsAllowedOrigins,
 		CorsAllowedHeaders: app.Server.CorsAllowedHeaders,
 		OpenAPISpec:        app.Spec,
+		Problems:           app.Problems,
 		RateLimit:          app.Server.RateLimit,
 		Routes: func(r *chi.Mux) {
 			buildErr = app.Build(ctx, d, r)

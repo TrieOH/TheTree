@@ -10,6 +10,7 @@ import (
 func ServerFrom(s libconfig.Server, cors libconfig.CORS, profilePort string) Server {
 	return Server{
 		Port:               s.Port,
+		APIURL:             s.APIURL,
 		ProfilePort:        profilePort,
 		CorsAllowedOrigins: cors.AllowedOrigins,
 		CorsAllowedHeaders: cors.AllowedHeaders,

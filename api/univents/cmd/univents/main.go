@@ -11,6 +11,7 @@ import (
 	"univents/internal/app"
 	"univents/internal/app/errmap"
 	"univents/internal/config"
+	"univents/internal/problems"
 )
 
 func main() {
@@ -27,7 +28,8 @@ func main() {
 			email.Module(cfg.ToEmailConfig()),
 			jobs.Module(cfg.JobsURL),
 		},
-		Build:  app.Build(cfg),
-		Errors: errmap.Errors(),
+		Build:    app.Build(cfg),
+		Errors:   problems.Mapper(errmap.Problem),
+		Problems: problems.Docs,
 	}), "univents exited with error")
 }
