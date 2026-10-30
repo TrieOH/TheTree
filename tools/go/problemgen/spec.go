@@ -368,7 +368,10 @@ func (b *bundler) bundle() ([]byte, error) {
 }
 
 // schema expands p into its full problem schema: the base Problem with
-// p's status and title fixed and p's members added.
+// p's status and title fixed and p's members added. The consts keep their
+// plain Go types: oapi-codegen would name an enum constant after the
+// title's value, which can collide with the spec's own types, and Go
+// builds problems through the constructors anyway.
 func (p *problem) schema() *yaml.Node {
 	props := mapping(
 		"type", mapping(
@@ -376,8 +379,8 @@ func (p *problem) schema() *yaml.Node {
 			"format", "uri",
 			"pattern", "/problems/"+p.Slug+"$",
 		),
-		"status", mapping("type", "integer", "const", p.Status),
-		"title", mapping("type", "string", "const", p.Title),
+		"status", mapping("type", "integer", "const", p.Status, "x-go-type", "int"),
+		"title", mapping("type", "string", "const", p.Title, "x-go-type", "string"),
 	)
 	required := make([]string, 0, 3+len(p.Members))
 	required = append(required, "type", "status", "title")

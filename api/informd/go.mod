@@ -3,6 +3,7 @@ module Informd
 go 1.27.3
 
 require (
+	github.com/MintzyG/problematic v1.1.0
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.3
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	github.com/MintzyG/problematic v1.1.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect

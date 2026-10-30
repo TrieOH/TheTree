@@ -137,6 +137,10 @@ func TestBundle(t *testing.T) {
 	if got := dig(t, ext, "properties", "title", "const"); got != "Payment Rejected" {
 		t.Errorf("title const = %v", got)
 	}
+	// A title const must not become an enum constant named after its value.
+	if got := dig(t, ext, "properties", "title", "x-go-type"); got != "string" {
+		t.Errorf("title x-go-type = %v", got)
+	}
 	if got := dig(t, ext, "properties", "type", "pattern"); got != "/problems/payment-rejected$" {
 		t.Errorf("type pattern = %v", got)
 	}
