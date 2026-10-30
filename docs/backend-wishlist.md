@@ -19,7 +19,7 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 | 11 | River + pgx pool metrics on `/metrics` | S | Job failures (webhook, email, key rotation) invisible except in logs |
 | 12 | Span enrichment + error marking | M | Traces lack actor/project/provider context; business errors don't mark spans |
 | 13 | Pagination across list endpoints | M | No limit/offset/cursor in any spec — list endpoints are unbounded |
-| 14 | RFC 9457 Problem Details (off the fun envelope) | L | Envelope hides HTTP semantics; errors are non-standard |
+| 14 | ~~RFC 9457 Problem Details (off the fun envelope)~~ ✅ | L | Envelope hides HTTP semantics; errors are non-standard |
 | 15 | Hot-reload dev loop (Tilt / compose watch) | M | `just <svc>` rebuilds containers; no watch loop |
 | 16 | Replace sdkkit in the Go SDKs (generate from spec) | M | Bespoke v0.0.2 kit used by 1 of 2 SDKs; couples public SDK to fun envelope |
 | 17 | Resty everywhere an HTTP caller is needed | S | Already adopted in oauth_providers; the rest still hand-rolls clients |
@@ -170,7 +170,9 @@ The good example exists: `deliver_webhook.go` builds its own client with a 10s t
 
 **Effort.** M.
 
-### 14. RFC 9457 Problem Details (move off the fun envelope)
+### 14. RFC 9457 Problem Details (move off the fun envelope) ✅ **done 2026-10-29**
+
+*Done (ADR-0019): every error is an `application/problem+json` problem declared in the spec (`api/problems.yml` + each Backend's `problems.yml`), generated into each Backend's `internal/problems`, mapped by a switch, and listed per operation in `x-problems`. The notes below predate it.*
 
 **Envelope part done 2026-10-29 (ADR-0017):** success is the plain payload, lists are `{ items }`, empty answers are 204, and errors are the bare `{ code, message, fields }` object. What's left is the error writer swap to `application/problem+json`; the TS readers and the e2e keywords already accept it.
 
