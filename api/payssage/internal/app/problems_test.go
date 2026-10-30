@@ -7,24 +7,28 @@ import (
 
 	"lib/database"
 	"payssage/errs"
+	"payssage/internal/problems"
 
 	"github.com/google/uuid"
 )
 
 // TestConstraintErrorsAreMapped — every constraint's named error answers
-// with its own status: a unique violation is a 409, a check a 400.
+// with a declared problem of its own status: a unique violation is a
+// 409, a check a 400.
 func TestConstraintErrorsAreMapped(t *testing.T) {
-	m := Errors()
 	for name, named := range Constraints() {
 		class, want := database.ErrCheckViolation, http.StatusBadRequest
 		if strings.HasPrefix(name, "uniq_") {
 			class, want = database.ErrUniqueViolation, http.StatusConflict
 		}
-		// The bare error catches a missing map line (a 500); the violation
-		// checks it still wins over its class.
+		// The bare error catches a missing case; the violation checks the
+		// switch still finds the named error inside it.
 		for _, err := range []error{named, &database.ViolationError{Named: named, Class: class}} {
-			if got := m.Status(err); got != want {
-				t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+			p := Problem(err)
+			if p == nil {
+				t.Errorf("%s (%v): no problem", name, named)
+			} else if p.Status != want {
+				t.Errorf("%s (%v): got %d, want %d", name, named, p.Status, want)
 			}
 		}
 	}
@@ -33,7 +37,7 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 // TestDataDependentStatuses — a provider's answer and a revoked seller map
 // by what they carry.
 func TestDataDependentStatuses(t *testing.T) {
-	m := Errors()
+	m := problems.Mapper(Problem)
 	cases := []struct {
 		name string
 		err  error
@@ -46,7 +50,7 @@ func TestDataDependentStatuses(t *testing.T) {
 		{"revoked at refund", &errs.SellerRevokedError{SellerID: uuid.New(), Op: "refund"}, http.StatusConflict},
 	}
 	for _, tc := range cases {
-		if got := m.Status(tc.err); got != tc.want {
+		if got := m(tc.err).Status; got != tc.want {
 			t.Errorf("%s: got %d, want %d", tc.name, got, tc.want)
 		}
 	}

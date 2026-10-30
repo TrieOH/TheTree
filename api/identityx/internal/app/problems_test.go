@@ -6,25 +6,28 @@ import (
 	"testing"
 
 	"IdentityX/errs"
+	"IdentityX/internal/problems"
 	"lib/database"
 )
 
 // TestConstraintErrorsAreMapped — every constraint's named error answers
-// with its own status: a unique violation is a 409, a check a 400. A
-// constraint error missing from the map would fall back to its class and
-// lose its message.
+// with a declared problem of its own status: a unique violation is a
+// 409, a check a 400. A constraint error with no case would be a generic
+// 500.
 func TestConstraintErrorsAreMapped(t *testing.T) {
-	m := Errors()
 	for name, named := range Constraints() {
 		class, want := database.ErrCheckViolation, http.StatusBadRequest
 		if len(name) >= 5 && name[:5] == "uniq_" {
 			class, want = database.ErrUniqueViolation, http.StatusConflict
 		}
-		// The bare error catches a missing map line (a 500); the violation
-		// checks it still wins over its class.
+		// The bare error catches a missing case; the violation checks the
+		// switch still finds the named error inside it.
 		for _, err := range []error{named, &database.ViolationError{Named: named, Class: class}} {
-			if got := m.Status(err); got != want {
-				t.Errorf("%s (%v): got %d, want %d", name, named, got, want)
+			p := Problem(err)
+			if p == nil {
+				t.Errorf("%s (%v): no problem", name, named)
+			} else if p.Status != want {
+				t.Errorf("%s (%v): got %d, want %d", name, named, p.Status, want)
 			}
 		}
 	}
@@ -32,13 +35,13 @@ func TestConstraintErrorsAreMapped(t *testing.T) {
 
 // TestMostSpecificErrorWins — a named error beats the missing row it wraps.
 func TestMostSpecificErrorWins(t *testing.T) {
-	m := Errors()
+	m := problems.Mapper(Problem)
 	err := fmt.Errorf("login: %w", fmt.Errorf("%w: %w", errs.ErrInvalidCredentials, database.ErrNotFound))
-	if got := m.Status(err); got != http.StatusUnauthorized {
+	if got := m(err).Status; got != http.StatusUnauthorized {
 		t.Fatalf("got %d, want 401", got)
 	}
 	missing := fmt.Errorf("%w: %w", errs.ErrActorNotFound, database.ErrNotFound)
-	if got := m.Status(missing); got != http.StatusNotFound {
+	if got := m(missing).Status; got != http.StatusNotFound {
 		t.Fatalf("got %d, want 404", got)
 	}
 }
