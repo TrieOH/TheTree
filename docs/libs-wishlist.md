@@ -1,26 +1,28 @@
 # Libs Wishlist — extraction into `lib/go`
 
-Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree` — `api/{identityx,informd,payssage,univents}` · `lib/go`. Owner: **backend developer**.
+Status: **open — some items done (marked ✅)**. Date: 2026-08-24, updated 2026-10-29. Scope: `TrieOH/TheTree` — `api/{identityx,informd,payssage,univents}` · `lib/go`. Owner: **backend developer**.
 
 What's duplicated across the four services that should live in `lib/go`. Evidence-based: every item cites the actual files. The rule of thumb used here — extract when there are **≥2 copies of the same logic**, skip when the copies are just "same shape, different deps" (that's DI, not duplication).
 
 | # | Item | Effort | Evidence |
 |---|------|--------|----------|
-| 1 | Shared service-authN middleware (`lib/go/authn`) | M | `auth.go` ×4 same shape (197 lines); `auth_dispatch.go` ×3 md5-identical; two conflicting verify paths |
+| 1 | ~~Shared service-authN middleware (`lib/go/authn`)~~ ✅ (ADR-0014) | M | `auth.go` ×4 same shape (197 lines); `auth_dispatch.go` ×3 md5-identical; two conflicting verify paths |
 | 2 | Webhook sign/verify (`lib/go/webhooks`) | XS–S | payssage `signPayload` HMAC + univents verify, hand-rolled on both sides |
 | 3 | Config error reporting (`lib/go/config` — all env errors at once) | XS | env/v11 already aggregates; the one-line blob is the problem |
-| 4 | Boot-skeleton residue audit (optional) | S | ~1267 lines of same-shape boot across 4 services — audit, don't rewrite |
+| 4 | ~~Boot-skeleton residue audit (optional)~~ ✅ (ADR-0014) | S | ~1267 lines of same-shape boot across 4 services — audit, don't rewrite |
 | 5 | `lib/crypto` — absorb webhook HMAC | XS | payssage hand-rolls `crypto/hmac` while `crypto.HashHMACSHA256` exists |
 | 6 | `lib/database` — activate `RegisterPoolMetrics` | XS | Exists, never called; backend #11's pool half |
 | 7 | `lib/river` — metrics + periodic helper | S | Queue/failure metrics absent; periodic jobs hand-scheduled |
 | 8 | `lib/email` — async river send-job | S–M | identityx wraps `Client` in its own river job; univents badges send via the same lib |
 | 9 | `lib/oauth` — injectable HTTP client | S | `FetchGitHubEmail`/userinfo still on `http.DefaultClient` — the #9 bug lives in the lib |
 | 10 | `lib/telemetry` — `RecordError` + attrs + `ServiceVersion` | S–M | Backend #12 / infra #11 enrichment point |
-| 11 | `lib/authz` — chain-registration helper | XS | `app/auth_dispatch.go` ×3 do the same `NewResolver` wiring |
+| 11 | ~~`lib/authz` — chain-registration helper~~ ✅ (ADR-0014) | XS | `app/auth_dispatch.go` ×3 do the same `NewResolver` wiring |
 
 ---
 
-### 1. Shared service-authN middleware — `lib/go/authn`
+### 1. Shared service-authN middleware — `lib/go/authn` ✅ **done 2026-10-23**
+
+*Done as the backend kit's `lib/go/backend/identityx` (ADR-0014), not a `lib/go/authn`: one implementation of the JWT / API-key / either primitives replaces the per-Backend `auth.go` copies, and `lib/go/backend` resolves the chains. informd's stubbed API-key hook is gone: a Backend opts in with `identityx.AcceptAPIKeys()`, and one that doesn't (informd today) answers `api-keys-not-accepted`.*
 
 **Problem.** Every downstream service (informd, payssage, univents) hand-assembles the same "verify identityx-issued access tokens + service API keys → dispatch to chain" middleware, in `internal/app/auth.go`:
 
@@ -75,7 +77,9 @@ func Load() Config {
 
 **Effort.** XS. Cross-ref: backend wishlist #21 (tool versions) — the helper lives next to the env loader in `lib/go`.
 
-### 4. Boot-skeleton residue audit (optional)
+### 4. Boot-skeleton residue audit (optional) ✅ **done 2026-10-23**
+
+*Done by the backend kit (ADR-0014): each Backend's `internal/app` is down to `build.go`, `server.go`, `constraints.go` and its problem mapper (univents also keeps its `router.go` and `clients.go`); the shared boot lives in `lib/go/backend`.*
 
 **Problem.** `internal/app/` still carries ~1267 lines of same-shape boot code across the four services (`app.go`, `router.go`, `run.go`, `constraints.go`, `wire.go`, `clients.go`). ADR-0001 already extracted the harness (`lib/httpserver`); what remains is DI assembly, route registration, config loading and constraint validation.
 
@@ -125,7 +129,9 @@ The #9 bug class lives *inside* the lib: `FetchGitHubEmail` and the userinfo fet
 
 **Effort.** S–M. Cross-ref: infra #11, backend #12.
 
-### 11. `lib/authz` — chain-registration helper
+### 11. `lib/authz` — chain-registration helper ✅ **done 2026-10-23**
+
+*Done in `lib/go/backend` (ADR-0014), which builds the resolver from the spec and the kit's primitives; the `auth_dispatch.go` copies are gone.*
 
 `app/auth_dispatch.go` ×3 (md5-identical) build `authz.NewResolver(spec.OpenAPISpec, authz.Primitives{...})` + resolve chains. The Resolver machinery is already in the lib — add a `ResolveChains(spec, primitives)` helper so that file shrinks to ~3 lines, folding into libs #1 (authn).
 

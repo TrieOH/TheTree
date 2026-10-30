@@ -1,6 +1,6 @@
 # Simplify Wishlist — deletion over addition
 
-Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree` — `api/*` · `lib/go` · Dockerfiles. Owner: **backend developer**. Lens: ponytail — "the best code is the code never written". Every item names what to *delete* or *shrink*, with the honest tradeoff.
+Status: **open — some items done (marked ✅)**. Date: 2026-08-24, updated 2026-10-29. Scope: `TrieOH/TheTree` — `api/*` · `lib/go` · Dockerfiles. Owner: **backend developer**. Lens: ponytail — "the best code is the code never written". Every item names what to *delete* or *shrink*, with the honest tradeoff.
 
 | # | Item | Effort | What it deletes |
 |---|------|--------|-----------------|
@@ -10,7 +10,7 @@ Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree
 | 4 | Revisit ADR-0006 (consumerless encryption keys) | M | A whole module if approved — decision, not code |
 | 5 | ~~Decouple harness from `fun/middlewares`~~ ✅ (ADR-0018) | M–L | Third-party middleware stack; 161 files import fun |
 | 6 | Drop the global default tx runner (`SetDefaultRunner`) | M | Hidden package-global state (maybe not worth it — see note) |
-| 7 | Boot glue dedup | XS–M | `strict.go` ×4 near-identical, Dockerfile healthcheck ×4, `auth_dispatch` ×3 (tracked in libs #1) |
+| 7 | Boot glue dedup (mostly ✅, ADR-0014) | XS–M | `strict.go` ×4 near-identical, Dockerfile healthcheck ×4, `auth_dispatch` ×3 (tracked in libs #1) |
 | 8 | Audit 30 `nolint` + 36 TODO/FIXME | XS | Dead suppressions, stale comments |
 | 9 | `aws-sdk-go-v2` → `minio-go` | M | 18 module lines for 2 S3 calls in one file |
 | 10 | `testcontainers` → shared test DB | M | ~26 indirect modules; per-binary spawn already smart, this is deps + warm starts |
@@ -69,7 +69,9 @@ Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree
 
 **Effort.** M if done; **XS if consciously kept** (add the comment).
 
-### 7. Boot glue dedup
+### 7. Boot glue dedup — mostly done
+
+*The `strict.go` and `auth_dispatch.go` copies are gone (backend kit, ADR-0014; strict mounting lives in `lib/go/httpserver`). Left: the `tools/healthcheck` build line in each Dockerfile.*
 
 - `app/strict.go` ×4 — 15 lines each, near-identical (differ only by service name): fold into the libs #4 boot audit.
 - `auth_dispatch.go` ×3 md5-identical — already tracked in libs #1/#11.
@@ -133,7 +135,7 @@ Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree
 - **ADR-0006 if kept** — same rule, deliberate reservation.
 - **`univents/checkouts/checkout.go` (973 lines)** — splitting a big file ≠ simplifying; it's one coherent checkout flow.
 - **`xslices` (84 uses), `validator`, `repos/services` facades** — legit, no stdlib equivalent / by-design (ADR-0002).
-- **The `fun` envelope removal** — real, but it's backend #14, not this list.
+- **The `fun` envelope removal** — done as backend #14 (ADR-0017, ADR-0019), not this list.
 
 ## Suggested order
 

@@ -1,6 +1,6 @@
 # Backend Wishlist
 
-Status: **open — nothing built yet**. Date: 2026-08-24. Scope: `TrieOH/TheTree` — `api/{identityx,informd,payssage,univents}` · `lib/go` · `sdk/go` · CI workflows. Owner: **backend developer** (no infra component; the CI runner already exists).
+Status: **open — some items done (marked ✅)**. Date: 2026-08-24, updated 2026-10-29. Scope: `TrieOH/TheTree` — `api/{identityx,informd,payssage,univents}` · `lib/go` · `sdk/go` · CI workflows. Owner: **backend developer** (no infra component; the CI runner already exists).
 
 From the backend dev point of view: language, dependencies, tooling, test hygiene. Go 1.27 shipped 2026-08-19 (five days ago) — two of these items are timed to it.
 
@@ -21,7 +21,7 @@ From the backend dev point of view: language, dependencies, tooling, test hygien
 | 13 | Pagination across list endpoints | M | No limit/offset/cursor in any spec — list endpoints are unbounded |
 | 14 | ~~RFC 9457 Problem Details (off the fun envelope)~~ ✅ | L | Envelope hides HTTP semantics; errors are non-standard |
 | 15 | Hot-reload dev loop (Tilt / compose watch) | M | `just <svc>` rebuilds containers; no watch loop |
-| 16 | Replace sdkkit in the Go SDKs (generate from spec) | M | Bespoke v0.0.2 kit used by 1 of 2 SDKs; couples public SDK to fun envelope |
+| 16 | ~~Replace sdkkit in the Go SDKs (generate from spec)~~ ✅ | M | Bespoke v0.0.2 kit used by 1 of 2 SDKs; couples public SDK to fun envelope |
 | 17 | Resty everywhere an HTTP caller is needed | S | Already adopted in oauth_providers; the rest still hand-rolls clients |
 | 18 | Dev seed data — `just seed` | S | Nothing seeds the dev DB; manual testing starts from empty postgres |
 | 19 | Compose-scoped ops recipes — `just logs <svc>` / `just status` | XS | justfile only has host-wide `just ps` |
@@ -130,7 +130,7 @@ The good example exists: `deliver_webhook.go` builds its own client with a 10s t
 
 **Problem.** A global limiter **already exists** in the harness (`lib/go/httpserver/httpserver.go`): a per-client-IP token bucket (RPS 400, burst 20) — every route, every service. That stops floods, not credential stuffing: an attacker sustains 400 req/s per IP after the burst, and login/token-mint/action-token-redeem/OAuth connect get the same coarse limit as `/health`.
 
-**Fix.** Auth-specific, tighter limits on the authn chain: per-IP + per-actor (e.g. 10/min on login, 60/min on refresh, action-token redeem tighter) — a second limiter ahead of the auth routes, keyed by `RemoteAddr` + actor id where known. `golang.org/x/time/rate` (already an indirect dep) or a second harness `rateLimiter` with a tighter config. Fail 429 with the RFC 9457 shape once #14 lands. (Note: this item was originally written as "zero rate limiting anywhere" — corrected 2026-08-24 after the harness's existing limiter was found; the gap is *specificity*, not presence.)
+**Fix.** Auth-specific, tighter limits on the authn chain: per-IP + per-actor (e.g. 10/min on login, 60/min on refresh, action-token redeem tighter) — a second limiter ahead of the auth routes, keyed by `RemoteAddr` + actor id where known. `golang.org/x/time/rate` (already an indirect dep) or a second harness `rateLimiter` with a tighter config. 429s already answer the shared `rate-limited` problem (#14, ADR-0019). (Note: this item was originally written as "zero rate limiting anywhere" — corrected 2026-08-24 after the harness's existing limiter was found; the gap is *specificity*, not presence.)
 
 **Effort.** M.
 
@@ -184,7 +184,9 @@ The good example exists: `deliver_webhook.go` builds its own client with a 10s t
 
 **Effort.** L. Do it as one project with #13 (pagination rides the same HTTP-surface change).
 
-### 16. Replace sdkkit in the Go SDKs
+### 16. Replace sdkkit in the Go SDKs ✅ **done 2026-10-27**
+
+*Done via option (b): both Go SDKs are hand-written on resty v3 (`ae2b59a5`), no sdkkit anywhere; their `APIError` reads #14's problem (`Type`, `Title`, `Message` ← `detail`, ADR-0019). Generating them from the spec (a) stays a possible later step.*
 
 **Problem.** `github.com/MintzyG/sdkkit` (v0.0.2 — pre-1.0) is a bespoke base client used by **exactly one of the two Go SDKs**: IdentityX embeds `*sdkkit.Client`; Payssage is hand-written with a plain `http.Client` + otelhttp transport and works fine without it. The kit drags a private dependency and the fun envelope into a public SDK — and #14 (RFC 9457) removes the envelope it's coupled to. The internal TS clients are orval-generated from the spec; the public SDKs (Go + TS) are all hand-written and drift independently.
 
