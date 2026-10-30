@@ -47,7 +47,7 @@ type Config struct {
 	SMTPUsername string `env:"SMTP_USERNAME"`
 	SMTPPassword string `env:"SMTP_PASSWORD"`
 	SMTPFrom     string `env:"SMTP_FROM,required"`
-	SMTPTLS      bool   `env:"SMTPTLS"            envDefault:"true"`
+	SMTPTLS      bool   `env:"SMTP_TLS"           envDefault:"true"`
 
 	// Webhook HMAC
 	HmacSecret string `env:"HMAC_SECRET,required"`

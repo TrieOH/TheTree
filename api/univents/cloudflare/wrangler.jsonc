@@ -39,10 +39,53 @@
 		]
 	},
 
-	// Config: none lives here. The whole Univents env (the same keys as
-	// api/univents/.example.env, minus JOBS_URL) is the UNIVENTS_API_ENV
-	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
-	// binding is passed to the container as an environment variable.
-	// Empty on purpose: `wrangler types` then never reads a local .dev.vars/.env.
-	"secrets": { "required": [] },
+	// Every string binding, var or secret, reaches the container as an
+	// environment variable (src/index.ts); the keys are those of
+	// api/univents/.example.env, minus JOBS_URL. Public config lives here,
+	// reviewed with the code.
+	"vars": {
+		"APP_NAME": "univents",
+		"APP_URL": "https://dev.univents.com.br",
+		"API_URL": "https://api.univents.com.br",
+		"CORS_ALLOWED_ORIGINS": "https://dev.univents.com.br",
+		"CORS_ALLOWED_HEADERS": "Content-Type,X-Request-ID,Authorization,X-API-KEY,Refresh-Token",
+		"PROFILE_PORT": "6063",
+		"REQUIRE_VERIFIED_EMAIL": "true",
+		"IDENTITY_X_URL": "https://api.identityx.trieoh.com",
+		"IDENTITY_X_PROJECT_ID": "01a00284-7b25-7f91-8e29-bdf7b4708fba",
+		"PAYSSAGE_URL": "https://api.payssage.trieoh.com",
+		"PAYSSAGE_WALLET_ID": "01a00289-1927-7daf-bba1-6e8c36602b76",
+		// R2's S3 API for this account; the bucket is "univents".
+		"OBJECT_STORAGE_ENDPOINT": "https://fdc6590fe9b028c608005c515140ff74.r2.cloudflarestorage.com",
+		"OBJECT_STORAGE_USE_SSL": "true",
+		"OBJECT_STORAGE_REGION": "auto",
+		"SMTP_HOST": "mail.trieoh.com",
+		"SMTP_PORT": "587",
+		"SMTP_FROM": "univents@trieoh.com",
+		"SMTP_TLS": "true",
+	},
+	// Credentials are Worker secrets, set one at a time with
+	// `wrangler secret put NAME` and kept across deploys. Listing them makes
+	// `wrangler types` type them without reading a local .dev.vars/.env.
+	// OBJECT_STORAGE_ACCESS_KEY/_SECRET_KEY are an R2 API token's S3
+	// credentials.
+	"secrets": {
+		"required": [
+			"UNIVENTS_POSTGRES_HOST",
+			"UNIVENTS_POSTGRES_PORT",
+			"UNIVENTS_POSTGRES_DB",
+			"UNIVENTS_POSTGRES_USER",
+			"UNIVENTS_POSTGRES_PASSWORD",
+			"IDENTITY_X_API_KEY",
+			"HMAC_SECRET",
+			"PAYSSAGE_API_KEY",
+			"PAYSSAGE_WEBHOOK_SECRET",
+			"OBJECT_STORAGE_ACCESS_KEY",
+			"OBJECT_STORAGE_SECRET_KEY",
+			"SMTP_USERNAME",
+			"SMTP_PASSWORD",
+			"SIMPLE_AUTH_USER",
+			"SIMPLE_AUTH_PASS",
+		],
+	},
 }

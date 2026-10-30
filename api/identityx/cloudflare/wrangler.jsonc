@@ -40,10 +40,51 @@
 	// Periodic jobs; must match PERIODIC in src/index.ts.
 	"triggers": { "crons": ["0 * * * *", "0 3 * * *"] },
 
-	// Config: none lives here. The whole IdentityX env (the same keys as
-	// api/identityx/.example.env, minus JOBS_URL) is the IDENTITYX_API_ENV
-	// GitHub secret, uploaded by deploy.yml with --secrets-file. Every string
-	// binding is passed to the container as an environment variable.
-	// Empty on purpose: `wrangler types` then never reads a local .dev.vars/.env.
-	"secrets": { "required": [] },
+	// Every string binding, var or secret, reaches the container as an
+	// environment variable (src/index.ts); the keys are those of
+	// api/identityx/.example.env, minus JOBS_URL. Public config lives here,
+	// reviewed with the code.
+	"vars": {
+		"APP_NAME": "IdentityX",
+		"APP_URL": "https://dev.identityx.com.br",
+		"API_URL": "https://api.identityx.trieoh.com",
+		"ISSUER": "https://identityx.com.br",
+		"CORS_ALLOWED_ORIGINS": "https://dev.identityx.com.br,https://dev.payssage.trieoh.com,https://dev.informd.trieoh.com,https://dev.univents.com.br",
+		"CORS_ALLOWED_HEADERS": "Content-Type,X-Request-ID,Authorization,Refresh-Token,X-API-KEY",
+		"DEBUG_MODE": "true",
+		"DISABLE_RATE_LIMIT": "false",
+		"PROFILE_PORT": "6060",
+		"IDENTITY_X_KEY_LIFETIME": "168h",
+		"ROTATE_KEYS_JOB_DURATION": "24h",
+		"ACCESS_TOKEN_LIFETIME": "15m",
+		"REFRESH_TOKEN_LIFETIME": "168h",
+		"GOOGLE_REDIRECT_URI": "https://dev.identityx.com.br/auth/google/callback",
+		"GITHUB_REDIRECT_URI": "https://dev.identityx.com.br/auth/github/callback",
+		"EMAIL_FROM": "identityx@trieoh.com",
+		"SMTP_HOST": "mail.trieoh.com",
+		"SMTP_PORT": "587",
+		"SMTP_TLS": "true",
+	},
+	// Credentials are Worker secrets, set one at a time with
+	// `wrangler secret put NAME` and kept across deploys. Listing them makes
+	// `wrangler types` type them without reading a local .dev.vars/.env.
+	"secrets": {
+		"required": [
+			"IDX_POSTGRES_HOST",
+			"IDX_POSTGRES_PORT",
+			"IDX_POSTGRES_DB",
+			"IDX_POSTGRES_USER",
+			"IDX_POSTGRES_PASSWORD",
+			"ENCRYPTION_KEY",
+			"HMAC_SECRET",
+			"GOOGLE_CLIENT_ID",
+			"GOOGLE_CLIENT_SECRET",
+			"GITHUB_CLIENT_ID",
+			"GITHUB_CLIENT_SECRET",
+			"SMTP_USERNAME",
+			"SMTP_PASSWORD",
+			"SIMPLE_AUTH_USER",
+			"SIMPLE_AUTH_PASS",
+		],
+	},
 }

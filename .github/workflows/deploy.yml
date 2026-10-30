@@ -342,7 +342,8 @@ jobs:
 
       # ── Services on Cloudflare (all four backends): the SAME image just
       #    pushed to GHCR → Cloudflare registry → Worker + Container rollout.
-      #    The service env is the <SERVICE>_API_ENV secret (dotenv format).
+      #    Config is the Worker's wrangler.jsonc vars; credentials are Worker
+      #    secrets set with `wrangler secret put`, kept across deploys.
       - name: Setup Node + pnpm (cloudflare service)
         if: ${{ env.TYPE == 'service' }}
         uses: ./.github/actions/setup-node
@@ -355,12 +356,6 @@ jobs:
         run: |
           echo "▶ publish: cloudflare"
           set -euo pipefail
-          case "$ARTIFACT" in
-            identityx) SERVICE_ENV="$IDENTITYX_API_ENV"; ENV_NAME=IDENTITYX_API_ENV ;;
-            payssage)  SERVICE_ENV="$PAYSSAGE_API_ENV";  ENV_NAME=PAYSSAGE_API_ENV ;;
-            informd)   SERVICE_ENV="$INFORMD_API_ENV";   ENV_NAME=INFORMD_API_ENV ;;
-            univents)  SERVICE_ENV="$UNIVENTS_API_ENV";  ENV_NAME=UNIVENTS_API_ENV ;;
-          esac
           SRC="ghcr.io/trieoh/$ARTIFACT@${{ steps.digest.outputs.digest }}"
           LOCAL="$ARTIFACT-api:$VERSION"
           docker pull "$SRC"
@@ -370,13 +365,7 @@ jobs:
           # deploy the pushed image instead of rebuilding from the Dockerfile
           sed -i -E "s|\"image\": \"[^\"]*\"|\"image\": \"$IMAGE\"|; /\"image_build_context\"/d" wrangler.jsonc
           grep -n '"image"' wrangler.jsonc
-          # the service env travels with the version (secrets are additive:
-          # keys removed from the file stay set until deleted by hand)
-          [ -n "$SERVICE_ENV" ] || { echo "::error::$ENV_NAME secret is empty"; exit 1; }
-          umask 077
-          printf '%s\n' "$SERVICE_ENV" > "$RUNNER_TEMP/service.env"
-          trap 'rm -f "$RUNNER_TEMP/service.env"' EXIT
-          pnpm exec wrangler deploy --secrets-file "$RUNNER_TEMP/service.env" \
+          pnpm exec wrangler deploy \
             --tag "$VERSION" --message "release: $ARTIFACT $VERSION" | tee deploy.log
           ID=$(grep -oE 'Current Version ID: [a-f0-9-]+' deploy.log | awk '{print $NF}' || true)
           echo "[release] $ARTIFACT $VERSION → Cloudflare ($IMAGE, worker version ${ID:-unknown})"
@@ -384,10 +373,6 @@ jobs:
           # backends deploy with their own token (Workers, Containers, Queues)
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_BACKEND_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          IDENTITYX_API_ENV: ${{ secrets.IDENTITYX_API_ENV }}
-          PAYSSAGE_API_ENV: ${{ secrets.PAYSSAGE_API_ENV }}
-          INFORMD_API_ENV: ${{ secrets.INFORMD_API_ENV }}
-          UNIVENTS_API_ENV: ${{ secrets.UNIVENTS_API_ENV }}
 
       # ── Fronts: build once → upload Worker version → promote SAME
       #    version to production (staging/E2E slots in here later) ────────
