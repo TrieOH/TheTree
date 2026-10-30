@@ -303,3 +303,41 @@ Either way, errors land on #14's problem+json shape (SDKError/APIError map to it
 7. **#15 hot-reload** whenever — compose watch first, Tilt if the dashboard pulls.
 8. **#6 json/v2 spike**; **#7/#8** optional whenever.
 9. **Dev loop (as you go):** #18 seed, #19 logs/status, #20 nuke, #21 versions file, then #22 shared test DB.
+
+---
+
+## Added 2026-10-29
+
+Not yet scoped: no effort estimate, no repo audit behind them. Numbers continue from #22.
+
+### 23. Caching (backend and frontend)
+
+Add caching on both sides: decide what's cacheable on the Backends (responses, lookups) and in the fronts (query caching, HTTP cache headers).
+
+### 24. Performance baselines (backend and frontend)
+
+Measure baselines now, so later optimizations have numbers to beat: Backend latency/throughput per endpoint, front load and render metrics.
+
+### 25. Email has no provider
+
+Email doesn't send: no provider is configured. Pick and wire one.
+
+### 26. Telemetry goes nowhere
+
+Telemetry is exported but nothing receives it. Start sending to Grafana Cloud.
+
+### 27. Circuit breakers (backend)
+
+Add circuit breakers on the Backends' outbound calls.
+
+### 28. Realtime is broken
+
+Fix realtime.
+
+### 29. A better solution for queues
+
+Find a better queue solution than the current one.
+
+### 30. A better solution for jobs
+
+Find a better background-jobs solution than the current one.
