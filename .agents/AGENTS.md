@@ -82,7 +82,7 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 
 Production backends run on **Cloudflare Containers**: `deploy.yml` pushes the GHCR image (by digest) to Cloudflare's registry and `wrangler deploy`s it from `api/<svc>/cloudflare/`. This repo is source + CI + **the deploy trigger** — release tags here drive the whole pipeline (see the ⛔️ rule at the top: agents never push tags). Dev orchestration stays in `compose.yml`.
 
-- Prod backends (identityx, univents, payssage, informd): `api/<svc>/cloudflare/wrangler.jsonc`, service env from the `<SERVICE>_API_ENV` repo secret
+- Prod backends (identityx, univents, payssage, informd): `api/<svc>/cloudflare/wrangler.jsonc`: config in its `vars`, credentials as Worker secrets (`wrangler secret put`, listed under `secrets.required`)
 - Infra stacks (caddy, mox, observability): run from `~/infra/<name>/` on the server — not part of this repo
 
 ## Shared Go Library (`lib/go/`)

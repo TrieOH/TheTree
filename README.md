@@ -198,7 +198,8 @@ paths: full/express × service/front).
 - **Backends:** tag `<svc>/v<semver>` (e.g. `payssage/v0.7.10`) → `deploy.yml`:
   R-chain checks → build once → push `ghcr.io/trieoh/<svc>@sha256:…` → the same
   image pushed to Cloudflare's registry → Worker + Container rollout from
-  `api/<svc>/cloudflare` (the service env is the `<SVC>_API_ENV` secret).
+  `api/<svc>/cloudflare` (config is its `wrangler.jsonc` vars; credentials
+  are Worker secrets, set with `wrangler secret put`).
 - **Frontends:** tag `<app>-ui/v<semver>` → Worker version uploaded, then the
   SAME version promoted to production (build once, never rebuild).
 - **TS SDKs:** tag `<sdk>-sdk-ts/v<semver>` → npm publish (version guard:
